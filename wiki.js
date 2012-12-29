@@ -5,33 +5,41 @@ var async = require('async');
 var sanitize = require('validator').sanitize;
 var uploadfs = require('uploadfs');
 var fs = require('fs');
+var _ = require('underscore');
+var jQuery = require('jquery');
+
+// MongoDB is pretty ridiculous without this
+RegExp.quote = require("regexp-quote");
 
 var app, db;
 
 var options = {
-  auth: {
-    strategy: 'local',
-    options: {
-      users: {
-        admin: {
-          username: 'admin',
-          password: 'demo',
-          id: 'admin'
-        }
-      }
-    }
-  },
+  // auth: {
+  //   strategy: 'local',
+  //   options: {
+  //     users: {
+  //       admin: {
+  //         username: 'admin',
+  //         password: 'demo',
+  //         id: 'admin'
+  //       }
+  //     }
+  //   }
+  // },
 
   // Lock the /user prefix to require login
-  locked: '/user',
+  // locked: '/user',
 
   sessionSecret: 'whatever',
 
   db: {
     // host: 'localhost'
     // port: 27017,
-    name: 'jot',
-    collections: [ 'posts', 'files' ]
+    name: 'jotwiki',
+    collections: [ 
+      { name: 'areas', index: { fields: { slug: 1 }, unique: true } }, 
+      'files' 
+    ],
   },  
 
   static: __dirname + '/public',
@@ -93,33 +101,28 @@ function setRoutes(callback) {
   // can't be AJAXed (although you can do that in Chrome and
   // Firefox it is still not supported in IE9).
 
-  app.get('/user/file-iframe/:id', validId, function(req, res) {
+  app.get('/jot/file-iframe/:id', validId, function(req, res) {
     var id = req.params.id;
     res.render('fileIframe', { id: id, error: false, uploaded: false });
   });
 
   // Deliver details about a previously uploaded file as a JSON response
-  app.get('/user/file-info/:id', validId, function(req, res) {
+  app.get('/jot/file-info/:id', validId, function(req, res) {
     var id = req.params.id;
-    appy.files.findOne({ _id: id, ownerId: req.user.id }, gotFile);
-    console.log('id was ' + id);
-    console.log(req.user);
+    appy.files.findOne({ _id: id }, gotFile);
     function gotFile(err, file) {
       if (err || (!file)) {
         res.statusCode = 404;
-        console.log(err);
-        console.log(file);
         res.send("Not Found");
         return;
       }
       file.url = uploadfs.getUrl() + '/images/' + id;
       res.send(file);
-      console.log(file);
     }
   });
 
   // An upload submitted via the iframe
-  app.post('/user/file-iframe/:id', validId, function(req, res) {
+  app.post('/jot/file-iframe/:id', validId, function(req, res) {
     var id = req.params.id;
     var file = req.files.file;
 
@@ -134,36 +137,28 @@ function setRoutes(callback) {
     var info;
 
     function gotExisting(err, existing) {
-      // If it's already in the db, make sure it belongs to us
-      // before we allow the user to overwrite it
-      if (existing && (existing.ownerId !== req.user.id)) {
-        console.log('existing and not ours:' + existing.ownerId + ',' + req.user.id);
-        return fail(req, res);
-      }
+      // This is a good place to add permissions checks
+
       // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
       uploadfs.copyImageIn(src, '/images/' + id, update);
     }
 
     function update(err, infoArg) {
       if (err) {
-        console.log(err);
         return fail(req, res);
       }
       info = infoArg;
       info._id = id;
       info.name = slugify(file.name);
-      info.ownerId = req.user.id ? req.user.id : req.user.username;
       info.createdAt = new Date();
 
-      appy.files.update({ _id: info._id, ownerId: req.user.id }, info, { upsert: true, safe: true }, inserted);
+      appy.files.update({ _id: info._id }, info, { upsert: true, safe: true }, inserted);
     }
 
     function inserted(err) {
       info.uploaded = true;
       info.error = false;
       info.id = info._id;
-      console.log(info);
-      console.log('so there');
       res.render('fileIframe', info);
     }
 
@@ -172,89 +167,62 @@ function setRoutes(callback) {
     }
   });
 
-  // Display an editor for a new or existing blog post
+  // Area editor
 
-  app.get('/user/editor', function(req, res) {
-    var id = req.query.id;
+  app.get('/jot/edit-area', function(req, res) {
+    var slug = req.query.slug;
     var isNew = false;
-    if (!id) {
-      isNew = true;
-      var post = {
-        body: '',
-        _id: generateId()
-      };
-      return edit(req, res, post, isNew);
+    if (!slug) {
+      return notfound(req, res);
     } else {
-      appy.posts.findOne({ _id: id, userId: req.user.id }, function(err, post) {
-        if (err || (!post)) {
-          return notfound(req, res);
+      appy.areas.findOne({ slug: slug }, function(err, area) {
+        if (!area) {
+          var area = {
+            slug: slug,
+            _id: generateId(),
+            content: null,
+            isNew: true
+          };
+          area.wid = 'w-' + area._id;
+          return res.render('editArea', area);
         }
         else
         {
-          return edit(req, res, post, isNew);
+          area.wid = 'w-' + area._id;
+          area.isNew = false;
+          return res.render('editArea', area);
         }
       });
     }
   });
 
-  function edit(req, res, post, isNew, error) {
-    var cancelUrl = '/' + req.user.username;
-    var deleteUrl = null;
-    if (!isNew) {
-      cancelUrl += '/' + post.slug;
-      deleteUrl = '/user/delete/' + post.slug;
-    }
-    res.render('editor', { post: post, cancelUrl: cancelUrl, deleteUrl: deleteUrl, error: error, isNew: isNew });
-  }
-
-  app.post('/user/editor', function(req, res) {
-    var id = req.body.id;
-    var title = req.body.title.substr(0, 130);
-    var post = {
-      title: title,
-      post: validatePost(req.body.body),
-      slug: slugify(title) + '-' + id,
-      userId: req.user.id,
-      username: req.user.username
+  app.post('/jot/edit-area', function(req, res) {
+    var slug = req.body.slug;
+    var area = {
+      slug: req.body.slug,
+      content: validateContent(req.body.content)
     };
 
-    // I wanted to use upsert here, but you can't have fields
-    // that are only inserted and not updated (createdAt), so I can't.
-    // https://jira.mongodb.org/browse/SERVER-340
+    // TODO: validate content. XSS, tag balancing, allowed tags and attributes,
+    // sensible use of widgets. All that stuff A1.5 does well
 
-    appy.posts.findOne({ _id: req.body.id }, function(err, doc) {
-      if ((!err) && doc) {
-        // This is an existing post. On update make sure it belongs to us
-        appy.posts.update({ 
-          _id: req.body.id, 
-          userId: req.user.id 
-        }, 
-        { 
-          $set: post 
-        }, function (err) {
-          return after(err, post);
-        });
-      } else {
-        // A new post
-        post.createdAt = new Date();
-        post._id = id;
-        appy.posts.insert(post, function(err, docs) {
-          return after(err, post);
-        });
+    appy.areas.update({ slug: area.slug }, area, { upsert: true, safe: true }, updated);
+
+    function updated(err) {
+      if (err) {
+        console.log(err);
+        return notfound(req, res);
       }
-    });
-    function after(err, post) {
-      if (err || (!post)) {
-        return fail(req, res);
-      }
-      return res.redirect('/' + req.user.username + '/' + post.slug);
+      res.send(area.content);
     }
   });
 
   // A simple oembed proxy to avoid cross-site scripting restrictions. 
-  // A more complete project would need to cache oembed results, 
-  // including the thumbnails
-  app.get('/oembed', function(req, res) {
+  // A more complete project should cache oembed results, 
+  // including the thumbnails. Also, I recommend a whitelist of
+  // sites whose oembed codes are known not to be XSS attacks
+
+  app.get('/jot/oembed', function(req, res) {
     oembed.fetch(req.query.url, {}, function (err, result) {
       if (err) {
         return res.send({ 'err': err });
@@ -264,56 +232,38 @@ function setRoutes(callback) {
     });
   });
 
-  // Delete the specified post
-  app.get('/user/delete/:slug', function(req, res) {
-    appy.posts.remove({ username: req.user.username, slug: req.params.slug },
-      function(err, post) {
-        return res.redirect('/');
-      }
-    );
+  // LAST ROUTE: pages in the wiki.
+  
+  // If we haven't matched anything special, look for a page with content.
+  // Note the leading slash is included. Express automatically supplies / 
+  // if the URL is empty
+  app.get(/^(.*)$/, function(req, res) {
+    var slug = req.params[0];
+    req.slug = slug;
+    renderPage(req, res);
   });
 
-  // Show a post, with an edit button if it's ours
-  app.get('/:username/:slug', function(req, res) {
-    var username = req.user ? req.user.username : null;
-    appy.posts.findOne({ username: req.params.username, slug: req.params.slug },
-      function(err, post) {
-        if (err || (!post)) {
-          return notfound(req, res);
-        }
-        res.render('show', { post: post, mine: username === req.params.username });
+  function renderPage(req, res) {
+    var slug = req.slug;
+    // Ask MongoDB for all areas whose slug starts with
+    // the slug of the page, followed by a :. This gives us
+    // a namespace for areas within the page
+    var pattern = new RegExp('^' + RegExp.quote(slug) + ':', 'i');
+    appy.areas.find({ slug: pattern }).toArray(function(err, areas) {
+      if (err) {
+        return notfound(req, res);
       }
-    );
-  });
-
-  // Show feed of posts for a user
-  app.get('/:username', function(req, res) {
-    if (req.params.username === 'favicon.ico') {
-      return notfound(req, res);
-    }
-    return indexFor(req, res, { username: req.params.username });
-  });
-
-  function indexFor(req, res, criteria) {
-    return appy.posts.find(criteria).sort({ createdAt: -1 }).toArray(function(err, posts) {
-        if (err) {
-          return notfound(req, res);
+      var data = {};
+      // Organize the areas by name
+      _.each(areas, function(area) {
+        var results = area.slug.match(/:(\w+)$/);
+        if (results) {
+          data[results[1]] = area;
         }
-        if (!posts.length) {
-          if (req.user && (req.params.username === req.user.username)) {
-            return ok();
-          } else {
-            console.log("Not sure about " + req.url); 
-            return notfound(req, res);
-          }
-        } else {
-          return ok();
-        }
-        function ok() {
-          res.render('index', { username: req.params.username, posts: posts, mine: req.user && (req.user.username === req.params.username) });
-        }
-      }
-    );
+      });
+      data.slug = slug;
+      return res.render('page', data);
+    });
   }
 
   // Middleware
@@ -394,12 +344,24 @@ function getTempPath(path) {
   return __dirname + '/temp' + path;
 }
 
-function validatePost(body)
+function validateContent(content)
 {
   // Remove float arrows on save. 
-  body = globalReplace(body, '↣', '');
-  body = globalReplace(body, '↢', '');
-  body = sanitize(body).xss().trim();
-  return body;
+  content = globalReplace(content, '↣', '');
+  content = globalReplace(content, '↢', '');
+  // Remove XSS threats. This is a tiny down payment on the
+  // validation of allowable markup and CSS we really want to do,
+  // similar to what Apostrophe 1.5 delivers
+  content = sanitize(content).xss().trim();
+
+  // Remove edit buttons from widgets. This is just the start of
+  // what we can do with jQuery on the server side. Note that 
+  // browser side validation is not enough because browsers are
+  // inherently not trusted
+  var $content = jQuery(content);
+  $content.find('.jot-edit-widget').remove();
+  var wrapper = jQuery('<div></div>');
+  wrapper.append($content);
+  return wrapper.html();
 }
 

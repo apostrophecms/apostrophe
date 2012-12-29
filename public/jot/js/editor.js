@@ -1,4 +1,8 @@
-var jot = window.jot = {};
+if (!window.jot) {
+  window.jot = {};
+}
+
+var jot = window.jot;
 
 jot.Editor = function(options) {
   var self = this;
@@ -23,8 +27,14 @@ jot.Editor = function(options) {
   });
 
   self.$editable.html(options.data);
+
   // Restore helper marks for widgets
-  self.$editable.find('[data-widget-type]').before('↢').after('↣');
+  self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
+
+  // Restore edit buttons
+  self.$editable.find('.jot-widget[data-widget-type]').each(function(i, w) {
+    jot.addEditButtonToWidget($(w));
+  });
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
@@ -315,7 +325,15 @@ jot.Editor = function(options) {
   setTimeout(function() {
     self.undoPoint();
   }, 200);
-}
+};
+
+// We need to be able to do this to every existing widget preview quickly when
+// the edit view starts up
+
+jot.addEditButtonToWidget = function($widget) {
+  var edit = $('<div class="jot-edit-widget">Edit ' + jot.widgetEditorLabels[$widget.attr('data-widget-type')] + '</div>');
+  $widget.prepend(edit);
+};
 
 jot.WidgetEditor = function(options) {
   var self = this;
@@ -447,8 +465,7 @@ jot.WidgetEditor = function(options) {
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
       self.$widget.html('');
-      var edit = $('<div class="jot-edit-widget">Edit ' + self.label + '</div>');
-      self.$widget.append(edit);
+      jot.addEditButtonToWidget(self.$widget);
       self.populateWidget();
     },
 
@@ -532,6 +549,7 @@ jot.WidgetEditor = function(options) {
 }
 
 jot.widgetEditors = {};
+jot.widgetEditorLabels = {};
 
 jot.widgetEditors.Image = function(options) {
   var self = this;
@@ -544,7 +562,7 @@ jot.widgetEditors.Image = function(options) {
   }
 
   self.afterCreatingEl = function() {
-    self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/user/file-iframe/' + self.widgetId + '"></iframe>'));
+    self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
     self.$el.bind('uploaded', function(e, id) {
       // Only react to events intended for us
       if (id === self.widgetId) {
@@ -559,7 +577,7 @@ jot.widgetEditors.Image = function(options) {
   self.preview = function() {
     self.$previewContainer.find('.jot-widget-preview').remove();
     if (self.exists) {
-      $.getJSON('/user/file-info/' + self.widgetId, function(infoArg) {
+      $.getJSON('/jot/file-info/' + self.widgetId, function(infoArg) {
         info = infoArg;
         var $player = self.getPreviewEmbed();
         self.$previewContainer.prepend($player);
@@ -595,12 +613,13 @@ jot.widgetEditors.Image = function(options) {
   };
 
   self.type = 'Image';
-  self.label = options.label ? options.label : 'Image';
   options.template = '.jot-image-editor';
 
   // Parent class constructor shared by all widget editors
   jot.WidgetEditor.call(self, options);
 }
+
+jot.widgetEditorLabels.Image = 'Image';
 
 jot.widgetEditors.Video = function(options) {
   var self = this;
@@ -706,7 +725,7 @@ jot.widgetEditors.Video = function(options) {
     }
     self.$el.find('[data-preview]').hide();
     self.$el.find('[data-spinner]').show();
-    $.getJSON('/oembed', { url: url }, function(data) {
+    $.getJSON('/jot/oembed', { url: url }, function(data) {
       self.$el.find('[data-spinner]').hide();
     self.$el.find('[data-preview]').show();
       if (data.err) {
@@ -739,12 +758,13 @@ jot.widgetEditors.Video = function(options) {
   }
 
   self.type = 'Video';
-  self.label = options.label ? options.label : 'Video';
   options.template = '.jot-video-editor';
 
   // Parent class constructor shared by all widget editors
   jot.WidgetEditor.call(self, options);
 }
+
+jot.widgetEditorLabels.Video = 'Video';
 
 // TODO copy current selection's text to pullquote
 jot.widgetEditors.Pullquote = function(options) {
@@ -802,12 +822,13 @@ jot.widgetEditors.Pullquote = function(options) {
   }
 
   self.type = 'Pullquote';
-  self.label = options.label ? options.label : 'Pullquote';
   options.template = '.jot-pullquote-editor';
 
   // Parent class constructor shared by all widget editors
   jot.WidgetEditor.call(self, options);
 }
+
+jot.widgetEditorLabels.Pullquote = 'Pullquote';
 
 // TODO copy current selection's text to code
 
@@ -866,12 +887,13 @@ jot.widgetEditors.Code = function(options) {
   }
 
   self.type = 'Code';
-  self.label = options.label ? options.label : 'Code Sample';
   options.template = '.jot-code-editor';
 
   // Parent class constructor shared by all widget editors
   jot.WidgetEditor.call(self, options);
 }
+
+jot.widgetEditorLabels.Code = 'Code Sample';
 
 // Utility methods
 
@@ -926,11 +948,11 @@ jot.insertHtmlAtCursor = function(html) {
     // range.setEndAfter(node);
     // sel.setSingleRange(range);
   }  
-}
+};
 
 jot.deselect = function() {
   rangy.getSelection().removeAllRanges();
-}
+};
 
 jot.selectElement = function(el) {
   var range = rangy.createRange();
@@ -939,7 +961,7 @@ jot.selectElement = function(el) {
   var sel = rangy.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-}
+};
 
 // Move the caret to the specified offset in characters
 // within the specified element. 
@@ -949,12 +971,47 @@ jot.moveCaretToTextPosition = function(el, offset) {
   range.setEnd(el, offset);
   var sel = rangy.getSelection();
   sel.setSingleRange(range);
-}
+};
 
 jot.moveCaretToEnd = function() {
   var last = self.$editable.contents().find(':last');
   if (last.length) {
     moveCaretToTextPosition(last[0], last.text().length);
   }
-}
+};
 
+jot.enableAreas = function() {
+  $('.jot-edit-area').click(function() {
+    
+    var area = $(this).closest('.jot-area');
+    var slug = area.attr('data-jot-slug');
+    
+    $.get('/jot/edit-area', { slug: slug }, function(data) {
+      area.find('.jot-edit-view').remove();
+      var editView = $('<div class="jot-edit-view"></div>');
+      editView.append($(data));
+      area.append(editView);
+      area.find('.jot-normal-view').hide();
+
+      area.find('[data-cancel-area]').click(function() {
+        var area = $(this).closest('.jot-area');
+        area.find('.jot-edit-view').remove();
+        area.find('.jot-normal-view').show();
+        return false;
+      });
+
+      area.find('[data-save-area]').click(function() {
+        var area = $(this).closest('.jot-area');
+        var slug = area.attr('data-jot-slug');
+        $.post('/jot/edit-area', { slug: slug, content: area.find('[data-editable]').html() }, function(data) {
+          area.find('.jot-edit-view').remove();
+          area.find('.jot-content').html(data);
+          area.find('.jot-normal-view').show();
+          jot.enablePlayers(area);
+        });
+        return false;
+      });
+    });
+    return false;
+  });
+};

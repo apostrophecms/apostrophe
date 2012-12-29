@@ -1,10 +1,36 @@
 extends layout
 
+// Bring in Jot's requirements. TODO: find a good way to load
+// these on first use as part of editArea, at least the scripts
+
+block append css
+  link(href="/jot/css/editor.css", rel="stylesheet")
+
+block append js
+  script(src="/js/jquery.hotkeys/jquery.hotkeys.js")
+  script(src="/js/rangy-1.2.3/rangy-core.js")
+  script(src="/js/rangy-1.2.3/rangy-selectionsaverestore.js")
+  script(src="/js/textinputs_jquery.js")
+  script(src="/jot/js/editor.js")
+  script(src="/jot/js/content.js")
+
+block append before
+  // TODO: should be looping over an array of supported widgets here
+  != partial('imageEditor')
+  != partial('videoEditor')
+  != partial('pullquoteEditor')
+  != partial('codeEditor')
+
+// Output the current content of the page, with buttons to edit it
+// Check locals.main and locals.sidebar to avoid an undefined error if
+// that area has never been saved
+
 block main
-  != partial('areaControls', { slug: slug + ':main' })
-  != main
+  != partial('area', { slug: slug + ':main', name: 'main', content: locals.main ? main.content : '' })
 
-block right
-  != partial('areaControls', { slug: slug + ':right' })
-  != right
+block sidebar
+  != partial('area', { slug: slug + ':sidebar', name: 'sidebar', content: locals.sidebar ? sidebar.content : '' })
 
+block append domready
+  | jot.enableAreas();
+  | jot.enablePlayers();

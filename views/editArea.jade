@@ -1,0 +1,39 @@
+// Main editor markup
+
+form
+  .jot-editor(data-editor-wrapper, id=wid)
+    .jot-toolbar
+      a(data-bold)
+        i.icon-bold
+      a(data-italic)
+        i.icon-italic
+      a.jot-large(data-large) A
+      a.jot-medium(data-medium) A
+      a(data-createLink)
+        i.icon-link
+      a(data-widgetButton="Pullquote") &ldquo;&rdquo;
+      a(data-widgetButton="Image")
+        i.icon-picture
+      a(data-widgetButton="Video")
+        i.icon-facetime-video
+      a.jot-code(data-widgetButton="Code") i++
+      .end
+
+    // This is the actual editable area
+    div.jot-editable(data-editable, contentEditable="true")
+      | &nbsp;
+
+  .form-actions
+    .btn-group
+      a.btn.btn-primary(data-save-area) Save
+      a.btn(data-cancel-area) Cancel
+
+script
+  $(function() {
+    // I have seen jquery domready fail to see this id yet, so
+    // wait for "next tick" as well (Chrome)
+    setTimeout(function() {
+      new jot.Editor({ selector: '##{wid}', data: !{JSON.stringify(content)} });
+    }, 0);
+  });
+

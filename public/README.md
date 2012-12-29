@@ -16,7 +16,10 @@ Jot's server-side components are built in Node. Although in principle browser-si
 
 Jot's server-side code uses uploadfs to store media files. uploadfs allows you to decide whether to keep them in a local filesystem, Amazon S3 or a custom backend.
 
-Jot currently requires Twitter Bootstrap and FontAwesome. That will probably change, because Bootstrap is a big requirement for a rich content editor to force on an entire project. Jot definitely requires Underscore and jQuery.
+Jot currently requires Twitter Bootstrap and FontAwesome. That will probably change, because Bootstrap is a big requirement for a rich content editor to force on an entire project. Jot definitely requires Underscore, jQuery and Rangy. Rangy makes working with contentEditable something a sane person would even consider.
+
+## Coding With Jot
+
 
 ## Conclusion and Contact Information
 
