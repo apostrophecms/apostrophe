@@ -1,0 +1,68 @@
+.jot-one-third
+{
+  width: 33.33333%;
+}
+
+.jot-one-half
+{
+  width: 50%;
+}
+
+.jot-two-thirds
+{
+  width: 66.66667%;
+}
+
+.jot-full
+{
+  width: 100%;
+}
+
+.jot-left
+{
+  float: left;
+  clear: both;
+  margin-right: 10px;
+}
+
+.jot-middle
+{
+  margin: auto;
+  margin-left: ;
+}
+
+.jot-right
+{
+  float: right;
+  clear: both;
+  margin-left: 10px;
+}
+
+.jot-pullquote
+{
+  font-size: 135%;
+  color: #488;
+  line-height: 1.5;
+  padding-bottom: 5px;
+}
+
+/*
+ * Edit button shown on placeholder that reopens the widget
+ */
+
+.jot-edit-widget {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  background-color: black;
+  color: white;
+  padding: 4px;
+  border: 2px solid #ccc;
+  margin-left: 20px;
+  margin-top: 20px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: normal;
+  pointer: hand;
+}

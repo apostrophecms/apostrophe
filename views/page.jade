@@ -1,0 +1,10 @@
+extends layout
+
+block main
+  != partial('areaControls', { slug: slug + ':main' })
+  != main
+
+block right
+  != partial('areaControls', { slug: slug + ':right' })
+  != right
+

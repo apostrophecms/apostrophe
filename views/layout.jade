@@ -1,0 +1,31 @@
+extends base
+
+block body
+  .container
+    .row
+      .span12
+        h1 JotWiki
+
+  if error
+    .container
+      .row
+        .span12.notice #{error}
+
+  .container
+    block before
+    .row
+      .span9.app
+        block main
+          | &nbsp;
+      .span3.app.gutter
+        block right
+          .hints
+            | &nbsp;
+    .footer-wrapper
+      .row.footer
+        .span12
+          block footer
+            strong Jot is in beta. 
+            span Please open issues on 
+            a(href="http://github.com/boutell/jot") github
+            span .

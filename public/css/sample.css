@@ -1,0 +1,5 @@
+/* Bugfix for bootstrap font */
+[class^="icon-"], [class*=" icon-"] {
+  background-image:none;
+}
+

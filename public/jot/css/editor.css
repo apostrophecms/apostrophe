@@ -1,0 +1,212 @@
+/**
+ * To prevent conflicts EVERY class should start with jot-
+ */
+
+.jot-widget
+{
+  display: block;
+}
+
+.jot-toolbar
+{
+  padding: 10px 0px 10px 0px;
+  font-size: 20px;
+}
+
+.jot-toolbar a
+{
+  color: #333;
+  text-decoration: none;
+  padding: 0px 10px 0px 10px;
+}
+
+.jot-toolbar a:hover
+{
+  color: #333;
+  text-decoration: underline
+}
+
+.jot-toolbar a.jot-large
+{
+  vertical-align: top;
+  font-size: 20px;
+  margin-top: -2px;
+}
+
+.jot-toolbar a.jot-medium
+{
+  vertical-align: top;
+  font-size: 16px;
+  margin-top: -2px;
+}
+
+.jot-toolbar a:visited
+{
+  color: #333;
+}
+
+.jot-toolbar a.jot-code
+{
+  vertical-align: top;
+  font-size: 16px;
+  margin-top: -2px;
+  font-weight: bold;
+}
+
+.jot-editor
+{
+  min-height: 400px;
+  border-radius: 4px;
+  border: 2px solid #ccc;
+  padding: 8px;
+}
+
+.jot-editor .jot-editable
+{
+  min-height: 400px;
+}
+
+.jot-center
+{
+  text-align: center;
+}
+
+/* Don't know why bootstrap puts a 4 pixel margin here and hoses
+  inline radio boxes, but it's not what I want */
+.jot-widget-editor input[type="radio"]
+{
+  margin-top: 0px;
+}
+
+.jot-widget-editor .jot-requires-preview
+{
+  display: none;
+}
+
+.jot-widget-editor .jot-embed
+{
+  width: 80%;
+  height: 20px;
+}
+
+.jot-widget-editor .jot-preview-button
+{
+  margin-left: 10px;
+}
+
+.jot-widget-preview-container
+{
+  margin: auto;
+  margin-top: 10px;
+  width: 408px;
+  border: 1px solid #ccc;
+  height: 210px;
+  overflow: hidden;
+}
+
+.jot-widget-preview
+{
+  display: block;
+}
+
+.jot-widget-preview.jot-left
+{
+  float: left;
+  clear: both;
+  margin-right: 10px;
+}
+
+.jot-widget-preview.jot-middle
+{
+  margin: auto;
+}
+
+.jot-widget-preview.jot-sright
+{
+  float: right;
+  clear: both;
+  margin-left: 10px;
+}
+
+.jot-widget-preview.jot-one-third
+{
+  width: 136px;
+}
+
+.jot-widget-preview.jot-one-half
+{
+  width: 204px;
+}
+
+.jot-widget-preview.jot-two-thirds
+{
+  width: 272px;
+}
+
+.jot-widget-preview.jot-full
+{
+  width: 408px;
+}
+
+.jot-widget-preview.jot-code
+{
+  font-size: 50%;
+}
+
+.jot-lorem
+{
+  text-align: left;
+  font-size: 80%;
+}
+
+.jot-clear
+{
+  clear: both;
+}
+
+.jot-template
+{
+  display: none;
+}
+
+.jot-pull-quote
+{
+  font-size: 15px; 
+  line-height: 20px; 
+  font-weight: bold; 
+  margin-right: 10px; 
+}
+
+.jot-editor .jot-pull-quote
+{
+  border: 1px dashed #ccc;
+}
+
+.jot-spinner
+{
+  margin-top: -1px;
+  margin-left: 10px;
+  display: none;
+}
+
+.jot-file-iframe {
+  display: block;
+  border: none;
+  width: 350px;
+  height: 100px;
+  padding-top: 10px;
+}
+
+textarea.jot-code {
+  width: 97%;
+}
+
+/*
+ * Cut ourselves a wee break here, we've striven mightily to
+ * obey bootstrap's limit but come on
+ */
+
+.jot-widget-editor .modal-body 
+{
+  max-height: 450px;
+}

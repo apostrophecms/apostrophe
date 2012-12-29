@@ -1,0 +1,56 @@
+extends layout
+
+block append css
+  link(href="/jot/css/editor.css", rel="stylesheet")
+
+block append js
+  script(src="/js/jquery.hotkeys/jquery.hotkeys.js")
+  script(src="/js/rangy-1.2.3/rangy-core.js")
+  script(src="/js/rangy-1.2.3/rangy-selectionsaverestore.js")
+  script(src="/js/textinputs_jquery.js")
+  script(src="/jot/js/editor.js")
+
+block main
+  form(data-post-form, action="/post", method="POST")
+    fieldset.title
+      label Title
+      input(data-title, name="title", type="text", maxlength="130")
+      // JS copies the markup of the editor here before submit
+      textarea(data-post, name="body", style="display: none")
+    fieldset.main
+      label Body
+
+      // Main editor markup
+      .jot-editor(data-editor-wrapper)
+        .jot-toolbar
+          a(data-bold)
+            i.icon-bold
+          a(data-italic)
+            i.icon-italic
+          a.jot-large(data-large) A
+          a.jot-medium(data-medium) A
+          a(data-createLink)
+            i.icon-link
+          a(data-widgetButton="Pullquote") &ldquo;&rdquo;
+          a(data-widgetButton="Image")
+            i.icon-picture
+          a(data-widgetButton="Video")
+            i.icon-facetime-video
+          a.jot-code(data-widgetButton="Code") i++
+          .end
+
+        // This is the actual editable area
+        div.jot-editable(data-editable, contentEditable="true")
+          | &nbsp;
+
+    .form-actions
+      .btn-group
+        a.btn.btn-primary(data-save-post) Post
+
+  != partial('imageEditor')
+  != partial('videoEditor')
+  != partial('pullquoteEditor')
+  != partial('codeEditor')
+
+block append domready
+  | new jot.Editor({ selector: '[data-editor-wrapper]', data: !{JSON.stringify(post.body)} });

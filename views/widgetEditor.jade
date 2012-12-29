@@ -1,0 +1,51 @@
+block widgetVars
+
+div(class="#{widgetClass} jot-widget-editor modal hide fade jot-template")
+  .modal-header
+    button.close(type="button", data-action="dismiss", aria-hidden="true") 
+      | &times;
+    h3 
+      block title
+        span Edit Widget
+  .modal-body
+    form
+      label
+        block instructions
+          span Paste a widget link.
+      block formBody
+        input.jot-embed
+      block previewButton
+        input.jot-preview-button.btn.btn-primary(data-preview, type="submit", value="Preview")
+        img.jot-spinner(data-spinner, src="/jot/images/spinner.gif")
+      .center
+        .jot-widget-preview-container.jot-requires-preview
+          .jot-lorem
+            | This is what your text will look like, in relation to the content you're adding now. If you click "left" or "right," the text will wrap around your your rich content on the right. After you insert your content, small arrows will appear above and below it in the text. These arrows help you position your text relative to your rich content. They are removed automatically when you save your content.
+          .jot-clear
+      fieldset.jot-center.jot-requires-preview.jot-position
+        label.checkbox.inline
+          input(type="radio", name="position", value="left")
+          |  Left
+        label.checkbox.inline
+          input(type="radio", name="position", value="middle", checked="checked")
+          |  Middle
+        label.checkbox.inline
+          input(type="radio", name="position", value="right")
+          |  Right
+      fieldset.jot-center.jot-requires-preview.jot-size
+        label.checkbox.inline
+          input(type="radio", name="size", value="one-third")
+          |  1/3
+        label.checkbox.inline
+          input(type="radio", name="size", value="one-half")
+          |  1/2
+        label.checkbox.inline
+          input(type="radio", name="size", value="two-thirds")
+          |  2/3
+        label.checkbox.inline
+          input(type="radio", name="size", value="full", checked="checked")
+          |  Full
+
+  .modal-footer
+    a.btn.btn-primary.jot-save(href="#") Save Changes
+    a.btn(href="#", data-action="dismiss") Cancel
