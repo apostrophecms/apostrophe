@@ -64,26 +64,26 @@ You will also need to make appropriate browser-side JavaScript calls to enable t
 
 Here's a simple `layout.html` Nunjucks template that includes everything Jot needs:
 
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    {{ jotStylesheets() }}
-    <link href="/css/my.css" rel="stylesheet" />
-    {{ jotScripts() }}
-  </head>
-  <body>
-    {% block body %}
-    {% endblock %}
-    {{ jotTemplates() }}
-  </body>
-  <script type="text/javascript">
-    // Wait for domready!
-    $(function() {
-      jot.enableAreas();
-      jot.enablePlayers();
-    });
-  </script>
-</html>
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        {{ jotStylesheets() }}
+        <link href="/css/my.css" rel="stylesheet" />
+        {{ jotScripts() }}
+      </head>
+      <body>
+        {% block body %}
+        {% endblock %}
+        {{ jotTemplates() }}
+      </body>
+      <script type="text/javascript">
+        // Wait for domready!
+        $(function() {
+          jot.enableAreas();
+          jot.enablePlayers();
+        });
+      </script>
+    </html>
 
 Note the `body` block, which can be overridden in any template that `extend`s this template. Jade has an identical feature.
 

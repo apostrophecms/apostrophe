@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Settings shared by all targets (staging, production, etc). Usually the
+# shortname of the project (which is also the hostname for the frontend
+# proxy server used for staging sites) and the directory name. For our
+# web apps that use sc-proxy we make sure each is a subdirectory
+# of /opt/stagecoach/apps
+
+PROJECT=jotwiki
+DIR=/opt/stagecoach/apps/$PROJECT
+
+# Adjust the PATH environment variable on the remote host. Here's an example
+# for deploying to MacPorts
+#ADJUST_PATH='export PATH=/opt/local/bin:$PATH'
+
+# ... But you probably won't need to on real servers. I just find it handy for
+# testing parts of stagecoach locally on a Mac. : is an acceptable "no-op" (do-nothing) statement
+ADJUST_PATH=':'
+
+# ssh port. Sensible people leave this set to 22 but it's common to do the
+# "security by obscurity" thing alas
+SSH_PORT=22

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Run any necessary database migration tasks that should happen while the 
+# site is paused here. Also a good place to ensure any data folders
+# that are *not* supposed to be replaced on every deployment exist
+# and create a symlink to them from the latest deployment directory
+
+# The real 'data' folder is shared. It lives two levels up and one over
+# (we're in a deployment dir, which is a subdir of 'deployments', which
+# is a subdir of the project's main dir)
+
+HERE=`pwd`
+mkdir -p ../../data
+ln -s ../../data $HERE/data
+
+echo "Site migrated"
+

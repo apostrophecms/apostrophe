@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Install any dependencies that can't just be rsynced over with
+# the deployment. Example: node apps have npm modules in a
+# node_modules folder. These may contain compiled C++ code that
+# won't work portably from one server to another.
+
+# This script runs after the rsync, but before the 'stop' script,
+# so your app is not down during the npm installation.
+
+# Make sure node_modules exists so npm doesn't go searching
+# up the filesystem tree
+mkdir -p node_modules
+
+# If there is no package.json file then we don't need npm install
+if [ -f './package.json' ]; then
+  # Install npm modules
+  npm install
+  if [ $? -ne 0 ]; then
+    echo "Error during npm install!"
+    exit 1
+  fi
+fi
