@@ -18,17 +18,17 @@
   <body>
     {% block beforeBody %}
     {% endblock %}
+
     {% block body %}
     {% endblock %}
-    {% block afterBody %}
-      {# Append js calls to the domready block to call them #}
-      {# when all js files are loaded and the DOM is ready #}
-      <script type="text/javascript">
-        $(function() {
-          {% block domready %}
-          {% endblock %}
-        });
-      </script>
-    {% endblock %}
+
+    <script type="text/javascript">
+      $(function() {
+        jot.enableAreas();
+        jot.enablePlayers();
+      });
+    </script>
+    {# Must be present in the page in order to use jot's widget editors #}
+    {{ jotTemplates() }}
   </body>
 </html>

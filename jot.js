@@ -17,13 +17,28 @@ module.exports = function() {
 
 function jot() {
   var self = this;
-  var app, files, areas, uploadfs, nunjucksEnv;
+  var app, files, areas, uploadfs, nunjucksEnv, permissions;
 
   self.init = function(options, callback) {
     app = options.app;
     files = options.files;
     areas = options.areas;
     uploadfs = options.uploadfs;
+    permissions = options.permissions;
+
+    // Default is to allow anyone to do anything.
+    // You will probably want to at least check for req.user.
+    // Possible actions are edit-area and edit-media.
+    // edit-area calls will include a slug as the third parameter.
+    // edit-media calls for existing files may include a file, with an 
+    // "owner" property set to the id or username property of req.user 
+    // at the time the file was last edited. edit-media calls with
+    // no existing file parameter also occur, for new file uploads.
+    if (!permissions) {
+      permissions = function(req, action, fileOrSlug, callback) {
+        return callback(null);
+      };
+    }
 
     nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(__dirname + '/views'));
     nunjucksEnv.addFilter('json', function(data) {
@@ -58,7 +73,7 @@ function jot() {
 
     app.get('/jot/file-iframe/:id', validId, function(req, res) {
       var id = req.params.id;
-      render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
+      return render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
     });
 
     // Deliver details about a previously uploaded file as a JSON response
@@ -71,8 +86,13 @@ function jot() {
           res.send("Not Found");
           return;
         }
-        file.url = uploadfs.getUrl() + '/images/' + id;
-        res.send(file);
+        permissions(req, 'edit-media', file, function(err) {
+          if (err) {
+            return forbid(res);
+          }
+          file.url = uploadfs.getUrl() + '/images/' + id;
+          return res.send(file);
+        });
       }
     });
 
@@ -92,10 +112,13 @@ function jot() {
       var info;
 
       function gotExisting(err, existing) {
-        // This is a good place to add permissions checks
-
-        // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
-        uploadfs.copyImageIn(src, '/images/' + id, update);
+        permissions(req, 'edit-media', existing, function(err) {
+          if (err) {
+            return forbid(res);
+          }
+          // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
+          return uploadfs.copyImageIn(src, '/images/' + id, update);
+        });
       }
 
       function update(err, infoArg) {
@@ -106,6 +129,13 @@ function jot() {
         info._id = id;
         info.name = slugify(file.name);
         info.createdAt = new Date();
+
+        // Do our best to record who owns this file to allow permissions
+        // checks later. If req.user exists and has an _id, id or username property, 
+        // record that
+        if (req.user) {
+          info.owner = req.user._id || req.user.id || req.user.username;
+        }
 
         files.update({ _id: info._id }, info, { upsert: true, safe: true }, inserted);
       }
@@ -126,50 +156,60 @@ function jot() {
 
     app.get('/jot/edit-area', function(req, res) {
       var slug = req.query.slug;
-      var isNew = false;
-      if (!slug) {
-        return notfound(req, res);
-      } else {
-        areas.findOne({ slug: slug }, function(err, area) {
-          if (!area) {
-            var area = {
-              slug: slug,
-              _id: generateId(),
-              content: null,
-              isNew: true
-            };
-            area.wid = 'w-' + area._id;
-            return render(res, 'editArea.html', area);
-          }
-          else
-          {
-            area.wid = 'w-' + area._id;
-            area.isNew = false;
-            return render(res, 'editArea.html', area);
-          }
-        });
-      }
+      permissions(req, 'edit-area', slug, function(err) {
+        if (err) {
+          return forbid(res);
+        }
+        var isNew = false;
+        if (!slug) {
+          return notfound(req, res);
+        } else {
+          areas.findOne({ slug: slug }, function(err, area) {
+            if (!area) {
+              var area = {
+                slug: slug,
+                _id: generateId(),
+                content: null,
+                isNew: true
+              };
+              area.wid = 'w-' + area._id;
+              return render(res, 'editArea.html', area);
+            }
+            else
+            {
+              area.wid = 'w-' + area._id;
+              area.isNew = false;
+              return render(res, 'editArea.html', area);
+            }
+          });
+        }
+      });
     });
 
     app.post('/jot/edit-area', function(req, res) {
       var slug = req.body.slug;
-      var area = {
-        slug: req.body.slug,
-        content: validateContent(req.body.content)
-      };
-
-      // TODO: validate content. XSS, tag balancing, allowed tags and attributes,
-      // sensible use of widgets. All that stuff A1.5 does well
-
-      areas.update({ slug: area.slug }, area, { upsert: true, safe: true }, updated);
-
-      function updated(err) {
+      permissions(req, 'edit-area', slug, function(err) {
         if (err) {
-          console.log(err);
-          return notfound(req, res);
+          return forbid(res);
         }
-        res.send(area.content);
-      }
+        var area = {
+          slug: req.body.slug,
+          content: validateContent(req.body.content)
+        };
+
+        // TODO: validate content. XSS, tag balancing, allowed tags and attributes,
+        // sensible use of widgets. All that stuff A1.5 does well
+
+        areas.update({ slug: area.slug }, area, { upsert: true, safe: true }, updated);
+
+        function updated(err) {
+          if (err) {
+            console.log(err);
+            return notfound(req, res);
+          }
+          res.send(area.content);
+        }
+      });
     });
 
     // A simple oembed proxy to avoid cross-site scripting restrictions. 
@@ -214,7 +254,23 @@ function jot() {
     return callback(null);
   };
 
-  // Returns an object with a property for each named area
+  // Invokes the callback with an error if any, and if no error,
+  // the area object requested if it exists. The area object is 
+  // guaranteed to have `slug` and `content` properties. The
+  // `content` property contains rich content markup ready to
+  // display in the browser. 
+
+  self.getArea = function(slug, callback) {
+    areas.findOne({ slug: slug }, function(err, area) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(null, area);
+    });
+  };
+
+  // Invokes the callback with an error if any, and if no error,
+  // an object with a property for each named area
   // matching the given page slug, plus a slug property.
   // Very handy for rendering pages and page-like collections
   // of areas. A simple convention is used to group areas into
@@ -225,10 +281,10 @@ function jot() {
   // string at the beginning can use indexes).
 
   self.getAreasForPage = function(slug, callback) {
-    var pattern = new RegExp('^' + RegExp.quote(slug) + ':', 'i');
+    var pattern = new RegExp('^' + RegExp.quote(slug) + ':');
     areas.find({ slug: pattern }).toArray(function(err, areaDocs) {
       if (err) {
-        return callback('Not found');
+        return callback(err);
       }
       var data = {};
       // Organize the areas by name
@@ -238,7 +294,6 @@ function jot() {
           data[results[1]] = area;
         }
       });
-      data.slug = slug;
       return callback(null, data);
     });
   };
@@ -254,6 +309,11 @@ function jot() {
   function fail(req, res) {
     res.statusCode = 500;
     res.send('500 error, URL was ' + req.url);
+  }
+
+  function forbid(res) {
+    res.statusCode = 403;
+    res.send('Forbidden');
   }
 
   function notfound(req, res) {
@@ -334,10 +394,9 @@ function jot() {
     // what we can do with jQuery on the server side. Note that 
     // browser side validation is not enough because browsers are
     // inherently not trusted
-    var $content = jQuery(content);
-    $content.find('.jot-edit-widget').remove();
     var wrapper = jQuery('<div></div>');
-    wrapper.append($content);
+    wrapper.html(content);
+    wrapper.find('.jot-edit-widget').remove();
     return wrapper.html();
   }
 }

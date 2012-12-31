@@ -1,7 +1,0 @@
-Isolate the truly wiki-sample-app-specific stuff in wiki.js
-Move the rest to jot.js
-Move the wiki-specific views to wiki/views
-Leave the jot views in views
-Etc.
-Reintroduce permissions hooks, implement an extremely simple example
-

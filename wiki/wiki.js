@@ -15,21 +15,18 @@ var options = {
     env.express(app);
   },
 
-  // auth: {
-  //   strategy: 'local',
-  //   options: {
-  //     users: {
-  //       admin: {
-  //         username: 'admin',
-  //         password: 'demo',
-  //         id: 'admin'
-  //       }
-  //     }
-  //   }
-  // },
-
-  // Lock the /user prefix to require login
-  // locked: '/user',
+  auth: {
+    strategy: 'local',
+    options: {
+      users: {
+        admin: {
+          username: 'admin',
+          password: 'demo',
+          id: 'admin'
+        }
+      }
+    }
+  },
 
   sessionSecret: 'whatever',
 
@@ -102,7 +99,8 @@ function initJot(callback) {
     files: appy.files,
     areas: appy.areas,
     app: app,
-    uploadfs: uploadfs
+    uploadfs: uploadfs,
+    permissions: jotPermissions,
   }, callback);
 }
 
@@ -117,16 +115,41 @@ function setRoutes(callback) {
 
   // Note the leading slash is included. Express automatically supplies / 
   // if the URL is empty
-  app.get('*', function(req, res) {
-    var slug = req.params[0];
-    jot.getAreasForPage(slug, function(e, info) {
-      if (e) {
-        console.log(e);
-        return fail(req, res);
-      }
-      return res.render('page.html', { slug: info.slug, main: info.main ? info.main.content : '', sidebar: info.sidebar ? info.sidebar.content : '' });
-    });
-  });
+  app.get('*', 
+    function(req, res, next) {
+      // Get content for this page
+      req.slug = req.params[0];
+      jot.getAreasForPage(req.slug, function(e, info) {
+        if (e) {
+          console.log(e);
+          return fail(req, res);
+        }
+        req.page = info;
+        return next();
+      });
+    },
+    function(req, res, next) {
+      // Get the shared footer
+      jot.getArea('footer', function(e, info) {
+        if (e) {
+          console.log(e);
+          return fail(req, res);
+        }
+        req.footer = info;
+        return next();
+      });
+    },
+    function (req, res) {
+      return res.render('page.html', { 
+        slug: req.slug, 
+        main: req.page.main ? req.page.main.content : '', 
+        sidebar: req.page.sidebar ? req.page.sidebar.content : '',
+        user: req.user,
+        edit: req.user && req.user.username === 'admin',
+        footer: req.footer ? req.footer.content : ''
+      });
+    }
+  );
 
   return callback(null);
 }
@@ -148,3 +171,13 @@ function getTempPath(path) {
   return __dirname + '/temp' + path;
 }
 
+// Allow only the admin user to edit anything with Jot
+
+function jotPermissions(req, action, fileOrSlug, callback) {
+  if (req.user && (req.user.username === 'admin')) {
+    // OK
+    return callback(null);
+  } else {
+    return callback('Forbidden');
+  }
+}

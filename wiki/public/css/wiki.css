@@ -30,6 +30,11 @@ h4
   font-size: 125%;
 }
 
+p
+{
+  margin-bottom: 1em;
+}
+
 em, i
 {
   font-style: italic;
@@ -66,3 +71,11 @@ strong, b
   border-top: 1px dotted #ccc;
   padding: 1%;
 }
+
+.login-status
+{
+  float: right;
+  padding-top: 40px;
+  padding-right: 20px;
+}
+
