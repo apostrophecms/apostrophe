@@ -38,6 +38,9 @@
     // wait for "next tick" as well (Chrome)
     setTimeout(function() {
       new jot.Editor({ selector: '#{{ wid }}', data: {{ content | json }} });
+      $(function() {
+        $('#{{ wid }} [data-editable]').focus();
+      });
     }, 0);
   });
 </script>
