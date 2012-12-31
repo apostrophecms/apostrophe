@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block before %}
+{{ super() }}
+{# Must be present in the page where we plan to use Jot #}
+{# See also jotStylesheets and jotScripts loaded in base.jade #}
+{{ jotTemplates() }}
+{% endblock %}
+
+{# Output the current content of the page, with buttons to edit it #}
+
+{% block main %}
+  {{ jotArea({ slug: slug + ':main', name: 'main', content: main }) }}
+{% endblock %}
+
+{% block sidebar %}
+  {{ jotArea({ slug: slug + ':sidebar', name: 'sidebar', content: sidebar }) }}
+{% endblock %}
+
+{% block domready %}
+  jot.enableAreas();
+  jot.enablePlayers();
+{% endblock %}

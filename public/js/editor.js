@@ -113,30 +113,35 @@ jot.Editor = function(options) {
     var sel = rangy.getSelection();
     if (sel.rangeCount) {
       var range = sel.getRangeAt(0);
+
       // "Why don't you just use intersectNode()?" Because
       // it considers adjacency to be intersection. ):
       self.$editable.find('[data-widget-type]').each(function() {
-        var nodeRange = rangy.createRange();
-        nodeRange.setStartBefore(this);
-        nodeRange.setEndAfter(this);
-        if (range.intersectsRange(nodeRange))
-        {
-          var left = '↢';
-          var right = '↣';
-          if (this.previousSibling) {
-            var p = this.previousSibling.nodeValue;
-            if ((p === left) || (p === right)) {
-              nodeRange.setStartBefore(this.previousSibling);
+        try {
+          var nodeRange = rangy.createRange();
+          nodeRange.setStartBefore(this);
+          nodeRange.setEndAfter(this);
+          if (range.intersectsRange(nodeRange))
+          {
+            var left = '↢';
+            var right = '↣';
+            if (this.previousSibling) {
+              var p = this.previousSibling.nodeValue;
+              if ((p === left) || (p === right)) {
+                nodeRange.setStartBefore(this.previousSibling);
+              }
             }
-          }
-          if (this.nextSibling) {
-            var n = this.nextSibling.nodeValue;
-            if ((n === left) || (n === right)) {
-              nodeRange.setEndAfter(this.nextSibling);
+            if (this.nextSibling) {
+              var n = this.nextSibling.nodeValue;
+              if ((n === left) || (n === right)) {
+                nodeRange.setEndAfter(this.nextSibling);
+              }
             }
+            var unionRange = range.union(nodeRange);
+            rangy.getSelection().setSingleRange(unionRange);
           }
-          var unionRange = range.union(nodeRange);
-          rangy.getSelection().setSingleRange(unionRange);
+        } catch (e) {
+          // Don't panic if this throws exceptions while we're inactive
         }
       });
     }
@@ -285,6 +290,7 @@ jot.Editor = function(options) {
           return false;
         }
       }
+
       document.execCommand(actualCommand, false, arg);
 
       // The easiest way to shut off an h4 is to toggle it
@@ -368,7 +374,7 @@ jot.WidgetEditor = function(options) {
 
   _.defaults(self, {
     destroy: function() {
-      self.$el.modal('hide');
+      self.modal('hide');
       _.map(self.timers, function(timer) { clearInterval(timer); });
       // Let it go away pretty, then remove it from the DOM
       setTimeout(function() {
@@ -497,6 +503,19 @@ jot.WidgetEditor = function(options) {
       if (options.hint) {
         options.hint('arrows', '"What\'s up with the little arrows?" They are there to show you where to enter text before and after your rich content. Always type text before or after the arrows, never between them. Select both arrows to select your rich content. Click directly on the rich content to edit it. Don\'t worry, the arrows automatically disappear later.');
       }
+    },
+
+    modal: function(command) {
+      if (command === 'hide') {
+        $('.jot-modal-blackout').remove();
+        self.$el.hide();
+      } else {
+        var blackout = $('<div class="jot-modal-blackout"></div>');
+        $('body').append(blackout);
+        self.$el.offset({ top: $('body').scrollTop() + 200, left: ($(window).width() - 600) / 2 });
+        $('body').append(self.$el);
+        self.$el.show();
+      }
     }
   });
 
@@ -545,7 +564,7 @@ jot.WidgetEditor = function(options) {
 
   self.preview();
 
-  self.$el.modal();
+  self.modal();
 }
 
 jot.widgetEditors = {};
@@ -562,6 +581,9 @@ jot.widgetEditors.Image = function(options) {
   }
 
   self.afterCreatingEl = function() {
+    console.log(self.$el.length);
+    console.log(self.$el[0]);
+    console.log(self.$el.find('[data-iframe-placeholder]').length);
     self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
     self.$el.bind('uploaded', function(e, id) {
       // Only react to events intended for us

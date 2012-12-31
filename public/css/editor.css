@@ -7,37 +7,37 @@
   display: block;
 }
 
+.jot-area-form-footer
+{
+  clear: both;
+}
+
 .jot-toolbar
 {
-  padding: 10px 0px 10px 0px;
+  padding: 0px 0px 10px 0px;
   font-size: 20px;
 }
 
-.jot-toolbar a
+.jot-toolbar .jot-button
 {
-  color: #333;
-  text-decoration: none;
-  padding: 0px 10px 0px 10px;
-}
-
-.jot-toolbar a:hover
-{
-  color: #333;
-  text-decoration: underline
-}
-
-.jot-toolbar a.jot-large
-{
-  vertical-align: top;
-  font-size: 20px;
-  margin-top: -2px;
-}
-
-.jot-toolbar a.jot-medium
-{
-  vertical-align: top;
   font-size: 16px;
-  margin-top: -2px;
+  margin-right: 5px;
+  height: 15px;
+}
+
+.jot-toolbar .jot-large-button
+{
+  font-size: 20px;
+}
+
+.jot-toolbar .jot-bold-button
+{
+  font-weight: bold;
+}
+
+.jot-toolbar .jot-italic-button
+{
+  font-style: italic;
 }
 
 .jot-toolbar a:visited
@@ -56,9 +56,6 @@
 .jot-editor
 {
   min-height: 400px;
-  border-radius: 4px;
-  border: 2px solid #ccc;
-  padding: 8px;
 }
 
 .jot-editor .jot-editable
@@ -119,9 +116,10 @@
 .jot-widget-preview.jot-middle
 {
   margin: auto;
+  text-align: center;
 }
 
-.jot-widget-preview.jot-sright
+.jot-widget-preview.jot-right
 {
   float: right;
   clear: both;
@@ -201,12 +199,69 @@ textarea.jot-code {
   width: 97%;
 }
 
-/*
- * Cut ourselves a wee break here, we've striven mightily to
- * obey bootstrap's limit but come on
- */
-
-.jot-widget-editor .modal-body 
+.jot-widget-editor .jot-modal-body 
 {
   max-height: 450px;
+}
+
+.jot-widget-editor .jot-modal-body fieldset
+{
+  margin-top: 10px;
+}
+
+.jot-widget-editor .jot-modal-body .jot-position input, 
+.jot-widget-editor .jot-modal-body .jot-size input
+{
+  margin-left: 10px;
+  margin-right: 10px;
+} 
+
+.jot-widget-editor .jot-modal-footer
+{
+  margin-top: 10px;
+}
+
+.jot-button
+{
+  float: left;
+  padding: 10px;
+  background-color: #ddf;
+  color: black;
+  border-radius: 6px;
+  margin-right: 10px;
+  text-decoration: none;
+}
+
+.jot-button:hover
+{
+  text-decoration: underline;
+}
+
+.jot-modal-blackout
+{
+  background-color: black;
+  opacity: 0.6;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  z-index: 998;
+}
+
+.jot-modal
+{
+  position: absolute;
+  width: 600px;
+  background-color: white;
+  opacity: 1.0;
+  z-index: 999;
+  padding: 10px;
+  border: 3px solid #ccc;
+}
+
+.jot-area-controls
+{
+  float: left;
+  padding-bottom: 4px;
 }

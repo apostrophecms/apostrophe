@@ -1,0 +1,24 @@
+{% extends "widgetEditor.html" %}
+
+{% block widgetVars %}
+  {% set widgetClass = 'jot-image-editor' %}
+{% endblock %}
+
+{% block title %}
+Edit Image
+{% endblock %}
+
+{% block instructions %}
+Choose an image file (GIF, JPEG or PNG).
+{% endblock %}
+
+{# No preview button needed, a change event on the browse button will do #}
+{% block previewButton %}
+{% endblock %}
+
+{# Replaced by iframe in jquery land #}
+{% block formBody %}
+  <div data-iframe-placeholder></div>
+{% endblock %}
+
+

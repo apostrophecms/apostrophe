@@ -1,0 +1,22 @@
+{% extends "widgetEditor.html" %}
+
+{% block widgetVars %}
+  {% set widgetClass = 'jot-code-editor' %}
+{% endblock %}
+
+{% block title %}
+Edit Preformatted Text
+{% endblock %}
+
+{% block instructions %}
+Paste in preformatted text (such as source code).
+{% endblock %}
+
+{% block previewButton %}
+{% endblock %}
+
+{% block formBody %}
+  <textarea class="jot-code"></textarea>
+{% endblock %}
+
+

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      {% block title %}
+        Jot Wiki
+      {% endblock %}
+    </title>
+    {% block css %}
+      {{ jotStylesheets() }}
+      <link href="/css/reset.css" rel="stylesheet" />
+      <link href="/css/wiki.css" rel="stylesheet" />
+    {% endblock %}
+    {% block js %}
+      {{ jotScripts() }}
+    {% endblock %}
+  </head>
+  <body>
+    {% block beforeBody %}
+    {% endblock %}
+    {% block body %}
+    {% endblock %}
+    {% block afterBody %}
+      {# Append js calls to the domready block to call them #}
+      {# when all js files are loaded and the DOM is ready #}
+      <script type="text/javascript">
+        $(function() {
+          {% block domready %}
+          {% endblock %}
+        });
+      </script>
+    {% endblock %}
+  </body>
+</html>

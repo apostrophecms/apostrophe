@@ -1,0 +1,43 @@
+<form class="jot-area-form">
+  <div class="jot-editor" data-editor-wrapper id="{{ wid }}">
+    <div class="jot-toolbar">
+      
+      {% macro jotButton(name, label) %}
+        <a class="jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+      {% endmacro %}
+      
+      {{ jotButton('bold', 'b') }}
+      {{ jotButton('italic', 'i') }}
+      {{ jotButton('large', 'A') }}
+      {{ jotButton('medium', 'A') }}
+      {{ jotButton('link', 'Link') }}
+
+      {% macro jotWidgetButton(name, label) %}
+        <a class="jot-button jot-{{ name }}-button" data-widgetButton="{{ name | capitalize }}">{{ label }}</a>
+      {% endmacro %}
+      
+      {{ jotWidgetButton('image', 'Image') }}
+      {{ jotWidgetButton('video', 'Video') }}
+      {{ jotWidgetButton('pullquote', '&ldquo;&rdquo;') }}
+      {{ jotWidgetButton('code', 'i++') }}
+
+      <div class="jot-clear"></div>
+    </div>
+    <div class="jot-editable" data-editable contentEditable="true">&nbsp;</div>
+  </div>
+  <div class="jot-area-form-footer">
+    <a class="jot-button jot-save" data-save-area>Save</a>
+    <a class="jot-button jot-cancel" data-cancel-area>Cancel</a>
+  </div>
+</form>
+
+<script>
+  $(function() {
+    // I have seen jquery domready fail to see this id yet, so
+    // wait for "next tick" as well (Chrome)
+    setTimeout(function() {
+      new jot.Editor({ selector: '#{{ wid }}', data: {{ content | json }} });
+    }, 0);
+  });
+</script>
+

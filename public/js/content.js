@@ -15,8 +15,8 @@ jot.enablePlayers = function(sel) {
       var e = $(data.html);
       e.removeAttr('width');
       e.removeAttr('height');
-      e.css('width', $widget.width());
-      e.css('height', $widget.height());
+      e.width($widget.width());
+      e.height($widget.height());
       $widget.html(e);
     });
   });

@@ -1,3 +1,5 @@
+/* Everything must have a jot- prefix */
+
 .jot-one-third
 {
   width: 33.33333%;
@@ -28,7 +30,7 @@
 .jot-middle
 {
   margin: auto;
-  margin-left: ;
+  text-align: center;
 }
 
 .jot-right

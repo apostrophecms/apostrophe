@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{# Document with typical page structure #}
+
+{% block body %}
+  <div class="header">
+    <h1>Jot Wiki</h1>
+  </div>
+
+  {% block before %}
+  {% endblock %}
+
+  <div class="main">
+    {% block main %}
+    {% endblock %}
+  </div>
+
+  <div class="sidebar">
+    {% block sidebar %}
+    {% endblock %}
+  </div>
+
+  <div class="footer">
+    {% block footer %}
+      Jot is in beta. Please open issues on 
+      <a href="http://github.com/boutell/jot">github</a>.
+    {% endblock %}
+  </div>
+{% endblock %}
+
+{% block domready %}
+{{ super() }}
+{% endblock %}

@@ -1,0 +1,68 @@
+body
+{
+  font-family: Helvetica;
+}
+
+h1, h2, h3, h4
+{
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+h1
+{
+  font-size: 200%;
+  font-weight: bold;
+}
+
+h2
+{
+  font-size: 175%;
+}
+
+h3
+{
+  font-size: 150%;
+}
+
+h4
+{
+  font-size: 125%;
+}
+
+em, i
+{
+  font-style: italic;
+}
+
+strong, b
+{
+  font-weight: bold;
+}
+
+.main
+{
+  float: left;
+  width: 68%;
+  margin: 1%;
+}
+
+.sidebar
+{
+  float: left;
+  width: 28%;
+  margin: 1%;
+}
+
+.header
+{
+  padding: 1%;
+}
+
+.footer
+{
+  clear: both;
+  margin-top: 100px;
+  border-top: 1px dotted #ccc;
+  padding: 1%;
+}
