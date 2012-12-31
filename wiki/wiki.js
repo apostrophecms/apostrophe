@@ -1,5 +1,4 @@
 var appy = require('appy');
-var request = require('request');
 var async = require('async');
 var uploadfs = require('uploadfs')();
 var fs = require('fs');
