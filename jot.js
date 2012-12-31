@@ -5,7 +5,6 @@ var sanitize = require('validator').sanitize;
 var fs = require('fs');
 var _ = require('underscore');
 var jQuery = require('jquery');
-var express = require('express');
 var nunjucks = require('nunjucks');
 
 // MongoDB prefix queries are painful without this

@@ -1,0 +1,50 @@
+{
+  "name": "jot",
+  "version": "0.1.0",
+  "description": "Jot is a rich content and rich text editor. In addition to rich text, jot allows you to add rich media to documents. Jot also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again.",
+  "main": "jot.js",
+  "dependencies": {
+    "async": "~0.1.22",
+    "express": "~3.0.5",
+    "jquery": "~1.8.3",
+    "nunjucks": "~0.1.7",
+    "oembed": "~0.1.0",
+    "regexp-quote": "0.0.0",
+    "request": "~2.12.0",
+    "underscore": "~1.4.3",
+    "validator": "~0.4.19"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/boutell/jot.git"
+  },
+  "keywords": [
+    "jot",
+    "rich",
+    "text",
+    "rich",
+    "media",
+    "rich",
+    "content",
+    "rich",
+    "text",
+    "editor",
+    "rte",
+    "content",
+    "management",
+    "system",
+    "cms",
+    "mongodb",
+    "express",
+    "nunjucks",
+    "wysiwyg",
+    "wysiwyg",
+    "editor"
+  ],
+  "author": "Thomas Boutell",
+  "license": "MIT"
+}
