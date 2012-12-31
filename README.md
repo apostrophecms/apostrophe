@@ -34,7 +34,7 @@ Jot does not require any external CSS framework. Jot's internal templates are pr
 
 You'll need to `npm install` the `node-jot` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/boutell/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
 
-Here's the `initJot` function of the provided sample application `wiki.js`. Notice this function invokes a callback when it's done. `wiki.js` makes good use of the `async` module to carry out its initialization tasks elegantly.
+Here's the `initJot` function of the sample application [http://github.com/boutell/jotwiki](jotwiki). Notice this function invokes a callback when it's done. `wiki.js` makes good use of the `async` module to carry out its initialization tasks elegantly.
 
     function initJot(callback) {
       return jot.init({
@@ -54,7 +54,7 @@ Here's the `initJot` function of the provided sample application `wiki.js`. Noti
 
 "What is `jotPermissions`?" A function you define to decide who is allowed to edit content. If you skip this parameter, Jot allows everyone to edit everything - not safe in production of course, but convenient in the early development stages.
 
-To understand configuration in detail, you should really check out `wiki.js`.
+To understand configuration in detail, you should really check out `wiki.js`. Please don't suffer without reading that simple and well-commented example.
 
 ### Making Sure Jot Is In The Browser
 
@@ -93,7 +93,7 @@ Note the `body` block, which can be overridden in any template that `extend`s th
 
 ### Adding Editable Areas To Your Templates
 
-The easiest way to add Jot-powered editable rich content areas to your Node Express 3.0 project is to use Jot's `jotArea` function, which is made available to your Express templates when you configure Jot. Here's a simple example taken from the `wiki` sample site provided with Jot:
+The easiest way to add Jot-powered editable rich content areas to your Node Express 3.0 project is to use Jot's `jotArea` function, which is made available to your Express templates when you configure Jot. Here's a simple example taken from the jotwiki sample application:
 
     {{ jotArea({ slug: 'main', content: main, edit: true }) }}
 
@@ -115,7 +115,7 @@ Naturally `getArea` is asynchronous:
 
 Note the code that checks whether `area` is actually set before attempting to access its content. If no area with that slug has ever been saved, the `area` callback parameter will be null.
 
-Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the provided `wiki.js` sample does).
+Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the `wiki.js` sample application does).
 
 ## Grouping Areas Into "Pages"
 
@@ -143,7 +143,7 @@ Then `getAreasForPage` will fetch all of them and deliver an object like this:
       },
     }
 
-The provided `wiki.js` sample site uses this method to deliver complete Wiki pages:
+The [jotwiki sample application](http://github.com/boutell/jotwiki) uses this method to deliver complete Wiki pages:
 
     app.get('*', function(req, res) {
       var slug = req.params[0];
