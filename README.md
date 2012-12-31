@@ -32,7 +32,7 @@ Jot does not require any external CSS framework. Jot's internal templates are pr
 
 ### Configuring Jot
 
-You'll need to `npm install` jot in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/boutell/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
+You'll need to `npm install` the `node-jot` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/boutell/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
 
 Here's the `initJot` function of the provided sample application `wiki.js`. Notice this function invokes a callback when it's done. `wiki.js` makes good use of the `async` module to carry out its initialization tasks elegantly.
 
