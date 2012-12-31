@@ -581,9 +581,6 @@ jot.widgetEditors.Image = function(options) {
   }
 
   self.afterCreatingEl = function() {
-    console.log(self.$el.length);
-    console.log(self.$el[0]);
-    console.log(self.$el.find('[data-iframe-placeholder]').length);
     self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
     self.$el.bind('uploaded', function(e, id) {
       // Only react to events intended for us
