@@ -42,7 +42,6 @@
     "express",
     "nunjucks",
     "wysiwyg",
-    "wysiwyg",
     "editor"
   ],
   "author": "Thomas Boutell",
