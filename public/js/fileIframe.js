@@ -2,7 +2,7 @@ function jotFileUploadHandler(options) {
   $(function() {
     $('#file').change(function() {
       var form = $(this).closest('form');
-      var progress = form.find('.spinner').show();
+      var progress = form.find('[data-spinner]').show();
       form.submit();
     });
     if (options.uploaded) {
