@@ -48,7 +48,7 @@
   padding-bottom: 5px;
 }
 
-.jot-image img
+.jot-image img, .jot-video img
 {
   width: 100%;
 }

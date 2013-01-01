@@ -1,6 +1,6 @@
 {
   "name": "node-jot",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Jot is a rich content and rich text editor. In addition to rich text, jot allows you to add rich media to documents. Jot also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again.",
   "main": "jot.js",
   "dependencies": {
