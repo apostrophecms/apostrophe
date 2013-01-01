@@ -48,6 +48,11 @@
   padding-bottom: 5px;
 }
 
+.jot-image img
+{
+  width: 100%;
+}
+
 /*
  * Edit button shown on placeholder that reopens the widget
  */
