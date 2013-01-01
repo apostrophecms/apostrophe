@@ -33,6 +33,11 @@
   text-align: center;
 }
 
+.jot-code-pre
+{
+  text-align: left;
+}
+
 .jot-right
 {
   float: right;

@@ -45,7 +45,7 @@ function jot() {
     });
 
     app.locals.jotTemplates = function(template, info) {
-      var templates = [ 'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor' ];
+      var templates = [ 'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint' ];
       return _.map(templates, function(template) {
         return partial(template + '.html', info);
       }).join('');

@@ -22,7 +22,7 @@
 {
   font-size: 16px;
   margin-right: 5px;
-  height: 15px;
+  height: 20px;
 }
 
 .jot-toolbar .jot-large-button
@@ -82,7 +82,7 @@
 
 .jot-widget-editor .jot-embed
 {
-  width: 80%;
+  width: 85%;
   height: 20px;
 }
 
@@ -151,6 +151,11 @@
   font-size: 50%;
 }
 
+.jot-widget-preview.jot-middle.jot-code
+{
+  text-align: left;
+}
+
 .jot-lorem
 {
   text-align: left;
@@ -199,24 +204,24 @@ textarea.jot-code {
   width: 97%;
 }
 
-.jot-widget-editor .jot-modal-body 
+.jot-modal .jot-modal-body 
 {
   max-height: 450px;
 }
 
-.jot-widget-editor .jot-modal-body fieldset
+.jot-modal .jot-modal-body fieldset
 {
   margin-top: 10px;
 }
 
-.jot-widget-editor .jot-modal-body .jot-position input, 
-.jot-widget-editor .jot-modal-body .jot-size input
+.jot-modal .jot-modal-body .jot-position input, 
+.jot-modal .jot-modal-body .jot-size input
 {
   margin-left: 10px;
   margin-right: 10px;
 } 
 
-.jot-widget-editor .jot-modal-footer
+.jot-modal .jot-modal-footer
 {
   margin-top: 10px;
 }

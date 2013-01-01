@@ -103,6 +103,11 @@ jot.Editor = function(options) {
     return false;
   });
 
+  self.$el.on('click', '.jot-widget', function(event) {
+    var node = this;
+    self.selectWidgetNode(node);
+  });
+
   self.timers.push(setInterval(function() {
     // If the current selection and/or caret moves to 
     // incorporate any part of a widget, expand it to
@@ -123,22 +128,7 @@ jot.Editor = function(options) {
           nodeRange.setEndAfter(this);
           if (range.intersectsRange(nodeRange))
           {
-            var left = '↢';
-            var right = '↣';
-            if (this.previousSibling) {
-              var p = this.previousSibling.nodeValue;
-              if ((p === left) || (p === right)) {
-                nodeRange.setStartBefore(this.previousSibling);
-              }
-            }
-            if (this.nextSibling) {
-              var n = this.nextSibling.nodeValue;
-              if ((n === left) || (n === right)) {
-                nodeRange.setEndAfter(this.nextSibling);
-              }
-            }
-            var unionRange = range.union(nodeRange);
-            rangy.getSelection().setSingleRange(unionRange);
+            self.selectWidgetNode(this);
           }
         } catch (e) {
           // Don't panic if this throws exceptions while we're inactive
@@ -147,34 +137,15 @@ jot.Editor = function(options) {
     }
   }, 200));
 
+  // Every 5 seconds save an undo point if edits have been made.
+  // Exception: don't try if the editor does not have the focus, as the
+  // rangy mechanisms we use to look for differences can disrupt the focus in 
+  // that case
   self.timers.push(setInterval(function() {
-    self.undoPoint();
+    if (self.$editable.is(':focus')) {
+      self.undoPoint();
+    }
   }, 5000));
-
-  // We use this to save the selection before starting
-  // a widget editor and later restore it
-  var selections = [];
-  self.pushSelection = function() {
-    var sel = rangy.getSelection();
-    if (sel && sel.getRangeAt && sel.rangeCount) {
-      range = rangy.getSelection().getRangeAt(0);
-      selections.push(range);
-    }
-    else
-    {
-      selections.push(null);
-    }
-  };
-
-  self.popSelection = function() {
-    self.$editable.focus();
-    var range = selections.pop();
-    if (range) {
-      sel = rangy.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-  };
 
   self.destroy = function() {
     _.map(self.timers, function(timer) { clearInterval(timer); });
@@ -243,6 +214,38 @@ jot.Editor = function(options) {
 
   self.html = function() {
     return self.$editable.html();
+  };
+
+  self.selectWidgetNode = function(node) {
+    var sel = rangy.getSelection();
+    var nodeRange;
+    var range;
+    if (sel && sel.rangeCount) {
+      range = sel.getRangeAt(0);
+    }
+    nodeRange = rangy.createRange();
+    nodeRange.setStartBefore(node);
+    nodeRange.setEndAfter(node);
+    var left = '↢';
+    var right = '↣';
+    if (node.previousSibling) {
+      var p = node.previousSibling.nodeValue;
+      if ((p.substr(0, 1) === left) || (p.substr(0, 1) === right)) {
+        nodeRange.setStart(node.previousSibling, p.length - 1);
+      }
+    }
+    if (node.nextSibling) {
+      var n = node.nextSibling.nodeValue;
+      if ((n.substr(0, 1) === left) || (n.substr(0, 1) === right)) {
+        nodeRange.setEnd(node.nextSibling, 1);
+      }
+    }
+    if (range && range.intersectsRange(nodeRange)) {
+      var unionRange = range.union(nodeRange);
+    } else {
+      unionRange = nodeRange;
+    }
+    rangy.getSelection().setSingleRange(unionRange);
   };
 
   function enableControl(command, keys, promptForLabel) {
@@ -361,7 +364,6 @@ jot.WidgetEditor = function(options) {
   // Make sure the selection we return to 
   // is actually on the editor
   self.editor.$editable.focus();
-  self.editor.pushSelection();
   // Make our own instance of the image editor template
   // so we don't have to fuss over old event handlers
   self.$el = $(options.template + '.jot-template').clone();
@@ -376,7 +378,6 @@ jot.WidgetEditor = function(options) {
   self.$el.find('input[type=radio]').change(function() {
     self.changeSizeAndPosition();
   });
-  $('body').append(self.$el);
 
   _.defaults(self, {
     destroy: function() {
@@ -502,26 +503,18 @@ jot.WidgetEditor = function(options) {
       if (surrounding) {
         markup = markup + surrounding.after;
       }
-      // Make sure the current selection is in the document, not the widget editor
-      self.editor.popSelection();
+
+      // Restore the selection to insert the markup into it
+      jot.popSelection();
       // Not we can insert the markup
       jot.insertHtmlAtCursor(markup);
-      if (options.hint) {
-        options.hint('arrows', '"What\'s up with the little arrows?" They are there to show you where to enter text before and after your rich content. Always type text before or after the arrows, never between them. Select both arrows to select your rich content. Click directly on the rich content to edit it. Don\'t worry, the arrows automatically disappear later.');
-      }
+      // Push the selection again, leaving it up to modal('hide')
+      // to do the final restore
+      jot.pushSelection();
     },
 
     modal: function(command) {
-      if (command === 'hide') {
-        $('.jot-modal-blackout').remove();
-        self.$el.hide();
-      } else {
-        var blackout = $('<div class="jot-modal-blackout"></div>');
-        $('body').append(blackout);
-        self.$el.offset({ top: $('body').scrollTop() + 200, left: ($(window).width() - 600) / 2 });
-        $('body').append(self.$el);
-        self.$el.show();
-      }
+      return jot.modal(self.$el, command);
     }
   });
 
@@ -540,6 +533,7 @@ jot.WidgetEditor = function(options) {
       self.updateWidget();
       if (_new) {
         self.insertWidget();
+        jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
       }
       self.destroy();
       return false;
@@ -942,11 +936,6 @@ jot.escapeHtml = function(string) {
   });
 };
 
-jot.hint = function(name, text) {
-  // $('.jot-hints').text(text);
-  // $('.jot-hints').show();
-};
-
 // http://stackoverflow.com/questions/2937975/contenteditable-text-editor-and-cursor-position
 
 jot.insertHtmlAtCursor = function(html) {
@@ -1040,3 +1029,78 @@ jot.enableAreas = function() {
     return false;
   });
 };
+
+jot.modal = function(sel, command) {
+  var $el = $(sel);
+  if (command === 'hide') {
+    $('.jot-modal-blackout').remove();
+    $el.hide();
+    jot.popSelection();
+  } else {
+    jot.pushSelection();
+    var blackout = $('<div class="jot-modal-blackout"></div>');
+    $('body').append(blackout);
+    $el.offset({ top: $('body').scrollTop() + 200, left: ($(window).width() - 600) / 2 });
+    $('body').append($el);
+    $el.show();
+  }
+};
+
+// Display the hint if the user hasn't seen it already. Use a cookie with an
+// array of hint titles to figure out if we've seen it before. TODO: consider
+// server side storage of this info, per user, so you don't get hints again on every
+// new machine. Move hint titles and markup into something translatable.
+
+jot.hint = function(title, markup) {
+
+  var hints = $.cookie('jot_hints');
+  var seen = [];
+  if (hints) {
+    seen = hints.split("\n");
+  }
+  if (seen.indexOf(title) !== -1) {
+    return;
+  }
+  $.cookie('jot_hints', hints + "\n" + title, { expires: 999999 });
+
+  // Give the dialog that inspired this hint time to get out of the way
+  // (TODO: this is a crude workaround)
+
+  setTimeout(function() {
+    var hint = $('.jot-hint.jot-template').clone();
+    hint.removeClass('jot-template');
+    hint.find('[data-hint-title]').text(title);
+    hint.find('[data-hint-text]').html(markup);
+    hint.find('[data-hint-ok]').click(function() {
+      jot.modal(hint, 'hide');
+    });
+    jot.modal(hint);
+  }, 1000);
+}
+
+// We use this to save the selection before starting
+// a modal and later restore it
+
+jot.selections = [];
+
+jot.pushSelection = function() {
+  var sel = rangy.getSelection();
+  if (sel && sel.getRangeAt && sel.rangeCount) {
+    range = rangy.getSelection().getRangeAt(0);
+    jot.selections.push(range);
+  }
+  else
+  {
+    jot.selections.push(null);
+  }
+};
+
+jot.popSelection = function() {
+  var range = jot.selections.pop();
+  if (range) {
+    sel = rangy.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+};
+
