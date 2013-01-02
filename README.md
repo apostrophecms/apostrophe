@@ -28,6 +28,14 @@ Jot's server-side code uses uploadfs to store media files. uploadfs allows you t
 
 Jot does not require any external CSS framework. Jot's internal templates are processed with Nunjucks, which is awesome, but your Node application does not have to use Nunjucks.
 
+You must have the following on your development and production servers:
+
+node, of course
+mongodb, on your local machine (or edit wiki.js to point somewhere else)
+imagemagick, to resize uploaded images (specifically the `convert` command line tool)
+
+Mac developers can install imagemagick via MacPorts. Your production server will need it too; it's probably a simple `apt-get install` or `yum` command away. Heroku includes imagemagick as standard equipment.
+
 ## Adding Editable Areas With Jot: A Simple Example
 
 ### Configuring Jot
