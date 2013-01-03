@@ -395,7 +395,7 @@ function jot() {
     // inherently not trusted
     var wrapper = jQuery('<div></div>');
     wrapper.html(content);
-    wrapper.find('.jot-edit-widget').remove();
+    wrapper.find('.jot-widget-buttons').remove();
     return wrapper.html();
   }
 }

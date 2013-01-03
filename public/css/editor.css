@@ -7,6 +7,35 @@
   display: block;
 }
 
+/*
+ * Edit button shown on placeholder that reopens the widget
+ */
+
+.jot-widget-buttons {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  margin-left: 20px;
+  margin-top: 20px;
+  pointer: hand;
+}
+
+.jot-widget-button {
+  z-index: 2;
+  background-color: black;
+  color: white;
+  padding: 4px;
+  border: 2px solid #ccc;
+  margin-top: 4px;
+  margin-right: 4px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: normal;
+  pointer: hand;
+  float: left;
+}
+
 .jot-area-form-footer
 {
   clear: both;
@@ -270,3 +299,4 @@ textarea.jot-code {
   float: left;
   padding-bottom: 4px;
 }
+

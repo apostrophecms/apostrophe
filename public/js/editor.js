@@ -28,12 +28,17 @@ jot.Editor = function(options) {
 
   self.$editable.html(options.data);
 
+  self.$editable.bind("dragstart", function(e) {
+    return false;
+  });
+
   // Restore helper marks for widgets
-  self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
+  // Removed in favor of Before and After buttons
+  // self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
 
   // Restore edit buttons
   self.$editable.find('.jot-widget[data-widget-type]').each(function(i, w) {
-    jot.addEditButtonToWidget($(w));
+    jot.addButtonsToWidget($(w));
   });
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
@@ -103,15 +108,39 @@ jot.Editor = function(options) {
     return false;
   });
 
-  self.$el.on('click', '.jot-widget', function(event) {
-    var node = this;
-    self.selectWidgetNode(node);
+  self.$el.on('click', '.jot-insert-before-widget', function(event) {
+    // Necessary so we don't wind up with the selection inside the button
+    jot.deselect();
+    var $widget = $(this).closest('[data-widget-type]');
+    var $placeholder = $('<span>Type Here</span>');
+    $placeholder.insertBefore($widget);
+    // The br ensures that it actually looks like we're typing "before" the
+    // widget. Otherwise we are, for all practical purposes, "after" the widget
+    // until we press enter, which is totally confusing
+    var $br = $('<br />');
+    $br.insertBefore($widget);
+    jot.selectElement($placeholder[0]);
+    // Necessary in Firefox
+    self.$editable.focus();
+    return false;
+  });
+
+  self.$el.on('click', '.jot-insert-after-widget', function(event) {
+    // Necessary so we don't wind up with the selection inside the button
+    jot.deselect();
+    var $widget = $(this).closest('[data-widget-type]');
+    var $placeholder = $('<span>Type Here</span>');
+    $placeholder.insertAfter($widget);
+    jot.selectElement($placeholder[0]);
+    // Necessary in Firefox
+    self.$editable.focus();
+    return false;
   });
 
   self.timers.push(setInterval(function() {
     // If the current selection and/or caret moves to 
     // incorporate any part of a widget, expand it to
-    // encompass the entire widget and its arrows. Do our best 
+    // encompass the entire widget. Do our best 
     // to avoid direct editing of the widget outside of the
     // widget editor. Eventually the user is trained to
     // just click the edit button when they want to edit the widget
@@ -217,35 +246,38 @@ jot.Editor = function(options) {
   };
 
   self.selectWidgetNode = function(node) {
-    var sel = rangy.getSelection();
-    var nodeRange;
-    var range;
-    if (sel && sel.rangeCount) {
-      range = sel.getRangeAt(0);
-    }
-    nodeRange = rangy.createRange();
-    nodeRange.setStartBefore(node);
-    nodeRange.setEndAfter(node);
-    var left = '↢';
-    var right = '↣';
-    if (node.previousSibling) {
-      var p = node.previousSibling.nodeValue;
-      if ((p.substr(0, 1) === left) || (p.substr(0, 1) === right)) {
-        nodeRange.setStart(node.previousSibling, p.length - 1);
-      }
-    }
-    if (node.nextSibling) {
-      var n = node.nextSibling.nodeValue;
-      if ((n.substr(0, 1) === left) || (n.substr(0, 1) === right)) {
-        nodeRange.setEnd(node.nextSibling, 1);
-      }
-    }
-    if (range && range.intersectsRange(nodeRange)) {
-      var unionRange = range.union(nodeRange);
-    } else {
-      unionRange = nodeRange;
-    }
-    rangy.getSelection().setSingleRange(unionRange);
+    // This is a lot simpler without the arrows
+    jot.selectElement(node);
+
+    // var sel = rangy.getSelection();
+    // var nodeRange;
+    // var range;
+    // if (sel && sel.rangeCount) {
+    //   range = sel.getRangeAt(0);
+    // }
+    // nodeRange = rangy.createRange();
+    // nodeRange.setStartBefore(node);
+    // nodeRange.setEndAfter(node);
+    // var left = '↢';
+    // var right = '↣';
+    // if (node.previousSibling) {
+    //   var p = node.previousSibling.nodeValue;
+    //   if ((p.substr(0, 1) === left) || (p.substr(0, 1) === right)) {
+    //     nodeRange.setStart(node.previousSibling, p.length - 1);
+    //   }
+    // }
+    // if (node.nextSibling) {
+    //   var n = node.nextSibling.nodeValue;
+    //   if ((n.substr(0, 1) === left) || (n.substr(0, 1) === right)) {
+    //     nodeRange.setEnd(node.nextSibling, 1);
+    //   }
+    // }
+    // if (range && range.intersectsRange(nodeRange)) {
+    //   var unionRange = range.union(nodeRange);
+    // } else {
+    //   unionRange = nodeRange;
+    // }
+    // rangy.getSelection().setSingleRange(unionRange);
   };
 
   function enableControl(command, keys, promptForLabel) {
@@ -345,9 +377,16 @@ jot.Editor = function(options) {
 // We need to be able to do this to every existing widget preview quickly when
 // the edit view starts up
 
-jot.addEditButtonToWidget = function($widget) {
-  var edit = $('<div class="jot-edit-widget">Edit ' + jot.widgetEditorLabels[$widget.attr('data-widget-type')] + '</div>');
-  $widget.prepend(edit);
+jot.addButtonsToWidget = function($widget) {
+  var $buttons = $('<div class="jot-widget-buttons"></div>');
+  var $button = $('<div class="jot-widget-button jot-edit-widget">Edit ' + jot.widgetEditorLabels[$widget.attr('data-widget-type')] + '</div>');
+  $buttons.append($button);
+  var $button = $('<div class="jot-widget-button jot-insert-before-widget">Before</div>');
+  $buttons.append($button);
+  var $button = $('<div class="jot-widget-button jot-insert-after-widget">After</div>');
+  $buttons.append($button);
+  $buttons.append($('<div class="jot-clear"></div>'));
+  $widget.prepend($buttons);
 };
 
 jot.WidgetEditor = function(options) {
@@ -478,7 +517,7 @@ jot.WidgetEditor = function(options) {
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
       self.$widget.html('');
-      jot.addEditButtonToWidget(self.$widget);
+      jot.addButtonsToWidget(self.$widget);
       self.populateWidget();
     },
 
@@ -487,22 +526,26 @@ jot.WidgetEditor = function(options) {
       // These make it easy to see where the float
       // is connected to the body and also simplify selecting
       // the image with the keyboard
-      var surroundings = {
-        left: { before: '↢', after: '↣' },
-        right: { before: '↣', after: '↢' },
-        middle: { before: '↢', after: '↣' }
-      };
-      var surrounding = surroundings[sizeAndPosition.position];
-      if (surrounding) {
-        markup = surrounding.before;
-      }
+
+      // Removed in favor of the "Before" and "After" buttons... so far they work
+      // var surroundings = {
+      //   left: { before: '↢', after: '↣' },
+      //   right: { before: '↣', after: '↢' },
+      //   middle: { before: '↢', after: '↣' }
+      // };
+      // var surrounding = surroundings[sizeAndPosition.position];
+      // if (surrounding) {
+      //   markup = surrounding.before;
+      // }
       // Make a temporary div so we can ask it for its HTML and
       // get the markup for the widget placeholder
+
       var widgetWrapper = $('<div></div>').append(self.$widget);
       markup += widgetWrapper.html();
-      if (surrounding) {
-        markup = markup + surrounding.after;
-      }
+
+      // if (surrounding) {
+      //   markup = markup + surrounding.after;
+      // }
 
       // Restore the selection to insert the markup into it
       jot.popSelection();
@@ -533,7 +576,7 @@ jot.WidgetEditor = function(options) {
       self.updateWidget();
       if (_new) {
         self.insertWidget();
-        jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
+        // jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
       }
       self.destroy();
       return false;

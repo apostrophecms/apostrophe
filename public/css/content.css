@@ -58,23 +58,3 @@
   width: 100%;
 }
 
-/*
- * Edit button shown on placeholder that reopens the widget
- */
-
-.jot-edit-widget {
-  display: block;
-  position: absolute;
-  z-index: 2;
-  background-color: black;
-  color: white;
-  padding: 4px;
-  border: 2px solid #ccc;
-  margin-left: 20px;
-  margin-top: 20px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-style: italic;
-  font-weight: normal;
-  pointer: hand;
-}
