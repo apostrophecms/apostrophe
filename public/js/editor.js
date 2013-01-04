@@ -4,6 +4,11 @@ if (!window.jot) {
 
 var jot = window.jot;
 
+// TODO: think about sharing these between pages somehow so that
+// copy and paste between pages has the benefit of the same
+// magical fixups. Possibly these should be on the server
+jot.widgetBackups = {};
+
 jot.Editor = function(options) {
   var self = this;
   self.$el = $(options.selector);
@@ -28,6 +33,58 @@ jot.Editor = function(options) {
 
   self.$editable.html(options.data);
 
+  // Back up each widget so we can restore them when they are damaged
+  // by the crazy things contenteditable can do in various browsers
+  self.updateWidgetBackup = function(id, $widget)
+  {
+    var wrapper = $('<div></div>');
+    // Clone it so we don't remove it from the document implicitly
+    wrapper.append($widget.clone());
+    jot.widgetBackups[id] = wrapper.html();
+  }
+
+  var $widgets = self.$editable.find('.jot-widget');
+  $widgets.each(function() {
+    var $widget = $(this);
+
+    var widgetId = $widget.attr('data-widget-id');
+
+    if (!$widget.find('.jot-widget-inner').length) {
+      // Add the before, inner, and after helper elements to older
+      // and/or stripped widgets. 
+
+      // These seemingly redundant elements assist in recovery when the widget itself 
+      // has been trashed by the strange things contenteditable can do in copy and 
+      // paste operations in various browsers. Please do not remove these elements.
+
+      // Actual widget contents go inside here
+      var inner = $('<div class="jot-widget-inner"></div>');
+      inner.attr('data-widget-id', widgetId);
+      $widget.wrapInner(inner);
+
+      var before = $('<div class="jot-widget-before"></div>');
+      before.attr('data-widget-id', widgetId);
+      $widget.prepend(before);
+
+      var after = $('<div class="jot-widget-after"></div>');
+      after.attr('data-widget-id', widgetId);
+
+      $widget.append(after);
+
+      // More legacy widget cleanup - add classes that help us detect
+      // orphaned content
+      $widget.find('img').addClass('jot-widget-content');
+      $widget.find('pre').addClass('jot-widget-content');
+      $widget.find('jot-pullquote-text').addClass('jot-widget-content');
+    }
+
+    // Restore edit buttons
+    jot.addButtonsToWidget($widget);
+
+    // Snapshot we can restore if contenteditable does something
+    self.updateWidgetBackup(widgetId, $widget);
+  });
+
   self.$editable.bind("dragstart", function(e) {
     return false;
   });
@@ -35,11 +92,6 @@ jot.Editor = function(options) {
   // Restore helper marks for widgets
   // Removed in favor of Before and After buttons
   // self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
-
-  // Restore edit buttons
-  self.$editable.find('.jot-widget[data-widget-type]').each(function(i, w) {
-    jot.addButtonsToWidget($(w));
-  });
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
@@ -131,11 +183,150 @@ jot.Editor = function(options) {
     var $widget = $(this).closest('[data-widget-type]');
     var $placeholder = $('<span>Type Here</span>');
     $placeholder.insertAfter($widget);
+    // Without the $br a cut operation drags the "after" text into
+    // the widget turd in Chrome
+    var $br = $('<br />');
+    $br.insertAfter($widget);
     jot.selectElement($placeholder[0]);
     // Necessary in Firefox
     self.$editable.focus();
     return false;
   });
+
+  self.$el.on('click', '.jot-widget', function(event) {
+    var $widget = $(this).closest('.jot-widget');
+    jot.selectElement($widget[0]);
+    return false;
+  });
+
+  // Cleanup timer. Responsible for overcoming an abundance of
+  // awful things that browsers do when you copy and paste widgets
+  // and so forth.
+
+  self.timers.push(setInterval(function() {
+
+    // Workarounds for horrible bugs in webkit. Firefox doesn't
+    // need them and reacts badly to them, so keep this code 
+    // webkit-specific
+
+    if ($.browser.webkit) {
+      var $widgets = self.$editable.find('.jot-widget');
+      $widgets.each(function() {
+        var $widget = $(this);
+        var style = $widget.attr('style');
+        if (style) {
+          if ($widget.attr('style').indexOf('font: inherit') !== -1) {
+            // Chrome has struck here. Restore the widget
+            $widget.replaceWith($(jot.widgetBackups[$widget.attr('data-widget-id')]));
+          }
+        }
+      });
+
+      var $inners = self.$editable.find('.jot-widget-inner');
+      $inners.each(function() {
+        var $inner = $(this);
+        if (!$inner.closest('.jot-widget').length) {
+          // Chrome botched the job pasting this widget.
+          // Restore it.
+          $inner.replaceWith($(jot.widgetBackups[$inner.attr('data-widget-id')]));
+        }
+      });
+
+      var $buttons = self.$editable.find('.jot-widget-buttons');
+      $buttons.each(function() {
+        var $buttonSet = $(this);
+        if (!$buttonSet.closest('.jot-widget').length) {
+          // Chrome botched the job pasting this widget.
+          // Restore it.
+          var lastDitchRecovery = $buttons.find('.jot-widget-last-ditch-recovery');
+          var id = lastDitchRecovery.attr('data-widget-id');
+          $buttonSet.replaceWith($(jot.widgetBackups[id]));
+        }
+      });
+
+      var $widgets = self.$editable.find('.jot-widget');
+      $widgets.each(function() {
+        var $widget = $(this);
+
+        if ((!$widget.find('.jot-widget-after').length) ||
+            (!$widget.find('.jot-edit-widget').text().length)) {
+          // Chrome botched the job cutting this widget.
+          // Eliminate the rest of it.
+          var $previous = $widget.prev();
+          console.log('removing botched widget');
+          console.log($widget[0].innerHTML);
+          $widget.remove();
+          // This usually disturbs the selection, so restore it
+          // to right before the widget
+          if ($previous.length) {
+            self.$editable.focus();
+            var range = rangy.createRange();
+            range.setStartAfter($previous[0]);
+            range.setEndAfter($previous[0]);
+            var sel = rangy.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      });
+    }
+
+    // Find any incidental leftover widget content due to bizarre
+    // Chrome behaviors like pasting the widget AND its image separately
+
+    $widgetContents = self.$editable.find('.jot-widget-content');
+    $widgetContents.each(function() {
+      var $content = $(this);
+      if (!$content.closest('.jot-widget').length) {
+        console.log('removing orphan content');
+        $content.remove();
+      }
+    });
+
+  //   $widgets.each(function() {
+  // // Remove any hardcoded instances of style: font-inherit anywhere or 'br' inside
+  // // a jot-widget-button that Chrome decides to add on cut and paste of a widget
+
+
+  //     // Restore the invisible 8288's wrapped around the widget. They can get lost
+  //     // in a variety of ways and without them Chrome will muck up cut and paste
+
+  //     nodeRange = rangy.createRange();
+  //     var node = this;
+  //     nodeRange.setStartBefore(node);
+  //     nodeRange.setEndAfter(node);
+  //     var c = String.fromCharCode(8288); // Invisible on purpose. We used to use '↢' '↣'
+  //     if (node.previousSibling) {
+  //       if (node.previousSibling.nodeValue === null) {
+  //         var p = document.createTextNode(c);
+  //         $(node).before(p);
+  //         console.log('prepended prev element');
+  //       } else {
+  //         var p = node.previousSibling.nodeValue;
+  //         if (p.substr(p.length - 1, 1) !== c) {
+  //           console.log('appended prev character');
+  //           node.previousSibling.nodeValue += c;
+  //         }
+  //       }
+  //     }
+  //     if (node.nextSibling) {
+  //       if (node.nextSibling.nodeValue === null) {
+  //         var p = document.createTextNode(c);
+  //         $(node).after(p);
+  //         console.log('appended next element');
+  //       } else {
+  //         var n = node.nextSibling.nodeValue;
+  //         if (n.substr(0, 1) !== c) {
+  //           node.nextSibling.nodeValue = c + node.nextSibling.nodeValue;
+  //           console.log('prepended character to next');
+  //         }
+  //       }
+  //     }
+  //   });
+  }, 200));
+
+
+  // This defeats "select all," which is not good. Think it over
 
   self.timers.push(setInterval(function() {
     // If the current selection and/or caret moves to 
@@ -157,7 +348,9 @@ jot.Editor = function(options) {
           nodeRange.setEndAfter(this);
           if (range.intersectsRange(nodeRange))
           {
-            self.selectWidgetNode(this);
+            var unionRange = range.union(nodeRange);
+            rangy.getSelection().setSingleRange(unionRange);
+            // self.selectWidgetNode(this);
           }
         } catch (e) {
           // Don't panic if this throws exceptions while we're inactive
@@ -172,7 +365,11 @@ jot.Editor = function(options) {
   // that case
   self.timers.push(setInterval(function() {
     if (self.$editable.is(':focus')) {
-      self.undoPoint();
+      var sel = rangy.getSelection();
+      // We don't want to mess up a selection in the editor either
+      if ((!sel.rangeCount) || ((sel.rangeCount === 1) && sel.isCollapsed)) {
+        self.undoPoint();
+      }
     }
   }, 5000));
 
@@ -245,10 +442,14 @@ jot.Editor = function(options) {
     return self.$editable.html();
   };
 
-  self.selectWidgetNode = function(node) {
-    // This is a lot simpler without the arrows
-    jot.selectElement(node);
+  // This logic, formerly used to select the arrows, is now used to select
+  // the invisible 8288 characters we need to prevent Chrome from doing
+  // horrible things on cut and paste like leaving the outer widget div behind. ):
+  // Chrome will still leave the 8288's behind, because it is evil and wants me
+  // to suffer, but we can restore them later if we spot a widget without them.
 
+  self.selectWidgetNode = function(node) {
+    jot.selectElement(node);
     // var sel = rangy.getSelection();
     // var nodeRange;
     // var range;
@@ -258,17 +459,16 @@ jot.Editor = function(options) {
     // nodeRange = rangy.createRange();
     // nodeRange.setStartBefore(node);
     // nodeRange.setEndAfter(node);
-    // var left = '↢';
-    // var right = '↣';
+    // var c = String.fromCharCode(8288); // Invisible on purpose. We used to use '↢' '↣'
     // if (node.previousSibling) {
     //   var p = node.previousSibling.nodeValue;
-    //   if ((p.substr(0, 1) === left) || (p.substr(0, 1) === right)) {
+    //   if (p.substr(0, 1) === c) {
     //     nodeRange.setStart(node.previousSibling, p.length - 1);
     //   }
     // }
     // if (node.nextSibling) {
     //   var n = node.nextSibling.nodeValue;
-    //   if ((n.substr(0, 1) === left) || (n.substr(0, 1) === right)) {
+    //   if (n.substr(0, 1) === c) {
     //     nodeRange.setEnd(node.nextSibling, 1);
     //   }
     // }
@@ -386,7 +586,10 @@ jot.addButtonsToWidget = function($widget) {
   var $button = $('<div class="jot-widget-button jot-insert-after-widget">After</div>');
   $buttons.append($button);
   $buttons.append($('<div class="jot-clear"></div>'));
-  $widget.prepend($buttons);
+  var lastDitchRecovery = $('<div class="jot-widget-last-ditch-recovery"></div>');
+  lastDitchRecovery.attr('data-widget-id', $widget.attr('data-widget-id'));
+  $buttons.append(lastDitchRecovery);
+  $widget.find('.jot-widget-inner').prepend($buttons);
 };
 
 jot.WidgetEditor = function(options) {
@@ -396,7 +599,8 @@ jot.WidgetEditor = function(options) {
   self.exists = false;
   if (options.widgetId) {
     self.exists = true;
-    self.$widget = options.editor.$editable.find('[data-widget-id="' + options.widgetId + '"]');
+    self.$widget = options.editor.$editable.find('.jot-widget[data-widget-id="' + options.widgetId + '"]');
+    self.$widgetInner = self.$widget.find('.jot-widget-inner');
   }
   self.widgetId = options.widgetId ? options.widgetId : jot.generateId();
 
@@ -480,7 +684,7 @@ jot.WidgetEditor = function(options) {
     // The video can also be played in the widget editor.
     //
     // Typically you will not override createWidget, instead you'll just override
-    // afterUpdateWidget. 
+    // populateWidget. 
 
     createWidget: function() {
       self.$widget = $('<div></div>');
@@ -489,6 +693,25 @@ jot.WidgetEditor = function(options) {
       self.$widget.addClass('jot-' + self.type.toLowerCase());
       self.$widget.attr('data-widget-type', self.type);
       self.$widget.attr('data-widget-id', self.widgetId);
+      
+      // These seemingly redundant elements assist in recovery when the widget itself 
+      // has been trashed by the strange things contenteditable can do in copy and 
+      // paste operations in various browsers. Please do not remove these elements.
+
+      var before = $('<div class="jot-widget-before"></div>');
+      before.attr('data-widget-id', self.widgetId);
+      self.$widget.append(before);
+
+      // Actual widget contents go inside here
+      var inner = $('<div class="jot-widget-inner"></div>');
+      inner.attr('data-widget-id', self.widgetId);
+      self.$widget.append(inner);
+
+      var after = $('<div class="jot-widget-after"></div>');
+      after.attr('data-widget-id', self.widgetId);
+      self.$widget.append(after);
+
+      self.$widgetInner = inner;
     },
 
     // Update the widget placeholder to reflect the new
@@ -516,36 +739,25 @@ jot.WidgetEditor = function(options) {
         addClass('jot-' + sizeAndPosition.position);
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
-      self.$widget.html('');
+      self.$widgetInner.html('');
       jot.addButtonsToWidget(self.$widget);
       self.populateWidget();
     },
 
     insertWidget: function() {
       var markup = '';
-      // These make it easy to see where the float
-      // is connected to the body and also simplify selecting
-      // the image with the keyboard
 
-      // Removed in favor of the "Before" and "After" buttons... so far they work
-      // var surroundings = {
-      //   left: { before: '↢', after: '↣' },
-      //   right: { before: '↣', after: '↢' },
-      //   middle: { before: '↢', after: '↣' }
-      // };
-      // var surrounding = surroundings[sizeAndPosition.position];
-      // if (surrounding) {
-      //   markup = surrounding.before;
-      // }
+      // Invisible characters before and after the widget to work around
+      // serious widget selection bugs in Chrome
+      // markup = String.fromCharCode(8288);
+
       // Make a temporary div so we can ask it for its HTML and
       // get the markup for the widget placeholder
 
       var widgetWrapper = $('<div></div>').append(self.$widget);
       markup += widgetWrapper.html();
 
-      // if (surrounding) {
-      //   markup = markup + surrounding.after;
-      // }
+      // markup = markup + String.fromCharCode(8288);
 
       // Restore the selection to insert the markup into it
       jot.popSelection();
@@ -578,6 +790,7 @@ jot.WidgetEditor = function(options) {
         self.insertWidget();
         // jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
       }
+      self.editor.updateWidgetBackup(self.widgetId, self.$widget);
       self.destroy();
       return false;
     });
@@ -663,7 +876,9 @@ jot.widgetEditors.Image = function(options) {
   self.populateWidget = function() {
     var img = $('<img />');
     img.attr('src', self.getImageUrl());
-    self.$widget.append(img);
+    // Needed so we can detect it when it is orphaned outside of its widget
+    img.addClass('jot-widget-content');
+    self.$widgetInner.append(img);
   }
 
   self.getPreviewEmbed = function() {
@@ -761,7 +976,9 @@ jot.widgetEditors.Video = function(options) {
     self.$widget.attr('data-video-url', self.videoInfo.url);
     var img = $('<img />');
     img.attr('src', self.videoInfo.thumbnailUrl);
-    self.$widget.append(img);
+    // Needed so we can detect it when it is orphaned outside of its widget
+    img.addClass('jot-widget-content');
+    self.$widgetInner.append(img);
   };
 
   self.preview = function() {
@@ -871,8 +1088,10 @@ jot.widgetEditors.Pullquote = function(options) {
 
   self.populateWidget = function() {
     var span = $('<span class="jot-pullquote-text"></span>');
+    // Needed so we can detect it when it is orphaned outside of its widget
+    span.addClass('jot-widget-content');
     span.text(self.$pullquote.val());
-    self.$widget.append(span);
+    self.$widgetInner.append(span);
   }
 
   self.preview = function() {
@@ -936,8 +1155,10 @@ jot.widgetEditors.Code = function(options) {
 
   self.populateWidget = function() {
     var pre = $('<pre class="jot-code-pre"></pre>');
+    // Needed so we can detect it when it is orphaned outside of its widget
+    pre.addClass('jot-widget-content');
     pre.text(self.$code.val());
-    self.$widget.append(pre);
+    self.$widgetInner.append(pre);
   }
 
   self.preview = function() {
