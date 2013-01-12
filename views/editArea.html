@@ -37,9 +37,10 @@
     // I have seen jquery domready fail to see this id yet, so
     // wait for "next tick" as well (Chrome)
     setTimeout(function() {
-      new jot.Editor({ selector: '#{{ wid }}', data: {{ content | json }} });
+      var editor = new jot.Editor({ selector: '#{{ wid }}', data: {{ content | json }} });
       $(function() {
         $('#{{ wid }} [data-editable]').focus();
+        $('#{{ wid }}').data('jot-editor', editor);
       });
     }, 0);
   });

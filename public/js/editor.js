@@ -4,10 +4,8 @@ if (!window.jot) {
 
 var jot = window.jot;
 
-// TODO: think about sharing these between pages somehow so that
-// copy and paste between pages has the benefit of the same
-// magical fixups. Possibly these should be on the server
-jot.widgetBackups = {};
+// Hopefully I won't need these again as they trash copy and paste between pages 
+// jot.widgetBackups = {};
 
 jot.Editor = function(options) {
   var self = this;
@@ -33,15 +31,15 @@ jot.Editor = function(options) {
 
   self.$editable.html(options.data);
 
-  // Back up each widget so we can restore them when they are damaged
-  // by the crazy things contenteditable can do in various browsers
-  self.updateWidgetBackup = function(id, $widget)
-  {
-    var wrapper = $('<div></div>');
-    // Clone it so we don't remove it from the document implicitly
-    wrapper.append($widget.clone());
-    jot.widgetBackups[id] = wrapper.html();
-  }
+  // A dangerous concept, hopefully we have fixed copy & paste and we don't need them
+
+  // self.updateWidgetBackup = function(id, $widget)
+  // {
+  //   var wrapper = $('<div></div>');
+  //   // Clone it so we don't remove it from the document implicitly
+  //   wrapper.append($widget.clone());
+  //   jot.widgetBackups[id] = wrapper.html();
+  // }
 
   var $widgets = self.$editable.find('.jot-widget');
   $widgets.each(function() {
@@ -62,7 +60,7 @@ jot.Editor = function(options) {
     jot.addButtonsToWidget($widget);
 
     // Snapshot we can restore if contenteditable does something
-    self.updateWidgetBackup(widgetId, $widget);
+    // self.updateWidgetBackup(widgetId, $widget);
   });
 
   self.$editable.bind("dragstart", function(e) {
@@ -323,9 +321,6 @@ jot.Editor = function(options) {
     });
   }, 200));
 
-
-  // This defeats "select all," which is not good. Think it over
-
   self.timers.push(setInterval(function() {
     // If the current selection and/or caret moves to 
     // incorporate any part of a widget, expand it to
@@ -373,6 +368,7 @@ jot.Editor = function(options) {
   }, 5000));
 
   self.destroy = function() {
+    jot.log('destroying editor');
     _.map(self.timers, function(timer) { clearInterval(timer); });
   };
 
@@ -771,7 +767,9 @@ jot.WidgetEditor = function(options) {
         self.insertWidget();
         // jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
       }
-      self.editor.updateWidgetBackup(self.widgetId, self.$widget);
+      // Widget backups are probably a bad idea since they would defeat
+      // copy and paste between pages or at least sites
+      // self.editor.updateWidgetBackup(self.widgetId, self.$widget);
       self.destroy();
       return false;
     });
@@ -1253,23 +1251,26 @@ jot.enableAreas = function() {
       area.find('.jot-normal-view').hide();
 
       area.find('[data-cancel-area]').click(function() {
-        var area = $(this).closest('.jot-area');
-        area.find('.jot-edit-view').remove();
-        area.find('.jot-normal-view').show();
+        destroyEditorAndShowNormalView();
         return false;
       });
 
       area.find('[data-save-area]').click(function() {
-        var area = $(this).closest('.jot-area');
         var slug = area.attr('data-jot-slug');
         $.post('/jot/edit-area', { slug: slug, content: area.find('[data-editable]').html() }, function(data) {
-          area.find('.jot-edit-view').remove();
           area.find('.jot-content').html(data);
-          area.find('.jot-normal-view').show();
+          destroyEditorAndShowNormalView();
           jot.enablePlayers(area);
         });
         return false;
       });
+
+      function destroyEditorAndShowNormalView() {
+        var $editor = area.find('.jot-editor');
+        $editor.data('jot-editor').destroy();
+        area.find('.jot-edit-view').remove();
+        area.find('.jot-normal-view').show();
+      }
     });
     return false;
   });
