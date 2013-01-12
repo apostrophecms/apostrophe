@@ -49,34 +49,14 @@ jot.Editor = function(options) {
 
     var widgetId = $widget.attr('data-widget-id');
 
-    if (!$widget.find('.jot-widget-inner').length) {
-      // Add the before, inner, and after helper elements to older
-      // and/or stripped widgets. 
-
-      // These seemingly redundant elements assist in recovery when the widget itself 
-      // has been trashed by the strange things contenteditable can do in copy and 
-      // paste operations in various browsers. Please do not remove these elements.
-
-      // Actual widget contents go inside here
-      var inner = $('<div class="jot-widget-inner"></div>');
-      inner.attr('data-widget-id', widgetId);
-      $widget.wrapInner(inner);
-
-      var before = $('<div class="jot-widget-before"></div>');
-      before.attr('data-widget-id', widgetId);
-      $widget.prepend(before);
-
-      var after = $('<div class="jot-widget-after"></div>');
-      after.attr('data-widget-id', widgetId);
-
-      $widget.append(after);
-
-      // More legacy widget cleanup - add classes that help us detect
-      // orphaned content
-      $widget.find('img').addClass('jot-widget-content');
-      $widget.find('pre').addClass('jot-widget-content');
-      $widget.find('jot-pullquote-text').addClass('jot-widget-content');
-    }
+    // Undo nasty workarounds for webkit bugs for which we found
+    // a better workaround
+    $widget.find('.jot-widget-inner').each(function() {
+      $(this).replaceWith(this.childNodes);
+    });
+    $widget.find('.jot-widget-content').removeClass('.jot-widget-content');
+    $widget.find('.jot-widget-before').remove();
+    $widget.find('.jot-widget-after').remove();
 
     // Restore edit buttons
     jot.addButtonsToWidget($widget);
@@ -204,8 +184,8 @@ jot.Editor = function(options) {
 
   self.timers.push(setInterval(function() {
 
-    // Use of the arrows eliminates all of these horrible and inadequate workarounds
-    // for webkit bugs.
+    // Use of beforeMarker and afterMarker eliminates all of these horrible and 
+    // inadequate workarounds for webkit bugs
 
     // Workarounds for horrible bugs in webkit. Firefox doesn't
     // need them and reacts badly to them, so keep this code 
@@ -284,11 +264,20 @@ jot.Editor = function(options) {
     //   }
     // });
 
-    // Chrome randomly blasts style attributes into pasted widgets and
+    // End Webkit fixes I THINK we can live without now... now stuff we really need:
+
+    // Webkit randomly blasts style attributes into pasted widgets and
     // other copy-and-pasted content. Remove this brain damage with a
     // blowtorch 
 
     self.$editable.find('[style]').removeAttr('style');
+
+    // Webkit loves to nest h4's endlessly as a result of copy and paste
+    // operations. Level things out. Note we will have to do this for
+    // various other containers at some point which may be more complicated
+    self.$editable.find('h4 h4').each(function() {
+      $(this).replaceWith($(this.childNodes));
+    });
 
     // Cleanups per widget
 
@@ -599,10 +588,7 @@ jot.addButtonsToWidget = function($widget) {
   var $button = $('<div class="jot-widget-button jot-insert-after-widget">After</div>');
   $buttons.append($button);
   $buttons.append($('<div class="jot-clear"></div>'));
-  var lastDitchRecovery = $('<div class="jot-widget-last-ditch-recovery"></div>');
-  lastDitchRecovery.attr('data-widget-id', $widget.attr('data-widget-id'));
-  $buttons.append(lastDitchRecovery);
-  $widget.find('.jot-widget-inner').prepend($buttons);
+  $widget.prepend($buttons);
 };
 
 jot.WidgetEditor = function(options) {
@@ -613,7 +599,6 @@ jot.WidgetEditor = function(options) {
   if (options.widgetId) {
     self.exists = true;
     self.$widget = options.editor.$editable.find('.jot-widget[data-widget-id="' + options.widgetId + '"]');
-    self.$widgetInner = self.$widget.find('.jot-widget-inner');
   }
   self.widgetId = options.widgetId ? options.widgetId : jot.generateId();
 
@@ -706,25 +691,6 @@ jot.WidgetEditor = function(options) {
       self.$widget.addClass('jot-' + self.type.toLowerCase());
       self.$widget.attr('data-widget-type', self.type);
       self.$widget.attr('data-widget-id', self.widgetId);
-      
-      // These seemingly redundant elements assist in recovery when the widget itself 
-      // has been trashed by the strange things contenteditable can do in copy and 
-      // paste operations in various browsers. Please do not remove these elements.
-
-      var before = $('<div class="jot-widget-before"></div>');
-      before.attr('data-widget-id', self.widgetId);
-      self.$widget.append(before);
-
-      // Actual widget contents go inside here
-      var inner = $('<div class="jot-widget-inner"></div>');
-      inner.attr('data-widget-id', self.widgetId);
-      self.$widget.append(inner);
-
-      var after = $('<div class="jot-widget-after"></div>');
-      after.attr('data-widget-id', self.widgetId);
-      self.$widget.append(after);
-
-      self.$widgetInner = inner;
     },
 
     // Update the widget placeholder to reflect the new
@@ -752,7 +718,7 @@ jot.WidgetEditor = function(options) {
         addClass('jot-' + sizeAndPosition.position);
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
-      self.$widgetInner.html('');
+      self.$widget.html('');
       jot.addButtonsToWidget(self.$widget);
       self.populateWidget();
     },
@@ -893,7 +859,7 @@ jot.widgetEditors.Image = function(options) {
     img.attr('src', self.getImageUrl());
     // Needed so we can detect it when it is orphaned outside of its widget
     img.addClass('jot-widget-content');
-    self.$widgetInner.append(img);
+    self.$widget.append(img);
   }
 
   self.getPreviewEmbed = function() {
@@ -993,7 +959,7 @@ jot.widgetEditors.Video = function(options) {
     img.attr('src', self.videoInfo.thumbnailUrl);
     // Needed so we can detect it when it is orphaned outside of its widget
     img.addClass('jot-widget-content');
-    self.$widgetInner.append(img);
+    self.$widget.append(img);
   };
 
   self.preview = function() {
@@ -1106,7 +1072,7 @@ jot.widgetEditors.Pullquote = function(options) {
     // Needed so we can detect it when it is orphaned outside of its widget
     span.addClass('jot-widget-content');
     span.text(self.$pullquote.val());
-    self.$widgetInner.append(span);
+    self.$widget.append(span);
   }
 
   self.preview = function() {
@@ -1173,7 +1139,7 @@ jot.widgetEditors.Code = function(options) {
     // Needed so we can detect it when it is orphaned outside of its widget
     pre.addClass('jot-widget-content');
     pre.text(self.$code.val());
-    self.$widgetInner.append(pre);
+    self.$widget.append(pre);
   }
 
   self.preview = function() {
