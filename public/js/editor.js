@@ -90,7 +90,7 @@ jot.Editor = function(options) {
   });
 
   // Restore helper marks for widgets
-  self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
+  self.$editable.find('.jot-widget[data-widget-type]').before(jot.beforeMarker).after(jot.afterMarker);
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
@@ -204,102 +204,116 @@ jot.Editor = function(options) {
 
   self.timers.push(setInterval(function() {
 
+    // Use of the arrows eliminates all of these horrible and inadequate workarounds
+    // for webkit bugs.
+
     // Workarounds for horrible bugs in webkit. Firefox doesn't
     // need them and reacts badly to them, so keep this code 
     // webkit-specific
 
-    if ($.browser.webkit) {
-      var $widgets = self.$editable.find('.jot-widget');
-      $widgets.each(function() {
-        var $widget = $(this);
-        var style = $widget.attr('style');
-        if (style) {
-          if ($widget.attr('style').indexOf('font: inherit') !== -1) {
-            // Chrome has struck here. Restore the widget
-            $widget.replaceWith($(jot.widgetBackups[$widget.attr('data-widget-id')]));
-          }
-        }
-      });
+    // if ($.browser.webkit) {
+    //   var $widgets = self.$editable.find('.jot-widget');
+    //   $widgets.each(function() {
+    //     var $widget = $(this);
+    //     var style = $widget.attr('style');
+    //     if (style) {
+    //       if ($widget.attr('style').indexOf('font: inherit') !== -1) {
+    //         // Chrome has struck here. Restore the widget
+    //         $widget.replaceWith($(jot.widgetBackups[$widget.attr('data-widget-id')]));
+    //       }
+    //     }
+    //   });
 
-      var $inners = self.$editable.find('.jot-widget-inner');
-      $inners.each(function() {
-        var $inner = $(this);
-        if (!$inner.closest('.jot-widget').length) {
-          // Chrome botched the job pasting this widget.
-          // Restore it.
-          $inner.replaceWith($(jot.widgetBackups[$inner.attr('data-widget-id')]));
-        }
-      });
+    //   var $inners = self.$editable.find('.jot-widget-inner');
+    //   $inners.each(function() {
+    //     var $inner = $(this);
+    //     if (!$inner.closest('.jot-widget').length) {
+    //       // Chrome botched the job pasting this widget.
+    //       // Restore it.
+    //       $inner.replaceWith($(jot.widgetBackups[$inner.attr('data-widget-id')]));
+    //     }
+    //   });
 
-      var $buttons = self.$editable.find('.jot-widget-buttons');
-      $buttons.each(function() {
-        var $buttonSet = $(this);
-        if (!$buttonSet.closest('.jot-widget').length) {
-          // Chrome botched the job pasting this widget.
-          // Restore it.
-          var lastDitchRecovery = $buttons.find('.jot-widget-last-ditch-recovery');
-          var id = lastDitchRecovery.attr('data-widget-id');
-          $buttonSet.replaceWith($(jot.widgetBackups[id]));
-        }
-      });
+    //   var $buttons = self.$editable.find('.jot-widget-buttons');
+    //   $buttons.each(function() {
+    //     var $buttonSet = $(this);
+    //     if (!$buttonSet.closest('.jot-widget').length) {
+    //       // Chrome botched the job pasting this widget.
+    //       // Restore it.
+    //       var lastDitchRecovery = $buttons.find('.jot-widget-last-ditch-recovery');
+    //       var id = lastDitchRecovery.attr('data-widget-id');
+    //       $buttonSet.replaceWith($(jot.widgetBackups[id]));
+    //     }
+    //   });
 
-      var $widgets = self.$editable.find('.jot-widget');
-      $widgets.each(function() {
-        var $widget = $(this);
+    //   var $widgets = self.$editable.find('.jot-widget');
+    //   $widgets.each(function() {
+    //     var $widget = $(this);
 
-        if ((!$widget.find('.jot-widget-after').length) ||
-            (!$widget.find('.jot-edit-widget').text().length)) {
-          // Chrome botched the job cutting this widget.
-          // Eliminate the rest of it.
-          var $previous = $widget.prev();
-          console.log('removing botched widget');
-          console.log($widget[0].innerHTML);
-          $widget.remove();
-          // This usually disturbs the selection, so restore it
-          // to right before the widget
-          if ($previous.length) {
-            self.$editable.focus();
-            var range = rangy.createRange();
-            range.setStartAfter($previous[0]);
-            range.setEndAfter($previous[0]);
-            var sel = rangy.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
-        }
-      });
-    }
+    //     if ((!$widget.find('.jot-widget-after').length) ||
+    //         (!$widget.find('.jot-edit-widget').text().length)) {
+    //       // Chrome botched the job cutting this widget.
+    //       // Eliminate the rest of it.
+    //       var $previous = $widget.prev();
+    //       jot.log('removing botched widget');
+    //       jot.log($widget[0].innerHTML);
+    //       $widget.remove();
+    //       // This usually disturbs the selection, so restore it
+    //       // to right before the widget
+    //       if ($previous.length) {
+    //         self.$editable.focus();
+    //         var range = rangy.createRange();
+    //         range.setStartAfter($previous[0]);
+    //         range.setEndAfter($previous[0]);
+    //         var sel = rangy.getSelection();
+    //         sel.removeAllRanges();
+    //         sel.addRange(range);
+    //       }
+    //     }
+    //   });
+    // }
 
-    // Find any incidental leftover widget content due to bizarre
-    // Chrome behaviors like pasting the widget AND its image separately
+    // // Find any incidental leftover widget content due to bizarre
+    // // Chrome behaviors like pasting the widget AND its image separately
 
-    $widgetContents = self.$editable.find('.jot-widget-content');
-    $widgetContents.each(function() {
-      var $content = $(this);
-      if (!$content.closest('.jot-widget').length) {
-        $content.remove();
-      }
-    });
+    // $widgetContents = self.$editable.find('.jot-widget-content');
+    // $widgetContents.each(function() {
+    //   var $content = $(this);
+    //   if (!$content.closest('.jot-widget').length) {
+    //     $content.remove();
+    //   }
+    // });
+
+    // Chrome randomly blasts style attributes into pasted widgets and
+    // other copy-and-pasted content. Remove this brain damage with a
+    // blowtorch 
+
+    self.$editable.find('[style]').removeAttr('style');
+
+    // Cleanups per widget
+
+    var $widgets = self.$editable.find('.jot-widget');
 
     $widgets.each(function() {
-      // Restore the arrows, which prevent Chrome from doing crazy things 
-      // with cut copy paste and typeover
+
+      // Restore the before and after markers, which prevent Chrome from doing crazy 
+      // things with cut copy paste and typeover
 
       nodeRange = rangy.createRange();
       var node = this;
       nodeRange.setStartBefore(node);
       nodeRange.setEndAfter(node);
-      var before = '↢';
-      var after = '↣';
+      var before = jot.beforeMarker;
+      var after = jot.afterMarker;
       if (node.previousSibling) {
         if (node.previousSibling.nodeValue === null) {
           var p = document.createTextNode(before);
           $(node).before(p);
-          console.log('prepended prev element');
+          jot.log('prepended prev element');
         } else {
           var p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
-            console.log('appended prev character');
+            jot.log('appended prev character');
             node.previousSibling.nodeValue += before;
           }
         }
@@ -308,12 +322,12 @@ jot.Editor = function(options) {
         if (node.nextSibling.nodeValue === null) {
           var p = document.createTextNode(after);
           $(node).after(p);
-          console.log('appended next element');
+          jot.log('appended next element');
         } else {
           var n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
-            console.log('prepended character to next');
+            jot.log('prepended character to next');
           }
         }
       }
@@ -457,8 +471,8 @@ jot.Editor = function(options) {
     nodeRange = rangy.createRange();
     nodeRange.setStartBefore(node);
     nodeRange.setEndAfter(node);
-    var before = '↢';
-    var after = '↣';
+    var before = jot.beforeMarker;
+    var after = jot.afterMarker;
     if (node.previousSibling) {
       var p = node.previousSibling.nodeValue;
       if (p.substr(0, 1) === before) {
@@ -748,8 +762,8 @@ jot.WidgetEditor = function(options) {
 
       // Work around serious widget selection bugs in Chrome by introducing
       // characters before and after the widget that become part of selecting it
-      var before = '↢';
-      var after = '↣';
+      var before = jot.beforeMarker;
+      var after = jot.afterMarker;
 
       markup = before;
 
@@ -1366,6 +1380,17 @@ jot.popSelection = function() {
     sel = rangy.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+  }
+};
+
+// The best marker to use as a workaround for webkit selection bugs
+// is an invisible one (the Unicode word joiner character).
+jot.beforeMarker = String.fromCharCode(8288); // '↢';
+jot.afterMarker = String.fromCharCode(8288); // '↣';
+
+jot.log = function(msg) {
+  if (console && console.log) {
+    console.log(msg);
   }
 };
 
