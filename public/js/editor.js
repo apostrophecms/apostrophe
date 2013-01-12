@@ -90,8 +90,7 @@ jot.Editor = function(options) {
   });
 
   // Restore helper marks for widgets
-  // Removed in favor of Before and After buttons
-  // self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
+  self.$editable.find('.jot-widget[data-widget-type]').before('↢').after('↣');
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
@@ -278,51 +277,47 @@ jot.Editor = function(options) {
     $widgetContents.each(function() {
       var $content = $(this);
       if (!$content.closest('.jot-widget').length) {
-        console.log('removing orphan content');
         $content.remove();
       }
     });
 
-  //   $widgets.each(function() {
-  // // Remove any hardcoded instances of style: font-inherit anywhere or 'br' inside
-  // // a jot-widget-button that Chrome decides to add on cut and paste of a widget
+    $widgets.each(function() {
+      // Restore the arrows, which prevent Chrome from doing crazy things 
+      // with cut copy paste and typeover
 
-
-  //     // Restore the invisible 8288's wrapped around the widget. They can get lost
-  //     // in a variety of ways and without them Chrome will muck up cut and paste
-
-  //     nodeRange = rangy.createRange();
-  //     var node = this;
-  //     nodeRange.setStartBefore(node);
-  //     nodeRange.setEndAfter(node);
-  //     var c = String.fromCharCode(8288); // Invisible on purpose. We used to use '↢' '↣'
-  //     if (node.previousSibling) {
-  //       if (node.previousSibling.nodeValue === null) {
-  //         var p = document.createTextNode(c);
-  //         $(node).before(p);
-  //         console.log('prepended prev element');
-  //       } else {
-  //         var p = node.previousSibling.nodeValue;
-  //         if (p.substr(p.length - 1, 1) !== c) {
-  //           console.log('appended prev character');
-  //           node.previousSibling.nodeValue += c;
-  //         }
-  //       }
-  //     }
-  //     if (node.nextSibling) {
-  //       if (node.nextSibling.nodeValue === null) {
-  //         var p = document.createTextNode(c);
-  //         $(node).after(p);
-  //         console.log('appended next element');
-  //       } else {
-  //         var n = node.nextSibling.nodeValue;
-  //         if (n.substr(0, 1) !== c) {
-  //           node.nextSibling.nodeValue = c + node.nextSibling.nodeValue;
-  //           console.log('prepended character to next');
-  //         }
-  //       }
-  //     }
-  //   });
+      nodeRange = rangy.createRange();
+      var node = this;
+      nodeRange.setStartBefore(node);
+      nodeRange.setEndAfter(node);
+      var before = '↢';
+      var after = '↣';
+      if (node.previousSibling) {
+        if (node.previousSibling.nodeValue === null) {
+          var p = document.createTextNode(before);
+          $(node).before(p);
+          console.log('prepended prev element');
+        } else {
+          var p = node.previousSibling.nodeValue;
+          if (p.substr(p.length - 1, 1) !== before) {
+            console.log('appended prev character');
+            node.previousSibling.nodeValue += before;
+          }
+        }
+      }
+      if (node.nextSibling) {
+        if (node.nextSibling.nodeValue === null) {
+          var p = document.createTextNode(after);
+          $(node).after(p);
+          console.log('appended next element');
+        } else {
+          var n = node.nextSibling.nodeValue;
+          if (n.substr(0, 1) !== after) {
+            node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
+            console.log('prepended character to next');
+          }
+        }
+      }
+    });
   }, 200));
 
 
@@ -348,9 +343,10 @@ jot.Editor = function(options) {
           nodeRange.setEndAfter(this);
           if (range.intersectsRange(nodeRange))
           {
-            var unionRange = range.union(nodeRange);
-            rangy.getSelection().setSingleRange(unionRange);
-            // self.selectWidgetNode(this);
+            // var unionRange = range.union(nodeRange);
+            // rangy.getSelection().setSingleRange(unionRange);
+            // TODO give this an intersect option
+            self.selectWidgetNode(this);
           }
         } catch (e) {
           // Don't panic if this throws exceptions while we're inactive
@@ -443,41 +439,44 @@ jot.Editor = function(options) {
   };
 
   // This logic, formerly used to select the arrows, is now used to select
-  // the invisible 8288 characters we need to prevent Chrome from doing
+  // the arrows we need to prevent Chrome from doing
   // horrible things on cut and paste like leaving the outer widget div behind. ):
-  // Chrome will still leave the 8288's behind, because it is evil and wants me
-  // to suffer, but we can restore them later if we spot a widget without them.
+  // Chrome will still leave the arrows behind, because it is evil and wants me
+  // to suffer, but we can clean those up in various ways
+
+  // https://bugs.webkit.org/show_bug.cgi?id=12250
 
   self.selectWidgetNode = function(node) {
-    jot.selectElement(node);
-    // var sel = rangy.getSelection();
-    // var nodeRange;
-    // var range;
-    // if (sel && sel.rangeCount) {
-    //   range = sel.getRangeAt(0);
-    // }
-    // nodeRange = rangy.createRange();
-    // nodeRange.setStartBefore(node);
-    // nodeRange.setEndAfter(node);
-    // var c = String.fromCharCode(8288); // Invisible on purpose. We used to use '↢' '↣'
-    // if (node.previousSibling) {
-    //   var p = node.previousSibling.nodeValue;
-    //   if (p.substr(0, 1) === c) {
-    //     nodeRange.setStart(node.previousSibling, p.length - 1);
-    //   }
-    // }
-    // if (node.nextSibling) {
-    //   var n = node.nextSibling.nodeValue;
-    //   if (n.substr(0, 1) === c) {
-    //     nodeRange.setEnd(node.nextSibling, 1);
-    //   }
-    // }
-    // if (range && range.intersectsRange(nodeRange)) {
-    //   var unionRange = range.union(nodeRange);
-    // } else {
-    //   unionRange = nodeRange;
-    // }
-    // rangy.getSelection().setSingleRange(unionRange);
+    // jot.selectElement(node);
+    var sel = rangy.getSelection();
+    var nodeRange;
+    var range;
+    if (sel && sel.rangeCount) {
+      range = sel.getRangeAt(0);
+    }
+    nodeRange = rangy.createRange();
+    nodeRange.setStartBefore(node);
+    nodeRange.setEndAfter(node);
+    var before = '↢';
+    var after = '↣';
+    if (node.previousSibling) {
+      var p = node.previousSibling.nodeValue;
+      if (p.substr(0, 1) === before) {
+        nodeRange.setStart(node.previousSibling, p.length - 1);
+      }
+    }
+    if (node.nextSibling) {
+      var n = node.nextSibling.nodeValue;
+      if (n.substr(0, 1) === after) {
+        nodeRange.setEnd(node.nextSibling, 1);
+      }
+    }
+    if (range && range.intersectsRange(nodeRange)) {
+      var unionRange = range.union(nodeRange);
+    } else {
+      unionRange = nodeRange;
+    }
+    rangy.getSelection().setSingleRange(unionRange);
   };
 
   function enableControl(command, keys, promptForLabel) {
@@ -747,15 +746,17 @@ jot.WidgetEditor = function(options) {
     insertWidget: function() {
       var markup = '';
 
-      // Invisible characters before and after the widget to work around
-      // serious widget selection bugs in Chrome
-      // markup = String.fromCharCode(8288);
+      // Work around serious widget selection bugs in Chrome by introducing
+      // characters before and after the widget that become part of selecting it
+      var before = '↢';
+      var after = '↣';
 
-      // Make a temporary div so we can ask it for its HTML and
-      // get the markup for the widget placeholder
+      markup = before;
 
       var widgetWrapper = $('<div></div>').append(self.$widget);
       markup += widgetWrapper.html();
+
+      markup += after;
 
       // markup = markup + String.fromCharCode(8288);
 
