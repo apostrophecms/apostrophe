@@ -3,17 +3,41 @@
     <div class="jot-toolbar">
       
       {% macro jotButton(name, label) %}
-        <a class="jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+        {% if controlMap[name] %}
+          <a class="jot-control jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+        {% endif %}
       {% endmacro %}
       
+      {% macro jotMenu(name, label, options) %}
+        {% if controlMap[name] %}
+          <div class="jot-control jot-menu={{ name }} jot-menu">
+            <div class="jot-menu-label">{{ label }}</div>
+            <select class="jot-menu-select" data-{{ name }}>
+              {% for optionValue, optionLabel in options %}
+                <option value="{{ optionValue | e }}">{{ optionLabel }}</option>
+              {% endfor %} 
+            </select>
+          </div>
+        {% endif %}
+      {% endmacro %}
+
+      {# TODO: should be configurable, although browsers have inherent limits here #}
+      {{ jotMenu('style', 'Style', { 
+        'div': 'Normal',
+        'h3': 'Heading 3',
+        'h4': 'Heading 4',
+        'h5': 'Heading 5',
+        'h6': 'Heading 6'
+      }) }}
+
       {{ jotButton('bold', 'b') }}
       {{ jotButton('italic', 'i') }}
-      {{ jotButton('large', 'A') }}
-      {{ jotButton('medium', 'A') }}
       {{ jotButton('createLink', 'Link') }}
 
       {% macro jotWidgetButton(name, label) %}
-        <a class="jot-button jot-{{ name }}-button" data-widgetButton="{{ name | capitalize }}">{{ label }}</a>
+        {% if controlMap[name] %}
+          <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name | capitalize }}">{{ label }}</a>
+        {% endif %}
       {% endmacro %}
       
       {{ jotWidgetButton('image', 'Image') }}
@@ -26,8 +50,8 @@
     <div class="jot-editable" data-editable contentEditable="true">&nbsp;</div>
   </div>
   <div class="jot-area-form-footer">
-    <a class="jot-button jot-save" data-save-area>Save</a>
-    <a class="jot-button jot-cancel" data-cancel-area>Cancel</a>
+    <a class="jot-control jot-button jot-save" data-save-area>Save</a>
+    <a class="jot-control jot-button jot-cancel" data-cancel-area>Cancel</a>
   </div>
   <div class="jot-clear"></div>
 </form>

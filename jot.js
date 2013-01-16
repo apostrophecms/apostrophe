@@ -18,12 +18,20 @@ function jot() {
   var self = this;
   var app, files, areas, uploadfs, nunjucksEnv, permissions;
 
+  // Obviously this needs to become an extensible list, with
+  // registration of browser and server side yadda yadda yaddas
+  var defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ];
+
   self.init = function(options, callback) {
     app = options.app;
     files = options.files;
     areas = options.areas;
     uploadfs = options.uploadfs;
     permissions = options.permissions;
+
+    if (options.controls) {
+      defaultControls = options.controls;
+    }
 
     // Default is to allow anyone to do anything.
     // You will probably want to at least check for req.user.
@@ -52,6 +60,9 @@ function jot() {
     };
 
     app.locals.jotArea = function(options) {
+      if (!options.controls) {
+        options.controls = defaultControls;
+      }
       return partial('area.html', options);
     }
 
@@ -155,6 +166,10 @@ function jot() {
 
     app.get('/jot/edit-area', function(req, res) {
       var slug = req.query.slug;
+      var controls = req.query.controls ? req.query.controls.split(' ') : [];
+      if (!controls.length) {
+        controls = defaultControls;
+      }
       permissions(req, 'edit-area', slug, function(err) {
         if (err) {
           return forbid(res);
@@ -169,16 +184,26 @@ function jot() {
                 slug: slug,
                 _id: generateId(),
                 content: null,
-                isNew: true
+                isNew: true,
               };
-              area.wid = 'w-' + area._id;
+              extraProperties(area);
               return render(res, 'editArea.html', area);
             }
             else
             {
-              area.wid = 'w-' + area._id;
+              extraProperties(area);
               area.isNew = false;
               return render(res, 'editArea.html', area);
+            }
+            function extraProperties(area) {
+              area.wid = 'w-' + area._id;
+              area.controlMap = {};
+              _.each(defaultControls, function(control) {
+                area.controlMap[control] = false;
+              });
+              _.each(controls, function(control) {
+                area.controlMap[control] = true;
+              });
             }
           });
         }

@@ -47,16 +47,38 @@
   font-size: 20px;
 }
 
-.jot-toolbar .jot-button
+.jot-toolbar .jot-control
 {
-  font-size: 16px;
   margin-right: 5px;
-  height: 20px;
 }
 
-.jot-toolbar .jot-large-button
+/**
+ * Buttons and menus both have this class
+ */
+ 
+.jot-control
 {
-  font-size: 20px;
+  float: left;
+  padding: 5px 10px 5px 10px;
+  background-color: #ddf;
+  color: black;
+  border-radius: 6px;
+  margin-right: 10px;
+  text-decoration: none;
+  font-size: 16px;
+  margin-right: 5px;
+  font-family: Helvetica, sans-serif;
+}
+
+.jot-toolbar .jot-menu-label
+{
+  float: left;
+}
+
+.jot-toolbar .jot-menu-select
+{
+  margin-left: 10px;
+  float: left;
 }
 
 .jot-toolbar .jot-bold-button
@@ -253,17 +275,6 @@ textarea.jot-code {
 .jot-modal .jot-modal-footer
 {
   margin-top: 10px;
-}
-
-.jot-button
-{
-  float: left;
-  padding: 10px;
-  background-color: #ddf;
-  color: black;
-  border-radius: 6px;
-  margin-right: 10px;
-  text-decoration: none;
 }
 
 .jot-button:hover

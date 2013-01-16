@@ -73,9 +73,8 @@ jot.Editor = function(options) {
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
   enableControl('createLink', ['meta+l', 'ctrl+l'], 'URL:');
-  enableControl('large');
-  enableControl('medium');
-  enableControl('small');
+
+  enableMenu('style', 'formatBlock');
 
   self.$editable.bind('keydown', 'meta+z', function() {
     self.undo();
@@ -270,9 +269,9 @@ jot.Editor = function(options) {
 
     self.$editable.find('[style]').removeAttr('style');
 
-    // Webkit loves to nest h4's endlessly as a result of copy and paste
-    // operations. Level things out. Note we will have to do this for
-    // various other containers at some point which may be more complicated
+    // Webkit loves to nest elements that should not be nested 
+    // as a result of copy and paste operations and formatBlock actions. 
+    // Level things out. 
     self.$editable.find('h4 h4').each(function() {
       $(this).replaceWith($(this.childNodes));
     });
@@ -563,8 +562,54 @@ jot.Editor = function(options) {
         });
       }
 
+      self.$editable.focus();
+
       return false;
     }
+  }
+
+  function enableMenu(name, action) {
+    self.$el.find('[data-' + name + ']').change(function() {
+      self.undoPoint();
+      document.execCommand(action, false, $(this).val());
+
+      // The easiest way to shut off an h4 is to toggle it
+      // to a div with formatBlock. But Firefox won't toggle a div 
+      // back to an h4. It strongly prefers br's as line breaks. 
+      // So after inserting the div, convert any divs found 
+      // into text nodes surrounded by br's. This can be 
+      // slightly surprising, but the end result is editable,
+      // so you can get back to what you started with.
+
+      // However we also avoid creating a double <br /> situation
+      // so that if we keep toggling we don't keep adding new lines.
+
+      // We don't use this hack in webkit because webkit prefers
+      // to insert divs and toggles divs to h4's just fine.
+
+      // Don't do this to divs that are or are inside a jot-widget!
+
+      if (jQuery.browser.mozilla) {
+        self.$editable.find('div').each(function() {
+          var div = $(this);
+
+          if (div.is('.jot-widget') || div.closest('.jot-widget').length) {
+            return;
+          }
+          if (div.html().length) {
+            var markup = '';
+            if (div.prev().length && (div.prev()[0].nodeName !== 'BR'))
+            {
+              markup += "<br />";
+            }
+            markup += div.html() + '<br />';
+            div.replaceWith(markup);
+          } else {
+            div.remove();
+          }
+        });
+      }
+    });
   }
 
   setTimeout(function() {
@@ -1243,7 +1288,7 @@ jot.enableAreas = function() {
     var area = $(this).closest('.jot-area');
     var slug = area.attr('data-jot-slug');
     
-    $.get('/jot/edit-area', { slug: slug }, function(data) {
+    $.get('/jot/edit-area', { slug: slug, controls: area.attr('data-jot-controls') }, function(data) {
       area.find('.jot-edit-view').remove();
       var editView = $('<div class="jot-edit-view"></div>');
       editView.append($(data));

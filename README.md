@@ -109,6 +109,12 @@ This is from a Nunjucks template. If you're using Twig, you'll write:
 
 != jotArea({ slug: 'main', content: content, edit: true })
 
+Sometimes Jot's default set of controls include features that don't make sense in a sidebar or otherwise don't suit a design. In these cases you can limit the list.
+
+This `jotArea` call turns on all of the controls. You can leave anything you like off the `controls` list:
+
+    {{ jotArea({ slug: 'main', content: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
+
 "What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. Many sites have slugs named `header`, `footer`, `sidebar` and the like.
 
 "Where does `content` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Jot's `getArea` method.
