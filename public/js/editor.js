@@ -181,89 +181,6 @@ jot.Editor = function(options) {
   // and so forth.
 
   self.timers.push(setInterval(function() {
-
-    // Use of beforeMarker and afterMarker eliminates all of these horrible and 
-    // inadequate workarounds for webkit bugs
-
-    // Workarounds for horrible bugs in webkit. Firefox doesn't
-    // need them and reacts badly to them, so keep this code 
-    // webkit-specific
-
-    // if ($.browser.webkit) {
-    //   var $widgets = self.$editable.find('.jot-widget');
-    //   $widgets.each(function() {
-    //     var $widget = $(this);
-    //     var style = $widget.attr('style');
-    //     if (style) {
-    //       if ($widget.attr('style').indexOf('font: inherit') !== -1) {
-    //         // Chrome has struck here. Restore the widget
-    //         $widget.replaceWith($(jot.widgetBackups[$widget.attr('data-widget-id')]));
-    //       }
-    //     }
-    //   });
-
-    //   var $inners = self.$editable.find('.jot-widget-inner');
-    //   $inners.each(function() {
-    //     var $inner = $(this);
-    //     if (!$inner.closest('.jot-widget').length) {
-    //       // Chrome botched the job pasting this widget.
-    //       // Restore it.
-    //       $inner.replaceWith($(jot.widgetBackups[$inner.attr('data-widget-id')]));
-    //     }
-    //   });
-
-    //   var $buttons = self.$editable.find('.jot-widget-buttons');
-    //   $buttons.each(function() {
-    //     var $buttonSet = $(this);
-    //     if (!$buttonSet.closest('.jot-widget').length) {
-    //       // Chrome botched the job pasting this widget.
-    //       // Restore it.
-    //       var lastDitchRecovery = $buttons.find('.jot-widget-last-ditch-recovery');
-    //       var id = lastDitchRecovery.attr('data-widget-id');
-    //       $buttonSet.replaceWith($(jot.widgetBackups[id]));
-    //     }
-    //   });
-
-    //   var $widgets = self.$editable.find('.jot-widget');
-    //   $widgets.each(function() {
-    //     var $widget = $(this);
-
-    //     if ((!$widget.find('.jot-widget-after').length) ||
-    //         (!$widget.find('.jot-edit-widget').text().length)) {
-    //       // Chrome botched the job cutting this widget.
-    //       // Eliminate the rest of it.
-    //       var $previous = $widget.prev();
-    //       jot.log('removing botched widget');
-    //       jot.log($widget[0].innerHTML);
-    //       $widget.remove();
-    //       // This usually disturbs the selection, so restore it
-    //       // to right before the widget
-    //       if ($previous.length) {
-    //         self.$editable.focus();
-    //         var range = rangy.createRange();
-    //         range.setStartAfter($previous[0]);
-    //         range.setEndAfter($previous[0]);
-    //         var sel = rangy.getSelection();
-    //         sel.removeAllRanges();
-    //         sel.addRange(range);
-    //       }
-    //     }
-    //   });
-    // }
-
-    // // Find any incidental leftover widget content due to bizarre
-    // // Chrome behaviors like pasting the widget AND its image separately
-
-    // $widgetContents = self.$editable.find('.jot-widget-content');
-    // $widgetContents.each(function() {
-    //   var $content = $(this);
-    //   if (!$content.closest('.jot-widget').length) {
-    //     $content.remove();
-    //   }
-    // });
-
-    // End Webkit fixes I THINK we can live without now... now stuff we really need:
-
     // Webkit randomly blasts style attributes into pasted widgets and
     // other copy-and-pasted content. Remove this brain damage with a
     // blowtorch 
@@ -272,9 +189,27 @@ jot.Editor = function(options) {
 
     // Webkit loves to nest elements that should not be nested 
     // as a result of copy and paste operations and formatBlock actions. 
-    // Level things out. 
-    self.$editable.find('h4 h4').each(function() {
-      $(this).replaceWith($(this.childNodes));
+    // Flatten the DOM, but don't tangle with anything inside a
+    // jot-widget.
+
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div').each(function() {
+      var outer = $(this);
+      if (outer.closest('.jot-widget').length) {
+        return;
+      }
+      $(this).find('h1, h2, h3, h4, h5, h6, div').each(function() {
+        var inner = $(this);
+        if (inner.closest('.jot-widget').length) {
+          return;
+        }
+        var saved = rangy.saveSelection();
+        var next = outer.clone();
+        next.html(inner.nextAll());
+        $(outer).html(inner.prevAll());
+        inner.insertAfter(outer);
+        next.insertAfter(inner);
+        rangy.restoreSelection(saved);
+      });
     });
 
     // Cleanups per widget
