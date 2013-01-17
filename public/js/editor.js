@@ -9,6 +9,9 @@ var jot = window.jot;
 
 jot.Editor = function(options) {
   var self = this;
+  var styleMenu;
+  var styleBlockElements;
+
   self.$el = $(options.selector);
   // The contenteditable element inside the wrapper div
   self.$editable = self.$el.find('[data-editable]');
@@ -76,6 +79,20 @@ jot.Editor = function(options) {
   enableControl('insertUnorderedList', []);
 
   enableMenu('style', 'formatBlock');
+
+  // Make a note of the style menu element so we can
+  // quickly update its value. Also make a map of the
+  // block elements the style menu is interested in so we
+  // can notice when the selection moves into one.
+
+  styleMenu = self.$el.find('[data-style]');
+  styleBlockElements = {};
+
+  jot.log(styleMenu.length);
+  styleMenu.find('option').each(function() {
+    jot.log(this);
+    styleBlockElements[$(this).val()] = true;
+  });
 
   self.$editable.bind('keydown', 'meta+z', function() {
     self.undo();
@@ -181,6 +198,15 @@ jot.Editor = function(options) {
   // and so forth.
 
   self.timers.push(setInterval(function() {
+
+    // If we don't have the focus, chill out. This prevents unpleasantness like
+    // changing the value of a select element while someone is trying to
+    // manually modify it
+
+    if (!self.$editable.is(':focus')) {
+      return;
+    }
+
     // Webkit randomly blasts style attributes into pasted widgets and
     // other copy-and-pasted content. Remove this brain damage with a
     // blowtorch 
@@ -254,18 +280,35 @@ jot.Editor = function(options) {
         }
       }
     });
-  }, 200));
 
-  self.timers.push(setInterval(function() {
-    // If the current selection and/or caret moves to 
-    // incorporate any part of a widget, expand it to
-    // encompass the entire widget. Do our best 
-    // to avoid direct editing of the widget outside of the
-    // widget editor. Eventually the user is trained to
-    // just click the edit button when they want to edit the widget
+    // Selection-related fixups
+
     var sel = rangy.getSelection();
     if (sel.rangeCount) {
+
       var range = sel.getRangeAt(0);
+
+      // Figure out what the style menu's current setting should
+      // be for the current selection.
+
+      var box = range.startContainer;
+      while (box) {
+        if (box.tagName) {
+          var tag = box.tagName.toLowerCase();
+          if (_.has(styleBlockElements, tag)) {
+            styleMenu.val(tag);
+            break;
+          }
+        }
+        box = box.parentNode;
+      }
+
+      // If the current selection and/or caret moves to 
+      // incorporate any part of a widget, expand it to
+      // encompass the entire widget. Do our best 
+      // to avoid direct editing of the widget outside of the
+      // widget editor. Eventually the user is trained to
+      // just click the edit button when they want to edit the widget
 
       // "Why don't you just use intersectNode()?" Because
       // it considers adjacency to be intersection. ):
@@ -536,6 +579,7 @@ jot.Editor = function(options) {
           }
         });
       }
+      self.$editable.focus();
     });
   }
 
