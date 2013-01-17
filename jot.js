@@ -20,7 +20,7 @@ function jot() {
 
   // Obviously this needs to become an extensible list, with
   // registration of browser and server side yadda yadda yaddas
-  var defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ];
+  var defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'image', 'video', 'pullquote', 'code' ];
 
   self.init = function(options, callback) {
     app = options.app;

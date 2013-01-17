@@ -10,7 +10,7 @@
       
       {% macro jotMenu(name, label, options) %}
         {% if controlMap[name] %}
-          <div class="jot-control jot-menu={{ name }} jot-menu">
+          <div class="jot-control jot-menu-{{ name }} jot-menu">
             <div class="jot-menu-label">{{ label }}</div>
             <select class="jot-menu-select" data-{{ name }}>
               {% for optionValue, optionLabel in options %}
@@ -33,6 +33,7 @@
       {{ jotButton('bold', 'b') }}
       {{ jotButton('italic', 'i') }}
       {{ jotButton('createLink', 'Link') }}
+      {{ jotButton('insertUnorderedList', 'List') }}
 
       {% macro jotWidgetButton(name, label) %}
         {% if controlMap[name] %}

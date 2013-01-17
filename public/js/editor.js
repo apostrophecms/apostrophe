@@ -73,6 +73,7 @@ jot.Editor = function(options) {
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
   enableControl('createLink', ['meta+l', 'ctrl+l'], 'URL:');
+  enableControl('insertUnorderedList', []);
 
   enableMenu('style', 'formatBlock');
 
@@ -507,15 +508,6 @@ jot.Editor = function(options) {
 
       self.undoPoint();
 
-      var actualCommand = command;
-      if (command === 'large') {
-        actualCommand = 'formatBlock';
-        arg = 'h4';
-      } else if (command === 'medium') {
-        actualCommand = 'formatBlock';
-        arg = 'div';
-      }
-
       if (promptForLabel) {
         arg = prompt(promptForLabel);
         if (!arg) {
@@ -523,7 +515,7 @@ jot.Editor = function(options) {
         }
       }
 
-      document.execCommand(actualCommand, false, arg);
+      document.execCommand(command, false, arg);
 
       // The easiest way to shut off an h4 is to toggle it
       // to a div with formatBlock. But Firefox won't toggle a div 
