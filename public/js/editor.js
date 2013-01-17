@@ -495,43 +495,6 @@ jot.Editor = function(options) {
 
       document.execCommand(command, false, arg);
 
-      // The easiest way to shut off an h4 is to toggle it
-      // to a div with formatBlock. But Firefox won't toggle a div 
-      // back to an h4. It strongly prefers br's as line breaks. 
-      // So after inserting the div, convert any divs found 
-      // into text nodes surrounded by br's. This can be 
-      // slightly surprising, but the end result is editable,
-      // so you can get back to what you started with.
-
-      // However we also avoid creating a double <br /> situation
-      // so that if we keep toggling we don't keep adding new lines.
-
-      // We don't use this hack in webkit because webkit prefers
-      // to insert divs and toggles divs to h4's just fine.
-
-      // Don't do this to divs that are or are inside a jot-widget!
-
-      if (jQuery.browser.mozilla) {
-        self.$editable.find('div').each(function() {
-          var div = $(this);
-
-          if (div.is('.jot-widget') || div.closest('.jot-widget').length) {
-            return;
-          }
-          if (div.html().length) {
-            var markup = '';
-            if (div.prev().length && (div.prev()[0].nodeName !== 'BR'))
-            {
-              markup += "<br />";
-            }
-            markup += div.html() + '<br />';
-            div.replaceWith(markup);
-          } else {
-            div.remove();
-          }
-        });
-      }
-
       self.$editable.focus();
 
       return false;
