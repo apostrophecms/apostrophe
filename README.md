@@ -48,13 +48,14 @@ Here's the `initJot` function of the sample application [http://github.com/boute
       return jot.init({
         files: appy.files,
         areas: appy.areas,
+        pages: appy.pages,
         app: app,
         uploadfs: uploadfs,
         permissions: jotPermissions,
       }, callback);
     }
 
-"What are `appy.files` and `appy.areas`?" MongoDB collections. You are responsible for connecting to MongoDB and creating these two collection objects, then providing them to Jot. (Hint: it's pretty convenient with Appy.) For best results, `areas` should have a unique index on the `slug` property.
+"What are `appy.files`, `appy.areas` and `appy.pages`?" MongoDB collections. You are responsible for connecting to MongoDB and creating these three collection objects, then providing them to Jot. (Hint: it's pretty convenient with Appy.) For best results, `areas` and `pages` should both have a unique index on the `slug` property. The `areas` collection is used for independent areas, while the `pages` collection is handy when areas should be logically grouped together (consider the "main" and "sidebar" content areas of a webpage, for instance). Jot's getArea, putArea and getPage methods make all that easy for you as you'll see below.
 
 "What is `app`?" `app` is your Express 3.0 app object. See the Express documentation for how to create an application. Again, Appy helps here.
 
