@@ -304,9 +304,7 @@ function jot() {
   // returns the entire page object, including all of its areas.
 
   self.getArea = function(slug, callback) {
-    console.log(slug);
     var matches = slug.match(/^(.*?)\:(\w+)$/);
-    console.log(matches);
     if (matches) {
       // This area is part of a page
       var pageSlug = matches[1];
