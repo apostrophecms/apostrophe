@@ -16,7 +16,7 @@ module.exports = function() {
 
 function jot() {
   var self = this;
-  var app, files, areas, uploadfs, nunjucksEnv, permissions;
+  var app, files, areas, pages, uploadfs, nunjucksEnv, permissions;
 
   // Obviously this needs to become an extensible list, with
   // registration of browser and server side yadda yadda yaddas
@@ -26,6 +26,7 @@ function jot() {
     app = options.app;
     files = options.files;
     areas = options.areas;
+    pages = options.pages;
     uploadfs = options.uploadfs;
     permissions = options.permissions;
 
@@ -178,7 +179,7 @@ function jot() {
         if (!slug) {
           return notfound(req, res);
         } else {
-          areas.findOne({ slug: slug }, function(err, area) {
+          self.getArea(slug, function(err, area) {
             if (!area) {
               var area = {
                 slug: slug,
@@ -224,7 +225,7 @@ function jot() {
         // TODO: validate content. XSS, tag balancing, allowed tags and attributes,
         // sensible use of widgets. All that stuff A1.5 does well
 
-        areas.update({ slug: area.slug }, area, { upsert: true, safe: true }, updated);
+        self.putArea(slug, area, updated);
 
         function updated(err) {
           if (err) {
@@ -278,47 +279,150 @@ function jot() {
     return callback(null);
   };
 
+  // getArea retrieves an area from MongoDB. It supports both
+  // freestanding areas and areas that are part of a page object.
+  //
   // Invokes the callback with an error if any, and if no error,
-  // the area object requested if it exists. The area object is 
-  // guaranteed to have `slug` and `content` properties. The
-  // `content` property contains rich content markup ready to
-  // display in the browser. 
+  // the area object requested if it exists. If the area does not
+  // exist, both parameters to the callback are null.
+  //
+  // If it exists, the area object is guaranteed to have `slug` and 
+  // `content` properties. The `content` property contains rich content 
+  // markup ready to display in the browser. 
+  //
+  // If 'slug' matches the following pattern:
+  //
+  // /cats/about:sidebar
+  //
+  // Then 'sidebar' is assumed to be the name of an area stored
+  // within the areas property of the page object with the slug /cats/about. That 
+  // object is fetched from the pages collection and the relevant area
+  // from its areas property, if present, is delivered. 
+  //
+  // Slugs of the latter type are an efficient way to store related areas 
+  // that are usually desired at the same time, because the getPage method
+  // returns the entire page object, including all of its areas.
 
   self.getArea = function(slug, callback) {
-    areas.findOne({ slug: slug }, function(err, area) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(null, area);
-    });
+    console.log(slug);
+    var matches = slug.match(/^(.*?)\:(\w+)$/);
+    console.log(matches);
+    if (matches) {
+      // This area is part of a page
+      var pageSlug = matches[1];
+      var areaSlug = matches[2];
+      // Retrieve only the desired area
+      var projection = {};
+      projection['areas.' + areaSlug] = 1;
+      pages.findOne({ slug: pageSlug }, projection, function (err, page) {
+        if (err) {
+          return callback(err);
+        }
+        if (page && page.areas && page.areas[areaSlug]) {
+          // What is stored in the db might be lagging behind the reality
+          // if the slug of the page has changed. Always return it in an
+          // up to date form
+          page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
+          return callback(null, page.areas[areaSlug]);
+        }
+        // Nonexistence isn't an error, it's just nonexistence
+        return callback(err, null);
+      });
+    } else {
+      areas.findOne({ slug: slug }, function(err, area) {
+        if (err) {
+          return callback(err);
+        }
+        return callback(null, area);
+      });
+    }
   };
 
+  // putArea stores an area in MongoDB. It supports both
+  // freestanding areas and areas that are part of a page object.
+  //
   // Invokes the callback with an error if any, and if no error,
-  // an object with a property for each named area
-  // matching the given page slug, plus a slug property.
-  // Very handy for rendering pages and page-like collections
-  // of areas. A simple convention is used to group areas into
-  // pages: the slug of each area is the slug of the page,
-  // followed by ':', followed by a shortname for the area
-  // such as 'main' or 'sidebar'. An efficient mongodb
-  // regexp search is used (regexps that are anchored with a literal
-  // string at the beginning can use indexes).
+  // the area object with its slug property set to the slug under
+  // which it was stored with putArea. 
+  //
+  // If 'slug' matches the following pattern:
+  //
+  // /cats/about:sidebar
+  //
+  // Then 'sidebar' is assumed to be the name of an area stored
+  // within the areas property of the page object with the slug /cats/about. 
+  // If the page object was previously empty it now looks like:
+  //
+  // { 
+  //   slug: '/cats/about', 
+  //   areas: { 
+  //     sidebar: { 
+  //       slug: '/cats/about/:sidebar', 
+  //       content: 'whatever your area.content property was'
+  //     } 
+  //   } 
+  // }
+  //
+  // Page objects are stored in the 'pages' collection.
+  //
+  // Slugs of this type are an efficient way to store related areas 
+  // that are usually desired at the same time, because the getPage method
+  // returns the entire page object, including all of its areas.
+  //
+  // If the slug does not contain a : then the area is stored directly
+  // in the 'areas' collection.
 
-  self.getAreasForPage = function(slug, callback) {
-    var pattern = new RegExp('^' + RegExp.quote(slug) + ':');
-    areas.find({ slug: pattern }).toArray(function(err, areaDocs) {
+  self.putArea = function(slug, area, callback) {
+    var matches = slug.match(/^(.*?)\:(\w+)$/);
+    if (matches) {
+      // This area is part of a page
+      var pageSlug = matches[1];
+      var areaSlug = matches[2];
+      area.slug = slug;
+      var set = {};
+      set.slug = pageSlug;
+      // Use MongoDB's dot notation to update just the area in question
+      set['areas.' + areaSlug] = area;
+      pages.update(
+        { slug: pageSlug }, 
+        { $set: set }, 
+        { upsert: true, safe: true }, 
+        invokeCallback);
+    } else {
+      areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
+    }
+
+    function invokeCallback(err) {
       if (err) {
         return callback(err);
       }
-      var data = {};
-      // Organize the areas by name
-      _.each(areaDocs, function(area) {
-        var results = area.slug.match(/:(\w+)$/);
-        if (results) {
-          data[results[1]] = area;
+      return callback(err, area);
+    }
+  };
+
+  // Fetch the "page" with the specified slug. As far as
+  // Jot is concerned, the "page" with the slug /about
+  // is expected to be an object with a .areas property. If areas
+  // with the slugs /about:main and /about:sidebar have
+  // been saved, then the areas property will be an
+  // object with properties named main and sidebar.
+  //
+  // You MAY also store entirely unrelated properties in
+  // your "page" objects, via your own mongo code.
+  //
+  // This allows the composition of objects as 
+  // different (and similar) as webpages, blog articles,
+  // upcoming events, etc.
+
+  self.getPage = function(slug, callback) {
+    pages.findOne({ slug: slug }, function(err, page) {
+      if (page) {
+        // For convenience guarantee there is a page.areas property
+        if (!page.areas) {
+          page.areas = {};
         }
-      });
-      return callback(null, data);
+      }
+      return callback(err, page);
     });
   };
 

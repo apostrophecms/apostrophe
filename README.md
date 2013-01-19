@@ -135,37 +135,47 @@ Also note that there is an `err` parameter to the callback. Real-world applicati
 
 "What if I'm building a site with lots of pages? Each page might have two or three areas. Is there an efficient way to get them all at once?"
 
-Sure! Jot provides a `getAreasForPage` method for this purpose. 
+Sure! Jot provides a `getPage` method for this purpose. 
 
-If you pass the slug `/about` to `getAreasForPage`, and areas exist with the following slugs:
+If you pass the slug `/about` to `getPage`, and areas exist with the following slugs:
 
     /about:main
     /about:sidebar
     /about:footer
 
-Then `getAreasForPage` will fetch all of them and deliver an object like this:
+Then `getPage` will fetch all of them and deliver an object like this:
 
-    {
-      main: {
-        content: "rich content markup for main"
-      },
-      sidebar: {
-        content: "rich content markup for sidebar"
-      },
-      footer: {
-        content: "rich content markup for footer"
-      },
+    { 
+      slug: '/about', 
+      areas: { 
+        main: { 
+          slug: '/about/:main', 
+          content: 'main content'
+        } 
+        sidebar: { 
+          slug: '/about/:sidebar', 
+          content: 'sidebar content'
+        } 
+        footer: { 
+          slug: '/about/:sidebar', 
+          content: 'footer content'
+        } 
+      } 
     }
+
+"Those page objects look useful. Can I store other stuff in those? Page titles and so forth?" Yes. You can write your own mongo code to set additional properties on the objects in the pages collection. Jot won't mind.
+
+Jot's putArea and getArea methods are written to automatically spot slugs containing a ":" and update or fetch an area within the areas property of a page in the pages collection, rather than creating a freestanding area object in the areas collection.
 
 The [jotwiki sample application](http://github.com/boutell/jotwiki) uses this method to deliver complete Wiki pages:
 
     app.get('*', function(req, res) {
       var slug = req.params[0];
-      jot.getAreasForPage(slug, function(e, info) {
+      jot.getPage(slug, function(e, info) {
         return res.render('page.html', { 
           slug: info.slug, 
-          main: info.main ? info.main.content : '', 
-          sidebar: info.sidebar ? info.sidebar.content : ''
+          main: info.areas.main ? info.areas.main.content : '', 
+          sidebar: info.areas.sidebar ? info.areas.sidebar.content : ''
         });
       });
     });
@@ -176,10 +186,13 @@ This is a simplified example. The actual code in `wiki.js` uses middleware to su
       function(req, res, next) {
         // Get content for this page
         req.slug = req.params[0];
-        jot.getAreasForPage(req.slug, function(e, info) {
+        jot.getPage(req.slug, function(e, info) {
           if (e) {
             console.log(e);
             return fail(req, res);
+          }
+          if (!info) {
+            info = { slug: slug, areas: {} };
           }
           req.page = info;
           return next();
@@ -199,8 +212,8 @@ This is a simplified example. The actual code in `wiki.js` uses middleware to su
       function (req, res) {
         return res.render('page.html', { 
           slug: req.slug, 
-          main: req.page.main ? req.page.main.content : '', 
-          sidebar: req.page.sidebar ? req.page.sidebar.content : '',
+          main: req.page.areas.main ? req.page.areas.main.content : '', 
+          sidebar: req.page.areas.sidebar ? req.page.areas.sidebar.content : '',
           user: req.user,
           edit: req.user && req.user.username === 'admin',
           footer: req.footer ? req.footer.content : ''
