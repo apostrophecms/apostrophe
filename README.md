@@ -104,27 +104,27 @@ Note the `body` block, which can be overridden in any template that `extend`s th
 
 The easiest way to add Jot-powered editable rich content areas to your Node Express 3.0 project is to use Jot's `jotArea` function, which is made available to your Express templates when you configure Jot. Here's a simple example taken from the jotwiki sample application:
 
-    {{ jotArea({ slug: 'main', content: main, edit: true }) }}
+    {{ jotArea({ slug: 'main', items: main, edit: true }) }}
 
 This is from a Nunjucks template. If you're using Twig, you'll write:
 
-!= jotArea({ slug: 'main', content: content, edit: true })
+!= jotArea({ slug: 'main', items: main, edit: true })
 
 Sometimes Jot's default set of controls include features that don't make sense in a sidebar or otherwise don't suit a design. In these cases you can limit the list.
 
 This `jotArea` call turns on all of the controls. You can leave anything you like off the `controls` list:
 
-    {{ jotArea({ slug: 'main', content: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
+    {{ jotArea({ slug: 'main', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
 
 "What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. Many sites have slugs named `header`, `footer`, `sidebar` and the like.
 
-"Where does `content` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Jot's `getArea` method.
+"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Jot's `getArea` and `getPage` methods.
 
 Naturally `getArea` is asynchronous:
 
     app.get('/', function(req, res) {
       jot.getArea('main', function(err, area) {
-        return res.render('home', { content: area ? area.content : '' });
+        return res.render('home', { content: area ? area.items : [] });
       });
     });
 
@@ -175,8 +175,8 @@ The [jotwiki sample application](http://github.com/boutell/jotwiki) uses this me
       jot.getPage(slug, function(e, info) {
         return res.render('page.html', { 
           slug: info.slug, 
-          main: info.areas.main ? info.areas.main.content : '', 
-          sidebar: info.areas.sidebar ? info.areas.sidebar.content : ''
+          main: info.areas.main ? info.areas.main.items : [], 
+          sidebar: info.areas.sidebar ? info.areas.sidebar.items : []
         });
       });
     });
@@ -213,8 +213,8 @@ This is a simplified example. The actual code in `wiki.js` uses middleware to su
       function (req, res) {
         return res.render('page.html', { 
           slug: req.slug, 
-          main: req.page.areas.main ? req.page.areas.main.content : '', 
-          sidebar: req.page.areas.sidebar ? req.page.areas.sidebar.content : '',
+          main: req.page.areas.main ? req.page.areas.main.items : [], 
+          sidebar: req.page.areas.sidebar ? req.page.areas.sidebar.items : [],
           user: req.user,
           edit: req.user && req.user.username === 'admin',
           footer: req.footer ? req.footer.content : ''
@@ -224,8 +224,8 @@ This is a simplified example. The actual code in `wiki.js` uses middleware to su
 
 Now `page.jade` can call `jotArea` to render the areas:
 
-    {{ jotArea({ slug: slug + ':main', content: main, edit: true }) }}
-    {{ jotArea({ slug: slug + ':sidebar', content: sidebar, edit: true }) }}
+    {{ jotArea({ slug: slug + ':main', items: main, edit: true }) }}
+    {{ jotArea({ slug: slug + ':sidebar', items: sidebar, edit: true }) }}
 
 ## Enforcing Permissions
 
@@ -263,10 +263,8 @@ Jot is a work in progress. Certainly the following things need to improve:
 * The built-in oembed proxy should cache thumbnails and markup.
 * The built-in oembed proxy should have a whitelist of sites whose oembed codes are not XSS attack vectors.
 * Server-side content validation should be much smarter.
-* It should be possible to fetch summaries of areas conveniently and quickly.
-* It should be possible to fetch just certain rich media from areas conveniently and quickly.
-* "Dynamic" widgets that require server-side interaction before the page is sent should be supported.
-* There should be a server-side render method, in place of the existing client-side JavaScript to turn video placeholders into videos.
+* It should be possible to fetch summaries of areas conveniently and quickly. The new way of storing items as a structured array in MongoDB makes this possible, but a simple API for it should be exposed.
+* It should be possible to fetch just certain rich media from areas conveniently and quickly (technically possible now, see above).
 * Server-side renders should be cached, for a minimum lifetime equal to that of the widget with the shortest cache lifetime.
 * A separate module that complements Jot by managing "pages" in a traditional page tree should be developed.
 
