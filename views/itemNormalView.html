@@ -1,0 +1,43 @@
+{# If this item type is a widget output a standard widget wrapper, with data attributes #}
+
+{% if options.widget %}
+  <div class="jot-widget jot-{{ itemType.css }} jot-{{ item.size }} jot-{{ item.position }}"
+    {% for name, value in item %}
+      {% if name != 'content' %}
+        data-{{ name }}="{{ value | e }}"
+      {% endif %}
+    {% endfor %}
+  >
+{% endif %}
+
+{# If this item type has a wrapper element output that element, with data attributes #}
+{% if itemType.wrapper %}
+  <{{itemType.wrapper }}>
+{% endif %}
+
+{# If this item type has plaintext content, output that content, escaped for HTML #}
+{% if itemType.plaintext %}
+  {{ item.content | e }}
+{% endif %}
+
+{# If this item type contains markup, output the markup, unescaped #}
+{% if itemType.markup %}
+  {{ item.content }}
+{% endif %}
+
+{# If this content type has a custom renderer, invoke that #}
+{# Note that you can use the various simple wrapper options above too, or #}
+{# just have a renderer that does its own wrapping #}
+{% if itemType.renderer %}
+  {{ itemType.renderer({ item: item }) }}
+{% endif %}
+
+{# If this item type has a wrapper close the wrapper #}
+{% if itemType.wrapper %}
+  </{{itemType.wrapper }}>
+{% endif %}
+
+{# If this item type is a widget close the div #}
+{% if options.widget %}
+  </div>
+{% endif %}

@@ -37,7 +37,7 @@
 
       {% macro jotWidgetButton(name, label) %}
         {% if controlMap[name] %}
-          <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name | capitalize }}">{{ label }}</a>
+          <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
         {% endif %}
       {% endmacro %}
       
@@ -48,13 +48,16 @@
 
       <div class="jot-clear"></div>
     </div>
-    <div class="jot-editable" data-editable contentEditable="true">&nbsp;</div>
+    <div class="jot-editable" data-editable contentEditable="true">{{ jotAreaContent(items) }}</div>
   </div>
   <div class="jot-area-form-footer">
     <a class="jot-control jot-button jot-save" data-save-area>Save</a>
     <a class="jot-control jot-button jot-cancel" data-cancel-area>Cancel</a>
   </div>
   <div class="jot-clear"></div>
+  <div class="jot-content-for-editing">
+
+  </div>
 </form>
 
 <script>
@@ -62,7 +65,7 @@
     // I have seen jquery domready fail to see this id yet, so
     // wait for "next tick" as well (Chrome)
     setTimeout(function() {
-      var editor = new jot.Editor({ selector: '#{{ wid }}', data: {{ content | json }} });
+      var editor = new jot.Editor({ selector: '#{{ wid }}' });
       $(function() {
         $('#{{ wid }} [data-editable]').focus();
         $('#{{ wid }}').data('jot-editor', editor);

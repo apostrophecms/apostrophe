@@ -8,9 +8,9 @@ jot.enablePlayers = function(sel) {
   if (!sel) {
     sel = 'body';
   }
-  $(sel).find('.jot-widget[data-widget-type="Video"]').each(function() {
+  $(sel).find('.jot-widget[data-type="video"]').each(function() {
     var $widget = $(this);
-    var videoUrl = $widget.attr('data-video-url');
+    var videoUrl = $widget.attr('data-video');
     $.get('/jot/oembed', { url: videoUrl }, function(data) {
       var e = $(data.html);
       e.removeAttr('width');

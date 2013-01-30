@@ -33,7 +33,7 @@
   text-align: center;
 }
 
-.jot-code-pre
+.jot-widget.jot-code pre
 {
   text-align: left;
   font-family: Fixed, monospace;
@@ -59,3 +59,13 @@
   width: 100%;
 }
 
+.jot-video-thumbnail-wrapper 
+{ 
+  display: block; 
+  background: url('/jot/images/play.png') center center no-repeat; 
+}
+
+.jot-video-thumbnail
+{
+  opacity: .5; 
+}

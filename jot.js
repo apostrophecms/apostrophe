@@ -53,27 +53,70 @@ function jot() {
       return JSON.stringify(data);
     });
 
-    app.locals.jotTemplates = function(template, info) {
+    jotLocals = {};
+
+    // All the locals we export to Express must have a jot prefix on the name
+    // for clean namespacing
+
+    jotLocals.jotTemplates = function(info) {
       var templates = [ 'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint' ];
       return _.map(templates, function(template) {
         return partial(template + '.html', info);
       }).join('');
     };
 
-    app.locals.jotArea = function(options) {
+    jotLocals.jotArea = function(options) {
       if (!options.controls) {
         options.controls = defaultControls;
       }
       return partial('area.html', options);
     }
 
-    app.locals.jotStylesheets = function(options) {
+    jotLocals.jotAreaContent = function(items, options) {
+      var result = '';
+      _.each(items, function(item) {
+        result += jotLocals.jotItemNormalView(item, options);
+      });
+      return result;
+    }
+
+    jotLocals.jotItemNormalView = function(item, options) {
+      if (!options) {
+        options = {};
+      }
+      if (!self.itemTypes[item.type]) {
+        console.log("Unknown item type: " + item.type);
+        return;
+      }
+      var itemType = self.itemTypes[item.type];
+      options.widget = itemType.widget;
+      console.log('whee');
+      console.log(options);
+      console.log(itemType);
+
+      if (options.bodyOnly) {
+        options.widget = false;
+      }
+
+      return partial('itemNormalView.html', { item: item, itemType: itemType, options: options });
+    }
+
+    jotLocals.jotStylesheets = function(options) {
       return partial('stylesheets.html', options);
     }
 
-    app.locals.jotScripts = function(options) {
+    jotLocals.jotScripts = function(options) {
       return partial('scripts.html', options);
     }
+
+    jotLocals.jotLog = function(m) {
+      console.log(m);
+      return '';
+    }
+
+    // In addition to making these available in app.locals we also
+    // make them available in our own partials later.
+    _.extend(app.locals, jotLocals);
 
     // All routes must begin with /jot!
 
@@ -217,13 +260,12 @@ function jot() {
         if (err) {
           return forbid(res);
         }
+        var content = JSON.parse(req.body.content);
+        sanitizeArea(content);
         var area = {
           slug: req.body.slug,
-          content: validateContent(req.body.content)
+          items: content
         };
-
-        // TODO: validate content. XSS, tag balancing, allowed tags and attributes,
-        // sensible use of widgets. All that stuff A1.5 does well
 
         self.putArea(slug, area, updated);
 
@@ -232,9 +274,22 @@ function jot() {
             console.log(err);
             return notfound(req, res);
           }
-          res.send(area.content);
+
+          res.send(jotLocals.jotAreaContent(area.items));
         }
       });
+    });
+
+    // Used to render newly created, as yet unsaved widgets to be displayed in
+    // the main jot editor. We're not really changing anything in the database
+    // here. We're just allowing the browser to leverage the same normal view
+    // generator that the server uses for actual page rendering. Renders the
+    // body of the widget only since the widget div has already been updated
+    // or created in the browser.
+
+    app.post('/jot/render-widget', function(req, res) {
+      var attributes = req.body;
+      res.send(jotLocals.jotItemNormalView(attributes, { bodyOnly: true }));
     });
 
     // A simple oembed proxy to avoid cross-site scripting restrictions. 
@@ -456,6 +511,16 @@ function jot() {
       data = {};
     }
 
+    // Make sure the jot-specific locals are visible to partials too.
+    // If we import ALL the locals we'll point at the wrong views directory
+    // and generally require the developer to worry about not breaking
+    // our partials, which ought to be a black box they can ignore.
+
+    console.log('IN PARTIAL ' + name);
+    console.log(data.item);
+
+    _.extend(data, jotLocals);
+
     var path = __dirname + '/views/' + name;
 
     if (typeof(data.partial) === 'undefined') {
@@ -506,24 +571,57 @@ function jot() {
     }
   }
 
-  function validateContent(content)
+  function sanitizeArea(items)
   {
-    // Remove float arrows on save. 
-    content = globalReplace(content, '↣', '');
-    content = globalReplace(content, '↢', '');
-    // Remove XSS threats. This is a tiny down payment on the
-    // validation of allowable markup and CSS we really want to do,
-    // similar to what Apostrophe 1.5 delivers
-    content = sanitize(content).xss().trim();
-
-    // Remove edit buttons from widgets. This is just the start of
-    // what we can do with jQuery on the server side. Note that 
-    // browser side validation is not enough because browsers are
-    // inherently not trusted
-    var wrapper = jQuery('<div></div>');
-    wrapper.html(content);
-    wrapper.find('.jot-widget-buttons').remove();
-    return wrapper.html();
+    _.each(items, function(item) {
+      // Remove XSS threats. This is a tiny down payment on the
+      // validation of allowable markup and CSS we really want to do,
+      // similar to what Apostrophe 1.5 delivers
+      item.content = sanitize(item.content).xss().trim();
+      // TODO: make sure item.type is on the allowed list for this area etc.
+      // Make sure all attributes of item belong there.
+    });
   }
+
+  self.itemTypes = {
+    richText: {
+      markup: true,
+      validate: function(item) {
+        // This is just a down payment, we should be throwing out unwanted
+        // tags attributes and properties as A1.5 does
+        item.content = sanitize(item.content).xss().trim();
+      }
+
+    },
+    image: {
+      widget: true,
+      renderer: function(data) {
+        return partial('image.html', data);
+      },
+      css: 'image'
+    },
+    video: {
+      widget: true,
+      renderer: function(data) {
+        return partial('video.html', data);
+      },
+      css: 'video'
+    },
+    pullquote: {
+      widget: true,
+      markup: true,
+      css: 'pullquote'
+    },
+    code: {
+      widget: true,
+      // Nunjucks currently can't filter whitespace well, which is bad inside a
+      // pre tag, so instead of the 'wrapper' feature we'll just use a simple
+      // inline renderer
+      renderer: function(data) {
+        return '<pre>' + data.item.content + '</pre>';
+      },
+      css: 'code'
+    }
+  };
 }
 
