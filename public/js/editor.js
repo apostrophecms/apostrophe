@@ -651,6 +651,8 @@ jot.widgetEditor = function(options) {
       $preview.removeClass('jot-middle');
       $preview.removeClass('jot-right');
       $preview.addClass('jot-' + sizeAndPosition.position);
+      self.data.size = sizeAndPosition.size;
+      self.data.position = sizeAndPosition.position;
     },
 
     // Create a new widget for insertion into the main content editor.
@@ -697,6 +699,7 @@ jot.widgetEditor = function(options) {
     // need to be overridden typically
     updateWidgetData: function() {
       _.each(self.data, function(val, key) {
+        jot.log(key + ': ' + val);
         self.$widget.attr('data-' + key, val);
       });
     },
