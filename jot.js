@@ -6,6 +6,7 @@ var fs = require('fs');
 var _ = require('underscore');
 var jQuery = require('jquery');
 var nunjucks = require('nunjucks');
+var async = require('async');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -173,7 +174,16 @@ function jot() {
         options.widget = false;
       }
 
-      return partial('itemNormalView.html', { item: item, itemType: itemType, options: options });
+      // The content property doesn't belong in a data attribute,
+      // and neither does any property beginning with an _
+      var attributes = {};
+      _.each(item, function(value, key) {
+        if ((key === 'content') || (key.substr(0, 1) === '_')) {
+          return;
+        }
+        attributes[key] = value;
+      });
+      return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
     }
 
     jotLocals.jotStylesheets = function(options) {
@@ -366,7 +376,9 @@ function jot() {
             return notfound(req, res);
           }
 
-          res.send(jotLocals.jotAreaContent(area.items));
+          return callLoadersForArea(area, function() {
+            return res.send(jotLocals.jotAreaContent(area.items));
+          });
         }
       });
     });
@@ -379,9 +391,27 @@ function jot() {
     // or created in the browser.
 
     app.post('/jot/render-widget', function(req, res) {
-      var attributes = req.body;
-      console.log(req.query);
-      res.send(jotLocals.jotItemNormalView(attributes, req.query));
+      var item = req.body;
+      var options = req.query;
+
+      var itemType = self.itemTypes[item.type];
+      if (!itemType) {
+        res.statusCode = 404;
+        return res.send('No such item type');
+      }
+
+      // Invoke server-side loader middleware like getArea or getPage would,
+      // unless explicitly asked not to
+
+      if ((options.load !== '0') && (itemType.load)) {
+        return itemType.load(item, go);
+      } else {
+        return go();
+      }
+
+      function go() {
+        return res.send(jotLocals.jotItemNormalView(item, options));
+      }
     });
 
     // A simple oembed proxy to avoid cross-site scripting restrictions. 
@@ -459,8 +489,23 @@ function jot() {
   // Slugs of the latter type are an efficient way to store related areas 
   // that are usually desired at the same time, because the getPage method
   // returns the entire page object, including all of its areas.
+  //
+  // You may skip the "options" parameter.
+  //
+  // By default, if an area contains items that have load functions, those
+  // load functions are invoked and the callback is not called until they
+  // complete. This means that items that require storage outside of
+  // the area collection, or data from APIs, can load that data at the time
+  // they are fetched. Set the 'load' option to false if you do not want this.
 
-  self.getArea = function(slug, callback) {
+  self.getArea = function(slug, options, callback) {
+    if (typeof(options) === 'function') {
+      callback = options;
+      options = {};
+    }
+    if (options.load === undefined) {
+      options.load = true;
+    }
     var matches = slug.match(/^(.*?)\:(\w+)$/);
     if (matches) {
       // This area is part of a page
@@ -478,7 +523,7 @@ function jot() {
           // if the slug of the page has changed. Always return it in an
           // up to date form
           page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
-          return callback(null, page.areas[areaSlug]);
+          return loadersThenCallback(page.areas[areaSlug]);
         }
         // Nonexistence isn't an error, it's just nonexistence
         return callback(err, null);
@@ -488,8 +533,20 @@ function jot() {
         if (err) {
           return callback(err);
         }
-        return callback(null, area);
+        return loadersThenCallback(area);
       });
+    }
+
+    function loadersThenCallback(area) {
+        if (options.load) {
+          return callLoadersForArea(area, after);
+        } else {
+          return after();
+        }
+        function after() {
+          return callback(null, area);
+        }
+
     }
   };
 
@@ -576,12 +633,36 @@ function jot() {
         if (!page.areas) {
           page.areas = {};
         }
+        // Call loaders for all areas in the page. Wow, async.map is awesome.
+        async.map(_.values(page.areas), callLoadersForArea, function(err, results) {
+          return callback(err, page);
+        });
+      } else {
+        // Nonexistence is not an error
+        return callback(null, null);
       }
-      return callback(err, page);
     });
   };
 
   // Private methods
+
+  // Invoke loaders for any items in this area that have loaders, then
+  // invoke callback. Loaders are expected to report failure as appropriate
+  // to their needs by setting item properties that their templates can 
+  // use to display that when relevant, so there is no formal error
+  // handling for loaders
+
+  function callLoadersForArea(area, callback) {
+    async.map(area.items, function(item, callback) {
+      if (self.itemTypes[item.type].load) {
+        return self.itemTypes[item.type].load(item, callback);
+      } else {
+        return callback();
+      }
+    }, function(err, results) {
+      return callback(err);
+    });
+  }
 
   // Render views specific to this module 
 

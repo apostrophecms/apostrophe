@@ -2,11 +2,9 @@
 
 {%- if options.widget -%}
   <div class="jot-widget jot-{{ itemType.css }} jot-{{ item.size }} jot-{{ item.position }}"
-    {%- for name, value in item -%}
+    {%- for name, value in attributes -%}
       {# Let some whitespace in for readability and cross-browser confidence #}
-      {% if name != 'content' %}
-        data-{{ name }}="{{ value | e }}"
-      {% endif %}
+      data-{{ name }}="{{ value | e }}"
     {%- endfor -%}
   >
 {%- endif -%}

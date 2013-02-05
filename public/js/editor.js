@@ -600,6 +600,10 @@ jot.widgetEditor = function(options) {
   if (self.afterCreatingEl) {
     self.afterCreatingEl();
   }
+  self.$el.find('[data-preview]').click(function() {
+    self.preview();
+    return false;
+  });
   self.$el.find('[data-action="dismiss"]').click(function() {
     self.destroy();
   });
@@ -755,11 +759,13 @@ jot.widgetEditor = function(options) {
 
     preview: function() {
       if (self.prePreview) {
+        console.log("prePreview");
         self.prePreview(go);
       } else {
         go();
       }
       function go() {
+        console.log("go");
         self.$previewContainer.find('.jot-widget-preview').remove();
         if (self.exists) {
           // Ask the server to generate a nice preview of the widget's contents
@@ -943,11 +949,6 @@ jot.widgetTypes.video = {
           return false;
         }
       }, 500));
-
-      self.$el.find('.jot-preview-button').click(function() {
-        getVideoInfo();
-        return false;
-      });
     };
 
     self.preSave = getVideoInfo;
