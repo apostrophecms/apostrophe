@@ -16,11 +16,82 @@ module.exports = function() {
 
 function jot() {
   var self = this;
-  var app, files, areas, pages, uploadfs, nunjucksEnv, permissions;
+  var app, files, areas, pages, uploadfs, nunjucksEnv, permissions, partial;
 
-  // Obviously this needs to become an extensible list, with
-  // registration of browser and server side yadda yadda yaddas
-  var defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'image', 'video', 'pullquote', 'code' ];
+  // This is our standard set of controls. If you add a new widget you'll be
+  // adding that to self.itemTypes (with widget: true) and to this list of
+  // default controls - or not, if you think your widget shouldn't be available
+  // unless explicitly specified in a jotArea call. If your project should *not*
+  // offer a particular control, ever, you can remove it from this list
+  // programmatically
+
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'image', 'video', 'pullquote', 'code' ];
+
+  // These are the controls that map directly to standard document.executeCommand
+  // rich text editor actions. You can modify these to introduce other simple verbs that
+  // are supported across all browsers by document.execCommand, or to add or remove
+  // tags from the choices array of jot.controlTypes.style, but if you introduce
+  // commands or tags that the browser does not actually support it will not
+  // do what you want.
+  //
+  // This is not the place to define widgets. See jot.itemTypes for that. 
+
+  self.controlTypes = {
+    style: {
+      type: 'menu',
+      label: 'Style',
+      choices: [
+        { value: 'div', label: 'Normal' },
+        { value: 'h3', label: 'Heading 3' },
+        { value: 'h4', label: 'Heading 4' },
+        { value: 'h5', label: 'Heading 5' },
+        { value: 'h6', label: 'Heading 6' }
+      ]
+    },
+    bold: {
+      type: 'button',
+      label: 'b'
+    },
+    italic: {
+      type: 'button',
+      label: 'i'
+    },
+    createLink: {
+      type: 'button',
+      label: 'Link'
+    },
+    insertUnorderedList: {
+      type: 'button',
+      label: 'List'
+    }
+  };
+
+  // Default stylesheet requirements
+  self.stylesheets = [
+    "/jot/css/content.css",
+    "/jot/css/editor.css"
+  ];
+
+  // Default browser side script requirements
+
+  self.scripts = [ 
+    '/jot/js/jquery-1.8.1.min.js',
+    '/jot/js/underscore-min.js',
+    '/jot/js/jquery.hotkeys/jquery.hotkeys.js',
+    '/jot/js/rangy-1.2.3/rangy-core.js',
+    '/jot/js/rangy-1.2.3/rangy-selectionsaverestore.js',
+    '/jot/js/textinputs_jquery.js',
+    '/jot/js/jquery.cookie.js',
+    '/jot/js/editor.js', 
+    '/jot/js/content.js' 
+  ];
+
+  // Templates pulled into the page by the jotTemplates() Express local
+  // These are typically hidden at first by CSS and cloned as needed by jQuery
+
+  self.templates = [
+    'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+  ];
 
   self.init = function(options, callback) {
     app = options.app;
@@ -31,7 +102,7 @@ function jot() {
     permissions = options.permissions;
 
     if (options.controls) {
-      defaultControls = options.controls;
+      self.defaultControls = options.controls;
     }
 
     // Default is to allow anyone to do anything.
@@ -48,26 +119,33 @@ function jot() {
       };
     }
 
-    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(__dirname + '/views'));
-    nunjucksEnv.addFilter('json', function(data) {
-      return JSON.stringify(data);
-    });
+    nunjucksEnv = self.newNunjucksEnv(__dirname + '/views');
 
     jotLocals = {};
 
     // All the locals we export to Express must have a jot prefix on the name
-    // for clean namespacing
+    // for clean namespacing.
 
-    jotLocals.jotTemplates = function(info) {
-      var templates = [ 'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint' ];
-      return _.map(templates, function(template) {
-        return partial(template + '.html', info);
+    // jotTemplates renders templates that are needed on any page that will
+    // use Jot. Examples: imageEditor.html, codeEditor.html, etc. These lie
+    // dormant in the page until they are needed as prototypes to be cloned 
+    // by jQuery
+
+    jotLocals.jotTemplates = function(options) {
+      if (!options) {
+        options = {};
+      }
+      if (!options.templates) {
+        options.templates = self.templates;
+      }
+      return _.map(options.templates, function(template) {
+        return partial(template + '.html', options);
       }).join('');
     };
 
     jotLocals.jotArea = function(options) {
       if (!options.controls) {
-        options.controls = defaultControls;
+        options.controls = self.defaultControls;
       }
       return partial('area.html', options);
     }
@@ -75,7 +153,7 @@ function jot() {
     jotLocals.jotAreaContent = function(items, options) {
       var result = '';
       _.each(items, function(item) {
-        result += jotLocals.jotItemNormalView(item, options);
+        result += jotLocals.jotItemNormalView(item, options).trim();
       });
       return result;
     }
@@ -90,9 +168,6 @@ function jot() {
       }
       var itemType = self.itemTypes[item.type];
       options.widget = itemType.widget;
-      console.log('whee');
-      console.log(options);
-      console.log(itemType);
 
       if (options.bodyOnly) {
         options.widget = false;
@@ -102,11 +177,31 @@ function jot() {
     }
 
     jotLocals.jotStylesheets = function(options) {
-      return partial('stylesheets.html', options);
+      if (!options) {
+        options = {};
+      }
+      if (!options.stylesheets) {
+        options.stylesheets = self.stylesheets;
+      }
+      // We can easily add a minifier and combiner here etc., but
+      // that's not important at this stage of development
+      return _.map(options.stylesheets, function(stylesheet) { 
+        return '<link href="' + stylesheet + '" rel="stylesheet" />';
+      }).join("\n");
     }
 
     jotLocals.jotScripts = function(options) {
-      return partial('scripts.html', options);
+      if (!options) {
+        options = {};
+      }
+      if (!options.scripts) {
+        options.scripts = self.scripts;
+      }
+      // We can easily add a minifier and combiner here etc., but
+      // that's not important at this stage of development
+      return _.map(options.scripts, function(script) { 
+        return '<script src="' + script + '"></script>';
+      }).join("\n");
     }
 
     jotLocals.jotLog = function(m) {
@@ -212,7 +307,7 @@ function jot() {
       var slug = req.query.slug;
       var controls = req.query.controls ? req.query.controls.split(' ') : [];
       if (!controls.length) {
-        controls = defaultControls;
+        controls = self.defaultControls;
       }
       permissions(req, 'edit-area', slug, function(err) {
         if (err) {
@@ -241,13 +336,9 @@ function jot() {
             }
             function extraProperties(area) {
               area.wid = 'w-' + area._id;
-              area.controlMap = {};
-              _.each(defaultControls, function(control) {
-                area.controlMap[control] = false;
-              });
-              _.each(controls, function(control) {
-                area.controlMap[control] = true;
-              });
+              area.controls = controls;
+              area.controlTypes = self.controlTypes;
+              area.itemTypes = self.itemTypes;
             }
           });
         }
@@ -289,7 +380,8 @@ function jot() {
 
     app.post('/jot/render-widget', function(req, res) {
       var attributes = req.body;
-      res.send(jotLocals.jotItemNormalView(attributes, { bodyOnly: true }));
+      console.log(req.query);
+      res.send(jotLocals.jotItemNormalView(attributes, req.query));
     });
 
     // A simple oembed proxy to avoid cross-site scripting restrictions. 
@@ -307,18 +399,7 @@ function jot() {
       });
     });
 
-    // Try everything else as a static file. For some reason
-    // app.use(express.static(...)) never wins here, but
-    // res.sendfile provides the same functionality. We do have
-    // to validate the path ourselves though. TODO: figure out
-    // how we can use app.use successfully here
-
-    app.get('/jot/*', function(req, res) {
-      var path = req.params[0];
-      // Don't let them peek at /etc/passwd
-      path = globalReplace(path, '..', '');
-      return res.sendfile(__dirname + '/public/' + path);
-    });
+    app.get('/jot/*', self.static(__dirname + '/public'));
 
     // app.use('/jot', express.static(__dirname + '/public'));
 
@@ -332,6 +413,27 @@ function jot() {
     }
 
     return callback(null);
+  };
+
+  // self.static returns a function for use as a route that
+  // serves static files from a folder. This is helpful when writing 
+  // your own modules that extend jot and need to serve their own static
+  // assets:
+  //
+  // app.get('/jot-twitter/*', jot.static(__dirname + '/public'))
+  //
+  // Because self.static is suitable for use as a route rather
+  // than as global middleware, it is easier to set it up for many
+  // separate modules.
+
+  self.static = function(dir) {
+    return function(req, res) {
+      var path = req.params[0];
+      // Don't let them peek at /etc/passwd etc. Browsers
+      // pre-resolve these anyway
+      path = globalReplace(path, '..', '');
+      return res.sendfile(dir + '/' + path);
+    };
   };
 
   // getArea retrieves an area from MongoDB. It supports both
@@ -506,9 +608,13 @@ function jot() {
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
   }
 
-  function partial(name, data) {
+  self.partial = function(name, data, dir) {
     if (!data) {
       data = {};
+    }
+
+    if (!dir) {
+      dir = __dirname + '/views';
     }
 
     // Make sure the jot-specific locals are visible to partials too.
@@ -516,19 +622,27 @@ function jot() {
     // and generally require the developer to worry about not breaking
     // our partials, which ought to be a black box they can ignore.
 
-    console.log('IN PARTIAL ' + name);
-    console.log(data.item);
-
     _.extend(data, jotLocals);
 
-    var path = __dirname + '/views/' + name;
+    var path;
 
-    if (typeof(data.partial) === 'undefined') {
-      data.partial = partial;
+    // Allow absolute paths
+    if (name.substr(0, 1) === '/') {
+      path = name;
+    } else {
+      path = dir + '/' + name;
+      if (typeof(data.partial) === 'undefined') {
+        data.partial = partial;
+      }
     }
 
     var tmpl = nunjucksEnv.getTemplate(path);
     return tmpl.render(data);
+  }
+
+  // Something we can export via app.locals etc.
+  function partial(name, data, dir) {
+    return self.partial(name, data, dir);
   }
 
   function slugify(s) {
@@ -571,57 +685,72 @@ function jot() {
     }
   }
 
+  // TODO: make sure item.type is on the allowed list for this specific area.
+  // Write more validators for types.
+
   function sanitizeArea(items)
   {
     _.each(items, function(item) {
-      // Remove XSS threats. This is a tiny down payment on the
-      // validation of allowable markup and CSS we really want to do,
-      // similar to what Apostrophe 1.5 delivers
-      item.content = sanitize(item.content).xss().trim();
-      // TODO: make sure item.type is on the allowed list for this area etc.
-      // Make sure all attributes of item belong there.
+      var itemType = self.itemTypes[item.type];
+      if (!itemType) {
+        return;
+      }
+      if (itemType.sanitize) {
+        itemType.sanitize(item);
+      }
     });
   }
 
   self.itemTypes = {
     richText: {
       markup: true,
-      validate: function(item) {
+      sanitize: function(item) {
         // This is just a down payment, we should be throwing out unwanted
         // tags attributes and properties as A1.5 does
         item.content = sanitize(item.content).xss().trim();
       }
-
     },
     image: {
       widget: true,
-      renderer: function(data) {
+      label: 'Image',
+      render: function(data) {
         return partial('image.html', data);
       },
       css: 'image'
     },
     video: {
       widget: true,
-      renderer: function(data) {
+      label: 'Video',
+      render: function(data) {
         return partial('video.html', data);
       },
       css: 'video'
     },
     pullquote: {
       widget: true,
-      markup: true,
+      label: 'Pullquote',
+      plaintext: true,
+      wrapper: 'span',
+      // Without this it's bothersome for editor.js to grab the text
+      // without accidentally grabbing the buttons. -Tom
+      wrapperClass: 'jot-pullquote-text',
       css: 'pullquote'
     },
     code: {
       widget: true,
-      // Nunjucks currently can't filter whitespace well, which is bad inside a
-      // pre tag, so instead of the 'wrapper' feature we'll just use a simple
-      // inline renderer
-      renderer: function(data) {
-        return '<pre>' + data.item.content + '</pre>';
-      },
+      label: 'Code',
+      plaintext: true,
+      wrapper: 'pre',
       css: 'code'
     }
   };
+
+  self.newNunjucksEnv = function(dir) {
+    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dir));
+    nunjucksEnv.addFilter('json', function(data) {
+      return JSON.stringify(data);
+    });
+    return nunjucksEnv;
+  }
 }
 

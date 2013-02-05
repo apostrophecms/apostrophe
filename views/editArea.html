@@ -1,63 +1,48 @@
+{% macro jotButton(name, label) %}
+  <a class="jot-control jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+{% endmacro %}
+
+{% macro jotMenu(name, label, choices) %}
+  <div class="jot-control jot-menu-{{ name }} jot-menu">
+    <div class="jot-menu-label">{{ label }}</div>
+    <select class="jot-menu-select" data-{{ name }}>
+      {% for choice in choices %}
+        <option value="{{ choice.value | e }}">{{ choice.label }}</option>
+      {% endfor %} 
+    </select>
+  </div>
+{% endmacro %}
+
+{% macro jotWidgetButton(name, label) %}
+  <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
+{% endmacro %}
+
 <form class="jot-area-form">
   <div class="jot-editor" data-editor-wrapper id="{{ wid }}">
     <div class="jot-toolbar">
-      
-      {% macro jotButton(name, label) %}
-        {% if controlMap[name] %}
-          <a class="jot-control jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
-        {% endif %}
-      {% endmacro %}
-      
-      {% macro jotMenu(name, label, options) %}
-        {% if controlMap[name] %}
-          <div class="jot-control jot-menu-{{ name }} jot-menu">
-            <div class="jot-menu-label">{{ label }}</div>
-            <select class="jot-menu-select" data-{{ name }}>
-              {% for optionValue, optionLabel in options %}
-                <option value="{{ optionValue | e }}">{{ optionLabel }}</option>
-              {% endfor %} 
-            </select>
-          </div>
-        {% endif %}
-      {% endmacro %}
-
-      {# TODO: should be configurable, although browsers have inherent limits here #}
-      {{ jotMenu('style', 'Style', { 
-        'div': 'Normal',
-        'h3': 'Heading 3',
-        'h4': 'Heading 4',
-        'h5': 'Heading 5',
-        'h6': 'Heading 6'
-      }) }}
-
-      {{ jotButton('bold', 'b') }}
-      {{ jotButton('italic', 'i') }}
-      {{ jotButton('createLink', 'Link') }}
-      {{ jotButton('insertUnorderedList', 'List') }}
-
-      {% macro jotWidgetButton(name, label) %}
-        {% if controlMap[name] %}
-          <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
-        {% endif %}
-      {% endmacro %}
-      
-      {{ jotWidgetButton('image', 'Image') }}
-      {{ jotWidgetButton('video', 'Video') }}
-      {{ jotWidgetButton('pullquote', '&ldquo;&rdquo;') }}
-      {{ jotWidgetButton('code', 'i++') }}
-
+      {%- for control in controls -%}
+        {%- set controlType = controlTypes[control] -%}
+        {%- if controlType -%}
+          {%- if controlType.type == 'button' -%}
+            {{ jotButton(control, controlType.label) }}
+          {%- endif -%}
+          {%- if controlType.type == 'menu' -%}
+            {{ jotMenu(control, controlType.label, controlType.choices) }}
+          {%- endif -%}
+        {%- endif -%}
+        {%- if itemTypes[control] and itemTypes[control].widget -%}
+          {{ jotWidgetButton(control, itemTypes[control].label) }}
+        {%- endif -%}
+      {% endfor %}
       <div class="jot-clear"></div>
     </div>
-    <div class="jot-editable" data-editable contentEditable="true">{{ jotAreaContent(items) }}</div>
+    <div class="jot-editable" data-editable contentEditable="true">{{ jotAreaContent(items, { editView: true }) }}</div>
   </div>
   <div class="jot-area-form-footer">
     <a class="jot-control jot-button jot-save" data-save-area>Save</a>
     <a class="jot-control jot-button jot-cancel" data-cancel-area>Cancel</a>
   </div>
   <div class="jot-clear"></div>
-  <div class="jot-content-for-editing">
-
-  </div>
 </form>
 
 <script>

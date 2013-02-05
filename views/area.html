@@ -1,13 +1,11 @@
 <div class="jot-area" data-jot-slug="{{ slug }}" data-jot-controls="{{ controls.join(' ') }}">
   <div class="jot-normal-view">
-    {% if edit %}
+    {%- if edit -%}
       <div class="jot-area-controls">
         <a class="jot-control jot-button jot-edit-area" href="#">Edit</a>
       </div>
       <div class="jot-clear"></div>
-    {% endif %}
-    <div class="jot-content">
-      {{ jotAreaContent(items) }}
-    </div>
+    {%- endif -%}
+    <div class="jot-content">{{ jotAreaContent(items) }}</div>
   </div>
 </div>

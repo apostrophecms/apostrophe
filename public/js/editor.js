@@ -132,7 +132,7 @@ jot.Editor = function(options) {
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
-    new jot.widgetEditors[widgetType]({ editor: self });
+    new jot.widgetTypes[widgetType].editor({ editor: self });
     return false;
   }).mousedown(function(e) {
     // Must prevent default on mousedown or the rich text editor loses the focus
@@ -151,7 +151,7 @@ jot.Editor = function(options) {
     var $widget = $(this).closest('[data-type]');
     var widgetType = $widget.attr('data-type');
     var widgetId = $widget.attr('data-id');
-    new jot.widgetEditors[widgetType](
+    new jot.widgetTypes[widgetType].editor(
     {
       editor: self,
       widgetId: widgetId
@@ -561,7 +561,7 @@ jot.Editor = function(options) {
 
 jot.addButtonsToWidget = function($widget) {
   var $buttons = $('<div class="jot-widget-buttons"></div>');
-  var $button = $('<div class="jot-widget-button jot-edit-widget">Edit ' + jot.widgetEditorLabels[$widget.attr('data-type')] + '</div>');
+  var $button = $('<div class="jot-widget-button jot-edit-widget">Edit ' + jot.widgetTypes[$widget.attr('data-type')].label + '</div>');
   $buttons.append($button);
   var $button = $('<div class="jot-widget-button jot-insert-before-widget">Before</div>');
   $buttons.append($button);
@@ -571,16 +571,23 @@ jot.addButtonsToWidget = function($widget) {
   $widget.prepend($buttons);
 };
 
-jot.WidgetEditor = function(options) {
+jot.widgetEditor = function(options) {
   var self = this;
   self.editor = options.editor;
   self.timers = [];
   self.exists = false;
+
+  // What will be in the data attributes of the widget
+  self.data = {};
+
   if (options.widgetId) {
     self.exists = true;
     self.$widget = options.editor.$editable.find('.jot-widget[data-id="' + options.widgetId + '"]');
+    self.data = self.$widget.data();
   }
+
   self.widgetId = options.widgetId ? options.widgetId : jot.generateId();
+  self.data.id = self.widgetId;
 
   // Make sure the selection we return to 
   // is actually on the editor
@@ -611,6 +618,7 @@ jot.WidgetEditor = function(options) {
       // Return focus to the main editor
       self.editor.$editable.focus();
     },
+
     getSizeAndPosition: function() {
       var size = self.$el.find('input[name="size"]:checked').val();
       var position = 'middle';
@@ -619,6 +627,7 @@ jot.WidgetEditor = function(options) {
       }
       return { size: size, position: position };
     },
+
     changeSizeAndPosition: function() {
       var sizeAndPosition = self.getSizeAndPosition();
       self.$previewContainer.find('.jot-widget-preview').removeClass('jot-one-third');
@@ -640,43 +649,22 @@ jot.WidgetEditor = function(options) {
       $preview.addClass('jot-' + sizeAndPosition.position);
     },
 
-    // This creates the placeholder displayed for this widget in the
-    // editor. Placeholders are subject to the following limitations:
-    //
-    // 1. NO markup that will not copy and paste reliably in every browser.
-    // Example: iframes will NOT copy and paste in Firefox.
-    //
-    // 2. NO JavaScript or event handlers of any kind! The ONLY direct interaction the
-    // user has with your placeholder is clicking on it to reopen the widget editor,
-    // where you can script anything you wish. Any attempt to move the caret into the
-    // placeholder selects the entire placeholder to further emphasize to the user that
-    // it is a single unit.
-    //
-    // However you may attach classes and attributes recognized later in a non-editing
-    // context which enable javascript to take over and bring the widget to full life once
-    // saved content is being displayed to an end user.
-    //
-    // Example: a suitable widget placeholder for a video is a thumbnail of the video
-    // with a play button superimposed on it and data attributes that allow javascript
-    // to figure out how to really play the video later in a non-editing context.
-    // The video can also be played in the widget editor.
-    //
-    // Typically you will need to implement updateWidgetData to set data attributes,
-    // and sometimes also getContent to set the markup that lives inside the widget if
-    // it was user-entered and cannot be generated from the data attributes (for 
-    // example: the code sample widget's content). 
-
+    // Create a new widget for insertion into the main content editor.
+    // See also the server-side itemNormalView.html template, which
+    // does the same thing
     createWidget: function() {
       self.$widget = $('<div></div>');
       // self.$widget.attr('unselectable', 'on');
       self.$widget.addClass('jot-widget');
-      self.$widget.addClass('jot-' + self.type.toLowerCase());
+      self.$widget.addClass('jot-' + self.type);
       self.$widget.attr('data-type', self.type);
       self.$widget.attr('data-id', self.widgetId);
     },
 
-    // Update the widget placeholder to reflect the new
-    // size and position, then ask the server to render the widget.
+    // Update the widget placeholder in the main content editor to reflect the new
+    // size and position, then ask the server to render the widget placeholder.
+    // We *don't* call the widget player inside the main content editor because
+    // those are not restricted to content that behaves inside contentEditable.
 
     updateWidget: function(callback) {
       var sizeAndPosition = self.getSizeAndPosition();
@@ -697,13 +685,19 @@ jot.WidgetEditor = function(options) {
       // markup and call populateWidget to insert the latest 
       self.$widget.html('');
       jot.addButtonsToWidget(self.$widget);
-      if (self.updateWidgetData) {
-        self.updateWidgetData();
-      }
+      self.updateWidgetData();
       self.renderWidget(callback);
     },
 
-    // Ask the server to render the widget's contents, stuff them in
+    // Widgets now just update self.data as needed so this doesn't
+    // need to be overridden typically
+    updateWidgetData: function() {
+      _.each(self.data, function(val, key) {
+        self.$widget.attr('data-' + key, val);
+      });
+    },
+
+    // Ask the server to render the widget's contents, stuff them into the placeholder
     renderWidget: function(callback) {
       // Get all the data attributes
       var info = self.$widget.data();
@@ -722,12 +716,13 @@ jot.WidgetEditor = function(options) {
       // and an inevitable drift into different behavior between browser
       // and server. At some point perhaps we'll run the same rendering code
       // on both client and server
-      $.post('/jot/render-widget', info, function(html) {
+      $.post('/jot/render-widget?bodyOnly=1&editView=1', info, function(html) {
         self.$widget.append(html);
         callback(null);
       });
     },
 
+    // Insert new widget into the main content editor
     insertWidget: function() {
       var markup = '';
 
@@ -756,12 +751,54 @@ jot.WidgetEditor = function(options) {
 
     modal: function(command) {
       return jot.modal(self.$el, command);
+    },
+
+    preview: function() {
+      if (self.prePreview) {
+        self.prePreview(go);
+      } else {
+        go();
+      }
+      function go() {
+        self.$previewContainer.find('.jot-widget-preview').remove();
+        if (self.exists) {
+          // Ask the server to generate a nice preview of the widget's contents
+          // for us, via its normal view renderer. This avoids code duplication
+          // and an inevitable drift into different behavior between browser
+          // and server. At some point perhaps we'll run the same rendering code
+          // on both client and server... if it matters, Node is terribly fast
+          var info = {};
+          _.defaults(info, self.data);
+          info.type = self.type;
+          var sizeAndPosition = self.getSizeAndPosition();
+          info.size = sizeAndPosition.size;
+          info.position = sizeAndPosition.position;
+          if (self.getContent) {
+            info.content = self.getContent();
+          } else {
+            info.content = undefined;
+          }
+          $.post('/jot/render-widget', info, function(html) {
+            var previewWidget = $(html);
+            previewWidget.addClass('jot-widget-preview');
+            self.$previewContainer.prepend(previewWidget);
+            self.$el.find('.jot-requires-preview').show();
+            if (jot.widgetPlayers[self.type]) {
+              jot.widgetPlayers[self.type](previewWidget);
+            }
+          });
+        }
+        else
+        {
+          self.$el.find('.jot-requires-preview').hide();
+        }
+      }
     }
   });
 
   self.$el.find('.jot-save').click(function() {
-    self.editor.undoPoint();
     self.preSave(function() {
+      self.editor.undoPoint();
       if (!self.exists) {
         alert(options.messages.missing);
         return false;
@@ -812,347 +849,263 @@ jot.WidgetEditor = function(options) {
   self.modal();
 }
 
-jot.widgetEditors = {};
-jot.widgetEditorLabels = {};
+jot.widgetTypes = {};
 
-jot.widgetEditors.image = function(options) {
-  var self = this;
+jot.widgetTypes.image = {
+  label: 'Image',
+  editor: function(options) {
+    var self = this;
 
-  if (!options.messages) {
-    options.messages = {};
-  }
-  if (!options.messages.missing) {
-    options.messages.missing = 'Upload an image file first.';
-  }
+    if (!options.messages) {
+      options.messages = {};
+    }
+    if (!options.messages.missing) {
+      options.messages.missing = 'Upload an image file first.';
+    }
 
-  self.afterCreatingEl = function() {
-    self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
-    self.$el.bind('uploaded', function(e, id) {
-      // Only react to events intended for us
-      if (id === self.widgetId) {
-        self.exists = true;
-        self.preview();
-      }
-    });
-    // Image info
-    self.info = {};
-  };
-
-  self.preview = function() {
-    self.$previewContainer.find('.jot-widget-preview').remove();
-    if (self.exists) {
-      $.getJSON('/jot/file-info/' + self.widgetId, function(infoArg) {
-        info = infoArg;
-        var $player = self.getPreviewEmbed();
-        self.$previewContainer.prepend($player);
-        self.$el.find('.jot-requires-preview').show();
-        self.changeSizeAndPosition();
+    self.afterCreatingEl = function() {
+      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
+      self.$el.bind('uploaded', function(e, id) {
+        // Only react to events intended for us
+        if (id === self.widgetId) {
+          self.exists = true;
+          self.preview();
+        }
       });
-    }
-    else
-    {
-      self.$el.find('.jot-requires-preview').hide();
-    }
-  };
+    };
 
-  self.getImageUrl = function() {
-    var size = self.getSizeAndPosition().size;
-    return info.url + '.' + size + '.' + info.extension;
-  };
-
-  self.updateWidgetData = function() {
-    self.$widget.attr('data-extension', info.extension);
-  };
-
-  self.getPreviewEmbed = function() {
-    var imageUrl = self.getImageUrl();
-    var img = $('<img />');
-    img.attr('src', imageUrl);
-    img.addClass('jot-widget-preview');
-    return img;
-  };
-
-  self.type = 'image';
-  options.template = '.jot-image-editor';
-
-  // Parent class constructor shared by all widget editors
-  jot.WidgetEditor.call(self, options);
-}
-
-jot.widgetEditorLabels.image = 'Image';
-
-jot.widgetEditors.video = function(options) {
-  var self = this;
-  self.videoUrl = null;
-  self.videoInfo = null;
-
-  if (!options.messages) {
-    options.messages = {};
-  }
-  if (!options.messages.missing) {
-    options.messages.missing = 'Paste a video link first.';
-  }
-
-  self.afterCreatingEl = function() {
-    if (self.exists) {
-      self.videoUrl = self.$widget.attr('data-video');
-    }
-    self.$embed = self.$el.find('.jot-embed');
-    self.$embed.val(self.videoUrl);
-    if (self.videoUrl) {
-      getVideoInfo();
-    }
-
-    // Automatically preview if we detect something that looks like a
-    // fresh paste
-    var last = '';
-    self.timers.push(setInterval(function() {
-      var next = self.$embed.val();
-      if (interestingDifference(last, next))
+    // For images, preview is triggered by an upload. We need to capture
+    // the file extension at that point so we are not forced to constantly
+    // look it up in a separate collection
+    self.prePreview = function(callback) {
+      if (self.exists) {
+        $.getJSON('/jot/file-info/' + self.widgetId, function(info) {
+          self.data.extension = info.extension;
+          callback();
+        });
+      }
+      else
       {
-        getVideoInfo();
-      }
-      last = next;
-
-      function interestingDifference(a, b) {
-        var i;
-        if (Math.abs(a.length - b.length) > 10) {
-          return true;
-        }
-        var min = Math.min(a.length, b.length);
-        var diff = 0;
-        for (i = 0; (i < min); i++) {
-          if (a.charAt(i) !== b.charAt(i)) {
-            diff++;
-            if (diff >= 5) {
-              return true;
-            }
-          }
-        }
-        return false;
-      }
-    }, 500));
-
-    self.$el.find('.jot-preview-button').click(function() {
-      getVideoInfo();
-      return false;
-    });
-  };
-
-  self.getImageUrl = function() {
-    if (self.videoInfo) {
-      return self.videoInfo.thumbnailUrl;
-    }
-    return null;
-  };
-
-  self.getPreviewEmbed = function() {
-    if (!self.videoInfo) {
-      return null;
-    }
-    return $(self.videoInfo.embed).addClass('jot-widget-preview');
-  };
-
-  self.preSave = getVideoInfo;
-
-  self.updateWidgetData = function() {
-    self.$widget.attr('data-video', self.videoInfo.url);
-    self.$widget.attr('data-thumbnail', self.videoInfo.thumbnailUrl);
-  };
-
-  self.preview = function() {
-    self.$previewContainer.find('.jot-widget-preview').remove();
-    if (self.exists) {
-      var $player = getVideoEmbed();
-      self.$previewContainer.prepend($player);
-      self.$el.find('.jot-requires-preview').show();
-      self.changeSizeAndPosition();
-    }
-    else
-    {
-      self.$el.find('.jot-requires-preview').hide();
-    }
-  }
-
-  function getVideoInfo(callback) {
-    var url = self.$embed.val();
-    // Lazy URLs
-    if (!url.match(/^http/))
-    {
-      url = 'http://' + url;
-    }
-    self.$el.find('[data-preview]').hide();
-    self.$el.find('[data-spinner]').show();
-    $.getJSON('/jot/oembed', { url: url }, function(data) {
-      self.$el.find('[data-spinner]').hide();
-    self.$el.find('[data-preview]').show();
-      if (data.err) {
-        if (callback) {
-          callback(false);
-        }
-        return;
-      }
-      var info = {
-        url: url,
-        thumbnailUrl: data.thumbnail_url,
-        embed: data.html.replace(/width="\d+"/, '').replace(/height="\d+"/, '')
-      };
-      self.videoInfo = info;
-      self.exists = !!info;
-      self.preview();
-      if (callback) {
         callback();
       }
-    });
-  }
+    };
 
-  function getVideoEmbed() {
-    if (!self.videoInfo) {
-      return '';
+    self.type = 'image';
+    options.template = '.jot-image-editor';
+
+    // Parent class constructor shared by all widget editors
+    jot.widgetEditor.call(self, options);
+  }
+};
+
+jot.widgetTypes.video = {
+  label: 'Video',
+  editor: function(options) {
+    var self = this;
+
+    if (!options.messages) {
+      options.messages = {};
     }
-    // assumes there's a wrapper
-    return $(self.videoInfo.embed).addClass('jot-widget-preview');
-    // return '<iframe class="widget-preview youtube-player" type="text/html" src="http://www.youtube.com/embed/' + id + '" frameborder="0"></iframe>';
-  }
-
-  self.type = 'video';
-  options.template = '.jot-video-editor';
-
-  // Parent class constructor shared by all widget editors
-  jot.WidgetEditor.call(self, options);
-}
-
-jot.widgetEditorLabels.video = 'Video';
-
-// TODO copy current selection's text to pullquote
-jot.widgetEditors.pullquote = function(options) {
-  var self = this;
-      
-  self.pullquote = '“”';
-
-  if (!options.messages) {
-    options.messages = {};
-  }
-  if (!options.messages.missing) {
-    options.messages.missing = 'Type in a pullquote first.';
-  }
-
-  self.afterCreatingEl = function() {
-    if (self.exists) {
-      self.pullquote = self.$widget.find('.jot-pullquote-text').text();
+    if (!options.messages.missing) {
+      options.messages.missing = 'Paste a video link first.';
     }
-    self.$pullquote = self.$el.find('.jot-embed');
-    self.$pullquote.val(self.pullquote);
-    setTimeout(function() {
-      self.$pullquote.focus();
-      self.$pullquote.setSelection(1, 1);
-    }, 500);
 
-    // Automatically preview if we detect something that looks like a
-    // fresh paste
-    var last = '';
-    self.timers.push(setInterval(function() {
-      var next = self.$pullquote.val();
-      self.exists = (next.length > 2);
-      if (next !== last) {
-        self.preview();
+    self.afterCreatingEl = function() {
+      self.$embed = self.$el.find('.jot-embed');
+      self.$embed.val(self.data.video);
+
+      // Automatically preview if we detect something that looks like a
+      // fresh paste
+      var last = '';
+      self.timers.push(setInterval(function() {
+        var next = self.$embed.val();
+        if (interestingDifference(last, next))
+        {
+          self.preview();
+        }
+        last = next;
+
+        function interestingDifference(a, b) {
+          var i;
+          if (Math.abs(a.length - b.length) > 10) {
+            return true;
+          }
+          var min = Math.min(a.length, b.length);
+          var diff = 0;
+          for (i = 0; (i < min); i++) {
+            if (a.charAt(i) !== b.charAt(i)) {
+              diff++;
+              if (diff >= 5) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      }, 500));
+
+      self.$el.find('.jot-preview-button').click(function() {
+        getVideoInfo();
+        return false;
+      });
+    };
+
+    self.preSave = getVideoInfo;
+
+    self.prePreview = getVideoInfo;
+
+    function getVideoInfo(callback) {
+      var url = self.$embed.val();
+      // Lazy URLs
+      if (!url.match(/^http/))
+      {
+        url = 'http://' + url;
       }
-      last = next;
-    }, 500));
-  };
-
-  self.getPreviewEmbed = function() {
-    return $('<div class="jot-pullquote jot-widget-preview"></div>').text(self.$pullquote.val());
-  };
-
-  self.getContent = function() {
-    return jot.escapeHtml(self.$pullquote.val());
-  }
-
-  self.preview = function() {
-    self.$previewContainer.find('.jot-widget-preview').remove();
-    var $preview = self.getPreviewEmbed();
-    self.$previewContainer.prepend($preview);
-    self.$el.find('.jot-requires-preview').show();
-    self.changeSizeAndPosition();
-  }
-
-  self.type = 'pullquote';
-  options.template = '.jot-pullquote-editor';
-
-  // Parent class constructor shared by all widget editors
-  jot.WidgetEditor.call(self, options);
-}
-
-jot.widgetEditorLabels.pullquote = 'Pullquote';
-
-// TODO copy current selection's text to code
-
-jot.widgetEditors.code = function(options) {
-  var self = this;
-      
-  self.code = '';
-
-  if (!options.messages) {
-    options.messages = {};
-  }
-  if (!options.messages.missing) {
-    options.messages.missing = 'Paste in some source code first.';
-  }
-
-  self.afterCreatingEl = function() {
-    if (self.exists) {
-      self.code = self.$widget.text();
+      self.$el.find('[data-preview]').hide();
+      self.$el.find('[data-spinner]').show();
+      $.getJSON('/jot/oembed', { url: url }, function(data) {
+        self.$el.find('[data-spinner]').hide();
+      self.$el.find('[data-preview]').show();
+        if (data.err) {
+          if (callback) {
+            callback(false);
+          }
+          return;
+        }
+        self.exists = !!data;
+        if (self.exists) {
+          self.data.video = url;
+          self.data.thumbnail = data.thumbnail_url;
+        }
+        if (callback) {
+          callback();
+        }
+      });
     }
-    self.$code = self.$el.find('.jot-code');
-    self.$code.val(self.code);
-    setTimeout(function() {
-      self.$code.focus();
-      self.$code.setSelection(0, 0);
-    }, 500);
 
-    // Automatically preview if we detect something that looks like a
-    // fresh paste
-    var last = '';
-    self.timers.push(setInterval(function() {
-      var next = self.$code.val();
-      self.exists = (next.length > 2);
-      if (next !== last) {
-        self.preview();
+    self.type = 'video';
+    options.template = '.jot-video-editor';
+
+    // Parent class constructor shared by all widget editors
+    jot.widgetEditor.call(self, options);
+  }
+};
+
+jot.widgetTypes.pullquote = {
+  label: 'Pullquote',
+  editor: function(options) {
+    var self = this;
+        
+    self.pullquote = '“”';
+
+    if (!options.messages) {
+      options.messages = {};
+    }
+    if (!options.messages.missing) {
+      options.messages.missing = 'Type in a pullquote first.';
+    }
+
+    self.afterCreatingEl = function() {
+      if (self.exists) {
+        self.pullquote = self.$widget.find('.jot-pullquote-text').text();
       }
-      last = next;
-    }, 500));
-  };
+      self.$pullquote = self.$el.find('.jot-embed');
+      self.$pullquote.val(self.pullquote);
+      setTimeout(function() {
+        self.$pullquote.focus();
+        self.$pullquote.setSelection(1, 1);
+      }, 500);
 
-  self.getPreviewEmbed = function() {
-    return $('<pre class="jot-code jot-widget-preview"></pre>').text(self.$code.val());
-  };
+      // Automatically preview if we detect something that looks like a
+      // fresh paste
+      var last = '';
+      self.timers.push(setInterval(function() {
+        var next = self.$pullquote.val();
+        self.exists = (next.length > 2);
+        if (next !== last) {
+          self.preview();
+        }
+        last = next;
+      }, 500));
+    };
 
-  self.getContent = function() {
-    return jot.escapeHtml(self.$code.val());
+    self.getContent = function() {
+      return self.$pullquote.val();
+    }
+
+    self.type = 'pullquote';
+    options.template = '.jot-pullquote-editor';
+
+    // Parent class constructor shared by all widget editors
+    jot.widgetEditor.call(self, options);
+  },
+
+  getContent: function($el) {
+    return $el.find('.jot-pullquote-text').text();
   }
+};
 
-  self.preview = function() {
-    self.$previewContainer.find('.jot-widget-preview').remove();
-    var $preview = self.getPreviewEmbed();
-    self.$previewContainer.prepend($preview);
-    self.$el.find('.jot-requires-preview').show();
-    self.changeSizeAndPosition();
+jot.widgetTypes.code = {
+  label: 'Code Sample',
+  editor: function(options) {
+    var self = this;
+        
+    self.code = '';
+
+    if (!options.messages) {
+      options.messages = {};
+    }
+    if (!options.messages.missing) {
+      options.messages.missing = 'Paste in some source code first.';
+    }
+
+    self.afterCreatingEl = function() {
+      if (self.exists) {
+        self.code = self.$widget.find('pre').text();
+      }
+      self.$code = self.$el.find('.jot-code');
+      self.$code.val(self.code);
+      setTimeout(function() {
+        self.$code.focus();
+        self.$code.setSelection(0, 0);
+      }, 500);
+
+      // Automatically preview if we detect something that looks like a
+      // fresh paste
+      var last = '';
+      self.timers.push(setInterval(function() {
+        var next = self.$code.val();
+        self.exists = (next.length > 2);
+        if (next !== last) {
+          self.preview();
+        }
+        last = next;
+      }, 500));
+    };
+
+    self.getContent = function() {
+      return self.$code.val();
+    }
+
+    self.type = 'code';
+    options.template = '.jot-code-editor';
+
+    // Parent class constructor shared by all widget editors
+    jot.widgetEditor.call(self, options);
+  },
+
+  getContent: function($el) {
+    return $el.find('pre').text();
   }
+};
 
-  self.type = 'code';
-  options.template = '.jot-code-editor';
+// Utilities
 
-  // Parent class constructor shared by all widget editors
-  jot.WidgetEditor.call(self, options);
-}
-
-jot.widgetEditorLabels.code = 'Code Sample';
-
-// Utility methods
+// Widget ids should be valid names for javascript variables, just in case
+// we find that useful, so avoid hyphens
 
 jot.generateId = function() {
-  return 'w-' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
+  return 'w' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
 }
 
 // mustache.js solution to escaping HTML (not URLs)
@@ -1292,15 +1245,12 @@ jot.parseArea = function(content) {
         // This is a widget, it gets its own entry in items
         flushRichText();
 
-        // Pass its content, if any, as the content property. Make sure
-        // the buttons don't sneak in there
-        var wrapper = $('<div></div>');
-        wrapper.append($(child.innerHTML));
-        // Don't let controls sneak into the content
-        wrapper.find('.jot-widget-buttons').remove();
-        var item = { 
-          content: wrapper.html()
-        };
+        var type = child.getAttribute('data-type');
+        var item = {};
+        if (jot.widgetTypes[type].getContent) {
+          item.content = jot.widgetTypes[type].getContent($(child));
+          jot.log(item.content);
+        }
 
         for (var j = 0; (j < child.attributes.length); j++) {
           var key = child.attributes[j].name;
