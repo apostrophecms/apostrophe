@@ -538,15 +538,18 @@ function jot() {
     }
 
     function loadersThenCallback(area) {
-        if (options.load) {
-          return callLoadersForArea(area, after);
-        } else {
-          return after();
-        }
-        function after() {
-          return callback(null, area);
-        }
-
+      if (!area) {
+        // Careful, this is not an error, don't crash
+        return callback(null, null);
+      }
+      if (options.load) {
+        return callLoadersForArea(area, after);
+      } else {
+        return after();
+      }
+      function after() {
+        return callback(null, area);
+      }
     }
   };
 
