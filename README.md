@@ -254,6 +254,10 @@ A common case is to restrict editing to a single user:
 
 You can see an example of this pattern in `wiki.js`.
 
+## Extending Jot
+
+You can extend jot with additional widgets, and the [jot-twitter](http://github.com/punkave/jot-twitter) and [jot-rss](http://github.com/punkave/jot-rss) modules provide working examples. New widget types can even have custom loaders that bring in additional data on the server side as needed. It's neat stuff. 
+
 ## Roadmap
 
 Jot is a work in progress. Certainly the following things need to improve:
