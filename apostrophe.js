@@ -467,8 +467,7 @@ function apos() {
       req.url = path;
       var middleware = lessMiddleware({
             src: dir,
-            compress: true,
-            debug: true
+            compress: true
       });
       middleware(req, res, function() {
         return res.sendfile(dir + '/' + path);
