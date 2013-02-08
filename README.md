@@ -1,10 +1,12 @@
 # Apostrophe
 
+## This is an early alpha quality version of Apostrophe 2, for node.js developers. Most frontend design work has not happened yet. Page trees, blogs events, etc. are not part of Apostrophe 2 yet. See [Apostrophe 1.5](http://apostrophenow.org) for the current stable and mature release of Apostrophe for PHP and Symfony.
+
 Apostrophe is a content management system. This core module provides rich content editing as well as essential services to tie Apostrophe to your Express application. 
 
 In addition to rich text, Apostrophe allows you to add rich media to documents. Apostrophe also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again.
 
-[You can try a live demo of the Apostrophe Wiki sample app here.](http://demowiki.apostrophenow.com/) (Note: the demo site resets at the top of the hour.)
+[You can try a live demo of the Apostrophe 2 Wiki sample app here.](http://demowiki.apostrophenow.com/) (Note: the demo site resets at the top of the hour.) See also the [apostrophe-wiki github project](http://github.com/punkave/apostrophe-wiki).
 
 Apostrophe introduces "widgets," separate editors for rich media items like photos, videos, pullquotes and code samples. Apostrophe's widgets handle these items much better than a rich text editor on its own.
 
