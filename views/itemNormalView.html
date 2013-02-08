@@ -1,7 +1,7 @@
 {# If this item type is a widget output a standard widget wrapper, with data attributes #}
 
 {%- if options.widget -%}
-  <div class="jot-widget jot-{{ itemType.css }} jot-{{ item.size }} jot-{{ item.position }}"
+  <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}"
     {%- for name, value in attributes -%}
       {# Let some whitespace in for readability and cross-browser confidence #}
       data-{{ name }}="{{ value | e }}"
