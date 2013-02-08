@@ -7,6 +7,7 @@ var _ = require('underscore');
 var jQuery = require('jquery');
 var nunjucks = require('nunjucks');
 var async = require('async');
+var lessMiddleware = require('less-middleware');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -458,11 +459,20 @@ function apos() {
 
   self.static = function(dir) {
     return function(req, res) {
-      var path = req.params[0];
+       var path = req.params[0];
       // Don't let them peek at /etc/passwd etc. Browsers
       // pre-resolve these anyway
       path = globalReplace(path, '..', '');
-      return res.sendfile(dir + '/' + path);
+      // Otherwise the middleware looks in the wrong place
+      req.url = path;
+      var middleware = lessMiddleware({
+            src: dir,
+            compress: true,
+            debug: true
+      });
+      middleware(req, res, function() {
+        return res.sendfile(dir + '/' + path);
+      });
     };
   };
 
