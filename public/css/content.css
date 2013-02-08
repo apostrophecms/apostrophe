@@ -1,52 +1,52 @@
-/* Everything must have a jot- prefix */
+/* Everything must have a apos- prefix */
 
-.jot-one-third
+.apos-one-third
 {
   width: 33.33333%;
 }
 
-.jot-one-half
+.apos-one-half
 {
   width: 50%;
 }
 
-.jot-two-thirds
+.apos-two-thirds
 {
   width: 66.66667%;
 }
 
-.jot-full
+.apos-full
 {
   width: 100%;
 }
 
-.jot-left
+.apos-left
 {
   float: left;
   clear: both;
   margin-right: 10px;
 }
 
-.jot-middle
+.apos-middle
 {
   margin: auto;
   text-align: center;
 }
 
-.jot-widget.jot-code pre
+.apos-widget.apos-code pre
 {
   text-align: left;
   font-family: Fixed, monospace;
 }
 
-.jot-right
+.apos-right
 {
   float: right;
   clear: both;
   margin-left: 10px;
 }
 
-.jot-pullquote
+.apos-pullquote
 {
   font-size: 135%;
   color: #488;
@@ -54,18 +54,18 @@
   padding-bottom: 5px;
 }
 
-.jot-image img, .jot-video img
+.apos-image img, .apos-video img
 {
   width: 100%;
 }
 
-.jot-video-thumbnail-wrapper 
+.apos-video-thumbnail-wrapper 
 { 
   display: block; 
   background: url('/jot/images/play.png') center center no-repeat; 
 }
 
-.jot-video-thumbnail
+.apos-video-thumbnail
 {
   opacity: .5; 
 }

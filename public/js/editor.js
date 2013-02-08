@@ -1,13 +1,13 @@
-if (!window.jot) {
-  window.jot = {};
+if (!window.apos) {
+  window.apos = {};
 }
 
-var jot = window.jot;
+var apos = window.apos;
 
 // Hopefully I won't need these again as they trash copy and paste between pages 
-// jot.widgetBackups = {};
+// apos.widgetBackups = {};
 
-jot.Editor = function(options) {
+apos.Editor = function(options) {
   var self = this;
   var styleMenu;
   var styleBlockElements;
@@ -41,10 +41,10 @@ jot.Editor = function(options) {
   //   var wrapper = $('<div></div>');
   //   // Clone it so we don't remove it from the document implicitly
   //   wrapper.append($widget.clone());
-  //   jot.widgetBackups[id] = wrapper.html();
+  //   apos.widgetBackups[id] = wrapper.html();
   // }
 
-  var $widgets = self.$editable.find('.jot-widget');
+  var $widgets = self.$editable.find('.apos-widget');
   $widgets.each(function() {
     var $widget = $(this);
 
@@ -52,15 +52,15 @@ jot.Editor = function(options) {
 
     // Undo nasty workarounds for webkit bugs for which we found
     // a better workaround
-    $widget.find('.jot-widget-inner').each(function() {
+    $widget.find('.apos-widget-inner').each(function() {
       $(this).replaceWith(this.childNodes);
     });
-    $widget.find('.jot-widget-content').removeClass('.jot-widget-content');
-    $widget.find('.jot-widget-before').remove();
-    $widget.find('.jot-widget-after').remove();
+    $widget.find('.apos-widget-content').removeClass('.apos-widget-content');
+    $widget.find('.apos-widget-before').remove();
+    $widget.find('.apos-widget-after').remove();
 
     // Restore edit buttons
-    jot.addButtonsToWidget($widget);
+    apos.addButtonsToWidget($widget);
 
     // Snapshot we can restore if contenteditable does something
     // self.updateWidgetBackup(widgetId, $widget);
@@ -71,7 +71,7 @@ jot.Editor = function(options) {
   });
 
   // Restore helper marks for widgets
-  self.$editable.find('.jot-widget[data-type]').before(jot.beforeMarker).after(jot.afterMarker);
+  self.$editable.find('.apos-widget[data-type]').before(apos.beforeMarker).after(apos.afterMarker);
 
   enableControl('bold', ['meta+b', 'ctrl+b']);
   enableControl('italic', ['meta+i', 'ctrl+i']);
@@ -88,9 +88,9 @@ jot.Editor = function(options) {
   styleMenu = self.$el.find('[data-style]');
   styleBlockElements = {};
 
-  jot.log(styleMenu.length);
+  apos.log(styleMenu.length);
   styleMenu.find('option').each(function() {
-    jot.log(this);
+    apos.log(this);
     styleBlockElements[$(this).val()] = true;
   });
 
@@ -132,7 +132,7 @@ jot.Editor = function(options) {
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
-    new jot.widgetTypes[widgetType].editor({ editor: self });
+    new apos.widgetTypes[widgetType].editor({ editor: self });
     return false;
   }).mousedown(function(e) {
     // Must prevent default on mousedown or the rich text editor loses the focus
@@ -145,13 +145,13 @@ jot.Editor = function(options) {
   
   self.$el.off('click.editWidget');
 
-  self.$el.on('click.editWidget', '.jot-edit-widget', function(event) {
+  self.$el.on('click.editWidget', '.apos-edit-widget', function(event) {
     // Necessary so we don't wind up with the selection inside the button
-    jot.deselect();
+    apos.deselect();
     var $widget = $(this).closest('[data-type]');
     var widgetType = $widget.attr('data-type');
     var widgetId = $widget.attr('data-id');
-    new jot.widgetTypes[widgetType].editor(
+    new apos.widgetTypes[widgetType].editor(
     {
       editor: self,
       widgetId: widgetId
@@ -159,9 +159,9 @@ jot.Editor = function(options) {
     return false;
   });
 
-  self.$el.on('click.editWidget', '.jot-insert-before-widget', function(event) {
+  self.$el.on('click.editWidget', '.apos-insert-before-widget', function(event) {
     // Necessary so we don't wind up with the selection inside the button
-    jot.deselect();
+    apos.deselect();
     var $widget = $(this).closest('[data-type]');
     var $placeholder = $('<span>Type Here</span>');
     $placeholder.insertBefore($widget);
@@ -170,15 +170,15 @@ jot.Editor = function(options) {
     // until we press enter, which is totally confusing
     var $br = $('<br />');
     $br.insertBefore($widget);
-    jot.selectElement($placeholder[0]);
+    apos.selectElement($placeholder[0]);
     // Necessary in Firefox
     self.$editable.focus();
     return false;
   });
 
-  self.$el.on('click.editWidget', '.jot-insert-after-widget', function(event) {
+  self.$el.on('click.editWidget', '.apos-insert-after-widget', function(event) {
     // Necessary so we don't wind up with the selection inside the button
-    jot.deselect();
+    apos.deselect();
     var $widget = $(this).closest('[data-type]');
     var $placeholder = $('<span>Type Here</span>');
     $placeholder.insertAfter($widget);
@@ -186,15 +186,15 @@ jot.Editor = function(options) {
     // the widget turd in Chrome
     var $br = $('<br />');
     $br.insertAfter($widget);
-    jot.selectElement($placeholder[0]);
+    apos.selectElement($placeholder[0]);
     // Necessary in Firefox
     self.$editable.focus();
     return false;
   });
 
-  self.$el.on('click.editWidget', '.jot-widget', function(event) {
-    var $widget = $(this).closest('.jot-widget');
-    jot.selectElement($widget[0]);
+  self.$el.on('click.editWidget', '.apos-widget', function(event) {
+    var $widget = $(this).closest('.apos-widget');
+    apos.selectElement($widget[0]);
     return false;
   });
 
@@ -221,16 +221,16 @@ jot.Editor = function(options) {
     // Webkit loves to nest elements that should not be nested 
     // as a result of copy and paste operations and formatBlock actions. 
     // Flatten the DOM, but don't tangle with anything inside a
-    // jot-widget. jot-widgets themselves are fair game.
+    // apos-widget. apos-widgets themselves are fair game.
 
     self.$editable.find('h1, h2, h3, h4, h5, h6, div').each(function() {
       var outer = $(this);
-      if (outer.closest('.jot-widget').length) {
+      if (outer.closest('.apos-widget').length) {
         return;
       }
       $(this).find('h1, h2, h3, h4, h5, h6, div').each(function() {
         var inner = $(this);
-        if (inner.parents('.jot-widget').length) {
+        if (inner.parents('.apos-widget').length) {
           return;
         }
         var saved = rangy.saveSelection();
@@ -245,7 +245,7 @@ jot.Editor = function(options) {
 
     // Cleanups per widget
 
-    var $widgets = self.$editable.find('.jot-widget');
+    var $widgets = self.$editable.find('.apos-widget');
 
     $widgets.each(function() {
 
@@ -256,17 +256,17 @@ jot.Editor = function(options) {
       var node = this;
       nodeRange.setStartBefore(node);
       nodeRange.setEndAfter(node);
-      var before = jot.beforeMarker;
-      var after = jot.afterMarker;
+      var before = apos.beforeMarker;
+      var after = apos.afterMarker;
       if (node.previousSibling) {
         if (node.previousSibling.nodeValue === null) {
           var p = document.createTextNode(before);
           $(node).before(p);
-          jot.log('prepended prev element');
+          apos.log('prepended prev element');
         } else {
           var p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
-            jot.log('appended prev character');
+            apos.log('appended prev character');
             node.previousSibling.nodeValue += before;
           }
         }
@@ -275,12 +275,12 @@ jot.Editor = function(options) {
         if (node.nextSibling.nodeValue === null) {
           var p = document.createTextNode(after);
           $(node).after(p);
-          jot.log('appended next element');
+          apos.log('appended next element');
         } else {
           var n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
-            jot.log('prepended character to next');
+            apos.log('prepended character to next');
           }
         }
       }
@@ -351,7 +351,7 @@ jot.Editor = function(options) {
   }, 5000));
 
   self.destroy = function() {
-    jot.log('destroying editor');
+    apos.log('destroying editor');
     _.map(self.timers, function(timer) { clearInterval(timer); });
   };
 
@@ -429,7 +429,7 @@ jot.Editor = function(options) {
   // https://bugs.webkit.org/show_bug.cgi?id=12250
 
   self.selectWidgetNode = function(node) {
-    // jot.selectElement(node);
+    // apos.selectElement(node);
     var sel = rangy.getSelection();
     var nodeRange;
     var range;
@@ -439,8 +439,8 @@ jot.Editor = function(options) {
     nodeRange = rangy.createRange();
     nodeRange.setStartBefore(node);
     nodeRange.setEndAfter(node);
-    var before = jot.beforeMarker;
-    var after = jot.afterMarker;
+    var before = apos.beforeMarker;
+    var after = apos.afterMarker;
     if (node.previousSibling) {
       var p = node.previousSibling.nodeValue;
       if (p.substr(0, 1) === before) {
@@ -525,13 +525,13 @@ jot.Editor = function(options) {
       // We don't use this hack in webkit because webkit prefers
       // to insert divs and toggles divs to h4's just fine.
 
-      // Don't do this to divs that are or are inside a jot-widget!
+      // Don't do this to divs that are or are inside a apos-widget!
 
       if (jQuery.browser.mozilla) {
         self.$editable.find('div').each(function() {
           var div = $(this);
 
-          if (div.is('.jot-widget') || div.closest('.jot-widget').length) {
+          if (div.is('.apos-widget') || div.closest('.apos-widget').length) {
             return;
           }
           if (div.html().length) {
@@ -559,19 +559,19 @@ jot.Editor = function(options) {
 // We need to be able to do this to every existing widget preview quickly when
 // the edit view starts up
 
-jot.addButtonsToWidget = function($widget) {
-  var $buttons = $('<div class="jot-widget-buttons"></div>');
-  var $button = $('<div class="jot-widget-button jot-edit-widget">Edit ' + jot.widgetTypes[$widget.attr('data-type')].label + '</div>');
+apos.addButtonsToWidget = function($widget) {
+  var $buttons = $('<div class="apos-widget-buttons"></div>');
+  var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
   $buttons.append($button);
-  var $button = $('<div class="jot-widget-button jot-insert-before-widget">Before</div>');
+  var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
   $buttons.append($button);
-  var $button = $('<div class="jot-widget-button jot-insert-after-widget">After</div>');
+  var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
   $buttons.append($button);
-  $buttons.append($('<div class="jot-clear"></div>'));
+  $buttons.append($('<div class="apos-clear"></div>'));
   $widget.prepend($buttons);
 };
 
-jot.widgetEditor = function(options) {
+apos.widgetEditor = function(options) {
   var self = this;
   self.editor = options.editor;
   self.timers = [];
@@ -582,11 +582,11 @@ jot.widgetEditor = function(options) {
 
   if (options.widgetId) {
     self.exists = true;
-    self.$widget = options.editor.$editable.find('.jot-widget[data-id="' + options.widgetId + '"]');
+    self.$widget = options.editor.$editable.find('.apos-widget[data-id="' + options.widgetId + '"]');
     self.data = self.$widget.data();
   }
 
-  self.widgetId = options.widgetId ? options.widgetId : jot.generateId();
+  self.widgetId = options.widgetId ? options.widgetId : apos.generateId();
   self.data.id = self.widgetId;
 
   // Make sure the selection we return to 
@@ -594,9 +594,9 @@ jot.widgetEditor = function(options) {
   self.editor.$editable.focus();
   // Make our own instance of the image editor template
   // so we don't have to fuss over old event handlers
-  self.$el = $(options.template + '.jot-template').clone();
-  self.$el.removeClass('.jot-template');
-  self.$previewContainer = self.$el.find('.jot-widget-preview-container');
+  self.$el = $(options.template + '.apos-template').clone();
+  self.$el.removeClass('.apos-template');
+  self.$previewContainer = self.$el.find('.apos-widget-preview-container');
   if (self.afterCreatingEl) {
     self.afterCreatingEl();
   }
@@ -634,23 +634,23 @@ jot.widgetEditor = function(options) {
 
     changeSizeAndPosition: function() {
       var sizeAndPosition = self.getSizeAndPosition();
-      self.$previewContainer.find('.jot-widget-preview').removeClass('jot-one-third');
-      self.$previewContainer.find('.jot-widget-preview').removeClass('jot-one-half');
-      self.$previewContainer.find('.jot-widget-preview').removeClass('jot-two-thirds');
-      self.$previewContainer.find('.jot-widget-preview').removeClass('jot-full');
-      self.$previewContainer.find('.jot-widget-preview').addClass('jot-' + sizeAndPosition.size);
+      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-one-third');
+      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-one-half');
+      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-two-thirds');
+      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-full');
+      self.$previewContainer.find('.apos-widget-preview').addClass('apos-' + sizeAndPosition.size);
       if (sizeAndPosition.size === 'full') {
-        self.$el.find('.jot-position').hide();
+        self.$el.find('.apos-position').hide();
       }
       else
       {
-        self.$el.find('.jot-position').show();
+        self.$el.find('.apos-position').show();
       }
-      var $preview = self.$previewContainer.find('.jot-widget-preview');
-      $preview.removeClass('jot-left');
-      $preview.removeClass('jot-middle');
-      $preview.removeClass('jot-right');
-      $preview.addClass('jot-' + sizeAndPosition.position);
+      var $preview = self.$previewContainer.find('.apos-widget-preview');
+      $preview.removeClass('apos-left');
+      $preview.removeClass('apos-middle');
+      $preview.removeClass('apos-right');
+      $preview.addClass('apos-' + sizeAndPosition.position);
       self.data.size = sizeAndPosition.size;
       self.data.position = sizeAndPosition.position;
     },
@@ -661,8 +661,8 @@ jot.widgetEditor = function(options) {
     createWidget: function() {
       self.$widget = $('<div></div>');
       // self.$widget.attr('unselectable', 'on');
-      self.$widget.addClass('jot-widget');
-      self.$widget.addClass('jot-' + self.type);
+      self.$widget.addClass('apos-widget');
+      self.$widget.addClass('apos-' + self.type);
       self.$widget.attr('data-type', self.type);
       self.$widget.attr('data-id', self.widgetId);
     },
@@ -678,19 +678,19 @@ jot.widgetEditor = function(options) {
         'data-size': sizeAndPosition.size,
         'data-position': sizeAndPosition.position
       });
-      self.$widget.removeClass('jot-left').
-        removeClass('jot-middle').
-        removeClass('jot-right').
-        removeClass('jot-one-third').
-        removeClass('jot-one-half').
-        removeClass('jot-two-thirds').
-        removeClass('jot-full').
-        addClass('jot-' + sizeAndPosition.size).
-        addClass('jot-' + sizeAndPosition.position);
+      self.$widget.removeClass('apos-left').
+        removeClass('apos-middle').
+        removeClass('apos-right').
+        removeClass('apos-one-third').
+        removeClass('apos-one-half').
+        removeClass('apos-two-thirds').
+        removeClass('apos-full').
+        addClass('apos-' + sizeAndPosition.size).
+        addClass('apos-' + sizeAndPosition.position);
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
       self.$widget.html('');
-      jot.addButtonsToWidget(self.$widget);
+      apos.addButtonsToWidget(self.$widget);
       self.updateWidgetData();
       self.renderWidget(callback);
     },
@@ -699,7 +699,7 @@ jot.widgetEditor = function(options) {
     // need to be overridden typically
     updateWidgetData: function() {
       _.each(self.data, function(val, key) {
-        jot.log(key + ': ' + val);
+        apos.log(key + ': ' + val);
         self.$widget.attr('data-' + key, val);
       });
     },
@@ -723,7 +723,7 @@ jot.widgetEditor = function(options) {
       // and an inevitable drift into different behavior between browser
       // and server. At some point perhaps we'll run the same rendering code
       // on both client and server
-      $.post('/jot/render-widget?bodyOnly=1&editView=1', info, function(html) {
+      $.post('/apos/render-widget?bodyOnly=1&editView=1', info, function(html) {
         self.$widget.append(html);
         callback(null);
       });
@@ -735,8 +735,8 @@ jot.widgetEditor = function(options) {
 
       // Work around serious widget selection bugs in Chrome by introducing
       // characters before and after the widget that become part of selecting it
-      var before = jot.beforeMarker;
-      var after = jot.afterMarker;
+      var before = apos.beforeMarker;
+      var after = apos.afterMarker;
 
       markup = before;
 
@@ -748,16 +748,16 @@ jot.widgetEditor = function(options) {
       // markup = markup + String.fromCharCode(8288);
 
       // Restore the selection to insert the markup into it
-      jot.popSelection();
+      apos.popSelection();
       // Not we can insert the markup
-      jot.insertHtmlAtCursor(markup);
+      apos.insertHtmlAtCursor(markup);
       // Push the selection again, leaving it up to modal('hide')
       // to do the final restore
-      jot.pushSelection();
+      apos.pushSelection();
     },
 
     modal: function(command) {
-      return jot.modal(self.$el, command);
+      return apos.modal(self.$el, command);
     },
 
     preview: function() {
@@ -769,7 +769,7 @@ jot.widgetEditor = function(options) {
       }
       function go() {
         console.log("go");
-        self.$previewContainer.find('.jot-widget-preview').remove();
+        self.$previewContainer.find('.apos-widget-preview').remove();
         if (self.exists) {
           // Ask the server to generate a nice preview of the widget's contents
           // for us, via its normal view renderer. This avoids code duplication
@@ -787,25 +787,25 @@ jot.widgetEditor = function(options) {
           } else {
             info.content = undefined;
           }
-          $.post('/jot/render-widget', info, function(html) {
+          $.post('/apos/render-widget', info, function(html) {
             var previewWidget = $(html);
-            previewWidget.addClass('jot-widget-preview');
+            previewWidget.addClass('apos-widget-preview');
             self.$previewContainer.prepend(previewWidget);
-            self.$el.find('.jot-requires-preview').show();
-            if (jot.widgetPlayers[self.type]) {
-              jot.widgetPlayers[self.type](previewWidget);
+            self.$el.find('.apos-requires-preview').show();
+            if (apos.widgetPlayers[self.type]) {
+              apos.widgetPlayers[self.type](previewWidget);
             }
           });
         }
         else
         {
-          self.$el.find('.jot-requires-preview').hide();
+          self.$el.find('.apos-requires-preview').hide();
         }
       }
     }
   });
 
-  self.$el.find('.jot-save').click(function() {
+  self.$el.find('.apos-save').click(function() {
     self.preSave(function() {
       self.editor.undoPoint();
       if (!self.exists) {
@@ -820,7 +820,7 @@ jot.widgetEditor = function(options) {
       self.updateWidget(function(err) {
         if (_new) {
           self.insertWidget();
-          // jot.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
+          // apos.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
         }
         // Widget backups are probably a bad idea since they would defeat
         // copy and paste between pages or at least sites
@@ -858,9 +858,9 @@ jot.widgetEditor = function(options) {
   self.modal();
 }
 
-jot.widgetTypes = {};
+apos.widgetTypes = {};
 
-jot.widgetTypes.image = {
+apos.widgetTypes.image = {
   label: 'Image',
   editor: function(options) {
     var self = this;
@@ -873,7 +873,7 @@ jot.widgetTypes.image = {
     }
 
     self.afterCreatingEl = function() {
-      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="jot-file-iframe" src="/jot/file-iframe/' + self.widgetId + '"></iframe>'));
+      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="apos-file-iframe" src="/apos/file-iframe/' + self.widgetId + '"></iframe>'));
       self.$el.bind('uploaded', function(e, id) {
         // Only react to events intended for us
         if (id === self.widgetId) {
@@ -888,7 +888,7 @@ jot.widgetTypes.image = {
     // look it up in a separate collection
     self.prePreview = function(callback) {
       if (self.exists) {
-        $.getJSON('/jot/file-info/' + self.widgetId, function(info) {
+        $.getJSON('/apos/file-info/' + self.widgetId, function(info) {
           self.data.extension = info.extension;
           callback();
         });
@@ -900,14 +900,14 @@ jot.widgetTypes.image = {
     };
 
     self.type = 'image';
-    options.template = '.jot-image-editor';
+    options.template = '.apos-image-editor';
 
     // Parent class constructor shared by all widget editors
-    jot.widgetEditor.call(self, options);
+    apos.widgetEditor.call(self, options);
   }
 };
 
-jot.widgetTypes.video = {
+apos.widgetTypes.video = {
   label: 'Video',
   editor: function(options) {
     var self = this;
@@ -920,7 +920,7 @@ jot.widgetTypes.video = {
     }
 
     self.afterCreatingEl = function() {
-      self.$embed = self.$el.find('.jot-embed');
+      self.$embed = self.$el.find('.apos-embed');
       self.$embed.val(self.data.video);
 
       // Automatically preview if we detect something that looks like a
@@ -967,7 +967,7 @@ jot.widgetTypes.video = {
       }
       self.$el.find('[data-preview]').hide();
       self.$el.find('[data-spinner]').show();
-      $.getJSON('/jot/oembed', { url: url }, function(data) {
+      $.getJSON('/apos/oembed', { url: url }, function(data) {
         self.$el.find('[data-spinner]').hide();
       self.$el.find('[data-preview]').show();
         if (data.err) {
@@ -988,14 +988,14 @@ jot.widgetTypes.video = {
     }
 
     self.type = 'video';
-    options.template = '.jot-video-editor';
+    options.template = '.apos-video-editor';
 
     // Parent class constructor shared by all widget editors
-    jot.widgetEditor.call(self, options);
+    apos.widgetEditor.call(self, options);
   }
 };
 
-jot.widgetTypes.pullquote = {
+apos.widgetTypes.pullquote = {
   label: 'Pullquote',
   editor: function(options) {
     var self = this;
@@ -1011,9 +1011,9 @@ jot.widgetTypes.pullquote = {
 
     self.afterCreatingEl = function() {
       if (self.exists) {
-        self.pullquote = self.$widget.find('.jot-pullquote-text').text();
+        self.pullquote = self.$widget.find('.apos-pullquote-text').text();
       }
-      self.$pullquote = self.$el.find('.jot-embed');
+      self.$pullquote = self.$el.find('.apos-embed');
       self.$pullquote.val(self.pullquote);
       setTimeout(function() {
         self.$pullquote.focus();
@@ -1038,18 +1038,18 @@ jot.widgetTypes.pullquote = {
     }
 
     self.type = 'pullquote';
-    options.template = '.jot-pullquote-editor';
+    options.template = '.apos-pullquote-editor';
 
     // Parent class constructor shared by all widget editors
-    jot.widgetEditor.call(self, options);
+    apos.widgetEditor.call(self, options);
   },
 
   getContent: function($el) {
-    return $el.find('.jot-pullquote-text').text();
+    return $el.find('.apos-pullquote-text').text();
   }
 };
 
-jot.widgetTypes.code = {
+apos.widgetTypes.code = {
   label: 'Code Sample',
   editor: function(options) {
     var self = this;
@@ -1067,7 +1067,7 @@ jot.widgetTypes.code = {
       if (self.exists) {
         self.code = self.$widget.find('pre').text();
       }
-      self.$code = self.$el.find('.jot-code');
+      self.$code = self.$el.find('.apos-code');
       self.$code.val(self.code);
       setTimeout(function() {
         self.$code.focus();
@@ -1092,10 +1092,10 @@ jot.widgetTypes.code = {
     }
 
     self.type = 'code';
-    options.template = '.jot-code-editor';
+    options.template = '.apos-code-editor';
 
     // Parent class constructor shared by all widget editors
-    jot.widgetEditor.call(self, options);
+    apos.widgetEditor.call(self, options);
   },
 
   getContent: function($el) {
@@ -1108,12 +1108,12 @@ jot.widgetTypes.code = {
 // Widget ids should be valid names for javascript variables, just in case
 // we find that useful, so avoid hyphens
 
-jot.generateId = function() {
+apos.generateId = function() {
   return 'w' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
 }
 
 // mustache.js solution to escaping HTML (not URLs)
-jot.entityMap = {
+apos.entityMap = {
   "&": "&amp;",
   "<": "&lt;",
   ">": "&gt;",
@@ -1122,15 +1122,15 @@ jot.entityMap = {
   "/": '&#x2F;'
 };
 
-jot.escapeHtml = function(string) {
+apos.escapeHtml = function(string) {
   return String(string).replace(/[&<>"'\/]/g, function (s) {
-    return jot.entityMap[s];
+    return apos.entityMap[s];
   });
 };
 
 // http://stackoverflow.com/questions/2937975/contenteditable-text-editor-and-cursor-position
 
-jot.insertHtmlAtCursor = function(html) {
+apos.insertHtmlAtCursor = function(html) {
   // If I use this, I lose the class of any div I insert in Chrome.
   // if (navigator.browser !== 'Microsoft Internet Explorer') {
   //   document.execCommand('insertHTML', false, html);
@@ -1156,11 +1156,11 @@ jot.insertHtmlAtCursor = function(html) {
   }  
 };
 
-jot.deselect = function() {
+apos.deselect = function() {
   rangy.getSelection().removeAllRanges();
 };
 
-jot.selectElement = function(el) {
+apos.selectElement = function(el) {
   var range = rangy.createRange();
   range.setStartBefore(el);
   range.setEndAfter(el);
@@ -1171,7 +1171,7 @@ jot.selectElement = function(el) {
 
 // Move the caret to the specified offset in characters
 // within the specified element. 
-jot.moveCaretToTextPosition = function(el, offset) {
+apos.moveCaretToTextPosition = function(el, offset) {
   var range = rangy.createRange();
   range.setStart(el, offset);
   range.setEnd(el, offset);
@@ -1179,25 +1179,25 @@ jot.moveCaretToTextPosition = function(el, offset) {
   sel.setSingleRange(range);
 };
 
-jot.moveCaretToEnd = function() {
+apos.moveCaretToEnd = function() {
   var last = self.$editable.contents().find(':last');
   if (last.length) {
     moveCaretToTextPosition(last[0], last.text().length);
   }
 };
 
-jot.enableAreas = function() {
-  $('.jot-edit-area').click(function() {
+apos.enableAreas = function() {
+  $('.apos-edit-area').click(function() {
     
-    var area = $(this).closest('.jot-area');
-    var slug = area.attr('data-jot-slug');
+    var area = $(this).closest('.apos-area');
+    var slug = area.attr('data-apos-slug');
     
-    $.get('/jot/edit-area', { slug: slug, controls: area.attr('data-jot-controls') }, function(data) {
-      area.find('.jot-edit-view').remove();
-      var editView = $('<div class="jot-edit-view"></div>');
+    $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-apos-controls') }, function(data) {
+      area.find('.apos-edit-view').remove();
+      var editView = $('<div class="apos-edit-view"></div>');
       editView.append($(data));
       area.append(editView);
-      area.find('.jot-normal-view').hide();
+      area.find('.apos-normal-view').hide();
 
       area.find('[data-cancel-area]').click(function() {
         destroyEditorAndShowNormalView();
@@ -1205,34 +1205,34 @@ jot.enableAreas = function() {
       });
 
       area.find('[data-save-area]').click(function() {
-        var slug = area.attr('data-jot-slug');
-        $.post('/jot/edit-area', 
+        var slug = area.attr('data-apos-slug');
+        $.post('/apos/edit-area', 
           { 
             slug: slug, 
             content: JSON.stringify(
-              jot.parseArea(area.find('[data-editable]').html())
+              apos.parseArea(area.find('[data-editable]').html())
             ) 
           }, function(data) {
-            area.find('.jot-content').html(data);
+            area.find('.apos-content').html(data);
             destroyEditorAndShowNormalView();
-            jot.enablePlayers(area);
+            apos.enablePlayers(area);
           }
         );
         return false;
       });
 
       function destroyEditorAndShowNormalView() {
-        var $editor = area.find('.jot-editor');
-        $editor.data('jot-editor').destroy();
-        area.find('.jot-edit-view').remove();
-        area.find('.jot-normal-view').show();
+        var $editor = area.find('.apos-editor');
+        $editor.data('apos-editor').destroy();
+        area.find('.apos-edit-view').remove();
+        area.find('.apos-normal-view').show();
       }
     });
     return false;
   });
 };
 
-jot.parseArea = function(content) {
+apos.parseArea = function(content) {
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
@@ -1242,7 +1242,7 @@ jot.parseArea = function(content) {
     var child = node.childNodes[i];
     if (child.nodeType === 3) {
       // This is a text node. Take care to escape when appending it to the rich text
-      richText += jot.escapeHtml(child.nodeValue);
+      richText += apos.escapeHtml(child.nodeValue);
 
     } else if (child.nodeType === 1) {
       if (child.getAttribute('data-type')) {
@@ -1251,9 +1251,9 @@ jot.parseArea = function(content) {
 
         var type = child.getAttribute('data-type');
         var item = {};
-        if (jot.widgetTypes[type].getContent) {
-          item.content = jot.widgetTypes[type].getContent($(child));
-          jot.log(item.content);
+        if (apos.widgetTypes[type].getContent) {
+          item.content = apos.widgetTypes[type].getContent($(child));
+          apos.log(item.content);
         }
 
         for (var j = 0; (j < child.attributes.length); j++) {
@@ -1293,15 +1293,15 @@ jot.parseArea = function(content) {
   }
 };
 
-jot.modal = function(sel, command) {
+apos.modal = function(sel, command) {
   var $el = $(sel);
   if (command === 'hide') {
-    $('.jot-modal-blackout').remove();
+    $('.apos-modal-blackout').remove();
     $el.hide();
-    jot.popSelection();
+    apos.popSelection();
   } else {
-    jot.pushSelection();
-    var blackout = $('<div class="jot-modal-blackout"></div>');
+    apos.pushSelection();
+    var blackout = $('<div class="apos-modal-blackout"></div>');
     $('body').append(blackout);
     $el.offset({ top: $('body').scrollTop() + 200, left: ($(window).width() - 600) / 2 });
     $('body').append($el);
@@ -1314,9 +1314,9 @@ jot.modal = function(sel, command) {
 // server side storage of this info, per user, so you don't get hints again on every
 // new machine. Move hint titles and markup into something translatable.
 
-jot.hint = function(title, markup) {
+apos.hint = function(title, markup) {
 
-  var hints = $.cookie('jot_hints');
+  var hints = $.cookie('apos_hints');
   var seen = [];
   if (hints) {
     seen = hints.split("\n");
@@ -1324,42 +1324,42 @@ jot.hint = function(title, markup) {
   if (seen.indexOf(title) !== -1) {
     return;
   }
-  $.cookie('jot_hints', hints + "\n" + title, { expires: 999999 });
+  $.cookie('apos_hints', hints + "\n" + title, { expires: 999999 });
 
   // Give the dialog that inspired this hint time to get out of the way
   // (TODO: this is a crude workaround)
 
   setTimeout(function() {
-    var hint = $('.jot-hint.jot-template').clone();
-    hint.removeClass('jot-template');
+    var hint = $('.apos-hint.apos-template').clone();
+    hint.removeClass('apos-template');
     hint.find('[data-hint-title]').text(title);
     hint.find('[data-hint-text]').html(markup);
     hint.find('[data-hint-ok]').click(function() {
-      jot.modal(hint, 'hide');
+      apos.modal(hint, 'hide');
     });
-    jot.modal(hint);
+    apos.modal(hint);
   }, 1000);
 }
 
 // We use this to save the selection before starting
 // a modal and later restore it
 
-jot.selections = [];
+apos.selections = [];
 
-jot.pushSelection = function() {
+apos.pushSelection = function() {
   var sel = rangy.getSelection();
   if (sel && sel.getRangeAt && sel.rangeCount) {
     range = rangy.getSelection().getRangeAt(0);
-    jot.selections.push(range);
+    apos.selections.push(range);
   }
   else
   {
-    jot.selections.push(null);
+    apos.selections.push(null);
   }
 };
 
-jot.popSelection = function() {
-  var range = jot.selections.pop();
+apos.popSelection = function() {
+  var range = apos.selections.pop();
   if (range) {
     sel = rangy.getSelection();
     sel.removeAllRanges();
@@ -1369,11 +1369,11 @@ jot.popSelection = function() {
 
 // The best marker to use as a workaround for webkit selection bugs
 // is an invisible one (the Unicode word joiner character).
-jot.beforeMarker = String.fromCharCode(8288); // '↢';
-jot.afterMarker = String.fromCharCode(8288); // '↣';
+apos.beforeMarker = String.fromCharCode(8288); // '↢';
+apos.afterMarker = String.fromCharCode(8288); // '↣';
 
-jot.log = function(msg) {
-  if (console && jot.log) {
+apos.log = function(msg) {
+  if (console && apos.log) {
     console.log(msg);
   }
 };

@@ -12,17 +12,17 @@ var async = require('async');
 RegExp.quote = require("regexp-quote");
 
 module.exports = function() {
-  return new jot();
+  return new apos();
 }
 
-function jot() {
+function apos() {
   var self = this;
   var app, files, areas, pages, uploadfs, nunjucksEnv, permissions, partial;
 
   // This is our standard set of controls. If you add a new widget you'll be
   // adding that to self.itemTypes (with widget: true) and to this list of
   // default controls - or not, if you think your widget shouldn't be available
-  // unless explicitly specified in a jotArea call. If your project should *not*
+  // unless explicitly specified in a aposArea call. If your project should *not*
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
@@ -31,11 +31,11 @@ function jot() {
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
   // are supported across all browsers by document.execCommand, or to add or remove
-  // tags from the choices array of jot.controlTypes.style, but if you introduce
+  // tags from the choices array of apos.controlTypes.style, but if you introduce
   // commands or tags that the browser does not actually support it will not
   // do what you want.
   //
-  // This is not the place to define widgets. See jot.itemTypes for that. 
+  // This is not the place to define widgets. See apos.itemTypes for that. 
 
   self.controlTypes = {
     style: {
@@ -69,25 +69,25 @@ function jot() {
 
   // Default stylesheet requirements
   self.stylesheets = [
-    "/jot/css/content.css",
-    "/jot/css/editor.css"
+    "/apos/css/content.css",
+    "/apos/css/editor.css"
   ];
 
   // Default browser side script requirements
 
   self.scripts = [ 
-    '/jot/js/jquery-1.8.1.min.js',
-    '/jot/js/underscore-min.js',
-    '/jot/js/jquery.hotkeys/jquery.hotkeys.js',
-    '/jot/js/rangy-1.2.3/rangy-core.js',
-    '/jot/js/rangy-1.2.3/rangy-selectionsaverestore.js',
-    '/jot/js/textinputs_jquery.js',
-    '/jot/js/jquery.cookie.js',
-    '/jot/js/editor.js', 
-    '/jot/js/content.js' 
+    '/apos/js/jquery-1.8.1.min.js',
+    '/apos/js/underscore-min.js',
+    '/apos/js/jquery.hotkeys/jquery.hotkeys.js',
+    '/apos/js/rangy-1.2.3/rangy-core.js',
+    '/apos/js/rangy-1.2.3/rangy-selectionsaverestore.js',
+    '/apos/js/textinputs_jquery.js',
+    '/apos/js/jquery.cookie.js',
+    '/apos/js/editor.js', 
+    '/apos/js/content.js' 
   ];
 
-  // Templates pulled into the page by the jotTemplates() Express local
+  // Templates pulled into the page by the aposTemplates() Express local
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   self.templates = [
@@ -122,17 +122,17 @@ function jot() {
 
     nunjucksEnv = self.newNunjucksEnv(__dirname + '/views');
 
-    jotLocals = {};
+    aposLocals = {};
 
-    // All the locals we export to Express must have a jot prefix on the name
+    // All the locals we export to Express must have a apos prefix on the name
     // for clean namespacing.
 
-    // jotTemplates renders templates that are needed on any page that will
-    // use Jot. Examples: imageEditor.html, codeEditor.html, etc. These lie
+    // aposTemplates renders templates that are needed on any page that will
+    // use apos. Examples: imageEditor.html, codeEditor.html, etc. These lie
     // dormant in the page until they are needed as prototypes to be cloned 
     // by jQuery
 
-    jotLocals.jotTemplates = function(options) {
+    aposLocals.aposTemplates = function(options) {
       if (!options) {
         options = {};
       }
@@ -144,22 +144,22 @@ function jot() {
       }).join('');
     };
 
-    jotLocals.jotArea = function(options) {
+    aposLocals.aposArea = function(options) {
       if (!options.controls) {
         options.controls = self.defaultControls;
       }
       return partial('area.html', options);
     }
 
-    jotLocals.jotAreaContent = function(items, options) {
+    aposLocals.aposAreaContent = function(items, options) {
       var result = '';
       _.each(items, function(item) {
-        result += jotLocals.jotItemNormalView(item, options).trim();
+        result += aposLocals.aposItemNormalView(item, options).trim();
       });
       return result;
     }
 
-    jotLocals.jotItemNormalView = function(item, options) {
+    aposLocals.aposItemNormalView = function(item, options) {
       if (!options) {
         options = {};
       }
@@ -186,7 +186,7 @@ function jot() {
       return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
     }
 
-    jotLocals.jotStylesheets = function(options) {
+    aposLocals.aposStylesheets = function(options) {
       if (!options) {
         options = {};
       }
@@ -200,7 +200,7 @@ function jot() {
       }).join("\n");
     }
 
-    jotLocals.jotScripts = function(options) {
+    aposLocals.aposScripts = function(options) {
       if (!options) {
         options = {};
       }
@@ -214,29 +214,29 @@ function jot() {
       }).join("\n");
     }
 
-    jotLocals.jotLog = function(m) {
+    aposLocals.aposLog = function(m) {
       console.log(m);
       return '';
     }
 
     // In addition to making these available in app.locals we also
     // make them available in our own partials later.
-    _.extend(app.locals, jotLocals);
+    _.extend(app.locals, aposLocals);
 
-    // All routes must begin with /jot!
+    // All routes must begin with /apos!
 
     // An iframe with file browse and upload buttons.
     // We use an iframe because traditional file upload buttons
     // can't be AJAXed (although you can do that in Chrome and
     // Firefox it is still not supported in IE9).
 
-    app.get('/jot/file-iframe/:id', validId, function(req, res) {
+    app.get('/apos/file-iframe/:id', validId, function(req, res) {
       var id = req.params.id;
       return render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
     });
 
     // Deliver details about a previously uploaded file as a JSON response
-    app.get('/jot/file-info/:id', validId, function(req, res) {
+    app.get('/apos/file-info/:id', validId, function(req, res) {
       var id = req.params.id;
       files.findOne({ _id: id }, gotFile);
       function gotFile(err, file) {
@@ -256,7 +256,7 @@ function jot() {
     });
 
     // An upload submitted via the iframe
-    app.post('/jot/file-iframe/:id', validId, function(req, res) {
+    app.post('/apos/file-iframe/:id', validId, function(req, res) {
       var id = req.params.id;
       var file = req.files.file;
 
@@ -313,7 +313,7 @@ function jot() {
 
     // Area editor
 
-    app.get('/jot/edit-area', function(req, res) {
+    app.get('/apos/edit-area', function(req, res) {
       var slug = req.query.slug;
       var controls = req.query.controls ? req.query.controls.split(' ') : [];
       if (!controls.length) {
@@ -355,7 +355,7 @@ function jot() {
       });
     });
 
-    app.post('/jot/edit-area', function(req, res) {
+    app.post('/apos/edit-area', function(req, res) {
       var slug = req.body.slug;
       permissions(req, 'edit-area', slug, function(err) {
         if (err) {
@@ -377,20 +377,20 @@ function jot() {
           }
 
           return callLoadersForArea(area, function() {
-            return res.send(jotLocals.jotAreaContent(area.items));
+            return res.send(aposLocals.aposAreaContent(area.items));
           });
         }
       });
     });
 
     // Used to render newly created, as yet unsaved widgets to be displayed in
-    // the main jot editor. We're not really changing anything in the database
+    // the main apos editor. We're not really changing anything in the database
     // here. We're just allowing the browser to leverage the same normal view
     // generator that the server uses for actual page rendering. Renders the
     // body of the widget only since the widget div has already been updated
     // or created in the browser.
 
-    app.post('/jot/render-widget', function(req, res) {
+    app.post('/apos/render-widget', function(req, res) {
       var item = req.body;
       var options = req.query;
 
@@ -410,7 +410,7 @@ function jot() {
       }
 
       function go() {
-        return res.send(jotLocals.jotItemNormalView(item, options));
+        return res.send(aposLocals.aposItemNormalView(item, options));
       }
     });
 
@@ -419,7 +419,7 @@ function jot() {
     // Also, I should offer a whitelist of sites whose oembed codes are 
     // known not to be XSS vectors
 
-    app.get('/jot/oembed', function(req, res) {
+    app.get('/apos/oembed', function(req, res) {
       oembed.fetch(req.query.url, {}, function (err, result) {
         if (err) {
           return res.send({ 'err': err });
@@ -429,9 +429,9 @@ function jot() {
       });
     });
 
-    app.get('/jot/*', self.static(__dirname + '/public'));
+    app.get('/apos/*', self.static(__dirname + '/public'));
 
-    // app.use('/jot', express.static(__dirname + '/public'));
+    // app.use('/apos', express.static(__dirname + '/public'));
 
     // Middleware
     function validId(req, res, next) {
@@ -447,10 +447,10 @@ function jot() {
 
   // self.static returns a function for use as a route that
   // serves static files from a folder. This is helpful when writing 
-  // your own modules that extend jot and need to serve their own static
+  // your own modules that extend apos and need to serve their own static
   // assets:
   //
-  // app.get('/jot-twitter/*', jot.static(__dirname + '/public'))
+  // app.get('/apos-twitter/*', apos.static(__dirname + '/public'))
   //
   // Because self.static is suitable for use as a route rather
   // than as global middleware, it is easier to set it up for many
@@ -616,7 +616,7 @@ function jot() {
   };
 
   // Fetch the "page" with the specified slug. As far as
-  // Jot is concerned, the "page" with the slug /about
+  // apos is concerned, the "page" with the slug /about
   // is expected to be an object with a .areas property. If areas
   // with the slugs /about:main and /about:sidebar have
   // been saved, then the areas property will be an
@@ -701,12 +701,12 @@ function jot() {
       dir = __dirname + '/views';
     }
 
-    // Make sure the jot-specific locals are visible to partials too.
+    // Make sure the apos-specific locals are visible to partials too.
     // If we import ALL the locals we'll point at the wrong views directory
     // and generally require the developer to worry about not breaking
     // our partials, which ought to be a black box they can ignore.
 
-    _.extend(data, jotLocals);
+    _.extend(data, aposLocals);
 
     var path;
 
@@ -817,7 +817,7 @@ function jot() {
       wrapper: 'span',
       // Without this it's bothersome for editor.js to grab the text
       // without accidentally grabbing the buttons. -Tom
-      wrapperClass: 'jot-pullquote-text',
+      wrapperClass: 'apos-pullquote-text',
       css: 'pullquote'
     },
     code: {

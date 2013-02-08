@@ -2,27 +2,27 @@
 <html lang="en">
   <head>
     <title>Jot</title>
-    <link href="/jot/css/editor.css" rel="stylesheet" />
-    <script src="/jot/js/jquery-1.8.1.min.js"></script>
-    <script src="/jot/js/fileIframe.js"></script>
+    <link href="/apos/css/editor.css" rel="stylesheet" />
+    <script src="/apos/js/jquery-1.8.1.min.js"></script>
+    <script src="/apos/js/fileIframe.js"></script>
   </head>
   <body>
     {% if error %}
-      <p class="jot-error">{{ error }}</p>
+      <p class="apos-error">{{ error }}</p>
     {% endif %}
 
     {% if uploaded %}
-      <p class="jot-success">Uploaded.</p>
+      <p class="apos-success">Uploaded.</p>
     {% endif %}
 
-    <form class="form-file" method="POST" enctype="multipart/form-data" action="/jot/file-iframe/{{ id }}">
-      <input class="jot-file" type="file" name="file" id="file" />
-      <img class="jot-spinner" data-spinner src="/jot/images/spinner.gif" />
+    <form class="form-file" method="POST" enctype="multipart/form-data" action="/apos/file-iframe/{{ id }}">
+      <input class="apos-file" type="file" name="file" id="file" />
+      <img class="apos-spinner" data-spinner src="/apos/images/spinner.gif" />
     </form>
 
     <script type="text/javascript">
       $(function() {
-        jotFileUploadHandler({ uploaded: {{ uploaded }}, id: '{{ id }}'});
+        aposFileUploadHandler({ uploaded: {{ uploaded }}, id: '{{ id }}'});
       });
     </script>
   </body>

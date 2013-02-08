@@ -1,4 +1,4 @@
-function jotFileUploadHandler(options) {
+function aposFileUploadHandler(options) {
   $(function() {
     $('#file').change(function() {
       var form = $(this).closest('form');
@@ -6,7 +6,7 @@ function jotFileUploadHandler(options) {
       form.submit();
     });
     if (options.uploaded) {
-      window.parent.$('.jot-widget-editor').trigger('uploaded', options.id);
+      window.parent.$('.apos-widget-editor').trigger('uploaded', options.id);
     }
   });
 }

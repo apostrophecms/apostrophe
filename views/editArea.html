@@ -1,11 +1,11 @@
-{% macro jotButton(name, label) %}
-  <a class="jot-control jot-button jot-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+{% macro aposButton(name, label) %}
+  <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}>{{ label }}</a>
 {% endmacro %}
 
-{% macro jotMenu(name, label, choices) %}
-  <div class="jot-control jot-menu-{{ name }} jot-menu">
-    <div class="jot-menu-label">{{ label }}</div>
-    <select class="jot-menu-select" data-{{ name }}>
+{% macro aposMenu(name, label, choices) %}
+  <div class="apos-control apos-menu-{{ name }} apos-menu">
+    <div class="apos-menu-label">{{ label }}</div>
+    <select class="apos-menu-select" data-{{ name }}>
       {% for choice in choices %}
         <option value="{{ choice.value | e }}">{{ choice.label }}</option>
       {% endfor %} 
@@ -13,36 +13,36 @@
   </div>
 {% endmacro %}
 
-{% macro jotWidgetButton(name, label) %}
-  <a class="jot-control jot-button jot-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
+{% macro aposWidgetButton(name, label) %}
+  <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
 {% endmacro %}
 
-<form class="jot-area-form">
-  <div class="jot-editor" data-editor-wrapper id="{{ wid }}">
-    <div class="jot-toolbar">
+<form class="apos-area-form">
+  <div class="apos-editor" data-editor-wrapper id="{{ wid }}">
+    <div class="apos-toolbar">
       {%- for control in controls -%}
         {%- set controlType = controlTypes[control] -%}
         {%- if controlType -%}
           {%- if controlType.type == 'button' -%}
-            {{ jotButton(control, controlType.label) }}
+            {{ aposButton(control, controlType.label) }}
           {%- endif -%}
           {%- if controlType.type == 'menu' -%}
-            {{ jotMenu(control, controlType.label, controlType.choices) }}
+            {{ aposMenu(control, controlType.label, controlType.choices) }}
           {%- endif -%}
         {%- endif -%}
         {%- if itemTypes[control] and itemTypes[control].widget -%}
-          {{ jotWidgetButton(control, itemTypes[control].label) }}
+          {{ aposWidgetButton(control, itemTypes[control].label) }}
         {%- endif -%}
       {% endfor %}
-      <div class="jot-clear"></div>
+      <div class="apos-clear"></div>
     </div>
-    <div class="jot-editable" data-editable contentEditable="true">{{ jotAreaContent(items, { editView: true }) }}</div>
+    <div class="apos-editable" data-editable contentEditable="true">{{ aposAreaContent(items, { editView: true }) }}</div>
   </div>
-  <div class="jot-area-form-footer">
-    <a class="jot-control jot-button jot-save" data-save-area>Save</a>
-    <a class="jot-control jot-button jot-cancel" data-cancel-area>Cancel</a>
+  <div class="apos-area-form-footer">
+    <a class="apos-control apos-button apos-save" data-save-area>Save</a>
+    <a class="apos-control apos-button apos-cancel" data-cancel-area>Cancel</a>
   </div>
-  <div class="jot-clear"></div>
+  <div class="apos-clear"></div>
 </form>
 
 <script>
@@ -50,10 +50,10 @@
     // I have seen jquery domready fail to see this id yet, so
     // wait for "next tick" as well (Chrome)
     setTimeout(function() {
-      var editor = new jot.Editor({ selector: '#{{ wid }}' });
+      var editor = new apos.Editor({ selector: '#{{ wid }}' });
       $(function() {
         $('#{{ wid }} [data-editable]').focus();
-        $('#{{ wid }}').data('jot-editor', editor);
+        $('#{{ wid }}').data('apos-editor', editor);
       });
     }, 0);
   });

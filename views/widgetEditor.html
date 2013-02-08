@@ -1,13 +1,13 @@
 {% block widgetVars %}
 {% endblock %}
 
-<div class="{{ widgetClass }} jot-widget-editor jot-modal jot-template">
+<div class="{{ widgetClass }} apos-widget-editor apos-modal apos-template">
   <h3>
     {% block title %}
       Edit Widget</h3>
     {% endblock %}
   </h3>
-  <div class="jot-modal-body">
+  <div class="apos-modal-body">
     <form>
       <label>
         {% block instructions %}
@@ -15,16 +15,16 @@
         {% endblock %}
       </label>
       {% block formBody %}
-        <input class="jot-embed"/>
+        <input class="apos-embed"/>
       {% endblock %}
       {% block previewButton %}
-        <input data-preview="data-preview" type="submit" value="Preview" class="jot-preview-button"/><img data-spinner="data-spinner" src="/jot/images/spinner.gif" class="jot-spinner"/>
+        <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/><img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/>
       {% endblock %}
-      <div class="jot-widget-preview-container jot-requires-preview">
-        <div class="jot-lorem">This is what your text will look like, in relation to the content you're adding now. If you click "left" or "right," the text will wrap around your your rich content on the right. After you insert your content, small arrows will appear above and below it in the text. These arrows help you position your text relative to your rich content. They are removed automatically when you save your content.</div>
-        <div class="jot-clear"></div>
+      <div class="apos-widget-preview-container apos-requires-preview">
+        <div class="apos-lorem">This is what your text will look like, in relation to the content you're adding now. If you click "left" or "right," the text will wrap around your your rich content on the right. After you insert your content, small arrows will appear above and below it in the text. These arrows help you position your text relative to your rich content. They are removed automatically when you save your content.</div>
+        <div class="apos-clear"></div>
       </div>
-      <fieldset class="jot-center jot-requires-preview jot-position">
+      <fieldset class="apos-center apos-requires-preview apos-position">
         <label class="checkbox inline">
           <input type="radio" name="position" value="left"/> Left
         </label>
@@ -35,7 +35,7 @@
           <input type="radio" name="position" value="right"/> Right
         </label>
       </fieldset>
-      <fieldset class="jot-center jot-requires-preview jot-size">
+      <fieldset class="apos-center apos-requires-preview apos-size">
         <label class="checkbox inline">
           <input type="radio" name="size" value="one-third"/> 1/3
         </label>
@@ -51,8 +51,8 @@
       </fieldset>
     </form>
   </div>
-  <div class="jot-modal-footer">
-    <a href="#" class="jot-control jot-button jot-save">Save Changes</a>
-    <a href="#" data-action="dismiss" class="jot-control jot-button jot-cancel">Cancel</a>
+  <div class="apos-modal-footer">
+    <a href="#" class="apos-control apos-button apos-save">Save Changes</a>
+    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
   </div>
 </div>

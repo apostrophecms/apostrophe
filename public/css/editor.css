@@ -1,8 +1,8 @@
 /**
- * To prevent conflicts EVERY class should start with jot-
+ * To prevent conflicts EVERY class should start with apos-
  */
 
-.jot-widget
+.apos-widget
 {
   display: block;
 }
@@ -11,7 +11,7 @@
  * Edit button shown on placeholder that reopens the widget
  */
 
-.jot-widget-buttons {
+.apos-widget-buttons {
   display: block;
   position: absolute;
   z-index: 2;
@@ -20,7 +20,7 @@
   pointer: hand;
 }
 
-.jot-widget-button {
+.apos-widget-button {
   z-index: 2;
   background-color: black;
   color: white;
@@ -36,18 +36,18 @@
   float: left;
 }
 
-.jot-area-form-footer
+.apos-area-form-footer
 {
   clear: both;
 }
 
-.jot-toolbar
+.apos-toolbar
 {
   padding: 0px 0px 10px 0px;
   font-size: 20px;
 }
 
-.jot-toolbar .jot-control
+.apos-toolbar .apos-control
 {
   margin-right: 5px;
 }
@@ -56,7 +56,7 @@
  * Buttons and menus both have this class
  */
  
-.jot-control
+.apos-control
 {
   float: left;
   padding: 5px 10px 5px 10px;
@@ -70,33 +70,33 @@
   font-family: Helvetica, sans-serif;
 }
 
-.jot-toolbar .jot-menu-label
+.apos-toolbar .apos-menu-label
 {
   float: left;
 }
 
-.jot-toolbar .jot-menu-select
+.apos-toolbar .apos-menu-select
 {
   margin-left: 10px;
   float: left;
 }
 
-.jot-toolbar .jot-bold-button
+.apos-toolbar .apos-bold-button
 {
   font-weight: bold;
 }
 
-.jot-toolbar .jot-italic-button
+.apos-toolbar .apos-italic-button
 {
   font-style: italic;
 }
 
-.jot-toolbar a:visited
+.apos-toolbar a:visited
 {
   color: #333;
 }
 
-.jot-toolbar a.jot-code
+.apos-toolbar a.apos-code
 {
   vertical-align: top;
   font-size: 16px;
@@ -104,45 +104,45 @@
   font-weight: bold;
 }
 
-.jot-editor
+.apos-editor
 {
   min-height: 400px;
 }
 
-.jot-editor .jot-editable
+.apos-editor .apos-editable
 {
   min-height: 400px;
 }
 
-.jot-center
+.apos-center
 {
   text-align: center;
 }
 
 /* Don't know why bootstrap puts a 4 pixel margin here and hoses
   inline radio boxes, but it's not what I want */
-.jot-widget-editor input[type="radio"]
+.apos-widget-editor input[type="radio"]
 {
   margin-top: 0px;
 }
 
-.jot-widget-editor .jot-requires-preview
+.apos-widget-editor .apos-requires-preview
 {
   display: none;
 }
 
-.jot-widget-editor .jot-embed
+.apos-widget-editor .apos-embed
 {
   width: 85%;
   height: 20px;
 }
 
-.jot-widget-editor .jot-preview-button
+.apos-widget-editor .apos-preview-button
 {
   margin-left: 10px;
 }
 
-.jot-widget-preview-container
+.apos-widget-preview-container
 {
   margin: auto;
   margin-top: 10px;
@@ -152,48 +152,48 @@
   overflow: scroll;
 }
 
-.jot-widget-preview-container .jot-widget
+.apos-widget-preview-container .apos-widget
 {
   font-size: 50%;
 }
 
-.jot-widget-preview-container .jot-one-third
+.apos-widget-preview-container .apos-one-third
 {
   width: 136px;
 }
 
-.jot-widget-preview-container .jot-one-half
+.apos-widget-preview-container .apos-one-half
 {
   width: 204px;
 }
 
-.jot-widget-preview-container .jot-two-thirds
+.apos-widget-preview-container .apos-two-thirds
 {
   width: 272px;
 }
 
-.jot-widget-preview-container .jot-full
+.apos-widget-preview-container .apos-full
 {
   width: 408px;
 }
 
-.jot-lorem
+.apos-lorem
 {
   text-align: left;
   font-size: 80%;
 }
 
-.jot-clear
+.apos-clear
 {
   clear: both;
 }
 
-.jot-template
+.apos-template
 {
   display: none;
 }
 
-.jot-pull-quote
+.apos-pull-quote
 {
   font-size: 15px; 
   line-height: 20px; 
@@ -201,19 +201,19 @@
   margin-right: 10px; 
 }
 
-.jot-editor .jot-pull-quote
+.apos-editor .apos-pull-quote
 {
   border: 1px dashed #ccc;
 }
 
-.jot-spinner
+.apos-spinner
 {
   margin-top: -1px;
   margin-left: 10px;
   display: none;
 }
 
-.jot-file-iframe {
+.apos-file-iframe {
   display: block;
   border: none;
   width: 350px;
@@ -221,38 +221,38 @@
   padding-top: 10px;
 }
 
-textarea.jot-code {
+textarea.apos-code {
   width: 97%;
 }
 
-.jot-modal .jot-modal-body 
+.apos-modal .apos-modal-body 
 {
   max-height: 450px;
 }
 
-.jot-modal .jot-modal-body fieldset
+.apos-modal .apos-modal-body fieldset
 {
   margin-top: 10px;
 }
 
-.jot-modal .jot-modal-body .jot-position input, 
-.jot-modal .jot-modal-body .jot-size input
+.apos-modal .apos-modal-body .apos-position input, 
+.apos-modal .apos-modal-body .apos-size input
 {
   margin-left: 10px;
   margin-right: 10px;
 } 
 
-.jot-modal .jot-modal-footer
+.apos-modal .apos-modal-footer
 {
   margin-top: 10px;
 }
 
-.jot-button:hover
+.apos-button:hover
 {
   text-decoration: underline;
 }
 
-.jot-modal-blackout
+.apos-modal-blackout
 {
   background-color: black;
   opacity: 0.6;
@@ -264,7 +264,7 @@ textarea.jot-code {
   z-index: 998;
 }
 
-.jot-modal
+.apos-modal
 {
   position: absolute;
   width: 600px;
@@ -275,7 +275,7 @@ textarea.jot-code {
   border: 3px solid #ccc;
 }
 
-.jot-area-controls
+.apos-area-controls
 {
   float: left;
   padding-bottom: 4px;
