@@ -887,5 +887,29 @@ function apos() {
     });
     return nunjucksEnv;
   }
+
+  // For convenience when configuring uploadfs
+  self.defaultImageSizes = [
+    {
+      name: 'full',
+      width: 1140,
+      height: 1140
+    },
+    {
+      name: 'two-thirds',
+      width: 760,
+      height: 760
+    },
+    {
+      name: 'one-half',
+      width: 570,
+      height: 700
+    },
+    {
+      name: 'one-third',
+      width: 380,
+      height: 700
+    }
+  ]
 }
 
