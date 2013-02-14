@@ -18,7 +18,7 @@ module.exports = function() {
 
 function apos() {
   var self = this;
-  var app, files, areas, pages, uploadfs, nunjucksEnv, permissions, partial;
+  var app, files, areas, pages, uploadfs, nunjucksEnv, partial;
 
   // This is our standard set of controls. If you add a new widget you'll be
   // adding that to self.itemTypes (with widget: true) and to this list of
@@ -101,7 +101,7 @@ function apos() {
     areas = options.areas;
     pages = options.pages;
     uploadfs = options.uploadfs;
-    permissions = options.permissions;
+    self.permissions = options.permissions;
 
     if (options.controls) {
       self.defaultControls = options.controls;
@@ -115,13 +115,13 @@ function apos() {
     // "owner" property set to the id or username property of req.user 
     // at the time the file was last edited. edit-media calls with
     // no existing file parameter also occur, for new file uploads.
-    if (!permissions) {
-      permissions = function(req, action, fileOrSlug, callback) {
+    if (!self.permissions) {
+      self.permissions = function(req, action, fileOrSlug, callback) {
         return callback(null);
       };
     }
 
-    nunjucksEnv = self.newNunjucksEnv(__dirname + '/views');
+    nunjucksEnv = self.newNunjucksEnv([__dirname + '/views'].concat(options.partialPaths ? options.partialPaths : []));
 
     aposLocals = {};
 
@@ -149,6 +149,12 @@ function apos() {
       if (!options.controls) {
         options.controls = self.defaultControls;
       }
+      if (!options.area) {
+        // Invent the area if it doesn't exist yet, so we can
+        // edit pages not previously edited
+        options.area = { items: [] };
+      }
+      console.log(options);
       return partial('area.html', options);
     }
 
@@ -246,7 +252,7 @@ function apos() {
           res.send("Not Found");
           return;
         }
-        permissions(req, 'edit-media', file, function(err) {
+        self.permissions(req, 'edit-media', file, function(err) {
           if (err) {
             return forbid(res);
           }
@@ -272,7 +278,7 @@ function apos() {
       var info;
 
       function gotExisting(err, existing) {
-        permissions(req, 'edit-media', existing, function(err) {
+        self.permissions(req, 'edit-media', existing, function(err) {
           if (err) {
             return forbid(res);
           }
@@ -320,7 +326,7 @@ function apos() {
       if (!controls.length) {
         controls = self.defaultControls;
       }
-      permissions(req, 'edit-area', slug, function(err) {
+      self.permissions(req, 'edit-area', slug, function(err) {
         if (err) {
           return forbid(res);
         }
@@ -358,7 +364,7 @@ function apos() {
 
     app.post('/apos/edit-area', function(req, res) {
       var slug = req.body.slug;
-      permissions(req, 'edit-area', slug, function(err) {
+      self.permissions(req, 'edit-area', slug, function(err) {
         if (err) {
           return forbid(res);
         }
@@ -701,6 +707,13 @@ function apos() {
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
   }
 
+  // Load and render a Nunjucks template by the specified name and give it the
+  // specified data. All of the Apostrophe helpers are available as 
+  // aposArea, etc. from the template. You can also render another partial
+  // from within your template by calling {{ partial('name') }}. You can pass a
+  // full path for 'name' otherwise it is assumed to be relative to 'dir',
+  // or to the Apostrophe's views folder if 'dir' is not specified.
+
   self.partial = function(name, data, dir) {
     if (!data) {
       data = {};
@@ -838,8 +851,8 @@ function apos() {
     }
   };
 
-  self.newNunjucksEnv = function(dir) {
-    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dir));
+  self.newNunjucksEnv = function(dirs) {
+    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
     });
