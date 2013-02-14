@@ -98,13 +98,13 @@ function apos() {
   self.init = function(options, callback) {
     app = options.app;
 
-    db = options.db;
+    self.db = db = options.db;
 
     async.series([setupAreas, setupPages, setupFiles, afterDb], callback);
 
     function setupAreas(callback) {
       db.collection('aposAreas', options, function(err, collection) {
-        areas = collection;
+        self.areas = areas = collection;
         collection.ensureIndex({ slug: 1 }, { unique: true }, function(err) {
           return callback(err);
         });
@@ -113,16 +113,18 @@ function apos() {
 
     function setupPages(callback) {
       db.collection('aposPages', options, function(err, collection) {
-        pages = collection;
-        collection.ensureIndex({ slug: 1 }, { unique: true }, function(err) {
-          return callback(err);
-        });
+        self.pages = pages = collection;
+        async.series([indexSlug], callback);
+        function indexSlug(callback) {
+          self.pages.ensureIndex({ slug: 1 }, { unique: true }, callback);
+        }
+        // ... more index functions
       });
     }
 
     function setupFiles(callback) {
       db.collection('aposFiles', options, function(err, collection) {
-        files = collection;
+        self.files = files = collection;
         return callback(err);
       });
     }
@@ -257,6 +259,13 @@ function apos() {
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
       _.extend(app.locals, aposLocals);
+
+      // Add more locals for Apostrophe later. Used by extension modules
+      // like apostrophe-pages
+      self.addLocal = function(name, fn) {
+        aposLocals[name] = fn;
+        app.locals[name] = fn;
+      }
 
       // All routes must begin with /apos!
 
