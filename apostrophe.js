@@ -97,360 +97,389 @@ function apos() {
 
   self.init = function(options, callback) {
     app = options.app;
-    files = options.files;
-    areas = options.areas;
-    pages = options.pages;
-    uploadfs = options.uploadfs;
-    self.permissions = options.permissions;
 
-    if (options.controls) {
-      self.defaultControls = options.controls;
+    db = options.db;
+
+    async.series([setupAreas, setupPages, setupFiles, afterDb], callback);
+
+    function setupAreas(callback) {
+      db.collection('aposAreas', options, function(err, collection) {
+        areas = collection;
+        collection.ensureIndex({ slug: 1 }, { unique: true }, function(err) {
+          return callback(err);
+        });
+      });
     }
 
-    // Default is to allow anyone to do anything.
-    // You will probably want to at least check for req.user.
-    // Possible actions are edit-area and edit-media.
-    // edit-area calls will include a slug as the third parameter.
-    // edit-media calls for existing files may include a file, with an 
-    // "owner" property set to the id or username property of req.user 
-    // at the time the file was last edited. edit-media calls with
-    // no existing file parameter also occur, for new file uploads.
-    if (!self.permissions) {
-      self.permissions = function(req, action, fileOrSlug, callback) {
-        return callback(null);
+    function setupPages(callback) {
+      db.collection('aposPages', options, function(err, collection) {
+        pages = collection;
+        collection.ensureIndex({ slug: 1 }, { unique: true }, function(err) {
+          return callback(err);
+        });
+      });
+    }
+
+    function setupFiles(callback) {
+      db.collection('aposFiles', options, function(err, collection) {
+        files = collection;
+        return callback(err);
+      });
+    }
+
+    function afterDb(callback) {
+      uploadfs = options.uploadfs;
+      self.permissions = options.permissions;
+
+      if (options.controls) {
+        self.defaultControls = options.controls;
+      }
+
+      // Default is to allow anyone to do anything.
+      // You will probably want to at least check for req.user.
+      // Possible actions are edit-area and edit-media.
+      // edit-area calls will include a slug as the third parameter.
+      // edit-media calls for existing files may include a file, with an 
+      // "owner" property set to the id or username property of req.user 
+      // at the time the file was last edited. edit-media calls with
+      // no existing file parameter also occur, for new file uploads.
+      if (!self.permissions) {
+        self.permissions = function(req, action, fileOrSlug, callback) {
+          return callback(null);
+        };
+      }
+
+      nunjucksEnv = self.newNunjucksEnv([__dirname + '/views'].concat(options.partialPaths ? options.partialPaths : []));
+
+      aposLocals = {};
+
+      // All the locals we export to Express must have a apos prefix on the name
+      // for clean namespacing.
+
+      // aposTemplates renders templates that are needed on any page that will
+      // use apos. Examples: imageEditor.html, codeEditor.html, etc. These lie
+      // dormant in the page until they are needed as prototypes to be cloned 
+      // by jQuery
+
+      aposLocals.aposTemplates = function(options) {
+        if (!options) {
+          options = {};
+        }
+        if (!options.templates) {
+          options.templates = self.templates;
+        }
+        return _.map(options.templates, function(template) {
+          return partial(template + '.html', options);
+        }).join('');
       };
-    }
 
-    nunjucksEnv = self.newNunjucksEnv([__dirname + '/views'].concat(options.partialPaths ? options.partialPaths : []));
-
-    aposLocals = {};
-
-    // All the locals we export to Express must have a apos prefix on the name
-    // for clean namespacing.
-
-    // aposTemplates renders templates that are needed on any page that will
-    // use apos. Examples: imageEditor.html, codeEditor.html, etc. These lie
-    // dormant in the page until they are needed as prototypes to be cloned 
-    // by jQuery
-
-    aposLocals.aposTemplates = function(options) {
-      if (!options) {
-        options = {};
-      }
-      if (!options.templates) {
-        options.templates = self.templates;
-      }
-      return _.map(options.templates, function(template) {
-        return partial(template + '.html', options);
-      }).join('');
-    };
-
-    aposLocals.aposArea = function(options) {
-      if (!options.controls) {
-        options.controls = self.defaultControls;
-      }
-      if (!options.area) {
-        // Invent the area if it doesn't exist yet, so we can
-        // edit pages not previously edited
-        options.area = { items: [] };
-      }
-      console.log(options);
-      return partial('area.html', options);
-    }
-
-    aposLocals.aposAreaContent = function(items, options) {
-      var result = '';
-      _.each(items, function(item) {
-        result += aposLocals.aposItemNormalView(item, options).trim();
-      });
-      return result;
-    }
-
-    aposLocals.aposItemNormalView = function(item, options) {
-      if (!options) {
-        options = {};
-      }
-      if (!self.itemTypes[item.type]) {
-        console.log("Unknown item type: " + item.type);
-        return;
-      }
-      var itemType = self.itemTypes[item.type];
-      options.widget = itemType.widget;
-
-      if (options.bodyOnly) {
-        options.widget = false;
+      aposLocals.aposArea = function(options) {
+        if (!options.controls) {
+          options.controls = self.defaultControls;
+        }
+        if (!options.area) {
+          // Invent the area if it doesn't exist yet, so we can
+          // edit pages not previously edited
+          options.area = { items: [] };
+        }
+        console.log(options);
+        return partial('area.html', options);
       }
 
-      // The content property doesn't belong in a data attribute,
-      // and neither does any property beginning with an _
-      var attributes = {};
-      _.each(item, function(value, key) {
-        if ((key === 'content') || (key.substr(0, 1) === '_')) {
+      aposLocals.aposAreaContent = function(items, options) {
+        var result = '';
+        _.each(items, function(item) {
+          result += aposLocals.aposItemNormalView(item, options).trim();
+        });
+        return result;
+      }
+
+      aposLocals.aposItemNormalView = function(item, options) {
+        if (!options) {
+          options = {};
+        }
+        if (!self.itemTypes[item.type]) {
+          console.log("Unknown item type: " + item.type);
           return;
         }
-        attributes[key] = value;
-      });
-      return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
-    }
+        var itemType = self.itemTypes[item.type];
+        options.widget = itemType.widget;
 
-    aposLocals.aposStylesheets = function(options) {
-      if (!options) {
-        options = {};
-      }
-      if (!options.stylesheets) {
-        options.stylesheets = self.stylesheets;
-      }
-      // We can easily add a minifier and combiner here etc., but
-      // that's not important at this stage of development
-      return _.map(options.stylesheets, function(stylesheet) { 
-        return '<link href="' + stylesheet + '" rel="stylesheet" />';
-      }).join("\n");
-    }
-
-    aposLocals.aposScripts = function(options) {
-      if (!options) {
-        options = {};
-      }
-      if (!options.scripts) {
-        options.scripts = self.scripts;
-      }
-      // We can easily add a minifier and combiner here etc., but
-      // that's not important at this stage of development
-      return _.map(options.scripts, function(script) { 
-        return '<script src="' + script + '"></script>';
-      }).join("\n");
-    }
-
-    aposLocals.aposLog = function(m) {
-      console.log(m);
-      return '';
-    }
-
-    // In addition to making these available in app.locals we also
-    // make them available in our own partials later.
-    _.extend(app.locals, aposLocals);
-
-    // All routes must begin with /apos!
-
-    // An iframe with file browse and upload buttons.
-    // We use an iframe because traditional file upload buttons
-    // can't be AJAXed (although you can do that in Chrome and
-    // Firefox it is still not supported in IE9).
-
-    app.get('/apos/file-iframe/:id', validId, function(req, res) {
-      var id = req.params.id;
-      return render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
-    });
-
-    // Deliver details about a previously uploaded file as a JSON response
-    app.get('/apos/file-info/:id', validId, function(req, res) {
-      var id = req.params.id;
-      files.findOne({ _id: id }, gotFile);
-      function gotFile(err, file) {
-        if (err || (!file)) {
-          res.statusCode = 404;
-          res.send("Not Found");
-          return;
+        if (options.bodyOnly) {
+          options.widget = false;
         }
-        self.permissions(req, 'edit-media', file, function(err) {
-          if (err) {
-            return forbid(res);
+
+        // The content property doesn't belong in a data attribute,
+        // and neither does any property beginning with an _
+        var attributes = {};
+        _.each(item, function(value, key) {
+          if ((key === 'content') || (key.substr(0, 1) === '_')) {
+            return;
           }
-          file.url = uploadfs.getUrl() + '/images/' + id;
-          return res.send(file);
+          attributes[key] = value;
         });
-      }
-    });
-
-    // An upload submitted via the iframe
-    app.post('/apos/file-iframe/:id', validId, function(req, res) {
-      var id = req.params.id;
-      var file = req.files.file;
-
-      if (!file) {
-        return fail(req, res);
+        return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
       }
 
-      var src = file.path;
+      aposLocals.aposStylesheets = function(options) {
+        if (!options) {
+          options = {};
+        }
+        if (!options.stylesheets) {
+          options.stylesheets = self.stylesheets;
+        }
+        // We can easily add a minifier and combiner here etc., but
+        // that's not important at this stage of development
+        return _.map(options.stylesheets, function(stylesheet) { 
+          return '<link href="' + stylesheet + '" rel="stylesheet" />';
+        }).join("\n");
+      }
 
-      files.findOne({ _id: id }, gotExisting);
+      aposLocals.aposScripts = function(options) {
+        if (!options) {
+          options = {};
+        }
+        if (!options.scripts) {
+          options.scripts = self.scripts;
+        }
+        // We can easily add a minifier and combiner here etc., but
+        // that's not important at this stage of development
+        return _.map(options.scripts, function(script) { 
+          return '<script src="' + script + '"></script>';
+        }).join("\n");
+      }
 
-      var info;
+      aposLocals.aposLog = function(m) {
+        console.log(m);
+        return '';
+      }
 
-      function gotExisting(err, existing) {
-        self.permissions(req, 'edit-media', existing, function(err) {
-          if (err) {
-            return forbid(res);
+      // In addition to making these available in app.locals we also
+      // make them available in our own partials later.
+      _.extend(app.locals, aposLocals);
+
+      // All routes must begin with /apos!
+
+      // An iframe with file browse and upload buttons.
+      // We use an iframe because traditional file upload buttons
+      // can't be AJAXed (although you can do that in Chrome and
+      // Firefox it is still not supported in IE9).
+
+      app.get('/apos/file-iframe/:id', validId, function(req, res) {
+        var id = req.params.id;
+        return render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
+      });
+
+      // Deliver details about a previously uploaded file as a JSON response
+      app.get('/apos/file-info/:id', validId, function(req, res) {
+        var id = req.params.id;
+        files.findOne({ _id: id }, gotFile);
+        function gotFile(err, file) {
+          if (err || (!file)) {
+            res.statusCode = 404;
+            res.send("Not Found");
+            return;
           }
-          // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
-          return uploadfs.copyImageIn(src, '/images/' + id, update);
-        });
-      }
+          self.permissions(req, 'edit-media', file, function(err) {
+            if (err) {
+              return forbid(res);
+            }
+            file.url = uploadfs.getUrl() + '/images/' + id;
+            return res.send(file);
+          });
+        }
+      });
 
-      function update(err, infoArg) {
-        if (err) {
+      // An upload submitted via the iframe
+      app.post('/apos/file-iframe/:id', validId, function(req, res) {
+        var id = req.params.id;
+        var file = req.files.file;
+
+        if (!file) {
           return fail(req, res);
         }
-        info = infoArg;
-        info._id = id;
-        info.name = slugify(file.name);
-        info.createdAt = new Date();
 
-        // Do our best to record who owns this file to allow permissions
-        // checks later. If req.user exists and has an _id, id or username property, 
-        // record that
-        if (req.user) {
-          info.owner = req.user._id || req.user.id || req.user.username;
-        }
+        var src = file.path;
 
-        files.update({ _id: info._id }, info, { upsert: true, safe: true }, inserted);
-      }
+        files.findOne({ _id: id }, gotExisting);
 
-      function inserted(err) {
-        info.uploaded = true;
-        info.error = false;
-        info.id = info._id;
-        render(res, 'fileIframe.html', info);
-      }
+        var info;
 
-      function fail(req, res) {
-        return render(res, 'fileIframe.html', { id: id, error: "Not a GIF, JPEG or PNG image file", uploaded: false });
-      }
-    });
-
-    // Area editor
-
-    app.get('/apos/edit-area', function(req, res) {
-      var slug = req.query.slug;
-      var controls = req.query.controls ? req.query.controls.split(' ') : [];
-      if (!controls.length) {
-        controls = self.defaultControls;
-      }
-      self.permissions(req, 'edit-area', slug, function(err) {
-        if (err) {
-          return forbid(res);
-        }
-        var isNew = false;
-        if (!slug) {
-          return notfound(req, res);
-        } else {
-          self.getArea(slug, function(err, area) {
-            if (!area) {
-              var area = {
-                slug: slug,
-                _id: generateId(),
-                content: null,
-                isNew: true,
-              };
-              extraProperties(area);
-              return render(res, 'editArea.html', area);
+        function gotExisting(err, existing) {
+          self.permissions(req, 'edit-media', existing, function(err) {
+            if (err) {
+              return forbid(res);
             }
-            else
-            {
-              extraProperties(area);
-              area.isNew = false;
-              return render(res, 'editArea.html', area);
-            }
-            function extraProperties(area) {
-              area.wid = 'w-' + area._id;
-              area.controls = controls;
-              area.controlTypes = self.controlTypes;
-              area.itemTypes = self.itemTypes;
-            }
+            // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
+            return uploadfs.copyImageIn(src, '/images/' + id, update);
           });
         }
-      });
-    });
 
-    app.post('/apos/edit-area', function(req, res) {
-      var slug = req.body.slug;
-      self.permissions(req, 'edit-area', slug, function(err) {
-        if (err) {
-          return forbid(res);
-        }
-        var content = JSON.parse(req.body.content);
-        sanitizeArea(content);
-        var area = {
-          slug: req.body.slug,
-          items: content
-        };
-
-        self.putArea(slug, area, updated);
-
-        function updated(err) {
+        function update(err, infoArg) {
           if (err) {
-            console.log(err);
-            return notfound(req, res);
+            return fail(req, res);
+          }
+          info = infoArg;
+          info._id = id;
+          info.name = slugify(file.name);
+          info.createdAt = new Date();
+
+          // Do our best to record who owns this file to allow permissions
+          // checks later. If req.user exists and has an _id, id or username property, 
+          // record that
+          if (req.user) {
+            info.owner = req.user._id || req.user.id || req.user.username;
           }
 
-          return callLoadersForArea(area, function() {
-            return res.send(aposLocals.aposAreaContent(area.items));
-          });
+          files.update({ _id: info._id }, info, { upsert: true, safe: true }, inserted);
+        }
+
+        function inserted(err) {
+          info.uploaded = true;
+          info.error = false;
+          info.id = info._id;
+          render(res, 'fileIframe.html', info);
+        }
+
+        function fail(req, res) {
+          return render(res, 'fileIframe.html', { id: id, error: "Not a GIF, JPEG or PNG image file", uploaded: false });
         }
       });
-    });
 
-    // Used to render newly created, as yet unsaved widgets to be displayed in
-    // the main apos editor. We're not really changing anything in the database
-    // here. We're just allowing the browser to leverage the same normal view
-    // generator that the server uses for actual page rendering. Renders the
-    // body of the widget only since the widget div has already been updated
-    // or created in the browser.
+      // Area editor
 
-    app.post('/apos/render-widget', function(req, res) {
-      var item = req.body;
-      var options = req.query;
+      app.get('/apos/edit-area', function(req, res) {
+        var slug = req.query.slug;
+        var controls = req.query.controls ? req.query.controls.split(' ') : [];
+        if (!controls.length) {
+          controls = self.defaultControls;
+        }
+        self.permissions(req, 'edit-area', slug, function(err) {
+          if (err) {
+            return forbid(res);
+          }
+          var isNew = false;
+          if (!slug) {
+            return notfound(req, res);
+          } else {
+            self.getArea(slug, function(err, area) {
+              if (!area) {
+                var area = {
+                  slug: slug,
+                  _id: generateId(),
+                  content: null,
+                  isNew: true,
+                };
+                extraProperties(area);
+                return render(res, 'editArea.html', area);
+              }
+              else
+              {
+                extraProperties(area);
+                area.isNew = false;
+                return render(res, 'editArea.html', area);
+              }
+              function extraProperties(area) {
+                area.wid = 'w-' + area._id;
+                area.controls = controls;
+                area.controlTypes = self.controlTypes;
+                area.itemTypes = self.itemTypes;
+              }
+            });
+          }
+        });
+      });
 
-      var itemType = self.itemTypes[item.type];
-      if (!itemType) {
-        res.statusCode = 404;
-        return res.send('No such item type');
-      }
+      app.post('/apos/edit-area', function(req, res) {
+        var slug = req.body.slug;
+        self.permissions(req, 'edit-area', slug, function(err) {
+          if (err) {
+            return forbid(res);
+          }
+          var content = JSON.parse(req.body.content);
+          sanitizeArea(content);
+          var area = {
+            slug: req.body.slug,
+            items: content
+          };
 
-      // Invoke server-side loader middleware like getArea or getPage would,
-      // unless explicitly asked not to
+          self.putArea(slug, area, updated);
 
-      if ((options.load !== '0') && (itemType.load)) {
-        return itemType.load(item, go);
-      } else {
-        return go();
-      }
+          function updated(err) {
+            if (err) {
+              console.log(err);
+              return notfound(req, res);
+            }
 
-      function go() {
-        return res.send(aposLocals.aposItemNormalView(item, options));
-      }
-    });
+            return callLoadersForArea(area, function() {
+              return res.send(aposLocals.aposAreaContent(area.items));
+            });
+          }
+        });
+      });
 
-    // A simple oembed proxy to avoid cross-site scripting restrictions. 
-    // TODO: cache results according to MaxAge, including the thumbnails. 
-    // Also, I should offer a whitelist of sites whose oembed codes are 
-    // known not to be XSS vectors
+      // Used to render newly created, as yet unsaved widgets to be displayed in
+      // the main apos editor. We're not really changing anything in the database
+      // here. We're just allowing the browser to leverage the same normal view
+      // generator that the server uses for actual page rendering. Renders the
+      // body of the widget only since the widget div has already been updated
+      // or created in the browser.
 
-    app.get('/apos/oembed', function(req, res) {
-      oembed.fetch(req.query.url, {}, function (err, result) {
-        if (err) {
-          return res.send({ 'err': err });
+      app.post('/apos/render-widget', function(req, res) {
+        var item = req.body;
+        var options = req.query;
+
+        var itemType = self.itemTypes[item.type];
+        if (!itemType) {
+          res.statusCode = 404;
+          return res.send('No such item type');
+        }
+
+        // Invoke server-side loader middleware like getArea or getPage would,
+        // unless explicitly asked not to
+
+        if ((options.load !== '0') && (itemType.load)) {
+          return itemType.load(item, go);
         } else {
-          return res.send(result);
+          return go();
+        }
+
+        function go() {
+          return res.send(aposLocals.aposItemNormalView(item, options));
         }
       });
-    });
 
-    app.get('/apos/*', self.static(__dirname + '/public'));
+      // A simple oembed proxy to avoid cross-site scripting restrictions. 
+      // TODO: cache results according to MaxAge, including the thumbnails. 
+      // Also, I should offer a whitelist of sites whose oembed codes are 
+      // known not to be XSS vectors
 
-    // app.use('/apos', express.static(__dirname + '/public'));
+      app.get('/apos/oembed', function(req, res) {
+        oembed.fetch(req.query.url, {}, function (err, result) {
+          if (err) {
+            return res.send({ 'err': err });
+          } else {
+            return res.send(result);
+          }
+        });
+      });
 
-    // Middleware
-    function validId(req, res, next) {
-      var id = req.params.id;
-      if (!id.match(/^[\w\-\d]+$/)) {
-        return fail(req, res);
+      app.get('/apos/*', self.static(__dirname + '/public'));
+
+      // app.use('/apos', express.static(__dirname + '/public'));
+
+      // Middleware
+      function validId(req, res, next) {
+        var id = req.params.id;
+        if (!id.match(/^[\w\-\d]+$/)) {
+          return fail(req, res);
+        }
+        next();
       }
-      next();
-    }
 
-    return callback(null);
-  };
+      return callback(null);
+    }
+  }
 
   // self.static returns a function for use as a route that
   // serves static files from a folder. This is helpful when writing 
