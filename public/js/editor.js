@@ -1307,7 +1307,40 @@ apos.modal = function(sel, command) {
     $('body').append($el);
     $el.show();
   }
+
 };
+
+apos.modalFromTemplate = function(sel, options) {
+
+  _.defaults(options,{
+    init: function(callback) {callback(null);},
+    save: function(callback) {callback(null);}
+  });
+
+  function hideModal() {
+    apos.modal($el, 'hide');
+    $el.remove();
+    return false;
+  };
+
+  var $el = $(sel).filter('.apos-template').clone();
+  $el.removeClass('.apos-template');
+  $el.on('click', '.apos-cancel', hideModal);
+  $el.on('click', '.apos-save', function() {
+    options.save(function(err) {
+      if(!err) {
+        hideModal();
+      }
+    });
+    return false;
+  });
+
+  options.init(function(){
+    apos.log("INIT",$el.length);
+    apos.modal($el);
+  });
+  return $el;
+}
 
 // Display the hint if the user hasn't seen it already. Use a cookie with an
 // array of hint titles to figure out if we've seen it before. TODO: consider
@@ -1327,7 +1360,7 @@ apos.hint = function(title, markup) {
   $.cookie('apos_hints', hints + "\n" + title, { expires: 999999 });
 
   // Give the dialog that inspired this hint time to get out of the way
-  // (TODO: this is a crude workaround)
+  // (TODO: this is a crude workaround, improve on it)
 
   setTimeout(function() {
     var hint = $('.apos-hint.apos-template').clone();
@@ -1336,6 +1369,7 @@ apos.hint = function(title, markup) {
     hint.find('[data-hint-text]').html(markup);
     hint.find('[data-hint-ok]').click(function() {
       apos.modal(hint, 'hide');
+      hint.remove();
     });
     apos.modal(hint);
   }, 1000);

@@ -184,7 +184,6 @@ function apos() {
           // edit pages not previously edited
           options.area = { items: [] };
         }
-        console.log(options);
         return partial('area.html', options);
       }
 
@@ -218,7 +217,7 @@ function apos() {
           if ((key === 'content') || (key.substr(0, 1) === '_')) {
             return;
           }
-          attributes[key] = value;
+          attributes[key] = value + '';
         });
         return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
       }
@@ -438,11 +437,16 @@ function apos() {
         var item = req.body;
         var options = req.query;
 
+        console.log('PREVIEW: ', item);
+
         var itemType = self.itemTypes[item.type];
         if (!itemType) {
           res.statusCode = 404;
           return res.send('No such item type');
         }
+
+        itemType.sanitize(item);
+        console.log('AFTER SANITIZE:', item);
 
         // Invoke server-side loader middleware like getArea or getPage would,
         // unless explicitly asked not to
@@ -685,6 +689,8 @@ function apos() {
   self.getPage = function(slug, callback) {
     pages.findOne({ slug: slug }, function(err, page) {
       if (page) {
+        console.log('LOADED PAGE:');
+        console.log(page);
         // For convenience guarantee there is a page.areas property
         if (!page.areas) {
           page.areas = {};
@@ -896,6 +902,30 @@ function apos() {
     });
     return nunjucksEnv;
   }
+
+  self.slugify = function(text, options) {
+    if (!options) {
+      options = {};
+    }
+    _.defaults(options, {
+      disallow: /[^\w\d]+/g,
+      substitute: '-'
+    });
+    slug = text.toLowerCase().replace(options.disallow, options.substitute);
+    // Lop off leading and trailing -
+    if (slug.length)
+    {
+      if (slug.substr(0, 1) === options.substitute)
+      {
+        slug = slug.substr(1);
+      }
+      if (slug.substr(slug.length - 1, 1) === options.substitute)
+      {
+        slug = slug.substr(0, slug.length - 1);
+      }
+    }
+    return slug;
+  };
 
   // For convenience when configuring uploadfs
   self.defaultImageSizes = [
