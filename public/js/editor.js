@@ -1321,7 +1321,10 @@ apos._modalCore = function(sel, command) {
 // modal with content (usually used with apos.modalFromTemplate, below).
 // If you pass an error as the first argument to the callback the
 // modal will not appear and options.afterHide will be triggered immediately.
-// Don't forget to call the callback.
+// Don't forget to call the callback. Note that apos.modal is
+// guaranteed to return *before* options.init is called, so you can
+// refer to $el in a closure. This is useful if you are using
+// apos.modalFromTemplate.
 
 // options.afterHide can be an asynchronous function to do something
 // after the modal is dismissed (for any reason, whether saved or cancelled), 
@@ -1389,20 +1392,35 @@ apos.modal = function(sel, options) {
     return false;
   });
 
-  options.init(function(err) {
-    if (err) {
-      hideModal();
-      return;
-    }
-    apos._modalCore($el);
-    // Give the focus to the first form element. (Would be nice to
-    // respect tabindex if it's present, but it's rare that
-    // anybody bothers)
-    $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+  apos.afterYield(function() {
+    options.init(function(err) {
+      if (err) {
+        hideModal();
+        return;
+      }
+      apos._modalCore($el);
+      // Give the focus to the first form element. (Would be nice to
+      // respect tabindex if it's present, but it's rare that
+      // anybody bothers)
+      $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+    });
   });
 
   return $el;
 };
+
+// Do something after control returns to the browser (after you return from
+// whatever event handler you're in). In old browsers the setTimeout(fn, 0)
+// technique is used. In the latest browsers setImmediate is used, because
+// it's faster (although it has a confusing name)
+
+apos.afterYield = function(fn) {
+  if (window.setImmediate) {
+    return window.setImmediate(fn);
+  } else {
+    return setTimeout(fn, 0);
+  }
+}
 
 // Clone the element matching the specified selector that
 // also has the apos-template class, remove the apos-template
