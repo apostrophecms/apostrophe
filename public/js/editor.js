@@ -762,13 +762,11 @@ apos.widgetEditor = function(options) {
 
     preview: function() {
       if (self.prePreview) {
-        console.log("prePreview");
         self.prePreview(go);
       } else {
         go();
       }
       function go() {
-        console.log("go");
         self.$previewContainer.find('.apos-widget-preview').remove();
         if (self.exists) {
           // Ask the server to generate a nice preview of the widget's contents
@@ -1293,7 +1291,10 @@ apos.parseArea = function(content) {
   }
 };
 
-apos.modal = function(sel, command) {
+// Core functionality for showing and hiding a modal dialog. You almost
+// certainly want apos.modal or apos.modalFromTemplate, below
+
+apos._modalCore = function(sel, command) {
   var $el = $(sel);
   if (command === 'hide') {
     $('.apos-modal-blackout').remove();
@@ -1307,25 +1308,78 @@ apos.modal = function(sel, command) {
     $('body').append($el);
     $el.show();
   }
-
 };
 
-apos.modalFromTemplate = function(sel, options) {
+// Be sure to read apos.modalFromTemplate too, as that is usually
+// the easiest way to present a modal.
+
+// apos.modal displays the element specified by sel as a modal. Goes away when
+// the user clicks .apos-save or .apos-cancel or presses enter or
+// escape, which trigger .apos-save and .apos-cancel respectively.
+
+// options.init can be an async function to populate the
+// modal with content (usually used with apos.modalFromTemplate, below).
+// If you pass an error as the first argument to the callback the
+// modal will not appear and options.afterHide will be triggered immediately.
+// Don't forget to call the callback.
+
+// options.afterHide can be an asynchronous function to do something
+// after the modal is dismissed (for any reason, whether saved or cancelled), 
+// like removing it from the DOM if that is appropriate.
+// Don't forget to call the callback. Currently passing an error
+// to the afterHide callback has no effect.
+
+// options.save can be an asynchronous function to do something after
+// .apos-save is clicked (or enter is pressed in the only text field).
+// It is invoked before afterHide. If you pass an error to the callback,
+// the modal is NOT dismissed, allowing you to do validation.
+
+// Focus is automatically given to the first form element found
+// that does not have the apos-filter class.
+
+// Does not support nested modals, yet.
+
+apos.modal = function(sel, options) {
+  var $el = $(sel);
+  
+  if (!options) {
+    options = {};
+  }
 
   _.defaults(options,{
     init: function(callback) {callback(null);},
-    save: function(callback) {callback(null);}
+    save: function(callback) {callback(null);},
+    afterHide: function(callback) {callback(null);}
   });
 
   function hideModal() {
-    apos.modal($el, 'hide');
-    $el.remove();
+    apos._modalCore($el, 'hide');
+    $(document).off('keyup.aposModal');
+    options.afterHide(function(err) {
+      return;
+    });
     return false;
   };
 
-  var $el = $(sel).filter('.apos-template').clone();
-  $el.removeClass('.apos-template');
+  // Enter key should act like a click on the save button,
+  // do not try to submit the form old-school
+  $el.on('submit', 'form', function() {
+    $el.find('.apos-save').click();
+    apos.log('triggered save');
+    return false;
+  });
+
+  // Escape key should dismiss the modal
+  $(document).on('keyup.aposModal', function(e) {
+    if (e.keyCode == 27) {
+      hideModal();
+      return false;
+    }
+    return true;
+  });
+
   $el.on('click', '.apos-cancel', hideModal);
+
   $el.on('click', '.apos-save', function() {
     options.save(function(err) {
       if(!err) {
@@ -1335,11 +1389,53 @@ apos.modalFromTemplate = function(sel, options) {
     return false;
   });
 
-  options.init(function(){
-    apos.log("INIT",$el.length);
-    apos.modal($el);
+  options.init(function(err) {
+    if (err) {
+      hideModal();
+      return;
+    }
+    apos._modalCore($el);
+    // Give the focus to the first form element. (Would be nice to
+    // respect tabindex if it's present, but it's rare that
+    // anybody bothers)
+    $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
   });
+
   return $el;
+};
+
+// Clone the element matching the specified selector that
+// also has the apos-template class, remove the apos-template
+// class from the clone, and present it as a modal. This is a 
+// highly convenient way to present modals based on templates 
+// present in the DOM (note that the .apos-template class hides
+// things until they are cloned). Accepts the same options as
+// apos.modal, above. 
+
+apos.modalFromTemplate = function(sel, options) {
+
+  var $el = $(sel).filter('.apos-template').clone();
+
+  $el.removeClass('.apos-template');
+
+  // Make sure they can provide their own afterHide
+  // option, and that we don't remove $el until
+  // after it invokes its callback
+
+  var afterAfterHide = options.afterHide;
+  if (!afterAfterHide) {
+    afterAfterHide = function(callback) {
+      return callback(null);
+    }
+  }
+  options.afterHide = function(callback) {
+    afterAfterHide(function(err) {
+      $el.remove();
+      return callback(err);
+    });
+  }
+
+  return apos.modal($el, options);
 }
 
 // Display the hint if the user hasn't seen it already. Use a cookie with an
