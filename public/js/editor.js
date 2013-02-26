@@ -757,7 +757,10 @@ apos.widgetEditor = function(options) {
     },
 
     modal: function(command) {
-      return apos.modal(self.$el, command);
+      // TODO: this should utilize all the good stuff in
+      // apos.modal, not just apos._modalCore, I need to 
+      // refactor out the redundancies
+      return apos._modalCore(self.$el, command);
     },
 
     preview: function() {
@@ -1454,39 +1457,6 @@ apos.modalFromTemplate = function(sel, options) {
   }
 
   return apos.modal($el, options);
-}
-
-// Display the hint if the user hasn't seen it already. Use a cookie with an
-// array of hint titles to figure out if we've seen it before. TODO: consider
-// server side storage of this info, per user, so you don't get hints again on every
-// new machine. Move hint titles and markup into something translatable.
-
-apos.hint = function(title, markup) {
-
-  var hints = $.cookie('apos_hints');
-  var seen = [];
-  if (hints) {
-    seen = hints.split("\n");
-  }
-  if (seen.indexOf(title) !== -1) {
-    return;
-  }
-  $.cookie('apos_hints', hints + "\n" + title, { expires: 999999 });
-
-  // Give the dialog that inspired this hint time to get out of the way
-  // (TODO: this is a crude workaround, improve on it)
-
-  setTimeout(function() {
-    var hint = $('.apos-hint.apos-template').clone();
-    hint.removeClass('apos-template');
-    hint.find('[data-hint-title]').text(title);
-    hint.find('[data-hint-text]').html(markup);
-    hint.find('[data-hint-ok]').click(function() {
-      apos.modal(hint, 'hide');
-      hint.remove();
-    });
-    apos.modal(hint);
-  }, 1000);
 }
 
 // We use this to save the selection before starting

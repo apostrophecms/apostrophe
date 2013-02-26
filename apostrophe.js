@@ -445,8 +445,10 @@ function apos() {
           return res.send('No such item type');
         }
 
-        itemType.sanitize(item);
-        console.log('AFTER SANITIZE:', item);
+        if (itemType.sanitize) {
+          itemType.sanitize(item);
+          console.log('AFTER SANITIZE:', item);
+        }
 
         // Invoke server-side loader middleware like getArea or getPage would,
         // unless explicitly asked not to
