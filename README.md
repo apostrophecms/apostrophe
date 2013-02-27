@@ -137,7 +137,7 @@ This `aposArea` call turns on all of the controls. You can leave anything you li
 
 "What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. Many sites have slugs named `header`, `footer`, `sidebar` and the like.
 
-"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Apostrophe's `getArea` and `getPage` methods.
+"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Apostrophe's `getArea` and `getPage` methods. [Note: if you just want a tree of editable pages, use the apostrophe-pages module to do most of this work.](http://github.com/punkave/apostrophe-pages)
 
 Naturally `getArea` is asynchronous:
 
@@ -150,6 +150,18 @@ Naturally `getArea` is asynchronous:
 Note the code that checks whether `area` is actually set before attempting to access its content. If no area with that slug has ever been saved, the `area` callback parameter will be null.
 
 Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the `app.js` sample application does).
+
+## Displaying Single Widgets ("Singletons")
+
+Of course, sometimes you want to enforce a more specific design for an editable page. You might, for instance, want to require the user to pick a video for the upper right corner. You can do that with `aposSingleton`:
+
+    {{ aposSingleton({ slug: slug + ':sidebarVideo', type: 'video', area: page.areas.sidebarVideo, edit: edit }) }}
+
+Note that singletons are stored as areas. The only difference is that the interface only displays and edits the first item of the specified type found in the area. There is no rich text editor "wrapped around" the widget, so clicking "edit" for a video immediately displays the video dialog box.
+
+Only widgets (images, videos and the like) may be specified as types for singletons. For a standalone rich-text editor that doesn't allow any widgets, just limit the set of controls to those that are not widgets:
+
+    {{ aposArea({ slug: 'main', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
 
 ## Grouping Areas Into "Pages"
 

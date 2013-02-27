@@ -187,6 +187,27 @@ function apos() {
         return partial('area.html', options);
       }
 
+      aposLocals.aposSingleton = function(options) {
+        console.log('aposSingleton');
+        if (!self.itemTypes[options.type]) {
+          console.log("Unknown item type: " + options.type);
+          return;
+        }
+        // If someone transforms an existing area into a singleton, do a reasonable thing by 
+        // taking the first existing item of the proper type
+        var item = _.find(options.area.items, function(item) {
+          return item.type === options.type;
+        });
+        if (!item) {
+          item = { type: options.type };
+        }
+        options.itemType = self.itemTypes[item.type];
+        options.item = item;
+        console.log('Rendering!');
+        console.log(options);
+        return partial('singleton.html', options);
+      }
+
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
         _.each(items, function(item) {
@@ -409,6 +430,45 @@ function apos() {
           var area = {
             slug: req.body.slug,
             items: content
+          };
+
+          self.putArea(slug, area, updated);
+
+          function updated(err) {
+            if (err) {
+              console.log(err);
+              return notfound(req, res);
+            }
+
+            return callLoadersForArea(area, function() {
+              return res.send(aposLocals.aposAreaContent(area.items));
+            });
+          }
+        });
+      });
+
+      app.post('/apos/edit-singleton', function(req, res) {
+        var slug = req.body.slug;
+        self.permissions(req, 'edit-area', slug, function(err) {
+          if (err) {
+            return forbid(res);
+          }
+          var content = JSON.parse(req.body.content);
+          // "OMG, what if they cheat and use a type not allowed for this singleton?"
+          // When they refresh the page they will discover they can't see their hack.
+          // aposSingleton only shows the first item of the specified type, regardless
+          // of what is kicking around in the area.
+          var type = content.type;
+          var itemType = self.itemTypes[type];
+          if (!itemType) {
+            return fail(req, res);
+          }
+          if (itemType.sanitize) {
+            itemType.sanitize(content);
+          }
+          var area = {
+            slug: req.body.slug,
+            items: [ content ]
           };
 
           self.putArea(slug, area, updated);

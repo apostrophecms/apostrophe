@@ -580,20 +580,36 @@ apos.widgetEditor = function(options) {
   // What will be in the data attributes of the widget
   self.data = {};
 
+  // When present in the context of a rich text editor, we interrogate
+  // our placeholder div in that editor to get our current attributes
   if (options.widgetId) {
-    self.exists = true;
     self.$widget = options.editor.$editable.find('.apos-widget[data-id="' + options.widgetId + '"]');
     self.data = self.$widget.data();
   }
 
-  self.widgetId = options.widgetId ? options.widgetId : apos.generateId();
-  self.data.id = self.widgetId;
+  // When displayed as a singleton or an area that does not involve a
+  // rich text editor as the larger context for all widgets, our data is passed in
+  if (options.data) {
+    self.data = options.data;
+    apos.log(self.data);
+  }
 
-  // Make sure the selection we return to 
-  // is actually on the editor
-  self.editor.$editable.focus();
-  // Make our own instance of the image editor template
-  // so we don't have to fuss over old event handlers
+  if (self.data.id) {
+    self.exists = true;
+  }
+
+  if (!self.data.id) {
+    self.data.id = apos.generateId();
+  }
+
+  // Careful, relevant only when we are in a rich text editor context
+  if (self.editor) {
+    // Make sure the selection we return to 
+    // is actually on the editor
+    self.editor.$editable.focus();
+  }
+
+  // Make our own instance of the editor template
   self.$el = $(options.template + '.apos-template').clone();
   self.$el.removeClass('.apos-template');
   self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -620,7 +636,9 @@ apos.widgetEditor = function(options) {
         self.$el.remove();
       }, 500);
       // Return focus to the main editor
-      self.editor.$editable.focus();
+      if (self.editor) {
+        self.editor.$editable.focus();
+      }
     },
 
     getSizeAndPosition: function() {
@@ -659,12 +677,14 @@ apos.widgetEditor = function(options) {
     // See also the server-side itemNormalView.html template, which
     // does the same thing
     createWidget: function() {
+      if (!self.editor) {
+        return;
+      }
       self.$widget = $('<div></div>');
       // self.$widget.attr('unselectable', 'on');
       self.$widget.addClass('apos-widget');
       self.$widget.addClass('apos-' + self.type);
       self.$widget.attr('data-type', self.type);
-      self.$widget.attr('data-id', self.widgetId);
     },
 
     // Update the widget placeholder in the main content editor to reflect the new
@@ -673,6 +693,9 @@ apos.widgetEditor = function(options) {
     // those are not restricted to content that behaves inside contentEditable.
 
     updateWidget: function(callback) {
+      if (!self.editor) {
+        return callback(null);
+      }
       var sizeAndPosition = self.getSizeAndPosition();
       self.$widget.attr({
         'data-size': sizeAndPosition.size,
@@ -698,6 +721,9 @@ apos.widgetEditor = function(options) {
     // Widgets now just update self.data as needed so this doesn't
     // need to be overridden typically
     updateWidgetData: function() {
+      if (!self.editor) {
+        return;
+      }
       _.each(self.data, function(val, key) {
         apos.log(key + ': ' + val);
         self.$widget.attr('data-' + key, val);
@@ -706,6 +732,9 @@ apos.widgetEditor = function(options) {
 
     // Ask the server to render the widget's contents, stuff them into the placeholder
     renderWidget: function(callback) {
+      if (!self.editor) {
+        return callback(null);
+      }
       // Get all the data attributes
       var info = self.$widget.data();
 
@@ -731,6 +760,9 @@ apos.widgetEditor = function(options) {
 
     // Insert new widget into the main content editor
     insertWidget: function() {
+      if (!self.editor) {
+        return;
+      }
       var markup = '';
 
       // Work around serious widget selection bugs in Chrome by introducing
@@ -808,15 +840,17 @@ apos.widgetEditor = function(options) {
 
   self.$el.find('.apos-save').click(function() {
     self.preSave(function() {
-      self.editor.undoPoint();
       if (!self.exists) {
         alert(options.messages.missing);
         return false;
       }
-      var _new = false;
-      if (!self.$widget) {
-        self.createWidget();
-        _new = true;
+      if (self.editor) {
+        self.editor.undoPoint();
+        var _new = false;
+        if (!self.$widget) {
+          self.createWidget();
+          _new = true;
+        }
       }
       self.updateWidget(function(err) {
         if (_new) {
@@ -826,7 +860,20 @@ apos.widgetEditor = function(options) {
         // Widget backups are probably a bad idea since they would defeat
         // copy and paste between pages or at least sites
         // self.editor.updateWidgetBackup(self.widgetId, self.$widget);
-        self.destroy();
+
+        if (options.save) {
+          // Used to implement save for singletons and non-rich-text-based areas.
+          // Note that in this case options.data was passed in by reference, 
+          // so the end result can be read there. Pay attention to the callback so
+          // we can allow the user a second chance 
+          options.save(function(err) {
+            if (!err) {
+              self.destroy();
+            }
+          });
+        } else {
+          self.destroy();
+        }
       });
     });
     return false;
@@ -846,8 +893,8 @@ apos.widgetEditor = function(options) {
 
   var sizeAndPosition = { size: 'two-thirds', position: 'middle' };
   if (self.exists) {
-    sizeAndPosition.size = self.$widget.attr('data-size');
-    sizeAndPosition.position = self.$widget.attr('data-position');
+    sizeAndPosition.size = self.data.size;
+    sizeAndPosition.position = self.data.position;
   }
   self.$el.find('input[name="size"]').prop('checked', false);
   self.$el.find('input[name="size"][value="' + sizeAndPosition.size + '"]').prop('checked', true);
@@ -874,10 +921,10 @@ apos.widgetTypes.image = {
     }
 
     self.afterCreatingEl = function() {
-      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.widgetId + '" name="iframe-' + self.widgetId + '" class="apos-file-iframe" src="/apos/file-iframe/' + self.widgetId + '"></iframe>'));
+      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.data.id + '" name="iframe-' + self.data.id + '" class="apos-file-iframe" src="/apos/file-iframe/' + self.data.id + '"></iframe>'));
       self.$el.bind('uploaded', function(e, id) {
         // Only react to events intended for us
-        if (id === self.widgetId) {
+        if (id === self.data.id) {
           self.exists = true;
           self.preview();
         }
@@ -889,7 +936,7 @@ apos.widgetTypes.image = {
     // look it up in a separate collection
     self.prePreview = function(callback) {
       if (self.exists) {
-        $.getJSON('/apos/file-info/' + self.widgetId, function(info) {
+        $.getJSON('/apos/file-info/' + self.data.id, function(info) {
           self.data.extension = info.extension;
           callback();
         });
@@ -1188,12 +1235,12 @@ apos.moveCaretToEnd = function() {
 };
 
 apos.enableAreas = function() {
-  $('.apos-edit-area').click(function() {
+  $('body').on('click', '.apos-edit-area', function() {
     
     var area = $(this).closest('.apos-area');
-    var slug = area.attr('data-apos-slug');
+    var slug = area.attr('data-slug');
     
-    $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-apos-controls') }, function(data) {
+    $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-controls') }, function(data) {
       area.find('.apos-edit-view').remove();
       var editView = $('<div class="apos-edit-view"></div>');
       editView.append($(data));
@@ -1206,7 +1253,7 @@ apos.enableAreas = function() {
       });
 
       area.find('[data-save-area]').click(function() {
-        var slug = area.attr('data-apos-slug');
+        var slug = area.attr('data-slug');
         $.post('/apos/edit-area', 
           { 
             slug: slug, 
@@ -1227,6 +1274,41 @@ apos.enableAreas = function() {
         $editor.data('apos-editor').destroy();
         area.find('.apos-edit-view').remove();
         area.find('.apos-normal-view').show();
+      }
+    });
+    return false;
+  });
+
+  $('body').on('click', '.apos-edit-singleton', function() {
+    var $singleton = $(this).closest('.apos-singleton');
+    var slug = $singleton.attr('data-slug');
+    var type = $singleton.attr('data-type');
+
+    var itemData = {};
+    var $item = $singleton.find('.apos-content .apos-widget :first');
+    if ($item.length) {
+      itemData = $item.data();
+    }
+    new apos.widgetTypes[type].editor({ 
+      data: itemData, 
+      save: function(callback) {
+        apos.log(itemData);
+        $.post('/apos/edit-singleton', 
+          {
+            slug: slug, 
+            // By now itemData has been updated (we passed it
+            // into the widget and JavaScript passes objects by reference)
+            content: JSON.stringify(itemData)
+          },
+          function(markup) {
+            $singleton.find('.apos-content').html(markup);
+            apos.enablePlayers($singleton);
+            callback(null);
+          }
+        ).fail(function() {
+          alert('Server error, please try again.');
+          callback('error');
+        }); 
       }
     });
     return false;
