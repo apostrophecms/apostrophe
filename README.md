@@ -1,12 +1,12 @@
 # Apostrophe
 
-## This is an early alpha quality version of Apostrophe 2, for node.js developers. Most frontend design work has not happened yet. Page trees, blogs events, etc. are not part of Apostrophe 2 yet. See [Apostrophe 1.5](http://apostrophenow.org) for the current stable and mature release of Apostrophe for PHP and Symfony.
+## This is an early alpha quality version of Apostrophe 2, for node.js developers. Most frontend design work has not happened yet. Blogs, events, etc. are not part of Apostrophe 2 yet. See [Apostrophe 1.5](http://apostrophenow.org) for the current stable and mature release of Apostrophe for PHP and Symfony.
 
 Apostrophe is a content management system. This core module provides rich content editing as well as essential services to tie Apostrophe to your Express application. 
 
 In addition to rich text, Apostrophe allows you to add rich media to documents. Apostrophe also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again.
 
-[You can try a live demo of the Apostrophe 2 Wiki sample app here.](http://demowiki.apostrophenow.com/) (Note: the demo site resets at the top of the hour.) See also the [apostrophe-wiki github project](http://github.com/punkave/apostrophe-wiki).
+[You can try a live demo of the Apostrophe 2 sandbox app here.](http://demo2.apostrophenow.com/) (Note: the demo site resets at the top of the hour.) See also the [apostrophe-sandbox github project](http://github.com/punkave/apostrophe-sandbox).
 
 Apostrophe introduces "widgets," separate editors for rich media items like photos, videos, pullquotes and code samples. Apostrophe's widgets handle these items much better than a rich text editor on its own.
 
@@ -37,7 +37,7 @@ Apostrophe does not require any external CSS framework. Apostrophe's internal te
 You must have the following on your development and production servers:
 
 node, of course
-mongodb, on your local machine (or edit wiki.js to point somewhere else)
+mongodb, on your local machine (or edit app.js to point somewhere else)
 imagemagick, to resize uploaded images (specifically the `convert` command line tool)
 
 Mac developers can install imagemagick via MacPorts. Your production server will need it too; it's probably a simple `apt-get install` or `yum` command away. Heroku includes imagemagick as standard equipment.
@@ -48,28 +48,41 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 You'll need to `npm install` the `node-apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
 
-Here's the `initApos` function of the sample application [http://github.com/punkave/aposwiki](aposwiki). Notice this function invokes a callback when it's done. `wiki.js` makes good use of the `async` module to carry out its initialization tasks elegantly.
+Here's the `initApos` function of the sample application [http://github.com/punkave/apostrophe-sandbox](apostrophe-sandbox). Notice this function invokes a callback when it's done. `app.js` makes good use of the `async` module to carry out its initialization tasks elegantly. Here we also initialize other modules that snap into Apostrophe:
 
     function initApos(callback) {
-      return apos.init({
-        files: appy.files,
-        areas: appy.areas,
-        pages: appy.pages,
-        app: app,
-        uploadfs: uploadfs,
-        permissions: aposPermissions,
-      }, callback);
+      require('apostrophe-twitter')({ apos: apos, app: app });
+      require('apostrophe-rss')({ apos: apos, app: app });
+
+      async.series([initAposMain, initAposPages], callback);
+
+      function initAposMain(callback) {
+        console.log('initAposMain');
+        return apos.init({
+          db: db,
+          app: app,
+          uploadfs: uploadfs,
+          permissions: aposPermissions,
+          // Allows us to extend shared layouts
+          partialPaths: [ __dirname + '/views/global' ]
+        }, callback);
+      }
+
+      function initAposPages(callback) {
+        console.log('initAposPages');
+        pages = require('apostrophe-pages')({ apos: apos, app: app }, callback);
+      }
     }
 
-"What are `appy.files`, `appy.areas` and `appy.pages`?" MongoDB collections. You are responsible for connecting to MongoDB and creating these three collection objects, then providing them to Apostrophe. (Hint: it's pretty convenient with Appy.) For best results, `areas` and `pages` should both have a unique index on the `slug` property. The `areas` collection is used for independent areas, while the `pages` collection is handy when areas should be logically grouped together (consider the "main" and "sidebar" content areas of a webpage, for instance). Apostrophe's getArea, putArea and getPage methods make all that easy for you as you'll see below.
+"Where does db come from?" It's a MongoDB native database connection. (Hint: convenient to set up with Appy, or just use mongodb-native yourself.) Apostrophe's getArea, putArea and getPage methods utilize these.
 
 "What is `app`?" `app` is your Express 3.0 app object. See the Express documentation for how to create an application. Again, Appy helps here.
 
-"What is `uploadfs`?" [http://github.com/punkave/uploadfs](uploadfs) is a module that conveniently stores uploaded files in either the local filesystem or S3, whichever you like. See `wiki.js` for an example of configuration. You'll create an `uploadfs` instance, initialize it and then pass it in here.
+"What is `uploadfs`?" [http://github.com/punkave/uploadfs](uploadfs) is a module that conveniently stores uploaded files in either the local filesystem or S3, whichever you like. See `app.js` in the `apostrophe-sandbox` project for an example of configuration. You'll create an `uploadfs` instance, initialize it and then pass it in here.
 
 "What is `aposPermissions`?" A function you define to decide who is allowed to edit content. If you skip this parameter, Apostrophe allows everyone to edit everything - not safe in production of course, but convenient in the early development stages.
 
-To understand configuration in detail, you should really check out `wiki.js`. Please don't suffer without reading that simple and well-commented example.
+To understand configuration in detail, you should really check out `app.js`. Please don't suffer without reading that simple and well-commented example.
 
 ### Making Sure Apostrophe Is In The Browser
 
@@ -108,7 +121,7 @@ Note the `body` block, which can be overridden in any template that `extend`s th
 
 ### Adding Editable Areas To Your Templates
 
-The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example taken from the aposwiki sample application:
+The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example taken from the apostrophe-sandbox sample application:
 
     {{ aposArea({ slug: 'main', items: main, edit: true }) }}
 
@@ -136,7 +149,7 @@ Naturally `getArea` is asynchronous:
 
 Note the code that checks whether `area` is actually set before attempting to access its content. If no area with that slug has ever been saved, the `area` callback parameter will be null.
 
-Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the `wiki.js` sample application does).
+Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the `app.js` sample application does).
 
 ## Grouping Areas Into "Pages"
 
@@ -174,64 +187,7 @@ Then `getPage` will fetch all of them and deliver an object like this:
 
 Apostrophe's putArea and getArea methods are written to automatically spot slugs containing a ":" and update or fetch an area within the areas property of a page in the pages collection, rather than creating a freestanding area object in the areas collection.
 
-The [apostrophe-wiki sample application](http://github.com/punkave/apostrophe-wiki) uses this method to deliver complete Wiki pages:
-
-    app.get('*', function(req, res) {
-      var slug = req.params[0];
-      apos.getPage(slug, function(e, info) {
-        return res.render('page.html', { 
-          slug: info.slug, 
-          main: info.areas.main ? info.areas.main.items : [], 
-          sidebar: info.areas.sidebar ? info.areas.sidebar.items : []
-        });
-      });
-    });
-
-This is a simplified example. The actual code in `wiki.js` uses middleware to summon the page and footer information into the `req` object. There are two middleware functions, one for the page contents and one for a globally shared footer. It's a good strategy to consider. Perhaps we'll add some standard middleware functions like this soon:
-
-    app.get('*', 
-      function(req, res, next) {
-        // Get content for this page
-        req.slug = req.params[0];
-        apos.getPage(req.slug, function(e, info) {
-          if (e) {
-            console.log(e);
-            return fail(req, res);
-          }
-          if (!info) {
-            info = { slug: slug, areas: {} };
-          }
-          req.page = info;
-          return next();
-        });
-      },
-      function(req, res, next) {
-        // Get the shared footer
-        apos.getArea('footer', function(e, info) {
-          if (e) {
-            console.log(e);
-            return fail(req, res);
-          }
-          req.footer = info;
-          return next();
-        });
-      },
-      function (req, res) {
-        return res.render('page.html', { 
-          slug: req.slug, 
-          main: req.page.areas.main ? req.page.areas.main.items : [], 
-          sidebar: req.page.areas.sidebar ? req.page.areas.sidebar.items : [],
-          user: req.user,
-          edit: req.user && req.user.username === 'admin',
-          footer: req.footer ? req.footer.content : ''
-        });
-      }
-    );
-
-Now `page.jade` can call `aposArea` to render the areas:
-
-    {{ aposArea({ slug: slug + ':main', items: main, edit: true }) }}
-    {{ aposArea({ slug: slug + ':sidebar', items: sidebar, edit: true }) }}
+The [apostrophe-pages module](http://github.com/punkave/apostrophe-pages) uses this method to deliver complete pages automatically for you. In most cases this is what you'll want to do. In rarer cases you'll write your own routes that need to deliver content. See the sandbox project and the `apostrophe-pages` module for examples.
 
 ## Enforcing Permissions
 
@@ -245,12 +201,12 @@ When calling init(), just set the `permissions` option to a function that looks 
 
 Once you've decided whether `req.user` should be allowed to carry out `action`, invoke `callback` with `null` to let the user complete the action, or with an error to forbid the action.
 
-Currently the possible actions are `edit-area` and `edit-media`. `edit-area` calls will include the slug of the area as the third parameter. `edit-media` calls for existing files may include a `file` object retrieved from Apostrophe's database, with an "owner" property set to the _id, id or username property of `req.user` at the time the file was last edited. `edit-media` calls with no existing file parameter also occur, for new file uploads.
+Currently the possible actions are `edit-area`, `edit-media`, `edit-page` and `view-page` (the latter two are added by the `apostrophe-pages` module). `edit-area` calls will include the slug of the area as the third parameter. `edit-media` calls for existing files may include a `file` object retrieved from Apostrophe's database, with an "owner" property set to the _id, id or username property of `req.user` at the time the file was last edited. `edit-media` calls with no existing file parameter also occur, for new file uploads.
 
-A common case is to restrict editing to a single user:
+A common case is to restrict editing to a single user but let view actions sail through:
 
     function permissions(req, action, fileOrSlug, callback) {
-      if (req.user && (req.user.username === 'admin')) {
+      if (req.user && (!action.match(/^view-/)) && (req.user.username === 'admin')) {
         // OK
         return callback(null);
       } else {
@@ -258,11 +214,13 @@ A common case is to restrict editing to a single user:
       }
     }
 
-You can see an example of this pattern in `wiki.js`.
+You can see an example of this pattern in `app.js` in the sandbox project.
 
 ## Extending Apostrophe
 
 You can extend apos with additional widgets, and the [apostrophe-twitter](http://github.com/punkave/apostrophe-twitter) and [apostrophe-rss](http://github.com/punkave/apostrophe-rss) modules provide working examples. New widget types can even have custom loaders that bring in additional data on the server side as needed. It's neat stuff. 
+
+The [apostrophe-pages](http://github.com/punkave/apostrophe-pages) module extends Apostrophe with full blown support for trees of editable web pages (like having a static site, except of course that your users can edit it gorgeously and intuitively).
 
 ## Roadmap
 
@@ -275,8 +233,6 @@ Apostrophe is a work in progress. Certainly the following things need to improve
 * Server-side content validation should be much smarter.
 * It should be possible to fetch summaries of areas conveniently and quickly. The new way of storing items as a structured array in MongoDB makes this possible, but a simple API for it should be exposed.
 * It should be possible to fetch just certain rich media from areas conveniently and quickly (technically possible now, see above).
-* Server-side renders should be cached, for a minimum lifetime equal to that of the widget with the shortest cache lifetime.
-* A separate module that complements Apostrophe by managing "pages" in a traditional page tree should be developed.
 
 ## Conclusion and Contact Information
 
