@@ -1,6 +1,7 @@
 @import 'utils.less';
 @import 'colors.less';
-@import 'icons.css';
+@import 'icons.less';
+@import 'typography.less';
 
 /**
  * To prevent conflicts EVERY class should start with apos-
@@ -9,6 +10,11 @@
 .apos-widget
 {
   display: block;
+}
+
+body
+{
+  padding-top: 40px;
 }
 
 /* Admin bar base styles */
@@ -30,12 +36,10 @@
     width: 40px;
     height: 40px;
     background-color: @apos-base;
-  }
-
-  .apos-page-bar
-  {
-    float: left;
-    width: 100px;
+    background-image: url('../images/apos-logo-tiny.png');
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    text-indent: -9999px;
   }
 
   .apos-admin-bar-item
@@ -43,7 +47,8 @@
     float: left;
     height: 40px;
     line-height: 40px;
-    
+    letter-spacing: 1px;
+    text-transform: uppercase;
     border-right: 1px dotted @apos-grey50;
     
     &:last-child
@@ -62,17 +67,39 @@
       margin: 0;
       width: 120px;
       cursor: pointer;
-      .apos-accordion-title {}
+      
+      .apos-accordion-title
+      {
+        color: #eee;
+      }
+
       .apos-accordion-items
       {
+        position: relative;
+        z-index: 9999;
         padding: 0;
+        height: auto;
+        max-height: 0px;
+        overflow: hidden;
+        
+        
+        .transition;
+        &.open
+        {
+          max-height: 600px;
+        }
+        
         ul
         {
           margin: 0;
-          
           .apos-accordion-item
           {
-
+            background-color: rgba(50,50,50,0.8);
+            
+            &:hover
+            {
+              background: @apos-grey20;
+            }
           }
         }
       }
@@ -80,16 +107,14 @@
 
     a, li
     {
-      padding: 0px 10px;
-      
-      font-size: 14px;
+      padding: 0px 15px;
+      font-size: 10px;
       display: inline-block;
-      // background-color: red;
       color: @apos-grey50;
       width: 100%;
       height: 40px;
-      line-height: 40px;
-      
+      line-height: 43px;
+      font-family: 'cabin';      
       text-decoration: none;
     }
   }/* apos bar items */
@@ -146,7 +171,7 @@
 .apos-control
 {
   float: left;
-  padding: 3px 6px;
+  padding: 4px;
   background-color: @apos-base;
   color: #fff;
   margin-right: 10px;
@@ -169,6 +194,25 @@
     text-decoration: none;
   }  
 }
+
+/* apos buttons for areas */
+.apos-area,
+.apos-singleton
+{
+  position: relative;
+}
+
+.apos-area-controls
+{
+  position: absolute;
+  top: -10px;
+  left: -10px;
+}
+
+
+
+
+
 
 .apos-toolbar .apos-menu-label
 {
@@ -369,12 +413,6 @@ textarea.apos-code {
   z-index: 999;
   padding: 10px;
   border: 3px solid #ccc;
-}
-
-.apos-area-controls
-{
-  float: left;
-  padding-bottom: 4px;
 }
 
 // Hiding these for now to see how we manage without them:
