@@ -10,7 +10,7 @@
   .box-shadow(@style, rgba(0, 0, 0, @alpha));
 }
 
-.transition(@property: all, @time: 0.2s) {
-  -webkit-transition: @property @time;
-     -moz-transition: @property @time;
+.transition(@property: all, @time: 0.2s, @ease:ease) {
+  -webkit-transition: @property @time @ease;
+     -moz-transition: @property @time @ease;
 }
