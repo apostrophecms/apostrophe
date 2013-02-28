@@ -5,7 +5,7 @@
   -moz-box-shadow:    @style @c;
 }
 
-.box-shadow(@style, @alpha: 50%) when (isnumber(@alpha))
+.box-shadow(@style:0px 2px 4px, @alpha: 20%) when (isnumber(@alpha))
 {
   .box-shadow(@style, rgba(0, 0, 0, @alpha));
 }

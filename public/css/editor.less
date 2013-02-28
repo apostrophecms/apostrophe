@@ -11,6 +11,68 @@
   display: block;
 }
 
+/* Admin bar base styles */
+.apos-admin-bar
+{
+  position: fixed;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: @apos-grey;
+  height: 40px;
+  .box-shadow;
+
+  
+  .apos-logo-tiny
+  {
+    float: left;
+    width: 40px;
+    height: 40px;
+    background-color: @apos-base;
+  }
+
+  .apos-page-bar
+  {
+    float: left;
+    width: 100px;
+  }
+
+  .apos-admin-bar-item
+  {
+    float: left;
+    height: 40px;
+    line-height: 40px;
+    padding: 0px 10px;
+    border-right: 1px dotted @apos-grey50;
+    
+    &:last-child
+    {
+      border-right: none;
+    }
+    
+    &.login-status
+    {
+      float: right;
+      background: @apos-grey10;  
+    }
+
+    &.apos-page-bar
+    {
+      
+    }
+
+    a
+    {
+      display: inline-block;
+      // background-color: red;
+      width: 100%;
+      height: 40px;
+      line-height: 40px;
+    }
+  }/* apos bar items */
+} /* admin bar */
+
 /*
  * Edit button shown on placeholder that reopens the widget
  */
@@ -293,3 +355,10 @@ textarea.apos-code {
   padding-bottom: 4px;
 }
 
+// Hiding these for now to see how we manage without them:
+.apos-insert-before-widget,
+.apos-insert-after-widget
+{
+  display: none;
+  visibility: hidden;
+}

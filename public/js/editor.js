@@ -561,7 +561,8 @@ apos.Editor = function(options) {
 
 apos.addButtonsToWidget = function($widget) {
   var $buttons = $('<div class="apos-widget-buttons"></div>');
-  var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
+  // var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
+  var $button = $('<div class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');  
   $buttons.append($button);
   var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
   $buttons.append($button);
