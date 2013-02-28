@@ -1,0 +1,39 @@
+{% extends "widgetEditor.html" %}
+
+{% block widgetVars %}
+  {% set widgetClass = 'apos-slideshow-editor' %}
+{% endblock %}
+
+{% block title %}
+  Edit Slideshow
+{% endblock %}
+
+{% block instructions %}
+Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
+{% endblock %}
+
+{# We have change events #}
+{% block previewButton %}
+{% endblock %}
+
+{% block formBody %}
+  {# Powered by the blueimp file uploader #}
+  <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
+{% endblock %}
+
+{# For reordering and removing of images #}
+
+{% block formAfterPreview %}
+  <ul class="apos-slideshow-items">
+    {# I am a template. I get cloned and populated by jQuery. If you #}
+    {# leave my data attributes intact you can edit me quite a bit. #}
+    <li class="apos-slideshow-item apos-template" data-slideshow-image-container>
+      {# jQuery will give this img a proper src #}
+      <img src="" class="apos-slideshow-image" data-slideshow-image></span>
+      <a class="apos-control apos-button">Drag Handle</a>
+      <a class="apos-control apos-button">Remove</a>
+    </li>
+  </ul>
+{% endblock %}
+
+

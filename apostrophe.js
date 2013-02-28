@@ -88,8 +88,11 @@ function apos() {
     '/apos/js/rangy-1.2.3/rangy-selectionsaverestore.js',
     '/apos/js/textinputs_jquery.js',
     '/apos/js/jquery.cookie.js',
+    '/apos/blueimp/vendor/jquery.ui.widget.js',
+    '/apos/blueimp/js/jquery.iframe-transport.js',
+    '/apos/blueimp/js/jquery.fileupload.js',
     '/apos/js/editor.js', 
-    '/apos/js/content.js' 
+    '/apos/js/content.js',
   ];
 
   // Templates pulled into the page by the aposTemplates() Express local
@@ -161,6 +164,11 @@ function apos() {
 
       // All the locals we export to Express must have a apos prefix on the name
       // for clean namespacing.
+
+      // Make crucial data such as apos.uploadsUrl available to the browser
+      aposLocals.aposSetVariables = function() {
+        return partial('variables.html', { uploadsUrl: uploadfs.getUrl() });
+      };
 
       // aposTemplates renders templates that are needed on any page that will
       // use apos. Examples: imageEditor.html, codeEditor.html, etc. These lie

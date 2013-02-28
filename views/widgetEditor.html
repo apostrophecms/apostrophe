@@ -49,6 +49,9 @@
           <input type="radio" name="size" value="full" checked="checked"/> Full
         </label>
       </fieldset>
+      {% block formAfterPreview %}
+        <input class="apos-embed"/>
+      {% endblock %}
     </form>
   </div>
   <div class="apos-modal-footer">

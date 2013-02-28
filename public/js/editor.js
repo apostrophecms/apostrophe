@@ -949,6 +949,96 @@ apos.widgetTypes.image = {
   }
 };
 
+apos.widgetTypes.slideshow = {
+  label: 'Slideshow',
+  editor: function(options) {
+    var self = this;
+    var $items;
+
+    if (!options.messages) {
+      options.messages = {};
+    }
+    if (!options.messages.missing) {
+      options.messages.missing = 'Upload an image file first.';
+    }
+
+    self.afterCreatingEl = function() {
+      var $items = self.$el.find('[data-items]');
+      self.files = [];
+
+      self.$el.find('[data-uploader]').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+          _.each(data.result.files, function (file) {
+            addItem(file.md5, file.name, file.format);
+          });
+          reflect();
+          self.preview();
+        }
+      });
+    };
+
+    // The server will render an actual slideshow, but we also want to see
+    // thumbnails of everything with draggability for reordering and remove buttons
+    self.prePreview = function(callback) {
+      $items.find('[data-item] :not(.apos-template)').remove();
+
+      var i = 0;
+      while (true) {
+        var md5 = self.data['item-' + i + '-md5'];
+        if (md5 === undefined) {
+          break;
+        }
+        var name = self.data['item-' + i + '-name'];
+        var format = self.data['item-' + i + '-format'];
+        addItem(md5, name, format);
+        i++;
+      }
+      callback();
+    };
+
+    function addItem(md5, name, format) {
+      var $item = $items.find('[data-item].apos-template').clone();
+      $item.removeClass('.apos-template');
+      $item.find('[data-image]').attr(src, apos.uploadUrl + '/media/' + md5 + '-' + name + '.one-third.' + format);
+      $item.data('md5', md5);
+      $item.data('name', name);
+      $item.data('format', format);
+      $item.click('[data-remove]', function() {
+        $item.remove();
+        reflect();
+        self.preview();
+      }
+    }
+
+    // Update the data attributes to match what is found in the 
+    // list of items. This is called after remove and reorder events
+    function reflect() {
+      $itemElements = $items.find('[data-item] :not(.apos-template)');
+
+      // Purge previous data for items
+      var keys = _.keys(self.data);
+      _.each(keys, function(key) {
+        if (key.match(/^item\-/)) {
+          delete item[key];
+        }
+      });
+
+      $.each(itemElements, function(i, $item) {
+        self.data['item-' + i + '-md5'] = $item.data('md5');
+        self.data['item-' + i + '-name'] = $item.data('name');
+        self.data['item-' + i + '-format'] = $item.data('format');
+      });
+    }
+
+    self.type = 'slideshow';
+    options.template = '.apos-slideshow-editor';
+
+    // Parent class constructor shared by all widget editors
+    apos.widgetEditor.call(self, options);
+  }
+};
+
 apos.widgetTypes.video = {
   label: 'Video',
   editor: function(options) {
@@ -1610,3 +1700,4 @@ apos.slugify = function(s, options) {
 apos.regExpQuote = function (string) {
   return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
 }
+
