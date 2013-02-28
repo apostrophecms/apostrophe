@@ -52,19 +52,23 @@ function apos() {
     },
     bold: {
       type: 'button',
-      label: 'b'
+      label: 'b',
+      icon: 'bold'
     },
     italic: {
       type: 'button',
-      label: 'i'
+      label: 'i',
+      icon: 'italic'
     },
     createLink: {
       type: 'button',
-      label: 'Link'
+      label: 'Link',
+      icon: 'link'
     },
     insertUnorderedList: {
       type: 'button',
-      label: 'List'
+      label: 'List',
+      icon: 'ul'
     }
   };
 
@@ -925,6 +929,7 @@ function apos() {
     image: {
       widget: true,
       label: 'Image',
+      icon: 'image',
       render: function(data) {
         return partial('image.html', data);
       },
@@ -933,6 +938,7 @@ function apos() {
     video: {
       widget: true,
       label: 'Video',
+      icon: 'video',
       render: function(data) {
         return partial('video.html', data);
       },
@@ -943,6 +949,7 @@ function apos() {
       label: 'Pullquote',
       plaintext: true,
       wrapper: 'span',
+      icon: 'quote-left',
       // Without this it's bothersome for editor.js to grab the text
       // without accidentally grabbing the buttons. -Tom
       wrapperClass: 'apos-pullquote-text',

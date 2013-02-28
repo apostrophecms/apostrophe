@@ -1,5 +1,9 @@
-{% macro aposButton(name, label) %}
-  <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}>{{ label }}</a>
+{% macro aposButton(name, label, icon) %}
+  {%- if icon -%}
+    <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}><i class="icon-{{ icon }}"></i></a>
+  {% else %}
+    <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}>{{ label }}</i></a>
+  {% endif %}
 {% endmacro %}
 
 {% macro aposMenu(name, label, choices) %}
@@ -13,8 +17,13 @@
   </div>
 {% endmacro %}
 
-{% macro aposWidgetButton(name, label) %}
-  <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
+{% macro aposWidgetButton(name, label, icon) %}
+  
+  {%- if icon -%}
+    <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}"><i class="icon-{{ icon }}"></i></a>
+  {% else %}
+    <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
+  {% endif %}
 {% endmacro %}
 
 <form class="apos-area-form">
@@ -24,14 +33,14 @@
         {%- set controlType = controlTypes[control] -%}
         {%- if controlType -%}
           {%- if controlType.type == 'button' -%}
-            {{ aposButton(control, controlType.label) }}
+            {{ aposButton(control, controlType.label, controlType.icon) }}
           {%- endif -%}
           {%- if controlType.type == 'menu' -%}
             {{ aposMenu(control, controlType.label, controlType.choices) }}
           {%- endif -%}
         {%- endif -%}
         {%- if itemTypes[control] and itemTypes[control].widget -%}
-          {{ aposWidgetButton(control, itemTypes[control].label) }}
+          {{ aposWidgetButton(control, itemTypes[control].label, itemTypes[control].icon) }}
         {%- endif -%}
       {% endfor %}
       <div class="apos-clear"></div>

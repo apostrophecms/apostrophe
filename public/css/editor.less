@@ -1,3 +1,7 @@
+@import 'utils.less';
+@import 'colors.less';
+@import 'icons.css';
+
 /**
  * To prevent conflicts EVERY class should start with apos-
  */
@@ -22,18 +26,17 @@
 
 .apos-widget-button {
   z-index: 2;
-  background-color: black;
+  background-color: @apos-base;
   color: white;
   padding: 4px;
-  border: 2px solid #ccc;
   margin-top: 4px;
   margin-right: 4px;
-  border-radius: 8px;
   font-size: 12px;
   font-style: italic;
   font-weight: normal;
-  pointer: hand;
   float: left;
+  
+  cursor: pointer;
 }
 
 .apos-area-form-footer
@@ -49,7 +52,7 @@
 
 .apos-toolbar .apos-control
 {
-  margin-right: 5px;
+  margin-right: 2px;
 }
 
 /**
@@ -59,15 +62,28 @@
 .apos-control
 {
   float: left;
-  padding: 5px 10px 5px 10px;
-  background-color: #ddf;
-  color: black;
-  border-radius: 6px;
+  padding: 3px 6px;
+  background-color: @apos-base;
+  color: #fff;
   margin-right: 10px;
   text-decoration: none;
   font-size: 16px;
   margin-right: 5px;
+  // text-transform: uppercase;
   font-family: Helvetica, sans-serif;
+}
+
+.apos-button
+{
+  // .box-shadow(1px 1px 5px, 20%);
+  cursor: pointer;
+  .transition;
+  
+  &:hover
+  {
+    background-color: @apos-shade-10;
+    text-decoration: none;
+  }  
 }
 
 .apos-toolbar .apos-menu-label
@@ -247,10 +263,6 @@ textarea.apos-code {
   margin-top: 10px;
 }
 
-.apos-button:hover
-{
-  text-decoration: underline;
-}
 
 .apos-modal-blackout
 {
