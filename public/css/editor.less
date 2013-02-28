@@ -43,7 +43,7 @@
     float: left;
     height: 40px;
     line-height: 40px;
-    padding: 0px 10px;
+    
     border-right: 1px dotted @apos-grey50;
     
     &:last-child
@@ -57,18 +57,40 @@
       background: @apos-grey10;  
     }
 
-    &.apos-page-bar
+    &.apos-accordion-menu
     {
-      
+      margin: 0;
+      width: 120px;
+      cursor: pointer;
+      .apos-accordion-title {}
+      .apos-accordion-items
+      {
+        padding: 0;
+        ul
+        {
+          margin: 0;
+          
+          .apos-accordion-item
+          {
+
+          }
+        }
+      }
     }
 
-    a
+    a, li
     {
+      padding: 0px 10px;
+      
+      font-size: 14px;
       display: inline-block;
       // background-color: red;
+      color: @apos-grey50;
       width: 100%;
       height: 40px;
       line-height: 40px;
+      
+      text-decoration: none;
     }
   }/* apos bar items */
 } /* admin bar */
