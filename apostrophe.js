@@ -203,6 +203,8 @@ function apos() {
         });
         options.itemType = self.itemTypes[options.type];
         options.item = item;
+        options.item.position = 'middle';
+        options.item.size = 'full';
         return partial('singleton.html', options);
       }
 

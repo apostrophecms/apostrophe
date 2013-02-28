@@ -612,36 +612,90 @@ apos.widgetEditor = function(options) {
     self.editor.$editable.focus();
   }
 
-  // Make our own instance of the editor template
-  self.$el = $(options.template + '.apos-template').clone();
-  self.$el.removeClass('.apos-template');
-  self.$previewContainer = self.$el.find('.apos-widget-preview-container');
-  if (self.afterCreatingEl) {
-    self.afterCreatingEl();
-  }
-  self.$el.find('[data-preview]').click(function() {
-    self.preview();
-    return false;
-  });
-  self.$el.find('[data-action="dismiss"]').click(function() {
-    self.destroy();
-  });
-  self.$el.find('input[type=radio]').change(function() {
-    self.changeSizeAndPosition();
+  // Use apos.modalFromTemplate to manage our lifecycle as a modal
+
+  self.$el = apos.modalFromTemplate(options.template, {
+    init: function(callback) {
+      self.$previewContainer = self.$el.find('.apos-widget-preview-container');
+      if (self.afterCreatingEl) {
+        self.afterCreatingEl();
+      }
+      self.$el.find('[data-preview]').click(function() {
+        self.preview();
+        return false;
+      });
+
+      if (options.fixedPositionAndSize) {
+        self.$el.find('.apos-position,.apos-size,.apos-lorem').remove();
+      } else {
+        self.$el.find('input[type=radio]').change(function() {
+          self.changeSizeAndPosition();
+        });
+      }
+  
+      var sizeAndPosition = { size: 'two-thirds', position: 'middle' };
+      if (self.exists) {
+        sizeAndPosition.size = self.data.size;
+        sizeAndPosition.position = self.data.position;
+      }
+      self.$el.find('input[name="size"]').prop('checked', false);
+      self.$el.find('input[name="size"][value="' + sizeAndPosition.size + '"]').prop('checked', true);
+      self.$el.find('input[name="position"]').prop('checked', false);
+      self.$el.find('input[name="position"][value="' + sizeAndPosition.position + '"]').prop('checked', true);
+
+      self.preview();
+      return callback(null);
+    },
+
+    save: function(callback) {
+      self.preSave(function() {
+        if (!self.exists) {
+          alert(options.messages.missing);
+          return callback('error');
+        }
+        if (self.editor) {
+          self.editor.undoPoint();
+          var _new = false;
+          if (!self.$widget) {
+            self.createWidget();
+            _new = true;
+          }
+        }
+        self.updateWidget(function(err) {
+          if (_new) {
+            self.insertWidget();
+            // apos.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
+          }
+          // Widget backups are probably a bad idea since they would defeat
+          // copy and paste between pages or at least sites
+          // self.editor.updateWidgetBackup(self.widgetId, self.$widget);
+
+          if (options.save) {
+            // Used to implement save for singletons and non-rich-text-based areas.
+            // Note that in this case options.data was passed in by reference, 
+            // so the end result can be read there. Pay attention to the callback so
+            // we can allow the user a second chance 
+            options.save(function(err) {
+              return callback(err);
+            });
+          } else {
+            return callback(null);
+          }
+        });
+      });
+    },
+
+    afterHide: function(callback) {
+      self.afterHide();
+      return callback(null);
+    }
   });
 
+  // Default methods
+
   _.defaults(self, {
-    destroy: function() {
-      self.modal('hide');
+    afterHide: function() {
       _.map(self.timers, function(timer) { clearInterval(timer); });
-      // Let it go away pretty, then remove it from the DOM
-      setTimeout(function() {
-        self.$el.remove();
-      }, 500);
-      // Return focus to the main editor
-      if (self.editor) {
-        self.editor.$editable.focus();
-      }
     },
 
     getSizeAndPosition: function() {
@@ -791,13 +845,6 @@ apos.widgetEditor = function(options) {
       apos.pushSelection();
     },
 
-    modal: function(command) {
-      // TODO: this should utilize all the good stuff in
-      // apos.modal, not just apos._modalCore, I need to 
-      // refactor out the redundancies
-      return apos._modalCore(self.$el, command);
-    },
-
     preview: function() {
       if (self.prePreview) {
         self.prePreview(go);
@@ -823,6 +870,7 @@ apos.widgetEditor = function(options) {
           } else {
             info.content = undefined;
           }
+          apos.log('rendering');
           $.post('/apos/render-widget', info, function(html) {
             var previewWidget = $(html);
             previewWidget.addClass('apos-widget-preview');
@@ -838,75 +886,18 @@ apos.widgetEditor = function(options) {
           self.$el.find('.apos-requires-preview').hide();
         }
       }
-    }
-  });
+    },
 
-  self.$el.find('.apos-save').click(function() {
-    self.preSave(function() {
-      if (!self.exists) {
-        alert(options.messages.missing);
-        return false;
-      }
-      if (self.editor) {
-        self.editor.undoPoint();
-        var _new = false;
-        if (!self.$widget) {
-          self.createWidget();
-          _new = true;
-        }
-      }
-      self.updateWidget(function(err) {
-        if (_new) {
-          self.insertWidget();
-          // apos.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
-        }
-        // Widget backups are probably a bad idea since they would defeat
-        // copy and paste between pages or at least sites
-        // self.editor.updateWidgetBackup(self.widgetId, self.$widget);
-
-        if (options.save) {
-          // Used to implement save for singletons and non-rich-text-based areas.
-          // Note that in this case options.data was passed in by reference, 
-          // so the end result can be read there. Pay attention to the callback so
-          // we can allow the user a second chance 
-          options.save(function(err) {
-            if (!err) {
-              self.destroy();
-            }
-          });
-        } else {
-          self.destroy();
-        }
-      });
-    });
-    return false;
-  });
-
-  // Override if you need to carry out an action such
-  // as fetching video information before the save can 
-  // take place. Takes a callback which completes the
-  // save operation, or gracefully refuses it if you
-  // don't set self.exists to true. Use of a callback
-  // allows you to asynchronously fetch video information, etc.
-  if (!self.preSave) {
-    self.preSave = function(callback) {
+    // Override if you need to carry out an action such
+    // as fetching video information before the save can 
+    // take place. Takes a callback which completes the
+    // save operation, or gracefully refuses it if you
+    // don't set self.exists to true. Use of a callback
+    // allows you to asynchronously fetch video information, etc.
+    preSave: function(callback) {
       callback();
     }
-  }
-
-  var sizeAndPosition = { size: 'two-thirds', position: 'middle' };
-  if (self.exists) {
-    sizeAndPosition.size = self.data.size;
-    sizeAndPosition.position = self.data.position;
-  }
-  self.$el.find('input[name="size"]').prop('checked', false);
-  self.$el.find('input[name="size"][value="' + sizeAndPosition.size + '"]').prop('checked', true);
-  self.$el.find('input[name="position"]').prop('checked', false);
-  self.$el.find('input[name="position"][value="' + sizeAndPosition.position + '"]').prop('checked', true);
-
-  self.preview();
-
-  self.modal();
+  });
 }
 
 apos.widgetTypes = {};
@@ -976,11 +967,12 @@ apos.widgetTypes.video = {
 
       // Automatically preview if we detect something that looks like a
       // fresh paste
-      var last = '';
+      var last = self.data.video;
       self.timers.push(setInterval(function() {
         var next = self.$embed.val();
         if (interestingDifference(last, next))
         {
+          apos.log('interesting paste');
           self.preview();
         }
         last = next;
@@ -1287,12 +1279,13 @@ apos.enableAreas = function() {
     var slug = $singleton.attr('data-slug');
     var type = $singleton.attr('data-type');
 
-    var itemData = {};
+    var itemData = { position: 'middle', size: 'full' };
     var $item = $singleton.find('.apos-content .apos-widget :first');
     if ($item.length) {
       itemData = $item.data();
     }
     new apos.widgetTypes[type].editor({ 
+      fixedPositionAndSize: true,
       data: itemData, 
       save: function(callback) {
         apos.log(itemData);
@@ -1391,9 +1384,9 @@ apos._modalCore = function(sel, command) {
   } else {
     apos.pushSelection();
     var blackout = $('<div class="apos-modal-blackout"></div>');
-    $('body').append(blackout);
-    $el.offset({ top: $('body').scrollTop() + 200, left: ($(window).width() - 600) / 2 });
+    $('body').append(blackout); 
     $('body').append($el);
+    $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
     $el.show();
   }
 };
