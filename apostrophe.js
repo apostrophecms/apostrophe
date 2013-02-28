@@ -864,37 +864,6 @@ function apos() {
     return self.partial(name, data, dir);
   }
 
-  function slugify(s, options) {
-    // Note: you'll need to use xregexp instead if you need non-Latin character
-    // support in slugs. KEEP IN SYNC WITH BROWSER SIDE IMPLEMENTATION in editor.js
-
-    // By default everything not a letter or number becomes a dash. 
-    // You can add additional allowed characters via options.allow
-
-    if (!options) {
-      options = {};
-    }
-
-    if (!options.allow) {
-      options.allow = '';
-    }
-
-    var regex = new RegExp("/[^A-Za-z0-9" + RegExp.quote(options.allow) + "]/g");
-    s = s.replace(regex, '-');
-    // Consecutive dashes become one dash
-    s = s.replace(/\-+/g, '-');
-    // Leading dashes go away
-    s = s.replace(/^\-/, '');
-    // Trailing dashes go away
-    s = s.replace(/\-$/, '');
-    // If the string is empty, supply something so that routes still match
-    if (!s.length)
-    {
-      s = 'none';
-    }
-    return s.toLowerCase();
-  }
-
   // String.replace does NOT do this
   // Regexps can but they can't be trusted with UTF8 ):
 
