@@ -595,6 +595,8 @@ apos.widgetEditor = function(options) {
     apos.log(self.data);
   }
 
+  self.data.type = self.type;
+
   if (self.data.id) {
     self.exists = true;
   }
@@ -1579,3 +1581,39 @@ apos.log = function(msg) {
   }
 };
 
+// Note: you'll need to use xregexp instead if you need non-Latin character
+// support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
+apos.slugify = function(s, options) {
+
+  // By default everything not a letter or number becomes a dash. 
+  // You can add additional allowed characters via options.allow
+
+  if (!options) {
+    options = {};
+  }
+
+  if (!options.allow) {
+    options.allow = '';
+  }
+
+  var r = "[^A-Za-z0-9" + apos.regExpQuote(options.allow) + "]";
+  var regex = new RegExp(r, 'g');
+  s = s.replace(regex, '-');
+  // Consecutive dashes become one dash
+  s = s.replace(/\-+/g, '-');
+  // Leading dashes go away
+  s = s.replace(/^\-/, '');
+  // Trailing dashes go away
+  s = s.replace(/\-$/, '');
+  // If the string is empty, supply something so that routes still match
+  if (!s.length)
+  {
+    s = 'none';
+  }
+  return s.toLowerCase();
+}
+
+// Borrowed from the regexp-quote module for node
+apos.regExpQuote = function (string) {
+  return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
+}
