@@ -212,6 +212,20 @@ function apos() {
         return partial('singleton.html', options);
       }
 
+      aposLocals.aposAreaIsEmpty = function(options) {
+        console.log('WOOOO');
+        if (!options.area) {
+          return true;
+        }
+        return !options.area.items.length;
+      }
+
+      aposLocals.aposSingletonIsEmpty = function(options) {
+        return !_.some(options.area.items, function(item) {
+          return item.type === options.type;
+        });
+      }
+
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
         _.each(items, function(item) {

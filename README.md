@@ -163,6 +163,16 @@ Only widgets (images, videos and the like) may be specified as types for singlet
 
     {{ aposArea({ slug: 'main', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
 
+## Detecting Empty Areas and Singletons
+
+It's common to want to do something special if an area or singleton is empty, especially if the user does not have editing privileges. You can detect that:
+
+    {% if (not edit) and aposSingletonIsEmpty({ area: page.areas.sidebarVideo, type: 'video' }) %}
+      <p>Default placeholder video might go here</p>
+    {% endif %}
+
+`aposAreaIsEmpty` is also available. (Singletons are stored as areas but aposSingletonIsEmpty is correctly written to detect whether a widget of the proper type is present.)
+
 ## Grouping Areas Into "Pages"
 
 "What if I'm building a site with lots of pages? Each page might have two or three areas. Is there an efficient way to get them all at once?"
