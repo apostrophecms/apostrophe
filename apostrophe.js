@@ -103,27 +103,27 @@ function apos() {
     async.series([setupAreas, setupPages, setupFiles, afterDb], callback);
 
     function setupAreas(callback) {
-      db.collection('aposAreas', options, function(err, collection) {
+      db.collection('aposAreas', function(err, collection) {
         self.areas = areas = collection;
-        collection.ensureIndex({ slug: 1 }, { unique: true }, function(err) {
+        collection.ensureIndex({ slug: 1 }, { safe: true, unique: true }, function(err) {
           return callback(err);
         });
       });
     }
 
     function setupPages(callback) {
-      db.collection('aposPages', options, function(err, collection) {
+      db.collection('aposPages', function(err, collection) {
         self.pages = pages = collection;
         async.series([indexSlug], callback);
         function indexSlug(callback) {
-          self.pages.ensureIndex({ slug: 1 }, { unique: true }, callback);
+          self.pages.ensureIndex({ slug: 1 }, { safe: true, unique: true }, callback);
         }
         // ... more index functions
       });
     }
 
     function setupFiles(callback) {
-      db.collection('aposFiles', options, function(err, collection) {
+      db.collection('aposFiles', function(err, collection) {
         self.files = files = collection;
         return callback(err);
       });
@@ -188,7 +188,6 @@ function apos() {
       }
 
       aposLocals.aposSingleton = function(options) {
-        console.log('aposSingleton');
         if (!self.itemTypes[options.type]) {
           console.log("Unknown item type: " + options.type);
           return;
@@ -198,18 +197,12 @@ function apos() {
         var item = _.find(options.area.items, function(item) {
           return item.type === options.type;
         });
-        if (!item) {
-          item = { type: options.type };
-        }
-        options.itemType = self.itemTypes[item.type];
+        options.itemType = self.itemTypes[options.type];
         options.item = item;
-        console.log('Rendering!');
-        console.log(options);
         return partial('singleton.html', options);
       }
 
       aposLocals.aposAreaIsEmpty = function(options) {
-        console.log('WOOOO');
         if (!options.area) {
           return true;
         }
@@ -364,7 +357,7 @@ function apos() {
           }
           info = infoArg;
           info._id = id;
-          info.name = slugify(file.name);
+          info.name = self.slugify(file.name);
           info.createdAt = new Date();
 
           // Do our best to record who owns this file to allow permissions
@@ -465,6 +458,7 @@ function apos() {
         var slug = req.body.slug;
         self.permissions(req, 'edit-area', slug, function(err) {
           if (err) {
+            console.log('forbid');
             return forbid(res);
           }
           var content = JSON.parse(req.body.content);
@@ -511,8 +505,6 @@ function apos() {
         var item = req.body;
         var options = req.query;
 
-        console.log('PREVIEW: ', item);
-
         var itemType = self.itemTypes[item.type];
         if (!itemType) {
           res.statusCode = 404;
@@ -521,7 +513,6 @@ function apos() {
 
         if (itemType.sanitize) {
           itemType.sanitize(item);
-          console.log('AFTER SANITIZE:', item);
         }
 
         // Invoke server-side loader middleware like getArea or getPage would,
@@ -765,8 +756,6 @@ function apos() {
   self.getPage = function(slug, callback) {
     pages.findOne({ slug: slug }, function(err, page) {
       if (page) {
-        console.log('LOADED PAGE:');
-        console.log(page);
         // For convenience guarantee there is a page.areas property
         if (!page.areas) {
           page.areas = {};
@@ -871,12 +860,23 @@ function apos() {
     return self.partial(name, data, dir);
   }
 
-  function slugify(s) {
+  function slugify(s, options) {
     // Note: you'll need to use xregexp instead if you need non-Latin character
-    // support in slugs
+    // support in slugs. KEEP IN SYNC WITH BROWSER SIDE IMPLEMENTATION in editor.js
 
-    // Everything not a letter or number becomes a dash
-    s = s.replace(/[^A-Za-z0-9]/g, '-');
+    // By default everything not a letter or number becomes a dash. 
+    // You can add additional allowed characters via options.allow
+
+    if (!options) {
+      options = {};
+    }
+
+    if (!options.allow) {
+      options.allow = '';
+    }
+
+    var regex = new RegExp("/[^A-Za-z0-9" + RegExp.quote(options.allow) + "]/g");
+    s = s.replace(regex, '-');
     // Consecutive dashes become one dash
     s = s.replace(/\-+/g, '-');
     // Leading dashes go away
@@ -979,29 +979,37 @@ function apos() {
     return nunjucksEnv;
   }
 
-  self.slugify = function(text, options) {
+  // Note: you'll need to use xregexp instead if you need non-Latin character
+  // support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
+  self.slugify = function(s, options) {
+
+    // By default everything not a letter or number becomes a dash. 
+    // You can add additional allowed characters via options.allow
+
     if (!options) {
       options = {};
     }
-    _.defaults(options, {
-      disallow: /[^\w\d]+/g,
-      substitute: '-'
-    });
-    slug = text.toLowerCase().replace(options.disallow, options.substitute);
-    // Lop off leading and trailing -
-    if (slug.length)
-    {
-      if (slug.substr(0, 1) === options.substitute)
-      {
-        slug = slug.substr(1);
-      }
-      if (slug.substr(slug.length - 1, 1) === options.substitute)
-      {
-        slug = slug.substr(0, slug.length - 1);
-      }
+
+    if (!options.allow) {
+      options.allow = '';
     }
-    return slug;
-  };
+
+    var r = "[^A-Za-z0-9" + RegExp.quote(options.allow) + "]";
+    var regex = new RegExp(r, 'g');
+    s = s.replace(regex, '-');
+    // Consecutive dashes become one dash
+    s = s.replace(/\-+/g, '-');
+    // Leading dashes go away
+    s = s.replace(/^\-/, '');
+    // Trailing dashes go away
+    s = s.replace(/\-$/, '');
+    // If the string is empty, supply something so that routes still match
+    if (!s.length)
+    {
+      s = 'none';
+    }
+    return s.toLowerCase();
+  }
 
   // For convenience when configuring uploadfs
   self.defaultImageSizes = [
@@ -1025,6 +1033,16 @@ function apos() {
       width: 380,
       height: 700
     }
-  ]
+  ];
+
+  // Is this MongoDB error related to the uniqueness of the specified field?
+  // Great for retrying on duplicates. Used heavily by the pages module and
+  // no doubt will be by other things
+  self.isUniqueError = function(err, field) {
+    if (!err) {
+      return false;
+    }
+    return (((err.code === 11000) || (err.code === 11001)) && (err.err.indexOf(field) !== -1));
+  }
 }
 

@@ -6,6 +6,10 @@
       </div>
       <div class="apos-clear"></div>
     {%- endif -%}
-    <div class="apos-content">{{ aposItemNormalView(item, item.options) }}</div>
+    <div class="apos-content">
+      {% if item %}
+        {{ aposItemNormalView(item, item.options) }}
+      {% endif %}
+    </div>
   </div>
 </div>
