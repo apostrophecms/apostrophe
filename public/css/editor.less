@@ -50,16 +50,37 @@ body
     letter-spacing: 1px;
     text-transform: uppercase;
     border-right: 1px dotted @apos-grey50;
+    cursor: pointer;
+    
+
     
     &:last-child
     {
       border-right: none;
     }
+
+    &.apos-preview-toggle
+    {
+      padding: 0 10px;
+      .icon-eye {display: block;}
+      .icon-wrench {display: none;}
+
+      &.previewing
+      {
+        .icon-eye {display: none;}
+        .icon-wrench {display: block;}
+      }
+
+      &:hover
+      {
+        i::before {color: #ccc;}
+      }
+    }
     
     &.login-status
     {
       float: right;
-      background: @apos-grey10;  
+      background: @apos-grey10;
     }
 
     &.apos-accordion-menu
@@ -180,6 +201,8 @@ body
   margin-right: 5px;
   // text-transform: uppercase;
   font-family: Helvetica, sans-serif;
+  .transition;
+  opacity: 1;
 }
 
 .apos-button
@@ -421,4 +444,25 @@ textarea.apos-code {
 {
   display: none;
   visibility: hidden;
+}
+
+.previewing
+{
+  .apos-area,
+  .apos-singleton
+  {
+    .apos-control
+    {
+      opacity: 0;
+    }    
+  }
+
+  .apos-area:hover,
+  .apos-singleton:hover
+  {
+    .apos-control
+    {
+      opacity: 1;
+    }
+  }
 }
