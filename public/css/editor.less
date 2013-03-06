@@ -422,3 +422,40 @@ textarea.apos-code {
   display: none;
   visibility: hidden;
 }
+
+.apos-slideshow-editor .apos-slideshow-editor-item
+{
+  list-style: none;
+  float: left;
+  display: block;
+  width: 170px;
+  height: 170px;
+  margin: 5px;
+  &.apos-template {
+    display: none;
+  }
+  .apos-slideshow-editor-item-box {
+    position: relative;
+  }
+  .apos-slideshow-editor-image {
+    position: absolute;
+    max-width: 170px;
+    max-height: 170px;
+  }
+  .apos-remove {
+    position: absolute;
+    font-style: italic;
+    color: red;
+    left: 10px;
+    top: 10px;
+    cursor: pointer;
+  }
+}
+
+.apos-progress 
+{
+  display: none;
+  font-size: 125%;
+  border-radius: 6px;
+  color: gray;
+}

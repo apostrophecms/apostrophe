@@ -8,15 +8,17 @@ var jQuery = require('jquery');
 var nunjucks = require('nunjucks');
 var async = require('async');
 var lessMiddleware = require('less-middleware');
+var hash_file = require('hash_file');
+var path = require('path');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
 
 module.exports = function() {
-  return new apos();
+  return new aposConstructor();
 }
 
-function apos() {
+function aposConstructor() {
   var self = this;
   var app, files, areas, pages, uploadfs, nunjucksEnv, partial;
 
@@ -27,7 +29,7 @@ function apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'image', 'video', 'pullquote', 'code' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'video', 'pullquote', 'code' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -81,17 +83,33 @@ function apos() {
   // Default browser side script requirements
 
   self.scripts = [ 
-    '/apos/js/jquery-1.8.1.min.js',
+    // VENDOR DEPENDENCIES
+
+    // Makes broken browsers usable
     '/apos/js/underscore-min.js',
+    // For everything
+    '/apos/js/jquery-1.9.1.min.js',
+    // For blueimp uploader, drag and drop reordering of anything, datepicker 
+    // & autocomplete
+    '/apos/jquery-ui-1.10.1/js/jquery-ui-1.10.1.custom.min.js',
+    // For the RTE
     '/apos/js/jquery.hotkeys/jquery.hotkeys.js',
+    // For selections in the RTE
     '/apos/js/rangy-1.2.3/rangy-core.js',
     '/apos/js/rangy-1.2.3/rangy-selectionsaverestore.js',
+    // For selections in ordinary textareas and inputs (part of Rangy)
     '/apos/js/textinputs_jquery.js',
-    '/apos/js/jquery.cookie.js',
-    '/apos/blueimp/vendor/jquery.ui.widget.js',
+    // Graceful fallback for older browsers
     '/apos/blueimp/js/jquery.iframe-transport.js',
+    // Spiffy multiple file upload
     '/apos/blueimp/js/jquery.fileupload.js',
+    
+    // OUR CODE
+
+    // Editing functionality
     '/apos/js/editor.js', 
+
+    // Viewers for standard content types
     '/apos/js/content.js',
   ];
 
@@ -99,7 +117,7 @@ function apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   self.templates = [
-    'imageEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+    'slideshowEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
   ];
 
   self.init = function(options, callback) {
@@ -171,9 +189,9 @@ function apos() {
       };
 
       // aposTemplates renders templates that are needed on any page that will
-      // use apos. Examples: imageEditor.html, codeEditor.html, etc. These lie
-      // dormant in the page until they are needed as prototypes to be cloned 
-      // by jQuery
+      // use apos. Examples: slideshowEditor.html, codeEditor.html, 
+      // etc. These lie dormant in the page until they are needed as prototypes to 
+      // be cloned by jQuery
 
       aposLocals.aposTemplates = function(options) {
         if (!options) {
@@ -261,7 +279,7 @@ function apos() {
           if ((key === 'content') || (key.substr(0, 1) === '_')) {
             return;
           }
-          attributes[key] = value + '';
+          attributes[key] = value;
         });
         return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
       }
@@ -294,6 +312,14 @@ function apos() {
         }).join("\n");
       }
 
+      aposLocals.aposFilePath = function(file, options) {
+        var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
+        if (options.size) {
+          path += '.' + options.size;
+        }
+        return path + '.' + file.extension;
+      }
+
       aposLocals.aposLog = function(m) {
         console.log(m);
         return '';
@@ -312,90 +338,52 @@ function apos() {
 
       // All routes must begin with /apos!
 
-      // An iframe with file browse and upload buttons.
-      // We use an iframe because traditional file upload buttons
-      // can't be AJAXed (although you can do that in Chrome and
-      // Firefox it is still not supported in IE9).
-
-      app.get('/apos/file-iframe/:id', validId, function(req, res) {
-        var id = req.params.id;
-        return render(res, 'fileIframe.html', { id: id, error: false, uploaded: false });
-      });
-
-      // Deliver details about a previously uploaded file as a JSON response
-      app.get('/apos/file-info/:id', validId, function(req, res) {
-        var id = req.params.id;
-        files.findOne({ _id: id }, gotFile);
-        function gotFile(err, file) {
-          if (err || (!file)) {
-            res.statusCode = 404;
-            res.send("Not Found");
-            return;
-          }
-          self.permissions(req, 'edit-media', file, function(err) {
-            if (err) {
-              return forbid(res);
-            }
-            file.url = uploadfs.getUrl() + '/images/' + id;
-            return res.send(file);
-          });
+      // Upload a file for slideshow purposes (TODO: extend to
+      // accept non-image files when appropriate)
+      app.post('/apos/upload-files', function(req, res) {
+        var newFiles = req.files.files;
+        if (!(newFiles instanceof Array)) {
+          newFiles = [ newFiles ];
         }
-      });
+        var infos = [];
+        async.map(newFiles, function(file, callback) {
+          var info = {
+            _id: generateId(),
+            length: file.length,
+            createdAt: new Date(),
+            name: self.slugify(path.basename(file.name, path.extname(file.name)))
+          };
 
-      // An upload submitted via the iframe
-      app.post('/apos/file-iframe/:id', validId, function(req, res) {
-        var id = req.params.id;
-        var file = req.files.file;
+          async.series([ permissions, upload, db ], callback);
 
-        if (!file) {
-          return fail(req, res);
-        }
-
-        var src = file.path;
-
-        files.findOne({ _id: id }, gotExisting);
-
-        var info;
-
-        function gotExisting(err, existing) {
-          self.permissions(req, 'edit-media', existing, function(err) {
-            if (err) {
-              return forbid(res);
-            }
-            // Let uploadfs do the heavy lifting of scaling and storage to fs or s3
-            return uploadfs.copyImageIn(src, '/images/' + id, update);
-          });
-        }
-
-        function update(err, infoArg) {
-          if (err) {
-            return fail(req, res);
-          }
-          info = infoArg;
-          info._id = id;
-          info.name = self.slugify(file.name);
-          info.createdAt = new Date();
-
-          // Do our best to record who owns this file to allow permissions
-          // checks later. If req.user exists and has an _id, id or username property, 
-          // record that
-          if (req.user) {
-            info.owner = req.user._id || req.user.id || req.user.username;
+          function permissions(callback) {
+            self.permissions(req, 'edit-media', null, callback);
           }
 
-          files.update({ _id: info._id }, info, { upsert: true, safe: true }, inserted);
-        }
+          function upload(callback) {
+            return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
+              if (err) {
+                return callback(err);
+              }
+              info.extension = result.extension;
+              return callback(null);
+            });
+          }
 
-        function inserted(err) {
-          info.uploaded = true;
-          info.error = false;
-          info.id = info._id;
-          render(res, 'fileIframe.html', info);
-        }
-
-        function fail(req, res) {
-          return render(res, 'fileIframe.html', { id: id, error: "Not a GIF, JPEG or PNG image file", uploaded: false });
-        }
+          function db(callback) {
+            console.log(info);
+            files.insert(info, { safe: true }, function(err, docs) {
+              if (!err) {
+                infos.push(docs[0]);
+              }
+              return callback(err);
+            });
+          }
+        }, function(err) {
+          console.log('result:');
+          console.log(infos);
+          return res.send({ files: infos, status: 'ok' });
+        });
       });
 
       // Area editor
@@ -520,6 +508,9 @@ function apos() {
       app.post('/apos/render-widget', function(req, res) {
         var item = req.body;
         var options = req.query;
+
+        console.log('The item as I received it is:');
+        console.log(item);
 
         var itemType = self.itemTypes[item.type];
         if (!itemType) {
@@ -921,14 +912,15 @@ function apos() {
         item.content = sanitize(item.content).xss().trim();
       }
     },
-    image: {
+    slideshow: {
       widget: true,
-      label: 'Image',
+      label: 'Slideshow',
       icon: 'image',
+      // icon: 'slideshow',
       render: function(data) {
-        return partial('image.html', data);
+        return partial('slideshow.html', data);
       },
-      css: 'image'
+      css: 'slideshow'
     },
     video: {
       widget: true,
@@ -963,6 +955,20 @@ function apos() {
     nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
+    });
+    nunjucksEnv.addFilter('jsonAttribute', function(data) {
+      // Leverage jQuery's willingness to parse attributes as JSON objects and arrays
+      // if they look like it. TODO: find out if this still works cross browser with
+      // single quotes, all the double escaping is unfortunate
+      if (typeof(data) === 'object') {
+        console.log('it is an object');
+        return JSON.stringify(data).replace(/\&/g, '&amp;').replace(/\</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+      } else {
+        console.log('it is not an object');
+        // Make it a string for sure
+        data += '';
+        return data.replace(/\&/g, '&amp;').replace(/\</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+      }
     });
     return nunjucksEnv;
   }

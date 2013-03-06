@@ -88,9 +88,7 @@ apos.Editor = function(options) {
   styleMenu = self.$el.find('[data-style]');
   styleBlockElements = {};
 
-  apos.log(styleMenu.length);
   styleMenu.find('option').each(function() {
-    apos.log(this);
     styleBlockElements[$(this).val()] = true;
   });
 
@@ -262,11 +260,9 @@ apos.Editor = function(options) {
         if (node.previousSibling.nodeValue === null) {
           var p = document.createTextNode(before);
           $(node).before(p);
-          apos.log('prepended prev element');
         } else {
           var p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
-            apos.log('appended prev character');
             node.previousSibling.nodeValue += before;
           }
         }
@@ -275,12 +271,10 @@ apos.Editor = function(options) {
         if (node.nextSibling.nodeValue === null) {
           var p = document.createTextNode(after);
           $(node).after(p);
-          apos.log('appended next element');
         } else {
           var n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
-            apos.log('prepended character to next');
           }
         }
       }
@@ -351,7 +345,6 @@ apos.Editor = function(options) {
   }, 5000));
 
   self.destroy = function() {
-    apos.log('destroying editor');
     _.map(self.timers, function(timer) { clearInterval(timer); });
   };
 
@@ -592,7 +585,6 @@ apos.widgetEditor = function(options) {
   // rich text editor as the larger context for all widgets, our data is passed in
   if (options.data) {
     self.data = options.data;
-    apos.log(self.data);
   }
 
   self.data.type = self.type;
@@ -782,8 +774,7 @@ apos.widgetEditor = function(options) {
         return;
       }
       _.each(self.data, function(val, key) {
-        apos.log(key + ': ' + val);
-        self.$widget.attr('data-' + key, val);
+        self.$widget.attr('data-' + key, apos.jsonAttribute(val));
       });
     },
 
@@ -794,6 +785,8 @@ apos.widgetEditor = function(options) {
       }
       // Get all the data attributes
       var info = self.$widget.data();
+      console.log('rendering these attributes:');
+      console.log(info);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -870,7 +863,6 @@ apos.widgetEditor = function(options) {
           } else {
             info.content = undefined;
           }
-          apos.log('rendering');
           $.post('/apos/render-widget', info, function(html) {
             var previewWidget = $(html);
             previewWidget.addClass('apos-widget-preview');
@@ -902,53 +894,6 @@ apos.widgetEditor = function(options) {
 
 apos.widgetTypes = {};
 
-apos.widgetTypes.image = {
-  label: 'Image',
-  editor: function(options) {
-    var self = this;
-
-    if (!options.messages) {
-      options.messages = {};
-    }
-    if (!options.messages.missing) {
-      options.messages.missing = 'Upload an image file first.';
-    }
-
-    self.afterCreatingEl = function() {
-      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.data.id + '" name="iframe-' + self.data.id + '" class="apos-file-iframe" src="/apos/file-iframe/' + self.data.id + '"></iframe>'));
-      self.$el.bind('uploaded', function(e, id) {
-        // Only react to events intended for us
-        if (id === self.data.id) {
-          self.exists = true;
-          self.preview();
-        }
-      });
-    };
-
-    // For images, preview is triggered by an upload. We need to capture
-    // the file extension at that point so we are not forced to constantly
-    // look it up in a separate collection
-    self.prePreview = function(callback) {
-      if (self.exists) {
-        $.getJSON('/apos/file-info/' + self.data.id, function(info) {
-          self.data.extension = info.extension;
-          callback();
-        });
-      }
-      else
-      {
-        callback();
-      }
-    };
-
-    self.type = 'image';
-    options.template = '.apos-image-editor';
-
-    // Parent class constructor shared by all widget editors
-    apos.widgetEditor.call(self, options);
-  }
-};
-
 apos.widgetTypes.slideshow = {
   label: 'Slideshow',
   editor: function(options) {
@@ -963,17 +908,41 @@ apos.widgetTypes.slideshow = {
     }
 
     self.afterCreatingEl = function() {
-      var $items = self.$el.find('[data-items]');
+      $items = self.$el.find('[data-items]');
+      $items.sortable({ 
+        update: function(event, ui) {
+          reflect();
+          self.preview();
+        }
+      });
       self.files = [];
 
       self.$el.find('[data-uploader]').fileupload({
         dataType: 'json',
+        // This is nice in a multiuser scenario, it prevents slamming,
+        // but I need to figure out why it's necessary to avoid issues
+        // with node-imagemagick 
+        sequentialUploads: true,
+        start: function (e) {
+          $('[data-progress]').show();
+          $('[data-finished]').hide();
+        },
+        stop: function (e) {
+          $('[data-progress]').hide();
+          $('[data-finished]').show();
+        },
+        progressall: function (e, data) {
+          var progress = parseInt(data.loaded / data.total * 100, 10);
+          self.$el.find('[data-progress-percentage]').text(progress);
+        },
         done: function (e, data) {
-          _.each(data.result.files, function (file) {
-            addItem(file.md5, file.name, file.format);
-          });
-          reflect();
-          self.preview();
+          if (data.result.files) {
+            _.each(data.result.files, function (file) {
+              addItem(file);
+            });
+            reflect();
+            self.preview();
+          }
         }
       });
     };
@@ -981,54 +950,47 @@ apos.widgetTypes.slideshow = {
     // The server will render an actual slideshow, but we also want to see
     // thumbnails of everything with draggability for reordering and remove buttons
     self.prePreview = function(callback) {
-      $items.find('[data-item] :not(.apos-template)').remove();
-
-      var i = 0;
-      while (true) {
-        var md5 = self.data['item-' + i + '-md5'];
-        if (md5 === undefined) {
-          break;
-        }
-        var name = self.data['item-' + i + '-name'];
-        var format = self.data['item-' + i + '-format'];
-        addItem(md5, name, format);
-        i++;
+      console.log('self.data in prePreview');
+      console.log(self.data);
+      $items.find('[data-item]:not(.apos-template)').remove();
+      var items = self.data.items;
+      if (!items) {
+        items = [];
       }
+      _.each(items, function(item) {
+        addItem(item);
+      });
       callback();
     };
 
-    function addItem(md5, name, format) {
+    function addItem(item) {
       var $item = $items.find('[data-item].apos-template').clone();
-      $item.removeClass('.apos-template');
-      $item.find('[data-image]').attr(src, apos.uploadUrl + '/media/' + md5 + '-' + name + '.one-third.' + format);
-      $item.data('md5', md5);
-      $item.data('name', name);
-      $item.data('format', format);
+      $item.removeClass('apos-template');
+      $item.find('[data-image]').attr('src', apos.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.data('item', item);
       $item.click('[data-remove]', function() {
         $item.remove();
         reflect();
         self.preview();
-      }
+        return false;
+      });
+      $items.append($item);
     }
 
     // Update the data attributes to match what is found in the 
     // list of items. This is called after remove and reorder events
     function reflect() {
-      $itemElements = $items.find('[data-item] :not(.apos-template)');
+      $itemElements = $items.find('[data-item]:not(.apos-template)');
 
-      // Purge previous data for items
-      var keys = _.keys(self.data);
-      _.each(keys, function(key) {
-        if (key.match(/^item\-/)) {
-          delete item[key];
-        }
-      });
+      self.data.items = [];
 
-      $.each(itemElements, function(i, $item) {
-        self.data['item-' + i + '-md5'] = $item.data('md5');
-        self.data['item-' + i + '-name'] = $item.data('name');
-        self.data['item-' + i + '-format'] = $item.data('format');
+      $.each($itemElements, function(i, item) {
+        var $item = $(item);
+        self.data.items.push($item.data('item'));
       });
+      // An empty slideshow is allowed, so permit it to be saved
+      // even if nothing has been added
+      self.exists = true;
     }
 
     self.type = 'slideshow';
@@ -1062,7 +1024,6 @@ apos.widgetTypes.video = {
         var next = self.$embed.val();
         if (interestingDifference(last, next))
         {
-          apos.log('interesting paste');
           self.preview();
         }
         last = next;
@@ -1328,7 +1289,7 @@ apos.enableAreas = function() {
     $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-controls') }, function(data) {
       area.find('.apos-edit-view').remove();
       var editView = $('<div class="apos-edit-view"></div>');
-      editView.append($(data));
+      editView.append(data);
       area.append(editView);
       area.find('.apos-normal-view').hide();
 
@@ -1378,7 +1339,6 @@ apos.enableAreas = function() {
       fixedPositionAndSize: true,
       data: itemData, 
       save: function(callback) {
-        apos.log(itemData);
         $.post('/apos/edit-singleton', 
           {
             slug: slug, 
@@ -1422,18 +1382,10 @@ apos.parseArea = function(content) {
         var item = {};
         if (apos.widgetTypes[type].getContent) {
           item.content = apos.widgetTypes[type].getContent($(child));
-          apos.log(item.content);
         }
 
-        for (var j = 0; (j < child.attributes.length); j++) {
-          var key = child.attributes[j].name;
-          var value = child.attributes[j].value;
-          var matches = key.match(/^data\-(.*)$/);
-          if (matches) {
-            var name = matches[1];
-            item[name] = value;
-          }
-        }
+        var data = $(child).data();
+        _.extend(item, data);
         items.push(item);
       } else {
         // This is a rich text element like <strong> or <h3>
@@ -1539,7 +1491,6 @@ apos.modal = function(sel, options) {
   // do not try to submit the form old-school
   $el.on('submit', 'form', function() {
     $el.find('.apos-save').click();
-    apos.log('triggered save');
     return false;
   });
 
@@ -1701,3 +1652,16 @@ apos.regExpQuote = function (string) {
   return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
 }
 
+// For use when storing DOM attributes meant to be compatible
+// with jQuery's built-in support for JSON parsing of 
+// objects and arrays in data attributes. We'll be passing
+// the result to .attr, so we don't have to worry about
+// HTML escaping.
+
+apos.jsonAttribute = function(value) {
+  if (typeof(value) === 'object') {
+    return JSON.stringify(value);
+  } else {
+    return value;
+  }
+}

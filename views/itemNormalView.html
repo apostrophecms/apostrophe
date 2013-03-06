@@ -4,7 +4,7 @@
   <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}"
     {%- for name, value in attributes -%}
       {# Let some whitespace in for readability and cross-browser confidence #}
-      data-{{ name }}="{{ value | e }}"
+      data-{{ name }}="{{ value | jsonAttribute }}"
     {%- endfor -%}
   >
 {%- endif -%}

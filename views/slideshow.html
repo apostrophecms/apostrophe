@@ -1,0 +1,8 @@
+<ul data-slideshow-items class="apos-slideshow-items">
+  {% for file in item.items %}
+    {# Make the first image initially current #}
+    <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}">
+      <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'one-third' }) }}" />
+    </li>
+  {% endfor %}
+</ul>
