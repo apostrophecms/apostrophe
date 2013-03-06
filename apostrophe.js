@@ -49,7 +49,7 @@ function aposConstructor() {
         { value: 'h3', label: 'Heading 3' },
         { value: 'h4', label: 'Heading 4' },
         { value: 'h5', label: 'Heading 5' },
-        { value: 'h6', label: 'Heading 6' }
+        { value: 'h6', label: 'Heading 6' },
       ]
     },
     bold: {
@@ -990,6 +990,7 @@ function aposConstructor() {
 
     var r = "[^A-Za-z0-9" + RegExp.quote(options.allow) + "]";
     var regex = new RegExp(r, 'g');
+    console.log(r);
     s = s.replace(regex, '-');
     // Consecutive dashes become one dash
     s = s.replace(/\-+/g, '-');
