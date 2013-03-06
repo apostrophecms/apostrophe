@@ -76,6 +76,7 @@ function aposConstructor() {
 
   // Default stylesheet requirements
   self.stylesheets = [
+    "/apos/jquery-ui-1.10.1/css/ui-lightness/jquery-ui-1.10.1.custom.min.css",
     "/apos/css/content.css",
     "/apos/css/editor.css"
   ];
