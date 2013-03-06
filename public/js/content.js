@@ -31,7 +31,6 @@ apos.widgetPlayers.slideshow = function($widget)
 
   var interval = setInterval(function() {
     var $current = $widget.find('[data-slideshow-item].apos-current');
-    apos.log($current.length);
     if (!$current.length) {
       // Widget has gone away. Kill the interval timer and go away too
       clearInterval(interval);
