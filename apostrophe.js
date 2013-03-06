@@ -75,14 +75,15 @@ function aposConstructor() {
   };
 
   // Default stylesheet requirements
+  // TODO: lots of override options
   self.stylesheets = [
-    "/apos/jquery-ui-1.10.1/css/ui-lightness/jquery-ui-1.10.1.custom.min.css",
+    "/apos/jquery-ui-1.10.1/css/ui-darkness/jquery-ui-1.10.1.custom.min.css",
     "/apos/css/content.css",
     "/apos/css/editor.css"
   ];
 
   // Default browser side script requirements
-
+  // TODO: lots of override options
   self.scripts = [ 
     // VENDOR DEPENDENCIES
 

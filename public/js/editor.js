@@ -44,45 +44,6 @@ apos.Editor = function(options) {
 
     $buttons.append($('<div class="apos-clear"></div>'));
     $widget.prepend($buttons);
-
-    $widget.resizable({
-      start: function(event, ui) {
-        resizing = true;
-      },
-      stop: function(event, ui) {
-        resizing = false;
-        var max = $widget.closest('[data-editable]').width();
-        var is = ui.size;
-        var size = 'full';
-        var sizes = [ 
-          { proportion: 1/3, name: 'one-third' }, 
-          { proportion: 1/2, name: 'one-half' },
-          { proportion: 2/3, name: 'two-thirds' },
-          { proportion: 1.0, name: 'full' }
-        ];
-        for (var i = 0; (i < sizes.length); i++) {
-          if (is.width <= (max * sizes[i].proportion * 1.1)) {
-            size = sizes[i].name;
-            break;
-          }
-        }
-        apos.log('winning size is ' + size);
-        $widget.attr('data-size', size);
-        _.each(sizes, function(s) {
-          $widget.removeClass('apos-' + s.name);
-        });
-        if (size === 'full') {
-          // full implies center
-          $widget.attr('data-position', 'middle');
-          $widget.removeClass('apos-left');
-          $widget.removeClass('apos-right');
-          $widget.removeClass('apos-middle');
-        }
-        $widget.addClass('apos-' + size);
-        apos.log($widget[0]);
-      }
-    });
-    apos.log('Should be resizable');
   };
 
   // The wrapper is taller than the editor at first, if someone
@@ -309,6 +270,7 @@ apos.Editor = function(options) {
     // blowtorch, except during resize when it breaks preview of resize
 
     if (!resizing) {
+      apos.log('torching');
       self.$editable.find('[style]').removeAttr('style');
     }
 
@@ -343,6 +305,47 @@ apos.Editor = function(options) {
 
     $widgets.each(function() {
 
+      var $widget = $(this);
+      // Make widgets resizable if they aren't already
+      if (!$widget.data('uiResizable')) {
+        $widget.resizable({
+          start: function(event, ui) {
+            resizing = true;
+            apos.log('start');
+          },
+          stop: function(event, ui) {
+            resizing = false;
+            var max = $widget.closest('[data-editable]').width();
+            var is = ui.size;
+            var size = 'full';
+            var sizes = [ 
+              { proportion: 1/3, name: 'one-third' }, 
+              { proportion: 1/2, name: 'one-half' },
+              { proportion: 2/3, name: 'two-thirds' },
+              { proportion: 1.0, name: 'full' }
+            ];
+            for (var i = 0; (i < sizes.length); i++) {
+              if (is.width <= (max * sizes[i].proportion * 1.1)) {
+                size = sizes[i].name;
+                break;
+              }
+            }
+            $widget.attr('data-size', size);
+            _.each(sizes, function(s) {
+              $widget.removeClass('apos-' + s.name);
+            });
+            if (size === 'full') {
+              // full implies middle
+              $widget.attr('data-position', 'middle');
+              $widget.removeClass('apos-left');
+              $widget.removeClass('apos-right');
+              $widget.addClass('apos-middle');
+            }
+            $widget.addClass('apos-' + size);
+            apos.log('stop');
+          }
+        });
+      }
       // Restore the before and after markers, which prevent Chrome from doing crazy 
       // things with cut copy paste and typeover
 
@@ -764,7 +767,6 @@ apos.widgetEditor = function(options) {
       self.$widget.addClass('apos-widget');
       self.$widget.addClass('apos-' + self.type);
       self.$widget.attr('data-type', self.type);
-      self.$widget.resizable();
     },
 
     // Update the widget placeholder in the main content editor, then ask the server 
@@ -834,6 +836,13 @@ apos.widgetEditor = function(options) {
       if (!self.editor) {
         return;
       }
+
+      // Newly created widgets need default position and size
+      self.$widget.attr('data-position', 'middle');
+      self.$widget.attr('data-size', 'full');
+      self.$widget.addClass('apos-middle');
+      self.$widget.addClass('apos-full');
+
       var markup = '';
 
       // Work around serious widget selection bugs in Chrome by introducing
