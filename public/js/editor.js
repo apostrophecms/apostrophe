@@ -270,7 +270,6 @@ apos.Editor = function(options) {
     // blowtorch, except during resize when it breaks preview of resize
 
     if (!resizing) {
-      apos.log('torching');
       self.$editable.find('[style]').removeAttr('style');
     }
 
@@ -279,12 +278,12 @@ apos.Editor = function(options) {
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
       }
-      $(this).find('h1, h2, h3, h4, h5, h6, div').each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
         var inner = $(this);
         if (inner.parents('.apos-widget').length) {
           return;
