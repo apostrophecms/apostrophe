@@ -11,6 +11,7 @@ apos.Editor = function(options) {
   var self = this;
   var styleMenu;
   var styleBlockElements;
+  var resizing = false;
 
   self.$el = $(options.selector);
   // The contenteditable element inside the wrapper div
@@ -21,6 +22,29 @@ apos.Editor = function(options) {
 
   self.undoQueue = [];
   self.redoQueue = [];
+
+  // We need to be able to do this to every existing widget preview quickly when
+  // the edit view starts up
+
+  self.addButtonsToWidget = function($widget) {
+    var $buttons = $('<div class="apos-widget-buttons"></div>');
+    // var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
+    var $button = $('<div data-edit-widget class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');  
+    $buttons.append($button);
+
+    var $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left">&laquo;</div>');  
+    $buttons.append($button);
+    var $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right">&raquo;</div>'); 
+    $buttons.append($button);
+
+    var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
+    $buttons.append($button);
+    var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
+    $buttons.append($button);
+
+    $buttons.append($('<div class="apos-clear"></div>'));
+    $widget.prepend($buttons);
+  };
 
   // The wrapper is taller than the editor at first, if someone
   // clicks below the editor make sure they still get focus to type
@@ -60,7 +84,7 @@ apos.Editor = function(options) {
     $widget.find('.apos-widget-after').remove();
 
     // Restore edit buttons
-    apos.addButtonsToWidget($widget);
+    self.addButtonsToWidget($widget);
 
     // Snapshot we can restore if contenteditable does something
     // self.updateWidgetBackup(widgetId, $widget);
@@ -88,9 +112,7 @@ apos.Editor = function(options) {
   styleMenu = self.$el.find('[data-style]');
   styleBlockElements = {};
 
-  apos.log(styleMenu.length);
   styleMenu.find('option').each(function() {
-    apos.log(this);
     styleBlockElements[$(this).val()] = true;
   });
 
@@ -145,19 +167,51 @@ apos.Editor = function(options) {
   
   self.$el.off('click.editWidget');
 
-  self.$el.on('click.editWidget', '.apos-edit-widget', function(event) {
+  self.$el.on('click.editWidget', '[data-edit-widget]', function(event) {
     // Necessary so we don't wind up with the selection inside the button
     apos.deselect();
     var $widget = $(this).closest('[data-type]');
     var widgetType = $widget.attr('data-type');
     var widgetId = $widget.attr('data-id');
+    apos.log('before creation');
     new apos.widgetTypes[widgetType].editor(
     {
       editor: self,
       widgetId: widgetId
     });
+    apos.log('after creation');
     return false;
   });
+
+  self.$el.on('click.editWidget', '[data-float-widget-left]', function(event) {
+    apos.deselect();
+    var $widget = $(this).closest('[data-type]');
+    if ($widget.attr('data-position') === 'right') {
+      floatWidget($widget, 'middle');
+    } else {
+      floatWidget($widget, 'left');
+    }
+    return false;
+  });
+
+  self.$el.on('click.editWidget', '[data-float-widget-right]', function(event) {
+    apos.deselect();
+    var $widget = $(this).closest('[data-type]');
+    if ($widget.attr('data-position') === 'left') {
+      floatWidget($widget, 'middle');
+    } else {
+      floatWidget($widget, 'right');
+    }
+    return false;
+  });
+
+  function floatWidget($widget, position) {
+    $widget.attr('data-position', position);
+    $widget.removeClass('apos-left');
+    $widget.removeClass('apos-middle');
+    $widget.removeClass('apos-right');
+    $widget.addClass('apos-' + position);
+  }
 
   self.$el.on('click.editWidget', '.apos-insert-before-widget', function(event) {
     // Necessary so we don't wind up with the selection inside the button
@@ -203,7 +257,6 @@ apos.Editor = function(options) {
   // and so forth.
 
   self.timers.push(setInterval(function() {
-
     // If we don't have the focus, chill out. This prevents unpleasantness like
     // changing the value of a select element while someone is trying to
     // manually modify it
@@ -214,21 +267,23 @@ apos.Editor = function(options) {
 
     // Webkit randomly blasts style attributes into pasted widgets and
     // other copy-and-pasted content. Remove this brain damage with a
-    // blowtorch 
+    // blowtorch, except during resize when it breaks preview of resize
 
-    self.$editable.find('[style]').removeAttr('style');
+    if (!resizing) {
+      self.$editable.find('[style]').removeAttr('style');
+    }
 
     // Webkit loves to nest elements that should not be nested 
     // as a result of copy and paste operations and formatBlock actions. 
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
       }
-      $(this).find('h1, h2, h3, h4, h5, h6, div').each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
         var inner = $(this);
         if (inner.parents('.apos-widget').length) {
           return;
@@ -249,6 +304,47 @@ apos.Editor = function(options) {
 
     $widgets.each(function() {
 
+      var $widget = $(this);
+      // Make widgets resizable if they aren't already
+      if (!$widget.data('uiResizable')) {
+        $widget.resizable({
+          start: function(event, ui) {
+            resizing = true;
+            apos.log('start');
+          },
+          stop: function(event, ui) {
+            resizing = false;
+            var max = $widget.closest('[data-editable]').width();
+            var is = ui.size;
+            var size = 'full';
+            var sizes = [ 
+              { proportion: 1/3, name: 'one-third' }, 
+              { proportion: 1/2, name: 'one-half' },
+              { proportion: 2/3, name: 'two-thirds' },
+              { proportion: 1.0, name: 'full' }
+            ];
+            for (var i = 0; (i < sizes.length); i++) {
+              if (is.width <= (max * sizes[i].proportion * 1.1)) {
+                size = sizes[i].name;
+                break;
+              }
+            }
+            $widget.attr('data-size', size);
+            _.each(sizes, function(s) {
+              $widget.removeClass('apos-' + s.name);
+            });
+            if (size === 'full') {
+              // full implies middle
+              $widget.attr('data-position', 'middle');
+              $widget.removeClass('apos-left');
+              $widget.removeClass('apos-right');
+              $widget.addClass('apos-middle');
+            }
+            $widget.addClass('apos-' + size);
+            apos.log('stop');
+          }
+        });
+      }
       // Restore the before and after markers, which prevent Chrome from doing crazy 
       // things with cut copy paste and typeover
 
@@ -262,11 +358,9 @@ apos.Editor = function(options) {
         if (node.previousSibling.nodeValue === null) {
           var p = document.createTextNode(before);
           $(node).before(p);
-          apos.log('prepended prev element');
         } else {
           var p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
-            apos.log('appended prev character');
             node.previousSibling.nodeValue += before;
           }
         }
@@ -275,12 +369,10 @@ apos.Editor = function(options) {
         if (node.nextSibling.nodeValue === null) {
           var p = document.createTextNode(after);
           $(node).after(p);
-          apos.log('appended next element');
         } else {
           var n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
-            apos.log('prepended character to next');
           }
         }
       }
@@ -351,7 +443,6 @@ apos.Editor = function(options) {
   }, 5000));
 
   self.destroy = function() {
-    apos.log('destroying editor');
     _.map(self.timers, function(timer) { clearInterval(timer); });
   };
 
@@ -556,22 +647,6 @@ apos.Editor = function(options) {
   }, 200);
 };
 
-// We need to be able to do this to every existing widget preview quickly when
-// the edit view starts up
-
-apos.addButtonsToWidget = function($widget) {
-  var $buttons = $('<div class="apos-widget-buttons"></div>');
-  // var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
-  var $button = $('<div class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');  
-  $buttons.append($button);
-  var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
-  $buttons.append($button);
-  var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
-  $buttons.append($button);
-  $buttons.append($('<div class="apos-clear"></div>'));
-  $widget.prepend($buttons);
-};
-
 apos.widgetEditor = function(options) {
   var self = this;
   self.editor = options.editor;
@@ -585,14 +660,13 @@ apos.widgetEditor = function(options) {
   // our placeholder div in that editor to get our current attributes
   if (options.widgetId) {
     self.$widget = options.editor.$editable.find('.apos-widget[data-id="' + options.widgetId + '"]');
-    self.data = self.$widget.data();
+    self.data = apos.cleanWidgetData(self.$widget.data());
   }
 
   // When displayed as a singleton or an area that does not involve a
   // rich text editor as the larger context for all widgets, our data is passed in
   if (options.data) {
     self.data = options.data;
-    apos.log(self.data);
   }
 
   self.data.type = self.type;
@@ -624,25 +698,7 @@ apos.widgetEditor = function(options) {
         self.preview();
         return false;
       });
-
-      if (options.fixedPositionAndSize) {
-        self.$el.find('.apos-position,.apos-size,.apos-lorem').remove();
-      } else {
-        self.$el.find('input[type=radio]').change(function() {
-          self.changeSizeAndPosition();
-        });
-      }
   
-      var sizeAndPosition = { size: 'two-thirds', position: 'middle' };
-      if (self.exists) {
-        sizeAndPosition.size = self.data.size;
-        sizeAndPosition.position = self.data.position;
-      }
-      self.$el.find('input[name="size"]').prop('checked', false);
-      self.$el.find('input[name="size"][value="' + sizeAndPosition.size + '"]').prop('checked', true);
-      self.$el.find('input[name="position"]').prop('checked', false);
-      self.$el.find('input[name="position"][value="' + sizeAndPosition.position + '"]').prop('checked', true);
-
       self.preview();
       return callback(null);
     },
@@ -698,38 +754,6 @@ apos.widgetEditor = function(options) {
       _.map(self.timers, function(timer) { clearInterval(timer); });
     },
 
-    getSizeAndPosition: function() {
-      var size = self.$el.find('input[name="size"]:checked').val();
-      var position = 'middle';
-      if (size !== 'full') {
-        position = self.$el.find('input[name="position"]:checked').val();
-      }
-      return { size: size, position: position };
-    },
-
-    changeSizeAndPosition: function() {
-      var sizeAndPosition = self.getSizeAndPosition();
-      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-one-third');
-      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-one-half');
-      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-two-thirds');
-      self.$previewContainer.find('.apos-widget-preview').removeClass('apos-full');
-      self.$previewContainer.find('.apos-widget-preview').addClass('apos-' + sizeAndPosition.size);
-      if (sizeAndPosition.size === 'full') {
-        self.$el.find('.apos-position').hide();
-      }
-      else
-      {
-        self.$el.find('.apos-position').show();
-      }
-      var $preview = self.$previewContainer.find('.apos-widget-preview');
-      $preview.removeClass('apos-left');
-      $preview.removeClass('apos-middle');
-      $preview.removeClass('apos-right');
-      $preview.addClass('apos-' + sizeAndPosition.position);
-      self.data.size = sizeAndPosition.size;
-      self.data.position = sizeAndPosition.position;
-    },
-
     // Create a new widget for insertion into the main content editor.
     // See also the server-side itemNormalView.html template, which
     // does the same thing
@@ -744,33 +768,19 @@ apos.widgetEditor = function(options) {
       self.$widget.attr('data-type', self.type);
     },
 
-    // Update the widget placeholder in the main content editor to reflect the new
-    // size and position, then ask the server to render the widget placeholder.
-    // We *don't* call the widget player inside the main content editor because
-    // those are not restricted to content that behaves inside contentEditable.
+    // Update the widget placeholder in the main content editor, then ask the server 
+    // to render the widget placeholder. We *don't* call the widget player inside 
+    // the main content editor because those are not restricted to content that 
+    // behaves inside contentEditable.
 
     updateWidget: function(callback) {
       if (!self.editor) {
         return callback(null);
       }
-      var sizeAndPosition = self.getSizeAndPosition();
-      self.$widget.attr({
-        'data-size': sizeAndPosition.size,
-        'data-position': sizeAndPosition.position
-      });
-      self.$widget.removeClass('apos-left').
-        removeClass('apos-middle').
-        removeClass('apos-right').
-        removeClass('apos-one-third').
-        removeClass('apos-one-half').
-        removeClass('apos-two-thirds').
-        removeClass('apos-full').
-        addClass('apos-' + sizeAndPosition.size).
-        addClass('apos-' + sizeAndPosition.position);
       // When we update the widget placeholder we also clear its
       // markup and call populateWidget to insert the latest 
       self.$widget.html('');
-      apos.addButtonsToWidget(self.$widget);
+      self.editor.addButtonsToWidget(self.$widget);
       self.updateWidgetData();
       self.renderWidget(callback);
     },
@@ -782,8 +792,11 @@ apos.widgetEditor = function(options) {
         return;
       }
       _.each(self.data, function(val, key) {
-        apos.log(key + ': ' + val);
-        self.$widget.attr('data-' + key, val);
+        // Watch out for unserializable stuff
+        if (key === 'uiResizable') {
+          return;
+        }
+        self.$widget.attr('data-' + key, apos.jsonAttribute(val));
       });
     },
 
@@ -793,7 +806,9 @@ apos.widgetEditor = function(options) {
         return callback(null);
       }
       // Get all the data attributes
-      var info = self.$widget.data();
+      var info = apos.cleanWidgetData(self.$widget.data());
+      console.log('rendering these attributes:');
+      console.log(info);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -820,6 +835,13 @@ apos.widgetEditor = function(options) {
       if (!self.editor) {
         return;
       }
+
+      // Newly created widgets need default position and size
+      self.$widget.attr('data-position', 'middle');
+      self.$widget.attr('data-size', 'full');
+      self.$widget.addClass('apos-middle');
+      self.$widget.addClass('apos-full');
+
       var markup = '';
 
       // Work around serious widget selection bugs in Chrome by introducing
@@ -861,18 +883,20 @@ apos.widgetEditor = function(options) {
           // on both client and server... if it matters, Node is terribly fast
           var info = {};
           _.defaults(info, self.data);
+          // Comes in from self.data and breaks serialization ):
+          delete info['uiResizable'];
           info.type = self.type;
-          var sizeAndPosition = self.getSizeAndPosition();
-          info.size = sizeAndPosition.size;
-          info.position = sizeAndPosition.position;
+          info.size = 'full';
+          info.position = 'center';
           if (self.getContent) {
             info.content = self.getContent();
           } else {
             info.content = undefined;
           }
-          apos.log('rendering');
           $.post('/apos/render-widget', info, function(html) {
-            var previewWidget = $(html);
+            // jQuery 1.9+ is super fussy about constructing elements from html
+            // more explicitly
+            var previewWidget = $($.parseHTML(html));
             previewWidget.addClass('apos-widget-preview');
             self.$previewContainer.prepend(previewWidget);
             self.$el.find('.apos-requires-preview').show();
@@ -902,10 +926,12 @@ apos.widgetEditor = function(options) {
 
 apos.widgetTypes = {};
 
-apos.widgetTypes.image = {
-  label: 'Image',
+apos.widgetTypes.slideshow = {
+  label: 'Slideshow',
+
   editor: function(options) {
     var self = this;
+    var $items;
 
     if (!options.messages) {
       options.messages = {};
@@ -914,35 +940,103 @@ apos.widgetTypes.image = {
       options.messages.missing = 'Upload an image file first.';
     }
 
+    // Our current thinking is that preview is redundant for slideshows.
+    // Another approach would be to make it much smaller. We might want that
+    // once we start letting people switch arrows and titles and descriptions
+    // on and off and so forth. Make sure we still invoke prePreview
+
+    self.preview = function() {
+      self.prePreview(function() { });
+    };
+
     self.afterCreatingEl = function() {
-      self.$el.find('[data-iframe-placeholder]').replaceWith($('<iframe id="iframe-' + self.data.id + '" name="iframe-' + self.data.id + '" class="apos-file-iframe" src="/apos/file-iframe/' + self.data.id + '"></iframe>'));
-      self.$el.bind('uploaded', function(e, id) {
-        // Only react to events intended for us
-        if (id === self.data.id) {
-          self.exists = true;
+      $items = self.$el.find('[data-items]');
+      $items.sortable({ 
+        update: function(event, ui) {
+          reflect();
           self.preview();
+        }
+      });
+      self.files = [];
+
+      self.$el.find('[data-uploader]').fileupload({
+        dataType: 'json',
+        // This is nice in a multiuser scenario, it prevents slamming,
+        // but I need to figure out why it's necessary to avoid issues
+        // with node-imagemagick 
+        sequentialUploads: true,
+        start: function (e) {
+          $('[data-progress]').show();
+          $('[data-finished]').hide();
+        },
+        stop: function (e) {
+          $('[data-progress]').hide();
+          $('[data-finished]').show();
+        },
+        progressall: function (e, data) {
+          var progress = parseInt(data.loaded / data.total * 100, 10);
+          self.$el.find('[data-progress-percentage]').text(progress);
+        },
+        done: function (e, data) {
+          if (data.result.files) {
+            _.each(data.result.files, function (file) {
+              addItem(file);
+            });
+            reflect();
+            self.preview();
+          }
         }
       });
     };
 
-    // For images, preview is triggered by an upload. We need to capture
-    // the file extension at that point so we are not forced to constantly
-    // look it up in a separate collection
+    // The server will render an actual slideshow, but we also want to see
+    // thumbnails of everything with draggability for reordering and remove buttons
     self.prePreview = function(callback) {
-      if (self.exists) {
-        $.getJSON('/apos/file-info/' + self.data.id, function(info) {
-          self.data.extension = info.extension;
-          callback();
-        });
+      console.log('self.data in prePreview');
+      console.log(self.data);
+      $items.find('[data-item]:not(.apos-template)').remove();
+      var items = self.data.items;
+      if (!items) {
+        items = [];
       }
-      else
-      {
-        callback();
-      }
+      _.each(items, function(item) {
+        addItem(item);
+      });
+      callback();
     };
 
-    self.type = 'image';
-    options.template = '.apos-image-editor';
+    function addItem(item) {
+      var $item = $items.find('[data-item].apos-template').clone();
+      $item.removeClass('apos-template');
+      $item.find('[data-image]').attr('src', apos.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.data('item', item);
+      $item.click('[data-remove]', function() {
+        $item.remove();
+        reflect();
+        self.preview();
+        return false;
+      });
+      $items.append($item);
+    }
+
+    // Update the data attributes to match what is found in the 
+    // list of items. This is called after remove and reorder events
+    function reflect() {
+      $itemElements = $items.find('[data-item]:not(.apos-template)');
+
+      self.data.items = [];
+
+      $.each($itemElements, function(i, item) {
+        var $item = $(item);
+        self.data.items.push($item.data('item'));
+      });
+      // An empty slideshow is allowed, so permit it to be saved
+      // even if nothing has been added
+      self.exists = true;
+    }
+
+    self.type = 'slideshow';
+    options.template = '.apos-slideshow-editor';
 
     // Parent class constructor shared by all widget editors
     apos.widgetEditor.call(self, options);
@@ -967,12 +1061,11 @@ apos.widgetTypes.video = {
 
       // Automatically preview if we detect something that looks like a
       // fresh paste
-      var last = self.data.video;
+      var last = self.data.video ? self.data.video : '';
       self.timers.push(setInterval(function() {
         var next = self.$embed.val();
         if (interestingDifference(last, next))
         {
-          apos.log('interesting paste');
           self.preview();
         }
         last = next;
@@ -1238,7 +1331,7 @@ apos.enableAreas = function() {
     $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-controls') }, function(data) {
       area.find('.apos-edit-view').remove();
       var editView = $('<div class="apos-edit-view"></div>');
-      editView.append($(data));
+      editView.append(data);
       area.append(editView);
       area.find('.apos-normal-view').hide();
 
@@ -1282,13 +1375,11 @@ apos.enableAreas = function() {
     var itemData = { position: 'middle', size: 'full' };
     var $item = $singleton.find('.apos-content .apos-widget :first');
     if ($item.length) {
-      itemData = $item.data();
+      itemData = apos.cleanWidgetData($item.data());
     }
     new apos.widgetTypes[type].editor({ 
-      fixedPositionAndSize: true,
       data: itemData, 
       save: function(callback) {
-        apos.log(itemData);
         $.post('/apos/edit-singleton', 
           {
             slug: slug, 
@@ -1332,18 +1423,10 @@ apos.parseArea = function(content) {
         var item = {};
         if (apos.widgetTypes[type].getContent) {
           item.content = apos.widgetTypes[type].getContent($(child));
-          apos.log(item.content);
         }
 
-        for (var j = 0; (j < child.attributes.length); j++) {
-          var key = child.attributes[j].name;
-          var value = child.attributes[j].value;
-          var matches = key.match(/^data\-(.*)$/);
-          if (matches) {
-            var name = matches[1];
-            item[name] = value;
-          }
-        }
+        var data = apos.cleanWidgetData($(child).data());
+        _.extend(item, data);
         items.push(item);
       } else {
         // This is a rich text element like <strong> or <h3>
@@ -1449,7 +1532,6 @@ apos.modal = function(sel, options) {
   // do not try to submit the form old-school
   $el.on('submit', 'form', function() {
     $el.find('.apos-save').click();
-    apos.log('triggered save');
     return false;
   });
 
@@ -1609,4 +1691,24 @@ apos.slugify = function(s, options) {
 // Borrowed from the regexp-quote module for node
 apos.regExpQuote = function (string) {
   return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
+}
+
+// For use when storing DOM attributes meant to be compatible
+// with jQuery's built-in support for JSON parsing of 
+// objects and arrays in data attributes. We'll be passing
+// the result to .attr, so we don't have to worry about
+// HTML escaping.
+
+apos.jsonAttribute = function(value) {
+  if (typeof(value) === 'object') {
+    return JSON.stringify(value);
+  } else {
+    return value;
+  }
+}
+
+apos.cleanWidgetData = function(data) {
+  // Take widget data and remove attributes not meant for serialization
+  delete data['uiResizable'];
+  return data;
 }
