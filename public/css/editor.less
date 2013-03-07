@@ -430,13 +430,112 @@ textarea.apos-code {
 .apos-modal
 {
   position: absolute;
-  width: 600px;
-  background-color: white;
+  width: 800px;
+  background-color: #ddd;
   opacity: 1.0;
   z-index: 999;
-  padding: 10px;
-  border: 3px solid #ccc;
+  // padding: 10px;
+  h3
+  {
+    background: @apos-base;
+    color: #fff;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin-bottom: 0px;
+  }
+
+  .apos-modal-body
+  {
+    padding: 10px;
+    
+    form
+    {
+      input
+      {
+        border: none;
+        padding: 8px;
+        width: 100%;
+        
+        & ~ label {color: blue;}
+      }
+
+      label
+      {
+        color: #fff;
+        background: @apos-base;
+        padding: 8px;
+        padding-bottom: 7px;
+        font-size: 12px;
+        border-right: 1px solid #fff;
+      }
+
+      select
+      {
+        position: relative;
+        -webkit-appearance:none;
+           -moz-appearance:none;
+        border: none;
+        background: @apos-base;
+        border-radius: 0px;
+        padding: 8px;
+        cursor: pointer;
+        margin-left: -4px;
+        
+        
+        &::before
+        {
+          display: block;
+          position: absolute;
+          
+          top: 0;
+          right: 0;
+          width: 20px;
+          height: 20px;
+          content: 'lkjf';
+          color:#f00;
+          // font-family: 'apos-icons';
+        }
+
+
+        option
+        {
+          &:hover
+          {
+            background: red;
+          }
+        }
+      }
+
+      input, select, option
+      {
+        &:focus
+        {
+          // -webkit-focus-ring-color: red;
+          // outline-color: @apos-base;
+          // outline-width: 3px;
+          outline: none;
+          // -webkit-appearance:none;
+          // border: 2px solid red;
+        }        
+      }
+    }
+
+
+
+  }
+
+  .apos-modal-footer
+  {
+    padding: 10px;
+    .clearfix;
+    
+    *
+    {
+      float: right;
+    }
+  }
 }
+
 
 // Hiding these for now to see how we manage without them:
 .apos-insert-before-widget,
