@@ -424,7 +424,8 @@ textarea.apos-code {
   position: fixed;
   top: 0px;
   left: 0px;
-  z-index: 998;
+  // Just below first modal, do not use >= 899 for other things please
+  z-index: 899;
 }
 
 .apos-modal
@@ -433,10 +434,14 @@ textarea.apos-code {
   width: 600px;
   background-color: white;
   opacity: 1.0;
-  z-index: 999;
+  // Do not use >= 899 for other things please
+  z-index: 900;
   padding: 10px;
   border: 3px solid #ccc;
   color: black;
+  a {
+    color: black;
+  }
 }
 
 // Hiding these for now to see how we manage without them:

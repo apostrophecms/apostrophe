@@ -1,10 +1,13 @@
+/* global rangy, $, _ */
+/* global alert, prompt */
+
 if (!window.apos) {
   window.apos = {};
 }
 
 var apos = window.apos;
 
-// Hopefully I won't need these again as they trash copy and paste between pages 
+// Hopefully I won't need these again as they trash copy and paste between pages
 // apos.widgetBackups = {};
 
 apos.Editor = function(options) {
@@ -12,6 +15,98 @@ apos.Editor = function(options) {
   var styleMenu;
   var styleBlockElements;
   var resizing = false;
+
+  // Helper functions
+
+  function enableControl(command, keys, promptForLabel) {
+    function doCommand() {
+      var arg = null;
+
+      self.undoPoint();
+
+      if (promptForLabel) {
+        arg = prompt(promptForLabel);
+        if (!arg) {
+          return false;
+        }
+      }
+
+      document.execCommand(command, false, arg);
+
+      self.$editable.focus();
+
+      return false;
+    }
+    self.$el.find('[data-' + command + ']').click(doCommand).mousedown(function(e) {
+      // Must prevent default on mousedown or the rich text editor
+      // loses the focus
+      e.preventDefault();
+      return false;
+    });
+
+    if (keys) {
+      _.each(keys, function(key) {
+        self.$editable.bind('keydown', key, doCommand);
+      });
+    }
+
+    // function findCurrentBlockElement() {
+    //   var range = rangy.getSelection().getRangeAt(0);
+    //   var node = range.startContainer;
+    //   var offset = range.startOffset;
+    //   if (node.nodeType === 3) {
+
+
+    //   }
+
+    // }
+
+  }
+
+  function enableMenu(name, action) {
+    self.$el.find('[data-' + name + ']').change(function() {
+      self.undoPoint();
+      document.execCommand(action, false, $(this).val());
+
+      // The easiest way to shut off an h4 is to toggle it
+      // to a div with formatBlock. But Firefox won't toggle a div 
+      // back to an h4. It strongly prefers br's as line breaks. 
+      // So after inserting the div, convert any divs found 
+      // into text nodes surrounded by br's. This can be 
+      // slightly surprising, but the end result is editable,
+      // so you can get back to what you started with.
+
+      // However we also avoid creating a double <br /> situation
+      // so that if we keep toggling we don't keep adding new lines.
+
+      // We don't use this hack in webkit because webkit prefers
+      // to insert divs and toggles divs to h4's just fine.
+
+      // Don't do this to divs that are or are inside a apos-widget!
+
+      if (jQuery.browser.mozilla) {
+        self.$editable.find('div').each(function() {
+          var div = $(this);
+
+          if (div.is('.apos-widget') || div.closest('.apos-widget').length) {
+            return;
+          }
+          if (div.html().length) {
+            var markup = '';
+            if (div.prev().length && (div.prev()[0].nodeName !== 'BR'))
+            {
+              markup += "<br />";
+            }
+            markup += div.html() + '<br />';
+            div.replaceWith(markup);
+          } else {
+            div.remove();
+          }
+        });
+      }
+      self.$editable.focus();
+    });
+  }
 
   self.$el = $(options.selector);
   // The contenteditable element inside the wrapper div
@@ -29,17 +124,17 @@ apos.Editor = function(options) {
   self.addButtonsToWidget = function($widget) {
     var $buttons = $('<div class="apos-widget-buttons"></div>');
     // var $button = $('<div class="apos-widget-button apos-edit-widget">Edit ' + apos.widgetTypes[$widget.attr('data-type')].label + '</div>');
-    var $button = $('<div data-edit-widget class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');  
+    var $button = $('<div data-edit-widget class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');
     $buttons.append($button);
 
-    var $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left">&laquo;</div>');  
+    $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left">&laquo;</div>');
     $buttons.append($button);
-    var $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right">&raquo;</div>'); 
+    $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right">&raquo;</div>');
     $buttons.append($button);
 
-    var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
+    $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
     $buttons.append($button);
-    var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
+    $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
     $buttons.append($button);
 
     $buttons.append($('<div class="apos-clear"></div>'));
@@ -51,22 +146,12 @@ apos.Editor = function(options) {
   self.$el.click(function(e) {
     if (e.target === this) {
       self.$editable.focus();
-      moveCaretToEnd();
+      apos.moveCaretToEnd();
     }
     return false;
   });
 
   self.$editable.html(options.data);
-
-  // A dangerous concept, hopefully we have fixed copy & paste and we don't need them
-
-  // self.updateWidgetBackup = function(id, $widget)
-  // {
-  //   var wrapper = $('<div></div>');
-  //   // Clone it so we don't remove it from the document implicitly
-  //   wrapper.append($widget.clone());
-  //   apos.widgetBackups[id] = wrapper.html();
-  // }
 
   var $widgets = self.$editable.find('.apos-widget');
   $widgets.each(function() {
@@ -164,7 +249,7 @@ apos.Editor = function(options) {
 
   // Use .editWidget namespace to avoid multiple binds without
   // bookkeeping
-  
+
   self.$el.off('click.editWidget');
 
   self.$el.on('click.editWidget', '[data-edit-widget]', function(event) {
@@ -173,13 +258,11 @@ apos.Editor = function(options) {
     var $widget = $(this).closest('[data-type]');
     var widgetType = $widget.attr('data-type');
     var widgetId = $widget.attr('data-id');
-    apos.log('before creation');
     new apos.widgetTypes[widgetType].editor(
     {
       editor: self,
       widgetId: widgetId
     });
-    apos.log('after creation');
     return false;
   });
 
@@ -310,15 +393,14 @@ apos.Editor = function(options) {
         $widget.resizable({
           start: function(event, ui) {
             resizing = true;
-            apos.log('start');
           },
           stop: function(event, ui) {
             resizing = false;
             var max = $widget.closest('[data-editable]').width();
             var is = ui.size;
             var size = 'full';
-            var sizes = [ 
-              { proportion: 1/3, name: 'one-third' }, 
+            var sizes = [
+              { proportion: 1/3, name: 'one-third' },
               { proportion: 1/2, name: 'one-half' },
               { proportion: 2/3, name: 'two-thirds' },
               { proportion: 1.0, name: 'full' }
@@ -341,25 +423,25 @@ apos.Editor = function(options) {
               $widget.addClass('apos-middle');
             }
             $widget.addClass('apos-' + size);
-            apos.log('stop');
           }
         });
       }
       // Restore the before and after markers, which prevent Chrome from doing crazy 
       // things with cut copy paste and typeover
 
-      nodeRange = rangy.createRange();
+      var nodeRange = rangy.createRange();
       var node = this;
       nodeRange.setStartBefore(node);
       nodeRange.setEndAfter(node);
       var before = apos.beforeMarker;
       var after = apos.afterMarker;
+      var p, n;
       if (node.previousSibling) {
         if (node.previousSibling.nodeValue === null) {
-          var p = document.createTextNode(before);
+          p = document.createTextNode(before);
           $(node).before(p);
         } else {
-          var p = node.previousSibling.nodeValue;
+          p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
             node.previousSibling.nodeValue += before;
           }
@@ -367,10 +449,10 @@ apos.Editor = function(options) {
       }
       if (node.nextSibling) {
         if (node.nextSibling.nodeValue === null) {
-          var p = document.createTextNode(after);
+          p = document.createTextNode(after);
           $(node).after(p);
         } else {
-          var n = node.nextSibling.nodeValue;
+          n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
           }
@@ -458,7 +540,7 @@ apos.Editor = function(options) {
   /**
    * Undo one action
    */
-  
+
   self.undo = function() {
     self.undoStep(self.undoQueue, self.redoQueue);
   };
@@ -479,7 +561,7 @@ apos.Editor = function(options) {
    * this with self.redoQueue, self.undoQueue. To save the 
    * current state to the undo queue if a change is detected,
    * call this with null, self.undoQueue, true. 
-   */ 
+   */
 
   self.undoStep = function(from, to, optional) {
     // If our purpose is to restore something via 'from' but there
@@ -544,103 +626,14 @@ apos.Editor = function(options) {
         nodeRange.setEnd(node.nextSibling, 1);
       }
     }
+    var unionRange;
     if (range && range.intersectsRange(nodeRange)) {
-      var unionRange = range.union(nodeRange);
+      unionRange = range.union(nodeRange);
     } else {
       unionRange = nodeRange;
     }
     rangy.getSelection().setSingleRange(unionRange);
   };
-
-  function enableControl(command, keys, promptForLabel) {
-    self.$el.find('[data-' + command + ']').click(doCommand).mousedown(function(e) {
-      // Must prevent default on mousedown or the rich text editor
-      // loses the focus
-      e.preventDefault();
-      return false;
-    });
-
-    if (keys) {
-      _.each(keys, function(key) {
-        self.$editable.bind('keydown', key, doCommand);
-      });
-    }
-
-    // function findCurrentBlockElement() {
-    //   var range = rangy.getSelection().getRangeAt(0);
-    //   var node = range.startContainer;
-    //   var offset = range.startOffset;
-    //   if (node.nodeType === 3) {
-
-
-    //   }
-
-    // }
-
-    function doCommand() {
-      var arg = null;
-
-      self.undoPoint();
-
-      if (promptForLabel) {
-        arg = prompt(promptForLabel);
-        if (!arg) {
-          return false;
-        }
-      }
-
-      document.execCommand(command, false, arg);
-
-      self.$editable.focus();
-
-      return false;
-    }
-  }
-
-  function enableMenu(name, action) {
-    self.$el.find('[data-' + name + ']').change(function() {
-      self.undoPoint();
-      document.execCommand(action, false, $(this).val());
-
-      // The easiest way to shut off an h4 is to toggle it
-      // to a div with formatBlock. But Firefox won't toggle a div 
-      // back to an h4. It strongly prefers br's as line breaks. 
-      // So after inserting the div, convert any divs found 
-      // into text nodes surrounded by br's. This can be 
-      // slightly surprising, but the end result is editable,
-      // so you can get back to what you started with.
-
-      // However we also avoid creating a double <br /> situation
-      // so that if we keep toggling we don't keep adding new lines.
-
-      // We don't use this hack in webkit because webkit prefers
-      // to insert divs and toggles divs to h4's just fine.
-
-      // Don't do this to divs that are or are inside a apos-widget!
-
-      if (jQuery.browser.mozilla) {
-        self.$editable.find('div').each(function() {
-          var div = $(this);
-
-          if (div.is('.apos-widget') || div.closest('.apos-widget').length) {
-            return;
-          }
-          if (div.html().length) {
-            var markup = '';
-            if (div.prev().length && (div.prev()[0].nodeName !== 'BR'))
-            {
-              markup += "<br />";
-            }
-            markup += div.html() + '<br />';
-            div.replaceWith(markup);
-          } else {
-            div.remove();
-          }
-        });
-      }
-      self.$editable.focus();
-    });
-  }
 
   setTimeout(function() {
     self.undoPoint();
@@ -698,7 +691,7 @@ apos.widgetEditor = function(options) {
         self.preview();
         return false;
       });
-  
+
       self.preview();
       return callback(null);
     },
@@ -807,8 +800,8 @@ apos.widgetEditor = function(options) {
       }
       // Get all the data attributes
       var info = apos.cleanWidgetData(self.$widget.data());
-      console.log('rendering these attributes:');
-      console.log(info);
+      apos.log('rendering these attributes:');
+      apos.log(info);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -868,11 +861,7 @@ apos.widgetEditor = function(options) {
     },
 
     preview: function() {
-      if (self.prePreview) {
-        self.prePreview(go);
-      } else {
-        go();
-      }
+
       function go() {
         self.$previewContainer.find('.apos-widget-preview').remove();
         if (self.exists) {
@@ -910,6 +899,12 @@ apos.widgetEditor = function(options) {
           self.$el.find('.apos-requires-preview').hide();
         }
       }
+
+      if (self.prePreview) {
+        self.prePreview(go);
+      } else {
+        go();
+      }
     },
 
     // Override if you need to carry out an action such
@@ -922,7 +917,7 @@ apos.widgetEditor = function(options) {
       callback();
     }
   });
-}
+};
 
 apos.widgetTypes = {};
 
@@ -951,7 +946,7 @@ apos.widgetTypes.slideshow = {
 
     self.afterCreatingEl = function() {
       $items = self.$el.find('[data-items]');
-      $items.sortable({ 
+      $items.sortable({
         update: function(event, ui) {
           reflect();
           self.preview();
@@ -992,8 +987,8 @@ apos.widgetTypes.slideshow = {
     // The server will render an actual slideshow, but we also want to see
     // thumbnails of everything with draggability for reordering and remove buttons
     self.prePreview = function(callback) {
-      console.log('self.data in prePreview');
-      console.log(self.data);
+      apos.log('self.data in prePreview');
+      apos.log(self.data);
       $items.find('[data-item]:not(.apos-template)').remove();
       var items = self.data.items;
       if (!items) {
@@ -1006,8 +1001,7 @@ apos.widgetTypes.slideshow = {
     };
 
     function addItem(item) {
-      var $item = $items.find('[data-item].apos-template').clone();
-      $item.removeClass('apos-template');
+      var $item = apos.fromTemplate($items.find('[data-item]'));
       $item.find('[data-image]').attr('src', apos.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.data('item', item);
       $item.click('[data-remove]', function() {
@@ -1022,7 +1016,7 @@ apos.widgetTypes.slideshow = {
     // Update the data attributes to match what is found in the 
     // list of items. This is called after remove and reorder events
     function reflect() {
-      $itemElements = $items.find('[data-item]:not(.apos-template)');
+      var $itemElements = $items.find('[data-item]:not(.apos-template)');
 
       self.data.items = [];
 
@@ -1059,6 +1053,24 @@ apos.widgetTypes.video = {
       self.$embed = self.$el.find('.apos-embed');
       self.$embed.val(self.data.video);
 
+      function interestingDifference(a, b) {
+        var i;
+        if (Math.abs(a.length - b.length) > 10) {
+          return true;
+        }
+        var min = Math.min(a.length, b.length);
+        var diff = 0;
+        for (i = 0; (i < min); i++) {
+          if (a.charAt(i) !== b.charAt(i)) {
+            diff++;
+            if (diff >= 5) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
       // Automatically preview if we detect something that looks like a
       // fresh paste
       var last = self.data.video ? self.data.video : '';
@@ -1070,29 +1082,8 @@ apos.widgetTypes.video = {
         }
         last = next;
 
-        function interestingDifference(a, b) {
-          var i;
-          if (Math.abs(a.length - b.length) > 10) {
-            return true;
-          }
-          var min = Math.min(a.length, b.length);
-          var diff = 0;
-          for (i = 0; (i < min); i++) {
-            if (a.charAt(i) !== b.charAt(i)) {
-              diff++;
-              if (diff >= 5) {
-                return true;
-              }
-            }
-          }
-          return false;
-        }
       }, 500));
     };
-
-    self.preSave = getVideoInfo;
-
-    self.prePreview = getVideoInfo;
 
     function getVideoInfo(callback) {
       var url = self.$embed.val();
@@ -1123,6 +1114,10 @@ apos.widgetTypes.video = {
       });
     }
 
+    self.preSave = getVideoInfo;
+
+    self.prePreview = getVideoInfo;
+
     self.type = 'video';
     options.template = '.apos-video-editor';
 
@@ -1135,7 +1130,7 @@ apos.widgetTypes.pullquote = {
   label: 'Pullquote',
   editor: function(options) {
     var self = this;
-        
+
     self.pullquote = '“”';
 
     if (!options.messages) {
@@ -1171,7 +1166,7 @@ apos.widgetTypes.pullquote = {
 
     self.getContent = function() {
       return self.$pullquote.val();
-    }
+    };
 
     self.type = 'pullquote';
     options.template = '.apos-pullquote-editor';
@@ -1189,7 +1184,7 @@ apos.widgetTypes.code = {
   label: 'Code Sample',
   editor: function(options) {
     var self = this;
-        
+
     self.code = '';
 
     if (!options.messages) {
@@ -1225,7 +1220,7 @@ apos.widgetTypes.code = {
 
     self.getContent = function() {
       return self.$code.val();
-    }
+    };
 
     self.type = 'code';
     options.template = '.apos-code-editor';
@@ -1246,7 +1241,7 @@ apos.widgetTypes.code = {
 
 apos.generateId = function() {
   return 'w' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
-}
+};
 
 // mustache.js solution to escaping HTML (not URLs)
 apos.entityMap = {
@@ -1281,15 +1276,15 @@ apos.insertHtmlAtCursor = function(html) {
     var node = range.createContextualFragment(html);
     range.collapse(false);
     range.insertNode(node);
-    
+
     // We can't do this and use a contextual fragment at the
-    // same time. But we need a fragment to deal with 
+    // same time. But we need a fragment to deal with
     // multiple tags in an insert.
 
     // range.setStartAfter(node);
     // range.setEndAfter(node);
     // sel.setSingleRange(range);
-  }  
+  }
 };
 
 apos.deselect = function() {
@@ -1316,18 +1311,18 @@ apos.moveCaretToTextPosition = function(el, offset) {
 };
 
 apos.moveCaretToEnd = function() {
-  var last = self.$editable.contents().find(':last');
+  var last = apos.$editable.contents().find(':last');
   if (last.length) {
-    moveCaretToTextPosition(last[0], last.text().length);
+    apos.moveCaretToTextPosition(last[0], last.text().length);
   }
 };
 
 apos.enableAreas = function() {
   $('body').on('click', '.apos-edit-area', function() {
-    
+
     var area = $(this).closest('.apos-area');
     var slug = area.attr('data-slug');
-    
+
     $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-controls') }, function(data) {
       area.find('.apos-edit-view').remove();
       var editView = $('<div class="apos-edit-view"></div>');
@@ -1342,12 +1337,10 @@ apos.enableAreas = function() {
 
       area.find('[data-save-area]').click(function() {
         var slug = area.attr('data-slug');
-        $.post('/apos/edit-area', 
-          { 
-            slug: slug, 
-            content: JSON.stringify(
-              apos.parseArea(area.find('[data-editable]').html())
-            ) 
+        $.post('/apos/edit-area',
+          {
+            slug: slug,
+            content: apos.stringifyArea(area.find('[data-editable]'))
           }, function(data) {
             area.find('.apos-content').html(data);
             destroyEditorAndShowNormalView();
@@ -1377,12 +1370,12 @@ apos.enableAreas = function() {
     if ($item.length) {
       itemData = apos.cleanWidgetData($item.data());
     }
-    new apos.widgetTypes[type].editor({ 
-      data: itemData, 
+    new apos.widgetTypes[type].editor({
+      data: itemData,
       save: function(callback) {
-        $.post('/apos/edit-singleton', 
+        $.post('/apos/edit-singleton',
           {
-            slug: slug, 
+            slug: slug,
             // By now itemData has been updated (we passed it
             // into the widget and JavaScript passes objects by reference)
             content: JSON.stringify(itemData)
@@ -1395,7 +1388,7 @@ apos.enableAreas = function() {
         ).fail(function() {
           alert('Server error, please try again.');
           callback('error');
-        }); 
+        });
       }
     });
     return false;
@@ -1403,6 +1396,15 @@ apos.enableAreas = function() {
 };
 
 apos.parseArea = function(content) {
+  // Helper functions
+
+  function flushRichText() {
+    if (richText.length) {
+      items.push({ type: 'richText', content: richText });
+      richText = '';
+    }
+  }
+
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
@@ -1438,57 +1440,40 @@ apos.parseArea = function(content) {
         richText += wrapper.html();
       }
     }
-  }  
+  }
   // Don't forget to flush any rich text that appeared after the last widget,
   // and/or if there are no widgets!
   flushRichText();
 
   return items;
-
-  // Helper functions
-
-  function flushRichText() {
-    if (richText.length) {
-      items.push({ type: 'richText', content: richText });
-      richText = '';
-    }
-  }
 };
 
-// Core functionality for showing and hiding a modal dialog. You almost
-// certainly want apos.modal or apos.modalFromTemplate, below
+apos._modalStack = [];
 
-apos._modalCore = function(sel, command) {
-  var $el = $(sel);
-  if (command === 'hide') {
-    $('.apos-modal-blackout').remove();
-    $el.hide();
-    apos.popSelection();
-  } else {
-    apos.pushSelection();
-    var blackout = $('<div class="apos-modal-blackout"></div>');
-    $('body').append(blackout); 
-    $('body').append($el);
-    $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
-    $el.show();
-  }
+apos._modalInitialized = false;
+
+// We have a stack of modals going, we want to add a blackout to the
+// previous one, or the body if this is the first modal
+apos.getTopModalOrBody = function() {
+  return $(apos._modalStack.length ? apos._modalStack[apos._modalStack.length - 1] : 'body');
 };
 
-// Be sure to read apos.modalFromTemplate too, as that is usually
+// Be sure to read about apos.modalFromTemplate too, as that is usually
 // the easiest way to present a modal.
 
-// apos.modal displays the element specified by sel as a modal. Goes away when
-// the user clicks .apos-save or .apos-cancel or presses enter or
-// escape, which trigger .apos-save and .apos-cancel respectively.
+// apos.modal displays the element specified by sel as a modal dialog. Goes 
+// away when the user clicks .apos-save or .apos-cancel, or submits the form
+// element in the modal (implicitly saving), or presses escape.
 
 // options.init can be an async function to populate the
 // modal with content (usually used with apos.modalFromTemplate, below).
 // If you pass an error as the first argument to the callback the
 // modal will not appear and options.afterHide will be triggered immediately.
-// Don't forget to call the callback. Note that apos.modal is
-// guaranteed to return *before* options.init is called, so you can
-// refer to $el in a closure. This is useful if you are using
-// apos.modalFromTemplate.
+// Don't forget to call the callback. 
+//
+// Note that apos.modal is guaranteed to return *before* options.init is called, 
+// so you can refer to $el in a closure. This is useful if you are using
+// apos.modalFromTemplate to create $el.
 
 // options.afterHide can be an asynchronous function to do something
 // after the modal is dismissed (for any reason, whether saved or cancelled), 
@@ -1499,49 +1484,80 @@ apos._modalCore = function(sel, command) {
 // options.save can be an asynchronous function to do something after
 // .apos-save is clicked (or enter is pressed in the only text field).
 // It is invoked before afterHide. If you pass an error to the callback,
-// the modal is NOT dismissed, allowing you to do validation.
+// the modal is NOT dismissed, allowing you to do validation. If it does
+// not exist then the save button has no hardwired function (and need not be present).
 
-// Focus is automatically given to the first form element found
+// If you wish to dismiss the dialog for any other reason, just trigger
+// an event on the modal dialog element:
+
+// $el.trigger('aposModalHide')
+
+// Focus is automatically given to the first visible form element
 // that does not have the apos-filter class.
 
-// Does not support nested modals, yet.
+// Modals may be nested and the right thing will happen.
 
 apos.modal = function(sel, options) {
+
+  if (!apos._modalInitialized) {
+    apos._modalInitialized = true;
+    // Just ONE event handler for the escape key so we don't have
+    // modals falling all over themselves to hide each other
+    // consecutively.
+
+    // Escape key should dismiss the top modal, if any
+
+    $(document).on('keyup.aposModal', function(e) {
+      if (e.keyCode === 27) {
+        var topModal = apos.getTopModalOrBody();
+        if (topModal.filter('.apos-modal')) {
+          topModal.trigger('aposModalHide');
+          return false;
+        } else {
+          return true;
+        }
+      }
+      return true;
+    });
+  }
+
   var $el = $(sel);
-  
+
   if (!options) {
     options = {};
   }
 
-  _.defaults(options,{
+  _.defaults(options, {
     init: function(callback) {callback(null);},
     save: function(callback) {callback(null);},
     afterHide: function(callback) {callback(null);}
   });
 
-  function hideModal() {
-    apos._modalCore($el, 'hide');
-    $(document).off('keyup.aposModal');
+  $el.on('aposModalHide', function() {
+    // TODO consider what to do if this modal is not the top.
+    // It's tricky because some need to be removed rather than
+    // merely hid. However we don't currently dismiss modals other
+    // than the top, so...
+    apos._modalStack.pop();
+    var blackoutContext = apos.getTopModalOrBody();
+    blackoutContext.find('.apos-modal-blackout').remove();
+    $el.hide();
+    apos.popSelection();
     options.afterHide(function(err) {
       return;
     });
-    return false;
-  };
+  });
 
-  // Enter key should act like a click on the save button,
+  function hideModal() {
+    $el.trigger('aposModalHide');
+    return false;
+  }
+
+  // Enter key driven submits of the form should act like a click on the save button,
   // do not try to submit the form old-school
   $el.on('submit', 'form', function() {
     $el.find('.apos-save').click();
     return false;
-  });
-
-  // Escape key should dismiss the modal
-  $(document).on('keyup.aposModal', function(e) {
-    if (e.keyCode == 27) {
-      hideModal();
-      return false;
-    }
-    return true;
   });
 
   $el.on('click', '.apos-cancel', hideModal);
@@ -1561,7 +1577,14 @@ apos.modal = function(sel, options) {
         hideModal();
         return;
       }
-      apos._modalCore($el);
+      apos.pushSelection();
+      var blackoutContext = apos.getTopModalOrBody();
+      var blackout = $('<div class="apos-modal-blackout"></div>');
+      blackoutContext.append(blackout);
+      apos._modalStack.push($el);
+      $('body').append($el);
+      $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
+      $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
@@ -1570,6 +1593,40 @@ apos.modal = function(sel, options) {
   });
 
   return $el;
+};
+
+// Clone the element matching the specified selector that
+// also has the apos-template class, remove the apos-template
+// class from the clone, and present it as a modal. This is a
+// highly convenient way to present modals based on templates
+// present in the DOM (note that the .apos-template class hides
+// things until they are cloned). Accepts the same options as
+// apos.modal, above. Returns a jquery object referring
+// to the modal dialog element. Note that this method always
+// returns *before* the init method is invoked.
+
+apos.modalFromTemplate = function(sel, options) {
+
+  var $el = apos.fromTemplate(sel);
+
+  // Make sure they can provide their own afterHide
+  // option, and that we don't remove $el until
+  // after it invokes its callback
+
+  var afterAfterHide = options.afterHide;
+  if (!afterAfterHide) {
+    afterAfterHide = function(callback) {
+      return callback(null);
+    };
+  }
+  options.afterHide = function(callback) {
+    afterAfterHide(function(err) {
+      $el.remove();
+      return callback(err);
+    });
+  };
+
+  return apos.modal($el, options);
 };
 
 // Do something after control returns to the browser (after you return from
@@ -1583,41 +1640,7 @@ apos.afterYield = function(fn) {
   } else {
     return setTimeout(fn, 0);
   }
-}
-
-// Clone the element matching the specified selector that
-// also has the apos-template class, remove the apos-template
-// class from the clone, and present it as a modal. This is a 
-// highly convenient way to present modals based on templates 
-// present in the DOM (note that the .apos-template class hides
-// things until they are cloned). Accepts the same options as
-// apos.modal, above. 
-
-apos.modalFromTemplate = function(sel, options) {
-
-  var $el = $(sel).filter('.apos-template').clone();
-
-  $el.removeClass('.apos-template');
-
-  // Make sure they can provide their own afterHide
-  // option, and that we don't remove $el until
-  // after it invokes its callback
-
-  var afterAfterHide = options.afterHide;
-  if (!afterAfterHide) {
-    afterAfterHide = function(callback) {
-      return callback(null);
-    }
-  }
-  options.afterHide = function(callback) {
-    afterAfterHide(function(err) {
-      $el.remove();
-      return callback(err);
-    });
-  }
-
-  return apos.modal($el, options);
-}
+};
 
 // We use this to save the selection before starting
 // a modal and later restore it
@@ -1627,7 +1650,7 @@ apos.selections = [];
 apos.pushSelection = function() {
   var sel = rangy.getSelection();
   if (sel && sel.getRangeAt && sel.rangeCount) {
-    range = rangy.getSelection().getRangeAt(0);
+    var range = rangy.getSelection().getRangeAt(0);
     apos.selections.push(range);
   }
   else
@@ -1639,7 +1662,7 @@ apos.pushSelection = function() {
 apos.popSelection = function() {
   var range = apos.selections.pop();
   if (range) {
-    sel = rangy.getSelection();
+    var sel = rangy.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
   }
@@ -1650,17 +1673,20 @@ apos.popSelection = function() {
 apos.beforeMarker = String.fromCharCode(8288); // '↢';
 apos.afterMarker = String.fromCharCode(8288); // '↣';
 
-apos.log = function(msg) {
-  if (console && apos.log) {
-    console.log(msg);
-  }
-};
+(function() {
+  /* jshint devel: true */
+  apos.log = function(msg) {
+    if (console && apos.log) {
+      console.log(msg);
+    }
+  };
+})();
 
 // Note: you'll need to use xregexp instead if you need non-Latin character
 // support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
 apos.slugify = function(s, options) {
 
-  // By default everything not a letter or number becomes a dash. 
+  // By default everything not a letter or number becomes a dash.
   // You can add additional allowed characters via options.allow
 
   if (!options) {
@@ -1686,15 +1712,15 @@ apos.slugify = function(s, options) {
     s = 'none';
   }
   return s.toLowerCase();
-}
+};
 
 // Borrowed from the regexp-quote module for node
 apos.regExpQuote = function (string) {
-  return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
-}
+  return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&");
+};
 
 // For use when storing DOM attributes meant to be compatible
-// with jQuery's built-in support for JSON parsing of 
+// with jQuery's built-in support for JSON parsing of
 // objects and arrays in data attributes. We'll be passing
 // the result to .attr, so we don't have to worry about
 // HTML escaping.
@@ -1705,10 +1731,95 @@ apos.jsonAttribute = function(value) {
   } else {
     return value;
   }
-}
+};
 
 apos.cleanWidgetData = function(data) {
   // Take widget data and remove attributes not meant for serialization
   delete data['uiResizable'];
   return data;
-}
+};
+
+// Clone the element matching the selector which also has the
+// .apos-template class, remove that class from the clone, and
+// return the clone. This is convenient for turning invisible templates in
+// the DOM into elements ready to add to the DOM.
+
+apos.fromTemplate = function(sel) {
+  var $item = $(sel).filter('.apos-template').clone();
+  $item.removeClass('apos-template');
+  return $item;
+};
+
+// We often submit the content of an area as part of a regular POST. This is
+// a good way to pack it up
+apos.stringifyArea = function($editable) {
+  return JSON.stringify(apos.parseArea($editable.html()));
+};
+
+// Reusable utility to watch one jquery element's value and use it to
+// suggest valid slugs by updating the second jquery element's value.
+// If the initial slug contains slashes, only the last component
+// (after the last slash) is changed on title edits. If the original
+// slug (or its last component) is not in sync with the title, it is
+// assumed that the user already made deliberate changes to the slug, and
+// the slug is not automatically updated.
+
+apos.suggestSlugOnTitleEdits = function($title, $slug) {
+  // Watch the title for changes, update the slug - but only if
+  // the slug was in sync with the title to start with
+
+  var originalTitle = $title.val();
+  var currentSlug = $slug.val();
+  var components = currentSlug.split('/');
+  var currentSlugTitle = components.pop();
+  apos.log('testing slug');
+  if (currentSlugTitle === apos.slugify(originalTitle)) {
+    apos.log('slug initially compatible with title');
+    $title.on('keyup', function() {
+      var title = $title.val();
+      if (title !== originalTitle) {
+        var currentSlug = $slug.val();
+        var components = currentSlug.split('/');
+        if (components.length) {
+          components.pop();
+          var candidateSlugTitle = apos.slugify(title);
+          components.push(candidateSlugTitle);
+          var newSlug = components.join('/');
+          $slug.val(newSlug);
+        }
+      }
+    });
+  }
+};
+
+// Accept tags as a comma-separated string and sanitize them,
+// returning an array of zero or more nonempty strings
+apos.tagsToArray = function(tags) {
+  if (typeof(tags) === 'number') {
+    tags += '';
+  }
+  if (typeof(tags) !== 'string') {
+    return [];
+  }
+  tags += '';
+  tags = tags.split(/,\s*/);
+  // split returns an array of one empty string for an empty source string ):
+  tags = _.filter(tags, function(tag) { return tag.length > 0; });
+  // Make them all strings
+  tags = _.map(tags, function(tag) {
+    return tag + '';
+  });
+  return tags;
+};
+
+// Convert tags back to a string
+apos.tagsToString = function(s) {
+  if (!$.isArray(s)) {
+    // This is legit if no tags property exists yet on an object, don't bomb
+    return '';
+  }
+  var result = s.join(', ');
+  apos.log("Tags string is " + result);
+  return result;
+};
+

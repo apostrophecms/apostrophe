@@ -1,3 +1,4 @@
+/* jshint undef: true */
 var oembed = require('oembed');
 var request = require('request');
 var async = require('async');
@@ -10,17 +11,49 @@ var async = require('async');
 var lessMiddleware = require('less-middleware');
 var hash_file = require('hash_file');
 var path = require('path');
+// provides quality date/time formatting which we make available in templates
+var moment = require('moment');
+// Query string parser/generator
+var qs = require('qs');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
 
-module.exports = function() {
-  return new aposConstructor();
-}
-
-function aposConstructor() {
+function Apos() {
   var self = this;
-  var app, files, areas, pages, uploadfs, nunjucksEnv, partial;
+  var app, files, areas, pages, uploadfs, nunjucksEnv, db, aposLocals;
+
+  // Helper functions first to please jshint
+
+  // Something we can export via app.locals etc.
+  function partial(name, data, dir) {
+    return self.partial(name, data, dir);
+  }
+
+  // Render views specific to this module
+
+  function render(res, template, info) {
+    return res.send(partial(template, info));
+  }
+
+  function fail(req, res) {
+    res.statusCode = 500;
+    res.send('500 error, URL was ' + req.url);
+  }
+
+  function forbid(res) {
+    res.statusCode = 403;
+    res.send('Forbidden');
+  }
+
+  function notfound(req, res) {
+    res.statusCode = 404;
+    res.send('404 not found error, URL was ' + req.url);
+  }
+
+  function generateId() {
+    return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
+  }
 
   // This is our standard set of controls. If you add a new widget you'll be
   // adding that to self.itemTypes (with widget: true) and to this list of
@@ -123,11 +156,6 @@ function aposConstructor() {
   ];
 
   self.init = function(options, callback) {
-    app = options.app;
-
-    self.db = db = options.db;
-
-    async.series([setupAreas, setupPages, setupFiles, afterDb], callback);
 
     function setupAreas(callback) {
       db.collection('aposAreas', function(err, collection) {
@@ -140,11 +168,11 @@ function aposConstructor() {
 
     function setupPages(callback) {
       db.collection('aposPages', function(err, collection) {
-        self.pages = pages = collection;
-        async.series([indexSlug], callback);
         function indexSlug(callback) {
           self.pages.ensureIndex({ slug: 1 }, { safe: true, unique: true }, callback);
         }
+        self.pages = pages = collection;
+        async.series([indexSlug], callback);
         // ... more index functions
       });
     }
@@ -153,6 +181,15 @@ function aposConstructor() {
       db.collection('aposFiles', function(err, collection) {
         self.files = files = collection;
         return callback(err);
+      });
+    }
+
+    function setupRedirects(callback) {
+      db.collection('aposRedirects', function(err, collection) {
+        self.redirects = collection;
+        collection.ensureIndex({ from: 1 }, { safe: true, unique: true }, function(err) {
+          return callback(err);
+        });
       });
     }
 
@@ -168,8 +205,8 @@ function aposConstructor() {
       // You will probably want to at least check for req.user.
       // Possible actions are edit-area and edit-media.
       // edit-area calls will include a slug as the third parameter.
-      // edit-media calls for existing files may include a file, with an 
-      // "owner" property set to the id or username property of req.user 
+      // edit-media calls for existing files may include a file, with an
+      // "owner" property set to the id or username property of req.user
       // at the time the file was last edited. edit-media calls with
       // no existing file parameter also occur, for new file uploads.
       if (!self.permissions) {
@@ -217,7 +254,7 @@ function aposConstructor() {
           options.area = { items: [] };
         }
         return partial('area.html', options);
-      }
+      };
 
       aposLocals.aposSingleton = function(options) {
         if (!self.itemTypes[options.type]) {
@@ -236,20 +273,20 @@ function aposConstructor() {
           options.item.size = 'full';
         }
         return partial('singleton.html', options);
-      }
+      };
 
       aposLocals.aposAreaIsEmpty = function(options) {
         if (!options.area) {
           return true;
         }
         return !options.area.items.length;
-      }
+      };
 
       aposLocals.aposSingletonIsEmpty = function(options) {
         return !_.some(options.area.items, function(item) {
           return item.type === options.type;
         });
-      }
+      };
 
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
@@ -257,7 +294,7 @@ function aposConstructor() {
           result += aposLocals.aposItemNormalView(item, options).trim();
         });
         return result;
-      }
+      };
 
       aposLocals.aposItemNormalView = function(item, options) {
         if (!options) {
@@ -284,7 +321,7 @@ function aposConstructor() {
           attributes[key] = value;
         });
         return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
-      }
+      };
 
       aposLocals.aposStylesheets = function(options) {
         if (!options) {
@@ -298,7 +335,7 @@ function aposConstructor() {
         return _.map(options.stylesheets, function(stylesheet) { 
           return '<link href="' + stylesheet + '" rel="stylesheet" />';
         }).join("\n");
-      }
+      };
 
       aposLocals.aposScripts = function(options) {
         if (!options) {
@@ -312,7 +349,7 @@ function aposConstructor() {
         return _.map(options.scripts, function(script) { 
           return '<script src="' + script + '"></script>';
         }).join("\n");
-      }
+      };
 
       aposLocals.aposFilePath = function(file, options) {
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
@@ -320,12 +357,12 @@ function aposConstructor() {
           path += '.' + options.size;
         }
         return path + '.' + file.extension;
-      }
+      };
 
       aposLocals.aposLog = function(m) {
         console.log(m);
         return '';
-      }
+      };
 
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
@@ -336,7 +373,7 @@ function aposConstructor() {
       self.addLocal = function(name, fn) {
         aposLocals[name] = fn;
         app.locals[name] = fn;
-      }
+      };
 
       // All routes must begin with /apos!
 
@@ -356,8 +393,6 @@ function aposConstructor() {
             name: self.slugify(path.basename(file.name, path.extname(file.name)))
           };
 
-          async.series([ permissions, upload, db ], callback);
-
           function permissions(callback) {
             self.permissions(req, 'edit-media', null, callback);
           }
@@ -373,7 +408,6 @@ function aposConstructor() {
           }
 
           function db(callback) {
-            console.log(info);
             files.insert(info, { safe: true }, function(err, docs) {
               if (!err) {
                 infos.push(docs[0]);
@@ -381,55 +415,96 @@ function aposConstructor() {
               return callback(err);
             });
           }
+
+          async.series([ permissions, upload, db ], callback);
+
         }, function(err) {
-          console.log('result:');
-          console.log(infos);
           return res.send({ files: infos, status: 'ok' });
         });
       });
 
-      // Area editor
+      // Render an area editor ready to edit the area specified by
+      // req.query.slug.
 
       app.get('/apos/edit-area', function(req, res) {
         var slug = req.query.slug;
+        var area;
         var controls = req.query.controls ? req.query.controls.split(' ') : [];
         if (!controls.length) {
           controls = self.defaultControls;
         }
-        self.permissions(req, 'edit-area', slug, function(err) {
-          if (err) {
-            return forbid(res);
-          }
-          var isNew = false;
+
+        function permissions(callback) {
           if (!slug) {
-            return notfound(req, res);
-          } else {
-            self.getArea(slug, function(err, area) {
-              if (!area) {
-                var area = {
-                  slug: slug,
-                  _id: generateId(),
-                  content: null,
-                  isNew: true,
-                };
-                extraProperties(area);
-                return render(res, 'editArea.html', area);
-              }
-              else
-              {
-                extraProperties(area);
-                area.isNew = false;
-                return render(res, 'editArea.html', area);
-              }
-              function extraProperties(area) {
-                area.wid = 'w-' + area._id;
-                area.controls = controls;
-                area.controlTypes = self.controlTypes;
-                area.itemTypes = self.itemTypes;
-              }
-            });
+            return callback(null);
           }
-        });
+          self.permissions(req, 'edit-area', slug, function(err) {
+            if (err) {
+              return forbid(res);
+            }
+            var isNew = false;
+            if (!slug) {
+              return notfound(req, res);
+            } else {
+              return callback(null);
+            }
+          });
+        }
+
+        function getArea(callback) {
+          self.getArea(slug, function(err, areaArg) {
+            if (!areaArg) {
+              area = {
+                slug: slug,
+                _id: generateId(),
+                content: null,
+                isNew: true,
+              };
+            } else {
+              area = areaArg;
+              area.isNew = false;
+            }
+            return callback(err);
+          });
+        }
+
+        function sendArea() {
+          area.wid = 'w-' + area._id;
+          area.controls = controls;
+          area.controlTypes = self.controlTypes;
+          area.itemTypes = self.itemTypes;
+          area.standalone = true;
+          return render(res, 'editArea.html', area);
+        }
+
+        async.series([ permissions, getArea ], sendArea);
+
+      });
+
+      // Render an editor for a virtual area with the content
+      // specified as a JSON array of items by the req.body.content
+      // property, if any. For use when you are supplying your own storage
+      // (for instance, the blog module uses this to render
+      // an area editor for the content of a post).
+
+      app.post('/apos/edit-virtual-area', function(req, res) {
+        var content = req.body.content ? JSON.parse(req.body.content) : [];
+        self.sanitizeItems(content);
+        var area = {
+          items: content,
+          // We give it an id anyway, even though we're not storing it,
+          // because it makes it more convenient to find in the DOM
+          _id: generateId()
+        };
+        var controls = req.query.controls ? req.query.controls.split(' ') : [];
+        if (!controls.length) {
+          controls = self.defaultControls;
+        }
+        area.wid = 'w-' + area._id;
+        area.controls = controls;
+        area.controlTypes = self.controlTypes;
+        area.itemTypes = self.itemTypes;
+        return render(res, 'editArea.html', area);
       });
 
       app.post('/apos/edit-area', function(req, res) {
@@ -439,13 +514,11 @@ function aposConstructor() {
             return forbid(res);
           }
           var content = JSON.parse(req.body.content);
-          sanitizeArea(content);
+          self.sanitizeItems(content);
           var area = {
             slug: req.body.slug,
             items: content
           };
-
-          self.putArea(slug, area, updated);
 
           function updated(err) {
             if (err) {
@@ -457,6 +530,9 @@ function aposConstructor() {
               return res.send(aposLocals.aposAreaContent(area.items));
             });
           }
+
+          self.putArea(slug, area, updated);
+
         });
       });
 
@@ -485,8 +561,6 @@ function aposConstructor() {
             items: [ content ]
           };
 
-          self.putArea(slug, area, updated);
-
           function updated(err) {
             if (err) {
               console.log(err);
@@ -497,6 +571,9 @@ function aposConstructor() {
               return res.send(aposLocals.aposAreaContent(area.items));
             });
           }
+
+          self.putArea(slug, area, updated);
+
         });
       });
 
@@ -511,9 +588,6 @@ function aposConstructor() {
         var item = req.body;
         var options = req.query;
 
-        console.log('The item as I received it is:');
-        console.log(item);
-
         var itemType = self.itemTypes[item.type];
         if (!itemType) {
           res.statusCode = 404;
@@ -527,14 +601,14 @@ function aposConstructor() {
         // Invoke server-side loader middleware like getArea or getPage would,
         // unless explicitly asked not to
 
+        function go() {
+          return res.send(aposLocals.aposItemNormalView(item, options));
+        }
+
         if ((options.load !== '0') && (itemType.load)) {
           return itemType.load(item, go);
         } else {
           return go();
-        }
-
-        function go() {
-          return res.send(aposLocals.aposItemNormalView(item, options));
         }
       });
 
@@ -568,7 +642,15 @@ function aposConstructor() {
 
       return callback(null);
     }
-  }
+
+    self.options = options;
+
+    app = options.app;
+
+    self.db = db = options.db;
+
+    async.series([setupAreas, setupPages, setupFiles, setupRedirects, afterDb], callback);
+  };
 
   // self.static returns a function for use as a route that
   // serves static files from a folder. This is helpful when writing 
@@ -675,13 +757,13 @@ function aposConstructor() {
         // Careful, this is not an error, don't crash
         return callback(null, null);
       }
+      function after() {
+        return callback(null, area);
+      }
       if (options.load) {
         return callLoadersForArea(area, after);
       } else {
         return after();
-      }
-      function after() {
-        return callback(null, area);
       }
     }
   };
@@ -721,6 +803,13 @@ function aposConstructor() {
   // in the 'areas' collection.
 
   self.putArea = function(slug, area, callback) {
+    function invokeCallback(err) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(err, area);
+    }
+
     var matches = slug.match(/^(.*?)\:(\w+)$/);
     if (matches) {
       // This area is part of a page
@@ -740,12 +829,41 @@ function aposConstructor() {
       areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
     }
 
-    function invokeCallback(err) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(err, area);
+  };
+
+  // slug is the existing slug of the page in the database. If page.slug is
+  // different then the slug of the page is changed. If page.slug is not defined
+  // it is set to the slug parameter for your convenience. The slug of the page,
+  // and the path of the page if it is defined, are both automatically made 
+  // unique through successive addition of random digits if necessary
+
+  self.putPage = function(slug, page, callback) {
+    if (!page.slug) {
+      page.slug = slug;
     }
+    self.pages.update({ slug: slug }, page, { upsert: true, safe: true }, 
+      function(err) {
+        if (err) {
+          if (self.isUniqueError(err, 'slug') || self.isUniqueError(err, 'path'))
+          {
+            var num = (Math.floor(Math.random() * 10)).toString();
+            if (page.slug === undefined) {
+              return callback('page.slug is not set');
+            }
+            page.slug += num;
+            // Path index is sparse, not everything is part of a page tree,
+            // don't create materialized paths where none are desired
+            // (for instance, blog posts)
+            if (page.path) {
+              page.path += num;
+            }
+            return self.putPage(page, self.options, callback);
+          }
+          return callback(err);
+        }
+        return callback(null, page);
+      }
+    );
   };
 
   // Fetch the "page" with the specified slug. As far as
@@ -755,23 +873,68 @@ function aposConstructor() {
   // been saved, then the areas property will be an
   // object with properties named main and sidebar.
   //
+  // The first callback parameter is an error or null.
+  // In the event of an exact slug match, the second parameter
+  // to the callback is the matching page object. If there is a
+  // partial slug match followed by a / in the URL or an exact
+  // slug match, the longest such match is the third parameter.
+  // The fourth parameter is the remainder of the URL following
+  // the best match, or the empty string in the event of an
+  // exact match.
+  //
+  // If the slug passed does not begin with a leading /,
+  // partial matches are never returned.
+  //
   // You MAY also store entirely unrelated properties in
   // your "page" objects, via your own mongo code.
   //
-  // This allows the composition of objects as 
+  // This allows the composition of objects as
   // different (and similar) as webpages, blog articles,
-  // upcoming events, etc.
+  // upcoming events, etc. Usually objects other than
+  // webpages do not have a leading / on their slugs
+  // (and when using the pages module they must not).
 
   self.getPage = function(slug, callback) {
-    pages.findOne({ slug: slug }, function(err, page) {
-      if (page) {
-        // For convenience guarantee there is a page.areas property
-        if (!page.areas) {
-          page.areas = {};
+    var orClauses = [];
+    var components;
+    // Partial matches
+    if (slug.length && (slug.substr(0, 1) === '/')) {
+      var path = '';
+      orClauses.unshift({ slug: '/' });
+      components = slug.substr(1).split('/');
+      for (var i = 0; (i < (components.length - 1)); i++) {
+        var component = components[i];
+        path += '/' + component;
+        orClauses.unshift({ slug: path });
+      }
+    }
+    // And of course always consider an exact match. We use unshift to
+    // put the exact match first in the query, but we still need to use
+    // sort() and limit() to guarantee that the best result wins
+    orClauses.unshift({ slug: slug });
+
+    // Ordering in reverse order by slug gives us the longest match first
+    pages.find({
+      $or: orClauses
+    }).sort({ slug: -1 }).limit(1).toArray(function(err, pages) {
+      if (pages.length) {
+        var page = pages[0];
+        var bestPage = page;
+        if (page.slug !== slug) {
+          // partial match only
+          page = null;
         }
+
+        // For convenience guarantee there is a page.areas property
+        if (!bestPage.areas) {
+          bestPage.areas = {};
+        }
+        var remainder = slug.substr(bestPage.slug.length);
+        // Strip trailing slashes for consistent results
+        remainder = remainder.replace(/\/+$/, '');
         // Call loaders for all areas in the page. Wow, async.map is awesome.
-        async.map(_.values(page.areas), callLoadersForArea, function(err, results) {
-          return callback(err, page);
+        async.map(_.values(bestPage.areas), callLoadersForArea, function(err, results) {
+          return callback(err, page, bestPage, remainder);
         });
       } else {
         // Nonexistence is not an error
@@ -784,7 +947,7 @@ function aposConstructor() {
 
   // Invoke loaders for any items in this area that have loaders, then
   // invoke callback. Loaders are expected to report failure as appropriate
-  // to their needs by setting item properties that their templates can 
+  // to their needs by setting item properties that their templates can
   // use to display that when relevant, so there is no formal error
   // handling for loaders
 
@@ -798,31 +961,6 @@ function aposConstructor() {
     }, function(err, results) {
       return callback(err);
     });
-  }
-
-  // Render views specific to this module 
-
-  function render(res, template, info) {
-    return res.send(partial(template, info));
-  }
-
-  function fail(req, res) {
-    res.statusCode = 500;
-    res.send('500 error, URL was ' + req.url);
-  }
-
-  function forbid(res) {
-    res.statusCode = 403;
-    res.send('Forbidden');
-  }
-
-  function notfound(req, res) {
-    res.statusCode = 404;
-    res.send('404 not found error, URL was ' + req.url);
-  }
-
-  function generateId() {
-    return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
   }
 
   // Load and render a Nunjucks template by the specified name and give it the
@@ -862,12 +1000,7 @@ function aposConstructor() {
 
     var tmpl = nunjucksEnv.getTemplate(path);
     return tmpl.render(data);
-  }
-
-  // Something we can export via app.locals etc.
-  function partial(name, data, dir) {
-    return self.partial(name, data, dir);
-  }
+  };
 
   // String.replace does NOT do this
   // Regexps can but they can't be trusted with UTF8 ):
@@ -892,7 +1025,7 @@ function aposConstructor() {
   // TODO: make sure item.type is on the allowed list for this specific area.
   // Write more validators for types.
 
-  function sanitizeArea(items)
+  self.sanitizeItems = function(items)
   {
     _.each(items, function(item) {
       var itemType = self.itemTypes[item.type];
@@ -903,7 +1036,7 @@ function aposConstructor() {
         itemType.sanitize(item);
       }
     });
-  }
+  };
 
   self.itemTypes = {
     richText: {
@@ -955,6 +1088,14 @@ function aposConstructor() {
 
   self.newNunjucksEnv = function(dirs) {
     nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
+    nunjucksEnv.addFilter('date', function(date, format) {
+      return moment(date).format(format);
+    });
+
+    nunjucksEnv.addFilter('query', function(data) {
+      return qs.stringify(data);
+    });
+    
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
     });
@@ -963,17 +1104,15 @@ function aposConstructor() {
       // if they look like it. TODO: find out if this still works cross browser with
       // single quotes, all the double escaping is unfortunate
       if (typeof(data) === 'object') {
-        console.log('it is an object');
-        return JSON.stringify(data).replace(/\&/g, '&amp;').replace(/\</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+        return JSON.stringify(data).replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
       } else {
-        console.log('it is not an object');
         // Make it a string for sure
         data += '';
-        return data.replace(/\&/g, '&amp;').replace(/\</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+        return data.replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
       }
     });
     return nunjucksEnv;
-  }
+  };
 
   // Note: you'll need to use xregexp instead if you need non-Latin character
   // support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
@@ -992,7 +1131,6 @@ function aposConstructor() {
 
     var r = "[^A-Za-z0-9" + RegExp.quote(options.allow) + "]";
     var regex = new RegExp(r, 'g');
-    console.log(r);
     s = s.replace(regex, '-');
     // Consecutive dashes become one dash
     s = s.replace(/\-+/g, '-');
@@ -1006,7 +1144,7 @@ function aposConstructor() {
       s = 'none';
     }
     return s.toLowerCase();
-  }
+  };
 
   // For convenience when configuring uploadfs
   self.defaultImageSizes = [
@@ -1040,6 +1178,48 @@ function aposConstructor() {
       return false;
     }
     return (((err.code === 11000) || (err.code === 11001)) && (err.err.indexOf(field) !== -1));
+  };
+
+  // An easy way to leave automatic redirects behind as things are renamed.
+  // Can be used with anything that lives in the pages table - regular pages,
+  // blog posts, events, etc. See the pages and blog modules for examples of usage.
+
+  self.updateRedirect = function(originalSlug, slug, callback) {
+    if (slug !== originalSlug) {
+      self.redirects.update(
+        { from: originalSlug },
+        { from: originalSlug, to: slug },
+        { upsert: true, safe: true },
+        function(err, doc) {
+          console.log('error in redirect');
+          console.log(err);
+          return callback(err);
+        }
+      );
+    }
+    return callback(null);
+  };
+
+  // The browser already submits tags as a nice array, but make sure
+  // that's really what we got.
+  self.sanitizeTags = function(tags) {
+    if (!Array.isArray(tags)) {
+      return [];
+    }
+    tags = _.map(tags, function(tag) {
+      if (typeof(tag) === 'number') {
+        tag += '';
+      }
+      return tag;
+    });
+    tags = _.filter(tags, function(tag) {
+      return (typeof(tag) === 'string');
+    });
+    return tags;
   }
 }
+
+module.exports = function() {
+  return new Apos();
+};
 

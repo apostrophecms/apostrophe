@@ -1,10 +1,14 @@
+/* jshint undef: true */
+/* global $, _ */
+/* global alert, prompt */
+
 if (!window.apos) {
   window.apos = {};
 }
 
 var apos = window.apos;
 
-// An extensible way to fire up javascript-powered players for 
+// An extensible way to fire up javascript-powered players for
 // the normal views of widgets that need them
 
 apos.enablePlayers = function(sel) {
@@ -16,6 +20,33 @@ apos.enablePlayers = function(sel) {
     var type = $widget.attr('data-type');
     if (apos.widgetPlayers[type]) {
       apos.widgetPlayers[type]($widget);
+    }
+  });
+};
+
+// When apos.change('blog') is invoked, the contents of all elements in the page
+// with data-apos-trigger-blog are refreshed from the URL specified by their
+// data-apos-source attribute. If they have no data-apos-source attribute, they
+// receive an apos-change-blog jQuery event instead. This accommodates the needs
+// of both server-rendered and browser-rendered components.
+
+apos.change = function(what) {
+  apos.log('apos.change');
+  var sel = '[data-apos-trigger-' + what + ']';
+  $(sel).each(function() {
+    var $el = $(this);
+    apos.log('Found an element');
+    var source = $el.attr('data-apos-source');
+    if (source) {
+      apos.log('With a source');
+      $.get(source, {}, function(data) {
+        apos.log('Data is ' + data);
+        apos.log(this);
+        $el.html(data);
+      });
+    } else {
+      apos.log('No source, triggering event');
+      $(this).trigger('apos-change-' + what);
     }
   });
 };
@@ -69,9 +100,9 @@ apos.widgetPlayers.slideshow = function($widget)
   }
 
   adjustSize();
-}
+};
 
-// The video player replaces a thumbnail with 
+// The video player replaces a thumbnail with
 // a suitable player via apos's oembed proxy
 
 apos.widgetPlayers.video = function($widget)
@@ -85,5 +116,5 @@ apos.widgetPlayers.video = function($widget)
     e.height($widget.height());
     $widget.html(e);
   });
-}
+};
 
