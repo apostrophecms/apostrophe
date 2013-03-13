@@ -32,15 +32,15 @@ apos.Editor = function(options) {
     var $button = $('<div data-edit-widget class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');  
     $buttons.append($button);
 
-    var $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left">&laquo;</div>');  
+    var $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left"><i class="icon-left-open"></i></div>');  
     $buttons.append($button);
-    var $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right">&raquo;</div>'); 
+    var $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right"><i class="icon-right-open"></div>'); 
     $buttons.append($button);
 
-    var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
-    $buttons.append($button);
-    var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
-    $buttons.append($button);
+    // var $button = $('<div class="apos-widget-button apos-insert-before-widget">Before</div>');
+    // $buttons.append($button);
+    // var $button = $('<div class="apos-widget-button apos-insert-after-widget">After</div>');
+    // $buttons.append($button);
 
     $buttons.append($('<div class="apos-clear"></div>'));
     $widget.prepend($buttons);
@@ -305,9 +305,17 @@ apos.Editor = function(options) {
     $widgets.each(function() {
 
       var $widget = $(this);
+      var $container = $widget.closest('.apos-editor');
+      var cellWidth = ($container.outerWidth() / 6)
+
       // Make widgets resizable if they aren't already
+
+
       if (!$widget.data('uiResizable')) {
         $widget.resizable({
+          containment: $container,
+          grid: cellWidth,
+          // helper: "ui-resizable-helper",
           start: function(event, ui) {
             resizing = true;
             apos.log('start');
@@ -317,22 +325,30 @@ apos.Editor = function(options) {
             var max = $widget.closest('[data-editable]').width();
             var is = ui.size;
             var size = 'full';
+            var size = is;
             var sizes = [ 
               { proportion: 1/3, name: 'one-third' }, 
               { proportion: 1/2, name: 'one-half' },
               { proportion: 2/3, name: 'two-thirds' },
               { proportion: 1.0, name: 'full' }
             ];
+
+
             for (var i = 0; (i < sizes.length); i++) {
               if (is.width <= (max * sizes[i].proportion * 1.1)) {
                 size = sizes[i].name;
                 break;
               }
             }
+
+
             $widget.attr('data-size', size);
             _.each(sizes, function(s) {
               $widget.removeClass('apos-' + s.name);
             });
+
+            // console.log(size);
+
             if (size === 'full') {
               // full implies middle
               $widget.attr('data-position', 'middle');

@@ -149,9 +149,13 @@ body
   display: block;
   position: absolute;
   z-index: 2;
-  margin-left: 20px;
-  margin-top: 20px;
-  pointer: hand;
+  width: 100%;
+  height: 100%;
+  // margin-top: -10px;
+  // margin-left: -10px;
+  // margin-left: 20px;
+  // margin-top: 20px;
+  // cursor: pointer;
 }
 
 .apos-widget-button {
@@ -159,14 +163,57 @@ body
   background-color: @apos-base;
   color: white;
   padding: 4px;
-  margin-top: 4px;
-  margin-right: 4px;
+  // margin-top: 4px;
+  // margin-right: 4px;
   font-size: 12px;
   font-style: italic;
   font-weight: normal;
   float: left;
   
   cursor: pointer;
+  
+
+  &.apos-float-widget-right,
+  &.apos-float-widget-left
+  {
+    position: absolute;
+    top: 50%;
+    margin-top: -7px;
+    margin-top: -14px;
+    left: 0px;
+    
+  }
+
+  &.apos-float-widget-right
+  {
+    right: 0;
+    left: auto;
+  }
+
+}
+
+.ui-resizable-handle
+{
+  &.ui-resizable-e,
+  &.ui-resizable-s
+  {
+    width: 0px;
+    height: 0px; 
+  }
+
+  &.ui-resizable-se
+  {
+    // position: relative;
+    font-size: 12px;
+    background: @apos-base;
+    width: auto;
+    text-align: center;
+    padding: 0px 0px 0px 2px;
+    height: 18px;
+    z-index: 9999;
+    right: 0px;
+    bottom: 7px;
+  }
 }
 
 .apos-area-form-footer
@@ -278,6 +325,7 @@ body
 
 .apos-editor .apos-editable
 {
+  .clearfix;
   min-height: 400px;
 }
 
@@ -434,7 +482,7 @@ textarea.apos-code {
   background-color: #ddd;
   opacity: 1.0;
   z-index: 999;
-<<<<<<< HEAD
+
   // padding: 10px;
   h3
   {
