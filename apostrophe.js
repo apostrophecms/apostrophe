@@ -109,51 +109,133 @@ function Apos() {
 
   // Default stylesheet requirements
   // TODO: lots of override options
-  self.stylesheets = [
-    "/apos/jquery-ui-1.10.1/css/ui-darkness/jquery-ui-1.10.1.custom.min.css",
-    "/apos/css/content.css",
-    "/apos/css/editor.css"
+  var stylesheets = [
+    // Has a subdirectory of relative image paths so give it a folder
+    "jquery-ui-darkness/jquery-ui-darkness",
+    "content",
+    "editor"
   ];
 
   // Default browser side script requirements
   // TODO: lots of override options
-  self.scripts = [ 
+  var scripts = [
     // VENDOR DEPENDENCIES
 
     // Makes broken browsers usable
-    '/apos/js/underscore-min.js',
+    'vendor/underscore-min',
     // For everything
-    '/apos/js/jquery-1.9.1.min.js',
-    // For blueimp uploader, drag and drop reordering of anything, datepicker 
+    'vendor/jquery',
+    // For blueimp uploader, drag and drop reordering of anything, datepicker
     // & autocomplete
-    '/apos/jquery-ui-1.10.1/js/jquery-ui-1.10.1.custom.min.js',
+    'vendor/jquery-ui',
     // For the RTE
-    '/apos/js/jquery.hotkeys/jquery.hotkeys.js',
+    'vendor/jquery-hotkeys',
     // For selections in the RTE
-    '/apos/js/rangy-1.2.3/rangy-core.js',
-    '/apos/js/rangy-1.2.3/rangy-selectionsaverestore.js',
+    'vendor/rangy-core',
+    'vendor/rangy-selectionsaverestore',
     // For selections in ordinary textareas and inputs (part of Rangy)
-    '/apos/js/textinputs_jquery.js',
+    'vendor/jquery-textinputs',
     // Graceful fallback for older browsers
-    '/apos/blueimp/js/jquery.iframe-transport.js',
+    'vendor/blueimp-iframe-transport',
     // Spiffy multiple file upload
-    '/apos/blueimp/js/jquery.fileupload.js',
-    
+    'vendor/blueimp-fileupload',
+
     // OUR CODE
 
     // Editing functionality
-    '/apos/js/editor.js', 
-
+    'editor',
     // Viewers for standard content types
-    '/apos/js/content.js',
+    'content',
   ];
 
   // Templates pulled into the page by the aposTemplates() Express local
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
-  self.templates = [
+  var templates = [
     'slideshowEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
   ];
+
+  // Full paths to assets as computed by pushAsset
+  self._assets = { stylesheets: [], scripts: [], templates: [] };
+
+  // self.pushAsset('stylesheet', 'foo', __dirname, '/apos-mymodule') will preload
+  // /apos-mymodule/css/foo.css
+
+  // self.pushAsset('script', 'foo', __dirname, '/apos-mymodule') will preload
+  // /apos-mymodule/js/foo.js
+
+  // self.pushAsset('template', 'foo', __dirname, '/apos-mymodule') will render
+  // the partial {__dirname}/views/foo.html at the bottom of the body
+  // (self.partial will take care of adding the extension). However you can also
+  // use:
+  //
+  // self.pushAsset('template', function() { foo })
+  //
+  // Which allows you to render the template in your own context and is typically
+  // the easier way when pushing a template from a module like apostrophe-snippets.
+  //
+  // The fs and web parameters default to __dirname and '/apos' for easy use here.
+  // Other modules typically have a wrapper method that passes them correctly
+  // for their needs.
+
+  self.pushAsset = function(type, name, fs, web) {
+    if (!fs) {
+      fs = __dirname;
+    }
+    if (!web) {
+      web = '/apos';
+    }
+    var types = {
+      script: {
+        ext: 'js',
+        fs: 'public/js',
+        web: 'js',
+        key: 'scripts',
+        serve: 'web'
+      },
+      stylesheet: {
+        ext: 'css',
+        fs: 'public/css',
+        web: 'css',
+        alternate: 'less',
+        key: 'stylesheets',
+        serve: 'web'
+      },
+      template: {
+        fs: 'views',
+        key: 'templates',
+        serve: 'fs'
+      }
+    };
+
+    if (typeof(name) === 'function') {
+      return self._assets[types[type].key].push(name);
+    }
+
+    var dir;
+    if (types[type].serve === 'fs') {
+      dir = fs + '/' + types[type].fs;
+    } else {
+      dir = web + '/' + types[type].web;
+    }
+
+    var file = dir + '/' + name;
+    if (types[type].ext) {
+      file += '.' + types[type].ext;
+    }
+    self._assets[types[type].key].push(file);
+  };
+
+  var i;
+  for (i in stylesheets) {
+    self.pushAsset('stylesheet', stylesheets[i]);
+  }
+  for (i in scripts) {
+    self.pushAsset('script', scripts[i]);
+  }
+  for (i in templates) {
+    self.pushAsset('template', templates[i]);
+  }
 
   self.init = function(options, callback) {
 
@@ -215,8 +297,6 @@ function Apos() {
         };
       }
 
-      nunjucksEnv = self.newNunjucksEnv([__dirname + '/views'].concat(options.partialPaths ? options.partialPaths : []));
-
       aposLocals = {};
 
       // All the locals we export to Express must have a apos prefix on the name
@@ -224,23 +304,22 @@ function Apos() {
 
       // Make crucial data such as apos.uploadsUrl available to the browser
       aposLocals.aposSetVariables = function() {
-        return partial('variables.html', { uploadsUrl: uploadfs.getUrl() });
+        return partial('variables', { uploadsUrl: uploadfs.getUrl() });
       };
 
       // aposTemplates renders templates that are needed on any page that will
-      // use apos. Examples: slideshowEditor.html, codeEditor.html, 
-      // etc. These lie dormant in the page until they are needed as prototypes to 
+      // use apos. Examples: slideshowEditor.html, codeEditor.html,
+      // etc. These lie dormant in the page until they are needed as prototypes to
       // be cloned by jQuery
 
-      aposLocals.aposTemplates = function(options) {
-        if (!options) {
-          options = {};
-        }
-        if (!options.templates) {
-          options.templates = self.templates;
-        }
-        return _.map(options.templates, function(template) {
-          return partial(template + '.html', options);
+      aposLocals.aposTemplates = function() {
+        var templates = self._assets['templates'];
+        return _.map(templates, function(template) {
+          if (typeof(template) === 'function') {
+            return template();
+          } else {
+            return partial(template);
+          }
         }).join('');
       };
 
@@ -253,7 +332,7 @@ function Apos() {
           // edit pages not previously edited
           options.area = { items: [] };
         }
-        return partial('area.html', options);
+        return partial('area', options);
       };
 
       aposLocals.aposSingleton = function(options) {
@@ -261,7 +340,7 @@ function Apos() {
           console.log("Unknown item type: " + options.type);
           return;
         }
-        // If someone transforms an existing area into a singleton, do a reasonable thing by 
+        // If someone transforms an existing area into a singleton, do a reasonable thing by
         // taking the first existing item of the proper type
         var item = _.find(options.area.items, function(item) {
           return item.type === options.type;
@@ -272,7 +351,7 @@ function Apos() {
           options.item.position = 'middle';
           options.item.size = 'full';
         }
-        return partial('singleton.html', options);
+        return partial('singleton', options);
       };
 
       aposLocals.aposAreaIsEmpty = function(options) {
@@ -320,33 +399,21 @@ function Apos() {
           }
           attributes[key] = value;
         });
-        return partial('itemNormalView.html', { item: item, itemType: itemType, options: options, attributes: attributes });
+        return partial('itemNormalView', { item: item, itemType: itemType, options: options, attributes: attributes });
       };
 
-      aposLocals.aposStylesheets = function(options) {
-        if (!options) {
-          options = {};
-        }
-        if (!options.stylesheets) {
-          options.stylesheets = self.stylesheets;
-        }
+      aposLocals.aposStylesheets = function() {
         // We can easily add a minifier and combiner here etc., but
         // that's not important at this stage of development
-        return _.map(options.stylesheets, function(stylesheet) { 
+        return _.map(self._assets['stylesheets'], function(stylesheet) {
           return '<link href="' + stylesheet + '" rel="stylesheet" />';
         }).join("\n");
       };
 
-      aposLocals.aposScripts = function(options) {
-        if (!options) {
-          options = {};
-        }
-        if (!options.scripts) {
-          options.scripts = self.scripts;
-        }
+      aposLocals.aposScripts = function() {
         // We can easily add a minifier and combiner here etc., but
         // that's not important at this stage of development
-        return _.map(options.scripts, function(script) { 
+        return _.map(self._assets['scripts'], function(script) {
           return '<script src="' + script + '"></script>';
         }).join("\n");
       };
@@ -474,7 +541,7 @@ function Apos() {
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
           area.standalone = true;
-          return render(res, 'editArea.html', area);
+          return render(res, 'editArea', area);
         }
 
         async.series([ permissions, getArea ], sendArea);
@@ -504,7 +571,7 @@ function Apos() {
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
-        return render(res, 'editArea.html', area);
+        return render(res, 'editArea', area);
       });
 
       app.post('/apos/edit-area', function(req, res) {
@@ -612,9 +679,9 @@ function Apos() {
         }
       });
 
-      // A simple oembed proxy to avoid cross-site scripting restrictions. 
-      // TODO: cache results according to MaxAge, including the thumbnails. 
-      // Also, I should offer a whitelist of sites whose oembed codes are 
+      // A simple oembed proxy to avoid cross-site scripting restrictions.
+      // TODO: cache results according to MaxAge, including the thumbnails.
+      // Also, I should offer a whitelist of sites whose oembed codes are
       // known not to be XSS vectors
 
       app.get('/apos/oembed', function(req, res) {
@@ -653,7 +720,7 @@ function Apos() {
   };
 
   // self.static returns a function for use as a route that
-  // serves static files from a folder. This is helpful when writing 
+  // serves static files from a folder. This is helpful when writing
   // your own modules that extend apos and need to serve their own static
   // assets:
   //
@@ -663,6 +730,8 @@ function Apos() {
   // than as global middleware, it is easier to set it up for many
   // separate modules.
 
+  var lessMiddlewares = {};
+
   self.static = function(dir) {
     return function(req, res) {
        var path = req.params[0];
@@ -671,14 +740,37 @@ function Apos() {
       path = globalReplace(path, '..', '');
       // Otherwise the middleware looks in the wrong place
       req.url = path;
-      var middleware = lessMiddleware({
+      if (!lessMiddlewares[dir]) {
+        lessMiddlewares[dir] = lessMiddleware({
             src: dir,
             compress: true
-      });
+        });
+      }
+      var middleware = lessMiddlewares[dir];
       middleware(req, res, function() {
         return res.sendfile(dir + '/' + path);
       });
     };
+  };
+
+  // Similar to fs.exists, except that if a .css file does not exist
+  // and a corresponding .less file does exist, that is considered
+  // sufficient
+
+  self.fileOrOriginalExists = function(file, callback) {
+    function attempt(file, callback) {
+      return fs.exists(file, function(exists) {
+        if (exists) {
+          return callback(true);
+        } else if (path.extname(file) === '.css') {
+          file = file.substr(0, file.length - '.css'.length) + '.less';
+          return attempt(file, callback);
+        } else {
+          return callback(false);
+        }
+      });
+    }
+    return attempt(file, callback);
   };
 
   // getArea retrieves an area from MongoDB. It supports both
@@ -963,20 +1055,20 @@ function Apos() {
     });
   }
 
+  var nunjucksEnvs = {};
+
   // Load and render a Nunjucks template by the specified name and give it the
-  // specified data. All of the Apostrophe helpers are available as 
+  // specified data. All of the Apostrophe helpers are available as
   // aposArea, etc. from the template. You can also render another partial
   // from within your template by calling {{ partial('name') }}. You can pass a
   // full path for 'name' otherwise it is assumed to be relative to 'dir',
   // or to the Apostrophe's views folder if 'dir' is not specified.
+  //
+  // The .html extension is assumed.
 
-  self.partial = function(name, data, dir) {
+  self.partial = function(name, data, dirs) {
     if (!data) {
       data = {};
-    }
-
-    if (!dir) {
-      dir = __dirname + '/views';
     }
 
     // Make sure the apos-specific locals are visible to partials too.
@@ -984,22 +1076,31 @@ function Apos() {
     // and generally require the developer to worry about not breaking
     // our partials, which ought to be a black box they can ignore.
 
-    _.extend(data, aposLocals);
+    _.defaults(data, aposLocals);
 
-    var path;
-
-    // Allow absolute paths
-    if (name.substr(0, 1) === '/') {
-      path = name;
-    } else {
-      path = dir + '/' + name;
-      if (typeof(data.partial) === 'undefined') {
-        data.partial = partial;
-      }
+    if (typeof(data.partial) === 'undefined') {
+      data.partial = partial;
     }
 
-    var tmpl = nunjucksEnv.getTemplate(path);
-    return tmpl.render(data);
+    if (!dirs) {
+      dirs = [ __dirname + '/views' ];
+    }
+
+    if (!Array.isArray(dirs)) {
+      dirs = [ dirs ];
+    }
+
+    dirs = dirs.concat(self.options.partialPaths || []);
+
+    var dirsKey = dirs.join(':');
+    if (!nunjucksEnvs[dirsKey]) {
+      nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
+    }
+
+    console.log('partial:');
+    console.log(name);
+    console.log(data);
+    return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
   };
 
   // String.replace does NOT do this
@@ -1015,7 +1116,7 @@ function Apos() {
       if (index === -1) {
         result += haystack;
         return result;
-      }  
+      }
       result += haystack.substr(0, index);
       result += replacement;
       haystack = haystack.substr(index + needle.length);
@@ -1053,7 +1154,7 @@ function Apos() {
       icon: 'image',
       // icon: 'slideshow',
       render: function(data) {
-        return partial('slideshow.html', data);
+        return partial('slideshow', data);
       },
       css: 'slideshow'
     },
@@ -1062,7 +1163,7 @@ function Apos() {
       label: 'Video',
       icon: 'video',
       render: function(data) {
-        return partial('video.html', data);
+        return partial('video', data);
       },
       css: 'video'
     },
@@ -1087,18 +1188,27 @@ function Apos() {
   };
 
   self.newNunjucksEnv = function(dirs) {
+
     nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
+
     nunjucksEnv.addFilter('date', function(date, format) {
-      return moment(date).format(format);
+      console.log('formatting');
+      console.trace();
+      console.log('date is:');
+      console.log(date);
+      var s = moment(date).format(format);
+      console.log('after formatting');
+      return s;
     });
 
     nunjucksEnv.addFilter('query', function(data) {
       return qs.stringify(data);
     });
-    
+
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
     });
+
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
       // Leverage jQuery's willingness to parse attributes as JSON objects and arrays
       // if they look like it. TODO: find out if this still works cross browser with
@@ -1111,6 +1221,7 @@ function Apos() {
         return data.replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
       }
     });
+
     return nunjucksEnv;
   };
 
@@ -1191,8 +1302,6 @@ function Apos() {
         { from: originalSlug, to: slug },
         { upsert: true, safe: true },
         function(err, doc) {
-          console.log('error in redirect');
-          console.log(err);
           return callback(err);
         }
       );
@@ -1216,6 +1325,28 @@ function Apos() {
       return (typeof(tag) === 'string');
     });
     return tags;
+  };
+
+  // STRING UTILITIES
+  self.capitalizeFirst = function(s) {
+    return s.charAt(0).toUpperCase() + s.substr(1);
+  };
+
+  // Convert camel case to a hyphenated css name. Not especially fast,
+  // hopefully you only do this during initialization and remember the result
+  self.cssName = function(camel) {
+    var i;
+    var css = '';
+    for (i = 0; (i < camel.length); i++) {
+      var c = camel.charAt(i);
+      if (c === c.toUpperCase()) {
+        css += '-';
+        css += c.toLowerCase();
+      } else {
+        css += c;
+      }
+    }
+    return css;
   }
 }
 

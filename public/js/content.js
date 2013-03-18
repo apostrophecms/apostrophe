@@ -33,6 +33,7 @@ apos.enablePlayers = function(sel) {
 apos.change = function(what) {
   apos.log('apos.change');
   var sel = '[data-apos-trigger-' + what + ']';
+  apos.log('Triggering on' + sel);
   $(sel).each(function() {
     var $el = $(this);
     apos.log('Found an element');
@@ -45,7 +46,7 @@ apos.change = function(what) {
         $el.html(data);
       });
     } else {
-      apos.log('No source, triggering event');
+      apos.log('No source, triggering event: ' + 'apos-change-' + what);
       $(this).trigger('apos-change-' + what);
     }
   });

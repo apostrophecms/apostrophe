@@ -1594,6 +1594,8 @@ apos.modal = function(sel, options) {
       apos._modalStack.push($el);
       $('body').append($el);
       $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
+      apos.log('SHOWING:');
+      apos.log($el);
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
@@ -1618,6 +1620,8 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
+  apos.log("Length of sel: " + $el.length);
+  apos.log("sel is: " + sel);
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
@@ -1833,3 +1837,20 @@ apos.tagsToString = function(s) {
   return result;
 };
 
+// Convert camel case to a hyphenated css name. Not especially fast,
+// hopefully you only do this during initialization and remember the result
+apos.cssName = function(camel) {
+  var i;
+  var css = '';
+  for (i = 0; (i < camel.length); i++) {
+    var c = camel.charAt(i);
+    if (c === c.toUpperCase()) {
+      css += '-';
+      css += c.toLowerCase();
+    } else {
+      css += c;
+    }
+  }
+  console.log("Returning " + css + " from cssName for " + camel);
+  return css;
+};
