@@ -21,8 +21,9 @@
         <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/><img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/>
       {% endblock %}
       <div class="apos-widget-preview-container apos-requires-preview">
-        <div class="apos-lorem">This is what your text will look like, in relation to the content you're adding now. If you click "left" or "right," the text will wrap around your your rich content on the right. After you insert your content, small arrows will appear above and below it in the text. These arrows help you position your text relative to your rich content. They are removed automatically when you save your content.</div>
-        <div class="apos-clear"></div>
+        {# We decided to move float preview into the main area editor so #}
+        {# this preview is just for things whose appearance is not obvious #}
+        {# or which require custom settings be tweaked (example: RSS feed) #}
       </div>
       {% block formAfterPreview %}
       {% endblock %}
