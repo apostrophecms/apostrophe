@@ -1097,9 +1097,6 @@ function Apos() {
       nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
     }
 
-    console.log('partial:');
-    console.log(name);
-    console.log(data);
     return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
   };
 
@@ -1192,12 +1189,7 @@ function Apos() {
     nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
 
     nunjucksEnv.addFilter('date', function(date, format) {
-      console.log('formatting');
-      console.trace();
-      console.log('date is:');
-      console.log(date);
       var s = moment(date).format(format);
-      console.log('after formatting');
       return s;
     });
 
