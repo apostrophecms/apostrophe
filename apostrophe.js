@@ -1246,7 +1246,8 @@ function Apos() {
     {
       s = 'none';
     }
-    return s.toLowerCase();
+    s = s.toLowerCase();
+    return s;
   };
 
   // For convenience when configuring uploadfs
