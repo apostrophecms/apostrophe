@@ -893,6 +893,9 @@ function Apos() {
   //
   // If the slug does not contain a : then the area is stored directly
   // in the 'areas' collection.
+  //
+  // Page objects must already exist, otherwise an error occurs.
+  // Create pages with putPage.
 
   self.putArea = function(slug, area, callback) {
     function invokeCallback(err) {
@@ -913,14 +916,13 @@ function Apos() {
       // Use MongoDB's dot notation to update just the area in question
       set['areas.' + areaSlug] = area;
       pages.update(
-        { slug: pageSlug }, 
-        { $set: set }, 
-        { upsert: true, safe: true }, 
+        { slug: pageSlug },
+        { $set: set },
+        { safe: true },
         invokeCallback);
     } else {
       areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
     }
-
   };
 
   // slug is the existing slug of the page in the database. If page.slug is
@@ -933,7 +935,10 @@ function Apos() {
     if (!page.slug) {
       page.slug = slug;
     }
-    self.pages.update({ slug: slug }, page, { upsert: true, safe: true }, 
+    if (!page._id) {
+      page._id = generateId();
+    }
+    self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
       function(err) {
         if (err) {
           if (self.isUniqueError(err, 'slug') || self.isUniqueError(err, 'path'))
@@ -1083,7 +1088,7 @@ function Apos() {
     }
 
     if (!dirs) {
-      dirs = [ __dirname + '/views' ];
+      dirs = [];
     }
 
     if (!Array.isArray(dirs)) {
@@ -1092,10 +1097,15 @@ function Apos() {
 
     dirs = dirs.concat(self.options.partialPaths || []);
 
+    // The apostrophe module's views directory is always the last
+    // thing tried, so that you can extend the widgetEditor template, etc.
+    dirs = dirs.concat([ __dirname + '/views' ]);
+
     var dirsKey = dirs.join(':');
     if (!nunjucksEnvs[dirsKey]) {
       nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
     }
+    console.log('rendering ' + name + ' from ' + dirsKey);
 
     return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
   };
@@ -1218,11 +1228,12 @@ function Apos() {
   };
 
   // Note: you'll need to use xregexp instead if you need non-Latin character
-  // support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
+  // support in slugs. KEEP IN SYNC WITH BROWSER SIDE IMPLEMENTATION in editor.js
   self.slugify = function(s, options) {
 
-    // By default everything not a letter or number becomes a dash. 
-    // You can add additional allowed characters via options.allow
+    // By default everything not a letter or number becomes a dash.
+    // You can add additional allowed characters via options.allow and
+    // change the separator with options.separator
 
     if (!options) {
       options = {};
@@ -1232,15 +1243,22 @@ function Apos() {
       options.allow = '';
     }
 
+    if (!options.separator) {
+      options.separator = '-';
+    }
+
     var r = "[^A-Za-z0-9" + RegExp.quote(options.allow) + "]";
     var regex = new RegExp(r, 'g');
-    s = s.replace(regex, '-');
+    s = s.replace(regex, options.separator);
     // Consecutive dashes become one dash
-    s = s.replace(/\-+/g, '-');
+    var consecRegex = new RegExp(RegExp.quote(options.separator) + '+', 'g');
+    s = s.replace(consecRegex, '-');
     // Leading dashes go away
-    s = s.replace(/^\-/, '');
+    var leadingRegex = new RegExp('^' + RegExp.quote(options.separator));
+    s = s.replace(leadingRegex, '');
     // Trailing dashes go away
-    s = s.replace(/\-$/, '');
+    var trailingRegex = new RegExp(RegExp.quote(options.separator) + '$');
+    s = s.replace(trailingRegex, '');
     // If the string is empty, supply something so that routes still match
     if (!s.length)
     {
@@ -1248,6 +1266,15 @@ function Apos() {
     }
     s = s.toLowerCase();
     return s;
+  };
+
+  // Returns a string that, when used for searches and indexes, behaves
+  // similarly to MySQL's default behavior for string matching, plus a little
+  // extra tolerance of punctuation and whitespace differences. This is
+  // in contrast to MongoDB's default "absolute match with same case only"
+  // behavior which is no good for most searches
+  self.sortify = function(s) {
+    return self.slugify(s, { separator: ' ' });
   };
 
   // For convenience when configuring uploadfs

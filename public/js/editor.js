@@ -234,6 +234,8 @@ apos.Editor = function(options) {
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
+    apos.log('instantiating widget type:');
+    apos.log(widgetType);
     new apos.widgetTypes[widgetType].editor({ editor: self });
     return false;
   }).mousedown(function(e) {
@@ -691,6 +693,8 @@ apos.widgetEditor = function(options) {
 
   // Use apos.modalFromTemplate to manage our lifecycle as a modal
 
+  apos.log('options are:');
+  apos.log(options);
   self.$el = apos.modalFromTemplate(options.template, {
     init: function(callback) {
       self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -1851,6 +1855,23 @@ apos.cssName = function(camel) {
       css += c;
     }
   }
-  console.log("Returning " + css + " from cssName for " + camel);
   return css;
 };
+
+// RADIO BUTTON CONVENIENCE FUNCTIONS
+
+// Anywhere you have a form and want to manipulate it with jQuery,
+// these will get you past the nonsense of val() not working
+// because there is more than one element involved. Just select
+// all the radio buttons by name and pass to these.
+
+apos.setRadio = function($els, value) {
+  $.each($els, function() {
+    $(this).attr('checked', $(this).attr('value') === value);
+  });
+};
+
+apos.getRadio = function($els) {
+  return $els.filter(':checked').val();
+};
+

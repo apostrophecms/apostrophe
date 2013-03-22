@@ -649,7 +649,7 @@ textarea.apos-code {
   }
 }
 
-.apos-progress 
+.apos-progress
 {
   display: none;
   font-size: 125%;
@@ -672,4 +672,9 @@ textarea.apos-code {
 .apos-widget.apos-right .apos-float-widget-right
 {
   display: none;
+}
+
+/* Fixup for jquery ui so it doesn't fall behind the modal */
+ul.ui-autocomplete {
+    z-index: 999 !important;
 }
