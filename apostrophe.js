@@ -1105,7 +1105,6 @@ function Apos() {
     if (!nunjucksEnvs[dirsKey]) {
       nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
     }
-    console.log('rendering ' + name + ' from ' + dirsKey);
 
     return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
   };
