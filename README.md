@@ -143,10 +143,12 @@ This `aposArea` call turns on all of the controls. You can leave anything you li
 Naturally `getArea` is asynchronous:
 
     app.get('/', function(req, res) {
-      apos.getArea('main', function(err, area) {
+      apos.getArea(req, 'main', function(err, area) {
         return res.render('home', { content: area ? area.items : [] });
       });
     });
+
+The `req` object is needed so that widget loaders can consider permissions and have an opportunity to perform caching when multiple queries occur during the lifetime of a single page request.
 
 Note the code that checks whether `area` is actually set before attempting to access its content. If no area with that slug has ever been saved, the `area` callback parameter will be null.
 
@@ -228,7 +230,7 @@ Currently the possible actions are `edit-area`, `edit-media`, `edit-page` and `v
 
 A common case is to restrict editing to a single user but let view actions sail through:
 
-    function permissions(req, action, fileOrSlug, callback) {
+    function permissions(req, action, object, callback) {
       if (req.user && (!action.match(/^view-/)) && (req.user.username === 'admin')) {
         // OK
         return callback(null);

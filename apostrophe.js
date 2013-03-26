@@ -519,7 +519,7 @@ function Apos() {
         }
 
         function getArea(callback) {
-          self.getArea(slug, function(err, areaArg) {
+          self.getArea(req, slug, function(err, areaArg) {
             if (!areaArg) {
               area = {
                 slug: slug,
@@ -593,7 +593,7 @@ function Apos() {
               return notfound(req, res);
             }
 
-            return callLoadersForArea(area, function() {
+            return self.callLoadersForArea(req, area, function() {
               return res.send(aposLocals.aposAreaContent(area.items));
             });
           }
@@ -634,7 +634,7 @@ function Apos() {
               return notfound(req, res);
             }
 
-            return callLoadersForArea(area, function() {
+            return self.callLoadersForArea(req, area, function() {
               return res.send(aposLocals.aposAreaContent(area.items));
             });
           }
@@ -673,7 +673,7 @@ function Apos() {
         }
 
         if ((options.load !== '0') && (itemType.load)) {
-          return itemType.load(item, go);
+          return itemType.load(req, item, go);
         } else {
           return go();
         }
@@ -780,20 +780,26 @@ function Apos() {
   // the area object requested if it exists. If the area does not
   // exist, both parameters to the callback are null.
   //
-  // If it exists, the area object is guaranteed to have `slug` and 
-  // `content` properties. The `content` property contains rich content 
-  // markup ready to display in the browser. 
+  // A 'req' object is needed to provide a context for permissions in custom
+  // widget loaders, and for caching for the duration of the current request.
+  // However this need not be a real Express 'req' object. Note that permissions
+  // are NOT checked on the page itself here. You should perform such checks before
+  // invoking this method.
+  //
+  // If it exists, the area object is guaranteed to have `slug` and
+  // `content` properties. The `content` property contains rich content
+  // markup ready to display in the browser.
   //
   // If 'slug' matches the following pattern:
   //
   // /cats/about:sidebar
   //
   // Then 'sidebar' is assumed to be the name of an area stored
-  // within the areas property of the page object with the slug /cats/about. That 
+  // within the areas property of the page object with the slug /cats/about. That
   // object is fetched from the pages collection and the relevant area
-  // from its areas property, if present, is delivered. 
+  // from its areas property, if present, is delivered.
   //
-  // Slugs of the latter type are an efficient way to store related areas 
+  // Slugs of the latter type are an efficient way to store related areas
   // that are usually desired at the same time, because the getPage method
   // returns the entire page object, including all of its areas.
   //
@@ -805,7 +811,7 @@ function Apos() {
   // the area collection, or data from APIs, can load that data at the time
   // they are fetched. Set the 'load' option to false if you do not want this.
 
-  self.getArea = function(slug, options, callback) {
+  self.getArea = function(req, slug, options, callback) {
     if (typeof(options) === 'function') {
       callback = options;
       options = {};
@@ -853,7 +859,7 @@ function Apos() {
         return callback(null, area);
       }
       if (options.load) {
-        return callLoadersForArea(area, after);
+        return self.callLoadersForArea(req, area, after);
       } else {
         return after();
       }
@@ -865,7 +871,7 @@ function Apos() {
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object with its slug property set to the slug under
-  // which it was stored with putArea. 
+  // which it was stored with putArea.
   //
   // If 'slug' matches the following pattern:
   //
@@ -970,6 +976,12 @@ function Apos() {
   // been saved, then the areas property will be an
   // object with properties named main and sidebar.
   //
+  // A 'req' object is needed to provide a context for permissions in custom
+  // widget loaders, and for caching for the duration of the current request.
+  // However this need not be a real Express 'req' object. Note that permissions
+  // are NOT checked on the page itself here. You should perform such checks before 
+  // invoking this method.
+  //
   // The first callback parameter is an error or null.
   // In the event of an exact slug match, the second parameter
   // to the callback is the matching page object. If there is a
@@ -991,7 +1003,7 @@ function Apos() {
   // webpages do not have a leading / on their slugs
   // (and when using the pages module they must not).
 
-  self.getPage = function(slug, callback) {
+  self.getPage = function(req, slug, callback) {
     var orClauses = [];
     var components;
     // Partial matches
@@ -1029,8 +1041,7 @@ function Apos() {
         var remainder = slug.substr(bestPage.slug.length);
         // Strip trailing slashes for consistent results
         remainder = remainder.replace(/\/+$/, '');
-        // Call loaders for all areas in the page. Wow, async.map is awesome.
-        async.map(_.values(bestPage.areas), callLoadersForArea, function(err, results) {
+        self.callLoadersForPage(req, bestPage, function(err) {
           return callback(err, page, bestPage, remainder);
         });
       } else {
@@ -1040,7 +1051,26 @@ function Apos() {
     });
   };
 
-  // Private methods
+  // Invoke loaders for any items in any area of the page that have loaders,
+  // then invoke callback. Loaders are expected to report failure as appropriate
+  // to their needs by setting item properties that their templates can
+  // use to display that when relevant, so there is no formal error
+  // handling for loaders
+
+  // The req object is available so that loaders can consider permissions
+  // and perform appropriate caching for the lifetime of the request.
+
+  self.callLoadersForPage = function(req, page, callback) {
+    // Call loaders for all areas in a page. Wow, async.map is awesome.
+    async.map(
+      _.values(page.areas),
+      function(area, callback) {
+        return self.callLoadersForArea(req, area, callback);
+      }, function(err, results) {
+        return callback(err);
+      }
+    );
+  };
 
   // Invoke loaders for any items in this area that have loaders, then
   // invoke callback. Loaders are expected to report failure as appropriate
@@ -1048,17 +1078,21 @@ function Apos() {
   // use to display that when relevant, so there is no formal error
   // handling for loaders
 
-  function callLoadersForArea(area, callback) {
+  // The req object is available so that loaders can consider permissions
+  // and perform appropriate caching for the lifetime of the request.
+
+  self.callLoadersForArea = function(req, area, callback) {
+    // Even more async.map goodness
     async.map(area.items, function(item, callback) {
       if (self.itemTypes[item.type].load) {
-        return self.itemTypes[item.type].load(item, callback);
+        return self.itemTypes[item.type].load(req, item, callback);
       } else {
         return callback();
       }
     }, function(err, results) {
       return callback(err);
     });
-  }
+  };
 
   var nunjucksEnvs = {};
 
