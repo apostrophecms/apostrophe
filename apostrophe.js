@@ -239,6 +239,12 @@ function Apos() {
 
   self.init = function(options, callback) {
 
+    aposLocals = {};
+
+    if (options.locals) {
+      _.extend(aposLocals, options.locals);
+    }
+
     function setupAreas(callback) {
       db.collection('aposAreas', function(err, collection) {
         self.areas = areas = collection;
@@ -296,8 +302,6 @@ function Apos() {
           return callback(null);
         };
       }
-
-      aposLocals = {};
 
       // All the locals we export to Express must have a apos prefix on the name
       // for clean namespacing.
