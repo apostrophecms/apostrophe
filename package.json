@@ -6,7 +6,6 @@
   "dependencies": {
     "async": "~0.1.22",
     "express": "~3.0.5",
-    "jquery": "~1.8.3",
     "nunjucks": "~0.1.8",
     "oembed": "~0.1.0",
     "regexp-quote": "0.0.0",

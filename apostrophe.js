@@ -526,7 +526,6 @@ function Apos() {
             if (!areaArg) {
               area = {
                 slug: slug,
-                _id: generateId(),
                 content: null,
                 isNew: true,
               };
@@ -539,11 +538,15 @@ function Apos() {
         }
 
         function sendArea() {
-          area.wid = 'w-' + area._id;
+          // A temporary id for the duration of the editing activity, useful
+          // in the DOM. Areas are permanently identified by their slugs, not their IDs.
+          area.wid = 'w-' + generateId();
           area.controls = controls;
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
           area.standalone = true;
+          console.log('editing area:');
+          console.log(area);
           return render(res, 'editArea', area);
         }
 
@@ -561,16 +564,16 @@ function Apos() {
         var content = req.body.content ? JSON.parse(req.body.content) : [];
         self.sanitizeItems(content);
         var area = {
-          items: content,
-          // We give it an id anyway, even though we're not storing it,
-          // because it makes it more convenient to find in the DOM
-          _id: generateId()
+          items: content
         };
         var controls = req.query.controls ? req.query.controls.split(' ') : [];
         if (!controls.length) {
           controls = self.defaultControls;
         }
-        area.wid = 'w-' + area._id;
+        // A temporary id for the duration of the editing activity, useful
+        // in the DOM. Regular areas are permanently identified by their slugs,
+        // not their IDs. Virtual areas are identified as the implementation sees fit.
+        area.wid = 'w-' + generateId();
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
