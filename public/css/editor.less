@@ -223,13 +223,15 @@ body
 
 .apos-toolbar
 {
-  padding: 0px 0px 10px 0px;
-  font-size: 20px;
+  // padding: 0px 0px 10px 0px;
+  // font-size: 20px;
 }
 
 .apos-toolbar .apos-control
 {
-  margin-right: 2px;
+  // margin-right: 2px;
+  margin-right: 0px;
+  border-right: 1px solid #fff;
 }
 
 /**
@@ -318,15 +320,48 @@ body
   font-weight: bold;
 }
 
+.apos-toolbar 
+{
+  i
+  {
+    font-size:0.9em;
+    padding: 9px 5px 10px;
+    font-weight: normal;
+    letter-spacing: 1px;
+    // text-transform: uppercase;
+  }
+  .apos-button
+  {
+    font-size:0.85em;
+    padding: 8px 5px 9px;
+    font-weight: normal;
+    letter-spacing: 1px;
+  }
+
+  select
+  {
+    padding: 3px 13px 4px 10px !important
+  }
+  /* This hides the label for heading/type style */
+  .apos-menu-style .apos-menu-label{ display: none; }
+
+
+}
+
 .apos-editor
 {
   min-height: 400px;
+  
 }
 
 .apos-editor .apos-editable
 {
   .clearfix;
   min-height: 400px;
+  background-color: #FFF;
+  // margin-top: -2px;
+  padding-top: 10px;
+  &:focus{outline:none;}
 }
 
 .apos-center
@@ -447,7 +482,26 @@ textarea.apos-code {
 
 .apos-modal .apos-modal-body fieldset
 {
-  margin-top: 10px;
+  margin-bottom: 15px;
+  .clearfix;
+}
+
+.apos-modal .apos-modal-body fieldset.apos-editor-fieldset
+{
+  label
+  {
+    float:left;
+    display: inline-block;
+  }
+  > div
+  {
+    float: left;
+  }
+  textarea
+  {
+    width: 80%;
+    border: 0;
+  }
 }
 
 .apos-modal .apos-modal-body .apos-position input, 
@@ -478,47 +532,61 @@ textarea.apos-code {
 
 .apos-modal
 {
+  top: 100px;
   position: absolute;
   width: 800px;
   background-color: #ddd;
   opacity: 1.0;
   // Do not use >= 899 for other things please
   z-index: 900;
+  
+  
 
   // padding: 10px;
   h3
   {
     background: @apos-base;
     color: #fff;
-    font-size: 14px;
-    padding: 5px 10px;
+    padding: 15px;
     margin-bottom: 0px;
+    
+    font-size: 10px;
+    font-family: 'cabin';
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   .apos-modal-body
   {
-    padding: 10px;
+    padding: 15px;
     
     form
     {
       input
       {
         border: none;
-        padding: 8px;
         width: 100%;
+        max-width: 500px;
+        margin-left: -3px;
+        padding: 8px 8px 10px 8px;
         
         & ~ label {color: blue;}
       }
 
       label
       {
-        color: #fff;
-        background: @apos-base;
-        padding: 8px;
-        padding-bottom: 7px;
+        color: @apos-grey10;
+        letter-spacing: 1px;
+        background: @apos-grey60;
+        padding: 9px 12px;
+        // padding-bottom: 7px;
         font-size: 12px;
-        border-right: 1px solid #fff;
+        font-family: 'cabinbold';
+        // border-right: 1px solid #fff;
+        text-transform: uppercase;
+        font-size: 10px;
       }
+
 
       select
       {
@@ -527,10 +595,17 @@ textarea.apos-code {
            -moz-appearance:none;
         border: none;
         background: @apos-base;
+        // background: @apos-grey40;
         border-radius: 0px;
-        padding: 8px;
+        padding: 8px 8px 10px 8px;
         cursor: pointer;
         margin-left: -4px;
+        color: #FFF;
+        
+        &::before
+        {
+          content:"hi";
+        }
         
         
         &::before
@@ -583,6 +658,15 @@ textarea.apos-code {
     *
     {
       float: right;
+    }
+
+    .apos-button
+    {
+      font-family: 'cabin';
+      font-size:10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 25px;
     }
   }
   // padding: 10px;
