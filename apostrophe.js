@@ -5,7 +5,6 @@ var async = require('async');
 var sanitize = require('validator').sanitize;
 var fs = require('fs');
 var _ = require('underscore');
-var jQuery = require('jquery');
 var nunjucks = require('nunjucks');
 var async = require('async');
 var lessMiddleware = require('less-middleware');
