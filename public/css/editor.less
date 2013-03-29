@@ -484,10 +484,12 @@ textarea.apos-code {
 {
   margin-bottom: 15px;
   .clearfix;
+  background-color: #FFF;
 }
 
 .apos-modal .apos-modal-body fieldset.apos-editor-fieldset
 {
+  background-color: inherit;
   label
   {
     float:left;
@@ -496,11 +498,18 @@ textarea.apos-code {
   > div
   {
     float: left;
+    width: 100%;
   }
   textarea
   {
     width: 80%;
     border: 0;
+  }
+  .apos-toolbar
+  {
+    float: right;
+    display: inline-block;
+    margin-top: -28px;
   }
 }
 
@@ -566,7 +575,7 @@ textarea.apos-code {
       {
         border: none;
         width: 100%;
-        max-width: 500px;
+        max-width: 550px;
         margin-left: -3px;
         padding: 8px 8px 10px 8px;
         
