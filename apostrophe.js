@@ -953,7 +953,7 @@ function Apos() {
     self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
       function(err) {
         if (err) {
-          if (self.isUniqueError(err, 'slug') || self.isUniqueError(err, 'path'))
+          if (self.isUniqueError(err))
           {
             var num = (Math.floor(Math.random() * 10)).toString();
             if (page.slug === undefined) {
@@ -966,7 +966,7 @@ function Apos() {
             if (page.path) {
               page.path += num;
             }
-            return self.putPage(page, self.options, callback);
+            return self.putPage(page.slug, page, callback);
           }
           return callback(err);
         }
@@ -1255,15 +1255,50 @@ function Apos() {
       // if they look like it. TODO: find out if this still works cross browser with
       // single quotes, all the double escaping is unfortunate
       if (typeof(data) === 'object') {
-        return JSON.stringify(data).replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+        return self.escapeHtml(JSON.stringify(data));
       } else {
         // Make it a string for sure
         data += '';
-        return data.replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+        return self.escapeHtml(data);
       }
     });
 
     return nunjucksEnv;
+  };
+
+  self.escapeHtml = function(s) {
+    if (s === 'undefined') {
+      s = '';
+    }
+    if (typeof(s) !== 'string') {
+      s = s + '';
+    }
+    return s.replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+  };
+
+  // Accept tags as a comma-separated string and sanitize them,
+  // returning an array of zero or more nonempty strings. Must match
+  // browser side implementation. Useful on the server side for
+  // import implementations
+  self.tagsToArray = function(tags) {
+    if (typeof(tags) === 'number') {
+      tags += '';
+    }
+    if (typeof(tags) !== 'string') {
+      return [];
+    }
+    tags += '';
+    tags = tags.split(/,\s*/);
+    // split returns an array of one empty string for an empty source string ):
+    tags = _.filter(tags, function(tag) { return tag.length > 0; });
+    // Make them all strings
+    tags = _.map(tags, function(tag) {
+      // Tags are always lowercase otherwise they will not compare
+      // properly in MongoDB. If you want to change this then you'll
+      // need to address that deeper issue
+      return (tag + '').toLowerCase();
+    });
+    return tags;
   };
 
   // Note: you'll need to use xregexp instead if you need non-Latin character
@@ -1340,14 +1375,26 @@ function Apos() {
     }
   ];
 
-  // Is this MongoDB error related to the uniqueness of the specified field?
-  // Great for retrying on duplicates. Used heavily by the pages module and
-  // no doubt will be by other things
-  self.isUniqueError = function(err, field) {
+  // Is this MongoDB error related to uniquness? Great for retrying on duplicates.
+  // Used heavily by the pages module and no doubt will be by other things.
+  //
+  // There are three error codes for this: 13596 ("cannot change _id of a document")
+  // and 11000 and 11001 which specifically relate to the uniqueness of an index.
+  // 13596 can arise on an upsert operation, especially when the _id is assigned
+  // by the caller rather than by MongoDB.
+  //
+  // IMPORTANT: you are responsible for making sure ALL of your unique indexes
+  // are accounted for before retrying... otherwise an infinite loop will
+  // likely result.
+
+  self.isUniqueError = function(err) {
     if (!err) {
       return false;
     }
-    return (((err.code === 11000) || (err.code === 11001)) && (err.err.indexOf(field) !== -1));
+    if (err.code === 13596) {
+      return true;
+    }
+    return ((err.code === 13596) || (err.code === 11000) || (err.code === 11001));
   };
 
   // An easy way to leave automatic redirects behind as things are renamed.
@@ -1406,6 +1453,30 @@ function Apos() {
       }
     }
     return css;
+  }
+
+  // Convert a name to camel case. Only digits and ASCII letters remain.
+  // Anything that isn't a digit or an ASCII letter prompts the next character
+  // to be uppercase. Useful in converting CSV with friendly headings into
+  // sensible property names
+  self.camelName = function(s) {
+    var i;
+    var n = '';
+    var nextUp = false;
+    for (i = 0; (i < s.length); i++) {
+      var c = s.charAt(i);
+      if (c.match(/[A-Za-z0-9]/)) {
+        if (nextUp) {
+          n += c.toUpperCase();
+          nextUp = false;
+        } else {
+          n += c.toLowerCase();
+        }
+      } else {
+        nextUp = true;
+      }
+    }
+    return n;
   }
 }
 

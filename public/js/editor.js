@@ -1811,7 +1811,8 @@ apos.suggestSlugOnTitleEdits = function($title, $slug) {
 };
 
 // Accept tags as a comma-separated string and sanitize them,
-// returning an array of zero or more nonempty strings
+// returning an array of zero or more nonempty strings. Must match
+// server side implementation
 apos.tagsToArray = function(tags) {
   if (typeof(tags) === 'number') {
     tags += '';
@@ -1825,7 +1826,10 @@ apos.tagsToArray = function(tags) {
   tags = _.filter(tags, function(tag) { return tag.length > 0; });
   // Make them all strings
   tags = _.map(tags, function(tag) {
-    return tag + '';
+    // Tags are always lowercase otherwise they will not compare
+    // properly in MongoDB. If you want to change this then you'll
+    // need to address that deeper issue
+    return (tag + '').toLowerCase();
   });
   return tags;
 };
