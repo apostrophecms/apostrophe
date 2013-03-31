@@ -745,6 +745,8 @@ function Apos() {
             less.render(fs.readFileSync(src, 'utf8'),
             {
               rootpath: path.dirname(stylesheet.web) + '/',
+              // Without this relative import paths are in trouble
+              paths: [ path.dirname(src) ],
               // Ensures the callback is invoked immediately.
               // Note we only do this once in production.
               syncImport: true
