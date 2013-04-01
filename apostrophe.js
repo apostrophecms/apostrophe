@@ -76,7 +76,7 @@ function Apos() {
   // commands or tags that the browser does not actually support it will not
   // do what you want.
   //
-  // This is not the place to define widgets. See apos.itemTypes for that. 
+  // This is not the place to define widgets. See apos.itemTypes for that.
 
   self.controlTypes = {
     style: {
@@ -1388,6 +1388,8 @@ function Apos() {
   // Note: you'll need to use xregexp instead if you need non-Latin character
   // support in slugs. KEEP IN SYNC WITH BROWSER SIDE IMPLEMENTATION in editor.js
   self.slugify = function(s, options) {
+    // Trim and deal with wacky cases like an array coming in without crashing
+    s = self.sanitizeString(s);
 
     // By default everything not a letter or number becomes a dash.
     // You can add additional allowed characters via options.allow and
@@ -1537,7 +1539,25 @@ function Apos() {
       }
     }
     return css;
-  }
+  };
+
+  // Simple string sanitization so junk submissions can't crash the app
+  self.sanitizeString = function(s, def) {
+    if (typeof(s) !== 'string') {
+      if (typeof(s) === 'number') {
+        s += '';
+      } else {
+        s = '';
+      }
+    }
+    s = s.trim();
+    if (def !== undefined) {
+      if (s === '') {
+        s = def;
+      }
+    }
+    return s;
+  };
 
   // Convert a name to camel case. Only digits and ASCII letters remain.
   // Anything that isn't a digit or an ASCII letter prompts the next character

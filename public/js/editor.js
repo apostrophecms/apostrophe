@@ -234,8 +234,6 @@ apos.Editor = function(options) {
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
-    apos.log('instantiating widget type:');
-    apos.log(widgetType);
     new apos.widgetTypes[widgetType].editor({ editor: self });
     return false;
   }).mousedown(function(e) {
@@ -693,8 +691,6 @@ apos.widgetEditor = function(options) {
 
   // Use apos.modalFromTemplate to manage our lifecycle as a modal
 
-  apos.log('options are:');
-  apos.log(options);
   self.$el = apos.modalFromTemplate(options.template, {
     init: function(callback) {
       self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -814,8 +810,6 @@ apos.widgetEditor = function(options) {
       }
       // Get all the data attributes
       var info = apos.cleanWidgetData(self.$widget.data());
-      apos.log('rendering these attributes:');
-      apos.log(info);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -1001,8 +995,6 @@ apos.widgetTypes.slideshow = {
     // The server will render an actual slideshow, but we also want to see
     // thumbnails of everything with draggability for reordering and remove buttons
     self.prePreview = function(callback) {
-      apos.log('self.data in prePreview');
-      apos.log(self.data);
       $items.find('[data-item]:not(.apos-template)').remove();
       var items = self.data.items;
       if (!items) {
@@ -1598,8 +1590,6 @@ apos.modal = function(sel, options) {
       apos._modalStack.push($el);
       $('body').append($el);
       $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
-      apos.log('SHOWING:');
-      apos.log($el);
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
@@ -1624,8 +1614,6 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
-  apos.log("Length of sel: " + $el.length);
-  apos.log("sel is: " + sel);
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
@@ -1790,9 +1778,7 @@ apos.suggestSlugOnTitleEdits = function($title, $slug) {
   var currentSlug = $slug.val();
   var components = currentSlug.split('/');
   var currentSlugTitle = components.pop();
-  apos.log('testing slug');
   if (currentSlugTitle === apos.slugify(originalTitle)) {
-    apos.log('slug initially compatible with title');
     $title.on('keyup', function() {
       var title = $title.val();
       if (title !== originalTitle) {
@@ -1841,7 +1827,6 @@ apos.tagsToString = function(s) {
     return '';
   }
   var result = s.join(', ');
-  apos.log("Tags string is " + result);
   return result;
 };
 
