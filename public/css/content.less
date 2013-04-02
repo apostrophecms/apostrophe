@@ -89,8 +89,104 @@
   display: block;
 }
 
+.apos-slideshow .apos-slideshow-next,
+.apos-slideshow .apos-slideshow-prev
+{
+  position: absolute;
+  top: 50%;
+  // background: red;
+  height: 50px;
+  width: 50px;
+  text-indent: -9999px;
+  &::after
+  {
+    top:14px;
+    left:0;
+    border-top: 3px solid black;
+    border-left: 3px solid black;
+    content: " ";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+  }
+  &::before
+  {
+    border: 3px solid black;
+    -webkit-border-radius: 30px;
+            border-radius: 30px;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    content: " ";
+    display: block;
+  }
+
+  &:hover::before
+  {
+    background-color: RGBA(255,255,255,0.3);
+  }
+}
+
+.apos-slideshow .apos-slideshow-next
+{
+
+   right: 10px;
+  &::after
+  {
+    left: 9px;
+    -webkit-transform: rotate(135deg);
+       -moz-transform: rotate(135deg);
+        -ms-transform: rotate(135deg);
+         -o-transform: rotate(135deg);
+            transform: rotate(135deg);
+  }
+}
+
+.apos-slideshow .apos-slideshow-prev
+{
+  
+  left: 10px;
+  &::after
+  {
+    left: 17px;
+    -webkit-transform: rotate(-45deg);
+       -moz-transform: rotate(-45deg);
+        -ms-transform: rotate(-45deg);
+         -o-transform: rotate(-45deg);
+            transform: rotate(-45deg);
+  }
+}
+
 /* Areas and singletons are always tall enough to contain their controls */
 .apos-area, .apos-singleton
 {
   min-height: 50px;
 }
+
+/*
+Below are some basic styles for the map module so it doesn't look totally broken.
+They will need to live somewhere else eventually
+*/
+#map-canvas
+{
+  // width: 600px;
+  // height: 350px;
+}
+
+// .map-marker
+// {
+//   position: absolute;
+  
+//   &.general
+//   { /*  This is general icon points as seen on homepage */
+//     height: 20px;
+//     width: 20px;
+//     background-color: red;
+//     border: 5px solid #fff;
+//     -webkit-border-radius: 10px;
+//             border-radius: 10px;
+    
+//     box-shadow: 0px 0px 11px #888;
+//   }
+// }
+

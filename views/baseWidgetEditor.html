@@ -9,7 +9,7 @@
   </h3>
   <div class="apos-modal-body">
     <form>
-      <label>
+      <label class='apos-instructions'>
         {% block instructions %}
           Paste a widget link.
         {% endblock %}
@@ -30,6 +30,8 @@
     </form>
   </div>
   <div class="apos-modal-footer">
+    {% block additionalFooterItems %}
+    {% endblock %}
     <a href="#" class="apos-control apos-button apos-save">Save Changes</a>
     <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
   </div>

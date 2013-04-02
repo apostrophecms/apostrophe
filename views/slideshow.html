@@ -1,8 +1,28 @@
 <ul data-slideshow-items class="apos-slideshow-items">
-  {% for file in item.items %}
+  {% for file in item.items %}<!-- http://localhost:3000/# -->
     {# Make the first image initially current #}
-    <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}">
-      <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'one-third' }) }}" />
+    <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
+      <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
+      {% if file.description or file.hyperlink or file.title %}
+      <div class="apos-slideshow-description-container">
+        
+        {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}
+        
+        {% if file.description %}
+          <div class="apos-slideshow-description">
+            <p>
+             {{ file.description }}
+            </p>
+          </div>
+        {% endif %}
+        
+        {% if file.hyperlink %}
+          <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">View Details</a>
+        {% endif %}
+      </div>
+      {% endif %}
     </li>
   {% endfor %}
 </ul>
+<a href="#" class="apos-slideshow-button apos-slideshow-next">Next</a>
+<a href="#" class="apos-slideshow-button apos-slideshow-prev">Previous</a>

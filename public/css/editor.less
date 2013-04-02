@@ -241,17 +241,21 @@ body
 .apos-control
 {
   float: left;
-  padding: 4px;
+  padding: 7px;
   background-color: @apos-base;
   color: #fff;
   margin-right: 10px;
   text-decoration: none;
   font-size: 16px;
   margin-right: 5px;
-  // text-transform: uppercase;
+  text-transform: uppercase;
   font-family: Helvetica, sans-serif;
   .transition;
   opacity: 1;
+  font-size: 11px;
+  font-family: 'cabin';
+  letter-spacing: 1px;
+  
 }
 
 .apos-button
@@ -279,6 +283,7 @@ body
   position: absolute;
   top: -10px;
   left: -10px;
+  z-index: 898;
 }
 
 
@@ -474,6 +479,10 @@ body
 textarea.apos-code {
   width: 97%;
 }
+.apos-modal
+{
+  
+}
 
 .apos-modal .apos-modal-body 
 {
@@ -548,10 +557,8 @@ textarea.apos-code {
   opacity: 1.0;
   // Do not use >= 899 for other things please
   z-index: 900;
-  
-  
-
   // padding: 10px;
+  * {font-family: 'cabin' !important; }
   h3
   {
     background: @apos-base;
@@ -560,7 +567,7 @@ textarea.apos-code {
     margin-bottom: 0px;
     
     font-size: 10px;
-    font-family: 'cabin';
+    
     letter-spacing: 1px;
     text-transform: uppercase;
   }
@@ -569,6 +576,12 @@ textarea.apos-code {
   {
     padding: 15px;
     
+    .apos-instructions
+    {
+      display: block;
+      margin-bottom: 20px;
+    }
+
     form
     {
       input
@@ -588,12 +601,15 @@ textarea.apos-code {
         letter-spacing: 1px;
         background: @apos-grey60;
         padding: 9px 12px;
-        // padding-bottom: 7px;
         font-size: 12px;
         font-family: 'cabinbold';
-        // border-right: 1px solid #fff;
         text-transform: uppercase;
         font-size: 10px;
+        &.short
+        {
+          display: inline-block;
+          .clearfix;
+        }
       }
 
 
@@ -653,6 +669,26 @@ textarea.apos-code {
           // border: 2px solid red;
         }        
       }
+      .apos-stacked-fieldset
+      {
+        background-color: transparent;
+        label
+        {
+          display: inline-block;
+        }
+        input, textarea
+        {
+          max-width: none;
+          width: 100%;
+          margin-left: 0;
+          outline:none;
+          border:none;
+        }
+        textarea
+        {
+          height: 100px;
+        }
+      }
     }
 
 
@@ -661,7 +697,7 @@ textarea.apos-code {
 
   .apos-modal-footer
   {
-    padding: 10px;
+    padding: 15px;
     .clearfix;
     
     *
@@ -719,27 +755,55 @@ textarea.apos-code {
   float: left;
   display: block;
   width: 170px;
-  height: 170px;
+  // height: 170px;
   margin: 5px;
-  &.apos-template {
+  &.apos-template
+  {
     display: none;
   }
-  .apos-slideshow-editor-item-box {
+  .apos-slideshow-editor-item-box
+  {
     position: relative;
   }
-  .apos-slideshow-editor-image {
-    position: absolute;
+  .apos-slideshow-editor-image
+  {
+    // position: absolute;
     max-width: 170px;
     max-height: 170px;
   }
-  .apos-remove {
+  .apos-remove
+  {
     position: absolute;
-    font-style: italic;
-    color: red;
-    left: 10px;
-    top: 10px;
+    // font-style: italic;
+    color: white;
+    right: 0;
+    top: 0;
+    background-color: @apos-base;
+    padding: 6px 8px;
     cursor: pointer;
+    &:hover
+    {
+      background-color: darken(@apos-base, 10%);
+      text-decoration: none;
+    }
   }
+
+}
+.apos-slideshow-editor .apos-slideshow-extra-fields-controls
+{
+  float: left;
+    *{float:left;}
+    input{margin-right:5px;}
+}
+
+.apos-slideshow-editor .apos-slideshow-extra-fields
+{
+  display: none;
+  margin-top: 20px;
+}
+.apos-extra-fields-enabled .apos-slideshow-extra-fields
+{
+  display: block;
 }
 
 .apos-progress
