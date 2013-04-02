@@ -247,17 +247,28 @@ You can extend apos with additional widgets, and the [apostrophe-twitter](http:/
 
 The [apostrophe-pages](http://github.com/punkave/apostrophe-pages) module extends Apostrophe with full blown support for trees of editable web pages (like having a static site, except of course that your users can edit it gorgeously and intuitively).
 
+## Minifying CSS and JS in Production
+
+Apostrophe has built-in support for minifying its CSS and JS. This is done via the `uglify-js` and `clean-css` modules, which are pure JS and have good performance given the complexity of what they do.
+
+By default, minification does not occur. This allows developers to click refresh and immediately see their changes, and also avoids the hassles of debugging minified code.
+
+To turn on minification, just pass the `minify: true` option to Apostrophe. The `aposScripts` and `aposStylesheets` locals will then load a single minified file of each type.
+
+Pass that option only in staging and production environments. We recommend resisting the urge not to minify on a staging server, because you need a truly faithful production-like environment to avoid surprises in production. You should minify on staging if you minify in production.
+
+Apostrophe automatically minifies CSS and JS on the first request received (in each process), then reuses the result. There is no need to "clear the cache" or rebuild assets with grunt. Your production deployment process should always involve restarting Apostrophe, which will be the case if you use Stagecoach as seen in our sandbox project.
+
 ## Roadmap
 
 Apostrophe is a work in progress. Certainly the following things need to improve:
 
-* Developers should be able to leverage everything else in Apostrophe without actually storing areas via the provided API. In particular, if I'm creating a blog post editor, I want an area to be part of it, but I don't want to store it separately or be forced to have a separate "save" button for it.
-* Developers should be able to inject their own storage layer that satisfies an API. I think. Maybe. (Requiring MongoDB has its benefits.)
 * The built-in oembed proxy should cache thumbnails and markup.
 * The built-in oembed proxy should have a whitelist of sites whose oembed codes are not XSS attack vectors.
-* Server-side content validation should be much smarter.
 * It should be possible to fetch summaries of areas conveniently and quickly. The new way of storing items as a structured array in MongoDB makes this possible, but a simple API for it should be exposed.
 * It should be possible to fetch just certain rich media from areas conveniently and quickly (technically possible now, see above).
+
+See github issues for more.
 
 ## Conclusion and Contact Information
 

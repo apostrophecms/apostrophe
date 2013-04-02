@@ -234,8 +234,6 @@ apos.Editor = function(options) {
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
-    apos.log('instantiating widget type:');
-    apos.log(widgetType);
     new apos.widgetTypes[widgetType].editor({ editor: self });
     return false;
   }).mousedown(function(e) {
@@ -693,8 +691,6 @@ apos.widgetEditor = function(options) {
 
   // Use apos.modalFromTemplate to manage our lifecycle as a modal
 
-  apos.log('options are:');
-  apos.log(options);
   self.$el = apos.modalFromTemplate(options.template, {
     init: function(callback) {
       self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -814,8 +810,6 @@ apos.widgetEditor = function(options) {
       }
       // Get all the data attributes
       var info = apos.cleanWidgetData(self.$widget.data());
-      apos.log('rendering these attributes:');
-      apos.log(info);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -1629,8 +1623,6 @@ apos.modal = function(sel, options) {
       apos._modalStack.push($el);
       $('body').append($el);
       $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
-      apos.log('SHOWING:');
-      apos.log($el);
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
@@ -1655,8 +1647,6 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
-  apos.log("Length of sel: " + $el.length);
-  apos.log("sel is: " + sel);
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
@@ -1821,9 +1811,7 @@ apos.suggestSlugOnTitleEdits = function($title, $slug) {
   var currentSlug = $slug.val();
   var components = currentSlug.split('/');
   var currentSlugTitle = components.pop();
-  apos.log('testing slug');
   if (currentSlugTitle === apos.slugify(originalTitle)) {
-    apos.log('slug initially compatible with title');
     $title.on('keyup', function() {
       var title = $title.val();
       if (title !== originalTitle) {
@@ -1842,7 +1830,8 @@ apos.suggestSlugOnTitleEdits = function($title, $slug) {
 };
 
 // Accept tags as a comma-separated string and sanitize them,
-// returning an array of zero or more nonempty strings
+// returning an array of zero or more nonempty strings. Must match
+// server side implementation
 apos.tagsToArray = function(tags) {
   if (typeof(tags) === 'number') {
     tags += '';
@@ -1856,7 +1845,10 @@ apos.tagsToArray = function(tags) {
   tags = _.filter(tags, function(tag) { return tag.length > 0; });
   // Make them all strings
   tags = _.map(tags, function(tag) {
-    return tag + '';
+    // Tags are always lowercase otherwise they will not compare
+    // properly in MongoDB. If you want to change this then you'll
+    // need to address that deeper issue
+    return (tag + '').toLowerCase();
   });
   return tags;
 };
@@ -1868,7 +1860,6 @@ apos.tagsToString = function(s) {
     return '';
   }
   var result = s.join(', ');
-  apos.log("Tags string is " + result);
   return result;
 };
 
