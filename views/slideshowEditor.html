@@ -34,11 +34,30 @@ Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
         {# jQuery will give this img a proper src #}
         {# Use the smallest possible empty GIF in the meantime #}
         <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
-        <a class="apos-remove">x</a>
+        <div class="apos-slideshow-extra-fields" data-extra-fields>
+          <fieldset class="apos-stacked-fieldset">
+            <label class="short">Title</label>
+            <input data-title class="apos-slideshow-editor-title" type="text" />
+          </fieldset>
+          <fieldset class="apos-stacked-fieldset">
+            <label>Description</label>
+            <textarea data-description class="apos-slideshow-editor-description"></textarea>
+          </fieldset>
+          <fieldset class="apos-stacked-fieldset">
+            <label>Link</label>
+            <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+          </fieldset>
+        </div>
+        <a class="apos-remove" data-remove>x</a>
       </div>
     </li>
   </ul>
   <div class="apos-clear"></div>
 {% endblock %}
 
+{% block additionalFooterItems %}
+<form class="apos-slideshow-extra-fields-controls">
+  <input class="apos-extra-fields-checkbox" type="checkbox" data-enable-extra-fields>Enable Extra Fields
+</form>
+{% endblock %}
 

@@ -937,7 +937,6 @@ apos.widgetTypes = {};
 
 apos.widgetTypes.slideshow = {
   label: 'Slideshow',
-
   editor: function(options) {
     var self = this;
     var $items;
@@ -996,6 +995,11 @@ apos.widgetTypes.slideshow = {
           }
         }
       });
+      self.$el.find('[data-enable-extra-fields]').on('click', function(){
+       $('[data-items]').toggleClass('apos-extra-fields-enabled');
+       reflect();
+      });
+
     };
 
     // The server will render an actual slideshow, but we also want to see
@@ -1003,6 +1007,7 @@ apos.widgetTypes.slideshow = {
     self.prePreview = function(callback) {
       apos.log('self.data in prePreview');
       apos.log(self.data);
+
       $items.find('[data-item]:not(.apos-template)').remove();
       var items = self.data.items;
       if (!items) {
@@ -1011,32 +1016,58 @@ apos.widgetTypes.slideshow = {
       _.each(items, function(item) {
         addItem(item);
       });
+
+      var extraFields = self.data.extra;
+
+      if (extraFields){
+        self.$el.find('[data-items]').addClass('apos-extra-fields-enabled');
+      }
+      
+      self.$el.find('[data-enable-extra-fields]').prop('checked', extraFields);
+
       callback();
+    };
+
+    self.preSave = function (callback){
+      reflect();
+      return callback();
     };
 
     function addItem(item) {
       var $item = apos.fromTemplate($items.find('[data-item]'));
       $item.find('[data-image]').attr('src', apos.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.find('[data-title]').val(item.title);
+      $item.find('[data-description]').val(item.description);
+      $item.find('[data-hyperlink]').val(item.hyperlink);
       $item.data('item', item);
-      $item.click('[data-remove]', function() {
+      $item.find('[data-remove]').click(function() {
         $item.remove();
         reflect();
         self.preview();
         return false;
       });
+
       $items.append($item);
     }
 
     // Update the data attributes to match what is found in the 
     // list of items. This is called after remove and reorder events
     function reflect() {
-      var $itemElements = $items.find('[data-item]:not(.apos-template)');
+      self.data.extra = self.$el.find('[data-enable-extra-fields]').prop('checked');
 
+      var $itemElements = $items.find('[data-item]:not(.apos-template)');
       self.data.items = [];
 
       $.each($itemElements, function(i, item) {
         var $item = $(item);
-        self.data.items.push($item.data('item'));
+
+        var info = $item.data('item');
+        info.title = $item.find('[data-title]').val();
+        info.description = $item.find('[data-description]').val();
+        info.hyperlink = $item.find('[data-hyperlink]').val();
+
+        self.data.items.push(info);
+
       });
       // An empty slideshow is allowed, so permit it to be saved
       // even if nothing has been added
