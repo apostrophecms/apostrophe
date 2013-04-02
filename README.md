@@ -303,6 +303,8 @@ By calling `req.pushData({ ... })` and/or `apos.pushGlobalData({ ... })`, you ca
 
 Apostrophe's modules use this mechanism to push options for constructors like `AposBlogPosts` to scoop up later.
 
+If you are not using the `apostrophe-pages` module to render the results, you'll need to call `apos.getData(req)` and `apos.getGlobalData()` to get the JavaScript blocks you'll want to invoke at the end of the body. You should do so *before* doing the same for `getCalls` and `getGlobalCalls`. If you are using `apostrophe-pages`, you can just take advantage of the `data` property already supplied to your page template.
+
 `req.pushData` and `req.pushGlobalData` are not as flexible as `req.pushCall` and `req.pushGlobalCall`. In many cases you'll want to use the latter.
 
 Keep in mind that all data passed via any of these mechanisms must be JSON-friendly. You cannot pass server-side function objects to browser-side code. That's just life in JavaScriptLand.
