@@ -119,3 +119,11 @@ apos.widgetPlayers.video = function($widget)
   });
 };
 
+// MINOR JQUERY EXTENSIONS
+
+(function( $ ){
+  // Less bug-prone way to find things by name attribute
+  $.fn.findByName = function(name) {
+    return this.find('[name=' + name + ']');
+  };
+})( jQuery );

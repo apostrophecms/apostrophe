@@ -14,6 +14,12 @@ var path = require('path');
 var moment = require('moment');
 // Query string parser/generator
 var qs = require('qs');
+// LESS CSS compiler
+var less = require('less');
+// JS minifier and optimizer
+var uglifyJs = require('uglify-js');
+// CSS minifier https://github.com/GoalSmashers/clean-css
+var cleanCss = require('clean-css');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -70,7 +76,7 @@ function Apos() {
   // commands or tags that the browser does not actually support it will not
   // do what you want.
   //
-  // This is not the place to define widgets. See apos.itemTypes for that. 
+  // This is not the place to define widgets. See apos.itemTypes for that.
 
   self.controlTypes = {
     style: {
@@ -176,12 +182,17 @@ function Apos() {
   // The fs and web parameters default to __dirname and '/apos' for easy use here.
   // Other modules typically have a wrapper method that passes them correctly
   // for their needs.
+  //
+  // You should pass BOTH fs and web for a stylesheet or script. This allows
+  // minification, LESS compilation that is aware of relative base paths, etc.
+  // fs should be the PARENT of the public folder, not the public folder itself.
 
   self.pushAsset = function(type, name, fs, web) {
-    if (!fs) {
+    // Careful with the defaults on this, '' is not false for this purpose
+    if (typeof(fs) !== 'string') {
       fs = __dirname;
     }
-    if (!web) {
+    if (typeof(web) !== 'string') {
       web = '/apos';
     }
     var types = {
@@ -211,18 +222,18 @@ function Apos() {
       return self._assets[types[type].key].push(name);
     }
 
-    var dir;
-    if (types[type].serve === 'fs') {
-      dir = fs + '/' + types[type].fs;
-    } else {
-      dir = web + '/' + types[type].web;
-    }
+    var fileDir = fs + '/' + types[type].fs;
+    var webDir = web + '/' + types[type].web;
 
-    var file = dir + '/' + name;
+    var filePath = fileDir + '/' + name;
     if (types[type].ext) {
-      file += '.' + types[type].ext;
+      filePath += '.' + types[type].ext;
     }
-    self._assets[types[type].key].push(file);
+    var webPath = webDir + '/' + name;
+    if (types[type].ext) {
+      webPath += '.' + types[type].ext;
+    }
+    self._assets[types[type].key].push({ file: filePath, web: webPath });
   };
 
   var i;
@@ -237,6 +248,10 @@ function Apos() {
   }
 
   self.init = function(options, callback) {
+
+    // An id for this particular process that should be unique
+    // even in a multiple server environment
+    self._pid = generateId();
 
     aposLocals = {};
 
@@ -321,7 +336,7 @@ function Apos() {
           if (typeof(template) === 'function') {
             return template();
           } else {
-            return partial(template);
+            return partial(template.file);
           }
         }).join('');
       };
@@ -406,19 +421,23 @@ function Apos() {
       };
 
       aposLocals.aposStylesheets = function() {
-        // We can easily add a minifier and combiner here etc., but
-        // that's not important at this stage of development
-        return _.map(self._assets['stylesheets'], function(stylesheet) {
-          return '<link href="' + stylesheet + '" rel="stylesheet" />';
-        }).join("\n");
+        if (options.minify) {
+          return '<link href="/apos/stylesheets.css?pid=' + self._pid + '" rel="stylesheet" />';
+        } else {
+          return _.map(self._assets['stylesheets'], function(stylesheet) {
+            return '<link href="' + stylesheet.web + '" rel="stylesheet" />';
+          }).join("\n");
+        }
       };
 
       aposLocals.aposScripts = function() {
-        // We can easily add a minifier and combiner here etc., but
-        // that's not important at this stage of development
-        return _.map(self._assets['scripts'], function(script) {
-          return '<script src="' + script + '"></script>';
-        }).join("\n");
+        if (options.minify) {
+          return '<script src="/apos/scripts.js?pid=' + self._pid + '"></script>\n';
+        } else {
+          return _.map(self._assets['scripts'], function(script) {
+            return '<script src="' + script.web + '"></script>';
+          }).join("\n");
+        }
       };
 
       aposLocals.aposFilePath = function(file, options) {
@@ -545,8 +564,6 @@ function Apos() {
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
           area.standalone = true;
-          console.log('editing area:');
-          console.log(area);
           return render(res, 'editArea', area);
         }
 
@@ -698,6 +715,73 @@ function Apos() {
             return res.send(result);
           }
         });
+      });
+
+      // Serve minified CSS. (If we're not minifying, aposStylesheets won't
+      // point here at all.)
+      app.get('/apos/stylesheets.css', function(req, res) {
+        if (self._minifiedCss === undefined) {
+          var css = _.map(self._assets['stylesheets'], function(stylesheet) {
+            var result;
+            var src = stylesheet.file;
+            var exists = false;
+            if (fs.existsSync(src)) {
+              exists = true;
+            }
+            if (!exists) {
+              var lessPath = src.replace(/\.css$/, '.less');
+              if (fs.existsSync(lessPath)) {
+                src = lessPath;
+                exists = true;
+              }
+            }
+            if (!exists) {
+              console.log('WARNING: stylesheet ' + stylesheet.file + ' does not exist');
+              return;
+            }
+            // We run ALL CSS through the LESS compiler, because
+            // it fixes relative paths for us so that a combined file
+            // will still have valid paths to background images etc.
+            less.render(fs.readFileSync(src, 'utf8'),
+            {
+              rootpath: path.dirname(stylesheet.web) + '/',
+              // Without this relative import paths are in trouble
+              paths: [ path.dirname(src) ],
+              // Ensures the callback is invoked immediately.
+              // Note we only do this once in production.
+              syncImport: true
+            }, function(err, css) {
+              if (!err) {
+                result = css;
+              }
+            });
+            if (result === undefined) {
+              throw "lessjs has gone asynchronous on us. That should not have happened. See: https://github.com/fson/less.js/commit/e21ddb74de6017cbce7a9cf1f3406697b98774ec";
+            }
+            return result;
+          }).join("\n");
+          self._minifiedCss = cleanCss.process(css);
+        }
+        res.type('text/css');
+        res.send(self._minifiedCss);
+      });
+
+      // Serve minified js. (If we're not minifying, aposScripts won't
+      // point here at all.)
+      app.get('/apos/scripts.js', function(req, res) {
+        if (self._minifiedJs === undefined) {
+          // Minify them all!
+          var scripts = _.filter(self._assets['scripts'], function(script) {
+            var exists = fs.existsSync(script.file);
+            if (!exists) {
+              console.log("Warning: " + script.file + " does not exist");
+            }
+            return exists;
+          });
+          self._minifiedJs = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
+        }
+        res.contentType = 'text/javascript';
+        res.send(self._minifiedJs);
       });
 
       app.get('/apos/*', self.static(__dirname + '/public'));
@@ -1304,6 +1388,8 @@ function Apos() {
   // Note: you'll need to use xregexp instead if you need non-Latin character
   // support in slugs. KEEP IN SYNC WITH BROWSER SIDE IMPLEMENTATION in editor.js
   self.slugify = function(s, options) {
+    // Trim and deal with wacky cases like an array coming in without crashing
+    s = self.sanitizeString(s);
 
     // By default everything not a letter or number becomes a dash.
     // You can add additional allowed characters via options.allow and
@@ -1453,7 +1539,25 @@ function Apos() {
       }
     }
     return css;
-  }
+  };
+
+  // Simple string sanitization so junk submissions can't crash the app
+  self.sanitizeString = function(s, def) {
+    if (typeof(s) !== 'string') {
+      if (typeof(s) === 'number') {
+        s += '';
+      } else {
+        s = '';
+      }
+    }
+    s = s.trim();
+    if (def !== undefined) {
+      if (s === '') {
+        s = def;
+      }
+    }
+    return s;
+  };
 
   // Convert a name to camel case. Only digits and ASCII letters remain.
   // Anything that isn't a digit or an ASCII letter prompts the next character
