@@ -1008,7 +1008,7 @@ apos.widgetTypes.slideshow = {
 
     function addItem(item) {
       var $item = apos.fromTemplate($items.find('[data-item]'));
-      $item.find('[data-image]').attr('src', apos.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.data('item', item);
       $item.click('[data-remove]', function() {
         $item.remove();

@@ -243,9 +243,11 @@ You can see an example of this pattern in `app.js` in the sandbox project.
 
 ## Extending Apostrophe
 
-You can extend apos with additional widgets, and the [apostrophe-twitter](http://github.com/punkave/apostrophe-twitter) and [apostrophe-rss](http://github.com/punkave/apostrophe-rss) modules provide working examples. New widget types can even have custom loaders that bring in additional data on the server side as needed. It's neat stuff. 
+You can extend apos with additional widgets, and the [apostrophe-twitter](http://github.com/punkave/apostrophe-twitter) and [apostrophe-rss](http://github.com/punkave/apostrophe-rss) modules provide working examples. New widget types can even have custom loaders that bring in additional data on the server side as needed. It's neat stuff.
 
 The [apostrophe-pages](http://github.com/punkave/apostrophe-pages) module extends Apostrophe with full blown support for trees of editable web pages (like having a static site, except of course that your users can edit it gorgeously and intuitively).
+
+The [apostrophe-snippets](http://github.com/punkave/apostrophe-snippets) module provides a way to maintain a library of reusable content and insert it anywhere on the site. This widget is also designed as a basis for creating modules like [apostrophe-blog](http://github.com/punkave/apostrophe-blog), [apostrophe-events](http://github.com/punkave/apostrophe-events) and [apostrophe-map](http://github.com/punkave/apostrophe-map) with a minimum of code duplication.
 
 ## Minifying CSS and JS in Production
 
@@ -258,6 +260,52 @@ To turn on minification, just pass the `minify: true` option to Apostrophe. The 
 Pass that option only in staging and production environments. We recommend resisting the urge not to minify on a staging server, because you need a truly faithful production-like environment to avoid surprises in production. You should minify on staging if you minify in production.
 
 Apostrophe automatically minifies CSS and JS on the first request received (in each process), then reuses the result. There is no need to "clear the cache" or rebuild assets with grunt. Your production deployment process should always involve restarting Apostrophe, which will be the case if you use Stagecoach as seen in our sandbox project.
+
+## Passing Data and Calling Functions in the Browser From Server-Side Code
+
+One of the great challenges of full-stack development is to pass data and call functions in browser-side javascript from server-side code without making a mess. Apostrophe can help here. Apostrophe has features that help you create a single block of clean JavaScript code and data assignment statements without escaping problems or a zillion separate `script` elements.
+
+Apostrophe adds `req.pushCall` and `req.pushData` to the Express request object. You call `req.pushCall` like so:
+
+    req.pushCall('something.func(?)', { any: { json: [5, 7] } });
+
+You can do this as many times as you need to.
+
+You can then call:
+
+    apos.getCalls(res)
+
+To obtain a block of JavaScript code ready to be popped into a `script` tag at the end of the `body` element. It's easy to pass that to your templates. If you are using the `apostrophe-pages` module, you don't even have to do that, because it is already passed as the `calls` property.
+
+Every `?` in the pattern (the first argument) is replaced by a correctly JSON-encoded representation of each additional argument. You can use as many `?`s as you need.
+
+JSON-encoding is a great way to avoid escaping bugs, but sometimes you do want one of your parameters to be inserted literally, for instance to pass a constructor function name dynamically. To do that, use `@` rather than `?`:
+
+    req.pushCall('@(?)', 'SomeFunction', 'SomeData')
+
+Note that `req.pushCall` pushes a call to be invoked just in the current HTTP request's response. To make calls that will be included in the `calls` property for *every* request, make a call like this:
+
+    apos.pushGlobalCall('myblog.setup(?)', options)
+
+Apostrophe's modules use this approach heavily for browser-side initialization.
+
+You can use both `?` (escaped via JSON) and `@` (inserted literally) as placeholders here too.
+
+Note: If you are not using the `apostrophe-pages` module, you'll need to call `apos.getCalls(req)` and `apos.getGlobalCalls()` to get two blocks of JavaScript source code ready to insert at the end of the body inside a `script` element. If you are using `apostrophe-pages` this is done for you, so your layout can just output both sets of calls (already concatenated together) via the `calls` property.
+
+Apostrophe's `apostrophe-pages` module automatically makes these calls available as a single block of code ready to insert into a script tag at the end of the body.
+
+### What About Data?
+
+Well, we've already given you a way to pass data, since you can pass any arguments you like to any browser-side JavaScript code via the `pushCall` mechanism and JSON-escape the arguments automatically. However, there is an alternative way to pass data.
+
+By calling `req.pushData({ ... })` and/or `apos.pushGlobalData({ ... })`, you can pass objects to the browser which will be merged into the browser-side JavaScript object `apos.data`. The merge operation is carried out recursively via `jQuery.extend`. That means that you can set some sub-properties on one call and set additional sub-properties on another.
+
+Apostrophe's modules use this mechanism to push options for constructors like `AposBlogPosts` to scoop up later.
+
+`req.pushData` and `req.pushGlobalData` are not as flexible as `req.pushCall` and `req.pushGlobalCall`. In many cases you'll want to use the latter.
+
+Keep in mind that all data passed via any of these mechanisms must be JSON-friendly. You cannot pass server-side function objects to browser-side code. That's just life in JavaScriptLand.
 
 ## Roadmap
 
