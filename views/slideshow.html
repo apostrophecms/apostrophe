@@ -1,5 +1,5 @@
 <ul data-slideshow-items class="apos-slideshow-items">
-  {% for file in item.items %}http://localhost:3000/#
+  {% for file in item.items %}<!-- http://localhost:3000/# -->
     {# Make the first image initially current #}
     <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
       <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
@@ -24,5 +24,5 @@
     </li>
   {% endfor %}
 </ul>
-<a href="#" class="apos-slideshow-next">Next</a>
-<a href="#" class="apos-slideshow-prev">Previous</a>
+<a href="#" class="apos-slideshow-button apos-slideshow-next">Next</a>
+<a href="#" class="apos-slideshow-button apos-slideshow-prev">Previous</a>

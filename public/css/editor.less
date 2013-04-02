@@ -241,17 +241,21 @@ body
 .apos-control
 {
   float: left;
-  padding: 4px;
+  padding: 7px;
   background-color: @apos-base;
   color: #fff;
   margin-right: 10px;
   text-decoration: none;
   font-size: 16px;
   margin-right: 5px;
-  // text-transform: uppercase;
+  text-transform: uppercase;
   font-family: Helvetica, sans-serif;
   .transition;
   opacity: 1;
+  font-size: 11px;
+  font-family: 'cabin';
+  letter-spacing: 1px;
+  
 }
 
 .apos-button
@@ -572,6 +576,12 @@ textarea.apos-code {
   {
     padding: 15px;
     
+    .apos-instructions
+    {
+      display: block;
+      margin-bottom: 20px;
+    }
+
     form
     {
       input
@@ -591,10 +601,8 @@ textarea.apos-code {
         letter-spacing: 1px;
         background: @apos-grey60;
         padding: 9px 12px;
-        // padding-bottom: 7px;
         font-size: 12px;
         font-family: 'cabinbold';
-        // border-right: 1px solid #fff;
         text-transform: uppercase;
         font-size: 10px;
         &.short
