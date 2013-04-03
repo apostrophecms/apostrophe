@@ -129,11 +129,14 @@ apos.cssName = function(camel) {
   var dash = false;
   for (i = 0; (i < camel.length); i++) {
     var c = camel.charAt(i);
-    if (!(((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))) {
+    var lower = ((c >= 'a') && (c <= 'z'));
+    var upper = ((c >= 'A') && (c <= 'Z'));
+    var digit = ((c >= '0') && (c <= '9'));
+    if (!(lower || upper || digit)) {
       dash = true;
       continue;
     }
-    if (c === c.toUpperCase()) {
+    if (upper) {
       if (i > 0) {
         dash = true;
       }
