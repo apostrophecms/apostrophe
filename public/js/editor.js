@@ -1863,23 +1863,6 @@ apos.tagsToString = function(s) {
   return result;
 };
 
-// Convert camel case to a hyphenated css name. Not especially fast,
-// hopefully you only do this during initialization and remember the result
-apos.cssName = function(camel) {
-  var i;
-  var css = '';
-  for (i = 0; (i < camel.length); i++) {
-    var c = camel.charAt(i);
-    if (c === c.toUpperCase()) {
-      css += '-';
-      css += c.toLowerCase();
-    } else {
-      css += c;
-    }
-  }
-  return css;
-};
-
 // RADIO BUTTON CONVENIENCE FUNCTIONS
 
 // Anywhere you have a form and want to manipulate it with jQuery,

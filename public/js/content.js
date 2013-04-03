@@ -119,6 +119,35 @@ apos.widgetPlayers.video = function($widget)
   });
 };
 
+// CONVENIENCES
+
+// Convert camel case to a hyphenated css name. Not especially fast,
+// hopefully you only do this during initialization and remember the result
+apos.cssName = function(camel) {
+  var i;
+  var css = '';
+  var dash = false;
+  for (i = 0; (i < camel.length); i++) {
+    var c = camel.charAt(i);
+    if (!(((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))) {
+      dash = true;
+      continue;
+    }
+    if (c === c.toUpperCase()) {
+      if (i > 0) {
+        dash = true;
+      }
+      c = c.toLowerCase();
+    }
+    if (dash) {
+      css += '-';
+      dash = false;
+    }
+    css += c;
+  }
+  return css;
+};
+
 // MINOR JQUERY EXTENSIONS
 
 (function( $ ){
