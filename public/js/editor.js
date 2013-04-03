@@ -1275,29 +1275,6 @@ apos.widgetTypes.code = {
 
 // Utilities
 
-// Widget ids should be valid names for javascript variables, just in case
-// we find that useful, so avoid hyphens
-
-apos.generateId = function() {
-  return 'w' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
-};
-
-// mustache.js solution to escaping HTML (not URLs)
-apos.entityMap = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': '&quot;',
-  "'": '&#39;',
-  "/": '&#x2F;'
-};
-
-apos.escapeHtml = function(string) {
-  return String(string).replace(/[&<>"'\/]/g, function (s) {
-    return apos.entityMap[s];
-  });
-};
-
 // http://stackoverflow.com/questions/2937975/contenteditable-text-editor-and-cursor-position
 
 apos.insertHtmlAtCursor = function(html) {

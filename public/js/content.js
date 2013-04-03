@@ -24,31 +24,31 @@ apos.enablePlayers = function(sel) {
   });
 };
 
-// When apos.change('blog') is invoked, the contents of all elements in the page
-// with data-apos-trigger-blog are refreshed from the URL specified by their
-// data-apos-source attribute. If they have no data-apos-source attribute, they
-// receive an apos-change-blog jQuery event instead. This accommodates the needs
-// of both server-rendered and browser-rendered components.
+// When apos.change('blog') is invoked, the following things happen:
+//
+// 1. All elements wih the data-apos-trigger-blog attribute receive an
+// apos-change-blog jQuery event.
+//
+// 2. The main content area (the data-apos-refreshable div) is
+// refreshed via an AJAX request, without refreshing the entire page.
+// This occurs without regard to the `what` parameter because there are
+// too many ways that the main content area can be influenced by any
+// change made via the admin bar. It's simplest to refresh the
+// entire content zone and still much faster than a page refresh.
+//
+// Note that this means there is no point in using data-apos-trigger-blog
+// attributes in the main content area. Those are mainly useful in dialogs
+// created by the admin bar, for instance to refresh the "manage" dialog
+// when an edit or delete operation succeeds.
 
 apos.change = function(what) {
-  apos.log('apos.change');
   var sel = '[data-apos-trigger-' + what + ']';
-  apos.log('Triggering on' + sel);
   $(sel).each(function() {
     var $el = $(this);
-    apos.log('Found an element');
-    var source = $el.attr('data-apos-source');
-    if (source) {
-      apos.log('With a source');
-      $.get(source, {}, function(data) {
-        apos.log('Data is ' + data);
-        apos.log(this);
-        $el.html(data);
-      });
-    } else {
-      apos.log('No source, triggering event: ' + 'apos-change-' + what);
-      $(this).trigger('apos-change-' + what);
-    }
+    $(this).trigger('apos-change-' + what);
+  });
+  $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
+    $('[data-apos-refreshable]').html($.parseHTML(data));
   });
 };
 
@@ -382,6 +382,29 @@ apos.outerHTML = function(e) {
   var wrapper = $('<div></div>');
   wrapper.append($(e).clone());
   return wrapper.html();
+};
+
+// Widget ids should be valid names for javascript variables, just in case
+// we find that useful, so avoid hyphens
+
+apos.generateId = function() {
+  return 'w' + Math.floor(Math.random() * 1000000000) + Math.floor(Math.random() * 1000000000);
+};
+
+// mustache.js solution to escaping HTML (not URLs)
+apos.entityMap = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': '&quot;',
+  "'": '&#39;',
+  "/": '&#x2F;'
+};
+
+apos.escapeHtml = function(string) {
+  return String(string).replace(/[&<>"'\/]/g, function (s) {
+    return apos.entityMap[s];
+  });
 };
 
 // MINOR JQUERY EXTENSIONS
