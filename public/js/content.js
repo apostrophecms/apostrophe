@@ -17,6 +17,11 @@ apos.enablePlayers = function(sel) {
   }
   $(sel).find('.apos-widget').each(function() {
     var $widget = $(this);
+    
+    if($widget.closest('.apos-no-player').length) {
+      return;
+    };
+
     var type = $widget.attr('data-type');
     if (apos.widgetPlayers[type]) {
       apos.widgetPlayers[type]($widget);
