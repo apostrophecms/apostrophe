@@ -154,6 +154,13 @@ apos.Editor = function(options) {
 
     var widgetId = $widget.attr('data-id');
 
+    // Do NOT add editing controls to widgets nested in other widgets.
+    // These are part of a snippet and should be edited in that separate context.
+    // Just edit the outer snippet widget.
+    if ($widget.parents('.apos-widget').length) {
+      return;
+    }
+
     // Undo nasty workarounds for webkit bugs for which we found
     // a better workaround
     $widget.find('.apos-widget-inner').each(function() {
@@ -383,6 +390,14 @@ apos.Editor = function(options) {
     $widgets.each(function() {
 
       var $widget = $(this);
+
+      // Do NOT add editing controls to widgets nested in other widgets.
+      // These are part of a snippet and should be edited in that separate context.
+      // Just edit the outer snippet widget.
+      if ($widget.parents('.apos-widget').length) {
+        return;
+      }
+
       var $container = $widget.closest('.apos-editor');
       var cellWidth = ($container.outerWidth() / 6)
 
@@ -408,7 +423,6 @@ apos.Editor = function(options) {
               { proportion: 2/3, name: 'two-thirds' },
               { proportion: 1.0, name: 'full' }
             ];
-
 
             for (var i = 0; (i < sizes.length); i++) {
               if (is.width <= (max * sizes[i].proportion * 1.1)) {
@@ -934,6 +948,9 @@ apos.widgetTypes.slideshow = {
   editor: function(options) {
     var self = this;
     var $items;
+    // Options passed from template or other context
+    var templateOptions = options.options || {};
+    var limit = templateOptions.limit;
 
     if (!options.messages) {
       options.messages = {};
@@ -965,7 +982,7 @@ apos.widgetTypes.slideshow = {
         dataType: 'json',
         // This is nice in a multiuser scenario, it prevents slamming,
         // but I need to figure out why it's necessary to avoid issues
-        // with node-imagemagick 
+        // with node-imagemagick
         sequentialUploads: true,
         start: function (e) {
           $('[data-progress]').show();
@@ -987,13 +1004,24 @@ apos.widgetTypes.slideshow = {
             reflect();
             self.preview();
           }
+        },
+        add: function(e, data) {
+          if (limit && (self.count() >= limit)) {
+            alert('You must remove an image before adding another.');
+            return false;
+          }
+          return data.submit();
         }
       });
       self.$el.find('[data-enable-extra-fields]').on('click', function(){
        $('[data-items]').toggleClass('apos-extra-fields-enabled');
        reflect();
       });
+    };
 
+    // Counts the list items in the DOM. Useful when still populating it.
+    self.count = function() {
+      return $items.find('[data-item]:not(.apos-template)').length;
     };
 
     // The server will render an actual slideshow, but we also want to see
@@ -1016,7 +1044,7 @@ apos.widgetTypes.slideshow = {
       if (extraFields){
         self.$el.find('[data-items]').addClass('apos-extra-fields-enabled');
       }
-      
+
       self.$el.find('[data-enable-extra-fields]').prop('checked', extraFields);
 
       callback();
@@ -1028,6 +1056,14 @@ apos.widgetTypes.slideshow = {
     };
 
     function addItem(item) {
+      var count = self.count();
+      // Refuse to exceed the limit if one was specified
+      if (limit && (count >= limit)) {
+        alert('You must remove an image before adding another.');
+        return;
+      }
+      apos.log(count);
+      apos.log(limit);
       var $item = apos.fromTemplate($items.find('[data-item]'));
       $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.find('[data-title]').val(item.title);
@@ -1038,10 +1074,17 @@ apos.widgetTypes.slideshow = {
         $item.remove();
         reflect();
         self.preview();
+        self.$el.find('[data-limit-reached]').hide();
         return false;
       });
 
       $items.append($item);
+      count++;
+
+      if (limit && (count >= limit)) {
+        self.$el.find('[data-limit]').text(limit);
+        self.$el.find('[data-limit-reached]').show();
+      }
     }
 
     // Update the data attributes to match what is found in the
@@ -1386,26 +1429,37 @@ apos.enableAreas = function() {
     if ($item.length) {
       itemData = apos.cleanWidgetData($item.data());
     }
-    new apos.widgetTypes[type].editor({
+    var $editor = new apos.widgetTypes[type].editor({
       data: itemData,
       save: function(callback) {
-        $.post('/apos/edit-singleton',
-          {
-            slug: slug,
-            // By now itemData has been updated (we passed it
-            // into the widget and JavaScript passes objects by reference)
-            content: JSON.stringify(itemData)
-          },
-          function(markup) {
-            $singleton.find('.apos-content').html(markup);
-            apos.enablePlayers($singleton);
-            callback(null);
-          }
-        ).fail(function() {
-          alert('Server error, please try again.');
-          callback('error');
-        });
-      }
+        if (slug) {
+          // Has a slug, save it
+          $.post('/apos/edit-singleton',
+            {
+              slug: slug,
+              // By now itemData has been updated (we passed it
+              // into the widget and JavaScript passes objects by reference)
+              content: JSON.stringify(itemData)
+            },
+            function(markup) {
+              $singleton.find('.apos-content').html(markup);
+              apos.enablePlayers($singleton);
+              callback(null);
+            }
+          ).fail(function() {
+            alert('Server error, please try again.');
+            callback('error');
+          });
+        } else {
+          // Virtual singletons must be saved in other ways. Add it as a
+          // data attribute of the singleton, and post an event
+          $singleton.attr('data-item', JSON.stringify(itemData));
+          $singleton.trigger('apos-edited', itemData);
+          return callback();
+        }
+      },
+      // Options passed from the template or other environment
+      options: $singleton.data('options')
     });
     return false;
   });

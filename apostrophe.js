@@ -20,6 +20,7 @@ var less = require('less');
 var uglifyJs = require('uglify-js');
 // CSS minifier https://github.com/GoalSmashers/clean-css
 var cleanCss = require('clean-css');
+var extend = require('extend');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -362,6 +363,9 @@ function Apos() {
           options.item.position = 'middle';
           options.item.size = 'full';
         }
+        // Options to pass on to the widget
+        options.options = _.omit(options, 'area', 'item', 'slug', 'type');
+
         return partial('singleton', options);
       };
 
@@ -381,7 +385,8 @@ function Apos() {
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
         _.each(items, function(item) {
-          result += aposLocals.aposItemNormalView(item, options).trim();
+          var itemOptions = options ? options[item.type] : undefined;
+          result += aposLocals.aposItemNormalView(item, itemOptions).trim();
         });
         return result;
       };
@@ -750,6 +755,32 @@ function Apos() {
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
         return render(res, 'editArea', area);
+      });
+
+      // Render an editor for a virtual area with the content
+      // specified as a JSON array of items by the req.body.content
+      // property, if any (there will be 0 or 1 elements, any further
+      // elements are ignored). For use when you are supplying your own storage
+      // (for instance, the blog module uses this to render
+      // a singleton thumbnail edit button for a post).
+
+      app.post('/apos/edit-virtual-singleton', function(req, res) {
+        var options = {};
+        var content = req.body.content ? JSON.parse(req.body.content) : [];
+        self.sanitizeItems(content);
+        var area = {
+          items: content
+        };
+        var type = req.body.type;
+        // A temporary id for the duration of the editing activity, useful
+        // in the DOM. Regular areas are permanently identified by their slugs,
+        // not their IDs. Virtual areas are identified as the implementation sees fit.
+        area.wid = 'w-' + generateId();
+        extend(options, _.omit(req.body, 'content', 'type'), true);
+        options.type = type;
+        options.area = area;
+        options.edit = true;
+        return res.send(aposLocals.aposSingleton(options));
       });
 
       app.post('/apos/edit-area', function(req, res) {
