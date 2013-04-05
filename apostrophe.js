@@ -1784,6 +1784,123 @@ function Apos() {
     return false;
   };
 
+  // pad an integer with leading zeroes, creating a string
+  self.padInteger = function(i, places) {
+    var s = i + '';
+    while (s.length < places) {
+      s = '0' + s;
+    }
+    return s;
+  };
+
+  // Accept a user-entered string in YYYY-MM-DD, MM/DD, MM/DD/YY, or MM/DD/YYYY format
+  // (tolerates missing leading zeroes on MM and DD). Also accepts a Date object.
+  // Returns YYYY-MM-DD.
+  //
+  // The current year is assumed when MM/DD is used. If there is no explicit default
+  // any unparseable date is returned as today's date.
+
+  self.sanitizeDate = function(date, def) {
+    var components;
+
+    function returnDefault() {
+      if (def === undefined) {
+        def = moment().format('YYYY-MM-DD');
+      }
+      return def;
+    }
+
+    if (typeof(date) === 'string') {
+      if (date.match(/\//)) {
+        components = date.split('/');
+        if (components.length === 2) {
+          // Convert mm/dd to yyyy-mm-dd
+          return self.padInteger(new Date().getYear() + 1900, 4) + '-' + self.padInteger(components[0], 2) + '-' + self.padInteger(components[1], 2);
+        } else if (components.length === 3) {
+          // Convert mm/dd/yyyy to yyyy-mm-dd
+          if (components[2] < 100) {
+            components[2] += 1000;
+          }
+          return self.padInteger(components[2], 4) + '-' + self.padInteger(components[0], 2) + '-' + self.padInteger(components[1], 2);
+        } else {
+          return returnDefault();
+        }
+      } else if (date.match(/\-/)) {
+        components = date.split('-');
+        if (components.length === 2) {
+          // Convert mm-dd to yyyy-mm-dd
+          return self.padInteger(new Date().getYear() + 1900, 4) + '-' + self.padInteger(components[0], 2) + '-' + self.padInteger(components[1], 2);
+        } else if (components.length === 3) {
+          // Convert yyyy-mm-dd (with questionable padding) to yyyy-mm-dd
+          return self.padInteger(components[0], 4) + '-' + self.padInteger(components[1], 2) + '-' + self.padInteger(components[2], 2);
+        } else {
+          return returnDefault();
+        }
+      }
+    }
+    try {
+      date = new Date(date);
+      if (isNaN(date.getTime())) {
+        return returnDefault();
+      }
+      return self.padInteger(date.getYear() + 1900, 4) + '-' + self.padInteger(date.getMonth() + 1, 2) + '-' + self.padInteger(date.getDay(), 2);
+    } catch (e) {
+      return returnDefault();
+    }
+  };
+
+  // Accept a user-entered string in 12-hour or 24-hour time and returns a string
+  // in 24-hour time. Seconds are not supported. If def is not set the default
+  // is the current time
+
+  self.sanitizeTime = function(time, def) {
+    time = self.sanitizeString(time).toLowerCase();
+    time = time.trim();
+    var components = time.match(/^(\d+)(:(\d+))?(:(\d+))?\s*(am|pm)?$/);
+    if (components) {
+      var hours = parseInt(components[1], 10);
+      var minutes = (components[3] !== undefined) ? parseInt(components[3], 10) : 0;
+      var seconds = (components[5] !== undefined) ? parseInt(components[5], 10) : 0;
+      var ampm = components[6];
+      if (ampm === 'pm') {
+        hours += 12;
+      }
+      if ((hours === 24) || (hours === '24')) {
+        hours = 0;
+      }
+      return self.padInteger(hours, 2) + ':' + self.padInteger(minutes, 2) + ':' + self.padInteger(seconds, 2);
+    } else {
+      if (def !== undefined) {
+        return def;
+      }
+      return moment().format('HH:mm');
+    }
+  };
+
+  // Requires a time in HH:MM or HH:MM:ss format. Returns
+  // an object with hours, minutes and seconds properties.
+  // See sanitizeTime for an easy way to get a time into the
+  // appropriate input format.
+
+  self.parseTime = function(time) {
+    var components = time.match(/^(\d\d):(\d\d)(:(\d\d))$/);
+    return {
+      hours: time[1],
+      minutes: time[2],
+      seconds: time[3] || 0
+    };
+  };
+
+  // Date and time tests
+  // console.log(self.padInteger(4, 2));
+  // console.log(self.padInteger(12, 2));
+  // console.log(self.sanitizeDate('04/01/2013'));
+  // console.log(self.sanitizeDate('2013-04-01'));
+  // console.log(self.sanitizeDate('04/01'));
+  // console.log(self.sanitizeDate(new Date()));
+  // console.log(self.sanitizeTime('23:35'));
+  // console.log(self.sanitizeTime('11pm'));
+
   // Convert a name to camel case. Only digits and ASCII letters remain.
   // Anything that isn't a digit or an ASCII letter prompts the next character
   // to be uppercase. Useful in converting CSV with friendly headings into
