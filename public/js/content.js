@@ -286,6 +286,9 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
+  // It's not uncommon to have duplicates of a template that hasn't
+  // been overridden for a derived type yet. Behave well in this case
+  $el = $el.filter(':first');
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
