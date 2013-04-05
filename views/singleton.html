@@ -1,14 +1,16 @@
-<div class="apos-singleton" data-slug="{{ slug }}" data-type="{{ type }}">
+<div class="apos-singleton" {% if slug %} data-slug="{{ slug }}" {% endif %} data-type="{{ type }}" data-options="{{ options | jsonAttribute }}">
   <div class="apos-normal-view">
     {%- if edit -%}
       <div class="apos-area-controls">
-        <a class="apos-control apos-button apos-edit-singleton" href="#">Edit {{ itemType.label }}</a>
+        {{ aposLog('in singleton') }}
+        {{ aposLog(options) }}
+        <a class="apos-control apos-button apos-edit-singleton" href="#">Edit {{ options.label or itemType.label }}</a>
       </div>
       <div class="apos-clear"></div>
     {%- endif -%}
     <div class="apos-content">
       {% if item %}
-        {{ aposItemNormalView(item, item.options) }}
+        {{ aposItemNormalView(item, options) }}
       {% endif %}
     </div>
   </div>
