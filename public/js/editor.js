@@ -1067,12 +1067,9 @@ apos.widgetTypes.slideshow = {
       if (extraFields){
         self.$el.find('[data-items]').addClass('apos-extra-fields-enabled');
       }
-<<<<<<< HEAD
-      
-      //setup Extra Fields Enabled mode
-=======
 
->>>>>>> b4860ec61f2a377531e60ff3e8c7b9bf3685895b
+      //setup Extra Fields Enabled mode
+
       self.$el.find('[data-enable-extra-fields]').prop('checked', extraFields);
 
       // on Edit button click, reveal extra fields
