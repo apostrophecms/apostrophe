@@ -980,6 +980,7 @@ apos.widgetTypes.slideshow = {
 
       self.$el.find('[data-uploader]').fileupload({
         dataType: 'json',
+        dropZone: self.$el.find('.apos-modal-body'),
         // This is nice in a multiuser scenario, it prevents slamming,
         // but I need to figure out why it's necessary to avoid issues
         // with node-imagemagick
@@ -1013,15 +1014,37 @@ apos.widgetTypes.slideshow = {
           return data.submit();
         }
       });
+
+      self.$el.find('.apos-modal-body').bind('dragover', function (e) {
+          var dropZone = self.$el.find('.apos-modal-body'),
+              timeout = window.dropZoneTimeout;
+          if (!timeout) {
+              dropZone.addClass('apos-slideshow-file-in');
+          } else {
+              clearTimeout(timeout);
+          }
+          if (e.target === dropZone[0]) {
+              dropZone.addClass('apos-slideshow-file-hover');
+          } else {
+              dropZone.removeClass('apos-slideshow-file-hover');
+          }
+          window.dropZoneTimeout = setTimeout(function () {
+              window.dropZoneTimeout = null;
+              dropZone.removeClass('apos-slideshow-file-in apos-slideshow-file-hover');
+          }, 100);
+      });
+
       self.$el.find('[data-enable-extra-fields]').on('click', function(){
        $('[data-items]').toggleClass('apos-extra-fields-enabled');
        reflect();
       });
+
     };
 
     // Counts the list items in the DOM. Useful when still populating it.
     self.count = function() {
       return $items.find('[data-item]:not(.apos-template)').length;
+
     };
 
     // The server will render an actual slideshow, but we also want to see
@@ -1045,7 +1068,24 @@ apos.widgetTypes.slideshow = {
         self.$el.find('[data-items]').addClass('apos-extra-fields-enabled');
       }
 
+      //setup Extra Fields Enabled mode
+
       self.$el.find('[data-enable-extra-fields]').prop('checked', extraFields);
+
+      // on Edit button click, reveal extra fields
+      
+      self.$el.find('[data-extra-fields-edit]').on('click', function(){
+        self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
+        var $button = $(this);
+        $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-extra-fields');
+      });
+
+      // on Extra Fields Save, reflect and close Extra Fields
+      self.$el.find('[data-extra-fields-save]').on('click', function(){
+        reflect();
+        var $button = $(this);
+        $button.closest('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
+      });
 
       callback();
     };

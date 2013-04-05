@@ -219,6 +219,16 @@ body
 .apos-area-form-footer
 {
   clear: both;
+  .clearfix;
+  
+  .apos-control
+  {
+    float:right;
+    &:first-child
+    {
+      margin-right:0px;
+    }
+  }
 }
 
 .apos-toolbar
@@ -230,6 +240,7 @@ body
 .apos-toolbar .apos-control
 {
   // margin-right: 2px;
+  padding: 5px;
   margin-right: 0px;
   border-right: 1px solid #fff;
 }
@@ -241,7 +252,7 @@ body
 .apos-control
 {
   float: left;
-  padding: 7px;
+  padding: 10px;
   background-color: @apos-base;
   color: #fff;
   margin-right: 10px;
@@ -255,6 +266,33 @@ body
   font-size: 11px;
   font-family: 'cabin';
   letter-spacing: 1px;
+  
+  &.apos-menu
+  {
+    position: relative;
+    &:hover {background-color: darken(@apos-base, 10%);}
+    &::after
+    {
+      position: absolute;
+      width: 0px;
+      height: 0px;
+      border-style: solid;
+      border-width: 6px 4px 0 4px;
+      border-color: #ffffff transparent transparent transparent;
+      content: "";
+      right: 9px;
+      top: 40%;
+      
+    }
+    .apos-menu-select
+    {
+      background-color: transparent;
+      outline-style: none;
+      border:none;
+      -webkit-appearance: none;
+      color: #FFF;
+    }
+  }
   
 }
 
@@ -338,14 +376,15 @@ body
   .apos-button
   {
     font-size:0.85em;
-    padding: 8px 5px 9px;
+    padding: 1px 5px 2px;
     font-weight: normal;
     letter-spacing: 1px;
   }
 
   select
   {
-    padding: 3px 13px 4px 10px !important
+    // padding: 3px 13px 4px 10px !important
+    padding: 3px 19px 4px 6px !important;
   }
   /* This hides the label for heading/type style */
   .apos-menu-style .apos-menu-label{ display: none; }
@@ -580,6 +619,7 @@ textarea.apos-code {
     {
       display: block;
       margin-bottom: 20px;
+      line-height: 1.4em;
     }
 
     form
@@ -749,6 +789,118 @@ textarea.apos-code {
   }
 }
 
+
+// Apostrophe Slideshow Modal
+.apos-file-styled-container
+{
+  position: relative;
+  width: 170px;
+  height: 170px;
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.apos-progress-container
+{
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
+.apos-slideshow-file-in
+{
+  .apos-slideshow-file-in-message
+  {
+    display: block;
+  }
+
+  .apos-slideshow-drag-container
+  {
+    border: 2px dashed darken(@apos-base, 20%);
+  }
+}
+.apos-slideshow-file-in-message
+{
+  display:none;
+  z-index: 20;
+  color: #FFF;
+  text-align: center;
+  background-color: @apos-base;
+  opacity: 0.5;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  font-size: 3em;
+  right: 0;
+  position: absolute;
+  span
+  {
+    position: relative;
+    display: block;
+    padding-top: 100px;
+  }
+}
+.apos-slideshow-drag-container
+{
+  border: 2px dashed @apos-base;
+  padding: 17px 10px 30px 10px;
+  position: relative;
+  .clearfix;
+  
+  &:hover
+  {
+    .apos-file-styled { opacity: 0.8; }  
+  }
+  
+  .apos-file-input
+  {
+    position: absolute;
+    top: 0;
+    z-index: 10;
+    height: 170px;
+    width: 170px;
+    // filter:alpha(opacity: 0);
+    opacity: 0;
+    &:hover
+    {
+      cursor: pointer;
+      background-color: darken(@apos-base, 10%);
+    }
+  }
+  .apos-file-styled
+  {
+    color: @apos-base;
+    background-color: @apos-base;
+    opacity: 0.5;
+    height: 170px;
+    width: 170px;
+    position: relative;
+    display: inline-block;
+    &:hover
+    {
+      background-color: darken(@apos-base, 10%);
+      color: darken(@apos-base, 10%);
+      cursor: pointer;
+      opacity: 0.7;
+      
+    }
+    
+    &:before
+    {
+      color: #FFF;
+      visibility: visible;
+      width: 100%;
+      font-size: 2em;
+      text-align: center;
+      margin: 0;
+      top: 43%;
+      position: absolute;
+      left: 0;
+    }
+  }
+}
+
+
 .apos-slideshow-editor .apos-slideshow-editor-item
 {
   list-style: none;
@@ -756,35 +908,71 @@ textarea.apos-code {
   display: block;
   width: 170px;
   // height: 170px;
-  margin: 5px;
+  margin: 0 8px 15px;
+  background-color: #eee;
   &.apos-template
   {
     display: none;
   }
+
+  &.apos-slideshow-reveal-extra-fields
+  {
+    background:#eee;
+    
+    .apos-slideshow-extra-fields { display: block; }
+  }
+
   .apos-slideshow-editor-item-box
   {
     position: relative;
+    overflow: hidden;
+    width: 170px;
+    height: 170px;
   }
-  .apos-slideshow-editor-image
-  {
-    // position: absolute;
-    max-width: 170px;
-    max-height: 170px;
-  }
-  .apos-remove
+  .apos-slideshow-editor-image { height: 120%; }
+  .apos-slideshow-control
   {
     position: absolute;
-    // font-style: italic;
-    color: white;
-    right: 0;
-    top: 0;
     background-color: @apos-base;
-    padding: 6px 8px;
+    width: 25px;
+    height: 25px;
     cursor: pointer;
+    color: white;
+    text-align: center;
+    font-size: 1.3em;
+    line-height: 1.4em;
     &:hover
     {
       background-color: darken(@apos-base, 10%);
       text-decoration: none;
+      
+      &::before { background-color: darken(@apos-base, 10%) }
+    }
+
+    &::before
+    {
+      font-family: 'apos-icons';
+      background: @apos-base;
+      font-size:1em;
+      padding: 5px;
+      font-size: 0.9em;
+    }
+  }
+  .apos-remove
+  {
+    right: 0;
+    top: 0;
+  }
+  .apos-edit
+  {
+    display: none;
+    right: 24px;
+    top: 0;
+    visibility: hidden;
+    &::before
+    {
+      content:'\1f527';
+      visibility: visible;
     }
   }
 
@@ -799,12 +987,30 @@ textarea.apos-code {
 .apos-slideshow-editor .apos-slideshow-extra-fields
 {
   display: none;
+  padding: 20px 10px 10px 10px;
+  -webkit-box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
+  box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
   margin-top: 20px;
+  position: absolute;
+  background:#eee;
+  z-index: 100;
+  &::before
+  {
+    position: absolute;
+    width: 170px;
+    height: 20px;
+    content: " ";
+    background:#eee;
+    top: -20px;
+    left: 0px;
+  }
 }
-.apos-extra-fields-enabled .apos-slideshow-extra-fields
+.apos-extra-fields-enabled .apos-edit
 {
-  display: block;
+  display: block !important;
 }
+
+// End Apostrophe Slideshow Modals
 
 .apos-progress
 {
@@ -830,6 +1036,38 @@ textarea.apos-code {
 {
   display: none;
 }
+
+
+.apos-manage-table
+{
+  width: 100%;
+  th
+  {
+    background-color: @apos-grey-light;
+    padding: 15px 0 15px 20px;
+    text-transform: uppercase;
+    font-size:11px;
+  }
+  td, th
+  {
+    border-right: 1px dashed @apos-grey70;
+    text-align: left;
+    &:last-child{border-right: none;}
+  }
+  td span
+  {
+    padding: 20px 0;
+    display: inline-block;
+  }
+
+  .apos-manage-events-date{width: 20%;}
+  .apos-manage-events-title{width: 50%;}
+  .apos-manage-events-author{width: 15%;}
+  .apos-manage-events-status{width: 15%;}
+}
+
+
+
 
 /* Fixup for jquery ui so it doesn't fall behind the modal */
 ul.ui-autocomplete {

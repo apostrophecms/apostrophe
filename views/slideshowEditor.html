@@ -9,7 +9,8 @@
 {% endblock %}
 
 {% block instructions %}
-Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
+Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
+You can also drag images from your computer into the dashed area below.
 {% endblock %}
 
 {# We have change events #}
@@ -18,9 +19,13 @@ Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
 
 {% block formBody %}
   {# Powered by the blueimp file uploader #}
-  <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
-  <span data-progress class="apos-progress">Progress: <span data-progress-percentage></span>%</span>
-  <span data-finished class="apos-progress">Upload Finished</span>
+  <div class="apos-slideshow-drag-container">
+    <div class="apos-slideshow-file-in-message"><span>Drop Files Here</span></div>
+    <div class="apos-progress-container">
+      <span data-progress class="apos-progress">Progress: <span data-progress-percentage></span>%</span>
+      <span data-finished class="apos-progress">Upload Finished</span>
+    </div>
+  
 {% endblock %}
 
 {# For reordering and removing of images #}
@@ -34,6 +39,9 @@ Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
         {# jQuery will give this img a proper src #}
         {# Use the smallest possible empty GIF in the meantime #}
         <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+        <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+        <a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>
+      </div>
         <div class="apos-slideshow-extra-fields" data-extra-fields>
           <fieldset class="apos-stacked-fieldset">
             <label class="short">Title</label>
@@ -47,12 +55,16 @@ Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer.
             <label>Link</label>
             <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
           </fieldset>
+          <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
-        <a class="apos-remove" data-remove>x</a>
-      </div>
     </li>
   </ul>
+  <div class="apos-file-styled-container">
+    <div class="apos-file-styled icon-plus">+</div>
+    <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+  </div>
   <div class="apos-clear"></div>
+  </div>
 {% endblock %}
 
 {% block additionalFooterItems %}
