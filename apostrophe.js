@@ -1756,6 +1756,34 @@ function Apos() {
     return s;
   };
 
+  // Accepts true, 'true', 't', '1', 1 as true
+  // Accepts everything else as false
+  // If nothing is submitted the default (def) is returned
+  // If def is undefined the default is false
+  self.sanitizeBoolean = function(b, def) {
+    if (b === true) {
+      return true;
+    }
+    if (b === false) {
+      return false;
+    }
+    b = self.sanitizeString(b, def);
+    if (b === def) {
+      if (b === undefined) {
+        return false;
+      }
+      return b;
+    }
+    b = b.toLowerCase().charAt(0);
+    if (b === '') {
+      return false;
+    }
+    if ((b === 't') || (b === 'y') || (b === 1)) {
+      return true;
+    }
+    return false;
+  };
+
   // Convert a name to camel case. Only digits and ASCII letters remain.
   // Anything that isn't a digit or an ASCII letter prompts the next character
   // to be uppercase. Useful in converting CSV with friendly headings into
