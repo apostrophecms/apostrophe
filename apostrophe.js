@@ -438,6 +438,7 @@ function Apos() {
         }
       };
 
+      // Keep in sync with browser side implementation in content.js
       aposLocals.aposFilePath = function(file, options) {
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
         if (options.size) {

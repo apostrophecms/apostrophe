@@ -57,6 +57,45 @@ apos.change = function(what) {
   });
 };
 
+// Given a page object retrieved from the server (such as a blog post) and an
+// area name, return the first image object found in that area, or undefined
+// if there is none. TODO: make it possible for more widget types to declare that they
+// contain this sort of thing. Right now it only looks at slideshows.
+//
+// This method is for situations where you want to show an image dynamically on the
+// browser side. More typically we render views on the server side, but there are
+// times when this is convenient.
+
+apos.getFirstImage = function(page, areaName) {
+  if (!page.areas[areaName]) {
+    return undefined;
+  }
+  var area = page.areas[areaName];
+  var item = _.find(area.items, function(item) {
+    return item.type === 'slideshow';
+  });
+  if (!item) {
+    return undefined;
+  }
+  if (item.items.length) {
+    return item.items[0];
+  }
+  return undefined;
+};
+
+// Given a file object (as found in a slideshow widget for instance),
+// return the file URL. If options.size is set, return the URL for
+// that size (one-third, one-half, two-thirds, full). full is
+// "full width" (1140px), not the original. For the original, don't pass size
+apos.filePath = function(file, options) {
+  var path = apos.data.uploadsUrl + '/files/' + file._id + '-' + file.name;
+  if (options.size) {
+    path += '.' + options.size;
+  }
+  return path + '.' + file.extension;
+};
+
+
 apos.widgetPlayers = {};
 
 apos.widgetPlayers.slideshow = function($widget)
