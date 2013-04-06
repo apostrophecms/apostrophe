@@ -608,8 +608,21 @@ textarea.apos-code {
     &:hover{cursor: pointer; background-color: darken(@apos-base, 10%); text-decoration: none;}
   }
 }
+.apos-fieldset-singleton
+{
+  label
+  {
+    float: left;
+  }
+  .apos-area-controls
+  {
+    position: relative;
+    top: inherit;
+    left: inherit;
+  }
+}
 
-.apos-modal .apos-modal-body fieldset.apos-fieldset-editor
+.apos-fieldset-editor
 {
   background-color: inherit;
   label
@@ -633,6 +646,7 @@ textarea.apos-code {
     display: inline-block;
     margin-top: -28px;
   }
+  textarea{display: block; clear: both;}
 }
 
 .apos-modal .apos-modal-body .apos-position input, 
@@ -671,7 +685,9 @@ textarea.apos-code {
   // Do not use >= 899 for other things please
   z-index: 900;
   // padding: 10px;
-  * {.apos-montserrat;}
+  * {.apos-montserrat; color: @apos-grey;}
+  strong {.apos-montserrat-bold;}
+  .apos-button{color: #FFF;}
   h3
   {
     background: @apos-base;
