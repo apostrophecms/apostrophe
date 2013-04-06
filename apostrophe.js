@@ -1501,6 +1501,7 @@ function Apos() {
     code: {
       widget: true,
       label: 'Code',
+      icon: 'code',
       plaintext: true,
       wrapper: 'pre',
       css: 'code'

@@ -291,9 +291,20 @@ body
       border:none;
       -webkit-appearance: none;
       color: #FFF;
+      &:hover{cursor: pointer;}
     }
   }
-  
+  &.apos-corner-close
+  {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 0;
+    padding: 14px 13px 12px 13px;
+    background-color: lighten(@apos-base, 8%);
+    font-size: 1.1em;
+    
+  }
 }
 
 .apos-button
@@ -368,9 +379,10 @@ body
   i
   {
     font-size:0.9em;
-    padding: 9px 5px 10px;
+    padding: 10px 5px 7px;
     font-weight: normal;
     letter-spacing: 1px;
+    display: inline-block;
     // text-transform: uppercase;
   }
   .apos-button
@@ -404,7 +416,7 @@ body
   min-height: 400px;
   background-color: #FFF;
   // margin-top: -2px;
-  padding-top: 10px;
+  padding: 10px;
   &:focus{outline:none;}
 }
 
@@ -528,14 +540,76 @@ textarea.apos-code {
   // max-height: 450px;
 }
 
-.apos-modal .apos-modal-body fieldset
+.apos-modal-body .apos-fieldset
 {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   .clearfix;
-  background-color: #FFF;
+  
+  label
+  {
+    display: inline-block;
+  }
 }
 
-.apos-modal .apos-modal-body fieldset.apos-editor-fieldset
+.apos-hr
+{
+  margin: 10px 0;
+  border-top: 1px solid @apos-grey60;
+}
+
+.apos-modal-body .apos-hr
+{
+  margin: 15px 0px 20px;
+}
+
+.apos-fieldset-text
+{
+  input
+  {
+    display: block;
+    width: 50%;
+    padding: 8px 8px 10px 8px;
+  }
+}
+
+.apos-fieldset-radio
+{
+  input
+  {
+    margin-left: 10px;
+  }
+}
+
+.apos-fieldset-typeahead
+{
+  .ui-sortable
+  {
+    li
+    {
+      background-color: lighten(@apos-base, 30%);
+      padding: 10px 0;
+      border-bottom: 1px solid lighten(@apos-base, 35%);
+      text-transform: uppercase;
+      color: @apos-grey20;
+      letter-spacing: 1px;
+      font-size: 11px;
+      
+      &:hover{ cursor: move}
+      &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
+    }
+  }
+
+  .apos-remove
+  {
+    background-color: lighten(@apos-base, 15%);
+    padding: 9px 8px;
+    margin-right: 5px;
+    color: #FFF;
+    &:hover{cursor: pointer; background-color: darken(@apos-base, 10%); text-decoration: none;}
+  }
+}
+
+.apos-modal .apos-modal-body fieldset.apos-fieldset-editor
 {
   background-color: inherit;
   label
@@ -597,7 +671,7 @@ textarea.apos-code {
   // Do not use >= 899 for other things please
   z-index: 900;
   // padding: 10px;
-  * {font-family: 'cabin' !important; }
+  * {.apos-montserrat;}
   h3
   {
     background: @apos-base;
@@ -627,10 +701,9 @@ textarea.apos-code {
       input
       {
         border: none;
-        width: 100%;
-        max-width: 550px;
-        margin-left: -3px;
-        padding: 8px 8px 10px 8px;
+        
+        // max-width: 550px;
+        
         
         & ~ label {color: blue;}
       }
@@ -1040,36 +1113,68 @@ textarea.apos-code {
 
 .apos-manage-table
 {
+  * {.apos-cabin;}
   width: 100%;
   th
   {
-    background-color: @apos-grey-light;
+    .apos-montserrat-bold;
+    color: @apos-grey10;
     padding: 15px 0 15px 20px;
     text-transform: uppercase;
     font-size:11px;
+    background-color: @apos-grey70;
   }
   td, th
   {
-    border-right: 1px dashed @apos-grey70;
+    border-right: 1px dashed @apos-grey50;
     text-align: left;
+    font-size:11px;
+    letter-spacing: 1px;
     &:last-child{border-right: none;}
+  }
+  tr
+  {
+    background-color: lighten(@apos-grey, 63%);
+    &:hover
+    {
+      background-color:@apos-grey70 !important;
+    }
+
+    &:nth-child(odd)
+    {
+      background-color: @apos-grey60;
+    }
   }
   td span
   {
-    padding: 20px 0;
+    padding: 30px 0 30px 15px;
     display: inline-block;
+    color: @apos-grey20;
+  }
+  a
+  {
+    color: @apos-grey10;
+    font-size: 12px;
   }
 
-  .apos-manage-events-date{width: 20%;}
-  .apos-manage-events-title{width: 50%;}
+  // Events Tabls
+  .apos-manage-events-date{width: 15%;}
+  .apos-manage-events-title{width: 55%;}
   .apos-manage-events-author{width: 15%;}
   .apos-manage-events-status{width: 15%;}
 }
 
-
-
-
 /* Fixup for jquery ui so it doesn't fall behind the modal */
 ul.ui-autocomplete {
     z-index: 999 !important;
+}
+
+
+
+// Login screen
+// Should probably have some sort of internal admin view stylesheet
+
+.appy-login
+{
+  border: none;
 }
