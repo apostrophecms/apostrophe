@@ -393,7 +393,7 @@ body
   .apos-button,
   .apos-menu-style select
   {
-    padding: 7px;
+    padding: 7px !important;
   }
   .apos-menu-style
   {
@@ -554,10 +554,7 @@ textarea.apos-code {
   margin-bottom: 20px;
   .clearfix;
   
-  label
-  {
-    display: inline-block;
-  }
+  label { display: inline-block; }
 }
 
 .apos-hr
@@ -587,6 +584,17 @@ textarea.apos-code {
   {
     margin-left: 10px;
   }
+}
+
+.apos-fieldset-select
+{
+  .apos-menu-style
+  {
+    float:none;
+    padding: 0px 20px 0 0;
+    display: inline-block;
+  }
+  select { padding: 10px; }
 }
 
 .apos-fieldset-typeahead
@@ -630,6 +638,7 @@ textarea.apos-code {
     left: inherit;
   }
 }
+
 
 .apos-fieldset-editor
 {
