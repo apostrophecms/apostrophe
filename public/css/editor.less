@@ -231,16 +231,11 @@ body
   }
 }
 
-.apos-toolbar
-{
-  // padding: 0px 0px 10px 0px;
-  // font-size: 20px;
-}
 
 .apos-toolbar .apos-control
 {
   // margin-right: 2px;
-  padding: 5px;
+  // padding: 5px;
   margin-right: 0px;
   border-right: 1px solid #fff;
 }
@@ -254,7 +249,7 @@ body
   float: left;
   padding: 10px;
   background-color: @apos-base;
-  color: #fff;
+  color: #fff !important;
   margin-right: 10px;
   text-decoration: none;
   font-size: 16px;
@@ -266,6 +261,7 @@ body
   font-size: 11px;
   font-family: 'cabin';
   letter-spacing: 1px;
+  &:hover{text-decoration:none !important;}
   
   &.apos-menu
   {
@@ -338,7 +334,12 @@ body
 
 
 
-
+.apos-toolbar
+{
+  float: right;
+  display: inline-block;
+  margin-top: -26px;
+}
 
 .apos-toolbar .apos-menu-label
 {
@@ -347,7 +348,7 @@ body
 
 .apos-toolbar .apos-menu-select
 {
-  margin-left: 10px;
+  margin: 0 10px;
   float: left;
 }
 
@@ -378,25 +379,33 @@ body
 {
   i
   {
-    font-size:0.9em;
-    padding: 10px 5px 7px;
+    font-size:1.1em;
     font-weight: normal;
     letter-spacing: 1px;
     display: inline-block;
-    // text-transform: uppercase;
   }
   .apos-button
   {
     font-size:0.85em;
-    padding: 1px 5px 2px;
     font-weight: normal;
     letter-spacing: 1px;
+  }
+  .apos-button,
+  .apos-menu-style select
+  {
+    padding: 7px;
+  }
+  .apos-menu-style
+  {
+    padding: 0px;
+    
   }
 
   select
   {
-    // padding: 3px 13px 4px 10px !important
-    padding: 3px 19px 4px 6px !important;
+    font-family: 'montserratregular' !important;
+    font-size: 0.9em !important;
+    letter-spacing: 1px;
   }
   /* This hides the label for heading/type style */
   .apos-menu-style .apos-menu-label{ display: none; }
@@ -415,7 +424,7 @@ body
   .clearfix;
   min-height: 400px;
   background-color: #FFF;
-  // margin-top: -2px;
+  border: 1px solid rgb(221, 221, 221);
   padding: 10px;
   &:focus{outline:none;}
 }
@@ -640,12 +649,6 @@ textarea.apos-code {
     width: 80%;
     border: 0;
   }
-  .apos-toolbar
-  {
-    float: right;
-    display: inline-block;
-    margin-top: -28px;
-  }
   textarea{display: block; clear: both;}
 }
 
@@ -717,11 +720,6 @@ textarea.apos-code {
       input
       {
         border: none;
-        
-        // max-width: 550px;
-        
-        
-        & ~ label {color: blue;}
       }
 
       label
@@ -749,33 +747,9 @@ textarea.apos-code {
            -moz-appearance:none;
         border: none;
         background: @apos-base;
-        // background: @apos-grey40;
         border-radius: 0px;
-        padding: 8px 8px 10px 8px;
-        cursor: pointer;
-        margin-left: -4px;
         color: #FFF;
         
-        &::before
-        {
-          content:"hi";
-        }
-        
-        
-        &::before
-        {
-          display: block;
-          position: absolute;
-          
-          top: 0;
-          right: 0;
-          width: 20px;
-          height: 20px;
-          content: 'lkjf';
-          color:#f00;
-          // font-family: 'apos-icons';
-        }
-
 
         option
         {
@@ -790,12 +764,7 @@ textarea.apos-code {
       {
         &:focus
         {
-          // -webkit-focus-ring-color: red;
-          // outline-color: @apos-base;
-          // outline-width: 3px;
           outline: none;
-          // -webkit-appearance:none;
-          // border: 2px solid red;
         }        
       }
       .apos-stacked-fieldset
