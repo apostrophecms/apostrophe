@@ -613,7 +613,7 @@ function Apos() {
       self._getData = function(data) {
         var code = '  apos.data = apos.data || {};\n';
         code += _.map(data, function(datum) {
-          return '  $.extend(apos.data, ' + JSON.stringify(datum) + ', true);';
+          return '  $.extend(true, apos.data, ' + JSON.stringify(datum) + ');';
         }).join("\n");
         return code;
       };
