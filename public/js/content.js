@@ -53,7 +53,8 @@ apos.change = function(what) {
     $(this).trigger('apos-change-' + what);
   });
   $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
-    $('[data-apos-refreshable]').html($.parseHTML(data));
+    // Make sure we run scripts in the returned HTML
+    $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
   });
 };
 

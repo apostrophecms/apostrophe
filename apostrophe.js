@@ -58,6 +58,8 @@ function Apos() {
   }
 
   function generateId() {
+    // TODO use something better, although this is not meant to be
+    // cryptographically secure
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
   }
 
@@ -450,6 +452,10 @@ function Apos() {
       aposLocals.aposLog = function(m) {
         console.log(m);
         return '';
+      };
+
+      aposLocals.aposGenerateId = function() {
+        return generateId();
       };
 
       // In addition to making these available in app.locals we also
