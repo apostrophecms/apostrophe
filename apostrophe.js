@@ -1894,7 +1894,11 @@ function Apos() {
       var minutes = (components[3] !== undefined) ? parseInt(components[3], 10) : 0;
       var seconds = (components[5] !== undefined) ? parseInt(components[5], 10) : 0;
       var ampm = components[6];
-      if (ampm === 'pm') {
+      if ((hours === 12) && (ampm === 'am')) {
+        hours -= 12;
+      } else if ((hours === 12) && (ampm === 'pm')) {
+        // Leave it be
+      } else if (ampm === 'pm') {
         hours += 12;
       }
       if ((hours === 24) || (hours === '24')) {
