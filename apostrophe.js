@@ -58,6 +58,8 @@ function Apos() {
   }
 
   function generateId() {
+    // TODO use something better, although this is not meant to be
+    // cryptographically secure
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
   }
 
@@ -450,6 +452,10 @@ function Apos() {
       aposLocals.aposLog = function(m) {
         console.log(m);
         return '';
+      };
+
+      aposLocals.aposGenerateId = function() {
+        return generateId();
       };
 
       // In addition to making these available in app.locals we also
@@ -1786,6 +1792,30 @@ function Apos() {
     return false;
   };
 
+  self.sanitizeInteger = function(i, def, min, max) {
+    if (def === undefined) {
+      def = 0;
+    }
+    if (typeof(i) === 'number') {
+      i = Math.floor(i);
+    }
+    else
+    {
+      try {
+        i = parseInt(i, 10);
+      } catch (e) {
+        i = def;
+      }
+    }
+    if ((min !== undefined) && (i < min)) {
+      i = min;
+    }
+    if ((max !== undefined) && (i > max)) {
+      i = max;
+    }
+    return i;
+  };
+
   // pad an integer with leading zeroes, creating a string
   self.padInteger = function(i, places) {
     var s = i + '';
@@ -1864,7 +1894,11 @@ function Apos() {
       var minutes = (components[3] !== undefined) ? parseInt(components[3], 10) : 0;
       var seconds = (components[5] !== undefined) ? parseInt(components[5], 10) : 0;
       var ampm = components[6];
-      if (ampm === 'pm') {
+      if ((hours === 12) && (ampm === 'am')) {
+        hours -= 12;
+      } else if ((hours === 12) && (ampm === 'pm')) {
+        // Leave it be
+      } else if (ampm === 'pm') {
         hours += 12;
       }
       if ((hours === 24) || (hours === '24')) {
