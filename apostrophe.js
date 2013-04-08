@@ -1792,6 +1792,30 @@ function Apos() {
     return false;
   };
 
+  self.sanitizeInteger = function(i, def, min, max) {
+    if (def === undefined) {
+      def = 0;
+    }
+    if (typeof(i) === 'number') {
+      i = Math.floor(i);
+    }
+    else
+    {
+      try {
+        i = parseInt(i, 10);
+      } catch (e) {
+        i = def;
+      }
+    }
+    if ((min !== undefined) && (i < min)) {
+      i = min;
+    }
+    if ((max !== undefined) && (i > max)) {
+      i = max;
+    }
+    return i;
+  };
+
   // pad an integer with leading zeroes, creating a string
   self.padInteger = function(i, places) {
     var s = i + '';
