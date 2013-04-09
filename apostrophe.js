@@ -845,6 +845,7 @@ function Apos() {
           };
 
           function updated(err) {
+            console.log(err);
             if (err) {
               console.log(err);
               return notfound(req, res);
@@ -855,6 +856,7 @@ function Apos() {
             });
           }
 
+          console.log('called putArea');
           self.putArea(slug, area, updated);
 
         });
@@ -1180,18 +1182,21 @@ function Apos() {
   //
   // Page objects are stored in the 'pages' collection.
   //
-  // Slugs of this type are an efficient way to store related areas 
+  // Slugs of this type are an efficient way to store related areas
   // that are usually desired at the same time, because the getPage method
   // returns the entire page object, including all of its areas.
   //
   // If the slug does not contain a : then the area is stored directly
   // in the 'areas' collection.
   //
-  // Page objects must already exist, otherwise an error occurs.
-  // Create pages with putPage.
+  // If a page does not exist this method will create it. You should
+  // NOT rely on this for pages that have a type property, including any
+  // page in the page tree, a snippet, etc. Such pages should be created
+  // first with putPage before they are used. It is convenient, however, for
+  // simple virtual pages used to hold things like a global footer area.
 
   self.putArea = function(slug, area, callback) {
-    function invokeCallback(err) {
+    function invokeCallback(err, data) {
       if (err) {
         return callback(err);
       }
@@ -1212,7 +1217,25 @@ function Apos() {
         { slug: pageSlug },
         { $set: set },
         { safe: true },
-        invokeCallback);
+        function(err, count) {
+          if ((!err) && (count === 0)) {
+            // The page doesn't exist yet. We'll need to create it. Use
+            // an insert without retry, so we fail politely if someone else creates
+            // it first or it already existed and mongo just didn't find it somehow.
+            // This tactic only makes sense for typeless virtual pages, like the
+            // 'global' page often used to hold footers. Other virtual pages should
+            // be created before they are used so they have the right type.
+            var page = {
+              id: generateId(),
+              slug: pageSlug,
+              areas: {}
+            };
+            page.areas[areaSlug] = area;
+            return pages.insert(page, { safe: true }, invokeCallback);
+          }
+          return invokeCallback(err, count);
+        }
+      );
     } else {
       areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
     }
@@ -1221,7 +1244,7 @@ function Apos() {
   // slug is the existing slug of the page in the database. If page.slug is
   // different then the slug of the page is changed. If page.slug is not defined
   // it is set to the slug parameter for your convenience. The slug of the page,
-  // and the path of the page if it is defined, are both automatically made 
+  // and the path of the page if it is defined, are both automatically made
   // unique through successive addition of random digits if necessary
 
   self.putPage = function(slug, page, callback) {
