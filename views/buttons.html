@@ -1,0 +1,45 @@
+{% extends "slideshow.html" %}
+
+<div class="apos-no-player">
+  {% block items %}
+    <ul data-slideshow-items class="apos-buttons">
+      {% for file in item.items %}
+        {% if ((loop.index0 < options.limit) or (not options.limit)) %}
+          <li data-slideshow-item class="apos-buttons-item">
+            {% if file.hyperlink %}
+              <a href="{{ file.hyperlink }}" class="apos-button-link apos-slideshow-clickthru">
+                <div data-slideshow-item class="apos-button-image" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
+                  <img data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
+                </div>
+              </a>
+            {% else %}
+                <div data-slideshow-item class="apos-button-image" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
+                  <img data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
+                </div>
+            {% endif %}
+
+            {% if file.description or file.title %}
+              <div class="apos-slideshow-description-container">
+                {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}
+                {% if file.description %}
+                  <div class="apos-slideshow-description">
+                    <p>
+                     {{ file.description }}
+                    </p>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  {% endblock %}
+</div>
+
+{% block arrows %}
+{% endblock %}
+
+
+
+

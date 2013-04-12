@@ -951,12 +951,16 @@ apos.widgetTypes.slideshow = {
     // Options passed from template or other context
     var templateOptions = options.options || {};
     var limit = templateOptions.limit;
+    var extraFields = templateOptions.extraFields;
 
     if (!options.messages) {
       options.messages = {};
     }
     if (!options.messages.missing) {
       options.messages.missing = 'Upload an image file first.';
+    }
+    if (!options.alwaysExtraFields) {
+      options.alwaysExtraFields = false;
     }
 
     // Our current thinking is that preview is redundant for slideshows.
@@ -1062,18 +1066,7 @@ apos.widgetTypes.slideshow = {
         addItem(item);
       });
 
-      var extraFields = self.data.extra;
-
-      if (extraFields){
-        self.$el.find('[data-items]').addClass('apos-extra-fields-enabled');
-      }
-
-      //setup Extra Fields Enabled mode
-
-      self.$el.find('[data-enable-extra-fields]').prop('checked', extraFields);
-
       // on Edit button click, reveal extra fields
-      
       self.$el.find('[data-extra-fields-edit]').on('click', function(){
         self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
         var $button = $(this);
@@ -1102,6 +1095,7 @@ apos.widgetTypes.slideshow = {
         alert('You must remove an image before adding another.');
         return;
       }
+
       apos.log(count);
       apos.log(limit);
       var $item = apos.fromTemplate($items.find('[data-item]'));
@@ -1109,6 +1103,9 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-title]').val(item.title);
       $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
+      if (extraFields) {
+        $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
+      }
       $item.data('item', item);
       $item.find('[data-remove]').click(function() {
         $item.remove();
@@ -1130,7 +1127,6 @@ apos.widgetTypes.slideshow = {
     // Update the data attributes to match what is found in the
     // list of items. This is called after remove and reorder events
     function reflect() {
-      self.data.extra = self.$el.find('[data-enable-extra-fields]').prop('checked');
 
       var $itemElements = $items.find('[data-item]:not(.apos-template)');
       self.data.items = [];
@@ -1151,13 +1147,29 @@ apos.widgetTypes.slideshow = {
       self.exists = true;
     }
 
-    self.type = 'slideshow';
-    options.template = '.apos-slideshow-editor';
+    if(!options.type) {
+      self.type = 'slideshow';
+    } else {
+      self.type = options.type;
+    }
 
+    if(!options.template) {
+      options.template = '.apos-slideshow-editor';
+    }
+    
     // Parent class constructor shared by all widget editors
     apos.widgetEditor.call(self, options);
   }
 };
+
+apos.widgetTypes.buttons = {
+  label: 'Buttons',
+  editor: function(options) {
+    options.template = '.apos-buttons-editor';
+    options.type = 'buttons';
+    apos.widgetTypes.slideshow.editor.call(self, options);
+  }
+}
 
 apos.widgetTypes.video = {
   label: 'Video',

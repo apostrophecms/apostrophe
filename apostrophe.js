@@ -70,7 +70,7 @@ function Apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'video', 'pullquote', 'code' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'pullquote', 'code' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -160,7 +160,7 @@ function Apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+    'slideshowEditor', 'buttonsEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -1508,6 +1508,16 @@ function Apos() {
         return partial('slideshow', data);
       },
       css: 'slideshow'
+    },
+    buttons: {
+      widget: true,
+      label: 'Button(s)',
+      // icon: '',
+      // icon: 'slideshow',
+      render: function(data) {
+        return partial('buttons', data);
+      },
+      css: 'buttons'
     },
     video: {
       widget: true,
