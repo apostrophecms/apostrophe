@@ -856,7 +856,6 @@ function Apos() {
             });
           }
 
-          console.log('called putArea');
           self.putArea(slug, area, updated);
 
         });
@@ -992,9 +991,11 @@ function Apos() {
         next();
       }
 
-      self.pushGlobalData({
-        uploadsUrl: uploadfs.getUrl()
-      });
+      if (uploadfs) {
+        self.pushGlobalData({
+          uploadsUrl: uploadfs.getUrl()
+        });
+      }
 
       return callback(null);
     }
