@@ -163,6 +163,46 @@
   min-height: 50px;
 }
 
+
+.apos-buttons
+{
+  .apos-buttons-item
+  {
+    float: left;
+    width: auto;
+    
+    .apos-button-link
+    {
+     &:hover
+     {
+      .apos-button-image
+      {
+        opacity: 0.6;
+      }           
+     }
+    }
+
+    .apos-button-image
+    {
+      width: 100%;
+      min-height: 0px;
+      height: 75px;
+
+      background-size: auto 100%;
+      background-position: 0px 50%;
+      background-repeat: no-repeat;
+
+      img
+      {
+        opacity: 0;
+        width: auto;
+        height: 100%;
+      }
+    }
+  }
+}
+
+
 /*
 Below are some basic styles for the map module so it doesn't look totally broken.
 They will need to live somewhere else eventually
