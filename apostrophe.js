@@ -1335,7 +1335,9 @@ function Apos() {
 
     // Ordering in reverse order by slug gives us the longest match first
     pages.find({
-      $or: orClauses
+      $or: orClauses,
+      // This method never returns pages from the trash
+      trash: { $exists: false }
     }).sort({ slug: -1 }).limit(1).toArray(function(err, pages) {
       if (pages.length) {
         var page = pages[0];
