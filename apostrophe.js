@@ -1822,7 +1822,7 @@ function Apos() {
     if (b === '') {
       return false;
     }
-    if ((b === 't') || (b === 'y') || (b === 1)) {
+    if ((b === 't') || (b === 'y') || (b === '1')) {
       return true;
     }
     return false;
