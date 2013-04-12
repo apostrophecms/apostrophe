@@ -1,29 +1,34 @@
-<ul data-slideshow-items class="apos-slideshow-items">
-  {% for file in item.items %}
-    {% if ((loop.index0 < options.limit) or (not options.limit)) %}
-      {# Make the first image initially current #}
-      <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
-        <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
-        {% if file.description or file.hyperlink or file.title %}
-        <div class="apos-slideshow-description-container">
-          {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}
-          {% if file.description %}
-            <div class="apos-slideshow-description">
-              <p>
-               {{ file.description }}
-              </p>
-            </div>
+{% block items %}
+  <ul data-slideshow-items class="apos-slideshow-items">
+    {% for file in item.items %}
+      {% if ((loop.index0 < options.limit) or (not options.limit)) %}
+        {# Make the first image initially current #}
+        <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current{% endif %}" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
+          <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: 'full' }) }}" />
+          {% if file.description or file.hyperlink or file.title %}
+          <div class="apos-slideshow-description-container">
+            {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}
+            {% if file.description %}
+              <div class="apos-slideshow-description">
+                <p>
+                 {{ file.description }}
+                </p>
+              </div>
+            {% endif %}
+            {% if file.hyperlink %}
+              <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">View Details</a>
+            {% endif %}
+          </div>
           {% endif %}
-          {% if file.hyperlink %}
-            <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">View Details</a>
-          {% endif %}
-        </div>
-        {% endif %}
-      </li>
-    {% endif %}
-  {% endfor %}
-</ul>
-{% if options.limit != 1 %}
-  <a href="#" class="apos-slideshow-button apos-slideshow-next">Next</a>
-  <a href="#" class="apos-slideshow-button apos-slideshow-prev">Previous</a>
-{% endif %}
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endblock %}
+
+{% block arrows %}
+  {% if item.items.length > 1 %}
+    <a href="#" class="apos-slideshow-button apos-slideshow-next">Next</a>
+    <a href="#" class="apos-slideshow-button apos-slideshow-prev">Previous</a>
+  {% endif %}
+{% endblock %}

@@ -958,6 +958,9 @@ apos.widgetTypes.slideshow = {
     if (!options.messages.missing) {
       options.messages.missing = 'Upload an image file first.';
     }
+    if (!options.alwaysExtraFields) {
+      options.alwaysExtraFields = false;
+    }
 
     // Our current thinking is that preview is redundant for slideshows.
     // Another approach would be to make it much smaller. We might want that
@@ -1151,13 +1154,29 @@ apos.widgetTypes.slideshow = {
       self.exists = true;
     }
 
-    self.type = 'slideshow';
-    options.template = '.apos-slideshow-editor';
+    if(!options.type) {
+      self.type = 'slideshow';
+    } else {
+      self.type = options.type;
+    }
 
+    if(!options.template) {
+      options.template = '.apos-slideshow-editor';
+    }
+    
     // Parent class constructor shared by all widget editors
     apos.widgetEditor.call(self, options);
   }
 };
+
+apos.widgetTypes.buttons = {
+  label: 'Buttons',
+  editor: function(options) {
+    options.template = '.apos-buttons-editor';
+    options.type = 'buttons';
+    apos.widgetTypes.slideshow.editor.call(self, options);
+  }
+}
 
 apos.widgetTypes.video = {
   label: 'Video',
