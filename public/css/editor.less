@@ -573,12 +573,15 @@ textarea.apos-code {
 
 .apos-fieldset-text
 {
-  input
+  input, textarea
   {
     display: block;
-    width: 50%;
+    width: 100%;
+    max-width: 385px;
     padding: 8px 8px 10px 8px;
+    border: none;
   }
+  textarea {height: 100px;}
 }
 
 .apos-fieldset-radio
@@ -1034,7 +1037,7 @@ textarea.apos-code {
   {
     background:#eee;
     
-    .apos-slideshow-extra-fields { display: block; }
+    .apos-slideshow-extra-fields { display: block; width: 250px; }
   }
 
   .apos-slideshow-editor-item-box

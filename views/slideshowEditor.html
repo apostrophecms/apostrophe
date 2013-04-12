@@ -41,24 +41,30 @@ You can also drag images from your computer into the dashed area below.
         <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
         <a class="apos-slideshow-control apos-remove" data-remove>x</a>
       </div>
-        <div class="apos-slideshow-extra-fields" data-extra-fields>
-          <fieldset class="apos-stacked-fieldset">
-            <label class="short">Title</label>
-            <input data-title class="apos-slideshow-editor-title" type="text" />
-          </fieldset>
-          <fieldset class="apos-stacked-fieldset">
-            <label>Description</label>
-            <textarea data-description class="apos-slideshow-editor-description"></textarea>
-          </fieldset>
-          <fieldset class="apos-stacked-fieldset">
-            <label>Link</label>
-            <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
-          </fieldset>
-          <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
-        </div>
+
+      <div class="apos-slideshow-extra-fields" data-extra-fields>
+        <fieldset class="apos-fieldset apos-fieldset-text">
+          <label class="short">Title</label>
+          <input data-title class="apos-slideshow-editor-title" type="text" />
+        </fieldset>
+        <fieldset class="apos-fieldset apos-fieldset-text">
+          <label>Description</label>
+          <textarea data-description class="apos-slideshow-editor-description"></textarea>
+        </fieldset>
+        <fieldset class="apos-fieldset apos-fieldset-text">
+          <label>Link</label>
+          <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+        </fieldset>
+        <fieldset class="apos-fieldset apos-fieldset-text">
+          <label>Link Title</label>
+          <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+        </fieldset>
+        <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
+      </div>
+
     </li>
   </ul>
-  <div class="apos-file-styled-container">
+  <div class="apos-file-styled-container" data-uploader-container>
     <div class="apos-file-styled icon-plus">+</div>
     <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
   </div>

@@ -1103,6 +1103,7 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-title]').val(item.title);
       $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
+      $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
       if (extraFields) {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
       }
@@ -1112,6 +1113,7 @@ apos.widgetTypes.slideshow = {
         reflect();
         self.preview();
         self.$el.find('[data-limit-reached]').hide();
+        self.$el.find('[data-uploader-container]').show();
         return false;
       });
 
@@ -1121,6 +1123,8 @@ apos.widgetTypes.slideshow = {
       if (limit && (count >= limit)) {
         self.$el.find('[data-limit]').text(limit);
         self.$el.find('[data-limit-reached]').show();
+        self.$el.find('[data-uploader-container]').hide();
+        console.log('trying to hide uploader');
       }
     }
 
@@ -1138,6 +1142,7 @@ apos.widgetTypes.slideshow = {
         info.title = $item.find('[data-title]').val();
         info.description = $item.find('[data-description]').val();
         info.hyperlink = $item.find('[data-hyperlink]').val();
+        info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
 
         self.data.items.push(info);
 
