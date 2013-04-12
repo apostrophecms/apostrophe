@@ -16,7 +16,13 @@
               </div>
             {% endif %}
             {% if file.hyperlink %}
-              <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">View Details</a>
+              <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">
+                {% if file.hyperlinkTitle %}
+                  {{ file.hyperlinkTitle }}
+                {% else %}
+                  View Details
+                {% endif %}
+              </a>
             {% endif %}
           </div>
           {% endif %}

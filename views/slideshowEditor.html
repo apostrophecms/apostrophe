@@ -19,53 +19,59 @@ You can also drag images from your computer into the dashed area below.
 
 {% block formBody %}
   {# Powered by the blueimp file uploader #}
-  <div class="apos-slideshow-drag-container">
-    <div class="apos-slideshow-file-in-message"><span>Drop Files Here</span></div>
-    <div class="apos-progress-container">
-      <span data-progress class="apos-progress">Progress: <span data-progress-percentage></span>%</span>
-      <span data-finished class="apos-progress">Upload Finished</span>
-    </div>
-  
-{% endblock %}
 
-{# For reordering and removing of images #}
-
-{% block formAfterPreview %}
-  <ul data-items class="apos-slideshow-editor-items">
-    {# I am a template. I get cloned and populated by jQuery. If you #}
-    {# leave my data attributes intact you can edit me quite a bit. #}
-    <li data-item class="apos-slideshow-editor-item apos-template">
-      <div class="apos-slideshow-editor-item-box">
-        {# jQuery will give this img a proper src #}
-        {# Use the smallest possible empty GIF in the meantime #}
-        <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
-        <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+    <div class="apos-slideshow-drag-container" data-drag-container>
+      <div class="apos-slideshow-file-in-message" data-drag-droparea><span data-drag-message>Drop Files Here</span></div>
+      <div class="apos-progress-container">
+        <span data-progress class="apos-progress">Progress: <span data-progress-percentage></span>%</span>
+        <span data-finished class="apos-progress">Upload Finished</span>
       </div>
+    
+  {% endblock %}
+
+  {# For reordering and removing of images #}
+
+  {% block formAfterPreview %}
+    <ul data-items class="apos-slideshow-editor-items">
+      {# I am a template. I get cloned and populated by jQuery. If you #}
+      {# leave my data attributes intact you can edit me quite a bit. #}
+      <li data-item class="apos-slideshow-editor-item apos-template">
+        <div class="apos-slideshow-editor-item-box">
+          {# jQuery will give this img a proper src #}
+          {# Use the smallest possible empty GIF in the meantime #}
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+          <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+        </div>
+
         <div class="apos-slideshow-extra-fields" data-extra-fields>
-          <fieldset class="apos-stacked-fieldset">
+          <fieldset class="apos-fieldset apos-fieldset-text">
             <label class="short">Title</label>
             <input data-title class="apos-slideshow-editor-title" type="text" />
           </fieldset>
-          <fieldset class="apos-stacked-fieldset">
+          <fieldset class="apos-fieldset apos-fieldset-text">
             <label>Description</label>
             <textarea data-description class="apos-slideshow-editor-description"></textarea>
           </fieldset>
-          <fieldset class="apos-stacked-fieldset">
+          <fieldset class="apos-fieldset apos-fieldset-text">
             <label>Link</label>
             <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
           </fieldset>
+          <fieldset class="apos-fieldset apos-fieldset-text">
+            <label>Link Title</label>
+            <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+          </fieldset>
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
-    </li>
-  </ul>
-  <div class="apos-file-styled-container">
-    <div class="apos-file-styled icon-plus">+</div>
-    <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
-  </div>
-  <div class="apos-clear"></div>
-  </div>
-{% endblock %}
 
+      </li>
+    </ul>
+    <div class="apos-file-styled-container" data-uploader-container>
+      <div class="apos-file-styled icon-plus">+</div>
+      <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+    </div>
+    <div class="apos-clear"></div>
+    </div>
+  {% endblock %}
 {% block additionalFooterItems %}
 <div class="apos-limit-reached" data-limit-reached style="display: none">You have reached the limit of <span data-limit>5</span> file(s) in this location.</div>
 {% endblock %}

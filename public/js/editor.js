@@ -1103,6 +1103,7 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-title]').val(item.title);
       $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
+      $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
       if (extraFields) {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
       }
@@ -1112,6 +1113,10 @@ apos.widgetTypes.slideshow = {
         reflect();
         self.preview();
         self.$el.find('[data-limit-reached]').hide();
+        self.$el.find('[data-uploader-container]').show();
+        self.$el.find('[data-drag-container]').removeClass('apos-upload-disabled');
+        self.$el.find('[data-drag-message]').text('Drop Files Here');
+        self.$el.find('[data-drag-container]').off('drop');
         return false;
       });
 
@@ -1121,6 +1126,23 @@ apos.widgetTypes.slideshow = {
       if (limit && (count >= limit)) {
         self.$el.find('[data-limit]').text(limit);
         self.$el.find('[data-limit-reached]').show();
+        self.$el.find('[data-uploader-container]').hide();
+        self.$el.find('[data-drag-container]').addClass('apos-upload-disabled');
+        self.$el.find('[data-drag-message]').text('The Upload Limit Has Been Reached');
+
+        // prevents drop action so that users dropping files into
+        // a a 'full' slideshow dont get thrown to an image file 
+        self.$el.find('[data-drag-container]').on(
+            'drop',
+            function(e){
+              if(e.originalEvent.dataTransfer){
+                if(e.originalEvent.dataTransfer.files.length) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }   
+              }
+            }
+        );
       }
     }
 
@@ -1138,6 +1160,7 @@ apos.widgetTypes.slideshow = {
         info.title = $item.find('[data-title]').val();
         info.description = $item.find('[data-description]').val();
         info.hyperlink = $item.find('[data-hyperlink]').val();
+        info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
 
         self.data.items.push(info);
 
