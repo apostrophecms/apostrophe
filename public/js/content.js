@@ -106,8 +106,52 @@ apos.widgetPlayers.slideshow = function($widget)
   // those options. Consider allowing for titles and descriptions.
   // Support all those cool fades we love to do. Et cetera, et cetera.
 
-  var interval = setInterval(function() {
+  var interval;
+
+  function reset() {
+    if (interval) {
+      clearInterval(interval);
+    }
+    interval = setInterval(function() {
+      if (!getCurrent().length) {
+        // Widget has gone away. Kill the interval timer and go away too
+        clearInterval(interval);
+      }
+      next();
+    }, 5000);
+  }
+
+  reset();
+
+  $widget.find('[data-previous]').click(function() {
+    previous();
+    return false;
+  });
+
+  $widget.find('[data-next]').click(function() {
+    next();
+    return false;
+  });
+
+  function getCurrent() {
     var $current = $widget.find('[data-slideshow-item].apos-current');
+    return $current;
+  }
+
+  function previous() {
+    var $current = getCurrent();
+    var $prev = $current.prev();
+    if (!$prev.length) {
+      $prev = $current.closest('[data-slideshow-items]').find('[data-slideshow-item]:last');
+    }
+    $current.removeClass('apos-current');
+    $prev.addClass('apos-current');
+    // A fresh n seconds for the next auto rotate
+    reset();
+  }
+
+  function next() {
+    var $current = getCurrent();
     if (!$current.length) {
       // Widget has gone away. Kill the interval timer and go away too
       clearInterval(interval);
@@ -119,7 +163,9 @@ apos.widgetPlayers.slideshow = function($widget)
     }
     $current.removeClass('apos-current');
     $next.addClass('apos-current');
-  }, 5000);
+    // A fresh n seconds for the next auto rotate
+    reset();
+  }
 
   // Wait until the height of all images is known, then
   // set the height of the entire slideshow. This prevents
