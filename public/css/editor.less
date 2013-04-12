@@ -927,6 +927,8 @@ textarea.apos-code {
   .apos-slideshow-drag-container
   {
     border: 2px dashed darken(@apos-base, 20%);
+    
+    &.apos-upload-disabled .apos-slideshow-file-in-message { background-color: red; &:hover{cursor: wait; } }
   }
 }
 .apos-slideshow-file-in-message
@@ -943,6 +945,8 @@ textarea.apos-code {
   font-size: 3em;
   right: 0;
   position: absolute;
+  
+
   span
   {
     position: relative;
@@ -959,11 +963,13 @@ textarea.apos-code {
 }
 
 .apos-slideshow-drag-container
-{
+{ 
   border: 2px dashed @apos-base;
   padding: 17px 10px 30px 10px;
   position: relative;
   .clearfix;
+  
+  // &.apos-upload-disabled:hover {background-color: red;}
   
   &:hover
   {

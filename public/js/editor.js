@@ -1114,6 +1114,9 @@ apos.widgetTypes.slideshow = {
         self.preview();
         self.$el.find('[data-limit-reached]').hide();
         self.$el.find('[data-uploader-container]').show();
+        self.$el.find('[data-drag-container]').removeClass('apos-upload-disabled');
+        self.$el.find('[data-drag-message]').text('Drop Files Here');
+        self.$el.find('[data-drag-container]').off('drop');
         return false;
       });
 
@@ -1124,7 +1127,22 @@ apos.widgetTypes.slideshow = {
         self.$el.find('[data-limit]').text(limit);
         self.$el.find('[data-limit-reached]').show();
         self.$el.find('[data-uploader-container]').hide();
-        console.log('trying to hide uploader');
+        self.$el.find('[data-drag-container]').addClass('apos-upload-disabled');
+        self.$el.find('[data-drag-message]').text('The Upload Limit Has Been Reached');
+
+        // prevents drop action so that users dropping files into
+        // a a 'full' slideshow dont get thrown to an image file 
+        self.$el.find('[data-drag-container]').on(
+            'drop',
+            function(e){
+              if(e.originalEvent.dataTransfer){
+                if(e.originalEvent.dataTransfer.files.length) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }   
+              }
+            }
+        );
       }
     }
 
