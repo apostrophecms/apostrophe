@@ -1550,6 +1550,31 @@ apos.parseArea = function(content) {
     }
   }
 
+  // Widgets must never get stuck inside other elements
+  var hoisted = false;
+  var $content = $($.parseHTML('<div data-apos-hoist-wrapper>' + content + '</div>'));
+  apos.log($content[0]);
+  var $widgets = $content.find('[data-type]');
+  $widgets.each(function() {
+    var $widget = $(this);
+    if ($widget.parents('[data-type]').length) {
+      // Ignore widgets nested in widgets, which may be present when we
+      // work with reuse tools like the blog widget but are not really
+      // being edited
+      return;
+    }
+    var $parent = $widget.parent();
+    if (!$parent.is('[data-apos-hoist-wrapper]')) {
+      // Hoist the widget
+      $widget.detach();
+      $parent.before($widget);
+      hoisted = true;
+    }
+  });
+  if (hoisted) {
+    content = $content.html();
+  }
+
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
