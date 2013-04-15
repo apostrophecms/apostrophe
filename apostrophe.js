@@ -27,7 +27,7 @@ RegExp.quote = require("regexp-quote");
 
 function Apos() {
   var self = this;
-  var app, files, areas, pages, uploadfs, nunjucksEnv, db, aposLocals;
+  var app, files, areas, versions, pages, uploadfs, nunjucksEnv, db, aposLocals;
 
   // Helper functions first to please jshint
 
@@ -265,15 +265,6 @@ function Apos() {
       _.extend(aposLocals, options.locals);
     }
 
-    function setupAreas(callback) {
-      db.collection('aposAreas', function(err, collection) {
-        self.areas = areas = collection;
-        collection.ensureIndex({ slug: 1 }, { safe: true, unique: true }, function(err) {
-          return callback(err);
-        });
-      });
-    }
-
     function setupPages(callback) {
       db.collection('aposPages', function(err, collection) {
         function indexSlug(callback) {
@@ -281,6 +272,28 @@ function Apos() {
         }
         self.pages = pages = collection;
         async.series([indexSlug], callback);
+        // ... more index functions
+      });
+    }
+
+    // Each time a page or area is updated with putArea or putPage, a new version
+    // object is also created. Regardless of whether putArea or putPage is called,
+    // if the area is in the context of a page it is the entire page that is
+    // versioned. A pageId or areaId property is added, which is a non-unique index
+    // allowing us to fetch prior versions of any page or independently stored
+    // area. Also createdAt and author. Author is a string to avoid issues with
+    // references to deleted users.
+    //
+    // Note that this also provides full versioning for types built upon pages, such as
+    // blog posts and snippets.
+
+    function setupVersions(callback) {
+      db.collection('aposVersions', function(err, collection) {
+        function index(callback) {
+          self.versions.ensureIndex({ pageId: 1, createdAt: -1 }, { safe: true }, callback);
+        }
+        self.versions = versions = collection;
+        async.series([index], callback);
         // ... more index functions
       });
     }
@@ -792,72 +805,53 @@ function Apos() {
 
       app.post('/apos/edit-area', function(req, res) {
         var slug = req.body.slug;
-        self.permissions(req, 'edit-area', slug, function(err) {
+        var content = JSON.parse(req.body.content);
+        self.sanitizeItems(content);
+        var area = {
+          slug: slug,
+          items: content
+        };
+        self.putArea(req, slug, area, updated);
+        function updated(err) {
           if (err) {
-            return forbid(res);
-          }
-          var content = JSON.parse(req.body.content);
-          self.sanitizeItems(content);
-          var area = {
-            slug: req.body.slug,
-            items: content
-          };
-
-          function updated(err) {
-            if (err) {
-              console.log(err);
-              return notfound(req, res);
-            }
-
-            return self.callLoadersForArea(req, area, function() {
-              return res.send(aposLocals.aposAreaContent(area.items));
-            });
+            console.log(err);
+            return notfound(req, res);
           }
 
-          self.putArea(slug, area, updated);
-
-        });
+          return self.callLoadersForArea(req, area, function() {
+            return res.send(aposLocals.aposAreaContent(area.items));
+          });
+        }
       });
 
       app.post('/apos/edit-singleton', function(req, res) {
         var slug = req.body.slug;
-        self.permissions(req, 'edit-area', slug, function(err) {
+        var content = JSON.parse(req.body.content);
+        // "OMG, what if they cheat and use a type not allowed for this singleton?"
+        // When they refresh the page they will discover they can't see their hack.
+        // aposSingleton only shows the first item of the specified type, regardless
+        // of what is kicking around in the area.
+        var type = content.type;
+        var itemType = self.itemTypes[type];
+        if (!itemType) {
+          return fail(req, res);
+        }
+        if (itemType.sanitize) {
+          itemType.sanitize(content);
+        }
+        var area = {
+          slug: req.body.slug,
+          items: [ content ]
+        };
+
+        self.putArea(req, slug, area, function(err, area) {
           if (err) {
-            console.log('forbid');
-            return forbid(res);
-          }
-          var content = JSON.parse(req.body.content);
-          // "OMG, what if they cheat and use a type not allowed for this singleton?"
-          // When they refresh the page they will discover they can't see their hack.
-          // aposSingleton only shows the first item of the specified type, regardless
-          // of what is kicking around in the area.
-          var type = content.type;
-          var itemType = self.itemTypes[type];
-          if (!itemType) {
-            return fail(req, res);
-          }
-          if (itemType.sanitize) {
-            itemType.sanitize(content);
-          }
-          var area = {
-            slug: req.body.slug,
-            items: [ content ]
-          };
-
-          function updated(err) {
-            console.log(err);
-            if (err) {
-              console.log(err);
-              return notfound(req, res);
-            }
-
-            return self.callLoadersForArea(req, area, function() {
-              return res.send(aposLocals.aposAreaContent(area.items));
-            });
+            return notfound(req, res);
           }
 
-          self.putArea(slug, area, updated);
-
+          return self.callLoadersForArea(req, area, function() {
+            return res.send(aposLocals.aposAreaContent(area.items));
+          });
         });
       });
 
@@ -1006,7 +1000,7 @@ function Apos() {
 
     self.db = db = options.db;
 
-    async.series([setupAreas, setupPages, setupFiles, setupRedirects, afterDb], callback);
+    async.series([setupPages, setupVersions, setupFiles, setupRedirects, afterDb], callback);
   };
 
   // self.static returns a function for use as a route that
@@ -1063,8 +1057,8 @@ function Apos() {
     return attempt(file, callback);
   };
 
-  // getArea retrieves an area from MongoDB. It supports both
-  // freestanding areas and areas that are part of a page object.
+  // getArea retrieves an area from MongoDB. All areas must be part
+  // of a page, thus the slug must look like: my-page-slug:areaname
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object requested if it exists. If the area does not
@@ -1110,35 +1104,29 @@ function Apos() {
       options.load = true;
     }
     var matches = slug.match(/^(.*?)\:(\w+)$/);
-    if (matches) {
-      // This area is part of a page
-      var pageSlug = matches[1];
-      var areaSlug = matches[2];
-      // Retrieve only the desired area
-      var projection = {};
-      projection['areas.' + areaSlug] = 1;
-      pages.findOne({ slug: pageSlug }, projection, function (err, page) {
-        if (err) {
-          return callback(err);
-        }
-        if (page && page.areas && page.areas[areaSlug]) {
-          // What is stored in the db might be lagging behind the reality
-          // if the slug of the page has changed. Always return it in an
-          // up to date form
-          page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
-          return loadersThenCallback(page.areas[areaSlug]);
-        }
-        // Nonexistence isn't an error, it's just nonexistence
-        return callback(err, null);
-      });
-    } else {
-      areas.findOne({ slug: slug }, function(err, area) {
-        if (err) {
-          return callback(err);
-        }
-        return loadersThenCallback(area);
-      });
+    if (!matches) {
+      return callback('All area slugs must now be page-based: page-slug:areaname');
     }
+    // This area is part of a page
+    var pageSlug = matches[1];
+    var areaSlug = matches[2];
+    // Retrieve only the desired area
+    var projection = {};
+    projection['areas.' + areaSlug] = 1;
+    pages.findOne({ slug: pageSlug }, projection, function (err, page) {
+      if (err) {
+        return callback(err);
+      }
+      if (page && page.areas && page.areas[areaSlug]) {
+        // What is stored in the db might be lagging behind the reality
+        // if the slug of the page has changed. Always return it in an
+        // up to date form
+        page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
+        return loadersThenCallback(page.areas[areaSlug]);
+      }
+      // Nonexistence isn't an error, it's just nonexistence
+      return callback(err, null);
+    });
 
     function loadersThenCallback(area) {
       if (!area) {
@@ -1156,59 +1144,61 @@ function Apos() {
     }
   };
 
-  // putArea stores an area in MongoDB. It supports both
-  // freestanding areas and areas that are part of a page object.
+  // putArea stores an area in a "page." We put "page" in quotes here
+  // because it is only a page in the narrowest sense: a mongodb document
+  // with a slug, containing one or more named areas, and open to the storage of
+  // other properties as well.
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object with its slug property set to the slug under
   // which it was stored with putArea.
   //
-  // If 'slug' matches the following pattern:
+  // The slug must match the following pattern:
   //
   // /cats/about:sidebar
   //
-  // Then 'sidebar' is assumed to be the name of an area stored
-  // within the areas property of the page object with the slug /cats/about. 
+  // 'sidebar' is assumed to be the name of an area stored
+  // within the areas property of the page object with the slug /cats/about.
   // If the page object was previously empty it now looks like:
   //
-  // { 
-  //   slug: '/cats/about', 
-  //   areas: { 
-  //     sidebar: { 
-  //       slug: '/cats/about/:sidebar', 
-  //       content: 'whatever your area.content property was'
-  //     } 
-  //   } 
+  // {
+  //   slug: '/cats/about',
+  //   areas: {
+  //     sidebar: {
+  //       slug: '/cats/about/:sidebar',
+  //       items: 'whatever your area.items property was'
+  //     }
+  //   }
   // }
   //
   // Page objects are stored in the 'pages' collection.
-  //
-  // Slugs of this type are an efficient way to store related areas
-  // that are usually desired at the same time, because the getPage method
-  // returns the entire page object, including all of its areas.
-  //
-  // If the slug does not contain a : then the area is stored directly
-  // in the 'areas' collection.
   //
   // If a page does not exist this method will create it. You should
   // NOT rely on this for pages that have a type property, including any
   // page in the page tree, a snippet, etc. Such pages should be created
   // first with putPage before they are used. It is convenient, however, for
   // simple virtual pages used to hold things like a global footer area.
+  //
+  // A copy of the page is inserted into the versions collection.
+  //
+  // The req argument is required for permissions checking. The
+  // edit-page permission is checked on the page slug.
 
-  self.putArea = function(slug, area, callback) {
-    function invokeCallback(err, data) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(err, area);
-    }
+  self.putArea = function(req, slug, area, callback) {
+    var pageOrSlug;
 
     var matches = slug.match(/^(.*?)\:(\w+)$/);
-    if (matches) {
-      // This area is part of a page
-      var pageSlug = matches[1];
-      var areaSlug = matches[2];
+    if (!matches) {
+      return callback('Area slugs now must be page-based: page-slug:areaname');
+    }
+    var pageSlug = matches[1];
+    var areaSlug = matches[2];
+
+    function permissions(callback) {
+      self.permissions(req, 'edit-page', pageSlug, callback);
+    }
+
+    function update(callback) {
       area.slug = slug;
       var set = {};
       set.slug = pageSlug;
@@ -1232,33 +1222,94 @@ function Apos() {
               areas: {}
             };
             page.areas[areaSlug] = area;
-            return pages.insert(page, { safe: true }, invokeCallback);
+            return pages.insert(page, { safe: true }, function(err, page) {
+              if (err) {
+                return callback(err);
+              }
+              pageOrSlug = page;
+              return callback(null);
+            });
           }
-          return invokeCallback(err, count);
+          if (err) {
+            return callback(err);
+          }
+          pageOrSlug = pageSlug;
+          return callback(null);
         }
       );
-    } else {
-      areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
     }
+
+    // We've updated or inserted a page, now save a copy in the versions collection.
+    // We might already have a page object or, if we did an update, we might have
+    // to go fetch it
+    function versioning(callback) {
+      var finder;
+      if (typeof(pageOrSlug) === 'string') {
+        finder = function(pageOrSlug, callback) {
+          return pages.findOne({ slug: pageOrSlug }, callback);
+        };
+      } else {
+        finder = function(pageOrSlug, callback) {
+          return callback(null, pageOrSlug);
+        };
+      }
+      finder(pageOrSlug, function(err, version) {
+        if (err) {
+          return callback(err);
+        }
+        version.createdAt = new Date();
+        version.pageId = version._id;
+        version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
+        version._id = generateId();
+        console.log('Saving version in putArea:');
+        console.log(version);
+        return versions.insert(version, callback);
+      });
+    }
+
+    function finish(err) {
+      return callback(err, area);
+    }
+
+    async.series([permissions, update, versioning], finish);
   };
 
+  // Insert or update an entire page object at once.
+  //
   // slug is the existing slug of the page in the database. If page.slug is
   // different then the slug of the page is changed. If page.slug is not defined
   // it is set to the slug parameter for your convenience. The slug of the page,
   // and the path of the page if it is defined, are both automatically made
-  // unique through successive addition of random digits if necessary
+  // unique through successive addition of random digits if necessary.
+  //
+  // You MAY add unrelated properties to page objects between calls to
+  // getPage and putPage, or directly manipulate page objects with mongodb.
+  //
+  // You MUST pass the req object for permissions checking.
+  //
+  // A copy of the page is inserted into the versions collection.
 
-  self.putPage = function(slug, page, callback) {
+  self.putPage = function(req, slug, page, callback) {
     if (!page.slug) {
       page.slug = slug;
     }
     if (!page._id) {
       page._id = generateId();
     }
-    self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
-      function(err) {
-        if (err) {
-          if (self.isUniqueError(err))
+
+    // Provide the object rather than the slug since we have it and we can
+    // avoid extra queries that way and also do meaningful permissions checks
+    // on new pages
+    function permissions(callback) {
+      console.log('putPage permissions');
+      self.permissions(req, 'edit-page', page, callback);
+    }
+
+    function update(callback) {
+      console.log('putPage update');
+      self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
+        function(err) {
+          if (err && self.isUniqueError(err))
           {
             var num = (Math.floor(Math.random() * 10)).toString();
             if (page.slug === undefined) {
@@ -1271,13 +1322,37 @@ function Apos() {
             if (page.path) {
               page.path += num;
             }
-            return self.putPage(page.slug, page, callback);
+            return self.putPage(req, page.slug, page, callback);
           }
           return callback(err);
         }
+      );
+    }
+
+    function versioning(callback) {
+      console.log('putPage versioning');
+      var version = {};
+      extend(true, version, page);
+      version.pageId = page._id;
+      version.createdAt = new Date();
+      version._id = generateId();
+      version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
+      console.log('Saving version in putPage:');
+      console.log(version);
+      versions.insert(version, function(err, inserted) {
+        // Versioning is not critical, the actual page update succeeded
         return callback(null, page);
+      });
+    }
+
+    function finish(err) {
+      console.log('putPage finish');
+      if (err) {
+        return callback(err);
       }
-    );
+      return callback(null, page);
+    }
+    async.series([permissions, update, versioning], finish);
   };
 
   // Fetch the "page" with the specified slug. As far as
@@ -1290,7 +1365,7 @@ function Apos() {
   // A 'req' object is needed to provide a context for permissions in custom
   // widget loaders, and for caching for the duration of the current request.
   // However this need not be a real Express 'req' object. Note that permissions
-  // are NOT checked on the page itself here. You should perform such checks before 
+  // are NOT checked on the page itself here. You should perform such checks before
   // invoking this method.
   //
   // The first callback parameter is an error or null.

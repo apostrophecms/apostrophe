@@ -122,27 +122,31 @@ Note the `body` block, which can be overridden in any template that `extend`s th
 
 ### Adding Editable Areas To Your Templates
 
-The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example taken from the apostrophe-sandbox sample application:
+The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example:
 
-    {{ aposArea({ slug: 'main', items: main, edit: true }) }}
+    {{ aposArea({ slug: 'global:footer', items: main, edit: true }) }}
 
 This is from a Nunjucks template. If you're using Twig, you'll write:
 
-!= aposArea({ slug: 'main', items: main, edit: true })
+!= aposArea({ slug: 'global:footer', items: main, edit: true })
 
 Sometimes Apostrophe's default set of controls include features that don't make sense in a sidebar or otherwise don't suit a design. In these cases you can limit the list.
 
 This `aposArea` call turns on all of the controls. You can leave anything you like off the `controls` list:
 
-    {{ aposArea({ slug: 'main', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
+    {{ aposArea({ slug: 'global:footer', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
 
-"What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. Many sites have slugs named `header`, `footer`, `sidebar` and the like.
+"What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. The slug is broken up into two parts: the "page slug" and the "area name." "Page" here is meant in the loosest sense of the word in Apostrophe: a set of areas grouped together which are typically loaded together. 
 
-"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Apostrophe's `getArea` and `getPage` methods. [Note: if you just want a tree of editable pages, use the apostrophe-pages module to do most of this work.](http://github.com/punkave/apostrophe-pages)
+In the above examples, the "page slug" is `global` and the "area name" is `footer`. For instance, most site designs call for a few editable elements that are shared across every pageview on the site. We group these together with the page slug `global` so they can be loaded as a single MongoDB document.
+
+You might think you can use page slugs to represent pages that are part of a tree of pages, and you would be right, but to do so easily make sure you [start with the `apostrophe-pages` module.](http://github.com/punkave/apostrophe-pages)
+
+"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Apostrophe's `getArea` and `getPage` methods. [Note: you probably want to use the apostrophe-pages module to do most of this work, including loading common shared elements like the `global` page.](http://github.com/punkave/apostrophe-pages)
 
 Naturally `getArea` is asynchronous:
 
-    app.get('/', function(req, res) {
+    app.get(req, 'global:footer', function(req, res) {
       apos.getArea(req, 'main', function(err, area) {
         return res.render('home', { content: area ? area.items : [] });
       });
@@ -158,13 +162,13 @@ Also note that there is an `err` parameter to the callback. Real-world applicati
 
 Of course, sometimes you want to enforce a more specific design for an editable page. You might, for instance, want to require the user to pick a video for the upper right corner. You can do that with `aposSingleton`:
 
-    {{ aposSingleton({ slug: slug + ':sidebarVideo', type: 'video', area: page.areas.sidebarVideo, edit: edit }) }}
+    {{ aposSingleton({ slug: 'global:my-video', type: 'video', area: page.areas.sidebarVideo, edit: edit }) }}
 
 Note that singletons are stored as areas. The only difference is that the interface only displays and edits the first item of the specified type found in the area. There is no rich text editor "wrapped around" the widget, so clicking "edit" for a video immediately displays the video dialog box.
 
 Only widgets (images, videos and the like) may be specified as types for singletons. For a standalone rich-text editor that doesn't allow any widgets, just limit the set of controls to those that are not widgets:
 
-    {{ aposArea({ slug: 'main', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
+    {{ aposArea({ slug: 'global:sidebar', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
 
 ## Detecting Empty Areas and Singletons
 
@@ -176,11 +180,11 @@ It's common to want to do something special if an area or singleton is empty, es
 
 `aposAreaIsEmpty` is also available. (Singletons are stored as areas but aposSingletonIsEmpty is correctly written to detect whether a widget of the proper type is present.)
 
-## Grouping Areas Into "Pages"
+## More About Grouping Areas Into "Pages"
 
 "What if I'm building a site with lots of pages? Each page might have two or three areas. Is there an efficient way to get them all at once?"
 
-Sure! Apostrophe provides a `getPage` method for this purpose. 
+Sure! Apostrophe provides a `getPage` method for this purpose.
 
 If you pass the slug `/about` to `getPage`, and areas exist with the following slugs:
 
@@ -190,10 +194,10 @@ If you pass the slug `/about` to `getPage`, and areas exist with the following s
 
 Then `getPage` will fetch all of them and deliver an object like this:
 
-    { 
-      slug: '/about', 
-      areas: { 
-        main: { 
+    {
+      slug: '/about',
+      areas: {
+        main: {
           slug: '/about/:main', 
           content: 'main content'
         } 
@@ -208,7 +212,7 @@ Then `getPage` will fetch all of them and deliver an object like this:
       } 
     }
 
-"Those page objects look useful. Can I store other stuff in those? Page titles and so forth?" Yes. You can write your own mongo code to set additional properties on the objects in the pages collection. Apostrophe won't mind.
+"Those page objects look useful. Can I store other stuff in those? Page titles and so forth?" Yes. You can write your own mongo code to set additional properties on the objects in the pages collection. Apostrophe won't mind. And you can pass those properties when calling `putPage`. Just make sure you retrieve the entire page object with `getPage` or a suitable MongoDB query before saving it with `putPage` so you don't lose data.
 
 Apostrophe's putArea and getArea methods are written to automatically spot slugs containing a ":" and update or fetch an area within the areas property of a page in the pages collection, rather than creating a freestanding area object in the areas collection.
 
