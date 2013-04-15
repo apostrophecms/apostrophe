@@ -1054,8 +1054,6 @@ apos.widgetTypes.slideshow = {
     // The server will render an actual slideshow, but we also want to see
     // thumbnails of everything with draggability for reordering and remove buttons
     self.prePreview = function(callback) {
-      apos.log('self.data in prePreview');
-      apos.log(self.data);
 
       $items.find('[data-item]:not(.apos-template)').remove();
       var items = self.data.items;
@@ -1096,8 +1094,6 @@ apos.widgetTypes.slideshow = {
         return;
       }
 
-      apos.log(count);
-      apos.log(limit);
       var $item = apos.fromTemplate($items.find('[data-item]'));
       $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.find('[data-title]').val(item.title);
@@ -1553,7 +1549,6 @@ apos.parseArea = function(content) {
   // Widgets must never get stuck inside other elements
   var hoisted = false;
   var $content = $($.parseHTML('<div data-apos-hoist-wrapper>' + content + '</div>'));
-  apos.log($content[0]);
   var $widgets = $content.find('[data-type]');
   $widgets.each(function() {
     var $widget = $(this);
