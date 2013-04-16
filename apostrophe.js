@@ -687,22 +687,16 @@ function Apos() {
           }
           // Do we accept this file extension?
           var accepted = [];
-          console.log(self.fileGroups);
           var group = _.find(self.fileGroups, function(group) {
-            console.log(group.name);
             accepted.push(group.extensions);
             var candidate = group.extensionMaps[extension] || extension;
-            console.log(candidate);
-            console.log(group.extensions);
             if (_.contains(group.extensions, candidate)) {
               return true;
             }
           });
-          console.log(group);
           if (!group) {
             return callback("File extension not accepted. Acceptable extensions: " + accepted.join(", "));
           }
-          console.log('accepted');
           var image = group.image;
           var info = {
             _id: generateId(),
@@ -719,7 +713,6 @@ function Apos() {
 
           function upload(callback) {
             if (image) {
-              console.log('copying image in');
               // For images we correct automatically for common file extension mistakes
               return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
                 if (err) {
@@ -732,7 +725,6 @@ function Apos() {
               // For non-image files we have to trust the file extension
               // (but we only serve it as that content type, so this should
               // be reasonably safe)
-              console.log('just copying in');
               return uploadfs.copyIn(file.path, '/files/' + info._id + '-' + info.name + '.' + info.extension, callback);
             }
           }
@@ -1809,9 +1801,7 @@ function Apos() {
       widget: true,
       label: 'Files',
       render: function(data) {
-        console.log('rendering files');
         var val = partial('files', data);
-        console.log('after rendering files');
         return val;
       },
       addDiffLines: function(item, lines) {

@@ -317,21 +317,29 @@ apos.modal = function(sel, options) {
     return false;
   }
 
+  function saveModal(next) {
+    options.save(function(err) {
+      if(!err) {
+        hideModal();
+        if (next) {
+          options.next();
+        }
+      }
+    });
+  }
+
   // Enter key driven submits of the form should act like a click on the save button,
   // do not try to submit the form old-school
   $el.on('submit', 'form', function() {
-    $el.find('.apos-save').click();
+    saveModal();
     return false;
   });
 
   $el.on('click', '.apos-cancel', hideModal);
 
   $el.on('click', '.apos-save', function() {
-    options.save(function(err) {
-      if(!err) {
-        hideModal();
-      }
-    });
+    var $button = $(this);
+    saveModal($button.is('[data-next]'));
     return false;
   });
 
