@@ -1,0 +1,19 @@
+{% for version in versions %}
+  <li class="apos-version" data-version-id="{{ version._id }}">
+    <ul class="apos-changes" data-changes>
+      {% for change in version.diff %}
+        <li class="apos-change">
+          {% if change.removed %}
+            <strike>
+          {% endif %}
+          {{ change.value | e }}
+          {% if change.removed %}
+            </strike>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    <div class="apos-author">{{ version.author | e }}</div>
+    <div class="apos-created-at">{{ version.createdAt | date('LLL') }}</div>
+  </li>
+{% endfor %}

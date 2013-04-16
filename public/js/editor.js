@@ -1779,4 +1779,3 @@ apos.tagsToString = function(s) {
   var result = s.join(', ');
   return result;
 };
-

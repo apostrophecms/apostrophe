@@ -19,7 +19,10 @@
     "less": "~1.3.3",
     "uglify-js": "~2.2.5",
     "clean-css": "~1.0.0",
-    "extend": "~1.1.3"
+    "extend": "~1.1.3",
+    "diff": "~1.0.4",
+    "wordwrap": "0.0.2",
+    "ent": "0.0.5"
   },
   "devDependencies": {},
   "scripts": {

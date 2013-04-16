@@ -21,6 +21,9 @@ var uglifyJs = require('uglify-js');
 // CSS minifier https://github.com/GoalSmashers/clean-css
 var cleanCss = require('clean-css');
 var extend = require('extend');
+var jsDiff = require('diff');
+var wordwrap = require('wordwrap');
+var ent = require('ent');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -1243,28 +1246,7 @@ function Apos() {
     // We might already have a page object or, if we did an update, we might have
     // to go fetch it
     function versioning(callback) {
-      var finder;
-      if (typeof(pageOrSlug) === 'string') {
-        finder = function(pageOrSlug, callback) {
-          return pages.findOne({ slug: pageOrSlug }, callback);
-        };
-      } else {
-        finder = function(pageOrSlug, callback) {
-          return callback(null, pageOrSlug);
-        };
-      }
-      finder(pageOrSlug, function(err, version) {
-        if (err) {
-          return callback(err);
-        }
-        version.createdAt = new Date();
-        version.pageId = version._id;
-        version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
-        version._id = generateId();
-        console.log('Saving version in putArea:');
-        console.log(version);
-        return versions.insert(version, callback);
-      });
+      return self.versionPage(req, pageOrSlug, callback);
     }
 
     function finish(err) {
@@ -1330,19 +1312,7 @@ function Apos() {
     }
 
     function versioning(callback) {
-      console.log('putPage versioning');
-      var version = {};
-      extend(true, version, page);
-      version.pageId = page._id;
-      version.createdAt = new Date();
-      version._id = generateId();
-      version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
-      console.log('Saving version in putPage:');
-      console.log(version);
-      versions.insert(version, function(err, inserted) {
-        // Versioning is not critical, the actual page update succeeded
-        return callback(null, page);
-      });
+      return self.versionPage(req, page, callback);
     }
 
     function finish(err) {
@@ -1353,6 +1323,164 @@ function Apos() {
       return callback(null, page);
     }
     async.series([permissions, update, versioning], finish);
+  };
+
+  // Given a request object (for permissions), a page object, and a version
+  // object (an old version of the page from the versions collection), roll
+  // back the page to the content in the version object. This method does not
+  // roll back changes to the slug property, or to the rank or path property of
+  // any page with a slug beginning with /, because these are part
+  // of the page's relationship to other pages which may not be rolling back and
+  // could lead to an unusable page tree and/or conflicting slugs and paths
+
+  self.rollBackPage = function(req, page, version, callback) {
+    var slug = page.slug;
+    var path = page.path;
+    var rank = page.rank;
+    delete version.diff;
+    delete version.author;
+    delete version.createdAt;
+    extend(true, page, version);
+    page.slug = slug;
+    if (slug.chart(0) === '/') {
+      page.path = path;
+      page.rank = rank;
+    }
+    return self.putPage(req, page.slug, page, callback);
+  };
+
+  // Save a copy of the specified page so that it can be rolled back to
+  // at any time. The req object is needed to identify the author of the change.
+  // Typically called only from self.putPage and self.putArea
+
+  self.versionPage = function(req, pageOrSlug, callback) {
+    var page;
+    var prior;
+
+    function findPage(callback) {
+      var finder;
+      if (typeof(pageOrSlug) === 'string') {
+        finder = function(pageOrSlug, callback) {
+          return pages.findOne({ slug: pageOrSlug }, callback);
+        };
+      } else {
+        finder = function(pageOrSlug, callback) {
+          return callback(null, pageOrSlug);
+        };
+      }
+      finder(pageOrSlug, function(err, pageArg) {
+        if (err) {
+          return callback(err);
+        }
+        page = pageArg;
+        return callback(null);
+      });
+    }
+
+    function findPrior(callback) {
+      versions.find({
+        pageId: page._id
+      }).sort({
+        createdAt: -1
+      }).limit(1).toArray(function(err, versions) {
+        if (err) {
+          return callback(err);
+        }
+        if (versions.length) {
+          prior = versions[0];
+        } else {
+          // There may indeed be no prior version
+          prior = null;
+        }
+        return callback(null);
+      });
+    }
+
+    function addVersion(callback) {
+      // Turn the page object we fetched into a version object
+      var version = page;
+      version.createdAt = new Date();
+      version.pageId = version._id;
+      version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
+      version._id = generateId();
+      if (!prior) {
+        version.diff = [ { value: '[NEW]', added: true } ];
+      } else {
+        version.diff = self.diffPages(prior, version);
+      }
+      return versions.insert(version, callback);
+    }
+
+    return async.series([findPage, findPrior, addVersion], callback);
+  };
+
+  self.diffPages = function(page1, page2) {
+    var lines1 = self.diffPageLines(page1);
+    var lines2 = self.diffPageLines(page2);
+    var results = jsDiff.diffLines(lines1.join("\n"), lines2.join("\n"));
+    // We're not interested in what stayed the same
+    return _.filter(results, function(result) { return result.added || result.removed; });
+  };
+
+  // Initially empty. Custom page types like snippets, blog and events can add
+  // functions here which take a page object and an array of lines and add
+  // additional lines of text that describe the page in such a way that diffing
+  // the output of two calls reveals a useful description of changes.
+  self.addDiffLinesForType = {};
+
+  // Returns a list of lines of text which, when diffed against the
+  // results for another version of the page, will result in a reasonable
+  // summary of what has changed
+  self.diffPageLines = function(page) {
+    var lines = [];
+    lines.push('title: ' + page.title);
+    lines.push('type: ' + page.type);
+    if (page.tags) {
+      lines.push('tags: ' + page.tags.join(','));
+    }
+    if (page.type) {
+      // Allows custom diffs by page type, for instance to
+      // reflect changes in metadata
+      if (self.addDiffLinesForType[page.type]) {
+        self.addDiffLinesForType(page, lines);
+      }
+    }
+    if (page.areas) {
+      var names = _.keys(page.areas);
+      names.sort();
+      _.each(names, function(name) {
+        var area = page.areas[name];
+        _.each(area.items, function(item) {
+          lines.push(name + ': ' + item.type);
+          var itemType = self.itemTypes[item.type];
+          if (itemType) {
+            if (itemType.addDiffLines) {
+              itemType.addDiffLines(item, lines);
+            }
+          }
+        });
+      });
+    }
+    console.log('PAGE DIFF LINES:');
+    console.log(lines);
+    return lines;
+  };
+
+  // Given some plaintext, add diff-friendly lines to the lines array
+  // based on its contents
+
+  self.addDiffLinesForText = function(text, lines) {
+    var wrapper = wordwrap(0, 60);
+    var rawLines = text.split("\n");
+    _.each(rawLines, function(line) {
+      line = wrapper(line);
+      _.each(line.split("\n"), function(finalLine) {
+        if (!finalLine.length) {
+          return;
+        }
+        lines.push(finalLine);
+      });
+    });
   };
 
   // Fetch the "page" with the specified slug. As far as
@@ -1574,6 +1702,12 @@ function Apos() {
         // This is just a down payment, we should be throwing out unwanted
         // tags attributes and properties as A1.5 does
         item.content = sanitize(item.content).xss().trim();
+      },
+      addDiffLines: function(item, lines) {
+        // Turn tags into line breaks, which generally produces some indication
+        // of a change around that point
+        var text = ent.encode(item.content.replace(/<.*?\>/g, "\n"));
+        self.addDiffLinesForText(text, lines);
       }
     },
     slideshow: {
@@ -1583,6 +1717,12 @@ function Apos() {
       // icon: 'slideshow',
       render: function(data) {
         return partial('slideshow', data);
+      },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('image: ' + item.name);
+        });
       },
       css: 'slideshow'
     },
@@ -1594,6 +1734,12 @@ function Apos() {
       render: function(data) {
         return partial('buttons', data);
       },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('image: ' + item.name);
+        });
+      },
       css: 'buttons'
     },
     video: {
@@ -1602,6 +1748,9 @@ function Apos() {
       icon: 'video',
       render: function(data) {
         return partial('video', data);
+      },
+      addDiffLines: function(item, lines) {
+        lines.push('video: ' + item.url);
       },
       css: 'video'
     },
@@ -1614,7 +1763,10 @@ function Apos() {
       // Without this it's bothersome for editor.js to grab the text
       // without accidentally grabbing the buttons. -Tom
       wrapperClass: 'apos-pullquote-text',
-      css: 'pullquote'
+      css: 'pullquote',
+      addDiffLines: function(item, lines) {
+        lines.push('pullquote: ' + item.content);
+      },
     },
     code: {
       widget: true,
@@ -1622,7 +1774,10 @@ function Apos() {
       icon: 'code',
       plaintext: true,
       wrapper: 'pre',
-      css: 'code'
+      css: 'code',
+      addDiffLines: function(item, lines) {
+        self.addDiffLinesForText(item.content ? item.content : '');
+      },
     }
   };
 

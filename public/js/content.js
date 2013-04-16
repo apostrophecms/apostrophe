@@ -397,13 +397,100 @@ apos.modalFromTemplate = function(sel, options) {
 };
 
 // Clone the element matching the selector which also has the
-// .apos-template class, remove that class from the clone, and
-// return the clone. This is convenient for turning invisible templates in
-// the DOM into elements ready to add to the DOM.
+// .apos-template class, remove the apos-template class from the clone, and
+// return the clone. This is convenient for turning invisible templates
+// already present in the DOM into elements ready to add to the document.
+//
+// Options are available to populate the newly returned element with content.
+// If options.text is { label: '<bob>' }, fromTemplate will look for a descendant
+// with the data-label attribute and set its text to <bob> (escaping < and > properly).
+//
+// If options.text is { address: { street: '569 South St' } },
+// fromTemplate will first look for the data-address element, and then
+// look for the data-street element within that and populate it with the
+// string 569 South St. You may pass as many properties as you wish,
+// nested as deeply as you wish.
+//
+// For easier JavaScript coding, properties are automatically converted from
+// camel case to hyphenation. For instance, the property userName will be
+// applied to the element with the attribute data-user-name.
+//
+// If options.text is { name: [ 'Jane', 'John', 'Bob' ] }, the
+// element with the data-name property will be repeated three times, for a total of
+// three copies given the text Jane, John and Bob.
+//
+// options.html functions exactly like options.text, except that the
+// value of each property is applied as HTML markup rather than as plaintext.
+// That is, if options.html is { body: '<h1>bob</h1>' },
+// fromTemplate will look for an element with the data-body attribute
+// and set its content to the markup <h1>bob</h1> (which will create an
+// h1 element). You may nest and repeat elements just as you do with options.text.
+//
+// Since not every situation is covered by these options, you may wish to
+// simply nest templates and manipulate things directly with jQuery. For instance,
+// an li list item template can be present inside a ul list template. Just call
+// apos.fromTemplate again to start making clones of the inner template and adding
+// them as appropriate. It is often convenient to remove() the inner template
+// first so that you don't have to filter it out when manipulating list items.
 
-apos.fromTemplate = function(sel) {
+apos.fromTemplate = function(sel, options) {
+  options = options || {};
+
   var $item = $(sel).filter('.apos-template').clone();
   $item.removeClass('apos-template');
+
+  function applyPropertyValue($element, fn, value) {
+    if (typeof(value) === 'object') {
+      applyValues($element, fn, value);
+    } else {
+      fn($item, value);
+    }
+  }
+
+  function applyValues($item, fn, values) {
+    _.each(values, function(value, key) {
+      var $element = $item.find('data-' + apos.cssName(key));
+      if (_.isArray(value)) {
+        var $elements = [];
+        var $e;
+        for (var i = 1; (i < value.length); i++) {
+          if (i === 0) {
+            $e = $element;
+          } else {
+            $e = $element.clone();
+            $element.after($e);
+          }
+          $elements.push($e);
+        }
+        for (i = 0; (i < value.length); i++) {
+          applyPropertyValue($elements[i], fn, value[i]);
+        }
+        if (!value.length) {
+          // Zero repetitions = remove the element
+          $element.remove();
+        }
+      } else {
+        applyPropertyValue($element, fn, value);
+      }
+    });
+  }
+
+  function text($item, value) {
+    $item.text(value);
+  }
+
+  function html($item, value) {
+    $item.html(value);
+  }
+
+  if (options.text) {
+    applyValues($item, text, options.text);
+  }
+
+  if (options.html) {
+    applyValues($item, html, options.html);
+  }
+
   return $item;
 };
 
