@@ -1283,12 +1283,10 @@ function Apos() {
     // avoid extra queries that way and also do meaningful permissions checks
     // on new pages
     function permissions(callback) {
-      console.log('putPage permissions');
       self.permissions(req, 'edit-page', page, callback);
     }
 
     function update(callback) {
-      console.log('putPage update');
       self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
         function(err) {
           if (err && self.isUniqueError(err))
@@ -1316,7 +1314,6 @@ function Apos() {
     }
 
     function finish(err) {
-      console.log('putPage finish');
       if (err) {
         return callback(err);
       }
@@ -1428,6 +1425,18 @@ function Apos() {
   // the output of two calls reveals a useful description of changes.
   self.addDiffLinesForType = {};
 
+  self.diffListeners = [];
+
+  // Add a function to be invoked on every call to diffPageLines. These are called
+  // after the generic metadata shared by all pages is added, and before the area
+  // content is added. Your listener receives a page object and an array of lines to
+  // which it should push additional lines, in a fixed order so that diffing them has
+  // predictable results. Diff listeners are intentionally synchronous - you should not
+  // do expensive time-consuming operations in a diff listener.
+  self.addDiffListener = function(fn) {
+    self.diffListeners.push(fn);
+  };
+
   // Returns a list of lines of text which, when diffed against the
   // results for another version of the page, will result in a reasonable
   // summary of what has changed
@@ -1438,13 +1447,11 @@ function Apos() {
     if (page.tags) {
       lines.push('tags: ' + page.tags.join(','));
     }
-    if (page.type) {
-      // Allows custom diffs by page type, for instance to
-      // reflect changes in metadata
-      if (self.addDiffLinesForType[page.type]) {
-        self.addDiffLinesForType(page, lines);
-      }
-    }
+
+    _.each(self.diffListeners, function(listener) {
+      listener(page, lines);
+    });
+
     if (page.areas) {
       var names = _.keys(page.areas);
       names.sort();
@@ -1461,8 +1468,6 @@ function Apos() {
         });
       });
     }
-    console.log('PAGE DIFF LINES:');
-    console.log(lines);
     return lines;
   };
 
@@ -1706,7 +1711,7 @@ function Apos() {
       addDiffLines: function(item, lines) {
         // Turn tags into line breaks, which generally produces some indication
         // of a change around that point
-        var text = ent.encode(item.content.replace(/<.*?\>/g, "\n"));
+        var text = ent.decode(item.content.replace(/<.*?\>/g, "\n"));
         self.addDiffLinesForText(text, lines);
       }
     },
@@ -1796,6 +1801,11 @@ function Apos() {
 
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
+    });
+
+    nunjucksEnv.addFilter('nlbr', function(data) {
+      data = globalReplace(data, "\n", "<br />\n");
+      return data;
     });
 
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
