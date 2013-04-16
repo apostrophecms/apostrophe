@@ -36,12 +36,14 @@ You can also drag images from your computer into the dashed area below.
       {# I am a template. I get cloned and populated by jQuery. If you #}
       {# leave my data attributes intact you can edit me quite a bit. #}
       <li data-item class="apos-slideshow-editor-item apos-template">
-        <div class="apos-slideshow-editor-item-box">
-          {# jQuery will give this img a proper src #}
-          {# Use the smallest possible empty GIF in the meantime #}
-          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
-          <a class="apos-slideshow-control apos-remove" data-remove>x</a>
-        </div>
+        {% block itemBox %}
+          <div class="apos-slideshow-editor-item-box">
+            {# jQuery will give this img a proper src #}
+            {# Use the smallest possible empty GIF in the meantime #}
+            <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+            <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+          </div>
+        {% endblock %}
 
         <div class="apos-slideshow-extra-fields" data-extra-fields>
           <fieldset class="apos-fieldset apos-fieldset-text">
@@ -52,14 +54,16 @@ You can also drag images from your computer into the dashed area below.
             <label>Description</label>
             <textarea data-description class="apos-slideshow-editor-description"></textarea>
           </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link</label>
-            <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
-          </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link Title</label>
-            <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
-          </fieldset>
+          {% block hyperlink %}
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link</label>
+              <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+            </fieldset>
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link Title</label>
+              <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+            </fieldset>
+          {% endblock %}
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
 

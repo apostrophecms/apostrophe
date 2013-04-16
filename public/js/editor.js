@@ -1095,8 +1095,19 @@ apos.widgetTypes.slideshow = {
       }
 
       var $item = apos.fromTemplate($items.find('[data-item]'));
-      $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+
+      if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
+        $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      }
+
       $item.find('[data-title]').val(item.title);
+
+      // Some derivatives of slideshows use these, some don't. These are
+      // not editable fields, they are immutable facts about the file
+      $item.find('[data-extension]').text(item.extension);
+      $item.find('[data-name]').text(item.name);
+
+      // These are editing fields
       $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
@@ -1127,7 +1138,7 @@ apos.widgetTypes.slideshow = {
         self.$el.find('[data-drag-message]').text('The Upload Limit Has Been Reached');
 
         // prevents drop action so that users dropping files into
-        // a a 'full' slideshow dont get thrown to an image file 
+        // a a 'full' slideshow dont get thrown to an image file
         self.$el.find('[data-drag-container]').on(
             'drop',
             function(e){
@@ -1135,7 +1146,7 @@ apos.widgetTypes.slideshow = {
                 if(e.originalEvent.dataTransfer.files.length) {
                   e.preventDefault();
                   e.stopPropagation();
-                }   
+                }
               }
             }
         );
@@ -1175,7 +1186,6 @@ apos.widgetTypes.slideshow = {
     if(!options.template) {
       options.template = '.apos-slideshow-editor';
     }
-    
     // Parent class constructor shared by all widget editors
     apos.widgetEditor.call(self, options);
   }
@@ -1186,6 +1196,15 @@ apos.widgetTypes.buttons = {
   editor: function(options) {
     options.template = '.apos-buttons-editor';
     options.type = 'buttons';
+    apos.widgetTypes.slideshow.editor.call(self, options);
+  }
+}
+
+apos.widgetTypes.files = {
+  label: 'Files',
+  editor: function(options) {
+    options.template = '.apos-files-editor';
+    options.type = 'files';
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
 }

@@ -1,0 +1,24 @@
+{% extends "slideshowEditor.html" %}
+
+{% block widgetVars %}
+  {% set widgetClass = 'apos-files-editor apos-slideshow-editor' %}
+{% endblock %}
+
+{% block title %}
+  Edit File(s)
+{% endblock %}
+
+{% block instructions %}
+Choose PDF, Office, .txt or .rtf files. Drag them into the order you prefer. <br />
+You can also drag files from your computer into the dashed area below.
+{% endblock %}
+
+{% block itemBox %}
+  <div class="apos-slideshow-editor-item-box apos-files-editor-item-box">
+    <span class="apos-slideshow-editor-item-extension" data-extension>pdf</span>
+    <span class="apos-slideshow-editor-item-name" data-name>filename</span>
+    <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+  </div>
+  {% endblock %}
+
+{% block hyperlink %}{% endblock %}

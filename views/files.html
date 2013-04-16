@@ -1,0 +1,23 @@
+{# Downloadable files. They do not have preview images. They always have a download #}
+{# link, and may or may not have a description and title. #}
+<ul class="apos-files-items">
+  {% for file in item.items %}
+    {% if ((loop.index0 < options.limit) or (not options.limit)) %}
+      <li data-slideshow-item class="apos-files-item">
+        {% if file.description or file.title %}
+        <div class="apos-files-description-container">
+          {% if file.title %}<h1 class="apos-files-title">{{ file.title }}</h1>{% endif %}
+          {% if file.description %}
+            <div class="apos-files-description">
+              <p>
+               {{ file.description }}
+              </p>
+            </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        <span class="apos-files-extension">{{ file.extension |e }}</span><a href="{{ aposFilePath(file) }}" class="apos-button apos-files-name">Download {{ file.name | e }}</a>
+      </li>
+    {% endif %}
+  {% endfor %}
+</ul>

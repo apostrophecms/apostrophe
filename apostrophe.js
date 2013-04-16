@@ -73,7 +73,7 @@ function Apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'pullquote', 'code' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'code' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -163,7 +163,7 @@ function Apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'buttonsEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -253,7 +253,30 @@ function Apos() {
     self.pushAsset('template', templates[i]);
   }
 
+  self.fileGroups = [
+    {
+      name: 'images',
+      label: 'Images',
+      extensions: [ 'gif', 'jpg', 'png' ],
+      extensionMaps: {
+        jpeg: 'jpg'
+      },
+      // uploadfs should treat this as an image and create scaled versions
+      image: true
+    },
+    {
+      name: 'office',
+      label: 'Office',
+      extensions: [ 'txt', 'rtf', 'pdf', 'xls', 'ppt', 'doc', 'pptx', 'sldx', 'ppsx', 'potx', 'xlsx', 'xltx', 'docx', 'dotx' ],
+      extensionMaps: {},
+      // uploadfs should just accept this file as-is
+      image: false
+    },
+  ];
+
   self.init = function(options, callback) {
+
+    self.fileGroups = options.fileGroups || self.fileGroups;
 
     uploadfs = options.uploadfs;
     self.permissions = options.permissions;
@@ -458,6 +481,7 @@ function Apos() {
 
       // Keep in sync with browser side implementation in content.js
       aposLocals.aposFilePath = function(file, options) {
+        options = options || {};
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
         if (options.size) {
           path += '.' + options.size;
@@ -649,8 +673,7 @@ function Apos() {
 
       // All routes must begin with /apos!
 
-      // Upload a file for slideshow purposes (TODO: extend to
-      // accept non-image files when appropriate)
+      // Upload files
       app.post('/apos/upload-files', function(req, res) {
         var newFiles = req.files.files;
         if (!(newFiles instanceof Array)) {
@@ -658,11 +681,36 @@ function Apos() {
         }
         var infos = [];
         async.map(newFiles, function(file, callback) {
+          var extension = path.extname(file.name);
+          if (extension && extension.length) {
+            extension = extension.substr(1);
+          }
+          // Do we accept this file extension?
+          var accepted = [];
+          console.log(self.fileGroups);
+          var group = _.find(self.fileGroups, function(group) {
+            console.log(group.name);
+            accepted.push(group.extensions);
+            var candidate = group.extensionMaps[extension] || extension;
+            console.log(candidate);
+            console.log(group.extensions);
+            if (_.contains(group.extensions, candidate)) {
+              return true;
+            }
+          });
+          console.log(group);
+          if (!group) {
+            return callback("File extension not accepted. Acceptable extensions: " + accepted.join(", "));
+          }
+          console.log('accepted');
+          var image = group.image;
           var info = {
             _id: generateId(),
             length: file.length,
+            group: group.name,
             createdAt: new Date(),
-            name: self.slugify(path.basename(file.name, path.extname(file.name)))
+            name: self.slugify(path.basename(file.name, path.extname(file.name))),
+            extension: extension
           };
 
           function permissions(callback) {
@@ -670,13 +718,23 @@ function Apos() {
           }
 
           function upload(callback) {
-            return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
-              if (err) {
-                return callback(err);
-              }
-              info.extension = result.extension;
-              return callback(null);
-            });
+            if (image) {
+              console.log('copying image in');
+              // For images we correct automatically for common file extension mistakes
+              return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
+                if (err) {
+                  return callback(err);
+                }
+                info.extension = result.extension;
+                return callback(null);
+              });
+            } else {
+              // For non-image files we have to trust the file extension
+              // (but we only serve it as that content type, so this should
+              // be reasonably safe)
+              console.log('just copying in');
+              return uploadfs.copyIn(file.path, '/files/' + info._id + '-' + info.name + '.' + info.extension, callback);
+            }
           }
 
           function db(callback) {
@@ -1746,6 +1804,23 @@ function Apos() {
         });
       },
       css: 'buttons'
+    },
+    files: {
+      widget: true,
+      label: 'Files',
+      render: function(data) {
+        console.log('rendering files');
+        var val = partial('files', data);
+        console.log('after rendering files');
+        return val;
+      },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('file: ' + item.name);
+        });
+      },
+      css: 'files'
     },
     video: {
       widget: true,
