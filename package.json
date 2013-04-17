@@ -22,7 +22,8 @@
     "extend": "~1.1.3",
     "diff": "~1.0.4",
     "wordwrap": "0.0.2",
-    "ent": "0.0.5"
+    "ent": "0.0.5",
+    "optimist": "~0.4.0"
   },
   "devDependencies": {},
   "scripts": {

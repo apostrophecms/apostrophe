@@ -24,6 +24,7 @@ var extend = require('extend');
 var jsDiff = require('diff');
 var wordwrap = require('wordwrap');
 var ent = require('ent');
+var argv = require('optimist').argv;
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -2300,7 +2301,90 @@ function Apos() {
       }
     }
     return n;
-  }
+  };
+
+  // COMMAND LINE TASKS
+  //
+  // Call this method just before invoking listen(). If it returns true, do not invoke
+  // listen(). Just let the Apostrophe command line task that has been invoked
+  // come to a graceful end on its own. This method only takes over if the
+  // first argument begins with apostrophe:, so you can easily implement your own
+  // command line processing without conflicts.
+  //
+  // "Why not have standalone task apps?" Because all the configuration and
+  // initialization you do for a server is typically needed for command line tasks
+  // to succeed as well (for instance, the right database connection).
+
+  self.startTask = function() {
+    if (!argv._.length) {
+      return false;
+    }
+    var matches = argv._[0].match(/^apostrophe:(.*)$/);
+    if (!matches) {
+      return false;
+    }
+    var cmd = matches[1];
+    if (_.has(self.tasks, cmd)) {
+      self.tasks[cmd]();
+      return true;
+    } else {
+      console.error('There is no such Apostrophe task. Available tasks:');
+      console.error();
+      var tasks = _.keys(self.tasks);
+      tasks.sort();
+      _.each(tasks, function(task) {
+        console.error('apostrophe:' + task);
+      });
+      process.exit(1);
+    }
+  };
+
+  self.tasks = {};
+
+  // Database migration (perform on deploy to address official database changes and fixes)
+  self.tasks.migrate = function() {
+    function fixEventEnd(callback) {
+      // ISSUE: 'end' was meant to be a Date object matching
+      // end_date and end_time, for sorting and output purposes, but it
+      // contained start_time instead. Fortunately end_date and end_time are
+      // authoritative so we can just rebuild it
+      self.pages.find({ type: 'event' }, function(err, cursor) {
+        if (err) {
+          return callback(err);
+        }
+        var done = false;
+        async.whilst(function() { return !done; }, function(callback) {
+          return cursor.nextObject(function(err, event) {
+            if (err) {
+              return callback(err);
+            }
+            if (!event) {
+              done = true;
+              return callback(null);
+            }
+            event.end = new Date(event.endDate + ' ' + event.endTime);
+            self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
+              return callback(err);
+            });
+          });
+        }, callback);
+      });
+    }
+
+    function done(err) {
+      if (err) {
+        console.log('Migration error:');
+        console.log(err);
+        process.exit(1);
+      }
+      console.log('Migration complete.');
+      process.exit(0);
+    }
+
+    // TODO: provide a way to hook in project specific stuff here
+
+    async.series([fixEventEnd], done);
+  };
 }
 
 module.exports = function() {
