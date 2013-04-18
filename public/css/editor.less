@@ -2,6 +2,7 @@
 @import 'colors.less';
 @import 'icons.less';
 @import 'typography.less';
+@import '../jcrop/css/jquery.Jcrop.less';
 
 /**
  * To prevent conflicts EVERY class should start with apos-
@@ -850,7 +851,7 @@ textarea.apos-code {
     padding: 15px;
     .clearfix;
     
-    *
+    .apos-modal-footer-buttons
     {
       float: right;
     }
@@ -1042,8 +1043,13 @@ textarea.apos-code {
   &.apos-slideshow-reveal-extra-fields
   {
     background:#eee;
-    
     .apos-slideshow-extra-fields { display: block; width: 250px; }
+  }
+
+  &.apos-slideshow-reveal-crop
+  {
+    background:#eee;
+    .apos-slideshow-crop{display: block;}
   }
 
   .apos-slideshow-editor-item-box
@@ -1132,6 +1138,21 @@ textarea.apos-code {
 .apos-extra-fields-enabled .apos-edit
 {
   display: block !important;
+}
+
+// Slideshow Cropping
+.apos-slideshow-crop
+{
+  position: absolute;
+  bottom:-57px;
+  display: inline-block;
+  z-index: 11;
+  padding: 20px 10px 10px 10px;
+  -webkit-box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
+  box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
+  background: #eee;
+  display: none;
+  
 }
 
 // End Apostrophe Slideshow Modals
@@ -1256,3 +1277,6 @@ ul.ui-autocomplete {
   }
 
 }
+
+
+// jCrop Style

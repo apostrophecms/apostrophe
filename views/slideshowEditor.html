@@ -40,6 +40,7 @@ You can also drag images from your computer into the dashed area below.
           {# jQuery will give this img a proper src #}
           {# Use the smallest possible empty GIF in the meantime #}
           <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+          <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop>Crop</a>
           <a class="apos-slideshow-control apos-remove" data-remove>x</a>
         </div>
 
@@ -61,6 +62,12 @@ You can also drag images from your computer into the dashed area below.
             <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
           </fieldset>
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
+        </div>
+
+        <div class="apos-slideshow-crop" data-crop-container>
+          <img data-crop-image />
+          <a href="#" data-crop-save class="apos-control apos-button">Save Changes</a>
+          <a href="#" data-crop-cancel class="apos-control apos-button">Cancel</a>
         </div>
 
       </li>

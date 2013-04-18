@@ -167,7 +167,24 @@ apos.widgetPlayers.slideshow = function($widget)
     reset();
   }
 
+  // Wait until the height of all images is known, then
+  // set the height of the entire slideshow. This prevents
+  // the clearly unacceptable "jumping" behavior.
+
+  function getOriginalWidthOfImg(src) {
+      var t = new Image();
+      t.src = src;
+      return t.width;
+  }
+
+  function getOriginalHeightOfImg(src) {
+      var t = new Image();
+      t.src = src;
+      return t.height;
+  }
+
   function adjustSize() {
+    apos.log('adjustSize');
     var ready = true;
     var maxHeight = 0;
     $widget.find('[data-image]').each(function(i, item) {
@@ -175,17 +192,83 @@ apos.widgetPlayers.slideshow = function($widget)
         ready = false;
         return;
       }
-      var height = $(item).height();
-      if (height > maxHeight) {
-        maxHeight = height;
-      }
     });
 
     if (ready) {
-      $widget.find('[data-slideshow-items]').height(maxHeight);
+      applyCropAndDetermineMaxHeight();
     } else {
       setTimeout(adjustSize, 100);
     }
+  }
+
+  function applyCropAndDetermineMaxHeight() {
+    apos.log('applyCrop');
+    var maxHeight = 0;
+    $widget.find('[data-slideshow-item]').each(function() {
+      apos.log('image');
+      var $item = $(this);
+      apos.log($item[0]);
+      if ($item.attr('data-crop-info-x') !== undefined) {
+        var x = $(this).attr('data-crop-info-x');
+        var y = $(this).attr('data-crop-info-y');
+        var w = $(this).attr('data-crop-info-w');
+        var h = $(this).attr('data-crop-info-h');
+        var outerWidth = $(this).outerWidth();
+        var outerHeight = $(this).outerHeight();
+
+        var widthScaleFactor = outerWidth / w;
+        // var heightScaleFactor = outerHeight / h;
+        var newWidth = getOriginalWidthOfImg($(this).find('img').attr('src')) * widthScaleFactor;
+        apos.log("WIDYTH $$$######## " + newWidth);
+        var newHeight = getOriginalHeightOfImg($(this).find('img').attr('src')) * widthScaleFactor;
+        // var newHeight = 
+
+        var xOffset = x * widthScaleFactor * -1;
+        var yOffset = y * widthScaleFactor * -1;
+
+        apos.log(x + " " + y + " " + w + " " + h);
+        apos.log("x offset: " + xOffset + "y offset: " + yOffset);
+        apos.log("wscale: " + widthScaleFactor);
+        // apos.log("hscale: " + heightScaleFactor);
+        // apos.log("newWidth: " + getOriginalWidthOfImg($(this).find('img').attr('src')));
+        // apos.log("check: " + parseInt(getOriginalHeightOfImg($(this).find('img').attr('src')), 10));
+        // apos.log("type check: " + typeof(getOriginalWidthOfImg($(this).find('img').attr('src'))));
+        // apos.log("widthscale: " + widthScaleFactor + " heightscale: "+ heightScaleFactor);
+
+        $(this).css('background-size', newWidth + 'px ' + newHeight + 'px');
+        $(this).css('background-position', xOffset + 'px ' + yOffset + 'px');
+
+        if (newHeight > maxHeight) {
+          maxHeight = newHeight;
+        }
+      } else {
+        var $image = $item.find('[data-image]');
+        var height = $image.height();
+        if (height > maxHeight) {
+          maxHeight = height;
+        }
+      }
+
+    //   var x = $(this).css('background-position-x');
+    //   // x = x.substring(0, -2);
+    //   x = parseInt(x, 10);
+
+    //   var y = $(this).css('background-position-y');
+      
+    //   y = parseInt(y, 10);
+    //   var width = $(this).outerWidth();
+    //   var height = $(this).outerHeight();
+
+    //   var newX = width + (Math.abs(x)) + 'px';
+    //   var newY = height + (Math.abs(y)) + 'px';
+
+    //   console.log(newX);
+    //   console.log(newY);
+
+    //   $(this).css('background-size', newX + " " + newY);
+    //   // apos.log(width + (Math.abs(x)) + 'px');
+    });    
+    $widget.find('[data-slideshow-items]').height(maxHeight);
   }
 
   adjustSize();
