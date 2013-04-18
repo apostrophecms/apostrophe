@@ -53,14 +53,16 @@ You can also drag images from your computer into the dashed area below.
             <label>Description</label>
             <textarea data-description class="apos-slideshow-editor-description"></textarea>
           </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link</label>
-            <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
-          </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link Title</label>
-            <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
-          </fieldset>
+          {% block hyperlink %}
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link</label>
+              <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+            </fieldset>
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link Title</label>
+              <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+            </fieldset>
+          {% endblock %}
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
 

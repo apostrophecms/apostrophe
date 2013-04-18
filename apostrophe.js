@@ -21,13 +21,17 @@ var uglifyJs = require('uglify-js');
 // CSS minifier https://github.com/GoalSmashers/clean-css
 var cleanCss = require('clean-css');
 var extend = require('extend');
+var jsDiff = require('diff');
+var wordwrap = require('wordwrap');
+var ent = require('ent');
+var argv = require('optimist').argv;
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
 
 function Apos() {
   var self = this;
-  var app, files, areas, pages, uploadfs, nunjucksEnv, db, aposLocals;
+  var app, files, areas, versions, pages, uploadfs, nunjucksEnv, db, aposLocals;
 
   // Helper functions first to please jshint
 
@@ -70,7 +74,7 @@ function Apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'pullquote', 'code' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'code' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -162,7 +166,7 @@ function Apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'buttonsEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -252,7 +256,30 @@ function Apos() {
     self.pushAsset('template', templates[i]);
   }
 
+  self.fileGroups = [
+    {
+      name: 'images',
+      label: 'Images',
+      extensions: [ 'gif', 'jpg', 'png' ],
+      extensionMaps: {
+        jpeg: 'jpg'
+      },
+      // uploadfs should treat this as an image and create scaled versions
+      image: true
+    },
+    {
+      name: 'office',
+      label: 'Office',
+      extensions: [ 'txt', 'rtf', 'pdf', 'xls', 'ppt', 'doc', 'pptx', 'sldx', 'ppsx', 'potx', 'xlsx', 'xltx', 'docx', 'dotx' ],
+      extensionMaps: {},
+      // uploadfs should just accept this file as-is
+      image: false
+    },
+  ];
+
   self.init = function(options, callback) {
+
+    self.fileGroups = options.fileGroups || self.fileGroups;
 
     uploadfs = options.uploadfs;
     self.permissions = options.permissions;
@@ -267,15 +294,6 @@ function Apos() {
       _.extend(aposLocals, options.locals);
     }
 
-    function setupAreas(callback) {
-      db.collection('aposAreas', function(err, collection) {
-        self.areas = areas = collection;
-        collection.ensureIndex({ slug: 1 }, { safe: true, unique: true }, function(err) {
-          return callback(err);
-        });
-      });
-    }
-
     function setupPages(callback) {
       db.collection('aposPages', function(err, collection) {
         function indexSlug(callback) {
@@ -283,6 +301,28 @@ function Apos() {
         }
         self.pages = pages = collection;
         async.series([indexSlug], callback);
+        // ... more index functions
+      });
+    }
+
+    // Each time a page or area is updated with putArea or putPage, a new version
+    // object is also created. Regardless of whether putArea or putPage is called,
+    // if the area is in the context of a page it is the entire page that is
+    // versioned. A pageId or areaId property is added, which is a non-unique index
+    // allowing us to fetch prior versions of any page or independently stored
+    // area. Also createdAt and author. Author is a string to avoid issues with
+    // references to deleted users.
+    //
+    // Note that this also provides full versioning for types built upon pages, such as
+    // blog posts and snippets.
+
+    function setupVersions(callback) {
+      db.collection('aposVersions', function(err, collection) {
+        function index(callback) {
+          self.versions.ensureIndex({ pageId: 1, createdAt: -1 }, { safe: true }, callback);
+        }
+        self.versions = versions = collection;
+        async.series([index], callback);
         // ... more index functions
       });
     }
@@ -444,6 +484,7 @@ function Apos() {
 
       // Keep in sync with browser side implementation in content.js
       aposLocals.aposFilePath = function(file, options) {
+        options = options || {};
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
         if (options.size) {
           path += '.' + options.size;
@@ -635,8 +676,7 @@ function Apos() {
 
       // All routes must begin with /apos!
 
-      // Upload a file for slideshow purposes (TODO: extend to
-      // accept non-image files when appropriate)
+      // Upload files
       app.post('/apos/upload-files', function(req, res) {
         var newFiles = req.files.files;
         if (!(newFiles instanceof Array)) {
@@ -644,11 +684,30 @@ function Apos() {
         }
         var infos = [];
         async.map(newFiles, function(file, callback) {
+          var extension = path.extname(file.name);
+          if (extension && extension.length) {
+            extension = extension.substr(1);
+          }
+          // Do we accept this file extension?
+          var accepted = [];
+          var group = _.find(self.fileGroups, function(group) {
+            accepted.push(group.extensions);
+            var candidate = group.extensionMaps[extension] || extension;
+            if (_.contains(group.extensions, candidate)) {
+              return true;
+            }
+          });
+          if (!group) {
+            return callback("File extension not accepted. Acceptable extensions: " + accepted.join(", "));
+          }
+          var image = group.image;
           var info = {
             _id: generateId(),
             length: file.length,
+            group: group.name,
             createdAt: new Date(),
-            name: self.slugify(path.basename(file.name, path.extname(file.name)))
+            name: self.slugify(path.basename(file.name, path.extname(file.name))),
+            extension: extension
           };
 
           function permissions(callback) {
@@ -656,13 +715,21 @@ function Apos() {
           }
 
           function upload(callback) {
-            return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
-              if (err) {
-                return callback(err);
-              }
-              info.extension = result.extension;
-              return callback(null);
-            });
+            if (image) {
+              // For images we correct automatically for common file extension mistakes
+              return uploadfs.copyImageIn(file.path, '/files/' + info._id + '-' + info.name, function(err, result) {
+                if (err) {
+                  return callback(err);
+                }
+                info.extension = result.extension;
+                return callback(null);
+              });
+            } else {
+              // For non-image files we have to trust the file extension
+              // (but we only serve it as that content type, so this should
+              // be reasonably safe)
+              return uploadfs.copyIn(file.path, '/files/' + info._id + '-' + info.name + '.' + info.extension, callback);
+            }
           }
 
           function db(callback) {
@@ -794,72 +861,53 @@ function Apos() {
 
       app.post('/apos/edit-area', function(req, res) {
         var slug = req.body.slug;
-        self.permissions(req, 'edit-area', slug, function(err) {
+        var content = JSON.parse(req.body.content);
+        self.sanitizeItems(content);
+        var area = {
+          slug: slug,
+          items: content
+        };
+        self.putArea(req, slug, area, updated);
+        function updated(err) {
           if (err) {
-            return forbid(res);
-          }
-          var content = JSON.parse(req.body.content);
-          self.sanitizeItems(content);
-          var area = {
-            slug: req.body.slug,
-            items: content
-          };
-
-          function updated(err) {
-            if (err) {
-              console.log(err);
-              return notfound(req, res);
-            }
-
-            return self.callLoadersForArea(req, area, function() {
-              return res.send(aposLocals.aposAreaContent(area.items));
-            });
+            console.log(err);
+            return notfound(req, res);
           }
 
-          self.putArea(slug, area, updated);
-
-        });
+          return self.callLoadersForArea(req, area, function() {
+            return res.send(aposLocals.aposAreaContent(area.items));
+          });
+        }
       });
 
       app.post('/apos/edit-singleton', function(req, res) {
         var slug = req.body.slug;
-        self.permissions(req, 'edit-area', slug, function(err) {
+        var content = JSON.parse(req.body.content);
+        // "OMG, what if they cheat and use a type not allowed for this singleton?"
+        // When they refresh the page they will discover they can't see their hack.
+        // aposSingleton only shows the first item of the specified type, regardless
+        // of what is kicking around in the area.
+        var type = content.type;
+        var itemType = self.itemTypes[type];
+        if (!itemType) {
+          return fail(req, res);
+        }
+        if (itemType.sanitize) {
+          itemType.sanitize(content);
+        }
+        var area = {
+          slug: req.body.slug,
+          items: [ content ]
+        };
+
+        self.putArea(req, slug, area, function(err, area) {
           if (err) {
-            console.log('forbid');
-            return forbid(res);
-          }
-          var content = JSON.parse(req.body.content);
-          // "OMG, what if they cheat and use a type not allowed for this singleton?"
-          // When they refresh the page they will discover they can't see their hack.
-          // aposSingleton only shows the first item of the specified type, regardless
-          // of what is kicking around in the area.
-          var type = content.type;
-          var itemType = self.itemTypes[type];
-          if (!itemType) {
-            return fail(req, res);
-          }
-          if (itemType.sanitize) {
-            itemType.sanitize(content);
-          }
-          var area = {
-            slug: req.body.slug,
-            items: [ content ]
-          };
-
-          function updated(err) {
-            console.log(err);
-            if (err) {
-              console.log(err);
-              return notfound(req, res);
-            }
-
-            return self.callLoadersForArea(req, area, function() {
-              return res.send(aposLocals.aposAreaContent(area.items));
-            });
+            return notfound(req, res);
           }
 
-          self.putArea(slug, area, updated);
-
+          return self.callLoadersForArea(req, area, function() {
+            return res.send(aposLocals.aposAreaContent(area.items));
+          });
         });
       });
 
@@ -1008,7 +1056,7 @@ function Apos() {
 
     self.db = db = options.db;
 
-    async.series([setupAreas, setupPages, setupFiles, setupRedirects, afterDb], callback);
+    async.series([setupPages, setupVersions, setupFiles, setupRedirects, afterDb], callback);
   };
 
   // self.static returns a function for use as a route that
@@ -1065,8 +1113,8 @@ function Apos() {
     return attempt(file, callback);
   };
 
-  // getArea retrieves an area from MongoDB. It supports both
-  // freestanding areas and areas that are part of a page object.
+  // getArea retrieves an area from MongoDB. All areas must be part
+  // of a page, thus the slug must look like: my-page-slug:areaname
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object requested if it exists. If the area does not
@@ -1112,35 +1160,29 @@ function Apos() {
       options.load = true;
     }
     var matches = slug.match(/^(.*?)\:(\w+)$/);
-    if (matches) {
-      // This area is part of a page
-      var pageSlug = matches[1];
-      var areaSlug = matches[2];
-      // Retrieve only the desired area
-      var projection = {};
-      projection['areas.' + areaSlug] = 1;
-      pages.findOne({ slug: pageSlug }, projection, function (err, page) {
-        if (err) {
-          return callback(err);
-        }
-        if (page && page.areas && page.areas[areaSlug]) {
-          // What is stored in the db might be lagging behind the reality
-          // if the slug of the page has changed. Always return it in an
-          // up to date form
-          page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
-          return loadersThenCallback(page.areas[areaSlug]);
-        }
-        // Nonexistence isn't an error, it's just nonexistence
-        return callback(err, null);
-      });
-    } else {
-      areas.findOne({ slug: slug }, function(err, area) {
-        if (err) {
-          return callback(err);
-        }
-        return loadersThenCallback(area);
-      });
+    if (!matches) {
+      return callback('All area slugs must now be page-based: page-slug:areaname');
     }
+    // This area is part of a page
+    var pageSlug = matches[1];
+    var areaSlug = matches[2];
+    // Retrieve only the desired area
+    var projection = {};
+    projection['areas.' + areaSlug] = 1;
+    pages.findOne({ slug: pageSlug }, projection, function (err, page) {
+      if (err) {
+        return callback(err);
+      }
+      if (page && page.areas && page.areas[areaSlug]) {
+        // What is stored in the db might be lagging behind the reality
+        // if the slug of the page has changed. Always return it in an
+        // up to date form
+        page.areas[areaSlug].slug = pageSlug + ':' + areaSlug;
+        return loadersThenCallback(page.areas[areaSlug]);
+      }
+      // Nonexistence isn't an error, it's just nonexistence
+      return callback(err, null);
+    });
 
     function loadersThenCallback(area) {
       if (!area) {
@@ -1158,59 +1200,61 @@ function Apos() {
     }
   };
 
-  // putArea stores an area in MongoDB. It supports both
-  // freestanding areas and areas that are part of a page object.
+  // putArea stores an area in a "page." We put "page" in quotes here
+  // because it is only a page in the narrowest sense: a mongodb document
+  // with a slug, containing one or more named areas, and open to the storage of
+  // other properties as well.
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object with its slug property set to the slug under
   // which it was stored with putArea.
   //
-  // If 'slug' matches the following pattern:
+  // The slug must match the following pattern:
   //
   // /cats/about:sidebar
   //
-  // Then 'sidebar' is assumed to be the name of an area stored
-  // within the areas property of the page object with the slug /cats/about. 
+  // 'sidebar' is assumed to be the name of an area stored
+  // within the areas property of the page object with the slug /cats/about.
   // If the page object was previously empty it now looks like:
   //
-  // { 
-  //   slug: '/cats/about', 
-  //   areas: { 
-  //     sidebar: { 
-  //       slug: '/cats/about/:sidebar', 
-  //       content: 'whatever your area.content property was'
-  //     } 
-  //   } 
+  // {
+  //   slug: '/cats/about',
+  //   areas: {
+  //     sidebar: {
+  //       slug: '/cats/about/:sidebar',
+  //       items: 'whatever your area.items property was'
+  //     }
+  //   }
   // }
   //
   // Page objects are stored in the 'pages' collection.
-  //
-  // Slugs of this type are an efficient way to store related areas
-  // that are usually desired at the same time, because the getPage method
-  // returns the entire page object, including all of its areas.
-  //
-  // If the slug does not contain a : then the area is stored directly
-  // in the 'areas' collection.
   //
   // If a page does not exist this method will create it. You should
   // NOT rely on this for pages that have a type property, including any
   // page in the page tree, a snippet, etc. Such pages should be created
   // first with putPage before they are used. It is convenient, however, for
   // simple virtual pages used to hold things like a global footer area.
+  //
+  // A copy of the page is inserted into the versions collection.
+  //
+  // The req argument is required for permissions checking. The
+  // edit-page permission is checked on the page slug.
 
-  self.putArea = function(slug, area, callback) {
-    function invokeCallback(err, data) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(err, area);
-    }
+  self.putArea = function(req, slug, area, callback) {
+    var pageOrSlug;
 
     var matches = slug.match(/^(.*?)\:(\w+)$/);
-    if (matches) {
-      // This area is part of a page
-      var pageSlug = matches[1];
-      var areaSlug = matches[2];
+    if (!matches) {
+      return callback('Area slugs now must be page-based: page-slug:areaname');
+    }
+    var pageSlug = matches[1];
+    var areaSlug = matches[2];
+
+    function permissions(callback) {
+      self.permissions(req, 'edit-page', pageSlug, callback);
+    }
+
+    function update(callback) {
       area.slug = slug;
       var set = {};
       set.slug = pageSlug;
@@ -1234,33 +1278,71 @@ function Apos() {
               areas: {}
             };
             page.areas[areaSlug] = area;
-            return pages.insert(page, { safe: true }, invokeCallback);
+            return pages.insert(page, { safe: true }, function(err, page) {
+              if (err) {
+                return callback(err);
+              }
+              pageOrSlug = page;
+              return callback(null);
+            });
           }
-          return invokeCallback(err, count);
+          if (err) {
+            return callback(err);
+          }
+          pageOrSlug = pageSlug;
+          return callback(null);
         }
       );
-    } else {
-      areas.update({ slug: slug }, area, { upsert: true, safe: true }, invokeCallback);
     }
+
+    // We've updated or inserted a page, now save a copy in the versions collection.
+    // We might already have a page object or, if we did an update, we might have
+    // to go fetch it
+    function versioning(callback) {
+      return self.versionPage(req, pageOrSlug, callback);
+    }
+
+    function finish(err) {
+      return callback(err, area);
+    }
+
+    async.series([permissions, update, versioning], finish);
   };
 
+  // Insert or update an entire page object at once.
+  //
   // slug is the existing slug of the page in the database. If page.slug is
   // different then the slug of the page is changed. If page.slug is not defined
   // it is set to the slug parameter for your convenience. The slug of the page,
   // and the path of the page if it is defined, are both automatically made
-  // unique through successive addition of random digits if necessary
+  // unique through successive addition of random digits if necessary.
+  //
+  // You MAY add unrelated properties to page objects between calls to
+  // getPage and putPage, or directly manipulate page objects with mongodb.
+  //
+  // You MUST pass the req object for permissions checking.
+  //
+  // A copy of the page is inserted into the versions collection.
 
-  self.putPage = function(slug, page, callback) {
+  self.putPage = function(req, slug, page, callback) {
     if (!page.slug) {
       page.slug = slug;
     }
     if (!page._id) {
       page._id = generateId();
     }
-    self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
-      function(err) {
-        if (err) {
-          if (self.isUniqueError(err))
+
+    // Provide the object rather than the slug since we have it and we can
+    // avoid extra queries that way and also do meaningful permissions checks
+    // on new pages
+    function permissions(callback) {
+      self.permissions(req, 'edit-page', page, callback);
+    }
+
+    function update(callback) {
+      self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
+        function(err) {
+          if (err && self.isUniqueError(err))
           {
             var num = (Math.floor(Math.random() * 10)).toString();
             if (page.slug === undefined) {
@@ -1273,13 +1355,190 @@ function Apos() {
             if (page.path) {
               page.path += num;
             }
-            return self.putPage(page.slug, page, callback);
+            return self.putPage(req, page.slug, page, callback);
           }
           return callback(err);
         }
-        return callback(null, page);
+      );
+    }
+
+    function versioning(callback) {
+      return self.versionPage(req, page, callback);
+    }
+
+    function finish(err) {
+      if (err) {
+        return callback(err);
       }
-    );
+      return callback(null, page);
+    }
+    async.series([permissions, update, versioning], finish);
+  };
+
+  // Given a request object (for permissions), a page object, and a version
+  // object (an old version of the page from the versions collection), roll
+  // back the page to the content in the version object. This method does not
+  // roll back changes to the slug property, or to the rank or path property of
+  // any page with a slug beginning with /, because these are part
+  // of the page's relationship to other pages which may not be rolling back and
+  // could lead to an unusable page tree and/or conflicting slugs and paths
+
+  self.rollBackPage = function(req, page, version, callback) {
+    var slug = page.slug;
+    var path = page.path;
+    var rank = page.rank;
+    delete version.diff;
+    delete version.author;
+    delete version.createdAt;
+    extend(true, page, version);
+    page.slug = slug;
+    if (slug.chart(0) === '/') {
+      page.path = path;
+      page.rank = rank;
+    }
+    return self.putPage(req, page.slug, page, callback);
+  };
+
+  // Save a copy of the specified page so that it can be rolled back to
+  // at any time. The req object is needed to identify the author of the change.
+  // Typically called only from self.putPage and self.putArea
+
+  self.versionPage = function(req, pageOrSlug, callback) {
+    var page;
+    var prior;
+
+    function findPage(callback) {
+      var finder;
+      if (typeof(pageOrSlug) === 'string') {
+        finder = function(pageOrSlug, callback) {
+          return pages.findOne({ slug: pageOrSlug }, callback);
+        };
+      } else {
+        finder = function(pageOrSlug, callback) {
+          return callback(null, pageOrSlug);
+        };
+      }
+      finder(pageOrSlug, function(err, pageArg) {
+        if (err) {
+          return callback(err);
+        }
+        page = pageArg;
+        return callback(null);
+      });
+    }
+
+    function findPrior(callback) {
+      versions.find({
+        pageId: page._id
+      }).sort({
+        createdAt: -1
+      }).limit(1).toArray(function(err, versions) {
+        if (err) {
+          return callback(err);
+        }
+        if (versions.length) {
+          prior = versions[0];
+        } else {
+          // There may indeed be no prior version
+          prior = null;
+        }
+        return callback(null);
+      });
+    }
+
+    function addVersion(callback) {
+      // Turn the page object we fetched into a version object
+      var version = page;
+      version.createdAt = new Date();
+      version.pageId = version._id;
+      version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
+      version._id = generateId();
+      if (!prior) {
+        version.diff = [ { value: '[NEW]', added: true } ];
+      } else {
+        version.diff = self.diffPages(prior, version);
+      }
+      return versions.insert(version, callback);
+    }
+
+    return async.series([findPage, findPrior, addVersion], callback);
+  };
+
+  self.diffPages = function(page1, page2) {
+    var lines1 = self.diffPageLines(page1);
+    var lines2 = self.diffPageLines(page2);
+    var results = jsDiff.diffLines(lines1.join("\n"), lines2.join("\n"));
+    // We're not interested in what stayed the same
+    return _.filter(results, function(result) { return result.added || result.removed; });
+  };
+
+  // Initially empty. Custom page types like snippets, blog and events can add
+  // functions here which take a page object and an array of lines and add
+  // additional lines of text that describe the page in such a way that diffing
+  // the output of two calls reveals a useful description of changes.
+  self.addDiffLinesForType = {};
+
+  self.diffListeners = [];
+
+  // Add a function to be invoked on every call to diffPageLines. These are called
+  // after the generic metadata shared by all pages is added, and before the area
+  // content is added. Your listener receives a page object and an array of lines to
+  // which it should push additional lines, in a fixed order so that diffing them has
+  // predictable results. Diff listeners are intentionally synchronous - you should not
+  // do expensive time-consuming operations in a diff listener.
+  self.addDiffListener = function(fn) {
+    self.diffListeners.push(fn);
+  };
+
+  // Returns a list of lines of text which, when diffed against the
+  // results for another version of the page, will result in a reasonable
+  // summary of what has changed
+  self.diffPageLines = function(page) {
+    var lines = [];
+    lines.push('title: ' + page.title);
+    lines.push('type: ' + page.type);
+    if (page.tags) {
+      lines.push('tags: ' + page.tags.join(','));
+    }
+
+    _.each(self.diffListeners, function(listener) {
+      listener(page, lines);
+    });
+
+    if (page.areas) {
+      var names = _.keys(page.areas);
+      names.sort();
+      _.each(names, function(name) {
+        var area = page.areas[name];
+        _.each(area.items, function(item) {
+          lines.push(name + ': ' + item.type);
+          var itemType = self.itemTypes[item.type];
+          if (itemType) {
+            if (itemType.addDiffLines) {
+              itemType.addDiffLines(item, lines);
+            }
+          }
+        });
+      });
+    }
+    return lines;
+  };
+
+  // Given some plaintext, add diff-friendly lines to the lines array
+  // based on its contents
+
+  self.addDiffLinesForText = function(text, lines) {
+    var wrapper = wordwrap(0, 60);
+    var rawLines = text.split("\n");
+    _.each(rawLines, function(line) {
+      line = wrapper(line);
+      _.each(line.split("\n"), function(finalLine) {
+        if (!finalLine.length) {
+          return;
+        }
+        lines.push(finalLine);
+      });
+    });
   };
 
   // Fetch the "page" with the specified slug. As far as
@@ -1292,7 +1551,7 @@ function Apos() {
   // A 'req' object is needed to provide a context for permissions in custom
   // widget loaders, and for caching for the duration of the current request.
   // However this need not be a real Express 'req' object. Note that permissions
-  // are NOT checked on the page itself here. You should perform such checks before 
+  // are NOT checked on the page itself here. You should perform such checks before
   // invoking this method.
   //
   // The first callback parameter is an error or null.
@@ -1501,6 +1760,12 @@ function Apos() {
         // This is just a down payment, we should be throwing out unwanted
         // tags attributes and properties as A1.5 does
         item.content = sanitize(item.content).xss().trim();
+      },
+      addDiffLines: function(item, lines) {
+        // Turn tags into line breaks, which generally produces some indication
+        // of a change around that point
+        var text = ent.decode(item.content.replace(/<.*?\>/g, "\n"));
+        self.addDiffLinesForText(text, lines);
       }
     },
     slideshow: {
@@ -1510,6 +1775,12 @@ function Apos() {
       // icon: 'slideshow',
       render: function(data) {
         return partial('slideshow', data);
+      },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('image: ' + item.name);
+        });
       },
       css: 'slideshow'
     },
@@ -1521,7 +1792,28 @@ function Apos() {
       render: function(data) {
         return partial('buttons', data);
       },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('image: ' + item.name);
+        });
+      },
       css: 'buttons'
+    },
+    files: {
+      widget: true,
+      label: 'Files',
+      render: function(data) {
+        var val = partial('files', data);
+        return val;
+      },
+      addDiffLines: function(item, lines) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          lines.push('file: ' + item.name);
+        });
+      },
+      css: 'files'
     },
     video: {
       widget: true,
@@ -1529,6 +1821,9 @@ function Apos() {
       icon: 'video',
       render: function(data) {
         return partial('video', data);
+      },
+      addDiffLines: function(item, lines) {
+        lines.push('video: ' + item.url);
       },
       css: 'video'
     },
@@ -1541,7 +1836,10 @@ function Apos() {
       // Without this it's bothersome for editor.js to grab the text
       // without accidentally grabbing the buttons. -Tom
       wrapperClass: 'apos-pullquote-text',
-      css: 'pullquote'
+      css: 'pullquote',
+      addDiffLines: function(item, lines) {
+        lines.push('pullquote: ' + item.content);
+      },
     },
     code: {
       widget: true,
@@ -1549,7 +1847,10 @@ function Apos() {
       icon: 'code',
       plaintext: true,
       wrapper: 'pre',
-      css: 'code'
+      css: 'code',
+      addDiffLines: function(item, lines) {
+        self.addDiffLinesForText(item.content ? item.content : '');
+      },
     }
   };
 
@@ -1568,6 +1869,11 @@ function Apos() {
 
     nunjucksEnv.addFilter('json', function(data) {
       return JSON.stringify(data);
+    });
+
+    nunjucksEnv.addFilter('nlbr', function(data) {
+      data = globalReplace(data, "\n", "<br />\n");
+      return data;
     });
 
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
@@ -1824,7 +2130,7 @@ function Apos() {
     if (b === '') {
       return false;
     }
-    if ((b === 't') || (b === 'y') || (b === 1)) {
+    if ((b === 't') || (b === 'y') || (b === '1')) {
       return true;
     }
     return false;
@@ -1997,7 +2303,90 @@ function Apos() {
       }
     }
     return n;
-  }
+  };
+
+  // COMMAND LINE TASKS
+  //
+  // Call this method just before invoking listen(). If it returns true, do not invoke
+  // listen(). Just let the Apostrophe command line task that has been invoked
+  // come to a graceful end on its own. This method only takes over if the
+  // first argument begins with apostrophe:, so you can easily implement your own
+  // command line processing without conflicts.
+  //
+  // "Why not have standalone task apps?" Because all the configuration and
+  // initialization you do for a server is typically needed for command line tasks
+  // to succeed as well (for instance, the right database connection).
+
+  self.startTask = function() {
+    if (!argv._.length) {
+      return false;
+    }
+    var matches = argv._[0].match(/^apostrophe:(.*)$/);
+    if (!matches) {
+      return false;
+    }
+    var cmd = matches[1];
+    if (_.has(self.tasks, cmd)) {
+      self.tasks[cmd]();
+      return true;
+    } else {
+      console.error('There is no such Apostrophe task. Available tasks:');
+      console.error();
+      var tasks = _.keys(self.tasks);
+      tasks.sort();
+      _.each(tasks, function(task) {
+        console.error('apostrophe:' + task);
+      });
+      process.exit(1);
+    }
+  };
+
+  self.tasks = {};
+
+  // Database migration (perform on deploy to address official database changes and fixes)
+  self.tasks.migrate = function() {
+    function fixEventEnd(callback) {
+      // ISSUE: 'end' was meant to be a Date object matching
+      // end_date and end_time, for sorting and output purposes, but it
+      // contained start_time instead. Fortunately end_date and end_time are
+      // authoritative so we can just rebuild it
+      self.pages.find({ type: 'event' }, function(err, cursor) {
+        if (err) {
+          return callback(err);
+        }
+        var done = false;
+        async.whilst(function() { return !done; }, function(callback) {
+          return cursor.nextObject(function(err, event) {
+            if (err) {
+              return callback(err);
+            }
+            if (!event) {
+              done = true;
+              return callback(null);
+            }
+            event.end = new Date(event.endDate + ' ' + event.endTime);
+            self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
+              return callback(err);
+            });
+          });
+        }, callback);
+      });
+    }
+
+    function done(err) {
+      if (err) {
+        console.log('Migration error:');
+        console.log(err);
+        process.exit(1);
+      }
+      console.log('Migration complete.');
+      process.exit(0);
+    }
+
+    // TODO: provide a way to hook in project specific stuff here
+
+    async.series([fixEventEnd], done);
+  };
 }
 
 module.exports = function() {
