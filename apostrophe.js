@@ -31,6 +31,10 @@ RegExp.quote = require("regexp-quote");
 
 function Apos() {
   var self = this;
+
+  // Apostrophe is an event emitter/receiver
+  require('events').EventEmitter.call(self);
+
   var app, files, areas, versions, pages, uploadfs, nunjucksEnv, db, aposLocals;
 
   // Helper functions first to please jshint
@@ -1478,18 +1482,6 @@ function Apos() {
   // the output of two calls reveals a useful description of changes.
   self.addDiffLinesForType = {};
 
-  self.diffListeners = [];
-
-  // Add a function to be invoked on every call to diffPageLines. These are called
-  // after the generic metadata shared by all pages is added, and before the area
-  // content is added. Your listener receives a page object and an array of lines to
-  // which it should push additional lines, in a fixed order so that diffing them has
-  // predictable results. Diff listeners are intentionally synchronous - you should not
-  // do expensive time-consuming operations in a diff listener.
-  self.addDiffListener = function(fn) {
-    self.diffListeners.push(fn);
-  };
-
   // Returns a list of lines of text which, when diffed against the
   // results for another version of the page, will result in a reasonable
   // summary of what has changed
@@ -1501,9 +1493,7 @@ function Apos() {
       lines.push('tags: ' + page.tags.join(','));
     }
 
-    _.each(self.diffListeners, function(listener) {
-      listener(page, lines);
-    });
+    self.emit('diff', page, lines);
 
     if (page.areas) {
       var names = _.keys(page.areas);
@@ -2317,6 +2307,28 @@ function Apos() {
   // initialization you do for a server is typically needed for command line tasks
   // to succeed as well (for instance, the right database connection).
 
+  var taskActive = 0;
+
+  // If a task event listener needs to return and keep working it should
+  // invoke this callback to signify that. Apostrophe will not exit until
+  // all busy tasks are marked done.
+  self.taskBusy = function() {
+    taskActive++;
+  };
+
+  // Call when no longer busy
+  self.taskDone = function() {
+    taskActive--;
+  };
+
+  var taskFailed = false;
+
+  // Call if the final exit status should not be 0 (something didn't work, and you want
+  // shell scripts invoking this command line task to be able to tell)
+  self.taskFailed = function() {
+    taskFailed = true;
+  };
+
   self.startTask = function() {
     if (!argv._.length) {
       return false;
@@ -2327,7 +2339,25 @@ function Apos() {
     }
     var cmd = matches[1];
     if (_.has(self.tasks, cmd)) {
-      self.tasks[cmd]();
+      self.emit('task:' + argv._[0] + ':before');
+      self.tasks[cmd](function(err) {
+        if (err) {
+          console.log('Command line task failed:');
+          console.log(err);
+          process.exit(1);
+        }
+        self.emit('task:' + argv._[0] + ':after');
+        // Exit when no listeners are busy. Both before and after listeners
+        // need to call apos.taskBusy() and apos.taskDone() to signify that
+        // they are going to do more work asynchronously and when they complete that work.
+        setInterval(function() {
+          if (!taskActive) {
+            process.exit(taskFailed ? 1 : 0);
+          }
+        }, 10);
+        // *Don't* exit. We want to allow things initiated by trigger
+        // to finish. Node will exit for us when the event queue is empty
+      });
       return true;
     } else {
       console.error('There is no such Apostrophe task. Available tasks:');
@@ -2344,7 +2374,7 @@ function Apos() {
   self.tasks = {};
 
   // Database migration (perform on deploy to address official database changes and fixes)
-  self.tasks.migrate = function() {
+  self.tasks.migrate = function(callback) {
     function fixEventEnd(callback) {
       // ISSUE: 'end' was meant to be a Date object matching
       // end_date and end_time, for sorting and output purposes, but it
@@ -2373,21 +2403,13 @@ function Apos() {
       });
     }
 
-    function done(err) {
-      if (err) {
-        console.log('Migration error:');
-        console.log(err);
-        process.exit(1);
-      }
-      console.log('Migration complete.');
-      process.exit(0);
-    }
-
-    // TODO: provide a way to hook in project specific stuff here
-
-    async.series([fixEventEnd], done);
+    async.series([fixEventEnd], callback);
   };
 }
+
+// Required because EventEmitter is built on prototypal inheritance,
+// calling the constructor is not enough
+require('util').inherits(Apos, require('events').EventEmitter);
 
 module.exports = function() {
   return new Apos();
