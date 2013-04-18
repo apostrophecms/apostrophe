@@ -36,14 +36,13 @@ You can also drag images from your computer into the dashed area below.
       {# I am a template. I get cloned and populated by jQuery. If you #}
       {# leave my data attributes intact you can edit me quite a bit. #}
       <li data-item class="apos-slideshow-editor-item apos-template">
-        {% block itemBox %}
-          <div class="apos-slideshow-editor-item-box">
-            {# jQuery will give this img a proper src #}
-            {# Use the smallest possible empty GIF in the meantime #}
-            <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
-            <a class="apos-slideshow-control apos-remove" data-remove>x</a>
-          </div>
-        {% endblock %}
+        <div class="apos-slideshow-editor-item-box">
+          {# jQuery will give this img a proper src #}
+          {# Use the smallest possible empty GIF in the meantime #}
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+          <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop>Crop</a>
+          <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+        </div>
 
         <div class="apos-slideshow-extra-fields" data-extra-fields>
           <fieldset class="apos-fieldset apos-fieldset-text">
@@ -65,6 +64,12 @@ You can also drag images from your computer into the dashed area below.
             </fieldset>
           {% endblock %}
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
+        </div>
+
+        <div class="apos-slideshow-crop" data-crop-container>
+          <img data-crop-image />
+          <a href="#" data-crop-save class="apos-control apos-button">Save Changes</a>
+          <a href="#" data-crop-cancel class="apos-control apos-button">Cancel</a>
         </div>
 
       </li>

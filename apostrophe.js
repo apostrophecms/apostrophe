@@ -155,6 +155,8 @@ function Apos() {
     'vendor/blueimp-iframe-transport',
     // Spiffy multiple file upload
     'vendor/blueimp-fileupload',
+    // imaging cropping plugin
+    'vendor/jquery.Jcrop.min',
 
     // OUR CODE
 

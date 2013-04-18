@@ -1019,6 +1019,7 @@ apos.widgetTypes.slideshow = {
         }
       });
 
+      // setup drag-over states
       self.$el.find('.apos-modal-body').bind('dragover', function (e) {
           var dropZone = self.$el.find('.apos-modal-body'),
               timeout = window.dropZoneTimeout;
@@ -1078,6 +1079,22 @@ apos.widgetTypes.slideshow = {
         $button.closest('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
       });
 
+
+      // on Crop button click, reveal cropping window
+      self.$el.find('[data-crop]').on('click', function(){
+        self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-crop');
+        var $button = $(this);
+        $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-crop');
+      });
+
+      // on Crop Save, reflect and close Crop
+      self.$el.find('[data-crop-save]').on('click', function(){
+        reflect();
+        var $button = $(this);
+        $button.closest('[data-item]').removeClass('apos-slideshow-reveal-crop');
+      });
+
+
       callback();
     };
 
@@ -1085,6 +1102,17 @@ apos.widgetTypes.slideshow = {
       reflect();
       return callback();
     };
+
+
+    function updateCoords(id, c){
+      var $el = self.$el.find("[data-crop-id='" + id + "']");
+      $el.attr('data-crop-x', c.x);
+      $el.attr('data-crop-y', c.y);
+      $el.attr('data-crop-x2', c.x2);
+      $el.attr('data-crop-y2', c.y2);
+      $el.attr('data-crop-w', c.w);
+      $el.attr('data-crop-h', c.h);
+    }
 
     function addItem(item) {
       var count = self.count();
@@ -1099,6 +1127,9 @@ apos.widgetTypes.slideshow = {
       if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
         $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       }
+      $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.find('[data-crop-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      $item.find('[data-crop-image]').attr('data-crop-id', item._id);
 
       $item.find('[data-title]').val(item.title);
 
@@ -1113,6 +1144,29 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
       if (extraFields) {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
+      }
+      if (item.cropCoords) {
+
+        var thumbnailCoords = [];
+        for (var i = 0; i < item.cropCoords.length; i++) {
+          thumbnailCoords.push(item.cropCoords[i] / 3);
+        }
+
+        $item.find('[data-crop-image]').Jcrop({
+          setSelect: thumbnailCoords,
+          onChange: function(c) {
+            updateCoords(item._id,c);
+          }
+        });
+
+      } else{
+
+        $item.find('[data-crop-image]').Jcrop({
+          onChange: function(c) {
+            updateCoords(item._id,c);
+          }
+        });
+
       }
       $item.data('item', item);
       $item.find('[data-remove]').click(function() {
@@ -1168,6 +1222,20 @@ apos.widgetTypes.slideshow = {
         info.description = $item.find('[data-description]').val();
         info.hyperlink = $item.find('[data-hyperlink]').val();
         info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
+        
+        if (typeof $item.find('[data-crop-image]').attr('data-crop-x') !== 'undefined') {
+          var cropCoords = [];
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-x'), 10) * 3);
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-y'), 10) * 3);
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-x2'), 10) * 3);
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-y2'), 10) * 3);
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-w'), 10) * 3);
+          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-h'), 10) * 3);
+          info.cropCoords = cropCoords;
+          console.log(cropCoords);
+        }
+        
+
 
         self.data.items.push(info);
 
