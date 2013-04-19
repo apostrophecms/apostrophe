@@ -1,0 +1,22 @@
+{% extends "baseWidgetEditor.html" %}
+
+{% block widgetVars %}
+  {% set widgetClass = 'apos-html-editor' %}
+{% endblock %}
+
+{% block title %}
+Edit Raw HTML
+{% endblock %}
+
+{% block instructions %}
+Paste in HTML source code (such as embed codes from Wufoo).
+{% endblock %}
+
+{% block previewButton %}
+{% endblock %}
+
+{% block formBody %}
+  <textarea class="apos-code"></textarea>
+{% endblock %}
+
+

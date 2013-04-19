@@ -78,7 +78,7 @@ function Apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'code' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'code', 'html' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -170,7 +170,7 @@ function Apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'hint'
+    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'htmlEditor', 'hint'
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -421,7 +421,13 @@ function Apos() {
         if (!options.area) {
           return true;
         }
-        return !options.area.items.length;
+        return !_.some(options.area.items, function(item) {
+          if (self.itemTypes[item.type] && self.itemTypes[item.type].empty) {
+            return !self.itemTypes[item.type].empty(item);
+          } else {
+            return true;
+          }
+        });
       };
 
       aposLocals.aposSingletonIsEmpty = function(options) {
@@ -1756,6 +1762,9 @@ function Apos() {
         // of a change around that point
         var text = ent.decode(item.content.replace(/<.*?\>/g, "\n"));
         self.addDiffLinesForText(text, lines);
+      },
+      empty: function(item) {
+        return !item.content.trim().length;
       }
     },
     slideshow: {
@@ -1771,6 +1780,9 @@ function Apos() {
         _.each(items, function(item) {
           lines.push('image: ' + item.name);
         });
+      },
+      empty: function(item) {
+        return !((item.items || []).length);
       },
       css: 'slideshow'
     },
@@ -1788,6 +1800,9 @@ function Apos() {
           lines.push('image: ' + item.name);
         });
       },
+      empty: function(item) {
+        return !((item.items || []).length);
+      },
       css: 'buttons'
     },
     files: {
@@ -1802,6 +1817,9 @@ function Apos() {
         _.each(items, function(item) {
           lines.push('file: ' + item.name);
         });
+      },
+      empty: function(item) {
+        return !((item.items || []).length);
       },
       css: 'files'
     },
@@ -1839,8 +1857,20 @@ function Apos() {
       wrapper: 'pre',
       css: 'code',
       addDiffLines: function(item, lines) {
-        self.addDiffLinesForText(item.content ? item.content : '');
+        self.addDiffLinesForText(item.content ? item.content : '', lines);
       },
+    },
+    html: {
+      widget: true,
+      label: 'HTML',
+      // icon: 'html',
+      css: 'html',
+      addDiffLines: function(item, lines) {
+        self.addDiffLinesForText(item.content ? item.content : '', lines);
+      },
+      render: function(data) {
+        return partial('html', data);
+      }
     }
   };
 
@@ -1889,7 +1919,7 @@ function Apos() {
     if (typeof(s) !== 'string') {
       s = s + '';
     }
-    return s.replace(/\&/g, '&amp;').replace(/</g, '&lt').replace(/\>/g, '&gt').replace(/\"/g, '&quot;');
+    return s.replace(/\&/g, '&amp;').replace(/</g, '&lt;').replace(/\>/g, '&gt;').replace(/\"/g, '&quot;');
   };
 
   // Accept tags as a comma-separated string and sanitize them,

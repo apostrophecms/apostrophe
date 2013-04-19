@@ -1474,6 +1474,61 @@ apos.widgetTypes.code = {
   }
 };
 
+apos.widgetTypes.html = {
+  label: 'Raw HTML',
+  editor: function(options) {
+    var self = this;
+
+    self.code = '';
+
+    if (!options.messages) {
+      options.messages = {};
+    }
+    if (!options.messages.missing) {
+      options.messages.missing = 'Paste in some HTML code first.';
+    }
+
+    self.afterCreatingEl = function() {
+      self.$code = self.$el.find('.apos-code');
+      self.$code.val(self.data.code);
+      setTimeout(function() {
+        self.$code.focus();
+        self.$code.setSelection(0, 0);
+      }, 500);
+
+      // Automatically preview if we detect something that looks like a
+      // fresh paste
+      var last = '';
+      self.timers.push(setInterval(function() {
+        var next = self.$code.val();
+        self.exists = (next.length > 2);
+        if (next !== last) {
+          self.preview();
+        }
+        last = next;
+      }, 500));
+    };
+
+    self.preSave = getCode;
+
+    self.prePreview = getCode;
+
+    function getCode(callback) {
+      var code = self.$code.val();
+      self.data.code = code;
+      if (callback) {
+        callback();
+      }
+    }
+
+    self.type = 'html';
+    options.template = '.apos-html-editor';
+
+    // Parent class constructor shared by all widget editors
+    apos.widgetEditor.call(self, options);
+  }
+};
+
 // Utilities
 
 // http://stackoverflow.com/questions/2937975/contenteditable-text-editor-and-cursor-position
