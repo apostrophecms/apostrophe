@@ -221,6 +221,7 @@ body
 {
   clear: both;
   .clearfix;
+  min-width: 153px;
   
   .apos-control
   {
@@ -640,6 +641,11 @@ textarea.apos-code {
     position: relative;
     top: inherit;
     left: inherit;
+  }
+  .apos-slideshow
+  {
+    max-width: 300px;
+    margin: inherit;
   }
 }
 
@@ -1123,28 +1129,47 @@ textarea.apos-code {
 
 .apos-files-item
 {
-  border: 2px solid #aaa;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
   margin: 10px 0 10px 0;
-  height: 100px;
-  background-color: #def;
-  padding: 10px;
+  padding: 20px 10px;
+  text-align: left;
   .apos-files-extension
   {
-    float: left;
-    display: block;
+    position: relative;
+    left: -21px !important;
+    display: inline-block;
     top: 2px;
     left: 2px;
     font-size: 40px;
     color: #aaa;
-    height: 100px;
-    width: 100px;
+    font-family: cabin !important;
+    text-transform: uppercase;
+    background-color: red;
+    font-size: 10px !important;
+    padding: 0px 5px;
+    color: #FFF !important;
+  }
+  .icon-docs
+  {
+
+    
+    &::before
+    {
+      font-size:3.5em;
+      color: #333;
+      visibility: visible;
+    }
   }
   .apos-files-name
   {
+
     text-align: left;
-    margin: 10px 10px 10px 120px;
-    height: 100px;
+    // margin: 10px 10px 10px 120px;
+    // height: 100px;
     font-size: 150%;
+    
+    &:hover{ background-color: transparent;}
   }
 }
 

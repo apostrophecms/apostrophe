@@ -1789,7 +1789,7 @@ function Apos() {
     buttons: {
       widget: true,
       label: 'Button(s)',
-      // icon: '',
+      icon: 'button',
       // icon: 'slideshow',
       render: function(data) {
         return partial('buttons', data);
@@ -1808,6 +1808,7 @@ function Apos() {
     files: {
       widget: true,
       label: 'Files',
+      icon: 'file',
       render: function(data) {
         var val = partial('files', data);
         return val;
