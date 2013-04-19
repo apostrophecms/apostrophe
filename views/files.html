@@ -3,7 +3,7 @@
 <ul class="apos-files-items">
   {% for file in item.items %}
     {% if ((loop.index0 < options.limit) or (not options.limit)) %}
-      <li data-slideshow-item class="apos-files-item">
+      <li data-slideshow-item class="apos-files-item apos-file-extension-{{ file.extension | e }}">
         {% if file.description or file.title %}
         <div class="apos-files-description-container">
           {% if file.title %}<h1 class="apos-files-title">{{ file.title }}</h1>{% endif %}
@@ -16,7 +16,9 @@
           {% endif %}
         </div>
         {% endif %}
-        <span class="apos-files-extension">{{ file.extension |e }}</span><a href="{{ aposFilePath(file) }}" class="apos-button apos-files-name">Download {{ file.name | e }}</a>
+        <i class='icon-docs'></i>
+        <span class="apos-files-extension">{{ file.extension |e }}</span>
+        <a href="{{ aposFilePath(file) }}" class="apos-button apos-files-name">Download {{ file.name | e }}</a>
       </li>
     {% endif %}
   {% endfor %}
