@@ -2434,7 +2434,41 @@ function Apos() {
       });
     }
 
-    async.series([fixEventEnd], callback);
+    function addTrash(callback) {
+      // ISSUE: old sites might not have a trashcan page as a parent for trashed pages.
+      self.pages.findOne({ type: 'trash', trash: true }, function (err, trash) {
+        if (err) {
+          return callback(err);
+        }
+        if (!trash) {
+          console.log('No trash, adding it');
+          // Determine rank of the trash
+          return self.pages.find({ path: /^home\/[\w\-]+$/ }, { rank: 1 }).sort({ rank: -1 }).limit(1).toArray(function(err, pages) {
+            if (err) {
+              return callback(null);
+            }
+            var rank = 0;
+            if (pages.length) {
+              rank = pages[0].rank + 1;
+            }
+            trash = {
+              _id: 'trash',
+              path: 'home/trash',
+              slug: '/trash',
+              type: 'trash',
+              title: 'Trash',
+              trash: true,
+              rank: rank,
+              level: 1
+            };
+            return self.pages.insert(trash, callback);
+          });
+        }
+        return callback(null);
+      });
+    }
+
+    async.series([fixEventEnd, addTrash], callback);
   };
 }
 
