@@ -1062,8 +1062,39 @@ textarea.apos-code {
     overflow: hidden;
     width: 170px;
     height: 170px;
+    
+    &.apos-not-image::before
+    {
+      font-family: 'apos-icons';
+      content: '\f0c5';
+      position: absolute;
+      top: 25%;
+      left: 38%;
+      font-size: 3em;
+    }
+    &.apos-not-image
+    {
+      &::after
+      {
+        position: absolute;
+        top: 40%;
+        left: 38%;
+        font-size: 1em;
+      }
+
+      span
+      {
+        position: absolute;
+        top: 56%;
+        width: 100%;
+        text-align: center;
+      }
+      .apos-crop{display: none;}
+    }
+
   }
   .apos-slideshow-editor-image { height: 120%; }
+
   .apos-slideshow-control
   {
     position: absolute;

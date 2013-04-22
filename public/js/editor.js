@@ -1126,8 +1126,11 @@ apos.widgetTypes.slideshow = {
 
       if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
         $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      } else {
+        $item.find('[data-image]').parent().addClass('apos-not-image');
+        $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
       }
-      $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+      // $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.find('[data-crop-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
       $item.find('[data-crop-image]').attr('data-crop-id', item._id);
 
