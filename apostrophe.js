@@ -1312,11 +1312,15 @@ function Apos() {
       return self.versionPage(req, pageOrSlug, callback);
     }
 
+    function indexing(callback) {
+      return self.indexPage(req, pageOrSlug, callback);
+    }
+
     function finish(err) {
       return callback(err, area);
     }
 
-    async.series([permissions, update, versioning], finish);
+    async.series([permissions, update, versioning, indexing], finish);
   };
 
   // Insert or update an entire page object at once.
@@ -1376,13 +1380,17 @@ function Apos() {
       return self.versionPage(req, page, callback);
     }
 
+    function indexing(callback) {
+      return self.indexPage(req, page, callback);
+    }
+
     function finish(err) {
       if (err) {
         return callback(err);
       }
       return callback(null, page);
     }
-    async.series([permissions, update, versioning], finish);
+    async.series([permissions, update, versioning, indexing], finish);
   };
 
   // Given a request object (for permissions), a page object, and a version
@@ -1418,22 +1426,9 @@ function Apos() {
     var prior;
 
     function findPage(callback) {
-      var finder;
-      if (typeof(pageOrSlug) === 'string') {
-        finder = function(pageOrSlug, callback) {
-          return pages.findOne({ slug: pageOrSlug }, callback);
-        };
-      } else {
-        finder = function(pageOrSlug, callback) {
-          return callback(null, pageOrSlug);
-        };
-      }
-      finder(pageOrSlug, function(err, pageArg) {
-        if (err) {
-          return callback(err);
-        }
+      return findByPageOrSlug(pageOrSlug, function(err, pageArg) {
         page = pageArg;
-        return callback(null);
+        return callback(err);
       });
     }
 
@@ -1463,6 +1458,7 @@ function Apos() {
       version.pageId = version._id;
       version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
       version._id = generateId();
+      delete version.searchText;
       if (!prior) {
         version.diff = [ { value: '[NEW]', added: true } ];
       } else {
@@ -1481,12 +1477,6 @@ function Apos() {
     // We're not interested in what stayed the same
     return _.filter(results, function(result) { return result.added || result.removed; });
   };
-
-  // Initially empty. Custom page types like snippets, blog and events can add
-  // functions here which take a page object and an array of lines and add
-  // additional lines of text that describe the page in such a way that diffing
-  // the output of two calls reveals a useful description of changes.
-  self.addDiffLinesForType = {};
 
   // Returns a list of lines of text which, when diffed against the
   // results for another version of the page, will result in a reasonable
@@ -1518,6 +1508,125 @@ function Apos() {
       });
     }
     return lines;
+  };
+
+  // Given some plaintext, add diff-friendly lines to the lines array
+  // based on its contents
+
+  self.addDiffLinesForText = function(text, lines) {
+    var wrapper = wordwrap(0, 60);
+    var rawLines = text.split("\n");
+    _.each(rawLines, function(line) {
+      line = wrapper(line);
+      _.each(line.split("\n"), function(finalLine) {
+        if (!finalLine.length) {
+          return;
+        }
+        lines.push(finalLine);
+      });
+    });
+  };
+
+  // Index the page for search purposes. The current implementation is a hack,
+  // but a surprisingly tolerable one. We build two texts, one representing
+  // only highly-weighted fields and the other including all text in the
+  // document, and use a simple regex search on them when the request comes.
+  // It's not suitable for huge amounts of content but it's not half bad either.
+  // You can, of course, swap this out for a better implementation for
+  // higher volume needs. We'll revisit when Mongo's text search is mature.
+
+  self.indexPage = function(req, pageOrSlug, callback) {
+    var page;
+    var prior;
+
+    function findPage(callback) {
+      var finder;
+      if (typeof(pageOrSlug) === 'string') {
+        finder = function(pageOrSlug, callback) {
+          return pages.findOne({ slug: pageOrSlug }, callback);
+        };
+      } else {
+        finder = function(pageOrSlug, callback) {
+          return callback(null, pageOrSlug);
+        };
+      }
+      finder(pageOrSlug, function(err, pageArg) {
+        if (err) {
+          return callback(err);
+        }
+        page = pageArg;
+        return callback(null);
+      });
+    }
+
+    function index(callback) {
+      // Index the page
+      var texts = self.getSearchTextsForPage(page);
+      // These texts have a weight property so they are ideal for feeding
+      // to something better, but for now we'll prep for a dumb, simple regex search
+      // via mongo that is not aware of the weight of fields. This is pretty
+      // slow on big corpuses but it does have the advantage of being compatible
+      // with the presence of other criteria. Our workaround for the lack of
+      // really good weighting is to make separate texts available for searches
+      // based on high-weight fields and searches based on everything
+
+      // Individual widget types play with weights a little, but the really
+      // big numbers are reserved for metadata fields. Look for those
+      var highTexts = _.filter(texts, function(text) {
+        return text.weight > 10;
+      });
+
+      function boilTexts(texts) {
+        var text = _.reduce(texts, function(memo, text) {
+          return memo + ' ' + text.text;
+        }, '');
+        text = self.sortify(text);
+        return text;
+      }
+
+      var searchSummary = _.map(_.filter(texts, function(text) { return !text.silent; } ), function(text) { return text.text }).join(" ");
+      var highText = boilTexts(highTexts);
+      var lowText = boilTexts(texts);
+      return pages.update({ slug: page.slug }, { $set: { highSearchText: highText, lowSearchText: lowText, searchSummary: searchSummary } }, callback);
+    }
+
+    return async.series([findPage, index], callback);
+  };
+
+  // Returns texts which are a reasonable basis for
+  // generating search results for this page. Should return
+  // an array in which each entry is an object with
+  // 'weight' and 'text' properties. 'weight' is a measure
+  // of relative importance. 'text' is the text associated
+  // with that chunk of content.
+
+  self.getSearchTextsForPage = function(page) {
+    var texts = [];
+    // Shown separately, so don't include it in the summary
+    texts.push({ weight: 100, text: page.title, silent: true });
+    // Not great to include in the summary
+    texts.push({ weight: 100, text: (page.tags || []).join("\n"), silent: true });
+
+    // This event is an opportunity to add custom texts for
+    // various types of pages
+    self.emit('index', page, texts);
+
+    if (page.areas) {
+      var names = _.keys(page.areas);
+      names.sort();
+      _.each(names, function(name) {
+        var area = page.areas[name];
+        _.each(area.items, function(item) {
+          var itemType = self.itemTypes[item.type];
+          if (itemType) {
+            if (itemType.addSearchTexts) {
+              itemType.addSearchTexts(item, texts);
+            }
+          }
+        });
+      });
+    }
+    return texts;
   };
 
   // Given some plaintext, add diff-friendly lines to the lines array
@@ -1620,6 +1729,30 @@ function Apos() {
       }
     });
   };
+
+  // An internal function for locating a page by slug or recognizing that
+  // it is already a page object. This function does NOT check permissions
+  // or call loaders. It is useful in migrations and versioning.
+
+  function findByPageOrSlug(pageOrSlug, callback) {
+    var finder;
+    if (typeof(pageOrSlug) === 'string') {
+      finder = function(pageOrSlug, callback) {
+        return pages.findOne({ slug: pageOrSlug }, callback);
+      };
+    } else {
+      finder = function(pageOrSlug, callback) {
+        return callback(null, pageOrSlug);
+      };
+    }
+    finder(pageOrSlug, function(err, page) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(null, page);
+    });
+  }
+
 
   // Invoke loaders for any items in any area of the page that have loaders,
   // then invoke callback. Loaders are expected to report failure as appropriate
@@ -1763,6 +1896,12 @@ function Apos() {
         var text = ent.decode(item.content.replace(/<.*?\>/g, "\n"));
         self.addDiffLinesForText(text, lines);
       },
+      addSearchTexts: function(item, texts) {
+        // Turn tags into line breaks, which generally produces some indication
+        // of a change around that point
+        var text = ent.decode(item.content.replace(/<.*?\>/g, "\n"));
+        texts.push({ weight: 1, text: text});
+      },
       empty: function(item) {
         return !item.content.trim().length;
       }
@@ -1781,6 +1920,12 @@ function Apos() {
           lines.push('image: ' + item.name);
         });
       },
+      addSearchTexts: function(item, texts) {
+        var items = item.items || [];
+        _.each(items, function(item) {
+          texts.push({ weight: 1, text: item.name });
+        });
+      },
       empty: function(item) {
         return !((item.items || []).length);
       },
@@ -1793,12 +1938,6 @@ function Apos() {
       // icon: 'slideshow',
       render: function(data) {
         return partial('buttons', data);
-      },
-      addDiffLines: function(item, lines) {
-        var items = item.items || [];
-        _.each(items, function(item) {
-          lines.push('image: ' + item.name);
-        });
       },
       empty: function(item) {
         return !((item.items || []).length);
@@ -1813,10 +1952,10 @@ function Apos() {
         var val = partial('files', data);
         return val;
       },
-      addDiffLines: function(item, lines) {
+      addSearchTexts: function(item, texts) {
         var items = item.items || [];
         _.each(items, function(item) {
-          lines.push('file: ' + item.name);
+          texts.push({ weight: 1, text: item.name });
         });
       },
       empty: function(item) {
@@ -1847,7 +1986,10 @@ function Apos() {
       wrapperClass: 'apos-pullquote-text',
       css: 'pullquote',
       addDiffLines: function(item, lines) {
-        lines.push('pullquote: ' + item.content);
+        lines.push('pullquote: ' + item.content || '');
+      },
+      addSearchTexts: function(item, texts) {
+        texts.push({ weight: 1, text: item.content || ''});
       },
     },
     code: {
@@ -1859,6 +2001,9 @@ function Apos() {
       css: 'code',
       addDiffLines: function(item, lines) {
         self.addDiffLinesForText(item.content ? item.content : '', lines);
+      },
+      addSearchTexts: function(item, texts) {
+        texts.push({ weight: 1, text: item.content || ''});
       },
     },
     html: {
@@ -1975,7 +2120,7 @@ function Apos() {
     s = s.replace(regex, options.separator);
     // Consecutive dashes become one dash
     var consecRegex = new RegExp(RegExp.quote(options.separator) + '+', 'g');
-    s = s.replace(consecRegex, '-');
+    s = s.replace(consecRegex, options.separator);
     // Leading dashes go away
     var leadingRegex = new RegExp('^' + RegExp.quote(options.separator));
     s = s.replace(leadingRegex, '');
@@ -2402,6 +2547,60 @@ function Apos() {
     }
   };
 
+  // Iterate over ALL page objects. This is pricey; it should be used in
+  // migrations, not everyday operations if you can possibly avoid it.
+  // Note this will fetch virtual pages that are not part of the tree, the
+  // trash page, etc. if you don't set criteria to the contrary. The simplest
+  // possible criteria is {} which will get everything, including the
+  // trash page. Consider using criteria on type and slug.
+  //
+  // Your 'each' function is called with a page object and a callback for each
+  // page. Your 'callback' function is called at the end with an error if any.
+
+  self.forEveryPage = function(criteria, each, callback) {
+    self.pages.find(criteria, function(err, cursor) {
+      if (err) {
+        return callback(err);
+      }
+      var done = false;
+      async.whilst(function() { return !done; }, function(callback) {
+        return cursor.nextObject(function(err, page) {
+          if (err) {
+            return callback(err);
+          }
+          if (!page) {
+            done = true;
+            return callback(null);
+          }
+          return each(page, callback);
+        });
+      }, callback);
+    });
+  };
+
+  // An internal function for use by migrations that install system pages
+  // like trash or search as children of the home page
+  function insertSystemPage(page, callback) {
+    // Determine rank of the new page, in case we didn't hardcode it, but
+    // then check for a hardcoded rank too
+    return self.pages.find({ path: /^home\/[\w\-]+$/ }, { rank: 1 }).sort({ rank: -1 }).limit(1).toArray(function(err, pages) {
+      if (err) {
+        return callback(null);
+      }
+      if (!page.rank) {
+        var rank = 0;
+        if (pages.length) {
+          rank = pages[0].rank + 1;
+        }
+        page.rank = rank;
+      }
+      // System pages are always orphans at level 1
+      page.level = 1;
+      page.orphan = true;
+      return self.pages.insert(page, callback);
+    });
+  }
+
   self.tasks = {};
 
   // Database migration (perform on deploy to address official database changes and fixes)
@@ -2442,34 +2641,65 @@ function Apos() {
         }
         if (!trash) {
           console.log('No trash, adding it');
-          // Determine rank of the trash
-          return self.pages.find({ path: /^home\/[\w\-]+$/ }, { rank: 1 }).sort({ rank: -1 }).limit(1).toArray(function(err, pages) {
-            if (err) {
-              return callback(null);
-            }
-            var rank = 0;
-            if (pages.length) {
-              rank = pages[0].rank + 1;
-            }
-            trash = {
-              _id: 'trash',
-              path: 'home/trash',
-              slug: '/trash',
-              type: 'trash',
-              title: 'Trash',
-              trash: true,
-              rank: rank,
-              level: 1
-            };
-            return self.pages.insert(trash, callback);
-          });
+          return insertSystemPage({
+            _id: 'trash',
+            path: 'home/trash',
+            slug: '/trash',
+            type: 'trash',
+            title: 'Trash',
+            rank: 9999,
+            trash: true,
+          }, null);
         }
         return callback(null);
       });
     }
 
-    async.series([fixEventEnd, addTrash], callback);
+    function spacesInSortTitle(callback) {
+      self.forEveryPage({ sortTitle: /\-/ },
+        function(page, callback) {
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { sortTitle: page.sortTitle.replace(/\-/g, ' ') } },
+            callback);
+        },
+        callback);
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle], callback);
   };
+
+  self.tasks.index = function(callback) {
+    console.log('Indexing all pages for search');
+    self.forEveryPage({},
+      function(page, callback) {
+        return self.indexPage({}, page, callback);
+      }, callback);
+  };
+
+  // This is not a migration because it is not mandatory to have search on your site
+  self.tasks.search = function(callback) {
+    console.log('Adding a search page to the site');
+    self.pages.findOne({ type: 'search' }, function (err, search) {
+      if (err) {
+        return callback(err);
+      }
+      if (!search) {
+        console.log('No search page, adding it');
+        return insertSystemPage({
+            _id: 'search',
+            path: 'home/search',
+            slug: '/search',
+            type: 'search',
+            title: 'Search',
+            rank: 9998
+        }, callback);
+      } else {
+        console.log('We already have one');
+      }
+      return callback(null);
+    });
+  }
 }
 
 // Required because EventEmitter is built on prototypal inheritance,
