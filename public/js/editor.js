@@ -1267,6 +1267,7 @@ apos.widgetTypes.buttons = {
   editor: function(options) {
     options.template = '.apos-buttons-editor';
     options.type = 'buttons';
+    options.options.extraFields = true;
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
 }
