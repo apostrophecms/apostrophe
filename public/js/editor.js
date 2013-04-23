@@ -1265,21 +1265,24 @@ apos.widgetTypes.slideshow = {
 apos.widgetTypes.buttons = {
   label: 'Buttons',
   editor: function(options) {
+    var self = this;
     options.template = '.apos-buttons-editor';
     options.type = 'buttons';
+    options.options = options.options || {};
     options.options.extraFields = true;
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
-}
+};
 
 apos.widgetTypes.files = {
   label: 'Files',
   editor: function(options) {
+    var self = this;
     options.template = '.apos-files-editor';
     options.type = 'files';
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
-}
+};
 
 apos.widgetTypes.video = {
   label: 'Video',
