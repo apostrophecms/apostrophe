@@ -698,6 +698,7 @@ function Apos() {
           if (extension && extension.length) {
             extension = extension.substr(1);
           }
+          extension = extension.toLowerCase();
           // Do we accept this file extension?
           var accepted = [];
           var group = _.find(self.fileGroups, function(group) {
