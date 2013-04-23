@@ -5,7 +5,7 @@
     <ul data-slideshow-items class="apos-buttons">
       {% for file in item.items %}
         {% if ((loop.index0 < options.limit) or (not options.limit)) %}
-          <li data-slideshow-item class="apos-buttons-item">
+          <li data-slideshow-item class="apos-buttons-item {% if loop.first %}apos-first{% endif %} {% if loop.last %}apos-last{% endif %}">
             {% if file.hyperlink %}
               <a href="{{ file.hyperlink }}" class="apos-button-link apos-slideshow-clickthru">
                 <div data-slideshow-item class="apos-button-image" style="background-image:url({{ aposFilePath(file, { size: 'full' }) }})">
