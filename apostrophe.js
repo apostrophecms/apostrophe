@@ -972,7 +972,6 @@ function Apos() {
             return res.send({ 'err': err });
           } else {
             oembedCache[req.query.url] = result;
-            console.log(result);
             return res.send(result);
           }
         });
