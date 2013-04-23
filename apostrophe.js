@@ -2152,6 +2152,15 @@ function Apos() {
     return self.slugify(s, { separator: ' ' });
   };
 
+  // Turn a user-entered search query into a regular expression, suitable
+  // for filtering on the highSearchText or lowSearchText property
+  self.searchify = function(q) {
+    q = self.sortify(q);
+    q = q.replace(/ /g, '.*?');
+    q = new RegExp(q);
+    return q;
+  };
+
   // For convenience when configuring uploadfs
   self.defaultImageSizes = [
     {
