@@ -957,15 +957,22 @@ function Apos() {
       });
 
       // A simple oembed proxy to avoid cross-site scripting restrictions.
-      // TODO: cache results according to MaxAge, including the thumbnails.
-      // Also, I should offer a whitelist of sites whose oembed codes are
-      // known not to be XSS vectors
+      // Includes bare-bones caching to avoid hitting rate limits.
+      // TODO: expiration for caching.
+      // TODO: whitelist to avoid accepting oembed from evil XSS sites.
+
+      var oembedCache = {};
 
       app.get('/apos/oembed', function(req, res) {
+        if (oembedCache[req.query.url]) {
+          return res.send(oembedCache[req.query.url]);
+        }
         oembed.fetch(req.query.url, {}, function (err, result) {
           if (err) {
             return res.send({ 'err': err });
           } else {
+            oembedCache[req.query.url] = result;
+            console.log(result);
             return res.send(result);
           }
         });

@@ -96,6 +96,60 @@ apos.filePath = function(file, options) {
   return path + '.' + file.extension;
 };
 
+// This method will invoke its callback when all img elements
+// contained in sel (including sel itself, if it is an image) have loaded
+// completely. Note that sel can be a jquery object or a selector.
+//
+// If the imgSel argument is present, it is used to limit the set of
+// image elements that are considered. However note that they must
+// still be img elements as .complete is not available on backgrounds.
+// You can skip the imgSel argument if you wish.
+//
+// The first argument to the callback is the maximum width
+// of all of the images, the second is the maximum height.
+//
+// Useful when you need to calculate sizes that depend on images or
+// just want to wait for all of the images to exist.
+
+apos.whenImagesReady = function(sel, imgSel, callback) {
+  var $el = $(sel);
+  if (!callback) {
+    // imgSel argument is skippable
+    callback = imgSel;
+    imgSel = null;
+  }
+  var $images = $el.find('img').add($el.filter('img'));
+  if (imgSel) {
+    $images = $images.filter(imgSel);
+  }
+
+  function attempt() {
+    var ready = true;
+    var maxWidth = 0;
+    var maxHeight = 0;
+    $images.each(function(i, item) {
+      if (!item.complete) {
+        ready = false;
+      }
+      var $item = $(item);
+      var width = $item.width();
+      var height = $item.height();
+      if (width > maxWidth) {
+        maxWidth = width;
+      }
+      if (height > maxHeight) {
+        maxHeight = height;
+      }
+    });
+    if (ready) {
+      return callback(maxWidth, maxHeight);
+    } else {
+      setTimeout(attempt, 50);
+    }
+  }
+
+  attempt();
+};
 
 apos.widgetPlayers = {};
 
@@ -168,24 +222,9 @@ apos.widgetPlayers.slideshow = function($widget)
   }
 
   function adjustSize() {
-    var ready = true;
-    var maxHeight = 0;
-    $widget.find('[data-image]').each(function(i, item) {
-      if (!item.complete) {
-        ready = false;
-        return;
-      }
-      var height = $(item).height();
-      if (height > maxHeight) {
-        maxHeight = height;
-      }
-    });
-
-    if (ready) {
+    apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight) {
       $widget.find('[data-slideshow-items]').height(maxHeight);
-    } else {
-      setTimeout(adjustSize, 100);
-    }
+    });
   }
 
   adjustSize();
@@ -198,12 +237,16 @@ apos.widgetPlayers.video = function($widget)
 {
   var videoUrl = $widget.attr('data-video');
   $.get('/apos/oembed', { url: videoUrl }, function(data) {
-    var e = $(data.html);
-    e.removeAttr('width');
-    e.removeAttr('height');
-    e.width($widget.width());
-    e.height($widget.height());
-    $widget.html(e);
+    // Wait until the thumbnail image size is available otherwise we'll
+    // get a tiny size for the widget
+    apos.whenImagesReady($widget, function() {
+      var e = $(data.html);
+      e.removeAttr('width');
+      e.removeAttr('height');
+      e.width($widget.width());
+      e.height($widget.height());
+      $widget.html(e);
+    });
   });
 };
 
