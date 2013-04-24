@@ -10,7 +10,7 @@
         <li data-slideshow-item data-crop-info-x="{{file.cropCoords[0]}}" data-crop-info-y="{{file.cropCoords[1]}}" data-crop-info-w="{{file.cropCoords[4]}}" data-crop-info-h="{{file.cropCoords[5]}}" class="apos-slideshow-item {% if file.cropCoords %}apos-slideshow-cropped {% endif %}{% if loop.first %}apos-current apos-first {% endif %}{% if loop.last %}apos-last {% endif %}" style="background-image:url({{ aposFilePath(file, { size: size }) }}); {% if file.cropCoords %} {% endif %} ">
           <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: size }) }}" />
           {% if file.description or file.hyperlink or file.title %}
-          <div class="apos-slideshow-description-container">
+          <div class="apos-slideshow-description-container{% if not file.hyperlink %} no-link {% endif %}">
             {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}
             {% if file.description %}
               <div class="apos-slideshow-description">
@@ -30,6 +30,14 @@
             {% endif %}
           </div>
           {% endif %}
+          {% if file.credit %}
+            <div class="apos-slideshow-credit">
+              {{ file.credit }}
+            </div>
+          {% endif %}
+
+
+
         </li>
       {% endif %}
     {% endfor %}

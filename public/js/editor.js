@@ -1145,6 +1145,7 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
+      $item.find('[data-credit]').val(item.credit);
       if (extraFields) {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
       }
@@ -1225,6 +1226,7 @@ apos.widgetTypes.slideshow = {
         info.description = $item.find('[data-description]').val();
         info.hyperlink = $item.find('[data-hyperlink]').val();
         info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
+        info.credit = $item.find('[data-credit]').val();
         
         if (typeof $item.find('[data-crop-image]').attr('data-crop-x') !== 'undefined') {
           var cropCoords = [];
@@ -1235,7 +1237,6 @@ apos.widgetTypes.slideshow = {
           cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-w'), 10) * 3);
           cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-h'), 10) * 3);
           info.cropCoords = cropCoords;
-          console.log(cropCoords);
         }
         
 
