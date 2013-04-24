@@ -342,6 +342,14 @@ apos.modal = function(sel, options) {
     // It's tricky because some need to be removed rather than
     // merely hid. However we don't currently dismiss modals other
     // than the top, so...
+
+    // Reset scroll position to what it was before this modal opened.
+    // Really awesome if you scrolled while using the modal
+    var $current = apos.getTopModalOrBody();
+    if ($current.data('aposSavedScrollTop') !== undefined) {
+      $(window).scrollTop($current.data('aposSavedScrollTop'));
+    }
+
     apos._modalStack.pop();
     var blackoutContext = apos.getTopModalOrBody();
     blackoutContext.find('.apos-modal-blackout').remove();
@@ -393,6 +401,8 @@ apos.modal = function(sel, options) {
       var blackoutContext = apos.getTopModalOrBody();
       var blackout = $('<div class="apos-modal-blackout"></div>');
       blackoutContext.append(blackout);
+      // Remember scroll top so we can easily get back
+      $el.data('aposSavedScrollTop', $(window).scrollTop());
       apos._modalStack.push($el);
       $('body').append($el);
       $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
