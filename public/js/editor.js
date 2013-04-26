@@ -1702,9 +1702,17 @@ apos.parseArea = function(content) {
     }
   }
 
-  // Widgets must never get stuck inside other elements
-  var hoisted = false;
+  // Pull it into jQuery land for a few cleanups best done there
+
+  var changedInJquery = false;
   var $content = $($.parseHTML('<div data-apos-hoist-wrapper>' + content + '</div>'));
+  // While we have it in jQuery, seize the opportunity to blow out any
+  // ui-resizable-handles that are still in the DOM
+  var $handles = $content.find('.ui-resizable-handle');
+  if ($handles.length) {
+    $handles.remove();
+    changedInJquery = true;
+  }
   var $widgets = $content.find('[data-type]');
   $widgets.each(function() {
     var $widget = $(this);
@@ -1719,10 +1727,10 @@ apos.parseArea = function(content) {
       // Hoist the widget
       $widget.detach();
       $parent.before($widget);
-      hoisted = true;
+      changedInJquery = true;
     }
   });
-  if (hoisted) {
+  if (changedInJquery) {
     content = $content.html();
   }
 
