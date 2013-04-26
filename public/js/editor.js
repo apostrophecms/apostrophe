@@ -399,7 +399,7 @@ apos.Editor = function(options) {
       }
 
       var $container = $widget.closest('.apos-editor');
-      var cellWidth = ($container.outerWidth() / 6)
+      var cellWidth = ($container.outerWidth() / 6);
 
       // Make widgets resizable if they aren't already
 
@@ -871,7 +871,7 @@ apos.widgetEditor = function(options) {
 
       markup += after;
 
-      // markup = markup + String.fromCharCode(8288);
+      // markup = markup + String.fromCharCode(65279);
 
       // Restore the selection to insert the markup into it
       apos.popSelection();
@@ -1691,6 +1691,12 @@ apos.parseArea = function(content) {
 
   function flushRichText() {
     if (richText.length) {
+      // Remove invisible markers used to ensure good behavior of
+      // webkit inside contenteditable. Some browsers render these
+      // as boxes (Windows Chrome) if they see them and the font is
+      // a custom one that doesn't explicitly address this code point
+      richText = apos.globalReplace(richText, apos.beforeMarker, '');
+      richText = apos.globalReplace(richText, apos.afterMarker, '');
       items.push({ type: 'richText', content: richText });
       richText = '';
     }
@@ -1786,9 +1792,12 @@ apos.popSelection = function() {
 };
 
 // The best marker to use as a workaround for webkit selection bugs
-// is an invisible one (the Unicode word joiner character).
-apos.beforeMarker = String.fromCharCode(8288); // '↢';
-apos.afterMarker = String.fromCharCode(8288); // '↣';
+// is an invisible one (the ZERO WIDTH NO-BREAK SPACE character).
+// We tried using 8288 (the WORD JOINER character), but it shows as
+// a box in Windows Chrome regardless of font. -Tom
+
+apos.beforeMarker = String.fromCharCode(65279); // was '↢';
+apos.afterMarker = String.fromCharCode(65279); // was '↣';
 
 (function() {
   /* jshint devel: true */

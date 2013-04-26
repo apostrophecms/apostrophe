@@ -421,7 +421,6 @@ body
 .apos-editor
 {
   min-height: 400px;
-  
 }
 
 .apos-editor .apos-editable
@@ -432,6 +431,11 @@ body
   border: 1px solid rgb(221, 221, 221);
   padding: 10px;
   &:focus{outline:none;}
+  // Make sure the first image is visible in the slideshow's in-editor preview
+  .apos-slideshow-image
+  {
+    opacity: 1.0;
+  }
 }
 
 .apos-center

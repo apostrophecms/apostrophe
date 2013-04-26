@@ -646,6 +646,27 @@ apos.escapeHtml = function(string) {
   });
 };
 
+// String.replace does NOT do this
+// Regexps can but they can't be trusted with unicode ):
+// Keep in sync with server side version
+
+apos.globalReplace = function(haystack, needle, replacement) {
+  var result = '';
+  while (true) {
+    if (!haystack.length) {
+      return result;
+    }
+    var index = haystack.indexOf(needle);
+    if (index === -1) {
+      result += haystack;
+      return result;
+    }
+    result += haystack.substr(0, index);
+    result += replacement;
+    haystack = haystack.substr(index + needle.length);
+  }
+};
+
 // MINOR JQUERY EXTENSIONS
 
 (function( $ ){

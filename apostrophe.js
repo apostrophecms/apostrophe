@@ -2690,7 +2690,41 @@ function Apos() {
         callback);
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle], callback);
+    // Early versions of Apostrophe didn't clean up their Unicode word joiner characters
+    // on save. These were present to prevent (Mac?) Chrome from selecting only half the widget
+    // when copying and pasting. To make matters worse, in Windows Chrome they turn out to
+    // show up as "I don't have this in my font" boxes. New versions use the 65279
+    // "zero-width non-break space" character, which is invisible on both platforms. And
+    // in addition they filter it out on save. Filter it out for existing pages on migrate.
+    function removeWidgetSaversOnSave(callback) {
+      var used = false;
+      self.forEveryPage({},
+        function(page, callback) {
+          var modified = false;
+          _.each(page.areas || [], function(area, name) {
+            _.each(area.items, function(item) {
+              if ((item.type === 'richText') && (item.content.indexOf(String.fromCharCode(8288)) !== -1)) {
+                if (!modified) {
+                  modified = true;
+                  if (!used) {
+                    used = true;
+                    console.log('Removing widget-saver unicode characters');
+                  }
+                }
+                item.content = globalReplace(item.content, String.fromCharCode(8288), '');
+              }
+            });
+          });
+          if (modified) {
+            return self.pages.update({ _id: page._id }, page, callback);
+          } else {
+            return callback(null);
+          }
+        }, callback
+      );
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave], callback);
   };
 
   self.tasks.index = function(callback) {
