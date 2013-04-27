@@ -368,16 +368,22 @@ apos.Editor = function(options) {
       if (outer.closest('.apos-widget').length) {
         return;
       }
-      $(this).find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
+      // Use first() because the first call usually resolves the rest, and if
+      // we keep going with the old result set we'll wind up reversing the order
+      // of the elements
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p').first().each(function() {
         var inner = $(this);
         if (inner.parents('.apos-widget').length) {
           return;
         }
         var saved = rangy.saveSelection();
+        // create next containing former contents of inner
         var next = inner.clone();
+        // Younger siblings of inner become descendants of next
         apos.moveYoungerSiblings(inner[0], next[0]);
-        apos.moveYoungerSiblings(outer[0], next[0]);
+        // outer keeps older siblings of inner
         apos.keepOlderSiblings(inner[0]);
+        // next is now the successor of outer
         next.insertAfter(outer);
         rangy.restoreSelection(saved);
       });
@@ -1970,7 +1976,8 @@ apos.keepOlderSiblings = function(node) {
 apos.moveYoungerSiblings = function(node, target) {
   var sibling = node.nextSibling;
   while (sibling) {
+    var next = sibling.nextSibling;
     target.insertBefore(sibling, null);
-    sibling = node.nextSibling;
+    sibling = next;
   }
 };
