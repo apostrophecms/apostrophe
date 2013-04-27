@@ -374,11 +374,11 @@ apos.Editor = function(options) {
           return;
         }
         var saved = rangy.saveSelection();
-        var next = outer.clone();
-        next.html(inner.nextAll());
-        $(outer).html(inner.prevAll());
-        inner.insertAfter(outer);
-        next.insertAfter(inner);
+        var next = inner.clone();
+        apos.moveYoungerSiblings(inner[0], next[0]);
+        apos.moveYoungerSiblings(outer[0], next[0]);
+        apos.keepOlderSiblings(inner[0]);
+        next.insertAfter(outer);
         rangy.restoreSelection(saved);
       });
     });
@@ -1954,4 +1954,23 @@ apos.tagsToString = function(s) {
   }
   var result = s.join(', ');
   return result;
+};
+
+// Keep all older siblings of node, remove the rest (including node) from the DOM.
+apos.keepOlderSiblings = function(node) {
+  while (node) {
+    var next = node.nextSibling;
+    node.parentNode.removeChild(node);
+    node = next;
+  }
+};
+
+// Append all DOM sibling nodes after node, including
+// text nodes, to target. This includes text nodes
+apos.moveYoungerSiblings = function(node, target) {
+  var sibling = node.nextSibling;
+  while (sibling) {
+    target.insertBefore(sibling, null);
+    sibling = node.nextSibling;
+  }
 };
