@@ -460,25 +460,34 @@ apos.Editor = function(options) {
       var before = apos.beforeMarker;
       var after = apos.afterMarker;
       var p, n;
+      var saved;
       if (node.previousSibling) {
         if (node.previousSibling.nodeValue === null) {
           p = document.createTextNode(before);
+          saved = rangy.saveSelection();
           $(node).before(p);
+          rangy.restoreSelection(saved);
         } else {
           p = node.previousSibling.nodeValue;
           if (p.substr(p.length - 1, 1) !== before) {
+            saved = rangy.saveSelection();
             node.previousSibling.nodeValue += before;
+            rangy.restoreSelection(saved);
           }
         }
       }
       if (node.nextSibling) {
         if (node.nextSibling.nodeValue === null) {
           p = document.createTextNode(after);
+          saved = rangy.saveSelection();
           $(node).after(p);
+          rangy.restoreSelection(saved);
         } else {
           n = node.nextSibling.nodeValue;
           if (n.substr(0, 1) !== after) {
+            saved = rangy.saveSelection();
             node.nextSibling.nodeValue = after + node.nextSibling.nodeValue;
+            rangy.restoreSelection(saved);
           }
         }
       }
