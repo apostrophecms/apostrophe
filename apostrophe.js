@@ -2124,6 +2124,10 @@ function Apos() {
       return data;
     });
 
+    nunjucksEnv.addFilter('css', function(data) {
+      return self.cssName(data);
+    });
+
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
       // Leverage jQuery's willingness to parse attributes as JSON objects and arrays
       // if they look like it. TODO: find out if this still works cross browser with
@@ -2327,19 +2331,33 @@ function Apos() {
     return s.charAt(0).toUpperCase() + s.substr(1);
   };
 
-  // Convert camel case to a hyphenated css name. Not especially fast,
+  // Convert everything else to a hyphenated css name. Not especially fast,
   // hopefully you only do this during initialization and remember the result
+  // KEEP IN SYNC WITH BROWSER SIDE VERSION in content.js
   self.cssName = function(camel) {
     var i;
     var css = '';
+    var dash = false;
     for (i = 0; (i < camel.length); i++) {
       var c = camel.charAt(i);
-      if (c === c.toUpperCase()) {
-        css += '-';
-        css += c.toLowerCase();
-      } else {
-        css += c;
+      var lower = ((c >= 'a') && (c <= 'z'));
+      var upper = ((c >= 'A') && (c <= 'Z'));
+      var digit = ((c >= '0') && (c <= '9'));
+      if (!(lower || upper || digit)) {
+        dash = true;
+        continue;
       }
+      if (upper) {
+        if (i > 0) {
+          dash = true;
+        }
+        c = c.toLowerCase();
+      }
+      if (dash) {
+        css += '-';
+        dash = false;
+      }
+      css += c;
     }
     return css;
   };
