@@ -978,6 +978,16 @@ apos.widgetTypes.slideshow = {
       options.alwaysExtraFields = false;
     }
 
+    self.busy = function(state) {
+      if (state) {
+        $('[data-progress]').show();
+        $('[data-finished]').hide();
+      } else {
+        $('[data-progress]').hide();
+        $('[data-finished]').show();
+      }
+    }
+
     // Our current thinking is that preview is redundant for slideshows.
     // Another approach would be to make it much smaller. We might want that
     // once we start letting people switch arrows and titles and descriptions
@@ -1005,18 +1015,20 @@ apos.widgetTypes.slideshow = {
         // with node-imagemagick
         sequentialUploads: true,
         start: function (e) {
-          $('[data-progress]').show();
-          $('[data-finished]').hide();
+          self.busy(true);
         },
-        stop: function (e) {
-          $('[data-progress]').hide();
-          $('[data-finished]').show();
-        },
-        progressall: function (e, data) {
-          var progress = parseInt(data.loaded / data.total * 100, 10);
-          self.$el.find('[data-progress-percentage]').text(progress);
-        },
+        // This is not the same thing as really being ready to work with the files,
+        // so wait for 'done'
+        // stop: function (e) {
+        // },
+        // Progress percentages are just misleading due to image rendering time,
+        // so just show a spinner
+        // progressall: function (e, data) {
+        //   var progress = parseInt(data.loaded / data.total * 100, 10);
+        //   self.$el.find('[data-progress-percentage]').text(progress);
+        // },
         done: function (e, data) {
+          self.busy(false);
           if (data.result.files) {
             _.each(data.result.files, function (file) {
               addItem(file);
@@ -1094,40 +1106,62 @@ apos.widgetTypes.slideshow = {
         $button.closest('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
       });
 
+      // on Crop button click, configure and reveal cropping modal
+      self.$el.on('click', '[data-crop]', function() {
+        var $item = $(this).closest('[data-item]');
+        var item = $item.data('item');
+        self.busy(true);
+        var $cropModal = apos.modalFromTemplate('.apos-slideshow-crop', {
+          init: function(callback) {
+            // Cropping should use the full size original. This gives us both the right
+            // coordinates and a chance to implement zoom if desired
+            var $cropImage = $cropModal.find('[data-crop-image]');
+            $cropImage.attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.extension);
+            apos.whenImagesReady($item, function() {
+              var jcropArgs = {};
+              if (item.crop) {
+                jcropArgs.setSelect = [ item.crop.left, item.crop.top, item.crop.left + item.crop.width, item.crop.top + item.crop.height ];
+              }
+              // Pass jcrop arguments and capture the jcrop API object so we can call
+              // tellSelect at a convenient time
+              $cropImage.Jcrop(jcropArgs, function() {
+                $item.data('jcrop', this);
+              });
+              self.busy(false);
+            });
+            return callback(null);
+          },
 
-      // on Crop button click, reveal cropping window
-      self.$el.find('[data-crop]').on('click', function(){
-        self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-crop');
-        var $button = $(this);
-        $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-crop');
+          save: function(callback) {
+            var c = $item.data('jcrop').tellSelect();
+            item.crop = {
+              top: c.y,
+              left: c.x,
+              width: c.w,
+              height: c.h
+            };
+            // Ask the server to render this crop
+            self.busy(true);
+            $.post('/apos/crop', { _id: $item.data('item')._id, crop: item.crop }, function(data) {
+              reflect();
+              apos.log('removing class');
+              $item.removeClass('apos-slideshow-reveal-crop');
+              self.busy(false);
+              return callback(null);
+            }).error(function() {
+              self.busy(false);
+              alert('Server error, please retry');
+              return callback('fail');
+            });
+          }
+        });
       });
-
-      // on Crop Save, reflect and close Crop
-      self.$el.find('[data-crop-save]').on('click', function(){
-        reflect();
-        var $button = $(this);
-        $button.closest('[data-item]').removeClass('apos-slideshow-reveal-crop');
-      });
-
-
-      callback();
     };
 
     self.preSave = function (callback){
       reflect();
       return callback();
     };
-
-
-    function updateCoords(id, c){
-      var $el = self.$el.find("[data-crop-id='" + id + "']");
-      $el.attr('data-crop-x', c.x);
-      $el.attr('data-crop-y', c.y);
-      $el.attr('data-crop-x2', c.x2);
-      $el.attr('data-crop-y2', c.y2);
-      $el.attr('data-crop-w', c.w);
-      $el.attr('data-crop-h', c.h);
-    }
 
     function addItem(item) {
       var count = self.count();
@@ -1146,8 +1180,6 @@ apos.widgetTypes.slideshow = {
         $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
       }
       // $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
-      $item.find('[data-crop-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
-      $item.find('[data-crop-image]').attr('data-crop-id', item._id);
 
       $item.find('[data-title]').val(item.title);
 
@@ -1163,29 +1195,6 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-credit]').val(item.credit);
       if (extraFields) {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
-      }
-      if (item.cropCoords) {
-
-        var thumbnailCoords = [];
-        for (var i = 0; i < item.cropCoords.length; i++) {
-          thumbnailCoords.push(item.cropCoords[i] / 3);
-        }
-
-        $item.find('[data-crop-image]').Jcrop({
-          setSelect: thumbnailCoords,
-          onChange: function(c) {
-            updateCoords(item._id,c);
-          }
-        });
-
-      } else{
-
-        $item.find('[data-crop-image]').Jcrop({
-          onChange: function(c) {
-            updateCoords(item._id,c);
-          }
-        });
-
       }
       $item.data('item', item);
       $item.find('[data-remove]').click(function() {
@@ -1242,19 +1251,6 @@ apos.widgetTypes.slideshow = {
         info.hyperlink = $item.find('[data-hyperlink]').val();
         info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
         info.credit = $item.find('[data-credit]').val();
-        
-        if (typeof $item.find('[data-crop-image]').attr('data-crop-x') !== 'undefined') {
-          var cropCoords = [];
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-x'), 10) * 3);
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-y'), 10) * 3);
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-x2'), 10) * 3);
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-y2'), 10) * 3);
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-w'), 10) * 3);
-          cropCoords.push(parseInt($item.find('[data-crop-image]').attr('data-crop-h'), 10) * 3);
-          info.cropCoords = cropCoords;
-        }
-        
-
 
         self.data.items.push(info);
 

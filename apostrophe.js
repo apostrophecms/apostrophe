@@ -170,7 +170,7 @@ function Apos() {
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'htmlEditor', 'hint'
+    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'htmlEditor', 'cropEditor'
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -496,6 +496,10 @@ function Apos() {
       aposLocals.aposFilePath = function(file, options) {
         options = options || {};
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
+        if (file.crop) {
+          var c = file.crop;
+          path += '.' + c.left + '.' + c.top + '.' + c.width + '.' + c.height;
+        }
         if (options.size) {
           path += '.' + options.size;
         }
@@ -733,6 +737,13 @@ function Apos() {
                   return callback(err);
                 }
                 info.extension = result.extension;
+                info.width = result.width;
+                info.height = result.height;
+                if (info.width > info.height) {
+                  info.landscape = true;
+                } else {
+                  info.portrait = true;
+                }
                 return callback(null);
               });
             } else {
@@ -756,6 +767,66 @@ function Apos() {
 
         }, function(err) {
           return res.send({ files: infos, status: 'ok' });
+        });
+      });
+
+      // Crop a previously uploaded image. This uploads a new, cropped version of
+      // it to uploadfs, named /files/ID-NAME.top.left.width.height.extension
+      app.post('/apos/crop', function(req, res) {
+        var _id = req.body._id;
+        var crop = req.body.crop;
+        var file;
+        async.series([
+          function(callback) {
+            return self.permissions(req, 'edit-media', null, callback);
+          },
+          function(callback) {
+            files.findOne({ _id: _id }, function(err, fileArg) {
+              file = fileArg;
+              return callback(err);
+            });
+          }
+        ], function(err) {
+          if (!file) {
+            return fail();
+          }
+          file.crops = file.crops || [];
+          var existing = _.find(file.crops, function(iCrop) {
+            if (_.isEqual(crop, iCrop)) {
+              return true;
+            }
+          });
+          if (existing) {
+            // We're done, this crop is already available
+            return res.send('OK');
+          }
+          // Pull the original out of cloud storage to a temporary folder where
+          // it can be cropped and popped back into uploadfs
+          var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
+          var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+          var croppedFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
+
+          async.series([
+            function(callback) {
+              uploadfs.copyOut(originalFile, tempFile, callback);
+            },
+            function(callback) {
+              uploadfs.copyImageIn(tempFile, croppedFile, { crop: crop }, callback);
+            },
+            function(callback) {
+              file.crops.push(crop);
+              files.update({ _id: file._id }, file, callback);
+            }
+          ], function(err) {
+            // We're done with the temp file. We don't care if it was never created.
+            fs.unlink(tempFile, function() { });
+            if (err) {
+              res.statusCode = 404;
+              return res.send('Not Found');
+            } else {
+              return res.send('OK');
+            }
+          });
         });
       });
 

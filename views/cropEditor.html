@@ -1,0 +1,15 @@
+{# Template for image cropping modal #}
+<div class="apos-slideshow-crop apos-modal apos-template">
+  <h3>
+    {% block title %}
+      Crop Image
+    {% endblock %}
+  </h3>
+  <div class="apos-modal-body">
+    <img data-crop-image />
+  </div>
+  <div class="apos-modal-footer">
+    <a href="#" class="apos-control apos-button apos-save">Crop</a>
+    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
+  </div>
+</div>

@@ -1054,11 +1054,11 @@ textarea.apos-code {
     .apos-slideshow-extra-fields { display: block; width: 250px; }
   }
 
-  &.apos-slideshow-reveal-crop
-  {
-    background:#eee;
-    .apos-slideshow-crop{display: block;}
-  }
+  // &.apos-slideshow-reveal-crop
+  // {
+  //   background:#eee;
+  //   .apos-slideshow-crop{display: block;}
+  // }
 
   .apos-slideshow-editor-item-box
   {
@@ -1241,19 +1241,23 @@ textarea.apos-code {
 }
 
 // Slideshow Cropping
-.apos-slideshow-crop
-{
-  position: absolute;
-  bottom:-57px;
-  display: inline-block;
-  z-index: 11;
-  padding: 20px 10px 10px 10px;
-  -webkit-box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
-  box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
-  background: #eee;
-  display: none;
+// This is commented out because we're using a real apos-modal. If you would like a different
+// style for this modal think about adding an additional class that tweaks apos-modal rather than
+// reinventing modals. -Tom
+//
+// .apos-slideshow-crop
+// {
+//   position: absolute;
+//   bottom:-57px;
+//   display: inline-block;
+//   z-index: 11;
+//   padding: 20px 10px 10px 10px;
+//   -webkit-box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
+//   box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
+//   background: #eee;
+//   display: none;
   
-}
+// }
 
 // End Apostrophe Slideshow Modals
 

@@ -93,6 +93,12 @@ apos.filePath = function(file, options) {
   if (options.size) {
     path += '.' + options.size;
   }
+  // NOTE: the crop must actually exist already, you can't just invent them
+  // browser-side without the crop API never having come into play
+  if (file.crop) {
+    var c = file.crop;
+    path += '.' + c.left + '.' + c.top + '.' + c.width + '.' + c.height;
+  }
   return path + '.' + file.extension;
 };
 
@@ -430,9 +436,12 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
+  console.log(sel);
+  console.log($el.length);
   // It's not uncommon to have duplicates of a template that hasn't
   // been overridden for a derived type yet. Behave well in this case
   $el = $el.filter(':first');
+  console.log($el[0]);
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
