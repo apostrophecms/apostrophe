@@ -676,6 +676,15 @@ apos.globalReplace = function(haystack, needle, replacement) {
   }
 };
 
+// pad an integer with leading zeroes, creating a string
+apos.padInteger = function(i, places) {
+    var s = i + '';
+    while (s.length < places) {
+      s = '0' + s;
+    }
+    return s;
+  };
+
 // MINOR JQUERY EXTENSIONS
 
 (function( $ ){

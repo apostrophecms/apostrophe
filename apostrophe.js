@@ -2795,7 +2795,30 @@ function Apos() {
       );
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave], callback);
+    function explodePublishedAt(callback) {
+      // the publishedAt property of articles must also be available in
+      // the form of two more easily edited fields, publicationDate and
+      // publicationTime
+      var used = false;
+      self.forEveryPage({ type: 'blogPost' }, function(page, callback) {
+        if ((page.publishedAt !== undefined) && (page.publicationDate === undefined)) {
+          if (!used) {
+            console.log('setting publication date and time for posts');
+            used = true;
+          }
+          page.publicationDate = moment(page.publishedAt).format('YYYY-MM-DD');
+          page.publicationTime = moment(page.publishedAt).format('HH:mm');
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { publicationDate: page.publicationDate, publicationTime: page.publicationTime } },
+            callback);
+        } else {
+          return callback(null);
+        }
+      }, callback);
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt], callback);
   };
 
   self.tasks.index = function(callback) {
