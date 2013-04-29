@@ -1071,36 +1071,15 @@ apos.widgetTypes.slideshow = {
        reflect();
       });
 
-    };
-
-    // Counts the list items in the DOM. Useful when still populating it.
-    self.count = function() {
-      return $items.find('[data-item]:not(.apos-template)').length;
-
-    };
-
-    // The server will render an actual slideshow, but we also want to see
-    // thumbnails of everything with draggability for reordering and remove buttons
-    self.prePreview = function(callback) {
-
-      $items.find('[data-item]:not(.apos-template)').remove();
-      var items = self.data.items;
-      if (!items) {
-        items = [];
-      }
-      _.each(items, function(item) {
-        addItem(item);
-      });
-
       // on Edit button click, reveal extra fields
-      self.$el.find('[data-extra-fields-edit]').on('click', function(){
+      self.$el.on('click', '[data-extra-fields-edit]', function(){
         self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
         var $button = $(this);
         $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-extra-fields');
       });
 
       // on Extra Fields Save, reflect and close Extra Fields
-      self.$el.find('[data-extra-fields-save]').on('click', function(){
+      self.$el.on('click', '[data-extra-fields-save]', function(){
         reflect();
         var $button = $(this);
         $button.closest('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
@@ -1155,6 +1134,27 @@ apos.widgetTypes.slideshow = {
             });
           }
         });
+      });
+
+    };
+
+    // Counts the list items in the DOM. Useful when still populating it.
+    self.count = function() {
+      return $items.find('[data-item]:not(.apos-template)').length;
+
+    };
+
+    // The server will render an actual slideshow, but we also want to see
+    // thumbnails of everything with draggability for reordering and remove buttons
+    self.prePreview = function(callback) {
+
+      $items.find('[data-item]:not(.apos-template)').remove();
+      var items = self.data.items;
+      if (!items) {
+        items = [];
+      }
+      _.each(items, function(item) {
+        addItem(item);
       });
     };
 
