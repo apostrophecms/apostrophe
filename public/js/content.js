@@ -579,8 +579,9 @@ apos.getRadio = function($els) {
 };
 
 
-// Convert camel case to a hyphenated css name. Not especially fast,
+// Convert everything else to a hyphenated css name. Not especially fast,
 // hopefully you only do this during initialization and remember the result
+// KEEP IN SYNC WITH SERVER SIDE VERSION in apostrophe.js
 apos.cssName = function(camel) {
   var i;
   var css = '';
@@ -675,6 +676,15 @@ apos.globalReplace = function(haystack, needle, replacement) {
     haystack = haystack.substr(index + needle.length);
   }
 };
+
+// pad an integer with leading zeroes, creating a string
+apos.padInteger = function(i, places) {
+    var s = i + '';
+    while (s.length < places) {
+      s = '0' + s;
+    }
+    return s;
+  };
 
 // MINOR JQUERY EXTENSIONS
 

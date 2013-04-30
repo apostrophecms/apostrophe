@@ -965,6 +965,8 @@ apos.widgetTypes.slideshow = {
     var $items;
     // Options passed from template or other context
     var templateOptions = options.options || {};
+    var aspectRatio = templateOptions.aspectRatio;
+    var minSize = templateOptions.minSize;
     var limit = templateOptions.limit;
     var extraFields = templateOptions.extraFields;
 
@@ -980,13 +982,13 @@ apos.widgetTypes.slideshow = {
 
     self.busy = function(state) {
       if (state) {
-        $('[data-progress]').show();
-        $('[data-finished]').hide();
+        self.$el.find('[data-progress]').show();
+        self.$el.find('[data-finished]').hide();
       } else {
-        $('[data-progress]').hide();
-        $('[data-finished]').show();
+        self.$el.find('[data-progress]').hide();
+        self.$el.find('[data-finished]').show();
       }
-    }
+    };
 
     // Our current thinking is that preview is redundant for slideshows.
     // Another approach would be to make it much smaller. We might want that
@@ -1089,46 +1091,107 @@ apos.widgetTypes.slideshow = {
       self.$el.on('click', '[data-crop]', function() {
         var $item = $(this).closest('[data-item]');
         var item = $item.data('item');
-        self.busy(true);
-        var $cropModal = apos.modalFromTemplate('.apos-slideshow-crop', {
+        var width;
+        var height;
+
+        // jcrop includes some tools for scaling coordinates but they are
+        // not consistent throughout jcrop, so do it ourselves
+
+        // TODO: get this from the CSS without interfering with the
+        // ability of the image to report its true size
+        var cropWidth = 770;
+
+        function down(coord) {
+          return Math.round(coord * cropWidth / width);
+        }
+
+        function up(coord) {
+          return Math.round(coord * width / cropWidth);
+        }
+
+        function cropToJcrop(crop) {
+          return [ down(item.crop.left), down(item.crop.top), down(item.crop.left + item.crop.width), down(item.crop.top + item.crop.height) ];
+        }
+
+        function jcropToCrop(jcrop) {
+          return {
+            top: up(jcrop.y),
+            left: up(jcrop.x),
+            width: up(jcrop.w),
+            height: up(jcrop.h)
+          };
+        }
+
+        var $cropModal;
+
+        // Cropping modal needs its own busy indicator
+        function busy(state) {
+          if (state) {
+            $cropModal.find('[data-progress]').show();
+            $cropModal.find('[data-finished]').hide();
+          } else {
+            $cropModal.find('[data-progress]').hide();
+            $cropModal.find('[data-finished]').show();
+          }
+        }
+
+        $cropModal = apos.modalFromTemplate('.apos-slideshow-crop', {
           init: function(callback) {
             // Cropping should use the full size original. This gives us both the right
             // coordinates and a chance to implement zoom if desired
             var $cropImage = $cropModal.find('[data-crop-image]');
+            busy(true);
+            // Load the image at its full size while hidden to discover its dimensions
+            // (TODO: record those in the database and skip this performance-lowering hack)
+            $cropImage.css('visibility', 'hidden');
             $cropImage.attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.extension);
-            apos.whenImagesReady($item, function() {
+            apos.whenImagesReady($cropImage, function(widthArg, heightArg) {
+              // Now we know the true dimensions, record them and scale down the image
+              width = widthArg;
+              height = heightArg;
+              var viewWidth = down(width);
+              var viewHeight = down(height);
+              $cropImage.css('width', viewWidth + 'px');
+              $cropImage.css('height', viewHeight + 'px');
+              $cropImage.css('visibility', 'visible');
               var jcropArgs = {};
               if (item.crop) {
-                jcropArgs.setSelect = [ item.crop.left, item.crop.top, item.crop.left + item.crop.width, item.crop.top + item.crop.height ];
+                jcropArgs.setSelect = cropToJcrop(item.crop);
               }
+              if (minSize) {
+                jcropArgs.minSize = [ down(minSize[0]), down(minSize[1]) ];
+              }
+              if (aspectRatio) {
+                jcropArgs.aspectRatio = aspectRatio[0] / aspectRatio[1];
+              }
+              apos.log(jcropArgs);
               // Pass jcrop arguments and capture the jcrop API object so we can call
               // tellSelect at a convenient time
               $cropImage.Jcrop(jcropArgs, function() {
                 $item.data('jcrop', this);
               });
-              self.busy(false);
+              busy(false);
             });
             return callback(null);
           },
 
           save: function(callback) {
             var c = $item.data('jcrop').tellSelect();
-            item.crop = {
-              top: c.y,
-              left: c.x,
-              width: c.w,
-              height: c.h
-            };
+            // If no crop is possible there may
+            // be NaN present. Just cancel with no crop performed
+            if ((c.w === undefined) || isNaN(c.w) || isNaN(c.h)) {
+              return callback(null);
+            }
             // Ask the server to render this crop
-            self.busy(true);
+            busy(true);
+            item.crop = jcropToCrop(c);
             $.post('/apos/crop', { _id: $item.data('item')._id, crop: item.crop }, function(data) {
               reflect();
-              apos.log('removing class');
               $item.removeClass('apos-slideshow-reveal-crop');
-              self.busy(false);
+              busy(false);
               return callback(null);
             }).error(function() {
-              self.busy(false);
+              busy(false);
               alert('Server error, please retry');
               return callback('fail');
             });

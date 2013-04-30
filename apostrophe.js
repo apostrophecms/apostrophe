@@ -141,6 +141,8 @@ function Apos() {
     'vendor/underscore-min',
     // For everything
     'vendor/jquery',
+    // For parsing query parameters browser-side
+    'vendor/jquery-url-parser',
     // For blueimp uploader, drag and drop reordering of anything, datepicker
     // & autocomplete
     'vendor/jquery-ui',
@@ -2124,6 +2126,10 @@ function Apos() {
       return data;
     });
 
+    nunjucksEnv.addFilter('css', function(data) {
+      return self.cssName(data);
+    });
+
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
       // Leverage jQuery's willingness to parse attributes as JSON objects and arrays
       // if they look like it. TODO: find out if this still works cross browser with
@@ -2327,19 +2333,33 @@ function Apos() {
     return s.charAt(0).toUpperCase() + s.substr(1);
   };
 
-  // Convert camel case to a hyphenated css name. Not especially fast,
+  // Convert everything else to a hyphenated css name. Not especially fast,
   // hopefully you only do this during initialization and remember the result
+  // KEEP IN SYNC WITH BROWSER SIDE VERSION in content.js
   self.cssName = function(camel) {
     var i;
     var css = '';
+    var dash = false;
     for (i = 0; (i < camel.length); i++) {
       var c = camel.charAt(i);
-      if (c === c.toUpperCase()) {
-        css += '-';
-        css += c.toLowerCase();
-      } else {
-        css += c;
+      var lower = ((c >= 'a') && (c <= 'z'));
+      var upper = ((c >= 'A') && (c <= 'Z'));
+      var digit = ((c >= '0') && (c <= '9'));
+      if (!(lower || upper || digit)) {
+        dash = true;
+        continue;
       }
+      if (upper) {
+        if (i > 0) {
+          dash = true;
+        }
+        c = c.toLowerCase();
+      }
+      if (dash) {
+        css += '-';
+        dash = false;
+      }
+      css += c;
     }
     return css;
   };
@@ -2795,7 +2815,30 @@ function Apos() {
       );
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave], callback);
+    function explodePublishedAt(callback) {
+      // the publishedAt property of articles must also be available in
+      // the form of two more easily edited fields, publicationDate and
+      // publicationTime
+      var used = false;
+      self.forEveryPage({ type: 'blogPost' }, function(page, callback) {
+        if ((page.publishedAt !== undefined) && (page.publicationDate === undefined)) {
+          if (!used) {
+            console.log('setting publication date and time for posts');
+            used = true;
+          }
+          page.publicationDate = moment(page.publishedAt).format('YYYY-MM-DD');
+          page.publicationTime = moment(page.publishedAt).format('HH:mm');
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { publicationDate: page.publicationDate, publicationTime: page.publicationTime } },
+            callback);
+        } else {
+          return callback(null);
+        }
+      }, callback);
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt], callback);
   };
 
   self.tasks.index = function(callback) {
