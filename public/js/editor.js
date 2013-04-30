@@ -237,11 +237,15 @@ apos.Editor = function(options) {
     return true;
   });
 
+  var $area = self.$el.closest('.apos-area');
+  var areaOptions = $area.data('options');
+
   // All buttons that launch editors derived from widgetEditor
 
   self.$el.find('[data-widgetButton]').click(function() {
     var widgetType = $(this).attr('data-widgetButton');
-    new apos.widgetTypes[widgetType].editor({ editor: self });
+    var options = areaOptions[widgetType] || {};
+    new apos.widgetTypes[widgetType].editor({ editor: self, options: options });
     return false;
   }).mousedown(function(e) {
     // Must prevent default on mousedown or the rich text editor loses the focus
@@ -260,10 +264,12 @@ apos.Editor = function(options) {
     var $widget = $(this).closest('[data-type]');
     var widgetType = $widget.attr('data-type');
     var widgetId = $widget.attr('data-id');
+    var options = areaOptions[widgetType] || {};
     new apos.widgetTypes[widgetType].editor(
     {
       editor: self,
-      widgetId: widgetId
+      widgetId: widgetId,
+      options: options
     });
     return false;
   });
@@ -964,6 +970,8 @@ apos.widgetTypes.slideshow = {
     var self = this;
     var $items;
     // Options passed from template or other context
+    apos.log('slideshow options');
+    apos.log(options.options);
     var templateOptions = options.options || {};
     var aspectRatio = templateOptions.aspectRatio;
     var minSize = templateOptions.minSize;
@@ -1676,8 +1684,11 @@ apos.enableAreas = function() {
 
     var area = $(this).closest('.apos-area');
     var slug = area.attr('data-slug');
+    var options = area.data('options');
+    options.slug = slug;
 
-    $.get('/apos/edit-area', { slug: slug, controls: area.attr('data-controls') }, function(data) {
+    // TODO think about POSTing JSON directly
+    $.get('/apos/edit-area', { slug: slug, options: JSON.stringify(options) }, function(data) {
       area.find('.apos-edit-view').remove();
       var editView = $('<div class="apos-edit-view"></div>');
       editView.append(data);

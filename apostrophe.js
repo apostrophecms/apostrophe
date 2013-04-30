@@ -448,6 +448,8 @@ function Apos() {
       };
 
       aposLocals.aposItemNormalView = function(item, options) {
+        console.log("options to " + item.type + " are: ");
+        console.log(options);
         if (!options) {
           options = {};
         }
@@ -836,11 +838,15 @@ function Apos() {
       // req.query.slug.
 
       app.get('/apos/edit-area', function(req, res) {
-        var slug = req.query.slug;
-        var area;
-        var controls = req.query.controls ? req.query.controls.split(' ') : [];
-        if (!controls.length) {
-          controls = self.defaultControls;
+        try {
+          var slug = req.query.slug;
+          var options = JSON.parse(req.query.options);
+          var area;
+          var controls = options.controls || self.defaultControls;
+          delete options.controls;
+        } catch (e) {
+          res.statusCode = 500;
+          return res.send('bad arguments');
         }
 
         function permissions(callback) {
@@ -884,6 +890,8 @@ function Apos() {
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
           area.standalone = true;
+          area.editView = true;
+          area.options = options;
           return render(res, 'editArea', area);
         }
 

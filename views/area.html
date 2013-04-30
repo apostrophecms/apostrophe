@@ -1,4 +1,4 @@
-<div class="apos-area" data-slug="{{ options.slug }}" data-controls="{{ options.controls.join(' ') }}">
+<div class="apos-area" data-slug="{{ options.slug }}" data-options="{{ options | jsonAttribute }}">
   <div class="apos-normal-view">
     {%- if options.edit -%}
       <div class="apos-area-controls">
