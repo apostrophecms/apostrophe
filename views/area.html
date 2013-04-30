@@ -1,11 +1,11 @@
-<div class="apos-area" data-slug="{{ slug }}" data-controls="{{ controls.join(' ') }}">
+<div class="apos-area" data-slug="{{ options.slug }}" data-controls="{{ options.controls.join(' ') }}">
   <div class="apos-normal-view">
-    {%- if edit -%}
+    {%- if options.edit -%}
       <div class="apos-area-controls">
         <a class="apos-control apos-button apos-edit-area" href="#"><i class="icon-pencil"></i></a>
       </div>
       <div class="apos-clear"></div>
     {%- endif -%}
-    <div class="apos-content">{{ aposAreaContent(area.items, options) }}</div>
+    <div class="apos-content">{{ aposAreaContent(options.area.items, options) }}</div>
   </div>
 </div>

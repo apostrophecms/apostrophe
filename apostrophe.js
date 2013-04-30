@@ -394,7 +394,7 @@ function Apos() {
           // edit pages not previously edited
           options.area = { items: [] };
         }
-        return partial('area', options);
+        return partial('area', { options: options });
       };
 
       aposLocals.aposSingleton = function(options) {
