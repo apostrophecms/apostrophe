@@ -1455,7 +1455,8 @@ function Apos() {
             if (page.path) {
               page.path += num;
             }
-            return self.putPage(req, page.slug, page, callback);
+            // Retry must use the OLD slug or it will just keep hitting dupe errors
+            return self.putPage(req, slug, page, callback);
           }
           return callback(err);
         }
