@@ -1096,15 +1096,22 @@ textarea.apos-code {
       }
       .apos-crop{display: none;}
     }
+    .apos-slideshow-controls
+    {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
 
   }
   .apos-slideshow-editor-image { height: 120%; }
 
   .apos-slideshow-control
   {
-    position: absolute;
+    // position: absolute;
+    float: right;
     background-color: @apos-base;
-    width: 25px;
+    width: 23px;
     height: 25px;
     cursor: pointer;
     color: white;
@@ -1133,7 +1140,8 @@ textarea.apos-code {
     right: 0;
     top: 0;
   }
-  .apos-edit
+  .apos-edit,
+  .apos-crop
   {
     // display: none;
     right: 24px;
@@ -1141,10 +1149,12 @@ textarea.apos-code {
     visibility: hidden;
     &::before
     {
-      content:'\1f527';
       visibility: visible;
     }
   }
+    .apos-edit::before { content:'\1f527'; }
+    .apos-crop::before { content:'\e746'; }
+
   .apos-slideshow-editor-item-extension
   {
     display: block;
