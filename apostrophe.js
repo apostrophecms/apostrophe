@@ -141,6 +141,8 @@ function Apos() {
     'vendor/underscore-min',
     // For everything
     'vendor/jquery',
+    // For parsing query parameters browser-side
+    'vendor/jquery-url-parser',
     // For blueimp uploader, drag and drop reordering of anything, datepicker
     // & autocomplete
     'vendor/jquery-ui',
