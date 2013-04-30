@@ -448,8 +448,6 @@ function Apos() {
       };
 
       aposLocals.aposItemNormalView = function(item, options) {
-        console.log("options to " + item.type + " are: ");
-        console.log(options);
         if (!options) {
           options = {};
         }
