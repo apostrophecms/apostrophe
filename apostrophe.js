@@ -389,12 +389,16 @@ function Apos() {
         if (!options.controls) {
           options.controls = self.defaultControls;
         }
-        if (!options.area) {
+        var area = options.area;
+        delete options.area;
+        if (!area) {
           // Invent the area if it doesn't exist yet, so we can
           // edit pages not previously edited
-          options.area = { items: [] };
+          area = { items: [] };
         }
-        return partial('area', { options: options });
+        // Keep options and area separate, area is much too big to stuff into
+        // the options attribute of every area element, whoops
+        return partial('area', { options: options, area: area });
       };
 
       aposLocals.aposSingleton = function(options) {
