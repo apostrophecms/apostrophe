@@ -16,6 +16,8 @@ apos.Editor = function(options) {
   var styleBlockElements;
   var resizing = false;
 
+  var areaOptions = options.options || {};
+
   // Helper functions
 
   function enableControl(command, keys, promptForLabel) {
@@ -236,9 +238,6 @@ apos.Editor = function(options) {
     self.undoPoint();
     return true;
   });
-
-  var $area = self.$el.closest('.apos-area');
-  var areaOptions = $area.data('options');
 
   // All buttons that launch editors derived from widgetEditor
 

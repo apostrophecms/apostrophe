@@ -842,7 +842,7 @@ function Apos() {
       app.get('/apos/edit-area', function(req, res) {
         try {
           var slug = req.query.slug;
-          var options = JSON.parse(req.query.options);
+          var options = req.query.options ? JSON.parse(req.query.options) : {};
           var area;
           var controls = options.controls || self.defaultControls;
           delete options.controls;
@@ -924,6 +924,8 @@ function Apos() {
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
+        // TODO: accept JSON options in this method as we do in regular edit-area
+        area.options = {};
         return render(res, 'editArea', area);
       });
 

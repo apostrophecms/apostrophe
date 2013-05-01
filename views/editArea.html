@@ -62,7 +62,8 @@
     // I have seen jquery domready fail to see this id yet, so
     // wait for "next tick" as well (Chrome)
     apos.afterYield(function() {
-      var editor = new apos.Editor({ selector: '#{{ wid }}' });
+      // Pass in the options from the area partial
+      var editor = new apos.Editor({ selector: '#{{ wid }}', options: {{ options | json }} });
       $(function() {
 {% if standalone %}
         $('#{{ wid }} [data-editable]').focus();
