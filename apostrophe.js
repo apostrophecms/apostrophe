@@ -2686,7 +2686,15 @@ function Apos() {
   // page. Your 'callback' function is called at the end with an error if any.
 
   self.forEveryPage = function(criteria, each, callback) {
-    self.pages.find(criteria, function(err, cursor) {
+    return self.forEveryItemInCollection(self.pages, criteria, each, callback);
+  };
+
+  self.forEveryFile = function(criteria, each, callback) {
+    return self.forEveryItemInCollection(self.files, criteria, each, callback);
+  };
+
+  self.forEveryItemInCollection = function(collection, criteria, each, callback) {
+    collection.find(criteria, function(err, cursor) {
       if (err) {
         return callback(err);
       }
@@ -2851,6 +2859,40 @@ function Apos() {
       function(page, callback) {
         return self.indexPage({}, page, callback);
       }, callback);
+  };
+
+  self.tasks.rescale = function(callback) {
+    console.log('Rescaling all images with latest uploadfs settings');
+    self.files.count(function(err, total) {
+      if (err) {
+        return callback(err);
+      }
+      var n = 0;
+      self.forEveryFile({},
+        function(file, callback) {
+          if (!_.contains(['jpg', 'png', 'gif'], file.extension)) {
+            n++;
+            console.log('Skipping a non-image file: ' + file.name + '.' + file.extension);
+            return callback(null);
+          }
+          var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
+          var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+          n++;
+          console.log(n + ' of ' + total + ': ' + originalFile);
+          async.series([
+            function(callback) {
+              uploadfs.copyOut(originalFile, tempFile, callback);
+            },
+            function(callback) {
+              uploadfs.copyImageIn(tempFile, originalFile, callback);
+            },
+            function(callback) {
+              fs.unlink(tempFile, callback);
+            }
+          ], callback);
+        },
+        callback);
+    });
   };
 
   // This is not a migration because it is not mandatory to have search on your site
