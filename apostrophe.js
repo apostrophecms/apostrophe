@@ -2738,26 +2738,17 @@ function Apos() {
       // end_date and end_time, for sorting and output purposes, but it
       // contained start_time instead. Fortunately end_date and end_time are
       // authoritative so we can just rebuild it
-      self.pages.find({ type: 'event' }, function(err, cursor) {
-        if (err) {
-          return callback(err);
+      self.forEveryPage({ type: 'event' }, function(event, callback) {
+        if (event.endTime) {
+          event.end = new Date(event.endDate + ' ' + event.endTime);
+        } else {
+          event.end = new Date(event.endDate);
         }
-        var done = false;
-        async.whilst(function() { return !done; }, function(callback) {
-          return cursor.nextObject(function(err, event) {
-            if (err) {
-              return callback(err);
-            }
-            if (!event) {
-              done = true;
-              return callback(null);
-            }
-            event.end = new Date(event.endDate + ' ' + event.endTime);
-            self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
-              return callback(err);
-            });
-          });
-        }, callback);
+        self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
+          return callback(err);
+        });
+      }, function(err) {
+        return callback(err);
       });
     }
 
