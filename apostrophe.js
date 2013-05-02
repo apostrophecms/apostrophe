@@ -2259,7 +2259,8 @@ function Apos() {
     return q;
   };
 
-  // For convenience when configuring uploadfs
+  // For convenience when configuring uploadfs. We recommend always configuring
+  // these sizes and adding more if you wish
   self.defaultImageSizes = [
     {
       name: 'full',
@@ -2280,10 +2281,16 @@ function Apos() {
       name: 'one-third',
       width: 380,
       height: 700
+    },
+    // Handy for thumbnailing
+    {
+      name: 'one-sixth',
+      width: 190,
+      height: 350
     }
   ];
 
-  // Is this MongoDB error related to uniquness? Great for retrying on duplicates.
+  // Is this MongoDB error related to uniqueness? Great for retrying on duplicates.
   // Used heavily by the pages module and no doubt will be by other things.
   //
   // There are three error codes for this: 13596 ("cannot change _id of a document")
