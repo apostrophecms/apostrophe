@@ -2582,6 +2582,8 @@ function Apos() {
   // console.log(self.sanitizeTime('23:35'));
   // console.log(self.sanitizeTime('11pm'));
 
+  // KEEP IN SYNC WITH CLIENT SIDE VERSION IN content.js
+  //
   // Convert a name to camel case. Only digits and ASCII letters remain.
   // Anything that isn't a digit or an ASCII letter prompts the next character
   // to be uppercase. Useful in converting CSV with friendly headings into
@@ -2605,6 +2607,31 @@ function Apos() {
     }
     return n;
   };
+
+  // MONGO HELPERS
+
+  // 'ids' should be an array of mongodb IDs. The elements of the 'items' array are
+  // returned in the order specified by 'ids'. This is useful after performing an
+  // $in query with MongoDB (note that $in does NOT sort its results in the order given).
+  //
+  // Any IDs that do not actually exist for an item in the 'items' array are not returned,
+  // and vice versa. You should not assume the result will have the same length as
+  // either array.
+
+  self.orderById = function(ids, items) {
+    var byId = {};
+    _.each(items, function(item) {
+      byId[item._id] = item;
+    });
+    items = [];
+    _.each(ids, function(_id) {
+      if (byId.hasOwnProperty(_id)) {
+        items.push(byId[_id]);
+      }
+    });
+    return items;
+  };
+
 
   // COMMAND LINE TASKS
   //

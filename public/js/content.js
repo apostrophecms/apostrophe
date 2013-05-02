@@ -436,12 +436,9 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
-  console.log(sel);
-  console.log($el.length);
   // It's not uncommon to have duplicates of a template that hasn't
   // been overridden for a derived type yet. Behave well in this case
   $el = $el.filter(':first');
-  console.log($el[0]);
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
@@ -578,6 +575,31 @@ apos.getRadio = function($els) {
   return $els.filter(':checked').val();
 };
 
+// KEEP IN SYNC WITH SERVER SIDE VERSION IN apostrophe.js
+//
+// Convert a name to camel case. Only digits and ASCII letters remain.
+// Anything that isn't a digit or an ASCII letter prompts the next character
+// to be uppercase. Useful in converting CSV with friendly headings into
+// sensible property names
+apos.camelName = function(s) {
+  var i;
+  var n = '';
+  var nextUp = false;
+  for (i = 0; (i < s.length); i++) {
+    var c = s.charAt(i);
+    if (c.match(/[A-Za-z0-9]/)) {
+      if (nextUp) {
+        n += c.toUpperCase();
+        nextUp = false;
+      } else {
+        n += c.toLowerCase();
+      }
+    } else {
+      nextUp = true;
+    }
+  }
+  return n;
+};
 
 // Convert everything else to a hyphenated css name. Not especially fast,
 // hopefully you only do this during initialization and remember the result
@@ -679,12 +701,12 @@ apos.globalReplace = function(haystack, needle, replacement) {
 
 // pad an integer with leading zeroes, creating a string
 apos.padInteger = function(i, places) {
-    var s = i + '';
-    while (s.length < places) {
-      s = '0' + s;
-    }
-    return s;
-  };
+  var s = i + '';
+  while (s.length < places) {
+    s = '0' + s;
+  }
+  return s;
+};
 
 // MINOR JQUERY EXTENSIONS
 

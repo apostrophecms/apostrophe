@@ -448,8 +448,6 @@ apos.Editor = function(options) {
               $widget.removeClass('apos-' + s.name);
             });
 
-            // console.log(size);
-
             if (size === 'full') {
               // full implies middle
               $widget.attr('data-position', 'middle');
@@ -842,8 +840,7 @@ apos.widgetEditor = function(options) {
       if (!self.editor) {
         return callback(null);
       }
-      // Get all the data attributes
-      var info = apos.cleanWidgetData(self.$widget.data());
+      var info = apos.getWidgetData(self.$widget);
 
       // Some widgets have content - markup that goes inside the widget
       // that was actually written by the user and can't be generated
@@ -969,8 +966,6 @@ apos.widgetTypes.slideshow = {
     var self = this;
     var $items;
     // Options passed from template or other context
-    apos.log('slideshow options');
-    apos.log(options.options);
     var templateOptions = options.options || {};
     var aspectRatio = templateOptions.aspectRatio;
     var minSize = templateOptions.minSize;
@@ -1171,7 +1166,6 @@ apos.widgetTypes.slideshow = {
               if (aspectRatio) {
                 jcropArgs.aspectRatio = aspectRatio[0] / aspectRatio[1];
               }
-              apos.log(jcropArgs);
               // Pass jcrop arguments and capture the jcrop API object so we can call
               // tellSelect at a convenient time
               $cropImage.Jcrop(jcropArgs, function() {
@@ -1732,7 +1726,7 @@ apos.enableAreas = function() {
     var itemData = { position: 'middle', size: 'full' };
     var $item = $singleton.find('.apos-content .apos-widget :first');
     if ($item.length) {
-      itemData = apos.cleanWidgetData($item.data());
+      itemData = apos.getWidgetData($item);
     }
     var $editor = new apos.widgetTypes[type].editor({
       data: itemData,
@@ -1840,7 +1834,7 @@ apos.parseArea = function(content) {
           item.content = apos.widgetTypes[type].getContent($(child));
         }
 
-        var data = apos.cleanWidgetData($(child).data());
+        var data = apos.getWidgetData($(child));
         _.extend(item, data);
         items.push(item);
       } else {
@@ -1949,6 +1943,29 @@ apos.jsonAttribute = function(value) {
   } else {
     return value;
   }
+};
+
+// Get data attributes, camelized, so data-id-list becomes idList. JSON-decode anything
+// that starts with [ or {. This matches the behavior of $.data, except that $.data has
+// caching behaviors that make it unsuitable for use once you start updating data attributes.
+// One difference from $.data: we don't try to coerce number-ish things to be numbers.
+
+apos.getWidgetData = function($widget) {
+  var data = {};
+  _.each($widget[0].attributes, function(attr) {
+    if (attr.name.substr(0,5) === 'data-') {
+      var value = attr.value;
+      if ((value[0] === '{') || (value[0] === '[')) {
+        try {
+          value = JSON.parse(value);
+        } catch(e) {
+          // OK, so it wasn't JSON, leave it alone
+        }
+      }
+      data[apos.camelName(attr.name.substr(5))] = value;
+    }
+  });
+  return apos.cleanWidgetData(data);
 };
 
 apos.cleanWidgetData = function(data) {
