@@ -234,12 +234,17 @@ body
 }
 
 
-.apos-toolbar .apos-control
+.apos-toolbar
 {
-  // margin-right: 2px;
-  // padding: 5px;
-  margin-right: 0px;
-  border-right: 1px solid #fff;
+  .apos-control
+  {
+    // margin-right: 2px;
+    // padding: 5px;
+    // margin-right: 0px;
+    // border-left: 1px solid #fff;
+    // border-top: 1px solid #fff;
+  }
+  
 }
 
 /**
@@ -266,6 +271,17 @@ body
   font-size: 11px;
   font-family: 'cabin';
   letter-spacing: 1px;
+  &.apos-menu-style
+  {
+    background-color: darken(@apos-base, 10%);
+    &:hover
+    {
+      background-color: darken(@apos-base, 15%);
+    }
+    width: 50%;
+    max-width: 170px;
+    select {width: 95%;}
+  }
   &:hover{text-decoration:none !important;}
   
   &.apos-menu
@@ -311,6 +327,7 @@ body
 .apos-button
 {
   // .box-shadow(1px 1px 5px, 20%);
+  line-height: 1em !important;
   cursor: pointer;
   .transition;
   
@@ -341,9 +358,14 @@ body
 
 .apos-toolbar
 {
-  float: right;
-  display: inline-block;
-  margin-top: -26px;
+  // float: right;
+  // position: absolute;
+  // width: 9999px;
+  // max-width: 200%;
+  display: block;
+  // margin-top: -26px;
+  height: 100%;
+  background-color: @apos-base;
 }
 
 .apos-toolbar .apos-menu-label
@@ -428,6 +450,8 @@ body
 {
   .clearfix;
   min-height: 400px;
+  max-height: 400px;
+  overflow: scroll;
   background-color: #FFF;
   border: 1px solid rgb(221, 221, 221);
   padding: 10px;

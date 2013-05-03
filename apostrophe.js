@@ -99,6 +99,7 @@ function Apos() {
         { value: 'h4', label: 'Heading 4' },
         { value: 'h5', label: 'Heading 5' },
         { value: 'h6', label: 'Heading 6' },
+        { value: 'pre', label: 'Preformatted' },
       ]
     },
     bold: {
@@ -2092,7 +2093,7 @@ function Apos() {
     code: {
       widget: true,
       label: 'Code',
-      icon: 'code',
+      // icon: 'code',
       plaintext: true,
       wrapper: 'pre',
       css: 'code',
@@ -2106,7 +2107,7 @@ function Apos() {
     html: {
       widget: true,
       label: 'HTML',
-      // icon: 'html',
+      icon: 'code',
       css: 'html',
       addDiffLines: function(item, lines) {
         self.addDiffLinesForText(item.content ? item.content : '', lines);
