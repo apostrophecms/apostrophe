@@ -551,8 +551,6 @@ function Apos() {
       // Keep in sync with browser side implementation in content.js
       aposLocals.aposFilePath = function(file, options) {
         options = options || {};
-        console.log('in aposFilePath:');
-        console.log(file);
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
         if (file.crop) {
           var c = file.crop;
