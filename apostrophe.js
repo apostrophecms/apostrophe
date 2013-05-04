@@ -78,7 +78,8 @@ function Apos() {
   // offer a particular control, ever, you can remove it from this list
   // programmatically
 
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'code', 'html' ];
+  // Removed the code widget for now in favor of giving 'pre' in the format dropdown a try
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -452,6 +453,54 @@ function Apos() {
         return result;
       };
 
+      // Returns the first file offered by an area that meets the
+      // criteria specified by `options`. If no options are passed,
+      // the first file offered by the area is returned. Currently the
+      // supported options are `extension` (such as pdf, gif or txt) and
+      // `extensions` (which permits an array). This is useful to pull
+      // out a particular file to be specially featured in an index view.
+      aposLocals.aposAreaFindFile = function(options) {
+        if (!options) {
+          options = {};
+        }
+        var area = options.area;
+        var winningFile;
+        if (!(area && area.items)) {
+          return false;
+        }
+        _.some(area.items, function(item) {
+          // The slideshow, files and similar widgets use an 'items' array
+          // to store files. Let's look there, and also allow for '_items' to
+          // support future widgets that pull in files dynamically. However
+          // we also must make sure the items are actually files by making
+          // sure they have an `extension` property. (TODO: this is a hack,
+          // think about having widgets register to participate in this.)
+          if (!(item.items || item._items)) {
+            return false;
+          }
+          var file = _.find(item.items || item._items, function(file) {
+            if (file.extension === undefined) {
+              return false;
+            }
+            if (options.extension) {
+              if (file.extension !== options.extension) {
+                return false;
+              }
+            }
+            if (options.extensions) {
+              if (!_.contains(options.extensions, file.extension)) {
+                return false;
+              }
+            }
+            return true;
+          });
+          if (file) {
+            winningFile = file;
+          }
+        });
+        return winningFile;
+      };
+
       aposLocals.aposItemNormalView = function(item, options) {
         if (!options) {
           options = {};
@@ -502,6 +551,8 @@ function Apos() {
       // Keep in sync with browser side implementation in content.js
       aposLocals.aposFilePath = function(file, options) {
         options = options || {};
+        console.log('in aposFilePath:');
+        console.log(file);
         var path = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name;
         if (file.crop) {
           var c = file.crop;

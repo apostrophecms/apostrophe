@@ -368,7 +368,7 @@ apos.Editor = function(options) {
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
@@ -376,7 +376,7 @@ apos.Editor = function(options) {
       // Use first() because the first call usually resolves the rest, and if
       // we keep going with the old result set we'll wind up reversing the order
       // of the elements
-      $(this).find('h1, h2, h3, h4, h5, h6, div, p').first().each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre').first().each(function() {
         var inner = $(this);
         if (inner.parents('.apos-widget').length) {
           return;
