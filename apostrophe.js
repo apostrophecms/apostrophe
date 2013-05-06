@@ -180,6 +180,8 @@ function Apos() {
   // Full paths to assets as computed by pushAsset
   self._assets = { stylesheets: [], scripts: [], templates: [] };
 
+  var alreadyPushed = {};
+
   // self.pushAsset('stylesheet', 'foo', __dirname, '/apos-mymodule') will preload
   // /apos-mymodule/css/foo.css
 
@@ -203,8 +205,18 @@ function Apos() {
   // You should pass BOTH fs and web for a stylesheet or script. This allows
   // minification, LESS compilation that is aware of relative base paths, etc.
   // fs should be the PARENT of the public folder, not the public folder itself.
+  //
+  // It is acceptable to push an asset more than once. Only one copy is sent, at
+  // the earliest point requested.
 
   self.pushAsset = function(type, name, fs, web) {
+    var key = type + ':' + name + ':' + fs + ':' + web;
+    if (type !== 'template') {
+      if (alreadyPushed[key]) {
+        return;
+      }
+      alreadyPushed[key] = true;
+    }
     // Careful with the defaults on this, '' is not false for this purpose
     if (typeof(fs) !== 'string') {
       fs = __dirname;
@@ -2576,6 +2588,13 @@ function Apos() {
     }
   };
 
+  // Given a jQuery date object, return a date string in
+  // Apostrophe's preferred sortable, comparable, JSON-able format.
+  // If 'date' is missing the current date is used
+  self.formatDate = function(date) {
+    return moment(date).format('YYYY-MM-DD');
+  };
+
   // Accept a user-entered string in 12-hour or 24-hour time and returns a string
   // in 24-hour time. Seconds are not supported. If def is not set the default
   // is the current time
@@ -2620,6 +2639,16 @@ function Apos() {
       minutes: time[2],
       seconds: time[3] || 0
     };
+  };
+
+  // Given a jQuery date object, return a time string in
+  // Apostrophe's preferred sortable, comparable, JSON-able format:
+  // 24-hour time, with seconds.
+  //
+  // If 'date' is missing the current time is used
+
+  self.formatTime = function(date) {
+    return moment(date).format('HH:mm:ss');
   };
 
   // Date and time tests
