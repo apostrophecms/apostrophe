@@ -1917,13 +1917,33 @@ function Apos() {
   // The req object is available so that loaders can consider permissions
   // and perform appropriate caching for the lifetime of the request.
 
+  // What happens if the loader for a page triggers a load of that same page?
+  // To avoid infinite recursion we track the current recursion level for each
+  // page id. We tolerate it but only up to a point. This allows some semi-reasonable
+  // cases without crashing the site.
+
+  var loaderRecursion = {};
+  var maxLoaderRecursion = 3;
+
   self.callLoadersForPage = function(req, page, callback) {
+
+    if (loaderRecursion[page._id]) {
+      if (loaderRecursion[page._id] === maxLoaderRecursion) {
+        console.log('max loader recursion reached on ' + page.slug);
+        return callback(null);
+      }
+      loaderRecursion[page._id]++;
+    } else {
+      loaderRecursion[page._id] = 1;
+    }
+
     // Call loaders for all areas in a page. Wow, async.map is awesome.
     async.map(
       _.values(page.areas),
       function(area, callback) {
         return self.callLoadersForArea(req, area, callback);
       }, function(err, results) {
+        loaderRecursion[page._id]--;
         return callback(err);
       }
     );
