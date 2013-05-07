@@ -1490,13 +1490,19 @@ function Apos() {
   // You MUST pass the req object for permissions checking.
   //
   // A copy of the page is inserted into the versions collection.
+  //
+  // Please let this function generate ._id for you on a new page. This is
+  // necessary to allow putPage to distinguish new pages from old when
+  // automatically fixing unique slug errors.
 
   self.putPage = function(req, slug, page, callback) {
+    var newPage = false;
     if (!page.slug) {
       page.slug = slug;
     }
     if (!page._id) {
       page._id = generateId();
+      newPage = true;
     }
 
     // Provide the object rather than the slug since we have it and we can
@@ -1506,28 +1512,34 @@ function Apos() {
       self.permissions(req, 'edit-page', page, callback);
     }
 
-    function update(callback) {
-      self.pages.update({ slug: slug }, page, { upsert: true, safe: true },
-        function(err) {
-          if (err && self.isUniqueError(err))
-          {
-            var num = (Math.floor(Math.random() * 10)).toString();
-            if (page.slug === undefined) {
-              return callback('page.slug is not set');
-            }
-            page.slug += num;
-            // Path index is sparse, not everything is part of a page tree,
-            // don't create materialized paths where none are desired
-            // (for instance, blog posts)
-            if (page.path) {
-              page.path += num;
-            }
-            // Retry must use the OLD slug or it will just keep hitting dupe errors
-            return self.putPage(req, slug, page, callback);
+    function save(callback) {
+      function afterUpdate(err) {
+        if (err && self.isUniqueError(err))
+        {
+          var num = (Math.floor(Math.random() * 10)).toString();
+          if (page.slug === undefined) {
+            return callback('page.slug is not set');
           }
-          return callback(err);
+          page.slug += num;
+          // Path index is sparse, not everything is part of a page tree,
+          // don't create materialized paths where none are desired
+          // (for instance, blog posts)
+          if (page.path) {
+            page.path += num;
+          }
+          // Retry on an existing page must use the OLD slug or it will
+          // create unwanted clones. For a new page it must NOT use the old slug
+          // or it will keep failing
+          return save(callback);
         }
-      );
+        return callback(err);
+      }
+
+      if (newPage) {
+        self.pages.insert(page, { safe: true }, afterUpdate);
+      } else {
+        self.pages.update({ slug: slug }, page, { safe: true }, afterUpdate);
+      }
     }
 
     function versioning(callback) {
@@ -1544,7 +1556,7 @@ function Apos() {
       }
       return callback(null, page);
     }
-    async.series([permissions, update, versioning, indexing], finish);
+    async.series([permissions, save, versioning, indexing], finish);
   };
 
   // Given a request object (for permissions), a page object, and a version
