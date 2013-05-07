@@ -417,7 +417,6 @@ function Apos() {
 
       aposLocals.aposSingleton = function(options) {
         if (!self.itemTypes[options.type]) {
-          console.log("Unknown item type: " + options.type);
           return;
         }
         // If someone transforms an existing area into a singleton, do a reasonable thing by
