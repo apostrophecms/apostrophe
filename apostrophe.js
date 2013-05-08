@@ -970,6 +970,7 @@ function Apos() {
 
       app.post('/apos/edit-virtual-area', function(req, res) {
         var content = req.body.content ? JSON.parse(req.body.content) : [];
+        var options = req.body.options ? JSON.parse(req.body.options) : {};
         self.sanitizeItems(content);
         var area = {
           items: content
@@ -985,8 +986,7 @@ function Apos() {
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
-        // TODO: accept JSON options in this method as we do in regular edit-area
-        area.options = {};
+        area.options = options;
         return render(res, 'editArea', area);
       });
 
@@ -998,7 +998,7 @@ function Apos() {
       // a singleton thumbnail edit button for a post).
 
       app.post('/apos/edit-virtual-singleton', function(req, res) {
-        var options = {};
+        var options = req.body.options ? JSON.parse(req.body.options) : {};
         var content = req.body.content ? JSON.parse(req.body.content) : [];
         self.sanitizeItems(content);
         var area = {
@@ -1017,6 +1017,7 @@ function Apos() {
       });
 
       app.post('/apos/edit-area', function(req, res) {
+        var options = req.body.options ? JSON.parse(req.body.options) : {};
         var slug = req.body.slug;
         var content = JSON.parse(req.body.content);
         self.sanitizeItems(content);
@@ -1032,7 +1033,7 @@ function Apos() {
           }
 
           return self.callLoadersForArea(req, area, function() {
-            return res.send(aposLocals.aposAreaContent(area.items));
+            return res.send(aposLocals.aposAreaContent(area.items, options));
           });
         }
       });
@@ -1040,6 +1041,7 @@ function Apos() {
       app.post('/apos/edit-singleton', function(req, res) {
         var slug = req.body.slug;
         var content = JSON.parse(req.body.content);
+        var options = req.body.options ? JSON.parse(req.body.options) : {};
         // "OMG, what if they cheat and use a type not allowed for this singleton?"
         // When they refresh the page they will discover they can't see their hack.
         // aposSingleton only shows the first item of the specified type, regardless
@@ -1063,7 +1065,9 @@ function Apos() {
           }
 
           return self.callLoadersForArea(req, area, function() {
-            return res.send(aposLocals.aposAreaContent(area.items));
+            var areaOptions = {};
+            areaOptions[type] = options;
+            return res.send(aposLocals.aposAreaContent(area.items, areaOptions));
           });
         });
       });

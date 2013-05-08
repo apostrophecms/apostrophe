@@ -1706,6 +1706,7 @@ apos.enableAreas = function() {
         $.post('/apos/edit-area',
           {
             slug: slug,
+            options: area.attr('data-options'),
             content: apos.stringifyArea(area.find('[data-editable]'))
           }, function(data) {
             area.find('.apos-content').html(data);
@@ -1744,6 +1745,7 @@ apos.enableAreas = function() {
           $.post('/apos/edit-singleton',
             {
               slug: slug,
+              options: $singleton.attr('data-options'),
               // By now itemData has been updated (we passed it
               // into the widget and JavaScript passes objects by reference)
               content: JSON.stringify(itemData)
