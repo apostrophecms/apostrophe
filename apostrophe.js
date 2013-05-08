@@ -2998,7 +2998,52 @@ function Apos() {
       }, callback);
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt], callback);
+    function missingImageMetadata(callback) {
+      var n = 0;
+      return self.forEveryFile({ extension: { $in: [ 'gif', 'jpg', 'png' ] }, width: { $exists: 0 } }, function(file, callback) {
+        var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
+        var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+        n++;
+        if (n === 1) {
+          console.log('Adding metadata for image files (may take a while)...');
+        }
+        console.log(originalFile + ' to ' + tempFile);
+        async.series([
+          function(callback) {
+            uploadfs.copyOut(originalFile, tempFile, callback);
+          },
+          function(callback) {
+            return uploadfs.identifyLocalImage(tempFile, function(err, info) {
+              if (err) {
+                return callback(err);
+              }
+              file.width = info.width;
+              file.height = info.height;
+              if (file.width > file.height) {
+                file.landscape = true;
+              } else {
+                file.portrait = true;
+              }
+              return callback(null);
+            });
+          },
+          function(callback) {
+            files.update({ _id: file._id }, file, { safe: true }, callback);
+          },
+          function(callback) {
+            fs.unlink(tempFile, callback);
+          }
+        ], function(err) {
+          if (err) {
+            // Don't give up completely if a file is gone or bad
+            console.log('WARNING: error on ' + originalFile);
+          }
+          return callback(null);
+        });
+      }, callback);
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata], callback);
   };
 
   self.tasks.index = function(callback) {
