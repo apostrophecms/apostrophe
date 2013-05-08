@@ -230,6 +230,7 @@ apos.widgetPlayers.slideshow = function($widget)
   function adjustSize() {
     apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight) {
       $widget.find('[data-slideshow-items]').height(maxHeight);
+      $widget.height(maxHeight);
     });
   }
 
