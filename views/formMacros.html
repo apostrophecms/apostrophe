@@ -1,0 +1,65 @@
+{# Standard form markup, for convenience and consistency #}
+
+{% macro formText(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ label | css }}">
+    <label>{{ label | e }}</label>
+    <input name="{{ name | e }}" type="text">
+  </fieldset>
+{% endmacro %}
+
+{% macro formTags(name, label) %}
+  {# Later this will be customized with autocomplete and such #}
+  {{ formText(name, label) }}
+{% endmacro %}
+
+{% macro formTextarea(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ label | css }}">
+    <label>{{ label | e }}</label>
+    <textarea name="{{ name | e }}" rows="4"></textarea>
+  </fieldset>
+{% endmacro %}
+
+{% macro formSelect(name, label, choices) %}
+  <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ label | css }}">
+    <label>{{ label | e }}</label>
+    <select name="{{ name | e }}">
+      {% for choice in choices %}
+        <option value="{{ choice.name | e }}">{{ choice.label | e }}</option>
+      {% endfor %}
+    </select>
+  </fieldset>
+{% endmacro %}
+
+{# Less ambiguous to work with than a checkbox #}
+{% macro formBoolean(name, label) %}
+  {{ formSelect(name, label, [ { name: '1', label: 'Yes' }, { name: '0', label: 'No' }]) }}
+{% endmacro %}
+
+{# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
+{# specifying the type we want for the singleton #}
+{% macro formSingleton(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ label | css }}">
+    <label>{{ name }}</label>
+    {# js adds this singleton to the dialog #}
+    <div data-{{ name }}-edit-view></div>
+  </fieldset>
+{% endmacro %}
+
+{# See enableArea in snippets' main.js for the necessary plumbing #}
+{% macro formArea(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ label | css }}">
+    <label>{{ label | e }}</label>
+    {# js adds this area to the dialog #}
+    <div data-{{ name }}-edit-view></div>
+  </fieldset>
+{% endmacro %}
+
+{# A pill button with several mutually exclusive choices (a nicer radio button basically). #}
+{# Designed to be plumbed with javascript, note the data attributes #}
+{% macro formPill(name, options) %}
+  <span class="apos-pill" data-pill data-name="{{ name }}">
+    {%- for pill in options -%}
+      <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ pill.label }}</a>
+    {%- endfor -%}
+  </span>
+{% endmacro %}
