@@ -7,8 +7,8 @@
     {% for file in item.items %}
       {% if ((loop.index0 < options.limit) or (not options.limit)) %}
         {# Make the first image initially current #}
-        <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current apos-first {% endif %}{% if loop.last %}apos-last {% endif %}" style="background-image:url({{ aposFilePath(file, { size: size }) }});">
-          <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: size }) }}" />
+        <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current apos-first {% endif %}{% if loop.last %}apos-last {% endif %}" style="background-image:url({{ aposFilePath(file, { size: size, crop: item.crop }) }});">
+          <img class="apos-slideshow-image" data-image src="{{ aposFilePath(file, { size: size, crop: item.crop }) }}" />
           {% if file.description or file.hyperlink or file.title %}
           <div class="apos-slideshow-description-container{% if not file.hyperlink %} no-link {% endif %}">
             {% if file.title %}<h1 class="apos-slideshow-title">{{ file.title }}</h1>{% endif %}

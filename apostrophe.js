@@ -796,6 +796,32 @@ function Apos() {
             self.permissions(req, 'edit-media', null, callback);
           }
 
+          function md5(callback) {
+            return self.md5File(file.path, function(err, md5) {
+              if (err) {
+                return callback(err);
+              }
+              info.md5 = md5;
+              return callback(null);
+            });
+          }
+
+          // If a duplicate file is uploaded, quietly reuse the old one to
+          // avoid filling the hard drive
+          function reuseOrUpload(callback) {
+            return files.findOne({ md5: info.md5 }, function(err, existing) {
+              if (err) {
+                return callback(err);
+              }
+              if (existing) {
+                infos.push(existing);
+                return callback(null);
+              } else {
+                async.series([upload, db], callback);
+              }
+            });
+          }
+
           function upload(callback) {
             if (image) {
               // For images we correct automatically for common file extension mistakes
@@ -830,7 +856,7 @@ function Apos() {
             });
           }
 
-          async.series([ permissions, upload, db ], callback);
+          async.series([ permissions, md5, reuseOrUpload ], callback);
 
         }, function(err) {
           return res.send({ files: infos, status: 'ok' });
@@ -855,7 +881,8 @@ function Apos() {
           }
         ], function(err) {
           if (!file) {
-            return fail();
+            console.log(err);
+            return fail(req, res);
           }
           file.crops = file.crops || [];
           var existing = _.find(file.crops, function(iCrop) {
@@ -2746,6 +2773,30 @@ function Apos() {
     return items;
   };
 
+  // FILE HELPERS
+
+  // http://nodejs.org/api/crypto.html
+  self.md5File = function(filename, callback) {
+    var crypto = require('crypto');
+    var fs = require('fs');
+
+    var md5 = crypto.createHash('md5');
+
+    var s = fs.ReadStream(filename);
+
+    s.on('data', function(d) {
+      md5.update(d);
+    });
+
+    s.on('error', function(err) {
+      return callback(err);
+    });
+
+    s.on('end', function() {
+      var d = md5.digest('hex');
+      return callback(null, d);
+    });
+  };
 
   // COMMAND LINE TASKS
   //
@@ -2833,15 +2884,94 @@ function Apos() {
   // Your 'each' function is called with a page object and a callback for each
   // page. Your 'callback' function is called at the end with an error if any.
 
-  self.forEveryPage = function(criteria, each, callback) {
-    return self.forEveryItemInCollection(self.pages, criteria, each, callback);
+  self.forEachPage = function(criteria, each, callback) {
+    return self.forEachDocumentInCollection(self.pages, criteria, each, callback);
   };
 
-  self.forEveryFile = function(criteria, each, callback) {
-    return self.forEveryItemInCollection(self.files, criteria, each, callback);
+  // Iterates over files in the aposFiles collection. Note denormalized copies
+  // of this information already exist in widgets (see self.forEachFileInAnyWidget)
+
+  self.forEachFile = function(criteria, each, callback) {
+    return self.forEachDocumentInCollection(self.files, criteria, each, callback);
   };
 
-  self.forEveryItemInCollection = function(collection, criteria, each, callback) {
+  // Iterate over every area on every page on the entire site! Not fast. Definitely for
+  // major migrations only. Iterator receives page object, area name, area object and
+  // callback.
+  //
+  // The area object refers to the same object as page.areas[name], so updating the one
+  // does update the other
+
+  self.forEachArea = function(each, callback) {
+    return self.forEachPage({}, function(page, callback) {
+      var areaNames = Object.keys(page.areas || {});
+      return async.forEachSeries(areaNames, function(name, callback) {
+        // Make sure we don't crash the stack if 'each' invokes 'callback' directly
+        // for many consecutive invocations
+        return setImmediate(function() {
+          return each(page, name, page.areas[name], callback);
+        });
+      }, callback);
+    }, callback);
+  };
+
+  // Iterate over every Apostrophe item in every area in every page in the universe.
+  // iterator receives page object, area name, area object, item offset, item object.
+  // Yes, the area and item objects do refer to the same objects you'd reach if you
+  // stepped through the properites of the page object, so updating the one does
+  // update the other
+
+  self.forEachItem = function(each, callback) {
+    return self.forEachArea(function(page, name, area, callback) {
+      var n = -1;
+      return async.forEachSeries(area.items || [], function(item, callback) {
+        n++;
+        // Make sure we don't crash the stack if 'each' invokes 'callback' directly
+        // for many consecutive invocations
+        return setImmediate(function() {
+          return each(page, name, area, n, item, callback);
+        });
+      }, function(err) {
+        return callback(err);
+      });
+    }, function(err) {
+      return callback(err);
+    });
+  };
+
+  // Iterate over all denormalized copies of file objects residing in widgets
+  // in areas in pages.
+  //
+  // Useful if you need to copy new metadata from the files collection to the denormalized
+  // copies of that data that are living in widgets.
+  //
+  // 'each' receives the page object, the denormalized file object and the callback.
+  // The page object is provided so that you can update it in MongoDB (the only way to
+  // update the denormalized file object).
+
+  self.forEachFileInPages = function(each, callback) {
+    return self.forEachItem(function(page, name, area, n, item, callback) {
+      var files = item.files || item.items;
+      if (!files) {
+        return callback(null);
+      }
+      return async.forEachSeries(files, function(file, callback) {
+        // '.items' is ambiguous, so make sure they are really files
+        if ((!file.extension) || (!file._id)) {
+          return callback(null);
+        }
+        // Make sure we don't crash the stack if 'each' invokes 'callback' directly
+        // for many consecutive invocations
+        return setImmediate(function() {
+          return each(page, file, callback);
+        });
+      }, callback);
+    }, function(err) {
+      return callback(err);
+    });
+  };
+
+  self.forEachDocumentInCollection = function(collection, criteria, each, callback) {
     collection.find(criteria, function(err, cursor) {
       if (err) {
         return callback(err);
@@ -2894,7 +3024,7 @@ function Apos() {
       // end_date and end_time, for sorting and output purposes, but it
       // contained start_time instead. Fortunately end_date and end_time are
       // authoritative so we can just rebuild it
-      self.forEveryPage({ type: 'event' }, function(event, callback) {
+      self.forEachPage({ type: 'event' }, function(event, callback) {
         if (event.endTime) {
           event.end = new Date(event.endDate + ' ' + event.endTime);
         } else {
@@ -2931,7 +3061,7 @@ function Apos() {
     }
 
     function spacesInSortTitle(callback) {
-      self.forEveryPage({ sortTitle: /\-/ },
+      self.forEachPage({ sortTitle: /\-/ },
         function(page, callback) {
           return self.pages.update(
             { _id: page._id },
@@ -2949,7 +3079,7 @@ function Apos() {
     // in addition they filter it out on save. Filter it out for existing pages on migrate.
     function removeWidgetSaversOnSave(callback) {
       var used = false;
-      self.forEveryPage({},
+      self.forEachPage({},
         function(page, callback) {
           var modified = false;
           _.each(page.areas || [], function(area, name) {
@@ -2980,7 +3110,7 @@ function Apos() {
       // the form of two more easily edited fields, publicationDate and
       // publicationTime
       var used = false;
-      self.forEveryPage({ type: 'blogPost' }, function(page, callback) {
+      self.forEachPage({ type: 'blogPost' }, function(page, callback) {
         if ((page.publishedAt !== undefined) && (page.publicationDate === undefined)) {
           if (!used) {
             console.log('setting publication date and time for posts');
@@ -3000,32 +3130,52 @@ function Apos() {
 
     function missingImageMetadata(callback) {
       var n = 0;
-      return self.forEveryFile({ extension: { $in: [ 'gif', 'jpg', 'png' ] }, width: { $exists: 0 } }, function(file, callback) {
+      return self.forEachFile({ $or: [
+          { md5: { $exists: 0 } },
+          { $and:
+            [
+              { extension: { $in: [ 'jpg', 'gif', 'png' ] } },
+              { width: { $exists: 0 } }
+            ]
+          }
+        ] }, function(file, callback) {
         var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
         var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
         n++;
         if (n === 1) {
-          console.log('Adding metadata for image files (may take a while)...');
+          console.log('Adding metadata for files (may take a while)...');
         }
-        console.log(originalFile + ' to ' + tempFile);
         async.series([
           function(callback) {
             uploadfs.copyOut(originalFile, tempFile, callback);
           },
           function(callback) {
-            return uploadfs.identifyLocalImage(tempFile, function(err, info) {
+            return self.md5File(tempFile, function(err, result) {
               if (err) {
                 return callback(err);
               }
-              file.width = info.width;
-              file.height = info.height;
-              if (file.width > file.height) {
-                file.landscape = true;
-              } else {
-                file.portrait = true;
-              }
+              file.md5 = result;
               return callback(null);
             });
+          },
+          function(callback) {
+            if (_.contains(['gif', 'jpg', 'png'], file.extension) && (!file.width)) {
+              return uploadfs.identifyLocalImage(tempFile, function(err, info) {
+                if (err) {
+                  return callback(err);
+                }
+                file.width = info.width;
+                file.height = info.height;
+                if (file.width > file.height) {
+                  file.landscape = true;
+                } else {
+                  file.portrait = true;
+                }
+                return callback(null);
+              });
+            } else {
+              return callback(null);
+            }
           },
           function(callback) {
             files.update({ _id: file._id }, file, { safe: true }, callback);
@@ -3043,12 +3193,51 @@ function Apos() {
       }, callback);
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata], callback);
+    // Now we have it in the aposFiles collection but we need to sync it to our
+    // denormalized copies too
+
+    function missingPageImageMetadata(callback) {
+      var n = 0;
+      return self.forEachFileInPages(function(page, file, callback) {
+        if (file.md5) {
+          return callback(null);
+        }
+        files.findOne({ _id: file._id }, function(err, originalFile) {
+          if (err) {
+            console.log('error');
+            return callback(err);
+          }
+          if (!file) {
+            // I could remove it here too but let's not be greedy yet
+            console.log('no file');
+            return callback(null);
+          }
+          n++;
+          if (n === 1) {
+            console.log('Supplying missing metadata for denormalized file objects');
+          }
+          file.width = originalFile.width;
+          file.height = originalFile.height;
+          file.md5 = originalFile.md5;
+          file.portrait = originalFile.portrait;
+          file.landscape = originalFile.landscape;
+          return pages.update({ _id: page._id }, page, function(err, count) {
+            return callback(err);
+          });
+        });
+      }, function(err) {
+        return callback(err);
+      });
+    }
+
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingPageImageMetadata], function(err) {
+      return callback(err);
+    });
   };
 
   self.tasks.index = function(callback) {
     console.log('Indexing all pages for search');
-    self.forEveryPage({},
+    self.forEachPage({},
       function(page, callback) {
         return self.indexPage({}, page, callback);
       }, callback);
@@ -3061,23 +3250,36 @@ function Apos() {
         return callback(err);
       }
       var n = 0;
-      self.forEveryFile({},
+      self.forEachFile({},
         function(file, callback) {
           if (!_.contains(['jpg', 'png', 'gif'], file.extension)) {
             n++;
             console.log('Skipping a non-image file: ' + file.name + '.' + file.extension);
             return callback(null);
           }
-          var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-          var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
-          n++;
-          console.log(n + ' of ' + total + ': ' + originalFile);
+          var tempFile;
           async.series([
             function(callback) {
-              uploadfs.copyOut(originalFile, tempFile, callback);
+              var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
+              tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+              n++;
+              console.log(n + ' of ' + total + ': ' + originalFile);
+              async.series([
+                function(callback) {
+                  uploadfs.copyOut(originalFile, tempFile, callback);
+                },
+                // function(callback) {
+                //   uploadfs.copyImageIn(tempFile, originalFile, callback);
+                // }
+              ], callback);
             },
+            // Don't forget to recrop as well!
             function(callback) {
-              uploadfs.copyImageIn(tempFile, originalFile, callback);
+              async.forEachSeries(file.crops || [], function(crop, callback) {
+                var originalFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
+                console.log('recropping ' + originalFile);
+                uploadfs.copyImageIn(tempFile, originalFile, { crop: crop }, callback);
+              }, callback);
             },
             function(callback) {
               fs.unlink(tempFile, callback);
