@@ -969,8 +969,6 @@ apos.widgetTypes.slideshow = {
     var templateOptions = options.options || {};
     var aspectRatio = templateOptions.aspectRatio;
     var minSize = templateOptions.minSize;
-    apos.log('minSize is:');
-    apos.log(minSize);
     var limit = templateOptions.limit;
     var extraFields = templateOptions.extraFields;
     var liveItem = '[data-item]:not(.apos-template)';
@@ -1066,6 +1064,11 @@ apos.widgetTypes.slideshow = {
         }
       });
 
+      var warning = getSizeWarning({ width: 0, height: 0 });
+      if (warning) {
+        self.$el.find('[data-size-warning]').show().text(warning);
+      }
+
       // setup drag-over states
       self.$el.find('.apos-modal-body').bind('dragover', function (e) {
           var dropZone = self.$el.find('.apos-modal-body'),
@@ -1113,8 +1116,6 @@ apos.widgetTypes.slideshow = {
 
     function crop($item) {
       var item = $item.data('item');
-      apos.log('in crop item is: ');
-      apos.log(item);
       var width;
       var height;
 
@@ -1284,8 +1285,6 @@ apos.widgetTypes.slideshow = {
                   width: width,
                   height: height
                 };
-                apos.log('autocropping ' + item.width + 'x' + item.height + ' to: ');
-                apos.log(item.crop);
                 self.busy(true);
                 var $autocropping = self.$el.find('.apos-autocropping');
                 $autocropping.show();
@@ -1315,17 +1314,25 @@ apos.widgetTypes.slideshow = {
 
     // Returns true if b is within 'percent' of a, as a percentage of a
     function within(a, b, percent) {
-      apos.log(a + ',' + b + ',' + percent);
       var portion = (Math.abs(a - b) / a);
-      apos.log(portion * 100.0);
       return (portion < (percent / 100.0));
     }
 
+    function getSizeWarning(item) {
+      if (minSize && (((minSize[0]) && (item.width < minSize[0])) ||
+          ((minSize[1]) && (item.height < minSize[1])))) {
+        if (minSize[0] && minSize[1]) {
+          return 'Images must be at least ' + minSize[0] + 'x' + minSize[1] + ' pixels.';
+        } else if (minSize.width) {
+          return 'Images must be at least ' + minSize[0] + ' pixels wide.';
+        } else {
+          return 'Images must be at least ' + minSize[1] + ' pixels tall.';
+        }
+      }
+      return undefined;
+    }
+
     function addItem(item, existing) {
-      apos.log('item is:');
-      apos.log(item);
-      apos.log('minSize is:');
-      apos.log(minSize);
       var count = self.count();
       // Refuse to exceed the limit if one was specified
       if (limit && (count >= limit)) {
@@ -1333,16 +1340,9 @@ apos.widgetTypes.slideshow = {
         return;
       }
       if (!existing) {
-        if (minSize && (((minSize[0]) && (item.width < minSize[0])) ||
-            ((minSize[1]) && (item.height < minSize[1])))) {
-          apos.log('inside the test');
-          if (minSize[0] && minSize[1]) {
-            alert('Images must be at least ' + minSize[0] + 'x' + minSize[1] + ' pixels for use in this location.');
-          } else if (minSize.width) {
-            alert('Images must be at least ' + minSize[0] + ' pixels wide for use in this location.');
-          } else {
-            alert('Images must be at least ' + minSize[1] + ' pixels tall for use in this location.');
-          }
+        var warning = getSizeWarning(item);
+        if (warning) {
+          alert(warning);
           return;
         }
       }
