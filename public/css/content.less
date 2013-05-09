@@ -88,14 +88,21 @@
   filter: alpha(opacity=70);
 }
 .apos-slideshow { position: relative; }
+.apos-slideshow .apos-slideshow-items
+{
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
 .apos-slideshow .apos-slideshow-item
 {
   list-style: none;
   display: none;
   width: 100%;
+  height: 100%;
   background-repeat: no-repeat;
 }
-
+.apos-slideshow{overflow: hidden;}
 .apos-slideshow .apos-slideshow-image
 {
   width: 100%;
