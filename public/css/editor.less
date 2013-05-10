@@ -21,16 +21,12 @@ body
 /* Admin bar base styles */
 .apos-admin-bar
 {
-  position: fixed;
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   background-color: @apos-grey;
   height: 40px;
   .box-shadow;
 
-  
+
   .apos-logo-tiny
   {
     float: left;
@@ -52,9 +48,9 @@ body
     text-transform: uppercase;
     border-right: 1px dotted @apos-grey50;
     cursor: pointer;
-    
 
-    
+
+
     &:last-child
     {
       border-right: none;
@@ -77,7 +73,7 @@ body
         i::before {color: #ccc;}
       }
     }
-    
+
     &.login-status
     {
       float: right;
@@ -89,7 +85,7 @@ body
       margin: 0;
       width: 120px;
       cursor: pointer;
-      
+
       .apos-accordion-title
       {
         color: #eee;
@@ -103,21 +99,21 @@ body
         height: auto;
         max-height: 0px;
         overflow: hidden;
-        
-        
+
+
         .transition;
         &.open
         {
           max-height: 600px;
         }
-        
+
         ul
         {
           margin: 0;
           .apos-accordion-item
           {
             background-color: rgba(50,50,50,0.8);
-            
+
             &:hover
             {
               background: @apos-grey20;
@@ -136,7 +132,7 @@ body
       width: 100%;
       height: 40px;
       line-height: 40px;
-      font-family: 'cabin';      
+      font-family: 'cabin';
       text-decoration: none;
     }
   }/* apos bar items */
@@ -170,9 +166,9 @@ body
   font-style: italic;
   font-weight: normal;
   float: left;
-  
+
   cursor: pointer;
-  
+
 
   &.apos-float-widget-right,
   &.apos-float-widget-left
@@ -182,7 +178,7 @@ body
     margin-top: -7px;
     margin-top: -14px;
     left: 0px;
-    
+
   }
 
   &.apos-float-widget-right
@@ -199,7 +195,7 @@ body
   &.ui-resizable-s
   {
     width: 0px;
-    height: 0px; 
+    height: 0px;
   }
 
   &.ui-resizable-se
@@ -222,7 +218,7 @@ body
   clear: both;
   .clearfix;
   min-width: 153px;
-  
+
   .apos-control
   {
     float:right;
@@ -244,7 +240,7 @@ body
     // border-left: 1px solid #fff;
     // border-top: 1px solid #fff;
   }
-  
+
 }
 
 /**
@@ -283,7 +279,7 @@ body
     select {width: 95%;}
   }
   &:hover{text-decoration:none !important;}
-  
+
   &.apos-menu
   {
     position: relative;
@@ -299,7 +295,7 @@ body
       content: "";
       right: 9px;
       top: 40%;
-      
+
     }
     .apos-menu-select
     {
@@ -320,7 +316,7 @@ body
     padding: 14px 13px 12px 13px;
     background-color: lighten(@apos-base, 8%);
     font-size: 1.1em;
-    
+
   }
 }
 
@@ -330,12 +326,12 @@ body
   line-height: 1em !important;
   cursor: pointer;
   .transition;
-  
+
   &:hover
   {
     background-color: @apos-shade-10;
     text-decoration: none;
-  }  
+  }
 }
 
 /* apos buttons for areas */
@@ -402,7 +398,7 @@ body
   font-weight: bold;
 }
 
-.apos-toolbar 
+.apos-toolbar
 {
   i
   {
@@ -426,7 +422,7 @@ body
   .apos-menu-style
   {
     padding: 0px;
-    
+
   }
 
   select
@@ -544,10 +540,10 @@ body
 
 .apos-pull-quote
 {
-  font-size: 15px; 
-  line-height: 20px; 
-  font-weight: bold; 
-  margin-right: 10px; 
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: bold;
+  margin-right: 10px;
 }
 
 .apos-editor .apos-pull-quote
@@ -574,7 +570,7 @@ textarea.apos-code {
   width: 97%;
 }
 
-.apos-modal .apos-modal-body 
+.apos-modal .apos-modal-body
 {
   // max-height: 450px;
 }
@@ -583,7 +579,7 @@ textarea.apos-code {
 {
   margin-bottom: 20px;
   .clearfix;
-  
+
   label { display: inline-block; }
 }
 
@@ -643,7 +639,7 @@ textarea.apos-code {
       color: @apos-grey20;
       letter-spacing: 1px;
       font-size: 11px;
-      
+
       &:hover{ cursor: move}
       &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
     }
@@ -738,12 +734,12 @@ textarea.apos-code {
   textarea{display: block; clear: both;}
 }
 
-.apos-modal .apos-modal-body .apos-position input, 
+.apos-modal .apos-modal-body .apos-position input,
 .apos-modal .apos-modal-body .apos-size input
 {
   margin-left: 10px;
   margin-right: 10px;
-} 
+}
 
 .apos-modal .apos-modal-footer
 {
@@ -783,9 +779,9 @@ textarea.apos-code {
     color: #fff;
     padding: 15px;
     margin-bottom: 0px;
-    
+
     font-size: 10px;
-    
+
     letter-spacing: 1px;
     text-transform: uppercase;
   }
@@ -793,7 +789,7 @@ textarea.apos-code {
   .apos-modal-body
   {
     padding: 15px;
-    
+
     .apos-instructions
     {
       display: block;
@@ -835,7 +831,7 @@ textarea.apos-code {
         background: @apos-base;
         border-radius: 0px;
         color: #FFF;
-        
+
 
         option
         {
@@ -851,7 +847,7 @@ textarea.apos-code {
         &:focus
         {
           outline: none;
-        }        
+        }
       }
       .apos-stacked-fieldset
       {
@@ -883,7 +879,7 @@ textarea.apos-code {
   {
     padding: 15px;
     .clearfix;
-    
+
     .apos-modal-footer-buttons
     {
       float: right;
@@ -920,7 +916,7 @@ textarea.apos-code {
     .apos-control
     {
       opacity: 0;
-    }    
+    }
   }
 
   .apos-area:hover,
@@ -961,7 +957,7 @@ textarea.apos-code {
   .apos-slideshow-drag-container
   {
     border: 2px dashed darken(@apos-base, 20%);
-    
+
     &.apos-upload-disabled .apos-slideshow-file-in-message { background-color: red; &:hover{cursor: wait; } }
   }
 }
@@ -979,7 +975,7 @@ textarea.apos-code {
   font-size: 3em;
   right: 0;
   position: absolute;
-  
+
 
   span
   {
@@ -997,19 +993,19 @@ textarea.apos-code {
 }
 
 .apos-slideshow-drag-container
-{ 
+{
   border: 2px dashed @apos-base;
   padding: 17px 10px 30px 10px;
   position: relative;
   .clearfix;
-  
+
   // &.apos-upload-disabled:hover {background-color: red;}
-  
+
   &:hover
   {
-    .apos-file-styled { opacity: 0.8; }  
+    .apos-file-styled { opacity: 0.8; }
   }
-  
+
   .apos-file-input
   {
     position: absolute;
@@ -1040,9 +1036,9 @@ textarea.apos-code {
       color: darken(@apos-base, 10%);
       cursor: pointer;
       opacity: 0.7;
-      
+
     }
-    
+
     &:before
     {
       color: #FFF;
@@ -1091,7 +1087,7 @@ textarea.apos-code {
     overflow: hidden;
     width: 170px;
     height: 170px;
-    
+
     &.apos-not-image::before
     {
       font-family: 'apos-icons';
@@ -1146,7 +1142,7 @@ textarea.apos-code {
     {
       background-color: darken(@apos-base, 10%);
       text-decoration: none;
-      
+
       &::before { background-color: darken(@apos-base, 10%) }
     }
 
@@ -1235,7 +1231,7 @@ textarea.apos-code {
 
     text-align: left;
     font-size: 150%;
-    
+
     &:hover{ background-color: transparent;}
   }
 }
@@ -1291,7 +1287,7 @@ textarea.apos-code {
 //   box-shadow:  1px 1px 15px 1px rgba(0, 0, 0, 0.3);
 //   background: #eee;
 //   display: none;
-  
+
 // }
 
 // End Apostrophe Slideshow Modals
@@ -1420,13 +1416,13 @@ ul.ui-autocomplete {
     width: 350px;
     margin: 0 auto;
     height: 210px;
-    
+
     .apos-control
     {
       float: right;
       margin-right: 12px;
     }
-    
+
   }
 
 }
