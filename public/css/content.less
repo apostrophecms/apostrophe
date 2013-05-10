@@ -265,7 +265,7 @@ They will need to live somewhere else eventually
 // These are not restricted to logged-in users, they do get used in
 // other situations
 
-.apos-modal .apos-modal-body 
+.apos-modal .apos-modal-body
 {
   // max-height: 450px;
 }
@@ -274,7 +274,7 @@ They will need to live somewhere else eventually
 {
   margin-bottom: 20px;
   .clearfix;
-  
+
   label { display: inline-block; }
 }
 
@@ -334,7 +334,7 @@ They will need to live somewhere else eventually
       color: @apos-grey20;
       letter-spacing: 1px;
       font-size: 11px;
-      
+
       &:hover{ cursor: move}
       &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
     }
@@ -429,12 +429,12 @@ They will need to live somewhere else eventually
   textarea{display: block; clear: both;}
 }
 
-.apos-modal .apos-modal-body .apos-position input, 
+.apos-modal .apos-modal-body .apos-position input,
 .apos-modal .apos-modal-body .apos-size input
 {
   margin-left: 10px;
   margin-right: 10px;
-} 
+}
 
 .apos-modal .apos-modal-footer
 {
@@ -474,9 +474,9 @@ They will need to live somewhere else eventually
     color: #fff;
     padding: 15px;
     margin-bottom: 0px;
-    
+
     font-size: 10px;
-    
+
     letter-spacing: 1px;
     text-transform: uppercase;
   }
@@ -484,7 +484,7 @@ They will need to live somewhere else eventually
   .apos-modal-body
   {
     padding: 15px;
-    
+
     .apos-instructions
     {
       display: block;
@@ -526,7 +526,7 @@ They will need to live somewhere else eventually
         background: @apos-base;
         border-radius: 0px;
         color: #FFF;
-        
+
 
         option
         {
@@ -542,7 +542,7 @@ They will need to live somewhere else eventually
         &:focus
         {
           outline: none;
-        }        
+        }
       }
       .apos-stacked-fieldset
       {
@@ -565,16 +565,13 @@ They will need to live somewhere else eventually
         }
       }
     }
-
-
-
   }
 
   .apos-modal-footer
   {
     padding: 15px;
     .clearfix;
-    
+
     .apos-modal-footer-buttons
     {
       float: right;
@@ -592,41 +589,6 @@ They will need to live somewhere else eventually
   // padding: 10px;
   // border: 3px solid #ccc;
   // color: black;
-}
-
-// Login screen
-// Should probably have some sort of internal admin view stylesheet
-
-.apos-login
-{
-  background-color: @apos-grey-light;
-  .content .main
-  {
-    max-width: 100%;
-    text-align: center;
-    min-height: 0px;
-  }
-  .apos-login-inner
-  {
-    padding: 15px;
-  }
-  .appy-login
-  {
-    .apos-modal;
-    position: relative;
-    text-align: left;
-    width: 350px;
-    margin: 0 auto;
-    height: 210px;
-    
-    .apos-control
-    {
-      float: right;
-      margin-right: 12px;
-    }
-
-  }
-
 }
 
 // Originally from snippet filters but now available in the form macros
@@ -658,4 +620,40 @@ They will need to live somewhere else eventually
     background-color: white;
   }
 }
+
+// Login screen
+// Should probably have some sort of internal admin view stylesheet
+
+.apos-login
+{
+  background-color: @apos-grey-light;
+  .content .main
+  {
+    max-width: 100%;
+    text-align: center;
+    min-height: 0px;
+  }
+  .apos-login-inner
+  {
+    padding: 15px;
+  }
+  .appy-login
+  {
+    .apos-modal;
+    position: relative;
+    text-align: left;
+    width: 350px;
+    margin: 0 auto;
+    height: 210px;
+
+    .apos-control
+    {
+      float: right;
+      margin-right: 12px;
+    }
+
+  }
+
+}
+
 
