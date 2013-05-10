@@ -90,6 +90,9 @@ apos.getFirstImage = function(page, areaName) {
 // "full width" (1140px), not the original. For the original, don't pass size
 apos.filePath = function(file, options) {
   var path = apos.data.uploadsUrl + '/files/' + file._id + '-' + file.name;
+  if (!options) {
+    options = {};
+  }
   if (options.size) {
     path += '.' + options.size;
   }
@@ -359,7 +362,11 @@ apos.modal = function(sel, options) {
 
     apos._modalStack.pop();
     var blackoutContext = apos.getTopModalOrBody();
-    blackoutContext.find('.apos-modal-blackout').remove();
+    var blackout = blackoutContext.find('.apos-modal-blackout');
+    if (blackout.data('interval')) {
+      clearInterval(blackout.data('interval'));
+    }
+    blackout.remove();
     $el.hide();
     apos.popSelection();
     options.afterHide(function(err) {
@@ -405,8 +412,21 @@ apos.modal = function(sel, options) {
         return;
       }
       apos.pushSelection();
+
+      // Black out the document or the top modal if there already is one.
+      // If we are blacking out the body height: 100% won't cover the entire document,
+      // so address that by tracking the document height with an interval timer
       var blackoutContext = apos.getTopModalOrBody();
       var blackout = $('<div class="apos-modal-blackout"></div>');
+      if (blackoutContext.prop('tagName') === 'BODY') {
+        var interval = setInterval(function() {
+          var contextHeight = $(document).height();
+          if (blackout.height() !== contextHeight) {
+            blackout.height(contextHeight);
+          }
+          blackout.data('interval', interval);
+        }, 200);
+      }
       blackoutContext.append(blackout);
       // Remember scroll top so we can easily get back
       $el.data('aposSavedScrollTop', $(window).scrollTop());

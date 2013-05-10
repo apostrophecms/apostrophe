@@ -14,18 +14,21 @@
           Paste a widget link.
         {% endblock %}
       </label>
-      {% block formBody %}
-        <input class="apos-embed"/>
-      {% endblock %}
-      {% block previewButton %}
-        <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/><img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/>
-      {% endblock %}
-      <div class="apos-widget-preview-container apos-requires-preview">
-        {# We decided to move float preview into the main area editor so #}
-        {# this preview is just for things whose appearance is not obvious #}
-        {# or which require custom settings be tweaked (example: RSS feed) #}
-      </div>
-      {% block formAfterPreview %}
+      {# Certain widgets, like the slideshow, are best off overriding all of this at one go #}
+      {% block formAll %}
+        {% block formBody %}
+          <input class="apos-embed"/>
+        {% endblock %}
+        {% block previewButton %}
+          <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/><img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/>
+        {% endblock %}
+        <div class="apos-widget-preview-container apos-requires-preview">
+          {# We decided to move float preview into the main area editor so #}
+          {# this preview is just for things whose appearance is not obvious #}
+          {# or which require custom settings be tweaked (example: RSS feed) #}
+        </div>
+        {% block formAfterPreview %}
+        {% endblock %}
       {% endblock %}
     </form>
   </div>

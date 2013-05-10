@@ -832,6 +832,7 @@ function Apos() {
                 info.extension = result.extension;
                 info.width = result.width;
                 info.height = result.height;
+                info.searchText = fileSearchText(info);
                 if (info.width > info.height) {
                   info.landscape = true;
                 } else {
@@ -920,6 +921,55 @@ function Apos() {
             } else {
               return res.send('OK');
             }
+          });
+        });
+      });
+
+      app.get('/apos/browse-files', function(req, res) {
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          var criteria = {};
+          var limit = 10;
+          var skip = 0;
+          var q;
+          if (req.query.group) {
+            criteria.group = self.sanitizeString(req.query.group);
+          }
+          if (req.query.extension) {
+            criteria.extension = self.sanitizeString(req.query.extension);
+          }
+          if (req.query.minSize) {
+            criteria.width = { $gte: self.sanitizeInteger(req.query.minSize[0], 0, 0) };
+            criteria.height = { $gte: self.sanitizeInteger(req.query.minSize[1], 0, 0) };
+          }
+          skip = self.sanitizeInteger(req.query.skip, 0, 0);
+          limit = self.sanitizeInteger(req.query.limit, 0, 0, 100);
+          if (req.query.q) {
+            criteria.searchText = self.searchify(req.query.q);
+          }
+          var result = {};
+          async.series([
+            function(callback) {
+              return files.count(criteria, function(err, count) {
+                result.total = count;
+                return callback(err);
+              });
+            },
+            function(callback) {
+              return files.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, files) {
+                result.files = files;
+                return callback(err);
+              });
+            }
+          ], function(err) {
+            if (err) {
+              res.statusCode = 500;
+              return res.send('error');
+            }
+            return res.send(result);
           });
         });
       });
@@ -2083,6 +2133,15 @@ function Apos() {
     }
   }
 
+  // Determine search text based on a file object
+  function fileSearchText(file) {
+    var s = globalReplace(file.name, '-', ' ') + ' ' + file.extension + ' ' + file.group;
+    if (file.extension === 'jpg') {
+      s += ' jpeg';
+    }
+    return s;
+  }
+
   // TODO: make sure item.type is on the allowed list for this specific area.
   // Write more validators for types.
 
@@ -3193,6 +3252,18 @@ function Apos() {
       }, callback);
     }
 
+    function missingFileSearch(callback) {
+      var n = 0;
+      return self.forEachFile({ searchText: { $exists: 0 } }, function(file, callback) {
+        n++;
+        if (n === 1) {
+          console.log('Adding searchText to files...');
+        }
+        file.searchText = fileSearchText(file);
+        files.update({ _id: file._id }, file, callback);
+      }, callback);
+    }
+
     // Now we have it in the aposFiles collection but we need to sync it to our
     // denormalized copies too
 
@@ -3230,7 +3301,7 @@ function Apos() {
       });
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingPageImageMetadata], function(err) {
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata], function(err) {
       return callback(err);
     });
   };

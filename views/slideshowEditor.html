@@ -10,14 +10,12 @@
 
 {% block instructions %}
 Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
-You can also drag images from your computer into the dashed area below.
+You can also drag images from your computer into the dashed area below. <br /> 
+Or, drag the existing images shown beneath the dashed area. <br />
+<span data-size-warning style="display: none">Images must be at least 400x300 pixels.</span>
 {% endblock %}
 
-{# We have change events #}
-{% block previewButton %}
-{% endblock %}
-
-{% block formBody %}
+{% block formAll %}
   {# Powered by the blueimp file uploader #}
 
   <div class="apos-slideshow-drag-container" data-drag-container>
@@ -25,71 +23,86 @@ You can also drag images from your computer into the dashed area below.
     <div class="apos-progress-container">
       <div data-autocropping class="apos-autocropping">Autocropping...</div>
       <img data-progress class="apos-progress" src="/apos/images/spinner.gif" />
-    {# Commented out the percentage display which is just confusing because there is also #}
-    {# image rendering time. #}
-    {#
-      <span data-progress class="apos-progress">Progress: <span data-progress-percentage></span>%</span>
-      <span data-finished class="apos-progress">Upload Finished</span>
-    #}
-  </div>
-    
-{% endblock %}
+    </div>
 
-{# For reordering and removing of images #}
+    {# Main slideshow editor: reordering and removing of images, drop target #}
 
-{% block formAfterPreview %}
-  <ul data-items class="apos-slideshow-editor-items">
-    {# I am a template. I get cloned and populated by jQuery. If you #}
-    {# leave my data attributes intact you can edit me quite a bit. #}
-    <li data-item class="apos-slideshow-editor-item apos-template">
-      <div class="apos-slideshow-editor-item-box">
-        {# jQuery will give this img a proper src #}
-        {# Use the smallest possible empty GIF in the meantime #}
-        <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
-        <div class="apos-slideshow-controls">
-          <a class="apos-slideshow-control apos-remove" data-remove>x</a>
-          <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop>Crop</a>
-          
+    <ul data-items class="apos-slideshow-editor-items apos-library-drag-peer">
+      {# I am a template. I get cloned and populated by jQuery. If you #}
+      {# leave my data attributes intact you can edit me quite a bit. #}
+      <li data-item class="apos-slideshow-editor-item apos-template">
+        <div class="apos-slideshow-editor-item-box">
+          {# jQuery will give this img a proper src #}
+          {# Use the smallest possible empty GIF in the meantime #}
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
+          <div class="apos-slideshow-controls">
+            <a class="apos-slideshow-control apos-remove" data-remove>x</a>
+            <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop>Crop</a>
+          </div>
         </div>
-      </div>
 
-      <div class="apos-slideshow-extra-fields" data-extra-fields>
-        <fieldset class="apos-fieldset apos-fieldset-text">
-          <label class="short">Title</label>
-          <input data-title class="apos-slideshow-editor-title" type="text" />
-        </fieldset>
-        <fieldset class="apos-fieldset apos-fieldset-text">
-          <label>Description</label>
-          <textarea data-description class="apos-slideshow-editor-description"></textarea>
-        </fieldset>
-        {% block hyperlink %}
+        <div class="apos-slideshow-extra-fields" data-extra-fields>
           <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link</label>
-            <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+            <label class="short">Title</label>
+            <input data-title class="apos-slideshow-editor-title" type="text" />
           </fieldset>
           <fieldset class="apos-fieldset apos-fieldset-text">
-            <label>Link Title</label>
-            <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+            <label>Description</label>
+            <textarea data-description class="apos-slideshow-editor-description"></textarea>
           </fieldset>
-        {% endblock %}
-        <fieldset class="apos-fieldset apos-fieldset-text">
-          <label>Image Credit</label>
-          <input data-credit class="apos-slideshow-editor-credit" type="text" />
-        </fieldset>
-        <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
-      </div>
-    </li>
-  </ul>
-  <div class="apos-file-styled-container" data-uploader-container>
-    <div class="apos-file-styled icon-plus">+</div>
-    <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+          {% block hyperlink %}
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link</label>
+              <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
+            </fieldset>
+            <fieldset class="apos-fieldset apos-fieldset-text">
+              <label>Link Title</label>
+              <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
+            </fieldset>
+          {% endblock %}
+          <fieldset class="apos-fieldset apos-fieldset-text">
+            <label>Image Credit</label>
+            <input data-credit class="apos-slideshow-editor-credit" type="text" />
+          </fieldset>
+          <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
+        </div>
+      </li>
+    </ul>
+    <div class="apos-file-styled-container" data-uploader-container>
+      <div class="apos-file-styled icon-plus">+</div>
+      <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+    </div>
+    <div class="apos-clear"></div>
   </div>
-  <div class="apos-clear"></div>
+
+  {# Media library #}
+
+  <div class="apos-media-library apos-library-drag-peer" data-library>
+    {# I float right #}
+    <a href="#" data-next class="apos-next">&raquo;</a>
+    {# I float left #}
+    <a href="#" data-previous class="apos-previous">&laquo;</a>
+    {# I sting like a bee #}
+    <ul data-library-items class="apos-media-library-items">
+      {# I am a template. I get cloned and populated by jQuery. If you #}
+      {# leave my data attributes intact you can edit me quite a bit. #}
+      <li data-library-item class="apos-media-library-item apos-template">
+        <div class="apos-media-library-item-box">
+          {# jQuery will give this img a proper src #}
+          {# Use the smallest possible empty GIF in the meantime #}
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-image />
+        </div>
+      </li>
+    </ul>
+    {# UX note: you can pretty up the search submit button but please don't remove it #}
+    {# entirely as some users will not press enter. -Tom #}
+    <div class="apos-media-library-search">Search <input type="text" name="search" /><input type="submit" class="apos-search-submit" value="Go" name="search-submit" /><a href="#" class="apos-remove-search" data-remove-search>x</a></div>
   </div>
+
+
 {% endblock %}
 
 {% block additionalFooterItems %}
 <div class="apos-limit-reached" data-limit-reached style="display: none">You have reached the limit of <span data-limit>5</span> file(s) in this location.</div>
-<div class="apos-size-warning" data-size-warning style="display: none">Images must be at least 400x300 pixels.</div>
 {% endblock %}
 

@@ -574,336 +574,6 @@ textarea.apos-code {
   width: 97%;
 }
 
-.apos-modal .apos-modal-body 
-{
-  // max-height: 450px;
-}
-
-.apos-modal-body .apos-fieldset
-{
-  margin-bottom: 20px;
-  .clearfix;
-  
-  label { display: inline-block; }
-}
-
-.apos-hr
-{
-  margin: 10px 0;
-  border-top: 1px solid @apos-grey60;
-}
-
-.apos-modal-body .apos-hr
-{
-  margin: 15px 0px 20px;
-}
-
-.apos-fieldset-text
-{
-  input, textarea
-  {
-    display: block;
-    width: 100%;
-    max-width: 385px;
-    padding: 8px 8px 10px 8px;
-    border: none;
-  }
-  textarea {height: 180px;}
-}
-
-.apos-fieldset-radio
-{
-  input
-  {
-    margin-left: 10px;
-  }
-}
-
-.apos-fieldset-select
-{
-  .apos-menu-style
-  {
-    float:none;
-    padding: 0px 20px 0 0;
-    display: inline-block;
-  }
-  select { padding: 10px; }
-}
-
-.apos-fieldset-typeahead
-{
-  .ui-sortable
-  {
-    li
-    {
-      background-color: lighten(@apos-base, 30%);
-      padding: 10px 0;
-      border-bottom: 1px solid lighten(@apos-base, 35%);
-      text-transform: uppercase;
-      color: @apos-grey20;
-      letter-spacing: 1px;
-      font-size: 11px;
-      
-      &:hover{ cursor: move}
-      &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
-    }
-  }
-
-  .apos-remove
-  {
-    background-color: lighten(@apos-base, 15%);
-    padding: 9px 8px;
-    margin-right: 5px;
-    color: #FFF;
-    &:hover{cursor: pointer; background-color: darken(@apos-base, 10%); text-decoration: none;}
-  }
-}
-
-.apos-fieldset-singleton
-{
-  label
-  {
-    float: left;
-  }
-  .apos-area-controls
-  {
-    position: relative;
-    top: inherit;
-    left: inherit;
-  }
-  .apos-slideshow
-  {
-    max-width: 300px;
-    margin: inherit;
-  }
-}
-
-.apos-fieldset-icon
-{
-  height: 50px;
-  label
-  {
-    visibility: hidden;
-    width: 0px;
-    &:before
-    {
-      visibility: visible;
-      color: lighten(@apos-grey, 15%);
-      width: auto;
-      padding: 12px 14px;
-      background: lighten(@apos-grey, 75%);
-      font-size: 1.2em;
-      width: 14px
-    }
-  }
-  input
-  {
-    display: inline;
-    width: inherit;
-    -webkit-appearance: none;
-    border: 0;
-    background-color: #FFF !important;
-    height: 39px;
-    position: relative;
-    top: -3px;
-    left: -10px;
-    width: 266px;
-    &:focus{border:none; outline: none; background-color: #FFF;}
-  }
-  input:-webkit-autofill {
-        -webkit-box-shadow: 0 0 0px 1000px white inset;
-    }
-
-}
-
-.apos-fieldset-editor
-{
-  background-color: inherit;
-  label
-  {
-    float:left;
-    display: inline-block;
-  }
-  > div
-  {
-    float: left;
-    width: 100%;
-  }
-  textarea
-  {
-    width: 80%;
-    border: 0;
-    min-height: 180px;
-  }
-  textarea{display: block; clear: both;}
-}
-
-.apos-modal .apos-modal-body .apos-position input, 
-.apos-modal .apos-modal-body .apos-size input
-{
-  margin-left: 10px;
-  margin-right: 10px;
-} 
-
-.apos-modal .apos-modal-footer
-{
-  margin-top: 10px;
-}
-
-
-.apos-modal-blackout
-{
-  background-color: black;
-  opacity: 0.6;
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  // Just below first modal, do not use >= 899 for other things please
-  z-index: 899;
-}
-
-.apos-modal
-{
-  top: 100px;
-  position: absolute;
-  width: 800px;
-  background-color: #ddd;
-  opacity: 1.0;
-  // Do not use >= 899 for other things please
-  z-index: 900;
-  // padding: 10px;
-  * {.apos-montserrat; color: @apos-grey;}
-  strong {.apos-montserrat-bold;}
-  .apos-button{color: #FFF;}
-  h3
-  {
-    background: @apos-base;
-    color: #fff;
-    padding: 15px;
-    margin-bottom: 0px;
-    
-    font-size: 10px;
-    
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .apos-modal-body
-  {
-    padding: 15px;
-    
-    .apos-instructions
-    {
-      display: block;
-      margin-bottom: 20px;
-      line-height: 1.4em;
-    }
-
-    form
-    {
-      input
-      {
-        border: none;
-      }
-
-      label
-      {
-        color: @apos-grey10;
-        letter-spacing: 1px;
-        background: @apos-grey60;
-        padding: 9px 12px;
-        font-size: 12px;
-        font-family: 'cabinbold';
-        text-transform: uppercase;
-        font-size: 10px;
-        &.short
-        {
-          display: inline-block;
-          .clearfix;
-        }
-      }
-
-
-      select
-      {
-        position: relative;
-        -webkit-appearance:none;
-           -moz-appearance:none;
-        border: none;
-        background: @apos-base;
-        border-radius: 0px;
-        color: #FFF;
-        
-
-        option
-        {
-          &:hover
-          {
-            background: red;
-          }
-        }
-      }
-
-      input, select, option
-      {
-        &:focus
-        {
-          outline: none;
-        }        
-      }
-      .apos-stacked-fieldset
-      {
-        background-color: transparent;
-        label
-        {
-          display: inline-block;
-        }
-        input, textarea
-        {
-          max-width: none;
-          width: 100%;
-          margin-left: 0;
-          outline:none;
-          border:none;
-        }
-        textarea
-        {
-          height: 180px;
-        }
-      }
-    }
-
-
-
-  }
-
-  .apos-modal-footer
-  {
-    padding: 15px;
-    .clearfix;
-    
-    .apos-modal-footer-buttons
-    {
-      float: right;
-    }
-
-    .apos-button
-    {
-      font-family: 'cabin';
-      font-size:10px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 10px 25px;
-    }
-  }
-  // padding: 10px;
-  // border: 3px solid #ccc;
-  // color: black;
-}
-
-
 // Hiding these for now to see how we manage without them:
 .apos-insert-before-widget,
 .apos-insert-after-widget
@@ -1240,6 +910,69 @@ textarea.apos-code {
   }
 }
 
+.apos-slideshow-editor .apos-media-library
+{
+  margin-top: 20px;
+  .apos-previous, .apos-next
+  {
+    font-size: 32px;
+  }
+  .apos-previous
+  {
+    float: left;
+    padding-right: 10px;
+  }
+  .apos-next
+  {
+    float: right;
+    padding-left: 10px;
+  }
+  .apos-media-library-items
+  {
+    // Don't float me, it breaks jquery ui sortable connectWith and then we can't
+    // drag from the library properly
+  }
+  .apos-media-library-item
+  {
+    float: left;
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 85px;
+    height: 85px;
+
+    .apos-media-library-item-box img {
+      width: 85px;
+      max-height: 85px;
+    }
+    // Plain old list of filenames
+    &.apos-not-image {
+      font-size: 12px;
+      height: 16px;
+      direction: rtl;
+      white-space: nowrap;
+      cursor: pointer;
+      width: 170px;
+      padding: 2px;
+      text-align: right;
+      overflow: hidden;
+      margin-left: 4px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+      background-color: white;
+      border: 1px solid #def;
+      .apos-media-library-item-box img {
+        display: none;
+      }
+    }
+  }
+  .apos-media-library-search
+  {
+    clear: left;
+    padding-top: 10px;
+    padding-bottom: 5px;
+  }
+}
+
 .apos-editor .apos-files-item a {color: #000 !important;}
 
 .apos-slideshow-editor .apos-slideshow-extra-fields-controls
@@ -1395,41 +1128,5 @@ ul.ui-autocomplete {
   font-size: 15px;
   // text-transform: uppercase;
 }
-
-// Login screen
-// Should probably have some sort of internal admin view stylesheet
-
-.apos-login
-{
-  background-color: @apos-grey-light;
-  .content .main
-  {
-    max-width: 100%;
-    text-align: center;
-    min-height: 0px;
-  }
-  .apos-login-inner
-  {
-    padding: 15px;
-  }
-  .appy-login
-  {
-    .apos-modal;
-    position: relative;
-    text-align: left;
-    width: 350px;
-    margin: 0 auto;
-    height: 210px;
-    
-    .apos-control
-    {
-      float: right;
-      margin-right: 12px;
-    }
-    
-  }
-
-}
-
 
 // jCrop Style
