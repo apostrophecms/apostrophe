@@ -729,6 +729,169 @@ apos.padInteger = function(i, places) {
   return s;
 };
 
+// Infinite scroll.
+//
+// REQUIRED OPTIONS
+//
+// 'url' is the URL to fetch new pages from. The URL should return an HTML fragment
+// containing one page's worth of content, based on the 'page' parameter to the URL.
+// Page numbers start from 1. The content will be appended to 'el'.
+//
+// 'el' is the jQuery selector, jQuery object or DOM element to append new pages
+// of content to. It should be initially empty (if you are using 'now') or be
+// prepopulated with the content of page 1.
+//
+// OTHER OPTIONS
+//
+// 'page' specifies the initial page number and defaults to 1, which assumes you are
+// preloading one page of content already. If you are not preloading any content and
+// wish the first page to load immediately, set 'now' to true and do not set 'page'.
+//
+// Set 'now' to trueto load the first page immediately. You do not have to
+// set 'page' if you set 'now'.
+//
+// 'criteria' contains additional query parameters and is often used when additional
+// filtering options besides pagination are available. You can also bake additional
+// parameters into the URL of course. However note the 'reset' event below.
+//
+// 'trigger' is the distance in pixels from the bottom of the page at which the loading
+// of a new page is triggered. This hopefully prevents the user from staring at a
+// spinner too often. It defaults to 350.
+//
+// 'method' can be used to change the HTTP method from GET to POST.
+//
+// 'spinner' is a selector, jQuery object or DOM element to be displayed while
+// a page is loading.
+//
+// 'distance' is the distance, in pixels, from being able to see the bottom of the page
+// at which the next page begins loading, hopefully preventing the user from waiting
+// in most cases. 'distance' defaults to 350.
+//
+// EVENTS
+//
+// You can trigger an 'apos.scroll.reset' event to 'el' on clear 'el' and reload page one.
+// You can also provide new criteria for the query when triggering this event:
+//
+// $('.posts').trigger('apos.scroll.reset', [ { tag: 'blue' } ])
+//
+// infiniteScroll will trigger the following events on 'el' on its own:
+//
+// 'apos.scroll.started' means page loading has begun.
+// 'apos.scroll.stopped' means page loading has just stopped (whether successfully or not).
+// 'apos.scroll.loaded' means a page has just been loaded successfully.
+//
+// PROPERTIES
+//
+// Assuming $('.posts') is your 'el', you may check whether the element is currently
+// loading a page with:
+//
+// $('.posts').data('loading')
+//
+// You may check the current page number with:
+//
+// $('.posts').data('page')
+
+apos.infiniteScroll = function(options) {
+  var url = options.url;
+  var now = options.now || false;
+  var page = options.page || 1;
+  if (now) {
+    if (options.page === undefined) {
+      // loadPage will increment this and load page one immediately
+      options.page = 0;
+    }
+  }
+  var criteria = options.criteria || {};
+  var distance = options.distance || 350;
+  var method = options.method || 'GET';
+  var $el = $(options.el);
+  var $spinner = $(options.spinner);
+  var atEnd = false;
+  var loading = false;
+
+  // Infinite scroll
+  setInterval(function() {
+    if ((!atEnd) && (!loading)) {
+      if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height())
+      {
+        loadPage();
+      }
+    }
+  }, 100);
+
+  $el.on('apos.scroll.reset', function(e, data) {
+    if (data) {
+      criteria = data;
+    }
+    reset();
+  });
+
+  function reset() {
+    $el.html('');
+    page = 0;
+    atEnd = false;
+    start();
+    loadPage();
+  }
+
+  function loadPage() {
+    page++;
+    loading = true;
+    $el.data('loading', true);
+    // Copy the criteria and add the page
+    var query = $.extend(true, criteria, {
+      page: page
+    });
+    $.ajax({
+      url: url,
+      type: method,
+      data: query,
+      success: function(data) {
+        var $items = $.parseHTML(data);
+        $el.append($items);
+        $el.data('page', page);
+        $el.trigger('apos.scroll.loaded');
+        stop();
+      },
+      error: function() {
+        $el.data('loading', false);
+        loading = false;
+      },
+      statusCode: {
+        404: function() {
+          stop();
+          end();
+        }
+      }
+    });
+  }
+
+  function start() {
+    $el.data('loading', true);
+    loading = true;
+    $el.trigger('apos.scroll.started');
+    $spinner.show();
+  }
+
+  function stop() {
+    $el.data('loading', false);
+    loading = false;
+    $el.trigger('apos.scroll.stopped');
+    $spinner.hide();
+  }
+
+  function end() {
+    $el.data('loading', false);
+    atEnd = true;
+    $el.trigger('apos.scroll.ended');
+    $spinner.hide();
+  }
+
+  if (now) {
+    loadPage();
+  }
+};
+
 // MINOR JQUERY EXTENSIONS
 
 (function( $ ){
