@@ -2406,6 +2406,10 @@ function Apos() {
       return self.cssName(data);
     });
 
+    nunjucksEnv.addFilter('truncate', function(data, limit) {
+      return self.truncatePlaintext(data, limit);
+    });
+
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
       // Leverage jQuery's willingness to parse attributes as JSON objects and arrays
       // if they look like it. TODO: find out if this still works cross browser with
