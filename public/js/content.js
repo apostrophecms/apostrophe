@@ -267,8 +267,12 @@ apos.widgetPlayers.slideshow = function($widget)
   function adjustSize() {
     apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight, maxHeightToWidth) {
       var proportion = $widget.width() * maxHeightToWidth;
-      $widget.find('[data-slideshow-items]').height(proportion);
-      $widget.height(proportion);
+
+      if(!$widget.parents().hasClass('apos-no-height')) {
+        $widget.find('[data-slideshow-items]').height(proportion);
+        $widget.height(proportion);
+      }
+
     });
   }
 
