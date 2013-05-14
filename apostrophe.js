@@ -25,6 +25,7 @@ var jsDiff = require('diff');
 var wordwrap = require('wordwrap');
 var ent = require('ent');
 var argv = require('optimist').argv;
+var qs = require('qs');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -35,7 +36,7 @@ function Apos() {
   // Apostrophe is an event emitter/receiver
   require('events').EventEmitter.call(self);
 
-  var app, files, areas, versions, pages, uploadfs, nunjucksEnv, db, aposLocals;
+  var app, files, areas, versions, pages, uploadfs, db, aposLocals;
 
   // Helper functions first to please jshint
 
@@ -457,7 +458,11 @@ function Apos() {
 
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
+        var allowed = options.allowed;
         _.each(items, function(item) {
+          if (allowed && (!_.contains(allowed, item.type))) {
+            return;
+          }
           var itemOptions = options ? options[item.type] : undefined;
           result += aposLocals.aposItemNormalView(item, itemOptions).trim();
         });
@@ -471,6 +476,10 @@ function Apos() {
       // `extensions` (which permits an array). This is useful to pull
       // out a particular file to be specially featured in an index view.
       aposLocals.aposAreaFindFile = function(options) {
+        return self.areaFindFile(options);
+      };
+
+      self.areaFindFile = function(options) {
         if (!options) {
           options = {};
         }
@@ -510,6 +519,64 @@ function Apos() {
           }
         });
         return winningFile;
+      };
+
+      // Convert an area to plaintext. This will only contain text for items that
+      // clearly have an appropriate plaintext representation for the public, so most
+      // widgets will not want to be represented as they have no reasonable plaintext
+      // equivalent, but you can define the 'getPlaintext' method for any widget to
+      // return one (see self.itemTypes for the richText example).
+      //
+      // If the truncate option is present, it is used as a character limit. The
+      // plaintext is cut at the closest word boundary before that length. If this
+      // cannot be done a hard cutoff is applied so that the result is never longer
+      // than options.truncate characters.
+      //
+      // Usage: {{ aposAreaPlaintext({ area: page.body, truncate: 200 }) }}
+
+      aposLocals.aposAreaPlaintext = function(options) {
+        return self.getAreaPlaintext(options);
+      };
+
+      self.getAreaPlaintext = function(options) {
+        var area = options.area;
+        if (!area) {
+          return '';
+        }
+        var t = '';
+        _.each(area.items, function(item) {
+          if (self.itemTypes[item.type].getPlaintext) {
+            if (t.length) {
+              t += "\n";
+            }
+            t += self.itemTypes[item.type].getPlaintext(item);
+          }
+        });
+        if (options.truncate) {
+          t = self.truncatePlaintext(t, options.truncate);
+        }
+        return t;
+      };
+
+      // Truncate a plaintext string at the character count expressed
+      // by the limit argument, which defaults to 200. NOT FOR HTML/RICH TEXT!
+      self.truncatePlaintext = function(t, limit) {
+        limit = limit || 200;
+        if (t.length <= limit) {
+          return t;
+        }
+        // Leave room for the ellipsis unicode character
+        // (-2 instead of -1 for the last offset we look at)
+        var p = limit - 2;
+        while (p >= 0) {
+          var c = t.charAt(p);
+          if ((c === ' ') || (c === "\n")) {
+            return t.substr(0, p) + '…';
+          }
+          p--;
+        }
+        // Saving words failed, do a hard crop
+        return t.substr(0, limit - 1) + '…';
       };
 
       aposLocals.aposItemNormalView = function(item, options) {
@@ -832,6 +899,7 @@ function Apos() {
                 info.extension = result.extension;
                 info.width = result.width;
                 info.height = result.height;
+                info.searchText = fileSearchText(info);
                 if (info.width > info.height) {
                   info.landscape = true;
                 } else {
@@ -920,6 +988,55 @@ function Apos() {
             } else {
               return res.send('OK');
             }
+          });
+        });
+      });
+
+      app.get('/apos/browse-files', function(req, res) {
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          var criteria = {};
+          var limit = 10;
+          var skip = 0;
+          var q;
+          if (req.query.group) {
+            criteria.group = self.sanitizeString(req.query.group);
+          }
+          if (req.query.extension) {
+            criteria.extension = self.sanitizeString(req.query.extension);
+          }
+          if (req.query.minSize) {
+            criteria.width = { $gte: self.sanitizeInteger(req.query.minSize[0], 0, 0) };
+            criteria.height = { $gte: self.sanitizeInteger(req.query.minSize[1], 0, 0) };
+          }
+          skip = self.sanitizeInteger(req.query.skip, 0, 0);
+          limit = self.sanitizeInteger(req.query.limit, 0, 0, 100);
+          if (req.query.q) {
+            criteria.searchText = self.searchify(req.query.q);
+          }
+          var result = {};
+          async.series([
+            function(callback) {
+              return files.count(criteria, function(err, count) {
+                result.total = count;
+                return callback(err);
+              });
+            },
+            function(callback) {
+              return files.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, files) {
+                result.files = files;
+                return callback(err);
+              });
+            }
+          ], function(err) {
+            if (err) {
+              res.statusCode = 500;
+              return res.send('error');
+            }
+            return res.send(result);
           });
         });
       });
@@ -2030,6 +2147,10 @@ function Apos() {
       data = {};
     }
 
+    if (typeof(data.partial) === 'undefined') {
+      data.partial = partial;
+    }
+
     // Make sure the apos-specific locals are visible to partials too.
     // If we import ALL the locals we'll point at the wrong views directory
     // and generally require the developer to worry about not breaking
@@ -2037,10 +2158,10 @@ function Apos() {
 
     _.defaults(data, aposLocals);
 
-    if (typeof(data.partial) === 'undefined') {
-      data.partial = partial;
-    }
+    return self.getNunjucksEnv(dirs).getTemplate(name + '.html').render(data);
+  };
 
+  self.getNunjucksEnv = function(dirs) {
     if (!dirs) {
       dirs = [];
     }
@@ -2059,9 +2180,8 @@ function Apos() {
     if (!nunjucksEnvs[dirsKey]) {
       nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
     }
-
-    return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
-  };
+    return nunjucksEnvs[dirsKey];
+  }
 
   // String.replace does NOT do this
   // Regexps can but they can't be trusted with UTF8 ):
@@ -2081,6 +2201,15 @@ function Apos() {
       result += replacement;
       haystack = haystack.substr(index + needle.length);
     }
+  }
+
+  // Determine search text based on a file object
+  function fileSearchText(file) {
+    var s = globalReplace(file.name, '-', ' ') + ' ' + file.extension + ' ' + file.group;
+    if (file.extension === 'jpg') {
+      s += ' jpeg';
+    }
+    return s;
   }
 
   // TODO: make sure item.type is on the allowed list for this specific area.
@@ -2106,6 +2235,12 @@ function Apos() {
         // This is just a down payment, we should be throwing out unwanted
         // tags attributes and properties as A1.5 does
         item.content = sanitize(item.content).xss().trim();
+      },
+      // Used by apos.getAreaPlaintext. Should not be present unless this type
+      // actually has an appropriate plaintext representation for the public
+      // to view. Most widgets won't. This is distinct from diff and search, see below.
+      getPlaintext: function(item, lines) {
+        return self.htmlToPlaintext(item.content);
       },
       addDiffLines: function(item, lines) {
         // Turn tags into line breaks, which generally produces some indication
@@ -2243,7 +2378,7 @@ function Apos() {
 
   self.newNunjucksEnv = function(dirs) {
 
-    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
+    var nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
 
     nunjucksEnv.addFilter('date', function(date, format) {
       var s = moment(date).format(format);
@@ -2258,6 +2393,10 @@ function Apos() {
       return JSON.stringify(data);
     });
 
+    nunjucksEnv.addFilter('qs', function(data) {
+      return qs.stringify(data);
+    });
+
     nunjucksEnv.addFilter('nlbr', function(data) {
       data = globalReplace(data, "\n", "<br />\n");
       return data;
@@ -2265,6 +2404,10 @@ function Apos() {
 
     nunjucksEnv.addFilter('css', function(data) {
       return self.cssName(data);
+    });
+
+    nunjucksEnv.addFilter('truncate', function(data, limit) {
+      return self.truncatePlaintext(data, limit);
     });
 
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
@@ -2293,8 +2436,14 @@ function Apos() {
     return s.replace(/\&/g, '&amp;').replace(/</g, '&lt;').replace(/\>/g, '&gt;').replace(/\"/g, '&quot;');
   };
 
+  // Convert HTML to true plaintext, with all entities decoded
   self.htmlToPlaintext = function(html) {
-    return ent.decode(html.replace(/<.*?\>/g, "\n"));
+    // The awesomest HTML renderer ever (look out webkit):
+    // block element opening tags = newlines, closing tags and non-container tags just gone
+    html = html.replace(/<\/.*?\>/g, '');
+    html = html.replace(/<(h1|h2|h3|h4|h5|h6|p|br|blockquote).*?\>/gi, '\n');
+    html = html.replace(/<.*?\>/g, '');
+    return ent.decode(html);
   };
 
   // Accept tags as a comma-separated string and sanitize them,
@@ -3193,6 +3342,18 @@ function Apos() {
       }, callback);
     }
 
+    function missingFileSearch(callback) {
+      var n = 0;
+      return self.forEachFile({ searchText: { $exists: 0 } }, function(file, callback) {
+        n++;
+        if (n === 1) {
+          console.log('Adding searchText to files...');
+        }
+        file.searchText = fileSearchText(file);
+        files.update({ _id: file._id }, file, callback);
+      }, callback);
+    }
+
     // Now we have it in the aposFiles collection but we need to sync it to our
     // denormalized copies too
 
@@ -3230,7 +3391,7 @@ function Apos() {
       });
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingPageImageMetadata], function(err) {
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata], function(err) {
       return callback(err);
     });
   };

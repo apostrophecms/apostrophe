@@ -965,6 +965,9 @@ apos.widgetTypes.slideshow = {
   editor: function(options) {
     var self = this;
     var $items;
+    if (self.fileGroup === undefined) {
+      self.fileGroup = 'images';
+    }
     // Options passed from template or other context
     var templateOptions = options.options || {};
     var aspectRatio = templateOptions.aspectRatio;
@@ -1020,9 +1023,11 @@ apos.widgetTypes.slideshow = {
           self.preview();
         }
       });
+
       self.files = [];
 
-      self.$el.find('[data-uploader]').fileupload({
+      var $uploader = self.$el.find('[data-uploader]');
+      $uploader.fileupload({
         dataType: 'json',
         dropZone: self.$el.find('.apos-modal-body'),
         // This is nice in a multiuser scenario, it prevents slamming,
@@ -1090,7 +1095,7 @@ apos.widgetTypes.slideshow = {
       });
 
       self.$el.find('[data-enable-extra-fields]').on('click', function(){
-       $('[data-items]').toggleClass('apos-extra-fields-enabled');
+       self.$el.find('[data-items]').toggleClass('apos-extra-fields-enabled');
        reflect();
       });
 
@@ -1112,6 +1117,181 @@ apos.widgetTypes.slideshow = {
       self.$el.on('click', '[data-crop]', function() {
         crop($(this).closest('[data-item]'));
       });
+
+      self.enableLibrary = function() {
+        // This is what we drag to. Easier than dragging to a ul that doesn't
+        // know the height of its li's
+        var $target = self.$el.find('[data-drag-container]');
+        var $library = self.$el.find('[data-library]');
+        var $items = $library.find('[data-library-items]');
+        var $search = $library.find('[name="search"]');
+        var $previous = $library.find('[data-previous]');
+        var $next = $library.find('[data-next]');
+        var $removeSearch = $library.find('[data-remove-search]');
+
+        var perPage = 8;
+        var page = 0;
+        var pages = 0;
+
+        self.refreshLibrary = function() {
+          self.busy(true);
+          $.get('/apos/browse-files', {
+            skip: page * perPage,
+            limit: perPage,
+            group: self.fileGroup,
+            minSize: minSize,
+            q: $search.val()
+          }, function(results) {
+            self.busy(false);
+
+            pages = Math.ceil(results.total / perPage);
+            if (page + 1 >= pages) {
+              $next.hide();
+            } else {
+              $next.show();
+            }
+            if (page === 0) {
+              $previous.hide();
+            } else {
+              $previous.show();
+            }
+
+            if ($search.val().length) {
+              $removeSearch.show();
+            } else {
+              $removeSearch.hide();
+            }
+
+            $items.find('[data-library-item]:not(.apos-template)').remove();
+            _.each(results.files, function(file) {
+              var $item = apos.fromTemplate($items.find('[data-library-item]'));
+              $item.data('file', file);
+              $item.attr('title', file.name + '.' + file.extension);
+              if (self.fileGroup === 'images') {
+                $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
+              } else {
+                // Display everything like a plain filename, after all we're offering
+                // a download interface only here and we need to accommodate all types of
+                // files in the same media library list
+                $item.addClass('apos-not-image');
+                $item.text(file.name + '.' + file.extension);
+              }
+              $items.append($item);
+
+              // DRAG AND DROP FROM LIBRARY TO SLIDESHOW
+              // Reimplemented with love by Tom because jquery sortable connectWith,
+              // jquery draggable connectToSortable and straight-up jquery draggable all
+              // refused to play nice. Was it the file uploader? Was it float vs. non-float?
+              // Who knows? This code works!
+
+              (function() {
+                var dragging = false;
+                var origin;
+                var gapX;
+                var gapY;
+                var width;
+                var height;
+                var fileUploadDropZone;
+                $item.on('mousedown', function(e) {
+                  // Temporarily disable file upload drop zone so it doesn't interfere
+                  // with drag and drop of existing "files"
+                  fileUploadDropZone = $uploader.fileupload('option', 'dropZone');
+                  // Don't do a redundant regular click event
+                  $items.off('click');
+                  $uploader.fileupload('option', 'dropZone', '[data-no-drop-zone-right-now]');
+                  dragging = true;
+                  origin = $item.offset();
+                  gapX = e.pageX - origin.left;
+                  gapY = e.pageY - origin.top;
+                  width = $item.width();
+                  height = $item.height();
+                  var file = $item.data('file');
+                  // Track on document so we can see it even if
+                  // something steals our event
+                  $(document).on('mouseup.aposLibrary', function(e) {
+                    if (dragging) {
+                      dragging = false;
+                      // Restore file uploader drop zone
+                      $uploader.fileupload('option', 'dropZone', fileUploadDropZone);
+                      // Kill our document-level events
+                      $(document).off('mouseup.aposLibrary');
+                      $(document).off('mousemove.aposLibrary');
+                      var iOffset = $target.offset();
+                      var iWidth = $target.width();
+                      var iHeight = $target.height();
+                      // Just intersect with the entire slideshow and add it at the end
+                      // if there's a match. TODO: it would be slicker to detect where
+                      // we fell in the list, but doing that really well probably requires
+                      // getting jQuery sortable connectWith to play nicely with us
+                      if ((e.pageX <= iOffset.left + iWidth) &&
+                        (e.pageX + width >= iOffset.left) &&
+                        (e.pageY <= iOffset.top + iHeight) &&
+                        (e.pageY + height >= iOffset.top)) {
+                        addItem(file);
+                      }
+                      // Snap back so we're available in the library again
+                      $item.css('top', 'auto');
+                      $item.css('left', 'auto');
+                      $item.css('position', 'static');
+                      return false;
+                    }
+                    return true;
+                  });
+                  $(document).on('mousemove.aposLibrary', function(e) {
+                    if (dragging) {
+                      $item.offset({ left: e.pageX - gapX, top: e.pageY - gapY });
+                    }
+                  });
+                  return false;
+                });
+              })();
+
+            });
+          }).error(function() {
+            self.busy(false);
+          });
+        };
+        $previous.on('click', function() {
+          if (page > 0) {
+            page--;
+            self.refreshLibrary();
+          }
+          return false;
+        });
+        $next.on('click', function() {
+          if ((page + 1) < pages) {
+            page++;
+            self.refreshLibrary();
+          }
+          return false;
+        });
+        $library.on('click', '[name="search-submit"]', function() {
+          search();
+          return false;
+        });
+        $removeSearch.on('click', function() {
+          $search.val('');
+          search();
+          return false;
+        });
+        $search.on('keydown', function(e) {
+          if (e.keyCode === 13) {
+            search();
+            return false;
+          }
+          return true;
+        });
+        function search() {
+          page = 0;
+          self.refreshLibrary();
+        }
+
+        // Initial load of library contents. Do this after yield so that
+        // a subclass like the file widget has time to change self.fileGroup
+        apos.afterYield(function() { self.refreshLibrary(); });
+      };
+
+      self.enableLibrary();
     };
 
     function crop($item) {
@@ -1345,6 +1525,16 @@ apos.widgetTypes.slideshow = {
           alert(warning);
           return;
         }
+        if (self.fileGroup && (item.group !== self.fileGroup)) {
+          // TODO: push list of allowed file extensions per group to browser side and
+          // just list those
+          if (self.fileGroup === 'images') {
+            alert('Please upload a .gif, .jpg or .png file.');
+          } else {
+            alert('That file is not in an appropriate format.');
+          }
+          return;
+        }
       }
 
       var $item = apos.fromTemplate($items.find('[data-item]'));
@@ -1476,6 +1666,8 @@ apos.widgetTypes.files = {
     if (options.options.extraFields === undefined) {
       options.options.extraFields = true;
     }
+    // Explicitly avoid limiting to a particular type of file
+    self.fileGroup = null;
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
 };
