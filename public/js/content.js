@@ -115,7 +115,10 @@ apos.filePath = function(file, options) {
 // You can skip the imgSel argument if you wish.
 //
 // The first argument to the callback is the maximum width
-// of all of the images, the second is the maximum height.
+// of all of the images, the second is the maximum height. The third
+// is the highest ratio of height to width encountered. This is useful
+// for determining the height of a slideshow with an externally
+// determined width.
 //
 // Useful when you need to calculate sizes that depend on images or
 // just want to wait for all of the images to exist.
@@ -132,26 +135,37 @@ apos.whenImagesReady = function(sel, imgSel, callback) {
     $images = $images.filter(imgSel);
   }
 
+
   function attempt() {
     var ready = true;
     var maxWidth = 0;
+    var maxHeightToWidth = 0 ;
     var maxHeight = 0;
+    var tmp = new Image();
     $images.each(function(i, item) {
       if (!item.complete) {
         ready = false;
+        return;
       }
       var $item = $(item);
-      var width = $item.width();
-      var height = $item.height();
+      tmp.src = $item.attr('src');
+      var width = tmp.width;
+      var height = tmp.height;
       if (width > maxWidth) {
         maxWidth = width;
       }
       if (height > maxHeight) {
         maxHeight = height;
       }
+      if (width && height) {
+        var heightToWidth = height / width;
+        if (heightToWidth > maxHeightToWidth) {
+          maxHeightToWidth = heightToWidth;
+        }
+      }
     });
     if (ready) {
-      return callback(maxWidth, maxHeight);
+      return callback(maxWidth, maxHeight, maxHeightToWidth);
     } else {
       setTimeout(attempt, 50);
     }
@@ -231,9 +245,10 @@ apos.widgetPlayers.slideshow = function($widget)
   }
 
   function adjustSize() {
-    apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight) {
-      $widget.find('[data-slideshow-items]').height(maxHeight);
-      $widget.height(maxHeight);
+    apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight, maxHeightToWidth) {
+      var proportion = $widget.width() * maxHeightToWidth;
+      $widget.find('[data-slideshow-items]').height(proportion);
+      $widget.height(proportion);
     });
   }
 
