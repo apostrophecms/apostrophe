@@ -596,6 +596,39 @@ apos.getRadio = function($els) {
   return $els.filter(':checked').val();
 };
 
+// Enhance a plaintext date field with a nice jquery ui date widget.
+// Just pass a jquery object referring to the text element as the
+// first argument.
+//
+// Uses the YYYY-MM-DD format we use on the back end.
+//
+// If $minFor is set, any date selected for $el becomes the
+// minimum date for $minFor. For instance, start_date should be the
+// minimum date for the end_date field.
+//
+// Similarly, if $maxFor is set, any date selected for $el becomes the maximum
+// date for $maxFor.
+
+apos.enhanceDate = function($el, options) {
+  if (!options) {
+    options = {};
+  }
+  $el.datepicker({
+    defaultDate: "+0w",
+    dateFormat: 'yy-mm-dd',
+    changeMonth: true,
+    numberOfMonths: 1,
+    onClose: function(selectedDate) {
+      if (options.$minFor) {
+        options.$minFor.datepicker( "option", "minDate", selectedDate);
+      }
+      if (options.$maxFor) {
+        options.$maxFor.datepicker( "option", "maxDate", selectedDate);
+      }
+    }
+  });
+};
+
 // Accepts a time in 24-hour HH:MM:SS format and returns a time
 // in the user's preferred format as determined by apos.data.timeFormat,
 // which may be either 24 or 12. Useful to allow 12-hour format editing
@@ -604,8 +637,14 @@ apos.getRadio = function($els) {
 // explicitly true. If options.timeFormat is set to 24 or 12, that format is
 // used, otherwise apos.data.timeFormat is consulted, which allows the format
 // to be pushed to the browser via apos.pushGlobalData on the server side
-
+//
+// For convenience, the values null, undefined and empty string are returned as
+// themselves rather than throwing an exception. This is useful when the absence of any
+// setting is an acceptable value.
 apos.formatTime = function(time, options) {
+  if ((time === null) || (time === undefined) || (time === '')) {
+    return time;
+  }
   if (!options) {
     options = {};
   }
