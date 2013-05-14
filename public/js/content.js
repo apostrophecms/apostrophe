@@ -596,6 +596,52 @@ apos.getRadio = function($els) {
   return $els.filter(':checked').val();
 };
 
+// Accepts a time in 24-hour HH:MM:SS format and returns a time
+// in the user's preferred format as determined by apos.data.timeFormat,
+// which may be either 24 or 12. Useful to allow 12-hour format editing
+// of times previously saved in the 24-hour format (always used on the back end).
+// Seconds are not included in the returned value unless options.seconds is
+// explicitly true. If options.timeFormat is set to 24 or 12, that format is
+// used, otherwise apos.data.timeFormat is consulted, which allows the format
+// to be pushed to the browser via apos.pushGlobalData on the server side
+
+apos.formatTime = function(time, options) {
+  if (!options) {
+    options = {};
+  }
+  var timeFormat = options.timeFormat || apos.data.timeFormat || 12;
+  var showSeconds = options.seconds || false;
+  var matches, hours, minutes, seconds, tail;
+  if (apos.data.timeFormat === 24) {
+    if (showSeconds) {
+      return time;
+    } else {
+      matches = time.match(/^(\d+):(\d+):(\d+)$/);
+      return matches[1] + ':' + matches[2];
+    }
+  } else {
+    matches = time.match(/^(\d+):(\d+):(\d+)$/);
+    hours = parseInt(matches[1], 10);
+    minutes = matches[2];
+    seconds = matches[3];
+    tail = minutes;
+    if (showSeconds) {
+      tail += ':' + seconds;
+    }
+    if (hours < 1) {
+      return '12:' + tail + 'am';
+    }
+    if (hours < 12) {
+      return apos.padInteger(hours, 2) + ':' + tail + 'am';
+    }
+    if (hours === 12) {
+      return '12:' + tail + 'pm';
+    }
+    hours -= 12;
+    return apos.padInteger(hours, 2) + ':' + tail + 'pm';
+  }
+};
+
 // KEEP IN SYNC WITH SERVER SIDE VERSION IN apostrophe.js
 //
 // Convert a name to camel case. Only digits and ASCII letters remain.
