@@ -25,6 +25,7 @@ var jsDiff = require('diff');
 var wordwrap = require('wordwrap');
 var ent = require('ent');
 var argv = require('optimist').argv;
+var qs = require('qs');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
@@ -35,7 +36,7 @@ function Apos() {
   // Apostrophe is an event emitter/receiver
   require('events').EventEmitter.call(self);
 
-  var app, files, areas, versions, pages, uploadfs, nunjucksEnv, db, aposLocals;
+  var app, files, areas, versions, pages, uploadfs, db, aposLocals;
 
   // Helper functions first to please jshint
 
@@ -457,7 +458,11 @@ function Apos() {
 
       aposLocals.aposAreaContent = function(items, options) {
         var result = '';
+        var allowed = options.allowed;
         _.each(items, function(item) {
+          if (allowed && (!_.contains(allowed, item.type))) {
+            return;
+          }
           var itemOptions = options ? options[item.type] : undefined;
           result += aposLocals.aposItemNormalView(item, itemOptions).trim();
         });
@@ -471,6 +476,10 @@ function Apos() {
       // `extensions` (which permits an array). This is useful to pull
       // out a particular file to be specially featured in an index view.
       aposLocals.aposAreaFindFile = function(options) {
+        return self.areaFindFile(options);
+      };
+
+      self.areaFindFile = function(options) {
         if (!options) {
           options = {};
         }
@@ -510,6 +519,64 @@ function Apos() {
           }
         });
         return winningFile;
+      };
+
+      // Convert an area to plaintext. This will only contain text for items that
+      // clearly have an appropriate plaintext representation for the public, so most
+      // widgets will not want to be represented as they have no reasonable plaintext
+      // equivalent, but you can define the 'getPlaintext' method for any widget to
+      // return one (see self.itemTypes for the richText example).
+      //
+      // If the truncate option is present, it is used as a character limit. The
+      // plaintext is cut at the closest word boundary before that length. If this
+      // cannot be done a hard cutoff is applied so that the result is never longer
+      // than options.truncate characters.
+      //
+      // Usage: {{ aposAreaPlaintext({ area: page.body, truncate: 200 }) }}
+
+      aposLocals.aposAreaPlaintext = function(options) {
+        return self.getAreaPlaintext(options);
+      };
+
+      self.getAreaPlaintext = function(options) {
+        var area = options.area;
+        if (!area) {
+          return '';
+        }
+        var t = '';
+        _.each(area.items, function(item) {
+          if (self.itemTypes[item.type].getPlaintext) {
+            if (t.length) {
+              t += "\n";
+            }
+            t += self.itemTypes[item.type].getPlaintext(item);
+          }
+        });
+        if (options.truncate) {
+          t = self.truncatePlaintext(t, options.truncate);
+        }
+        return t;
+      };
+
+      // Truncate a plaintext string at the character count expressed
+      // by the limit argument, which defaults to 200. NOT FOR HTML/RICH TEXT!
+      self.truncatePlaintext = function(t, limit) {
+        limit = limit || 200;
+        if (t.length <= limit) {
+          return t;
+        }
+        // Leave room for the ellipsis unicode character
+        // (-2 instead of -1 for the last offset we look at)
+        var p = limit - 2;
+        while (p >= 0) {
+          var c = t.charAt(p);
+          if ((c === ' ') || (c === "\n")) {
+            return t.substr(0, p) + '…';
+          }
+          p--;
+        }
+        // Saving words failed, do a hard crop
+        return t.substr(0, limit - 1) + '…';
       };
 
       aposLocals.aposItemNormalView = function(item, options) {
@@ -2080,6 +2147,10 @@ function Apos() {
       data = {};
     }
 
+    if (typeof(data.partial) === 'undefined') {
+      data.partial = partial;
+    }
+
     // Make sure the apos-specific locals are visible to partials too.
     // If we import ALL the locals we'll point at the wrong views directory
     // and generally require the developer to worry about not breaking
@@ -2087,10 +2158,10 @@ function Apos() {
 
     _.defaults(data, aposLocals);
 
-    if (typeof(data.partial) === 'undefined') {
-      data.partial = partial;
-    }
+    return self.getNunjucksEnv(dirs).getTemplate(name + '.html').render(data);
+  };
 
+  self.getNunjucksEnv = function(dirs) {
     if (!dirs) {
       dirs = [];
     }
@@ -2109,9 +2180,8 @@ function Apos() {
     if (!nunjucksEnvs[dirsKey]) {
       nunjucksEnvs[dirsKey] = self.newNunjucksEnv(dirs);
     }
-
-    return nunjucksEnvs[dirsKey].getTemplate(name + '.html').render(data);
-  };
+    return nunjucksEnvs[dirsKey];
+  }
 
   // String.replace does NOT do this
   // Regexps can but they can't be trusted with UTF8 ):
@@ -2165,6 +2235,12 @@ function Apos() {
         // This is just a down payment, we should be throwing out unwanted
         // tags attributes and properties as A1.5 does
         item.content = sanitize(item.content).xss().trim();
+      },
+      // Used by apos.getAreaPlaintext. Should not be present unless this type
+      // actually has an appropriate plaintext representation for the public
+      // to view. Most widgets won't. This is distinct from diff and search, see below.
+      getPlaintext: function(item, lines) {
+        return self.htmlToPlaintext(item.content);
       },
       addDiffLines: function(item, lines) {
         // Turn tags into line breaks, which generally produces some indication
@@ -2302,7 +2378,7 @@ function Apos() {
 
   self.newNunjucksEnv = function(dirs) {
 
-    nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
+    var nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(dirs));
 
     nunjucksEnv.addFilter('date', function(date, format) {
       var s = moment(date).format(format);
@@ -2317,6 +2393,10 @@ function Apos() {
       return JSON.stringify(data);
     });
 
+    nunjucksEnv.addFilter('qs', function(data) {
+      return qs.stringify(data);
+    });
+
     nunjucksEnv.addFilter('nlbr', function(data) {
       data = globalReplace(data, "\n", "<br />\n");
       return data;
@@ -2324,6 +2404,10 @@ function Apos() {
 
     nunjucksEnv.addFilter('css', function(data) {
       return self.cssName(data);
+    });
+
+    nunjucksEnv.addFilter('truncate', function(data, limit) {
+      return self.truncatePlaintext(data, limit);
     });
 
     nunjucksEnv.addFilter('jsonAttribute', function(data) {
@@ -2352,8 +2436,14 @@ function Apos() {
     return s.replace(/\&/g, '&amp;').replace(/</g, '&lt;').replace(/\>/g, '&gt;').replace(/\"/g, '&quot;');
   };
 
+  // Convert HTML to true plaintext, with all entities decoded
   self.htmlToPlaintext = function(html) {
-    return ent.decode(html.replace(/<.*?\>/g, "\n"));
+    // The awesomest HTML renderer ever (look out webkit):
+    // block element opening tags = newlines, closing tags and non-container tags just gone
+    html = html.replace(/<\/.*?\>/g, '');
+    html = html.replace(/<(h1|h2|h3|h4|h5|h6|p|br|blockquote).*?\>/gi, '\n');
+    html = html.replace(/<.*?\>/g, '');
+    return ent.decode(html);
   };
 
   // Accept tags as a comma-separated string and sanitize them,
