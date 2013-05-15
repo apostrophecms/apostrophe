@@ -117,8 +117,10 @@ apos.filePath = function(file, options) {
 // The first argument to the callback is the maximum width
 // of all of the images, the second is the maximum height. The third
 // is the highest ratio of height to width encountered. This is useful
-// for determining the height of a slideshow with an externally
-// determined width.
+// for determining the height of a slideshow with a predetermined width.
+//
+// The sizes returned are always the TRUE pixel sizes of the images, regardless
+// of any CSS that may be present.
 //
 // Useful when you need to calculate sizes that depend on images or
 // just want to wait for all of the images to exist.
@@ -141,28 +143,46 @@ apos.whenImagesReady = function(sel, imgSel, callback) {
     var maxWidth = 0;
     var maxHeightToWidth = 0 ;
     var maxHeight = 0;
-    var tmp = new Image();
+    var tmps = [];
     $images.each(function(i, item) {
       if (!item.complete) {
         ready = false;
         return;
       }
       var $item = $(item);
-      tmp.src = $item.attr('src');
-      var width = tmp.width;
-      var height = tmp.height;
-      if (width > maxWidth) {
-        maxWidth = width;
+      // Great, the image loaded, but CSS may have scaled it and we need
+      // to know its true dimensions. So jam it into a temporary image element
+      // and wait for that to be ready too. (You'd think this would always be
+      // ready immediately, but we've seen otherwise.)
+      if (!tmps[i]) {
+        tmps[i] = new Image();
+        tmps[i].src = $item.attr('src');
       }
-      if (height > maxHeight) {
-        maxHeight = height;
+      var tmp = tmps[i];
+      if (!tmp.complete) {
+        ready = false;
+        return;
       }
-      if (width && height) {
-        var heightToWidth = height / width;
-        if (heightToWidth > maxHeightToWidth) {
-          maxHeightToWidth = heightToWidth;
+      function attemptTmp() {
+        if (!tmp.complete) {
+          return setTimeout(attemptTmp, 50);
+        }
+        var width = tmp.width;
+        var height = tmp.height;
+        if (width > maxWidth) {
+          maxWidth = width;
+        }
+        if (height > maxHeight) {
+          maxHeight = height;
+        }
+        if (width && height) {
+          var heightToWidth = height / width;
+          if (heightToWidth > maxHeightToWidth) {
+            maxHeightToWidth = heightToWidth;
+          }
         }
       }
+      attemptTmp();
     });
     if (ready) {
       return callback(maxWidth, maxHeight, maxHeightToWidth);
