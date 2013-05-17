@@ -285,7 +285,7 @@ body
   {
     position: relative;
     &:hover {background-color: darken(@apos-base, 10%);}
-    &::after
+    &:after
     {
       position: absolute;
       width: 0px;
@@ -296,6 +296,7 @@ body
       content: "";
       right: 9px;
       top: 40%;
+      z-index: 0;
 
     }
     .apos-menu-select
@@ -305,6 +306,8 @@ body
       border:none;
       -webkit-appearance: none;
       color: #FFF;
+      z-index: 1;
+      position: relative;
       &:hover{cursor: pointer;}
     }
   }
@@ -1042,6 +1045,17 @@ textarea.apos-code {
 .apos-autocropping
 {
   display: none;
+  background-color: @apos-base;
+  padding: 10px 15px;
+  color: #fff;
+  text-transform: uppercase;
+  top: 7px;
+  position: relative;
+  right: -4px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  
+  
 }
 
 .apos-widget.apos-full
@@ -1131,4 +1145,177 @@ ul.ui-autocomplete {
   // text-transform: uppercase;
 }
 
-// jCrop Style
+/* Apostrophe Progress spinner */
+@outColor:transparent; @inColor:@apos-base;
+  .apos-progress
+  {
+    // .apos-progress-container
+    // {
+      position:absolute;
+      bottom: 0;
+      width:65px;
+      height:65px;
+      -moz-transform:scale(0.6);
+      -webkit-transform:scale(0.6);
+      -ms-transform:scale(0.6);
+      -o-transform:scale(0.6);
+      transform:scale(0.6);
+    // }
+
+    .apos-progress-circle{
+    position:absolute;
+    background-color:transparent;
+    height:12px;
+    width:12px;
+    -moz-border-radius:6px;
+    -moz-animation-name:apos_progress_fade;
+    -moz-animation-duration:0.88s;
+    -moz-animation-iteration-count:infinite;
+    -moz-animation-direction:linear;
+    -webkit-border-radius:6px;
+    -webkit-animation-name:apos_progress_fade;
+    -webkit-animation-duration:0.88s;
+    -webkit-animation-iteration-count:infinite;
+    -webkit-animation-direction:linear;
+    -ms-border-radius:6px;
+    -ms-animation-name:apos_progress_fade;
+    -ms-animation-duration:0.88s;
+    -ms-animation-iteration-count:infinite;
+    -ms-animation-direction:linear;
+    -o-border-radius:6px;
+    -o-animation-name:apos_progress_fade;
+    -o-animation-duration:0.88s;
+    -o-animation-iteration-count:infinite;
+    -o-animation-direction:linear;
+    border-radius:6px;
+    animation-name:apos_progress_fade;
+    animation-duration:0.88s;
+    animation-iteration-count:infinite;
+    animation-direction:linear;
+    }
+
+    #apos-progress-01{
+    left:0;
+    top:27px;
+    -moz-animation-delay:0.33s;
+    -webkit-animation-delay:0.33s;
+    -ms-animation-delay:0.33s;
+    -o-animation-delay:0.33s;
+    animation-delay:0.33s;
+    }
+
+    #apos-progress-02{
+    left:8px;
+    top:8px;
+    -moz-animation-delay:0.44s;
+    -webkit-animation-delay:0.44s;
+    -ms-animation-delay:0.44s;
+    -o-animation-delay:0.44s;
+    animation-delay:0.44s;
+    }
+
+    #apos-progress-03{
+    left:27px;
+    top:0;
+    -moz-animation-delay:0.55s;
+    -webkit-animation-delay:0.55s;
+    -ms-animation-delay:0.55s;
+    -o-animation-delay:0.55s;
+    animation-delay:0.55s;
+    }
+
+    #apos-progress-04{
+    right:8px;
+    top:8px;
+    -moz-animation-delay:0.66s;
+    -webkit-animation-delay:0.66s;
+    -ms-animation-delay:0.66s;
+    -o-animation-delay:0.66s;
+    animation-delay:0.66s;
+    }
+
+    #apos-progress-05{
+    right:0;
+    top:27px;
+    -moz-animation-delay:0.77s;
+    -webkit-animation-delay:0.77s;
+    -ms-animation-delay:0.77s;
+    -o-animation-delay:0.77s;
+    animation-delay:0.77s;
+    }
+
+    #apos-progress-06{
+    right:8px;
+    bottom:8px;
+    -moz-animation-delay:0.88s;
+    -webkit-animation-delay:0.88s;
+    -ms-animation-delay:0.88s;
+    -o-animation-delay:0.88s;
+    animation-delay:0.88s;
+    }
+
+    #apos-progress-07{
+    left:27px;
+    bottom:0;
+    -moz-animation-delay:0.99s;
+    -webkit-animation-delay:0.99s;
+    -ms-animation-delay:0.99s;
+    -o-animation-delay:0.99s;
+    animation-delay:0.99s;
+    }
+
+    #apos-progress-08{
+    left:8px;
+    bottom:8px;
+    -moz-animation-delay:1.1s;
+    -webkit-animation-delay:1.1s;
+    -ms-animation-delay:1.1s;
+    -o-animation-delay:1.1s;
+    animation-delay:1.1s;
+    }
+
+    @-moz-keyframes apos_progress_fade{
+    0%{
+    background-color:@inColor}
+
+    100%{
+    background-color:@outColor}
+
+    }
+
+    @-webkit-keyframes apos_progress_fade{
+    0%{
+    background-color:@inColor}
+
+    100%{
+    background-color:@outColor}
+
+    }
+
+    @-ms-keyframes apos_progress_fade{
+    0%{
+    background-color:@inColor}
+
+    100%{
+    background-color:@outColor}
+
+    }
+
+    @-o-keyframes apos_progress_fade{
+    0%{
+    background-color:@inColor}
+
+    100%{
+    background-color:@outColor}
+
+    }
+
+    @keyframes apos_progress_fade{
+    0%{
+    background-color:@inColor}
+
+    100%{
+    background-color:@outColor}
+
+    }
+  }

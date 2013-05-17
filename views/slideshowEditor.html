@@ -22,7 +22,8 @@ Or, drag the existing images shown beneath the dashed area. <br />
     <div class="apos-slideshow-file-in-message" data-drag-droparea><span data-drag-message>Drop Files Here</span></div>
     <div class="apos-progress-container">
       <div data-autocropping class="apos-autocropping">Autocropping...</div>
-      <img data-progress class="apos-progress" src="/apos/images/spinner.gif" />
+      {% include "progress.html" %}
+
     </div>
 
     {# Main slideshow editor: reordering and removing of images, drop target #}
