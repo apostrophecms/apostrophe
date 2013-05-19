@@ -1974,6 +1974,222 @@ function Apos() {
     });
   };
 
+  // apos.get delivers pages that the current user is permitted to view, with areas fully
+  // populated and ready to render. Pages are also marked with a ._edit property if
+  // they are editable by this user.
+  //
+  // The results are delivered as the second argument of the callback if there is no
+  // error. The results object will have a `pages` property containing 0 or more pages.
+  //
+  // WHO SHOULD USE THIS FUNCTION
+  //
+  // Developers who need something different from a simple fetch of one page
+  // (use `apos.getPage`), fetch of ancestors, descendants, etc. of tree pages (use
+  // `pages.getAncestors`, `pages.getDescendants`, etc.), or fetch of snippets of
+  // some type such as blog posts or events (use `snippets.get`).
+  //
+  // WARNING
+  //
+  // This function doesn't care if a page is a "tree page" (slug starting with a /)
+  // or not. If you are only interested in tree pages and you are not filtering by
+  // page type to achieve that, consider setting .slug to a regular expression
+  // matching a leading /.
+  //
+  // SPECIAL OPTIONS
+  //
+  // The following options are treated specially. Any other options become part
+  // of the mongodb query criteria.
+  //
+  // If `options.editable` is true, only pages the current user can edit are
+  // returned.
+  //
+  // If `options.sort` is present, it is passed as the argument to the MongoDB sort()
+  // function. There is no default sort.
+  //
+  // `options.limit` indicates the maximum number of results to return. options.skip
+  // indicates the number of results to skip. These can be used to implement pagination.
+  //
+  // If `options.fields` is present it is used to limit the fields returned
+  // by MongoDB for performance reasons (the second argument to MongoDB's find()).
+  //
+  // `options.titleSearch` can be used to search the titles of all snippets for a
+  // particular string using a fairly tolerant algorithm. options.q does the same
+  // on the full text.
+  //
+  // `options.published` indicates whether to return only published pages
+  // ('1' or true), return only unpublished pages (`0` or false), or return both
+  // ('any' or null). It defaults to 'any', allowing admins to preview unpublished
+  // pages.
+  //
+  // `options.trash` indicates whether to return only pages in the trashcan
+  // the trashcan ('1' or true), return only pages not in the trashcan ('0' or false),
+  // or return both ('any' or null). It defaults to '0'.
+  //
+  // FILTERING ON YOUR OWN CRITERIA
+  //
+  // All other properties of options are merged with the MongoDB criteria object
+  // used to select the relevant pages.
+
+  self.get = function(req, optionsArg, mainCallback) {
+    if (!mainCallback) {
+      mainCallback = optionsArg;
+      optionsArg = {};
+    }
+
+    var options = {};
+    extend(true, options, optionsArg);
+
+    var editable = options.editable;
+    if (options.editable !== undefined) {
+      delete options['editable'];
+    }
+
+    var sort = options.sort || { sortTitle: 1 };
+    delete options.sort;
+
+    var limit = options.limit || undefined;
+    // Don't get cute about when to delete, it never hurts, and if you're not very
+    // careful you're going to fail to delete if it was set to '0' (see the or above)
+    delete options.limit;
+
+    var skip = options.skip || undefined;
+    delete options.skip;
+
+    var fields = options.fields || undefined;
+    delete options.fields;
+
+    var titleSearch = options.titleSearch || undefined;
+    if (options.titleSearch !== undefined) {
+      options.sortTitle = self.searchify(titleSearch);
+    }
+    delete options.titleSearch;
+
+    self.convertBooleanFilterCriteria('trash', options, '0');
+    self.convertBooleanFilterCriteria('published', options);
+
+    if (options.q && options.q.length) {
+      // Crude fulltext search support. It would be better to present
+      // highSearchText results before lowSearchText results, but right now
+      // we are doing a single query only
+      options.lowSearchText = self.searchify(options.q);
+    }
+    // Don't let an empty or not-so-empty q screw up our query
+    delete options.q;
+    var args = {};
+
+    if (fields !== undefined) {
+      args.fields = fields;
+    }
+
+    // TODO: with many pages there is a performance problem with calling
+    // permissions separately on them. Pagination will have to be performed
+    // manually after all permissions have been checked. The A1.5 permissions
+    // model wasn't perfect but it was something you could do by joining tables.
+    // We will fix it ASAP by just storing the permissions for a page in the page.
+
+    var q = self.pages.find(options, args).sort(sort);
+
+    // For now we have to implement limit and skip ourselves because of the way
+    // our permissions callback works. TODO: research whether we can make permissions
+    // checks something that can be part of our single query to mongodb
+
+    // if (limit !== undefined) {
+    //   q.limit(limit);
+    // }
+    // if (skip !== undefined) {
+    //   q.skip(skip);
+    // }
+
+    var results = {};
+    var got;
+    var total;
+
+    async.series([loadPages, permissions, skipLimitAndTotal, loadWidgets], done);
+
+    function loadPages(callback) {
+      q.toArray(function(err, pagesArg) {
+        if (err) {
+          console.log(err);
+          return callback(err);
+        }
+        results.pages = pagesArg;
+        got = pagesArg.length;
+        // This is a good idea, but we need to figure out how to make sure it all
+        // ends in a browser redirect and doesn't break blog, events or map, and
+        // also guard against loops
+        //
+        // // If this all started with a slug parameter that possibly no longer
+        // // exists, check the redirect table before giving up. If there is a redirect
+        // // recursively invoke the whole thing
+        // if (optionsArg.slug && (!got)) {
+        //   // Check the redirect table
+        //   return self.redirects.findOne({ from: optionsArg.slug }, function(err, redirect) {
+        //     if (redirect) {
+        //       var newOptions = {};
+        //       extend(true, newOptions, optionsArg);
+        //       newOptions.slug = redirect.to;
+        //       return self.get(req, newOptions, mainCallback);
+        //     }
+        //   });
+        // }
+        return callback(err);
+      });
+    }
+
+    function permissions(callback) {
+      async.filter(results.pages, function(page, callback) {
+        self.permissions(req, 'edit-page', page, function(err) {
+          if (editable) {
+            return callback(!err);
+          } else {
+            page._edit = !err;
+            self.permissions(req, 'view-page', page, function(err) {
+              return callback(!err);
+            });
+          }
+        });
+      }, function(pagesArg) {
+        results.pages = pagesArg;
+        return callback(null);
+      });
+    }
+
+    // Brute force strategy is the only one that works with 'skip' and 'total'
+    // in the mix until we put permissions in the database
+    function skipLimitAndTotal(callback) {
+      var limited = [];
+      var i;
+      skip = skip || 0;
+      limit = limit || 1000000000;
+      results.total = results.pages.length;
+      for (i = skip; (i < skip + limit); i++) {
+        if (results.pages[i]) {
+          limited.push(results.pages[i]);
+        } else {
+          break;
+        }
+      }
+      results.pages = limited;
+      return callback(null);
+    }
+
+    function loadWidgets(callback) {
+      // Use eachSeries to avoid devoting overwhelming mongodb resources
+      // to a single user's request. There could be many snippets on this
+      // page, and callLoadersForPage is parallel already
+      async.forEachSeries(results.pages, function(page, callback) {
+        self.callLoadersForPage(req, page, callback);
+      }, function(err) {
+        return callback(err);
+      });
+    }
+
+    function done(err) {
+      results.criteria = options;
+      return mainCallback(null, results);
+    }
+  };
+
   // Fetch the "page" with the specified slug. As far as
   // apos is concerned, the "page" with the slug /about
   // is expected to be an object with a .areas property. If areas
@@ -2028,7 +2244,7 @@ function Apos() {
     orClauses.unshift({ slug: slug });
 
     // Ordering in reverse order by slug gives us the longest match first
-    pages.find({
+    self.pages.find({
       $or: orClauses,
       // This method never returns pages from the trash
       trash: { $exists: false }
@@ -2837,6 +3053,46 @@ function Apos() {
       return true;
     }
     return false;
+  };
+
+  // Given an options object in which options[name] is a string
+  // set to '0', '1', or 'any', this method corrects options[name] to
+  // be suitable for use in a MongoDB criteria object. false, true and null
+  // are also accepted as synonyms for '0', '1' and 'any'.
+  //
+  // '0' or false means "the property must be false or absent," '1' or true
+  // means "the property must be true," and 'any' or null means "we don't care
+  // what the property is."
+  //
+  // An empty string is considered equivalent to '0'.
+  //
+  // This is not the same as apos.sanitizeBoolean which is concerned only with
+  // true or false and does not address "any."
+  //
+  // def should be set to '0'/false, '1'/true or 'any'/null and defaults to 'any'.
+  //
+  // This method is most often used with REST API parameters and forms.
+
+  self.convertBooleanFilterCriteria = function(name, options, def) {
+    // Consume special options then remove them, turning the rest into mongo criteria
+
+    if (def === undefined) {
+      def = 'any';
+    }
+    var value = (options[name] === undefined) ? def : options[name];
+    if (options[name] !== undefined) {
+      delete options[name];
+    }
+
+    if ((value === 'any') || (value === null)) {
+      // Don't care, show all
+    } else if ((!value) || (value === '0')) {
+      // Must be absent or false. Hooray for $ne
+      options[name] = { $ne: true };
+    } else {
+      // Must be true
+      options[name] = true;
+    }
   };
 
   self.sanitizeInteger = function(i, def, min, max) {
