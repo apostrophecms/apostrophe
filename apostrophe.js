@@ -2018,12 +2018,20 @@ function Apos() {
   //
   // `options.published` indicates whether to return only published pages
   // ('1' or true), return only unpublished pages (`0` or false), or return both
-  // ('any' or null). It defaults to 'any', allowing admins to preview unpublished
+  // ('any' or null). It defaults to 'any', allowing suitable users to preview unpublished
   // pages.
   //
   // `options.trash` indicates whether to return only pages in the trashcan
   // the trashcan ('1' or true), return only pages not in the trashcan ('0' or false),
   // or return both ('any' or null). It defaults to '0'.
+  //
+  // In any case the user's identity determines what they can see. Permissions are
+  // checked according to the Apostrophe permissions model. The `admin` permission
+  // permits unlimited retrieval. Otherwise the user's `groupIds` array, if any, is
+  // compared to the `viewGroupIds` and `editGroupIds` properites of the page.
+  // Setting `options.published` to '0' or 'any' has no effect if the user is not
+  // logged in and is limited to unpublished pages this particular is allowed to edit
+  // otherwise.
   //
   // FILTERING ON YOUR OWN CRITERIA
   //
@@ -2081,14 +2089,6 @@ function Apos() {
       args.fields = fields;
     }
 
-    // TODO: with many pages there is a performance problem with calling
-    // permissions separately on them. Pagination will have to be performed
-    // manually after all permissions have been checked. The A1.5 permissions
-    // model wasn't perfect but it was something you could do by joining tables.
-    // We will fix it ASAP by just storing the permissions for a page in the page.
-
-    var q = self.pages.find(options, args).sort(sort);
-
     // For now we have to implement limit and skip ourselves because of the way
     // our permissions callback works. TODO: research whether we can make permissions
     // checks something that can be part of our single query to mongodb
@@ -2101,12 +2101,65 @@ function Apos() {
     // }
 
     var results = {};
-    var got;
-    var total;
 
-    async.series([loadPages, permissions, skipLimitAndTotal, loadWidgets], done);
+    async.series([permissions, count, loadPages, markPermissions, loadWidgets], done);
+
+    // REFACTOR into apostrophe-people
+    function permissions(callback) {
+      // If they have the admin permission we're done
+      if (req.user && _.contains(req.user.permissions, 'admin')) {
+        return callback(null);
+      }
+
+      // (published AND ((loginRequired is undefined) OR (viewGroups IN userGroups)))
+      // *OR*
+      // (editGroups IN userGroups)
+
+      var groupIds = (req.user && req.user.groupIds) ? req.user.groupIds : [];
+
+      if (!groupIds.length) {
+        // General public and unprivileged users have the simplest criteria
+        options.published = true;
+        options.loginRequired = { $exists: false };
+      } else {
+        // People with groups are more complicated
+        options.$or = [
+          // You can view if you have view privileges...
+          {
+            published: true,
+            $or: [
+              { loginRequired: { $exists: false } },
+              { viewGroupIds: { $in: [ groupIds ] } }
+            ]
+          },
+          // OR you have edit privileges in which case you don't care if it's published
+          {
+            editGroupIds: { $in: groupIds }
+          }
+        ];
+      }
+
+      return callback(null);
+    }
+
+    function count(callback) {
+      self.pages.find(options).count(function(err, count) {
+        results.total = count;
+        return callback(err);
+      });
+    }
 
     function loadPages(callback) {
+      var q = self.pages.find(options, args);
+      // At last we can use skip and limit properly thanks to permissions stored
+      // in the document
+      if (skip !== undefined) {
+        q.skip(skip);
+      }
+      if (limit !== undefined) {
+        q.limit(limit);
+      }
+      q.sort();
       q.toArray(function(err, pagesArg) {
         if (err) {
           console.log(err);
@@ -2136,40 +2189,20 @@ function Apos() {
       });
     }
 
-    function permissions(callback) {
-      async.filter(results.pages, function(page, callback) {
-        self.permissions(req, 'edit-page', page, function(err) {
-          if (editable) {
-            return callback(!err);
-          } else {
-            page._edit = !err;
-            self.permissions(req, 'view-page', page, function(err) {
-              return callback(!err);
-            });
-          }
-        });
-      }, function(pagesArg) {
-        results.pages = pagesArg;
+    // REFACTOR into apostrophe-people
+    function markPermissions(callback) {
+      if (!req.user) {
         return callback(null);
-      });
-    }
-
-    // Brute force strategy is the only one that works with 'skip' and 'total'
-    // in the mix until we put permissions in the database
-    function skipLimitAndTotal(callback) {
-      var limited = [];
-      var i;
-      skip = skip || 0;
-      limit = limit || 1000000000;
-      results.total = results.pages.length;
-      for (i = skip; (i < skip + limit); i++) {
-        if (results.pages[i]) {
-          limited.push(results.pages[i]);
-        } else {
-          break;
-        }
       }
-      results.pages = limited;
+      _.each(results.pages, function(page) {
+        if (req.user.permissions && _.contains(req.user.permissions, 'admin')) {
+          page._edit = true;
+        } else {
+          if (page.editGroupIds && _.intersect(req.user.groupIds, page.editGroupIds).length) {
+            page._edit = true;
+          }
+        }
+      });
       return callback(null);
     }
 
@@ -3308,6 +3341,60 @@ function Apos() {
       }
     });
     return items;
+  };
+
+  // Perform a one-to-one join with another page type (such as any snippet type).
+  // If you have events and wish to bring a place object into a ._place property
+  // of each event based on a .placeId property, this is what you want. The performance
+  // isn't bad because we tackle them all at once. Note that a
+  // permalink is found for each object and set as the ._url property.
+  //
+  // The `options` argument may be skipped. `options.get` should be the `get` method
+  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
+  // `apos.get`. `options.getOptions` may contain options to the `get` call in
+  // addition to the ids, such as `permalink` for `snippets.get`.
+  //
+  // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
+
+  self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
+    if (!callback) {
+      callback = options;
+      options = {};
+    }
+    var otherIds = [];
+    var othersById = {};
+    _.each(items, function(item) {
+      if (item[idField]) {
+        otherIds.push(item[idField]);
+      }
+    });
+    var getter = options.get || self.get;
+    var getOptions = options.getOptions || {};
+    if (otherIds.length) {
+      var finalOptions = {};
+      extend(true, finalOptions, getOptions);
+      finalOptions._id = { $in: otherIds };
+      return getter(req, finalOptions, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        var others = results.snippets || results.pages;
+        // Make a lookup table of the others by id
+        _.each(others, function(other) {
+          othersById[other._id] = other;
+        });
+        // Attach the others to the items
+        _.each(items, function(item) {
+          var id = item[idField];
+          if (id && othersById[id]) {
+            item[objectField] = othersById[id];
+          }
+        });
+        return callback(null);
+      });
+    } else {
+      return callback(null);
+    }
   };
 
   // FILE HELPERS
