@@ -1,9 +1,16 @@
 {# Standard form markup, for convenience and consistency #}
 
 {% macro formText(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ label | css }}">
+  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css }}">
     <label>{{ label | e }}</label>
     <input name="{{ name | e }}" type="text">
+  </fieldset>
+{% endmacro %}
+
+{% macro formPassword(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-password apos-fieldset-{{ name | css }}">
+    <label>{{ label | e }}</label>
+    <input name="{{ name | e }}" type="password">
   </fieldset>
 {% endmacro %}
 
@@ -12,15 +19,20 @@
   {{ formText(name, label) }}
 {% endmacro %}
 
+{# Maybe fancier later #}
+{% macro formEmail(name, label) %}
+  {{ formText(name, label) }}
+{% endmacro %}
+
 {% macro formTextarea(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ label | css }}">
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}">
     <label>{{ label | e }}</label>
     <textarea name="{{ name | e }}" rows="4"></textarea>
   </fieldset>
 {% endmacro %}
 
 {% macro formSelect(name, label, choices) %}
-  <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ label | css }}">
+  <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}">
     <label>{{ label | e }}</label>
     <select name="{{ name | e }}">
       {% for choice in choices %}
@@ -38,7 +50,7 @@
 {# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
 {# specifying the type we want for the singleton #}
 {% macro formSingleton(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ label | css }}">
+  <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ name | css }}">
     <label>{{ name }}</label>
     {# js adds this singleton to the dialog #}
     <div data-{{ name }}-edit-view></div>
@@ -47,7 +59,7 @@
 
 {# See enableArea in snippets' main.js for the necessary plumbing #}
 {% macro formArea(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ label | css }}">
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}">
     <label>{{ label | e }}</label>
     {# js adds this area to the dialog #}
     <div data-{{ name }}-edit-view></div>

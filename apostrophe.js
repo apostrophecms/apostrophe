@@ -66,11 +66,11 @@ function Apos() {
     res.send('404 not found error, URL was ' + req.url);
   }
 
-  function generateId() {
+  self.generateId = function() {
     // TODO use something better, although this is not meant to be
-    // cryptographically secure
+    // ultra cryptographically secure
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
-  }
+  };
 
   // This is our standard set of controls. If you add a new widget you'll be
   // adding that to self.itemTypes (with widget: true) and to this list of
@@ -307,7 +307,7 @@ function Apos() {
 
     // An id for this particular process that should be unique
     // even in a multiple server environment
-    self._pid = generateId();
+    self._pid = self.generateId();
 
     aposLocals = {};
 
@@ -646,7 +646,7 @@ function Apos() {
       };
 
       aposLocals.aposGenerateId = function() {
-        return generateId();
+        return self.generateId();
       };
 
       // Generate the right range of page numbers to display in the pager.
@@ -865,7 +865,7 @@ function Apos() {
           }
           var image = group.image;
           var info = {
-            _id: generateId(),
+            _id: self.generateId(),
             length: file.length,
             group: group.name,
             createdAt: new Date(),
@@ -979,7 +979,7 @@ function Apos() {
           // Pull the original out of cloud storage to a temporary folder where
           // it can be cropped and popped back into uploadfs
           var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-          var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+          var tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
           var croppedFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
 
           async.series([
@@ -1106,7 +1106,7 @@ function Apos() {
         function sendArea() {
           // A temporary id for the duration of the editing activity, useful
           // in the DOM. Areas are permanently identified by their slugs, not their IDs.
-          area.wid = 'w-' + generateId();
+          area.wid = 'w-' + self.generateId();
           area.controls = controls;
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
@@ -1140,7 +1140,7 @@ function Apos() {
         // A temporary id for the duration of the editing activity, useful
         // in the DOM. Regular areas are permanently identified by their slugs,
         // not their IDs. Virtual areas are identified as the implementation sees fit.
-        area.wid = 'w-' + generateId();
+        area.wid = 'w-' + self.generateId();
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
@@ -1166,7 +1166,7 @@ function Apos() {
         // A temporary id for the duration of the editing activity, useful
         // in the DOM. Regular areas are permanently identified by their slugs,
         // not their IDs. Virtual areas are identified as the implementation sees fit.
-        area.wid = 'w-' + generateId();
+        area.wid = 'w-' + self.generateId();
         extend(options, _.omit(req.body, 'content', 'type'), true);
         options.type = type;
         options.area = area;
@@ -1598,7 +1598,7 @@ function Apos() {
             // 'global' page often used to hold footers. Other virtual pages should
             // be created before they are used so they have the right type.
             var page = {
-              id: generateId(),
+              id: self.generateId(),
               slug: pageSlug,
               areas: {}
             };
@@ -1663,7 +1663,7 @@ function Apos() {
       page.slug = slug;
     }
     if (!page._id) {
-      page._id = generateId();
+      page._id = self.generateId();
       newPage = true;
     }
 
@@ -1785,7 +1785,7 @@ function Apos() {
       version.createdAt = new Date();
       version.pageId = version._id;
       version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
-      version._id = generateId();
+      version._id = self.generateId();
       delete version.searchText;
       if (!prior) {
         version.diff = [ { value: '[NEW]', added: true } ];
@@ -3677,7 +3677,7 @@ function Apos() {
           }
         ] }, function(file, callback) {
         var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-        var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+        var tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
         n++;
         if (n === 1) {
           console.log('Adding metadata for files (may take a while)...');
@@ -3810,7 +3810,7 @@ function Apos() {
           async.series([
             function(callback) {
               var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-              tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+              tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
               n++;
               console.log(n + ' of ' + total + ': ' + originalFile);
               async.series([
