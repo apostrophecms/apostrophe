@@ -74,7 +74,7 @@ Here's the `initApos` function of the sample application [http://github.com/punk
       }
     }
 
-"Where does db come from?" It's a MongoDB native database connection. (Hint: convenient to set up with Appy, or just use mongodb-native yourself.) Apostrophe's getArea, putArea and getPage methods utilize these.
+"Where does db come from?" It's a MongoDB native database connection. (Hint: convenient to set up with Appy, or just use mongodb-native yourself.) Apostrophe's `getArea`, `putArea`, `getPage`, `putPage` and `get` methods utilize these.
 
 "What is `app`?" `app` is your Express 3.0 app object. See the Express documentation for how to create an application. Again, Appy helps here.
 

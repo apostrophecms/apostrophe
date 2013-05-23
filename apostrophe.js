@@ -66,11 +66,11 @@ function Apos() {
     res.send('404 not found error, URL was ' + req.url);
   }
 
-  function generateId() {
+  self.generateId = function() {
     // TODO use something better, although this is not meant to be
-    // cryptographically secure
+    // ultra cryptographically secure
     return Math.floor(Math.random() * 1000000000) + '' + Math.floor(Math.random() * 1000000000);
-  }
+  };
 
   // This is our standard set of controls. If you add a new widget you'll be
   // adding that to self.itemTypes (with widget: true) and to this list of
@@ -307,7 +307,7 @@ function Apos() {
 
     // An id for this particular process that should be unique
     // even in a multiple server environment
-    self._pid = generateId();
+    self._pid = self.generateId();
 
     aposLocals = {};
 
@@ -646,7 +646,7 @@ function Apos() {
       };
 
       aposLocals.aposGenerateId = function() {
-        return generateId();
+        return self.generateId();
       };
 
       // Generate the right range of page numbers to display in the pager.
@@ -865,7 +865,7 @@ function Apos() {
           }
           var image = group.image;
           var info = {
-            _id: generateId(),
+            _id: self.generateId(),
             length: file.length,
             group: group.name,
             createdAt: new Date(),
@@ -979,7 +979,7 @@ function Apos() {
           // Pull the original out of cloud storage to a temporary folder where
           // it can be cropped and popped back into uploadfs
           var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-          var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+          var tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
           var croppedFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
 
           async.series([
@@ -1106,7 +1106,7 @@ function Apos() {
         function sendArea() {
           // A temporary id for the duration of the editing activity, useful
           // in the DOM. Areas are permanently identified by their slugs, not their IDs.
-          area.wid = 'w-' + generateId();
+          area.wid = 'w-' + self.generateId();
           area.controls = controls;
           area.controlTypes = self.controlTypes;
           area.itemTypes = self.itemTypes;
@@ -1140,7 +1140,7 @@ function Apos() {
         // A temporary id for the duration of the editing activity, useful
         // in the DOM. Regular areas are permanently identified by their slugs,
         // not their IDs. Virtual areas are identified as the implementation sees fit.
-        area.wid = 'w-' + generateId();
+        area.wid = 'w-' + self.generateId();
         area.controls = controls;
         area.controlTypes = self.controlTypes;
         area.itemTypes = self.itemTypes;
@@ -1166,7 +1166,7 @@ function Apos() {
         // A temporary id for the duration of the editing activity, useful
         // in the DOM. Regular areas are permanently identified by their slugs,
         // not their IDs. Virtual areas are identified as the implementation sees fit.
-        area.wid = 'w-' + generateId();
+        area.wid = 'w-' + self.generateId();
         extend(options, _.omit(req.body, 'content', 'type'), true);
         options.type = type;
         options.area = area;
@@ -1598,7 +1598,7 @@ function Apos() {
             // 'global' page often used to hold footers. Other virtual pages should
             // be created before they are used so they have the right type.
             var page = {
-              id: generateId(),
+              id: self.generateId(),
               slug: pageSlug,
               areas: {}
             };
@@ -1663,7 +1663,7 @@ function Apos() {
       page.slug = slug;
     }
     if (!page._id) {
-      page._id = generateId();
+      page._id = self.generateId();
       newPage = true;
     }
 
@@ -1785,7 +1785,7 @@ function Apos() {
       version.createdAt = new Date();
       version.pageId = version._id;
       version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
-      version._id = generateId();
+      version._id = self.generateId();
       delete version.searchText;
       if (!prior) {
         version.diff = [ { value: '[NEW]', added: true } ];
@@ -1974,6 +1974,255 @@ function Apos() {
     });
   };
 
+  // apos.get delivers pages that the current user is permitted to view, with areas fully
+  // populated and ready to render. Pages are also marked with a ._edit property if
+  // they are editable by this user.
+  //
+  // The results are delivered as the second argument of the callback if there is no
+  // error. The results object will have a `pages` property containing 0 or more pages.
+  //
+  // WHO SHOULD USE THIS FUNCTION
+  //
+  // Developers who need something different from a simple fetch of one page
+  // (use `apos.getPage`), fetch of ancestors, descendants, etc. of tree pages (use
+  // `pages.getAncestors`, `pages.getDescendants`, etc.), or fetch of snippets of
+  // some type such as blog posts or events (use `snippets.get`).
+  //
+  // WARNING
+  //
+  // This function doesn't care if a page is a "tree page" (slug starting with a /)
+  // or not. If you are only interested in tree pages and you are not filtering by
+  // page type to achieve that, consider setting .slug to a regular expression
+  // matching a leading /.
+  //
+  // SPECIAL OPTIONS
+  //
+  // The following options are treated specially. Any other options become part
+  // of the mongodb query criteria.
+  //
+  // If `options.editable` is true, only pages the current user can edit are
+  // returned.
+  //
+  // If `options.sort` is present, it is passed as the argument to the MongoDB sort()
+  // function. There is no default sort.
+  //
+  // `options.limit` indicates the maximum number of results to return. options.skip
+  // indicates the number of results to skip. These can be used to implement pagination.
+  //
+  // If `options.fields` is present it is used to limit the fields returned
+  // by MongoDB for performance reasons (the second argument to MongoDB's find()).
+  //
+  // `options.titleSearch` can be used to search the titles of all snippets for a
+  // particular string using a fairly tolerant algorithm. options.q does the same
+  // on the full text.
+  //
+  // `options.published` indicates whether to return only published pages
+  // ('1' or true), return only unpublished pages (`0` or false), or return both
+  // ('any' or null). It defaults to 'any', allowing suitable users to preview unpublished
+  // pages.
+  //
+  // `options.trash` indicates whether to return only pages in the trashcan
+  // the trashcan ('1' or true), return only pages not in the trashcan ('0' or false),
+  // or return both ('any' or null). It defaults to '0'.
+  //
+  // In any case the user's identity determines what they can see. Permissions are
+  // checked according to the Apostrophe permissions model. The `admin` permission
+  // permits unlimited retrieval. Otherwise the user's `groupIds` array, if any, is
+  // compared to the `viewGroupIds` and `editGroupIds` properites of the page.
+  // Setting `options.published` to '0' or 'any' has no effect if the user is not
+  // logged in and is limited to unpublished pages this particular is allowed to edit
+  // otherwise.
+  //
+  // FILTERING ON YOUR OWN CRITERIA
+  //
+  // All other properties of options are merged with the MongoDB criteria object
+  // used to select the relevant pages.
+
+  self.get = function(req, optionsArg, mainCallback) {
+    if (!mainCallback) {
+      mainCallback = optionsArg;
+      optionsArg = {};
+    }
+
+    var options = {};
+    extend(true, options, optionsArg);
+
+    var editable = options.editable;
+    if (options.editable !== undefined) {
+      delete options['editable'];
+    }
+
+    var sort = options.sort || { sortTitle: 1 };
+    delete options.sort;
+
+    var limit = options.limit || undefined;
+    // Don't get cute about when to delete, it never hurts, and if you're not very
+    // careful you're going to fail to delete if it was set to '0' (see the or above)
+    delete options.limit;
+
+    var skip = options.skip || undefined;
+    delete options.skip;
+
+    var fields = options.fields || undefined;
+    delete options.fields;
+
+    var titleSearch = options.titleSearch || undefined;
+    if (options.titleSearch !== undefined) {
+      options.sortTitle = self.searchify(titleSearch);
+    }
+    delete options.titleSearch;
+
+    self.convertBooleanFilterCriteria('trash', options, '0');
+    self.convertBooleanFilterCriteria('published', options);
+
+    if (options.q && options.q.length) {
+      // Crude fulltext search support. It would be better to present
+      // highSearchText results before lowSearchText results, but right now
+      // we are doing a single query only
+      options.lowSearchText = self.searchify(options.q);
+    }
+    // Don't let an empty or not-so-empty q screw up our query
+    delete options.q;
+    var args = {};
+
+    if (fields !== undefined) {
+      args.fields = fields;
+    }
+
+    // For now we have to implement limit and skip ourselves because of the way
+    // our permissions callback works. TODO: research whether we can make permissions
+    // checks something that can be part of our single query to mongodb
+
+    // if (limit !== undefined) {
+    //   q.limit(limit);
+    // }
+    // if (skip !== undefined) {
+    //   q.skip(skip);
+    // }
+
+    var results = {};
+
+    async.series([permissions, count, loadPages, markPermissions, loadWidgets], done);
+
+    // REFACTOR into apostrophe-people
+    function permissions(callback) {
+      // If they have the admin permission we're done
+      if (req.user && _.contains(req.user.permissions, 'admin')) {
+        return callback(null);
+      }
+
+      // (published AND ((loginRequired is undefined) OR (viewGroups IN userGroups)))
+      // *OR*
+      // (editGroups IN userGroups)
+
+      var groupIds = (req.user && req.user.groupIds) ? req.user.groupIds : [];
+
+      if (!groupIds.length) {
+        // General public and unprivileged users have the simplest criteria
+        options.published = true;
+        options.loginRequired = { $exists: false };
+      } else {
+        // People with groups are more complicated
+        options.$or = [
+          // You can view if you have view privileges...
+          {
+            published: true,
+            $or: [
+              { loginRequired: { $exists: false } },
+              { viewGroupIds: { $in: [ groupIds ] } }
+            ]
+          },
+          // OR you have edit privileges in which case you don't care if it's published
+          {
+            editGroupIds: { $in: groupIds }
+          }
+        ];
+      }
+
+      return callback(null);
+    }
+
+    function count(callback) {
+      self.pages.find(options).count(function(err, count) {
+        results.total = count;
+        return callback(err);
+      });
+    }
+
+    function loadPages(callback) {
+      var q = self.pages.find(options, args);
+      // At last we can use skip and limit properly thanks to permissions stored
+      // in the document
+      if (skip !== undefined) {
+        q.skip(skip);
+      }
+      if (limit !== undefined) {
+        q.limit(limit);
+      }
+      q.sort();
+      q.toArray(function(err, pagesArg) {
+        if (err) {
+          console.log(err);
+          return callback(err);
+        }
+        results.pages = pagesArg;
+        got = pagesArg.length;
+        // This is a good idea, but we need to figure out how to make sure it all
+        // ends in a browser redirect and doesn't break blog, events or map, and
+        // also guard against loops
+        //
+        // // If this all started with a slug parameter that possibly no longer
+        // // exists, check the redirect table before giving up. If there is a redirect
+        // // recursively invoke the whole thing
+        // if (optionsArg.slug && (!got)) {
+        //   // Check the redirect table
+        //   return self.redirects.findOne({ from: optionsArg.slug }, function(err, redirect) {
+        //     if (redirect) {
+        //       var newOptions = {};
+        //       extend(true, newOptions, optionsArg);
+        //       newOptions.slug = redirect.to;
+        //       return self.get(req, newOptions, mainCallback);
+        //     }
+        //   });
+        // }
+        return callback(err);
+      });
+    }
+
+    // REFACTOR into apostrophe-people
+    function markPermissions(callback) {
+      if (!req.user) {
+        return callback(null);
+      }
+      _.each(results.pages, function(page) {
+        if (req.user.permissions && _.contains(req.user.permissions, 'admin')) {
+          page._edit = true;
+        } else {
+          if (page.editGroupIds && _.intersect(req.user.groupIds, page.editGroupIds).length) {
+            page._edit = true;
+          }
+        }
+      });
+      return callback(null);
+    }
+
+    function loadWidgets(callback) {
+      // Use eachSeries to avoid devoting overwhelming mongodb resources
+      // to a single user's request. There could be many snippets on this
+      // page, and callLoadersForPage is parallel already
+      async.forEachSeries(results.pages, function(page, callback) {
+        self.callLoadersForPage(req, page, callback);
+      }, function(err) {
+        return callback(err);
+      });
+    }
+
+    function done(err) {
+      results.criteria = options;
+      return mainCallback(null, results);
+    }
+  };
+
   // Fetch the "page" with the specified slug. As far as
   // apos is concerned, the "page" with the slug /about
   // is expected to be an object with a .areas property. If areas
@@ -2028,7 +2277,7 @@ function Apos() {
     orClauses.unshift({ slug: slug });
 
     // Ordering in reverse order by slug gives us the longest match first
-    pages.find({
+    self.pages.find({
       $or: orClauses,
       // This method never returns pages from the trash
       trash: { $exists: false }
@@ -2839,6 +3088,46 @@ function Apos() {
     return false;
   };
 
+  // Given an options object in which options[name] is a string
+  // set to '0', '1', or 'any', this method corrects options[name] to
+  // be suitable for use in a MongoDB criteria object. false, true and null
+  // are also accepted as synonyms for '0', '1' and 'any'.
+  //
+  // '0' or false means "the property must be false or absent," '1' or true
+  // means "the property must be true," and 'any' or null means "we don't care
+  // what the property is."
+  //
+  // An empty string is considered equivalent to '0'.
+  //
+  // This is not the same as apos.sanitizeBoolean which is concerned only with
+  // true or false and does not address "any."
+  //
+  // def should be set to '0'/false, '1'/true or 'any'/null and defaults to 'any'.
+  //
+  // This method is most often used with REST API parameters and forms.
+
+  self.convertBooleanFilterCriteria = function(name, options, def) {
+    // Consume special options then remove them, turning the rest into mongo criteria
+
+    if (def === undefined) {
+      def = 'any';
+    }
+    var value = (options[name] === undefined) ? def : options[name];
+    if (options[name] !== undefined) {
+      delete options[name];
+    }
+
+    if ((value === 'any') || (value === null)) {
+      // Don't care, show all
+    } else if ((!value) || (value === '0')) {
+      // Must be absent or false. Hooray for $ne
+      options[name] = { $ne: true };
+    } else {
+      // Must be true
+      options[name] = true;
+    }
+  };
+
   self.sanitizeInteger = function(i, def, min, max) {
     if (def === undefined) {
       def = 0;
@@ -3052,6 +3341,60 @@ function Apos() {
       }
     });
     return items;
+  };
+
+  // Perform a one-to-one join with another page type (such as any snippet type).
+  // If you have events and wish to bring a place object into a ._place property
+  // of each event based on a .placeId property, this is what you want. The performance
+  // isn't bad because we tackle them all at once. Note that a
+  // permalink is found for each object and set as the ._url property.
+  //
+  // The `options` argument may be skipped. `options.get` should be the `get` method
+  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
+  // `apos.get`. `options.getOptions` may contain options to the `get` call in
+  // addition to the ids, such as `permalink` for `snippets.get`.
+  //
+  // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
+
+  self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
+    if (!callback) {
+      callback = options;
+      options = {};
+    }
+    var otherIds = [];
+    var othersById = {};
+    _.each(items, function(item) {
+      if (item[idField]) {
+        otherIds.push(item[idField]);
+      }
+    });
+    var getter = options.get || self.get;
+    var getOptions = options.getOptions || {};
+    if (otherIds.length) {
+      var finalOptions = {};
+      extend(true, finalOptions, getOptions);
+      finalOptions._id = { $in: otherIds };
+      return getter(req, finalOptions, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        var others = results.snippets || results.pages;
+        // Make a lookup table of the others by id
+        _.each(others, function(other) {
+          othersById[other._id] = other;
+        });
+        // Attach the others to the items
+        _.each(items, function(item) {
+          var id = item[idField];
+          if (id && othersById[id]) {
+            item[objectField] = othersById[id];
+          }
+        });
+        return callback(null);
+      });
+    } else {
+      return callback(null);
+    }
   };
 
   // FILE HELPERS
@@ -3421,7 +3764,7 @@ function Apos() {
           }
         ] }, function(file, callback) {
         var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-        var tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+        var tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
         n++;
         if (n === 1) {
           console.log('Adding metadata for files (may take a while)...');
@@ -3554,7 +3897,7 @@ function Apos() {
           async.series([
             function(callback) {
               var originalFile = '/files/' + file._id + '-' + file.name + '.' + file.extension;
-              tempFile = uploadfs.getTempPath() + '/' + generateId() + '.' + file.extension;
+              tempFile = uploadfs.getTempPath() + '/' + self.generateId() + '.' + file.extension;
               n++;
               console.log(n + ' of ' + total + ': ' + originalFile);
               async.series([
