@@ -2159,7 +2159,7 @@ function Apos() {
       if (limit !== undefined) {
         q.limit(limit);
       }
-      q.sort();
+      q.sort(sort);
       q.toArray(function(err, pagesArg) {
         if (err) {
           console.log(err);
@@ -3346,13 +3346,14 @@ function Apos() {
   // Perform a one-to-one join with another page type (such as any snippet type).
   // If you have events and wish to bring a place object into a ._place property
   // of each event based on a .placeId property, this is what you want. The performance
-  // isn't bad because we tackle them all at once. Note that a
-  // permalink is found for each object and set as the ._url property.
+  // isn't bad because we tackle them all at once.
   //
   // The `options` argument may be skipped. `options.get` should be the `get` method
   // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
   // `apos.get`. `options.getOptions` may contain options to the `get` call in
   // addition to the ids, such as `permalink` for `snippets.get`.
+  //
+  // The first argument should be an array of pages already fetched.
   //
   // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
 
@@ -3389,6 +3390,128 @@ function Apos() {
           if (id && othersById[id]) {
             item[objectField] = othersById[id];
           }
+        });
+        return callback(null);
+      });
+    } else {
+      return callback(null);
+    }
+  };
+
+  // Perform a one-to-many join with another page type (such as any snippet type).
+  // If you have users and wish to bring all associated groups into a ._groups property
+  // based on a .groupIds array property, this is what you want. The performance
+  // isn't bad because we tackle them all at once. Note that a
+  // permalink is found for each object and set as the ._url property.
+  //
+  // The `options` argument may be skipped. `options.get` should be the `get` method
+  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
+  // `apos.get`. `options.getOptions` may contain options to the `get` call in
+  // addition to the ids, such as `permalink` for `snippets.get`.
+  //
+  // The first argument should be an array of pages already fetched.
+  //
+  // Example usage: apos.joinOneToMany(req, users, 'groupIds', '_groups', { get: groups.get, getOptions: { } }, callback)
+
+  self.joinOneToMany = function(req, items, idsField, objectsField, options, callback) {
+    if (!callback) {
+      callback = options;
+      options = {};
+    }
+    var otherIds = [];
+    var othersById = {};
+    _.each(items, function(item) {
+      if (item[idsField]) {
+        otherIds.concat(item[idsField]);
+      }
+    });
+    var getter = options.get || self.get;
+    var getOptions = options.getOptions || {};
+    if (otherIds.length) {
+      var finalOptions = {};
+      extend(true, finalOptions, getOptions);
+      finalOptions._id = { $in: otherIds };
+      return getter(req, finalOptions, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        var others = results.snippets || results.pages;
+        // Make a lookup table of the others by id
+        _.each(others, function(other) {
+          othersById[other._id] = other;
+        });
+        // Attach the others to the items
+        _.each(items, function(item) {
+          _.each(item[idsField] || [], function(id) {
+            if (othersById[id]) {
+              if (!item[objectsField]) {
+                item[objectsField] = [];
+              }
+              item[objectsField].push(othersById[id]);
+            }
+          });
+        });
+        return callback(null);
+      });
+    } else {
+      return callback(null);
+    }
+  };
+
+  // Perform a one-to-many join with another page type (such as any snippet type) when
+  // the relationship is stored on the "many" side.
+  //
+  // If you have groups and wish to bring all associated users into a ._users property
+  // based on a .groupIds array property of each user, this is what you want.
+  //
+  // The performance isn't bad because we tackle them all at once. Note that a
+  // permalink is found for each object and set as the ._url property.
+  //
+  // The `options` argument may be skipped. `options.get` should be the `get` method
+  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
+  // `apos.get`. `options.getOptions` may contain options to the `get` call in
+  // addition to the ids, such as `permalink` for `snippets.get`.
+  //
+  // The first argument should be an array of pages already fetched.
+  //
+  // Example usage: apos.joinOneToManyReverse(req, groups, 'groupIds', '_users', { get: users.get, getOptions: { } }, callback)
+
+  self.joinOneToManyReverse = function(req, items, idsField, objectsField, options, callback) {
+    if (!callback) {
+      callback = options;
+      options = {};
+    }
+    var itemIds = _.pluck(items, '_id');
+    var getter = options.get || self.get;
+    var getOptions = options.getOptions || {};
+    if (itemIds.length) {
+      // Copy the getOptions object so we don't modify it
+      var finalOptions = {};
+      extend(true, finalOptions, getOptions);
+      finalOptions[idsField] = { $in: itemIds };
+      return getter(req, finalOptions, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        // An array, an object with a snippets property, and an object with a
+        // pages property are all acceptable responses. Compatible with
+        // apos.get, snippets.get, and the obvious thing.
+        var others = Array.isArray(results) ? results : (results.snippets || results.pages);
+
+        var itemsById = {};
+        _.each(items, function (item) {
+          itemsById[item._id] = item;
+        });
+        // Attach the others to the items
+        _.each(others, function(other) {
+          _.each(other[idsField], function(id) {
+            if (itemsById[id]) {
+              if (!items[objectsField]) {
+                items[objectsField] = [];
+              }
+              items[objectsField].push(other);
+            }
+          });
         });
         return callback(null);
       });

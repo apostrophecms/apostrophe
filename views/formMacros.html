@@ -58,11 +58,23 @@
 {% endmacro %}
 
 {# See enableArea in snippets' main.js for the necessary plumbing #}
+{# (TODO: factor that out to content.js or editor.js) #}
 {% macro formArea(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}">
     <label>{{ label | e }}</label>
     {# js adds this area to the dialog #}
     <div data-{{ name }}-edit-view></div>
+  </fieldset>
+{% endmacro %}
+
+{# See enableList in content.js for the necessary plumbing #}
+{% macro formTypeaheadList(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-typeahead-list apos-fieldset-{{ name | css }}">
+    <label>{{ label | e }}</label>
+    <input type="text" name="title" />
+    <ul data-{{ name | css }}>
+      <li data-id class="apos-template"><span data-title>Title</span> <a class="apos-remove">x</a></li>
+    </ul>
   </fieldset>
 {% endmacro %}
 
@@ -75,3 +87,4 @@
     {%- endfor -%}
   </span>
 {% endmacro %}
+
