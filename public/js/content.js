@@ -694,11 +694,11 @@ apos.formatTime = function(time, options) {
     if (showSeconds) {
       return time;
     } else {
-      matches = time.match(/^(\d+):(\d+):(\d+)$/);
+      matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
       return matches[1] + ':' + matches[2];
     }
   } else {
-    matches = time.match(/^(\d+):(\d+):(\d+)$/);
+    matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
     hours = parseInt(matches[1], 10);
     minutes = matches[2];
     seconds = matches[3];
