@@ -206,11 +206,24 @@ body
     background: @apos-base;
     width: auto;
     text-align: center;
-    padding: 0px 0px 0px 2px;
+    padding: 7px;
     height: 18px;
     z-index: 9999;
     right: 0px;
     bottom: 7px;
+    text-indent: 0;
+    height: auto;
+    
+    &:before
+    {
+      content: '\f0b2';
+      font-family: 'apos-icons';
+      display: inline-block;
+      text-decoration: inherit;
+      margin-right: 0.2em;
+      text-align: center;
+      color: #fff;
+    }
   }
 }
 
@@ -466,6 +479,7 @@ body
   {
     opacity: 1.0;
   }
+
 }
 
 .apos-center
