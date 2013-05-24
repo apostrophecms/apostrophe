@@ -1286,6 +1286,10 @@ function Apos() {
         });
       });
 
+      app.get('/apos/pager', function(req, res) {
+        return res.send(partial('pager', req.query));
+      });
+
       // Serve minified CSS. (If we're not minifying, aposStylesheets won't
       // point here at all.)
       app.get('/apos/stylesheets.css', function(req, res) {

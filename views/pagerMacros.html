@@ -35,7 +35,8 @@
   {% if (page <= options.total) %}
     <span class="apos-pager-number {% if page == 1 %}apos-first{% endif %} {% if page == options.total %}apos-last{% endif %} {% if page == options.page %}apos-active{% endif %}">
       {%- if (options.page != page) -%}
-        <a href="{{ url | build({ page: page }) }}">
+        {# Dual markup for javascript applicatons and plain old links #}
+        <a data-page="{{ page }}" href="{{ url | build({ page: page }) }}">
       {%- endif -%}
       {{ page }}
       {%- if (options.page != page) -%}

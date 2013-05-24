@@ -1,0 +1,7 @@
+{# Render a pager as an AJAX response for use by JS code, like the manage view of #}
+{# snippets. It's a little lazy not to render this browser side, but maintaining two #}
+{# sets of logic for rendering pagers isn't great, and we don't have browser-side #}
+{# nunjucks yet. -Tom #}
+
+{% include 'pagerMacros.html' %}
+{{ renderPager({ page: page, total: total }, '#') }}
