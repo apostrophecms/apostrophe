@@ -1293,17 +1293,18 @@ function Apos() {
           var css = _.map(self._assets['stylesheets'], function(stylesheet) {
             var result;
             var src = stylesheet.file;
+
+            // Make sure we look first for a LESS source file so we're not
+            // just using a (possibly stale) previously compiled version
+            var lessPath = src.replace(/\.css$/, '.less');
             var exists = false;
-            if (fs.existsSync(src)) {
+            if (fs.existsSync(lessPath)) {
+              src = lessPath;
+              exists = true;
+            } else if (fs.existsSync(src)) {
               exists = true;
             }
-            if (!exists) {
-              var lessPath = src.replace(/\.css$/, '.less');
-              if (fs.existsSync(lessPath)) {
-                src = lessPath;
-                exists = true;
-              }
-            }
+
             if (!exists) {
               console.log('WARNING: stylesheet ' + stylesheet.file + ' does not exist');
               return;
