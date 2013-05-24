@@ -126,6 +126,7 @@ apos.filePath = function(file, options) {
 // just want to wait for all of the images to exist.
 
 apos.whenImagesReady = function(sel, imgSel, callback) {
+  var countlogs = 0;
   var $el = $(sel);
   if (!callback) {
     // imgSel argument is skippable
@@ -136,62 +137,62 @@ apos.whenImagesReady = function(sel, imgSel, callback) {
   if (imgSel) {
     $images = $images.filter(imgSel);
   }
+  var tmps = [];
+  var tmpsLoaded = 0;
 
+  $images.each(function(i, item) {
+    // Great, the image loaded, but CSS may have scaled it and we need
+    // to know its true dimensions. So jam it into a temporary image element
+    // and wait for that to be ready. Note that the original and the temporary copy
+    // may become ready at different times (yes we've seen that happen), so we wait
+    // for the copy to be ready.
 
-  function attempt() {
+    if (!tmps[i]) {
+      tmps[i] = new Image();
+      $(tmps[i]).load(function() {
+        tmpsLoaded++;
+      });
+      tmps[i].src = item.src;
+    }
+  });
+
+  function wait() {
     var ready = true;
+    // Wait for all temporary images to be loaded according to jQuery's .load()
+    if (tmpsLoaded !== tmps.length) {
+      ready = false;
+    } else {
+      return finish();
+    }
+    setTimeout(wait, 50);
+  }
+
+  function finish() {
+    // Now we can compute overall stats
     var maxWidth = 0;
     var maxHeightToWidth = 0 ;
     var maxHeight = 0;
-    var tmps = [];
-    $images.each(function(i, item) {
-      if (!item.complete) {
-        ready = false;
-        return;
+
+    _.each(tmps, function(tmp) {
+      var width = tmp.width;
+      var height = tmp.height;
+      if (width > maxWidth) {
+        maxWidth = width;
       }
-      var $item = $(item);
-      // Great, the image loaded, but CSS may have scaled it and we need
-      // to know its true dimensions. So jam it into a temporary image element
-      // and wait for that to be ready too. (You'd think this would always be
-      // ready immediately, but we've seen otherwise.)
-      if (!tmps[i]) {
-        tmps[i] = new Image();
-        tmps[i].src = $item.attr('src');
+      if (height > maxHeight) {
+        maxHeight = height;
       }
-      var tmp = tmps[i];
-      if (!tmp.complete) {
-        ready = false;
-        return;
-      }
-      function attemptTmp() {
-        if (!tmp.complete) {
-          return setTimeout(attemptTmp, 50);
-        }
-        var width = tmp.width;
-        var height = tmp.height;
-        if (width > maxWidth) {
-          maxWidth = width;
-        }
-        if (height > maxHeight) {
-          maxHeight = height;
-        }
-        if (width && height) {
-          var heightToWidth = height / width;
-          if (heightToWidth > maxHeightToWidth) {
-            maxHeightToWidth = heightToWidth;
-          }
+      if (width && height) {
+        var heightToWidth = height / width;
+        if (heightToWidth > maxHeightToWidth) {
+          maxHeightToWidth = heightToWidth;
         }
       }
-      attemptTmp();
     });
-    if (ready) {
-      return callback(maxWidth, maxHeight, maxHeightToWidth);
-    } else {
-      setTimeout(attempt, 50);
-    }
+    return callback(maxWidth, maxHeight, maxHeightToWidth);
   }
 
-  attempt();
+  wait();
 };
 
 apos.widgetPlayers = {};
