@@ -1129,7 +1129,7 @@ apos.widgetTypes.slideshow = {
         var $next = $library.find('[data-next]');
         var $removeSearch = $library.find('[data-remove-search]');
 
-        var perPage = 8;
+        var perPage = 7;
         var page = 0;
         var pages = 0;
 
@@ -1145,15 +1145,23 @@ apos.widgetTypes.slideshow = {
             self.busy(false);
 
             pages = Math.ceil(results.total / perPage);
+
+            // do pretty active/inactive states instead of 
+            // hide / show
+
             if (page + 1 >= pages) {
-              $next.hide();
+              // $next.hide();
+              $next.addClass('inactive');
             } else {
-              $next.show();
+              // $next.show();
+              $next.removeClass('inactive');
             }
             if (page === 0) {
-              $previous.hide();
+              // $previous.hide();
+              $previous.addClass('inactive');
             } else {
-              $previous.show();
+              // $previous.show();
+              $previous.removeClass('inactive');
             }
 
             if ($search.val().length) {
@@ -1166,6 +1174,7 @@ apos.widgetTypes.slideshow = {
             _.each(results.files, function(file) {
               var $item = apos.fromTemplate($items.find('[data-library-item]'));
               $item.data('file', file);
+              $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
               $item.attr('title', file.name + '.' + file.extension);
               if (self.fileGroup === 'images') {
                 $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
