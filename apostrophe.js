@@ -3806,7 +3806,7 @@ function Apos() {
             title: 'Trash',
             rank: 9999,
             trash: true,
-          }, null);
+          }, callback);
         }
         return callback(null);
       });
@@ -4076,7 +4076,7 @@ function Apos() {
       }
       return callback(null);
     });
-  }
+  };
 }
 
 // Required because EventEmitter is built on prototypal inheritance,
