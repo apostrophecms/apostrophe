@@ -1,6 +1,6 @@
 # Apostrophe
 
-## This is an early alpha quality version of Apostrophe 2, for node.js developers. Most frontend design work has not happened yet. Blogs, events, etc. are not part of Apostrophe 2 yet. See [Apostrophe 1.5](http://apostrophenow.org) for the current stable and mature release of Apostrophe for PHP and Symfony.
+## About Apostrophe
 
 Apostrophe is a content management system. This core module provides rich content editing as well as essential services to tie Apostrophe to your Express application. 
 
@@ -23,6 +23,10 @@ Apostrophe is led by the team at [P'unk Avenue](http://punkave.com). Previously 
 ## Acknowledgements
 
 Apostrophe wouldn't be nearly so awesome without [nunjucks](http://nunjucks.jlongster.com/), [Express](http://expressjs.com/) and [Rangy](http://code.google.com/p/rangy/). Please don't go anywhere near HTML's `contentEditable` attribute without Rangy. And a hip flask.
+
+## Stability
+
+Apostrophe 2 is in production on some client sites. Overall code stability is beta at this point.
 
 ## Requirements
 
