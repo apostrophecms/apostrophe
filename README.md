@@ -1,5 +1,7 @@
 # Apostrophe
 
+### [See apostrophe-sandbox for a quick start guide and a ready-to-use starter project.](http://github.com/punkave/apostrophe-sandbox)
+
 ## About Apostrophe
 
 Apostrophe is a content management system. This core module provides rich content editing as well as essential services to tie Apostrophe to your Express application. 
