@@ -267,7 +267,13 @@ apos.widgetPlayers.slideshow = function($widget)
 
   function adjustSize() {
     apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight, maxHeightToWidth) {
-      var proportion = $widget.width() * maxHeightToWidth;
+      var effectiveWidth = $widget.width();
+      // If all of the images are narrower than the widget,
+      // use the maximum width of an image
+      if (maxWidth < effectiveWidth) {
+        effectiveWidth = maxWidth;
+      }
+      var proportion = effectiveWidth * maxHeightToWidth;
 
       if(!$widget.parents().hasClass('apos-no-height')) {
         $widget.find('[data-slideshow-items]').height(proportion);
