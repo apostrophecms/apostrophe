@@ -72,7 +72,7 @@ body
 
       &:hover
       {
-        i::before {color: #ccc;}
+        i:before {color: #ccc;}
       }
     }
 
@@ -258,12 +258,12 @@ body
 }
 
 /**
- * Buttons and menus both have this class
- */
- input.apos-control
- {
-   border: none;
- }
+* Buttons and menus both have this class
+*/
+input.apos-control
+{
+ border: none;
+}
 .apos-control
 {
   float: left;
@@ -322,6 +322,11 @@ body
       z-index: 1;
       position: relative;
       &:hover{cursor: pointer;}
+      &:active option,
+      &:focus option
+      {
+        color: #000 !important;
+      }
     }
   }
   &.apos-corner-close
@@ -777,7 +782,7 @@ textarea.apos-code {
     width: 170px;
     height: 170px;
 
-    &.apos-not-image::before
+    &.apos-not-image:before
     {
       font-family: 'apos-icons';
       content: '\f0c5';
@@ -788,7 +793,7 @@ textarea.apos-code {
     }
     &.apos-not-image
     {
-      &::after
+      &:after
       {
         position: absolute;
         top: 40%;
@@ -832,10 +837,10 @@ textarea.apos-code {
       background-color: darken(@apos-base, 10%);
       text-decoration: none;
 
-      &::before { background-color: darken(@apos-base, 10%) }
+      &:before { background-color: darken(@apos-base, 10%) }
     }
 
-    &::before
+    &:before
     {
       font-family: 'apos-icons';
       background: @apos-base;
@@ -856,13 +861,13 @@ textarea.apos-code {
     right: 24px;
     top: 0;
     visibility: hidden;
-    &::before
+    &:before
     {
       visibility: visible;
     }
   }
-    .apos-edit::before { content:'\1f527'; }
-    .apos-crop::before { content:'\e746'; }
+    .apos-edit:before { content:'\1f527'; }
+    .apos-crop:before { content:'\e746'; }
 
   .apos-slideshow-editor-item-extension
   {
@@ -908,7 +913,7 @@ textarea.apos-code {
   .icon-docs
   {
 
-    &::before
+    &:before
     {
       font-size:3.5em;
       color: #333;
@@ -1083,7 +1088,7 @@ textarea.apos-code {
   position: absolute;
   background:#eee;
   z-index: 100;
-  &::before
+  &:before
   {
     position: absolute;
     width: 170px;
