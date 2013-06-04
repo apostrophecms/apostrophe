@@ -67,13 +67,15 @@
   </fieldset>
 {% endmacro %}
 
-{# See enableList in content.js for the necessary plumbing #}
-{% macro formTypeaheadList(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-typeahead-list apos-fieldset-{{ name | css }}">
+{# See $.selective in content.js for the necessary plumbing #}
+{% macro formAutocompleteList(name, label) %}
+  <fieldset class="apos-fieldset apos-fieldset-autocomplete-list apos-fieldset-{{ name | css }}" data-{{ name | css }}>
     <label>{{ label | e }}</label>
-    <input type="text" name="title" />
-    <ul data-{{ name | css }}>
-      <li data-id class="apos-template"><span data-title>Title</span> <a class="apos-remove">x</a></li>
+    <input type="text" data-autocomplete />
+    <ul data-list>
+      {# This is a template for creating the real items, #}
+      {# it will be cloned as needed #}
+      <li data-item><span data-label>Title</span> <a class="apos-remove" data-remove>x</a></li>
     </ul>
   </fieldset>
 {% endmacro %}

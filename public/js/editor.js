@@ -71,10 +71,10 @@ apos.Editor = function(options) {
       document.execCommand(action, false, $(this).val());
 
       // The easiest way to shut off an h4 is to toggle it
-      // to a div with formatBlock. But Firefox won't toggle a div 
-      // back to an h4. It strongly prefers br's as line breaks. 
-      // So after inserting the div, convert any divs found 
-      // into text nodes surrounded by br's. This can be 
+      // to a div with formatBlock. But Firefox won't toggle a div
+      // back to an h4. It strongly prefers br's as line breaks.
+      // So after inserting the div, convert any divs found
+      // into text nodes surrounded by br's. This can be
       // slightly surprising, but the end result is editable,
       // so you can get back to what you started with.
 
@@ -86,7 +86,7 @@ apos.Editor = function(options) {
 
       // Don't do this to divs that are or are inside a apos-widget!
 
-      if (jQuery.browser.mozilla) {
+      if (navigator.product === 'Gecko') {
         self.$editable.find('div').each(function() {
           var div = $(this);
 
@@ -1359,7 +1359,7 @@ apos.widgetTypes.slideshow = {
           // (TODO: record those in the database and skip this performance-lowering hack)
           $cropImage.css('visibility', 'hidden');
           $cropImage.attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.extension);
-          apos.whenImagesReady($cropImage, function(widthArg, heightArg) {
+          $cropImage.imagesReady(function(widthArg, heightArg) {
             // Now we know the true dimensions, record them and scale down the image
             width = widthArg;
             height = heightArg;
@@ -2163,7 +2163,7 @@ apos.parseArea = function(content) {
       } else {
         // This is a rich text element like <strong> or <h3>.
         // We need the markup for the entire thing
-        richText += apos.outerHTML(child);
+        richText += $(child).getOuterHTML();
       }
     }
   }
