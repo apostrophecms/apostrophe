@@ -130,7 +130,7 @@
   height: 50px;
   width: 50px;
   text-indent: -9999px;
-  &::after
+  &:after
   {
     top:14px;
     left:0;
@@ -141,7 +141,7 @@
     width: 15px;
     height: 15px;
   }
-  &::before
+  &:before
   {
     border: 3px solid black;
     -webkit-border-radius: 30px;
@@ -153,7 +153,7 @@
     display: block;
   }
 
-  &:hover::before
+  &:hover:before
   {
     background-color: RGBA(255,255,255,0.3);
   }
@@ -163,7 +163,7 @@
 {
 
    right: 10px;
-  &::after
+  &:after
   {
     left: 9px;
     -webkit-transform: rotate(135deg);
@@ -178,7 +178,7 @@
 {
   
   left: 10px;
-  &::after
+  &:after
   {
     left: 17px;
     -webkit-transform: rotate(-45deg);
@@ -811,7 +811,7 @@ textarea.apos-code {
 
       &:hover
       {
-        i::before {color: #ccc;}
+        i:before {color: #ccc;}
       }
     }
 
@@ -877,5 +877,3 @@ textarea.apos-code {
     }
   }/* apos bar items */
 } /* admin bar */
-
-

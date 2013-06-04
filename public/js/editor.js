@@ -129,9 +129,9 @@ apos.Editor = function(options) {
     var $button = $('<div data-edit-widget class="apos-widget-button apos-edit-widget"><i class="icon-pencil"></i></div>');
     $buttons.append($button);
 
-    $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left"><i class="icon-left-open"></i></div>');  
+    $button = $('<div data-float-widget-left class="apos-widget-button apos-float-widget-left"><i class="icon-left-open"></i></div>');
     $buttons.append($button);
-    $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right"><i class="icon-right-open"></div>'); 
+    $button = $('<div data-float-widget-right class="apos-widget-button apos-float-widget-right"><i class="icon-right-open"></div>');
     $buttons.append($button);
 
     $buttons.append($('<div class="apos-clear"></div>'));
@@ -232,8 +232,10 @@ apos.Editor = function(options) {
 
   // Firefox displays resize handles we don't want.
   // We prefer to do that via the widget editor
-  document.execCommand("enableObjectResizing", false, false);
-
+  if(navigator.product == 'Gecko') {
+    //this is a firefox-only thing we need to keep it wrapped in this browser check so it doesn't break IE10
+    document.execCommand("enableObjectResizing", false, false);
+  }
   self.$editable.bind('cut paste', function() {
     self.undoPoint();
     return true;
@@ -363,8 +365,8 @@ apos.Editor = function(options) {
       self.$editable.find('[style]').removeAttr('style');
     }
 
-    // Webkit loves to nest elements that should not be nested 
-    // as a result of copy and paste operations and formatBlock actions. 
+    // Webkit loves to nest elements that should not be nested
+    // as a result of copy and paste operations and formatBlock actions.
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
 
@@ -459,7 +461,7 @@ apos.Editor = function(options) {
           }
         });
       }
-      // Restore the before and after markers, which prevent Chrome from doing crazy 
+      // Restore the before and after markers, which prevent Chrome from doing crazy
       // things with cut copy paste and typeover
 
       var nodeRange = rangy.createRange();
@@ -524,9 +526,9 @@ apos.Editor = function(options) {
         box = box.parentNode;
       }
 
-      // If the current selection and/or caret moves to 
+      // If the current selection and/or caret moves to
       // incorporate any part of a widget, expand it to
-      // encompass the entire widget. Do our best 
+      // encompass the entire widget. Do our best
       // to avoid direct editing of the widget outside of the
       // widget editor. Eventually the user is trained to
       // just click the edit button when they want to edit the widget
@@ -554,7 +556,7 @@ apos.Editor = function(options) {
 
   // Every 5 seconds save an undo point if edits have been made.
   // Exception: don't try if the editor does not have the focus, as the
-  // rangy mechanisms we use to look for differences can disrupt the focus in 
+  // rangy mechanisms we use to look for differences can disrupt the focus in
   // that case
   self.timers.push(setInterval(function() {
     if (self.$editable.is(':focus')) {
@@ -600,9 +602,9 @@ apos.Editor = function(options) {
    * Then pop the most recent state from the 'from' queue and
    * restore that state. To implement undo, call this with
    * self.undoQueue, self.redoQueue. To implement redo, call
-   * this with self.redoQueue, self.undoQueue. To save the 
+   * this with self.redoQueue, self.undoQueue. To save the
    * current state to the undo queue if a change is detected,
-   * call this with null, self.undoQueue, true. 
+   * call this with null, self.undoQueue, true.
    */
 
   self.undoStep = function(from, to, optional) {
@@ -716,7 +718,7 @@ apos.widgetEditor = function(options) {
 
   // Careful, relevant only when we are in a rich text editor context
   if (self.editor) {
-    // Make sure the selection we return to 
+    // Make sure the selection we return to
     // is actually on the editor
     self.editor.$editable.focus();
   }
@@ -763,9 +765,9 @@ apos.widgetEditor = function(options) {
 
           if (options.save) {
             // Used to implement save for singletons and non-rich-text-based areas.
-            // Note that in this case options.data was passed in by reference, 
+            // Note that in this case options.data was passed in by reference,
             // so the end result can be read there. Pay attention to the callback so
-            // we can allow the user a second chance 
+            // we can allow the user a second chance
             options.save(function(err) {
               return callback(err);
             });
@@ -803,9 +805,9 @@ apos.widgetEditor = function(options) {
       self.$widget.attr('data-type', self.type);
     },
 
-    // Update the widget placeholder in the main content editor, then ask the server 
-    // to render the widget placeholder. We *don't* call the widget player inside 
-    // the main content editor because those are not restricted to content that 
+    // Update the widget placeholder in the main content editor, then ask the server
+    // to render the widget placeholder. We *don't* call the widget player inside
+    // the main content editor because those are not restricted to content that
     // behaves inside contentEditable.
 
     updateWidget: function(callback) {
@@ -813,7 +815,7 @@ apos.widgetEditor = function(options) {
         return callback(null);
       }
       // When we update the widget placeholder we also clear its
-      // markup and call populateWidget to insert the latest 
+      // markup and call populateWidget to insert the latest
       self.$widget.html('');
       self.editor.addButtonsToWidget(self.$widget);
       self.updateWidgetData();
@@ -947,7 +949,7 @@ apos.widgetEditor = function(options) {
     },
 
     // Override if you need to carry out an action such
-    // as fetching video information before the save can 
+    // as fetching video information before the save can
     // take place. Takes a callback which completes the
     // save operation, or gracefully refuses it if you
     // don't set self.exists to true. Use of a callback
@@ -1146,7 +1148,7 @@ apos.widgetTypes.slideshow = {
 
             pages = Math.ceil(results.total / perPage);
 
-            // do pretty active/inactive states instead of 
+            // do pretty active/inactive states instead of
             // hide / show
 
             if (page + 1 >= pages) {
@@ -1977,7 +1979,7 @@ apos.selectElement = function(el) {
 };
 
 // Move the caret to the specified offset in characters
-// within the specified element. 
+// within the specified element.
 apos.moveCaretToTextPosition = function(el, offset) {
   var range = rangy.createRange();
   range.setStart(el, offset);

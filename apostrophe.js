@@ -467,6 +467,11 @@ function Apos() {
         }
         // If someone transforms an existing area into a singleton, do a reasonable thing by
         // taking the first existing item of the proper type
+        if (!options.area) {
+          // Invent the area if it doesn't exist yet, so we can
+          // edit pages not previously edited
+          options.area = { items: [] };
+        }
         var item = _.find(options.area.items, function(item) {
           return item.type === options.type;
         });

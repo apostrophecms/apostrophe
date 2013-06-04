@@ -18,9 +18,9 @@ apos.enablePlayers = function(sel) {
   $(sel).find('.apos-widget').each(function() {
     var $el = $(this);
 
-    // TODO why did this get commented out?
+    // TODO switch this to a jsonOption
     if($el.closest('.apos-no-player').length) {
-      //return;
+      return;
     }
 
     var type = $el.attr('data-type');
