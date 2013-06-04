@@ -163,7 +163,17 @@ function Apos() {
     // imaging cropping plugin
     { name: 'vendor/jquery.Jcrop.min', when: 'user' },
 
-    // OUR CODE
+    // PUNKAVE-MAINTAINED, GENERAL PURPOSE JQUERY PLUGINS
+
+    { name: 'vendor/jquery.get-outer-html', when: 'always' },
+    { name: 'vendor/jquery.find-by-name', when: 'always' },
+    { name: 'vendor/jquery.projector', when: 'always' },
+    { name: 'vendor/jquery.bottomless', when: 'always' },
+    { name: 'vendor/jquery.selective', when: 'always' },
+    { name: 'vendor/jquery.images-ready', when: 'always' },
+    { name: 'vendor/jquery.radio', when: 'always' },
+
+    // APOSTROPHE CORE JS
 
     // Editing functionality
     { name: 'editor', when: 'user' },
