@@ -291,7 +291,7 @@ function Apos() {
     };
 
     if (typeof(name) === 'function') {
-      return self._assets[types[type].key].push(name);
+      return self._assets[types[type].key].push({ call: name, when: when });
     }
 
     var fileDir = fs + '/' + types[type].fs;
@@ -436,9 +436,10 @@ function Apos() {
           when = 'all';
         }
         var templates = self._assets['templates'];
+        templates = filterAssets(templates, when);
         return _.map(templates, function(template) {
-          if (typeof(template) === 'function') {
-            return template();
+          if (template.call) {
+            return template.call();
           } else {
             return partial(template.file);
           }
