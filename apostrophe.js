@@ -1376,11 +1376,13 @@ function Apos() {
         return res.send(partial('pager', req.query));
       });
 
+      self._minifiedCss = {};
+
       // Serve minified CSS. (If we're not minifying, aposStylesheets won't
       // point here at all.) REFACTOR: too much code duplication with
       // the /apos/scripts.js route.
       app.get('/apos/stylesheets.css', function(req, res) {
-        if (self._minifiedCss === undefined) {
+        if (self._minifiedCss[req.query.when] === undefined) {
           var css = _.map(filterAssets(self._assets['stylesheets'], req.query.when), function(stylesheet) {
             var result;
             var src = stylesheet.file;
@@ -1421,16 +1423,18 @@ function Apos() {
             }
             return result;
           }).join("\n");
-          self._minifiedCss = cleanCss.process(css);
+          self._minifiedCss[req.query.when] = cleanCss.process(css);
         }
         res.type('text/css');
-        res.send(self._minifiedCss);
+        res.send(self._minifiedCss[req.query.when]);
       });
+
+      self._minifiedJs = {};
 
       // Serve minified js. (If we're not minifying, aposScripts won't
       // point here at all.)
       app.get('/apos/scripts.js', function(req, res) {
-        if (self._minifiedJs === undefined) {
+        if (self._minifiedJs[req.query.when] === undefined) {
           // Minify them all!
           var scripts = _.filter(filterAssets(self._assets['scripts'], req.query.when), function(script) {
             var exists = fs.existsSync(script.file);
@@ -1439,10 +1443,10 @@ function Apos() {
             }
             return exists;
           });
-          self._minifiedJs = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
+          self._minifiedJs[req.query.when] = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
         }
         res.contentType = 'text/javascript';
-        res.send(self._minifiedJs);
+        res.send(self._minifiedJs[req.query.when]);
       });
 
       app.get('/apos/*', self.static(__dirname + '/public'));
