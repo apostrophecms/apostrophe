@@ -3483,10 +3483,10 @@ function Apos() {
             item[objectField] = othersById[id];
           }
         });
-        return callback(null, items);
+        return callback(null);
       });
     } else {
-      return callback(null, items);
+      return callback(null);
     }
   };
 
@@ -3545,10 +3545,10 @@ function Apos() {
             }
           });
         });
-        return callback(null, items);
+        return callback(null);
       });
     } else {
-      return callback(null, items);
+      return callback(null);
     }
   };
 
@@ -3610,10 +3610,10 @@ function Apos() {
             }
           });
         });
-        return callback(null, items);
+        return callback(null);
       });
     } else {
-      return callback(null, items);
+      return callback(null);
     }
   };
 
