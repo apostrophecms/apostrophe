@@ -441,7 +441,7 @@ function Apos() {
           if (template.call) {
             return template.call();
           } else {
-            return partial(template.file);
+            return partial(template.file, {}, [ path.dirname(template.file) ]);
           }
         }).join('');
       };
@@ -1876,8 +1876,10 @@ function Apos() {
     }
 
     function addVersion(callback) {
-      // Turn the page object we fetched into a version object
-      var version = page;
+      // Turn the page object we fetched into a version object.
+      // But don't modify the page object!
+      var version = {};
+      extend(true, version, page);
       version.createdAt = new Date();
       version.pageId = version._id;
       version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
@@ -2185,17 +2187,6 @@ function Apos() {
       args.fields = fields;
     }
 
-    // For now we have to implement limit and skip ourselves because of the way
-    // our permissions callback works. TODO: research whether we can make permissions
-    // checks something that can be part of our single query to mongodb
-
-    // if (limit !== undefined) {
-    //   q.limit(limit);
-    // }
-    // if (skip !== undefined) {
-    //   q.skip(skip);
-    // }
-
     var results = {};
 
     async.series([permissions, count, loadPages, markPermissions, loadWidgets], done);
@@ -2314,7 +2305,7 @@ function Apos() {
 
     function done(err) {
       results.criteria = options;
-      return mainCallback(null, results);
+      return mainCallback(err, results);
     }
   };
 
@@ -3454,6 +3445,8 @@ function Apos() {
   //
   // The first argument should be an array of pages already fetched.
   //
+  // The callback receives an error object if any.
+  //
   // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
 
   self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
@@ -3490,10 +3483,10 @@ function Apos() {
             item[objectField] = othersById[id];
           }
         });
-        return callback(null);
+        return callback(null, items);
       });
     } else {
-      return callback(null);
+      return callback(null, items);
     }
   };
 
@@ -3509,6 +3502,8 @@ function Apos() {
   // addition to the ids, such as `permalink` for `snippets.get`.
   //
   // The first argument should be an array of pages already fetched.
+  //
+  // The callback receives an error object if any.
   //
   // Example usage: apos.joinOneToMany(req, users, 'groupIds', '_groups', { get: groups.get, getOptions: { } }, callback)
 
@@ -3550,10 +3545,10 @@ function Apos() {
             }
           });
         });
-        return callback(null);
+        return callback(null, items);
       });
     } else {
-      return callback(null);
+      return callback(null, items);
     }
   };
 
@@ -3572,6 +3567,8 @@ function Apos() {
   // addition to the ids, such as `permalink` for `snippets.get`.
   //
   // The first argument should be an array of pages already fetched.
+  //
+  // The callback receives an error object if any.
   //
   // Example usage: apos.joinOneToManyReverse(req, groups, 'groupIds', '_users', { get: users.get, getOptions: { } }, callback)
 
@@ -3605,17 +3602,18 @@ function Apos() {
         _.each(others, function(other) {
           _.each(other[idsField], function(id) {
             if (itemsById[id]) {
-              if (!items[objectsField]) {
-                items[objectsField] = [];
+              var item = itemsById[id];
+              if (!item[objectsField]) {
+                item[objectsField] = [];
               }
-              items[objectsField].push(other);
+              item[objectsField].push(other);
             }
           });
         });
-        return callback(null);
+        return callback(null, items);
       });
     } else {
-      return callback(null);
+      return callback(null, items);
     }
   };
 
@@ -4093,6 +4091,22 @@ function Apos() {
     });
   };
 
+  self.tasks.reset = function(callback) {
+    console.log('Resetting the database - removing ALL content');
+    var collections = [ self.files, self.pages, self.redirects, self.versions ];
+    async.map(collections, function(collection, callback) {
+      return collection.remove({}, callback);
+    }, function (err) {
+      if (err) {
+        return callback(err);
+      }
+      return async.series([ resetMain ], callback);
+      function resetMain(callback) {
+        return self.pages.insert([{ slug: '/', _id: '4444444444444', path: 'home', title: 'Home', level: 0, type: 'home' }, { slug: '/search', _id: 'search', orphan: true, path: 'home/search', title: 'Search', level: 1, type: 'search', rank: 9998 }, { slug: '/trash', _id: 'trash', path: 'home/trash', title: 'Trash', level: 1, trash: true, type: 'trash', rank: 9999 }], callback);
+      }
+    });
+  };
+
   self.tasks.index = function(callback) {
     console.log('Indexing all pages for search');
     self.forEachPage({},
@@ -4163,6 +4177,7 @@ function Apos() {
             slug: '/search',
             type: 'search',
             title: 'Search',
+            published: true,
             rank: 9998
         }, callback);
       } else {
