@@ -999,7 +999,7 @@ textarea.apos-code {
   {
     // Don't float me, it breaks jquery ui sortable connectWith and then we can't
     // drag from the library properly
-    padding: 15px 15px 15px 23px;
+    padding: 30px 15px 15px 23px;
   }
   .apos-media-library-item
   {
@@ -1007,6 +1007,7 @@ textarea.apos-code {
     width: 85px;
     height: 85px;
     margin-right:15px;
+    margin-bottom: 15px;
     overflow: hidden;
     -webkit-background-size: cover;
          -o-background-size: cover;
@@ -1014,7 +1015,7 @@ textarea.apos-code {
     background-repeat: no-repeat;
     background-position: center;
     
-    &:last-child{margin-right: 0;}
+    &:nth-child(7n+8){margin-right: 0;}
     .apos-media-library-item-box img {
       opacity: 0;
     }
@@ -1041,9 +1042,12 @@ textarea.apos-code {
   }
   .apos-media-library-search
   {
-    clear: left;
-    padding: 17px 0 5px 20px;
-    margin-top: 10px;
+    // clear: left;
+    position: absolute;
+    top: 0;
+    right: 43px;
+    padding: 14px 0 5px 20px;
+    // margin-top: 10px;
     
     .apos-library-search-label
     {
@@ -1065,6 +1069,11 @@ textarea.apos-code {
       background-color: darken(@apos-grey,60%);
       color: #FFF;
       padding: 6px 10px;
+    }
+    .apos-remove-search
+    {
+      float: none;
+      padding: 6px 7px;
     }
   }
 }

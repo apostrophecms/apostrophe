@@ -1129,7 +1129,7 @@ apos.widgetTypes.slideshow = {
         var $next = $library.find('[data-next]');
         var $removeSearch = $library.find('[data-remove-search]');
 
-        var perPage = 7;
+        var perPage = 21;
         var page = 0;
         var pages = 0;
 
