@@ -106,12 +106,12 @@ function Apos() {
     },
     bold: {
       type: 'button',
-      label: 'b',
+      label: 'Bold',
       icon: 'bold'
     },
     italic: {
       type: 'button',
-      label: 'i',
+      label: 'Italic',
       icon: 'italic'
     },
     createLink: {

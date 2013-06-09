@@ -5,6 +5,12 @@ if (!window.apos) {
   window.apos = {};
 }
 
+$( document ).tooltip({   
+  show: { effect: "fadeIn", duration: 200 },
+  hide: { effect: "fadeOut", duration: 200 },
+  position: { my: "left top+10", at: "left bottom" }
+});
+
 var apos = window.apos;
 
 // Hopefully I won't need these again as they trash copy and paste between pages

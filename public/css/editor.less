@@ -1217,3 +1217,39 @@ ul.ui-autocomplete {
 
     }
   }
+
+  // Tooltip
+  
+body .ui-tooltip
+{
+  padding: 10px;
+  position: absolute;
+  z-index: 9999;
+  max-width: 300px;
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-family: 'cabin';
+  // background-color: white !important;
+  /*-webkit-box-shadow: 0 0 5px #aaa;*/
+  /*box-shadow: 0 0 5px #aaa;*/
+  -webkit-border-radius: 0;
+          border-radius: 0; 
+  border-width: 0px;
+  // position: relative;
+  // opacity:0;
+  // .transition(@property:opacity);
+  &:after
+  {
+    content: " ";
+    position: absolute;
+    top: -5px;
+    
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+    border-width: 0 7.5px 11px 7.5px;
+    border-color: transparent transparent #262626 transparent;
+  }
+}

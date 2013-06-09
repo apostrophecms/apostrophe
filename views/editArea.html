@@ -1,6 +1,6 @@
 {% macro aposButton(name, label, icon) %}
   {%- if icon -%}
-    <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}><i class="icon-{{ icon }}"></i></a>
+    <a class="apos-control apos-button apos-{{ name }}-button" title="{{ label }}" data-{{ name }}><i class="icon-{{ icon }}"></i></a>
   {% else %}
     <a class="apos-control apos-button apos-{{ name }}-button" data-{{ name }}>{{ label }}</i></a>
   {% endif %}
@@ -19,7 +19,7 @@
 
 {% macro aposWidgetButton(name, label, icon) %}
   {%- if icon -%}
-    <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}"><i class="icon-{{ icon }}"></i></a>
+    <a class="apos-control apos-button apos-{{ name }}-button" title="{{ label }}" data-widgetButton="{{ name  }}"><i class="icon-{{ icon }}"></i></a>
   {% else %}
     <a class="apos-control apos-button apos-{{ name }}-button" data-widgetButton="{{ name  }}">{{ label }}</a>
   {% endif %}
