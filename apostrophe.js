@@ -130,9 +130,9 @@ function Apos() {
   // TODO: lots of override options
   var stylesheets = [
     // Has a subdirectory of relative image paths so give it a folder
-    "jquery-ui-darkness/jquery-ui-darkness",
-    "content",
-    "editor"
+    { name: "jquery-ui-darkness/jquery-ui-darkness", when: 'always' },
+    { name: "content", when: 'always' },
+    { name: "editor", when: 'user' }
   ];
 
   // Default browser side script requirements
@@ -141,41 +141,58 @@ function Apos() {
     // VENDOR DEPENDENCIES
 
     // Makes broken browsers usable
-    'vendor/underscore-min',
+    { name: 'vendor/underscore-min', when: 'always' },
     // For everything
-    'vendor/jquery',
+    { name: 'vendor/jquery', when: 'always' },
     // For parsing query parameters browser-side
-    'vendor/jquery-url-parser',
+    { name: 'vendor/jquery-url-parser', when: 'always' },
     // For blueimp uploader, drag and drop reordering of anything, datepicker
     // & autocomplete
-    'vendor/jquery-ui',
+    { name: 'vendor/jquery-ui', when: 'always' },
     // For the RTE
-    'vendor/jquery-hotkeys',
+    { name: 'vendor/jquery-hotkeys', when: 'user' },
     // For selections in the RTE
-    'vendor/rangy-core',
-    'vendor/rangy-selectionsaverestore',
+    { name: 'vendor/rangy-core', when: 'user' },
+    { name: 'vendor/rangy-selectionsaverestore', when: 'user' },
     // For selections in ordinary textareas and inputs (part of Rangy)
-    'vendor/jquery-textinputs',
+    { name: 'vendor/jquery-textinputs', when: 'user' },
     // Graceful fallback for older browsers
-    'vendor/blueimp-iframe-transport',
+    { name: 'vendor/blueimp-iframe-transport', when: 'user' },
     // Spiffy multiple file upload
-    'vendor/blueimp-fileupload',
+    { name: 'vendor/blueimp-fileupload', when: 'user' },
     // imaging cropping plugin
-    'vendor/jquery.Jcrop.min',
+    { name: 'vendor/jquery.Jcrop.min', when: 'user' },
 
-    // OUR CODE
+    // PUNKAVE-MAINTAINED, GENERAL PURPOSE JQUERY PLUGINS
+
+    { name: 'vendor/jquery.get-outer-html', when: 'always' },
+    { name: 'vendor/jquery.find-by-name', when: 'always' },
+    { name: 'vendor/jquery.projector', when: 'always' },
+    { name: 'vendor/jquery.bottomless', when: 'always' },
+    { name: 'vendor/jquery.selective', when: 'always' },
+    { name: 'vendor/jquery.images-ready', when: 'always' },
+    { name: 'vendor/jquery.radio', when: 'always' },
+
+    // APOSTROPHE CORE JS
 
     // Editing functionality
-    'editor',
+    { name: 'editor', when: 'user' },
     // Viewers for standard content types
-    'content',
+    { name: 'content', when: 'always' }
   ];
 
   // Templates pulled into the page by the aposTemplates() Express local
   // These are typically hidden at first by CSS and cloned as needed by jQuery
 
   var templates = [
-    'slideshowEditor', 'buttonsEditor', 'filesEditor', 'pullquoteEditor', 'videoEditor', 'codeEditor', 'htmlEditor', 'cropEditor'
+    { name: 'slideshowEditor', when: 'user' },
+    { name: 'buttonsEditor', when: 'user' },
+    { name: 'filesEditor', when: 'user' },
+    { name: 'pullquoteEditor', when: 'user' },
+    { name: 'videoEditor', when: 'user' },
+    { name: 'codeEditor', when: 'user' },
+    { name: 'htmlEditor', when: 'user' },
+    { name: 'cropEditor', when: 'user' }
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -183,34 +200,59 @@ function Apos() {
 
   var alreadyPushed = {};
 
-  // self.pushAsset('stylesheet', 'foo', __dirname, '/apos-mymodule') will preload
-  // /apos-mymodule/css/foo.css
+  // self.pushAsset('stylesheet', 'foo', { dir: __dirname, web: '/apos-mymodule', when: 'always' }) will preload
+  // /apos-mymodule/css/foo.css at all times. Leaving off the last argument
+  // has the same effect.
 
-  // self.pushAsset('script', 'foo', __dirname, '/apos-mymodule') will preload
-  // /apos-mymodule/js/foo.js
+  // self.pushAsset('script', 'foo', { dir: __dirname, web: '/apos-mymodule', when: 'user' }) will preload
+  // /apos-mymodule/js/foo.js only when a user is logged in.
 
-  // self.pushAsset('template', 'foo', __dirname, '/apos-mymodule') will render
+  // self.pushAsset('template', 'foo', { dir: __dirname }) will render
   // the partial {__dirname}/views/foo.html at the bottom of the body
-  // (self.partial will take care of adding the extension). However you can also
-  // use:
+  // (self.partial will take care of adding the extension). Note
+  // that 'web' is not used for templates.
   //
+  // If you wish you may pass `options` as the second argument as long
+  // as you include a `name` property in `options`.
+  //
+  // You may also write:
   // self.pushAsset('template', function() { foo })
   //
   // Which allows you to render the template in your own context and is typically
   // the easier way when pushing a template from a module like apostrophe-snippets.
   //
-  // The fs and web parameters default to __dirname and '/apos' for easy use here.
+  // The fs and web options default to __dirname and '/apos' for easy use in the apostroph emodule itself.
   // Other modules typically have a wrapper method that passes them correctly
   // for their needs.
   //
-  // You should pass BOTH fs and web for a stylesheet or script. This allows
+  // You must pass BOTH fs and web for a stylesheet or script. This allows
   // minification, LESS compilation that is aware of relative base paths, etc.
   // fs should be the PARENT of the public folder, not the public folder itself.
   //
   // It is acceptable to push an asset more than once. Only one copy is sent, at
   // the earliest point requested.
 
-  self.pushAsset = function(type, name, fs, web) {
+  self.pushAsset = function(type, name, options) {
+    var fs, web, when;
+    // Support just 2 arguments with the name as a property
+    if (typeof(name) === 'object') {
+      options = name;
+      name = name.name;
+    }
+    if (typeof(options) === 'string') {
+      // Support old order of parameters
+      fs = options;
+      options = undefined;
+      web = arguments[3];
+    }
+    if (options) {
+      fs = options.fs;
+      web = options.web;
+      when = options.when || 'always';
+    } else {
+      // bc
+      when = 'always';
+    }
     var key = type + ':' + name + ':' + fs + ':' + web;
     if (type !== 'template') {
       if (alreadyPushed[key]) {
@@ -249,7 +291,7 @@ function Apos() {
     };
 
     if (typeof(name) === 'function') {
-      return self._assets[types[type].key].push(name);
+      return self._assets[types[type].key].push({ call: name, when: when });
     }
 
     var fileDir = fs + '/' + types[type].fs;
@@ -263,7 +305,7 @@ function Apos() {
     if (types[type].ext) {
       webPath += '.' + types[type].ext;
     }
-    self._assets[types[type].key].push({ file: filePath, web: webPath });
+    self._assets[types[type].key].push({ file: filePath, web: webPath, when: when });
   };
 
   var i;
@@ -389,13 +431,17 @@ function Apos() {
       // etc. These lie dormant in the page until they are needed as prototypes to
       // be cloned by jQuery
 
-      aposLocals.aposTemplates = function() {
+      aposLocals.aposTemplates = function(when) {
+        if (!when) {
+          when = 'all';
+        }
         var templates = self._assets['templates'];
+        templates = filterAssets(templates, when);
         return _.map(templates, function(template) {
-          if (typeof(template) === 'function') {
-            return template();
+          if (template.call) {
+            return template.call();
           } else {
-            return partial(template.file);
+            return partial(template.file, {}, [ path.dirname(template.file) ]);
           }
         }).join('');
       };
@@ -422,6 +468,11 @@ function Apos() {
         }
         // If someone transforms an existing area into a singleton, do a reasonable thing by
         // taking the first existing item of the proper type
+        if (!options.area) {
+          // Invent the area if it doesn't exist yet, so we can
+          // edit pages not previously edited
+          options.area = { items: [] };
+        }
         var item = _.find(options.area.items, function(item) {
           return item.type === options.type;
         });
@@ -603,24 +654,48 @@ function Apos() {
           }
           attributes[key] = value;
         });
-        return partial('itemNormalView', { item: item, itemType: itemType, options: options, attributes: attributes });
+
+        // Any options listed in a jsonOptions array in the itemType
+        // are made available as data attributes on the widget
+        var jsonOptions = {};
+        _.each(itemType.jsonOptions || [], function(name) {
+          if (options[name] !== undefined) {
+            jsonOptions[name] = options[name];
+          }
+        });
+
+        return partial('itemNormalView', { item: item, itemType: itemType, options: options, jsonOptions: jsonOptions, attributes: attributes });
       };
 
-      aposLocals.aposStylesheets = function() {
+      function filterAssets(assets, when) {
+        // Support older layouts
+        if (!when) {
+          when = 'all';
+        }
+        return _.filter(assets, function(asset) {
+          return (asset.when === 'always') || (when === 'all') || (asset.when === when);
+        });
+      }
+
+      aposLocals.aposStylesheets = function(when) {
         if (options.minify) {
-          return '<link href="/apos/stylesheets.css?pid=' + self._pid + '" rel="stylesheet" />';
+          return '<link href="/apos/stylesheets.css?pid=' + self._pid + '&when=' + when + '" rel="stylesheet" />';
         } else {
-          return _.map(self._assets['stylesheets'], function(stylesheet) {
+          return _.map(filterAssets(self._assets['stylesheets'], when), function(stylesheet) {
             return '<link href="' + stylesheet.web + '" rel="stylesheet" />';
           }).join("\n");
         }
       };
 
-      aposLocals.aposScripts = function() {
+      aposLocals.aposScripts = function(when) {
+        if (!when) {
+          // Backwards compatibility with older layouts
+          when = 'all';
+        }
         if (options.minify) {
-          return '<script src="/apos/scripts.js?pid=' + self._pid + '"></script>\n';
+          return '<script src="/apos/scripts.js?pid=' + self._pid + '&when=' + when + '"></script>\n';
         } else {
-          return _.map(self._assets['scripts'], function(script) {
+          return _.map(filterAssets(self._assets['scripts'], when), function(script) {
             return '<script src="' + script.web + '"></script>';
           }).join("\n");
         }
@@ -693,10 +768,10 @@ function Apos() {
       //
       // You may also call:
       //
-      // apos.pushGlobalCall('my.browserSide.method(?, ?)', arg1, arg2, ...)
+      // apos.pushGlobalCallWhen('user', 'my.browserSide.method(?, ?)', arg1, arg2, ...)
       //
       // Which pushes a call that will be included EVERY TIME
-      // apos.globalCalls is invoked. This is NOT specific
+      // apos.globalCallsWhen('user') is invoked. This is NOT specific
       // to a single request and should be used for global client-side
       // configuration needed at all times. The pages module automatically
       // passes this code as the 'globalCalls' property of the data object given
@@ -719,21 +794,29 @@ function Apos() {
         return self._getCalls(req._aposCalls || []);
       };
 
-      self._globalCalls = [];
+      self._globalCalls = {};
 
-      // Just like req.pushCall except there is one global list, to be
-      // used every time self.playGlobalCalls is invoked. NOT limited
-      // to the lifetime of a single request. Use this only for global
-      // initialization of the browser-side environment.
+      // Push a browser side JS call that will be invoked 'when'
+      // a particular situation applies. Currently 'always' and
+      // 'user' (a logged in user is present) are supported. Any
+      // @'s and ?'s in 'pattern' are replaced with the remaining arguments
+      // after 'when'. @ arguments appear literally (useful for
+      // constructor names) while ? arguments are JSON-encoded.
+      //
+      // Example:
+      // apos.pushGlobalCallWhen('user', 'aposPages.addType(?)', typeObject)
 
-      self.pushGlobalCall = function(pattern) {
+      self.pushGlobalCallWhen = function(when, pattern) {
         // Turn arguments into a real array https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Functions_and_function_scope/arguments
         var args = Array.prototype.slice.call(arguments);
-        self._globalCalls.push({ pattern: pattern, arguments: args.slice(1) });
+        if (!self._globalCalls[when]) {
+          self._globalCalls[when] = [];
+        }
+        self._globalCalls[when].push({ pattern: pattern, arguments: args.slice(2) });
       };
 
-      self.getGlobalCalls = function() {
-        var s = self._getCalls(self._globalCalls || []);
+      self.getGlobalCallsWhen = function(when) {
+        var s = self._getCalls(self._globalCalls[when] || []);
         return s;
       };
 
@@ -777,6 +860,9 @@ function Apos() {
           return code;
         }).join("\n");
       };
+
+      self.pushGlobalCallWhen('user', 'apos.enableAreas()');
+      self.pushGlobalCallWhen('always', 'apos.enablePlayers()');
 
       // Pass data to JavaScript on the browser side. We extend the app.request template
       // so that req.pushData() is a valid call.
@@ -1290,11 +1376,14 @@ function Apos() {
         return res.send(partial('pager', req.query));
       });
 
+      self._minifiedCss = {};
+
       // Serve minified CSS. (If we're not minifying, aposStylesheets won't
-      // point here at all.)
+      // point here at all.) REFACTOR: too much code duplication with
+      // the /apos/scripts.js route.
       app.get('/apos/stylesheets.css', function(req, res) {
-        if (self._minifiedCss === undefined) {
-          var css = _.map(self._assets['stylesheets'], function(stylesheet) {
+        if (self._minifiedCss[req.query.when] === undefined) {
+          var css = _.map(filterAssets(self._assets['stylesheets'], req.query.when), function(stylesheet) {
             var result;
             var src = stylesheet.file;
 
@@ -1334,28 +1423,30 @@ function Apos() {
             }
             return result;
           }).join("\n");
-          self._minifiedCss = cleanCss.process(css);
+          self._minifiedCss[req.query.when] = cleanCss.process(css);
         }
         res.type('text/css');
-        res.send(self._minifiedCss);
+        res.send(self._minifiedCss[req.query.when]);
       });
+
+      self._minifiedJs = {};
 
       // Serve minified js. (If we're not minifying, aposScripts won't
       // point here at all.)
       app.get('/apos/scripts.js', function(req, res) {
-        if (self._minifiedJs === undefined) {
+        if (self._minifiedJs[req.query.when] === undefined) {
           // Minify them all!
-          var scripts = _.filter(self._assets['scripts'], function(script) {
+          var scripts = _.filter(filterAssets(self._assets['scripts'], req.query.when), function(script) {
             var exists = fs.existsSync(script.file);
             if (!exists) {
               console.log("Warning: " + script.file + " does not exist");
             }
             return exists;
           });
-          self._minifiedJs = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
+          self._minifiedJs[req.query.when] = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
         }
         res.contentType = 'text/javascript';
-        res.send(self._minifiedJs);
+        res.send(self._minifiedJs[req.query.when]);
       });
 
       app.get('/apos/*', self.static(__dirname + '/public'));
@@ -1785,8 +1876,10 @@ function Apos() {
     }
 
     function addVersion(callback) {
-      // Turn the page object we fetched into a version object
-      var version = page;
+      // Turn the page object we fetched into a version object.
+      // But don't modify the page object!
+      var version = {};
+      extend(true, version, page);
       version.createdAt = new Date();
       version.pageId = version._id;
       version.author = (req && req.user && req.user.username) ? req.user.username : 'unknown';
@@ -2094,17 +2187,6 @@ function Apos() {
       args.fields = fields;
     }
 
-    // For now we have to implement limit and skip ourselves because of the way
-    // our permissions callback works. TODO: research whether we can make permissions
-    // checks something that can be part of our single query to mongodb
-
-    // if (limit !== undefined) {
-    //   q.limit(limit);
-    // }
-    // if (skip !== undefined) {
-    //   q.skip(skip);
-    // }
-
     var results = {};
 
     async.series([permissions, count, loadPages, markPermissions, loadWidgets], done);
@@ -2171,7 +2253,6 @@ function Apos() {
           return callback(err);
         }
         results.pages = pagesArg;
-        got = pagesArg.length;
         // This is a good idea, but we need to figure out how to make sure it all
         // ends in a browser redirect and doesn't break blog, events or map, and
         // also guard against loops
@@ -2224,7 +2305,7 @@ function Apos() {
 
     function done(err) {
       results.criteria = options;
-      return mainCallback(null, results);
+      return mainCallback(err, results);
     }
   };
 
@@ -2553,7 +2634,11 @@ function Apos() {
       empty: function(item) {
         return !((item.items || []).length);
       },
-      css: 'slideshow'
+      css: 'slideshow',
+      // If these options are passed to the widget,
+      // set them as JSON data attributes of the
+      // widget element
+      jsonOptions: [ 'delay', 'noHeight' ]
     },
     buttons: {
       widget: true,
@@ -3360,6 +3445,8 @@ function Apos() {
   //
   // The first argument should be an array of pages already fetched.
   //
+  // The callback receives an error object if any.
+  //
   // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
 
   self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
@@ -3415,6 +3502,8 @@ function Apos() {
   // addition to the ids, such as `permalink` for `snippets.get`.
   //
   // The first argument should be an array of pages already fetched.
+  //
+  // The callback receives an error object if any.
   //
   // Example usage: apos.joinOneToMany(req, users, 'groupIds', '_groups', { get: groups.get, getOptions: { } }, callback)
 
@@ -3479,6 +3568,8 @@ function Apos() {
   //
   // The first argument should be an array of pages already fetched.
   //
+  // The callback receives an error object if any.
+  //
   // Example usage: apos.joinOneToManyReverse(req, groups, 'groupIds', '_users', { get: users.get, getOptions: { } }, callback)
 
   self.joinOneToManyReverse = function(req, items, idsField, objectsField, options, callback) {
@@ -3511,10 +3602,11 @@ function Apos() {
         _.each(others, function(other) {
           _.each(other[idsField], function(id) {
             if (itemsById[id]) {
-              if (!items[objectsField]) {
-                items[objectsField] = [];
+              var item = itemsById[id];
+              if (!item[objectsField]) {
+                item[objectsField] = [];
               }
-              items[objectsField].push(other);
+              item[objectsField].push(other);
             }
           });
         });
@@ -3999,6 +4091,22 @@ function Apos() {
     });
   };
 
+  self.tasks.reset = function(callback) {
+    console.log('Resetting the database - removing ALL content');
+    var collections = [ self.files, self.pages, self.redirects, self.versions ];
+    async.map(collections, function(collection, callback) {
+      return collection.remove({}, callback);
+    }, function (err) {
+      if (err) {
+        return callback(err);
+      }
+      return async.series([ resetMain ], callback);
+      function resetMain(callback) {
+        return self.pages.insert([{ slug: '/', _id: '4444444444444', path: 'home', title: 'Home', level: 0, type: 'home' }, { slug: '/search', _id: 'search', orphan: true, path: 'home/search', title: 'Search', level: 1, type: 'search', rank: 9998 }, { slug: '/trash', _id: 'trash', path: 'home/trash', title: 'Trash', level: 1, trash: true, type: 'trash', rank: 9999 }], callback);
+      }
+    });
+  };
+
   self.tasks.index = function(callback) {
     console.log('Indexing all pages for search');
     self.forEachPage({},
@@ -4069,6 +4177,7 @@ function Apos() {
             slug: '/search',
             type: 'search',
             title: 'Search',
+            published: true,
             rank: 9998
         }, callback);
       } else {

@@ -1,8 +1,9 @@
 {
   "name": "apostrophe",
-  "version": "0.4.48",
+  "version": "0.4.55",
   "description": "Apostrophe is a user-friendly content management system. This core module of Apostrophe provides rich content editing and essential facilities to integrate Apostrophe into your Express project. Apostrophe also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again. Additional functionality is available in modules like apostrophe-pages, apostrophe-snippets, apostrophe-blog, apostrophe-events, apostrophe-twitter and apostrophe-rss.",
   "main": "apostrophe.js",
+  "//": "temporarily using a fork of less-middleware with safe dependencies",
   "dependencies": {
     "async": "~0.1.22",
     "express": "~3.0.5",
@@ -12,7 +13,7 @@
     "request": "~2.12.0",
     "underscore": "~1.4.3",
     "validator": "~0.4.19",
-    "less-middleware": "~0.1.9",
+    "less-middleware": "https://github.com/punkave/less.js-middleware/tarball/master",
     "hash_file": "0.0.8",
     "moment": "~2.0.0",
     "qs": "~0.5.6",

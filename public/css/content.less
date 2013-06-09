@@ -324,9 +324,7 @@ They will need to live somewhere else eventually
   select { padding: 10px; }
 }
 
-// TODO stomp out apos-fieldset-typeahead thoroughly in templates,
-// then it can later become useful for a single select maybe
-.apos-fieldset-typeahead, .apos-fieldset-typeahead-list
+.apos-fieldset-selective
 {
   .ui-sortable
   {
@@ -683,3 +681,199 @@ They will need to live somewhere else eventually
   }
 }
 
+/**
+ * To prevent conflicts EVERY class should start with apos-
+ */
+
+.apos-widget
+{
+  display: block;
+}
+
+
+.apos-center
+{
+  text-align: center;
+}
+
+
+.apos-clear
+{
+  clear: both;
+}
+
+.apos-template
+{
+  display: none;
+}
+
+.apos-pull-quote
+{
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.apos-widget.apos-full
+{
+  .apos-float-widget-left, .apos-float-widget-right {
+    display: none;
+  }
+}
+
+.apos-widget.apos-left .apos-float-widget-left
+{
+  display: none;
+}
+
+.apos-widget.apos-right .apos-float-widget-right
+{
+  display: none;
+}
+
+textarea.apos-code {
+  width: 97%;
+}
+
+.apos-button
+{
+  // .box-shadow(1px 1px 5px, 20%);
+
+  cursor: pointer;
+  .transition;
+
+  &:hover
+  {
+    background-color: @apos-shade-10;
+    text-decoration: none;
+  }
+}
+
+.apos-button:not(.apos-accordion-item, .apos-logout)
+{
+  line-height: 1em !important;
+}
+
+/* Admin bar is needed for demo at least */
+
+/* Admin bar base styles */
+.apos-admin-bar
+{
+  // position: fixed;
+  // position: absolute;
+  // top: 0;
+  // left: 0;
+  width: 100%;
+  background-color: @apos-grey;
+  height: 40px;
+  .box-shadow;
+
+
+  .apos-logo-tiny
+  {
+    float: left;
+    width: 40px;
+    height: 40px;
+    background-color: @apos-base;
+    background-image: url('../images/apos-logo-tiny.png');
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    text-indent: -9999px;
+  }
+
+  .apos-admin-bar-item
+  {
+    float: left;
+    height: 40px;
+    line-height: 40px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-right: 1px dotted @apos-grey50;
+    cursor: pointer;
+
+    &:last-child
+    {
+      border-right: none;
+    }
+
+    &.apos-preview-toggle
+    {
+      padding: 0 10px;
+      .icon-eye {display: block;}
+      .icon-wrench {display: none;}
+
+      &.previewing
+      {
+        .icon-eye {display: none;}
+        .icon-wrench {display: block;}
+      }
+
+      &:hover
+      {
+        i:before {color: #ccc;}
+      }
+    }
+
+    &.login-status
+    {
+      float: right;
+      background: @apos-grey10;
+    }
+
+    &.apos-accordion-menu
+    {
+      margin: 0;
+      width: 120px;
+      cursor: pointer;
+
+      .apos-accordion-title
+      {
+        color: #eee;
+      }
+
+      .apos-accordion-items
+      {
+        position: relative;
+        z-index: 9999;
+        padding: 0;
+        height: auto;
+        max-height: 0px;
+        overflow: hidden;
+
+
+        .transition;
+        &.open
+        {
+          max-height: 600px;
+        }
+
+        ul
+        {
+          margin: 0;
+          .apos-accordion-item
+          {
+            background-color: rgba(50,50,50,0.8);
+
+            &:hover
+            {
+              background: @apos-grey20;
+            }
+          }
+        }
+      }
+    }
+
+    a, li
+    {
+      padding: 10px 15px;
+      font-size: 10px;
+      display: inline-block;
+      color: @apos-grey50;
+      width: 100%;
+      line-height: 1.7em;
+      font-family: 'cabin';
+      text-decoration: none;
+    }
+  }/* apos bar items */
+} /* admin bar */
