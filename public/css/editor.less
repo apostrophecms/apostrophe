@@ -4,141 +4,6 @@
 @import 'typography.less';
 @import '../jcrop/css/jquery.Jcrop.less';
 
-/**
- * To prevent conflicts EVERY class should start with apos-
- */
-
-.apos-widget
-{
-  display: block;
-}
-
-body
-{
-  // padding-top: 40px;
-}
-
-/* Admin bar base styles */
-.apos-admin-bar
-{
-  // position: fixed;
-  // position: absolute;
-  // top: 0;
-  // left: 0;
-  width: 100%;
-  background-color: @apos-grey;
-  height: 40px;
-  .box-shadow;
-
-
-  .apos-logo-tiny
-  {
-    float: left;
-    width: 40px;
-    height: 40px;
-    background-color: @apos-base;
-    background-image: url('../images/apos-logo-tiny.png');
-    background-repeat: no-repeat;
-    background-position: 50% 50%;
-    text-indent: -9999px;
-  }
-
-  .apos-admin-bar-item
-  {
-    float: left;
-    height: 40px;
-    line-height: 40px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border-right: 1px dotted @apos-grey50;
-    cursor: pointer;
-
-    &:last-child
-    {
-      border-right: none;
-    }
-
-    &.apos-preview-toggle
-    {
-      padding: 0 10px;
-      .icon-eye {display: block;}
-      .icon-wrench {display: none;}
-
-      &.previewing
-      {
-        .icon-eye {display: none;}
-        .icon-wrench {display: block;}
-      }
-
-      &:hover
-      {
-        i:before {color: #ccc;}
-      }
-    }
-
-    &.login-status
-    {
-      float: right;
-      background: @apos-grey10;
-    }
-
-    &.apos-accordion-menu
-    {
-      margin: 0;
-      width: 120px;
-      cursor: pointer;
-
-      .apos-accordion-title
-      {
-        color: #eee;
-      }
-
-      .apos-accordion-items
-      {
-        position: relative;
-        z-index: 9999;
-        padding: 0;
-        height: auto;
-        max-height: 0px;
-        overflow: hidden;
-
-
-        .transition;
-        &.open
-        {
-          max-height: 600px;
-        }
-
-        ul
-        {
-          margin: 0;
-          .apos-accordion-item
-          {
-            background-color: rgba(50,50,50,0.8);
-
-            &:hover
-            {
-              background: @apos-grey20;
-            }
-          }
-        }
-      }
-    }
-
-    a, li
-    {
-      padding: 10px 15px;
-      font-size: 10px;
-      display: inline-block;
-      color: @apos-grey50;
-      width: 100%;
-      line-height: 1.7em;
-      font-family: 'cabin';
-      text-decoration: none;
-    }
-  }/* apos bar items */
-} /* admin bar */
-
 /*
  * Edit button shown on placeholder that reopens the widget
  */
@@ -243,7 +108,6 @@ body
   }
 }
 
-
 .apos-toolbar
 {
   .apos-control
@@ -342,25 +206,6 @@ input.apos-control
   }
 }
 
-.apos-button
-{
-  // .box-shadow(1px 1px 5px, 20%);
-
-  cursor: pointer;
-  .transition;
-
-  &:hover
-  {
-    background-color: @apos-shade-10;
-    text-decoration: none;
-  }
-}
-
-.apos-button:not(.apos-accordion-item, .apos-logout)
-{
-  line-height: 1em !important;
-}
-
 /* apos buttons for areas */
 .apos-area,
 .apos-singleton
@@ -375,9 +220,6 @@ input.apos-control
   left: -10px;
   z-index: 898;
 }
-
-
-
 
 .apos-toolbar
 {
@@ -487,11 +329,6 @@ input.apos-control
 
 }
 
-.apos-center
-{
-  text-align: center;
-}
-
 /* Don't know why bootstrap puts a 4 pixel margin here and hoses
   inline radio boxes, but it's not what I want */
 .apos-widget-editor input[type="radio"]
@@ -556,24 +393,6 @@ input.apos-control
   font-size: 80%;
 }
 
-.apos-clear
-{
-  clear: both;
-}
-
-.apos-template
-{
-  display: none;
-}
-
-.apos-pull-quote
-{
-  font-size: 15px;
-  line-height: 20px;
-  font-weight: bold;
-  margin-right: 10px;
-}
-
 .apos-editor .apos-pull-quote
 {
   border: 1px dashed #ccc;
@@ -594,10 +413,6 @@ input.apos-control
   padding-top: 10px;
 }
 
-textarea.apos-code {
-  width: 97%;
-}
-
 // Hiding these for now to see how we manage without them:
 .apos-insert-before-widget,
 .apos-insert-after-widget
@@ -606,6 +421,7 @@ textarea.apos-code {
   visibility: hidden;
 }
 
+/* TODO fix unprefixed name */
 .previewing
 {
   .apos-area,
@@ -999,7 +815,7 @@ textarea.apos-code {
   {
     // Don't float me, it breaks jquery ui sortable connectWith and then we can't
     // drag from the library properly
-    padding: 15px 15px 15px 23px;
+    padding: 30px 15px 15px 23px;
   }
   .apos-media-library-item
   {
@@ -1007,6 +823,7 @@ textarea.apos-code {
     width: 85px;
     height: 85px;
     margin-right:15px;
+    margin-bottom: 15px;
     overflow: hidden;
     -webkit-background-size: cover;
          -o-background-size: cover;
@@ -1014,7 +831,7 @@ textarea.apos-code {
     background-repeat: no-repeat;
     background-position: center;
     
-    &:last-child{margin-right: 0;}
+    &:nth-child(7n+8){margin-right: 0;}
     .apos-media-library-item-box img {
       opacity: 0;
     }
@@ -1041,9 +858,12 @@ textarea.apos-code {
   }
   .apos-media-library-search
   {
-    clear: left;
-    padding: 17px 0 5px 20px;
-    margin-top: 10px;
+    // clear: left;
+    position: absolute;
+    top: 0;
+    right: 43px;
+    padding: 14px 0 5px 20px;
+    // margin-top: 10px;
     
     .apos-library-search-label
     {
@@ -1065,6 +885,11 @@ textarea.apos-code {
       background-color: darken(@apos-grey,60%);
       color: #FFF;
       padding: 6px 10px;
+    }
+    .apos-remove-search
+    {
+      float: none;
+      padding: 6px 7px;
     }
   }
 }
@@ -1148,24 +973,6 @@ textarea.apos-code {
   
   
 }
-
-.apos-widget.apos-full
-{
-  .apos-float-widget-left, .apos-float-widget-right {
-    display: none;
-  }
-}
-
-.apos-widget.apos-left .apos-float-widget-left
-{
-  display: none;
-}
-
-.apos-widget.apos-right .apos-float-widget-right
-{
-  display: none;
-}
-
 
 .apos-manage-table
 {
@@ -1410,3 +1217,39 @@ ul.ui-autocomplete {
 
     }
   }
+
+  // Tooltip
+  
+body .ui-tooltip
+{
+  padding: 10px;
+  position: absolute;
+  z-index: 9999;
+  max-width: 300px;
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-family: 'cabin';
+  // background-color: white !important;
+  /*-webkit-box-shadow: 0 0 5px #aaa;*/
+  /*box-shadow: 0 0 5px #aaa;*/
+  -webkit-border-radius: 0;
+          border-radius: 0; 
+  border-width: 0px;
+  // position: relative;
+  // opacity:0;
+  // .transition(@property:opacity);
+  &:after
+  {
+    content: " ";
+    position: absolute;
+    top: -5px;
+    
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+    border-width: 0 7.5px 11px 7.5px;
+    border-color: transparent transparent #262626 transparent;
+  }
+}

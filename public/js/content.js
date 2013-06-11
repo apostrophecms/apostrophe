@@ -16,15 +16,16 @@ apos.enablePlayers = function(sel) {
     sel = 'body';
   }
   $(sel).find('.apos-widget').each(function() {
-    var $widget = $(this);
-    
-    if($widget.closest('.apos-no-player').length) {
-      return;
-    };
+    var $el = $(this);
 
-    var type = $widget.attr('data-type');
+    // TODO switch this to a jsonOption
+    if($el.closest('.apos-no-player').length) {
+      return;
+    }
+
+    var type = $el.attr('data-type');
     if (apos.widgetPlayers[type]) {
-      apos.widgetPlayers[type]($widget);
+      apos.widgetPlayers[type]($el);
     }
   });
 };
@@ -105,203 +106,30 @@ apos.filePath = function(file, options) {
   return path + '.' + file.extension;
 };
 
-// This method will invoke its callback when all img elements
-// contained in sel (including sel itself, if it is an image) have loaded
-// completely. Note that sel can be a jquery object or a selector.
-//
-// If the imgSel argument is present, it is used to limit the set of
-// image elements that are considered. However note that they must
-// still be img elements as .complete is not available on backgrounds.
-// You can skip the imgSel argument if you wish.
-//
-// The first argument to the callback is the maximum width
-// of all of the images, the second is the maximum height. The third
-// is the highest ratio of height to width encountered. This is useful
-// for determining the height of a slideshow with a predetermined width.
-//
-// The sizes returned are always the TRUE pixel sizes of the images, regardless
-// of any CSS that may be present.
-//
-// Useful when you need to calculate sizes that depend on images or
-// just want to wait for all of the images to exist.
-
-apos.whenImagesReady = function(sel, imgSel, callback) {
-  var countlogs = 0;
-  var $el = $(sel);
-  if (!callback) {
-    // imgSel argument is skippable
-    callback = imgSel;
-    imgSel = null;
-  }
-  var $images = $el.find('img').add($el.filter('img'));
-  if (imgSel) {
-    $images = $images.filter(imgSel);
-  }
-  var tmps = [];
-  var tmpsLoaded = 0;
-
-  $images.each(function(i, item) {
-    // Great, the image loaded, but CSS may have scaled it and we need
-    // to know its true dimensions. So jam it into a temporary image element
-    // and wait for that to be ready. Note that the original and the temporary copy
-    // may become ready at different times (yes we've seen that happen), so we wait
-    // for the copy to be ready.
-
-    if (!tmps[i]) {
-      tmps[i] = new Image();
-      $(tmps[i]).load(function() {
-        tmpsLoaded++;
-      });
-      tmps[i].src = item.src;
-    }
-  });
-
-  function wait() {
-    var ready = true;
-    // Wait for all temporary images to be loaded according to jQuery's .load()
-    if (tmpsLoaded !== tmps.length) {
-      ready = false;
-    } else {
-      return finish();
-    }
-    setTimeout(wait, 50);
-  }
-
-  function finish() {
-    // Now we can compute overall stats
-    var maxWidth = 0;
-    var maxHeightToWidth = 0 ;
-    var maxHeight = 0;
-
-    _.each(tmps, function(tmp) {
-      var width = tmp.width;
-      var height = tmp.height;
-      if (width > maxWidth) {
-        maxWidth = width;
-      }
-      if (height > maxHeight) {
-        maxHeight = height;
-      }
-      if (width && height) {
-        var heightToWidth = height / width;
-        if (heightToWidth > maxHeightToWidth) {
-          maxHeightToWidth = heightToWidth;
-        }
-      }
-    });
-    return callback(maxWidth, maxHeight, maxHeightToWidth);
-  }
-
-  wait();
-};
-
 apos.widgetPlayers = {};
 
-apos.widgetPlayers.slideshow = function($widget)
+apos.widgetPlayers.slideshow = function($el)
 {
-  // TODO take the interval from data attributes, add arrows based on
-  // data attributes, and so on. Include controls in the form to set
-  // those options. Consider allowing for titles and descriptions.
-  // Support all those cool fades we love to do. Et cetera, et cetera.
-
-  var interval;
-
-  function reset() {
-    if (interval) {
-      clearInterval(interval);
-    }
-    interval = setInterval(function() {
-      if (!getCurrent().length) {
-        // Widget has gone away. Kill the interval timer and go away too
-        clearInterval(interval);
-      }
-      next();
-    }, 5000);
-  }
-
-  reset();
-
-  $widget.find('[data-previous]').click(function() {
-    previous();
-    return false;
-  });
-
-  $widget.find('[data-next]').click(function() {
-    next();
-    return false;
-  });
-
-  function getCurrent() {
-    var $current = $widget.find('[data-slideshow-item].apos-current');
-    return $current;
-  }
-
-  function previous() {
-    var $current = getCurrent();
-    var $prev = $current.prev();
-    if (!$prev.length) {
-      $prev = $current.closest('[data-slideshow-items]').find('[data-slideshow-item]:last');
-    }
-    $current.removeClass('apos-current');
-    $prev.addClass('apos-current');
-    // A fresh n seconds for the next auto rotate
-    reset();
-  }
-
-  function next() {
-    var $current = getCurrent();
-    if (!$current.length) {
-      // Widget has gone away. Kill the interval timer and go away too
-      clearInterval(interval);
-      return;
-    }
-    var $next = $current.next();
-    if (!$next.length) {
-      $next = $current.closest('[data-slideshow-items]').find('[data-slideshow-item]:first');
-    }
-    $current.removeClass('apos-current');
-    $next.addClass('apos-current');
-    // A fresh n seconds for the next auto rotate
-    reset();
-  }
-
-  function adjustSize() {
-    apos.whenImagesReady($widget, '[data-image]', function(maxWidth, maxHeight, maxHeightToWidth) {
-      var effectiveWidth = $widget.width();
-      // If all of the images are narrower than the widget,
-      // use the maximum width of an image
-      if (maxWidth < effectiveWidth) {
-        effectiveWidth = maxWidth;
-      }
-      var proportion = effectiveWidth * maxHeightToWidth;
-
-      if(!$widget.parents().hasClass('apos-no-height')) {
-        $widget.find('[data-slideshow-items]').height(proportion);
-        $widget.height(proportion);
-      }
-
-    });
-  }
-
-  adjustSize();
+  // Use our jQuery slideshow plugin
+  $el.projector();
 };
 
 // The video player replaces a thumbnail with
 // a suitable player via apos's oembed proxy
 
-apos.widgetPlayers.video = function($widget)
+apos.widgetPlayers.video = function($el)
 {
-  var videoUrl = $widget.attr('data-video');
+  var videoUrl = $el.attr('data-video');
   $.get('/apos/oembed', { url: videoUrl }, function(data) {
     // Wait until the thumbnail image size is available otherwise we'll
     // get a tiny size for the widget
-    apos.whenImagesReady($widget, function() {
+    $el.imagesReady(function() {
       var e = $(data.html);
       e.removeAttr('width');
       e.removeAttr('height');
-      e.width($widget.width());
-      e.height($widget.height());
-      $widget.html(e);
+      e.width($el.width());
+      e.height($el.height());
+      $el.html(e);
     });
   });
 };
@@ -503,9 +331,6 @@ apos.modal = function(sel, options) {
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
-  // It's not uncommon to have duplicates of a template that hasn't
-  // been overridden for a derived type yet. Behave well in this case
-  $el = $el.filter(':first');
 
   // Make sure they can provide their own afterHide
   // option, and that we don't remove $el until
@@ -567,7 +392,7 @@ apos.modalFromTemplate = function(sel, options) {
 apos.fromTemplate = function(sel, options) {
   options = options || {};
 
-  var $item = $(sel).filter('.apos-template').clone();
+  var $item = $(sel).filter('.apos-template:first').clone();
   $item.removeClass('apos-template');
 
   function applyPropertyValue($element, fn, value) {
@@ -626,21 +451,6 @@ apos.fromTemplate = function(sel, options) {
 };
 
 // CONVENIENCES
-
-// Anywhere you have a form and want to manipulate it with jQuery,
-// these functions will get you past the nonsense of val() not working
-// because there is more than one element involved. Just select
-// all the radio buttons by name and pass to these.
-
-apos.setRadio = function($els, value) {
-  $.each($els, function() {
-    $(this).attr('checked', $(this).attr('value') === value);
-  });
-};
-
-apos.getRadio = function($els) {
-  return $els.filter(':checked').val();
-};
 
 // Enhance a plaintext date field with a nice jquery ui date widget.
 // Just pass a jquery object referring to the text element as the
@@ -797,16 +607,6 @@ apos.afterYield = function(fn) {
   }
 };
 
-// Return complete markup for an element. Not all browsers
-// support outerHTML natively. This is useful when dealing with
-// APIs that require raw markup, including rich text editing
-
-apos.outerHTML = function(e) {
-  var wrapper = $('<div></div>');
-  wrapper.append($(e).clone());
-  return wrapper.html();
-};
-
 // Widget ids should be valid names for javascript variables, just in case
 // we find that useful, so avoid hyphens
 
@@ -860,174 +660,3 @@ apos.padInteger = function(i, places) {
   return s;
 };
 
-// Infinite scroll.
-//
-// REQUIRED OPTIONS
-//
-// 'url' is the URL to fetch new pages from. The URL should return an HTML fragment
-// containing one page's worth of content, based on the 'page' parameter to the URL.
-// Page numbers start from 1. The content will be appended to 'el'.
-//
-// 'el' is the jQuery selector, jQuery object or DOM element to append new pages
-// of content to. It should be initially empty (if you are using 'now') or be
-// prepopulated with the content of page 1.
-//
-// OTHER OPTIONS
-//
-// 'page' specifies the initial page number and defaults to 1, which assumes you are
-// preloading one page of content already. If you are not preloading any content and
-// wish the first page to load immediately, set 'now' to true and do not set 'page'.
-//
-// Set 'now' to trueto load the first page immediately. You do not have to
-// set 'page' if you set 'now'.
-//
-// 'criteria' contains additional query parameters and is often used when additional
-// filtering options besides pagination are available. You can also bake additional
-// parameters into the URL of course. However note the 'reset' event below.
-//
-// 'trigger' is the distance in pixels from the bottom of the page at which the loading
-// of a new page is triggered. This hopefully prevents the user from staring at a
-// spinner too often. It defaults to 350.
-//
-// 'method' can be used to change the HTTP method from GET to POST.
-//
-// 'spinner' is a selector, jQuery object or DOM element to be displayed while
-// a page is loading.
-//
-// 'distance' is the distance, in pixels, from being able to see the bottom of the page
-// at which the next page begins loading, hopefully preventing the user from waiting
-// in most cases. 'distance' defaults to 350.
-//
-// EVENTS
-//
-// You can trigger an 'apos.scroll.reset' event to 'el' on clear 'el' and reload page one.
-// You can also provide new criteria for the query when triggering this event:
-//
-// $('.posts').trigger('apos.scroll.reset', [ { tag: 'blue' } ])
-//
-// infiniteScroll will trigger the following events on 'el' on its own:
-//
-// 'apos.scroll.started' means page loading has begun.
-// 'apos.scroll.stopped' means page loading has just stopped (whether successfully or not).
-// 'apos.scroll.loaded' means a page has just been loaded successfully.
-//
-// PROPERTIES
-//
-// Assuming $('.posts') is your 'el', you may check whether the element is currently
-// loading a page with:
-//
-// $('.posts').data('loading')
-//
-// You may check the current page number with:
-//
-// $('.posts').data('page')
-
-apos.infiniteScroll = function(options) {
-  var url = options.url;
-  var now = options.now || false;
-  var page = options.page || 1;
-  if (now) {
-    if (options.page === undefined) {
-      // loadPage will increment this and load page one immediately
-      options.page = 0;
-    }
-  }
-  var criteria = options.criteria || {};
-  var distance = options.distance || 350;
-  var method = options.method || 'GET';
-  var $el = $(options.el);
-  var $spinner = $(options.spinner);
-  var atEnd = false;
-  var loading = false;
-
-  // Infinite scroll
-  setInterval(function() {
-    if ((!atEnd) && (!loading)) {
-      if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height())
-      {
-        loadPage();
-      }
-    }
-  }, 100);
-
-  $el.on('apos.scroll.reset', function(e, data) {
-    if (data) {
-      criteria = data;
-    }
-    reset();
-  });
-
-  function reset() {
-    $el.html('');
-    page = 0;
-    atEnd = false;
-    start();
-    loadPage();
-  }
-
-  function loadPage() {
-    page++;
-    loading = true;
-    $el.data('loading', true);
-    // Copy the criteria and add the page
-    var query = $.extend(true, criteria, {
-      page: page
-    });
-    $.ajax({
-      url: url,
-      type: method,
-      data: query,
-      success: function(data) {
-        var $items = $.parseHTML(data);
-        $el.append($items);
-        $el.data('page', page);
-        $el.trigger('apos.scroll.loaded');
-        stop();
-      },
-      error: function() {
-        $el.data('loading', false);
-        loading = false;
-      },
-      statusCode: {
-        404: function() {
-          stop();
-          end();
-        }
-      }
-    });
-  }
-
-  function start() {
-    $el.data('loading', true);
-    loading = true;
-    $el.trigger('apos.scroll.started');
-    $spinner.show();
-  }
-
-  function stop() {
-    $el.data('loading', false);
-    loading = false;
-    $el.trigger('apos.scroll.stopped');
-    $spinner.hide();
-  }
-
-  function end() {
-    $el.data('loading', false);
-    atEnd = true;
-    $el.trigger('apos.scroll.ended');
-    $spinner.hide();
-  }
-
-  if (now) {
-    loadPage();
-  }
-};
-
-// MINOR JQUERY EXTENSIONS
-
-(function( $ ){
-  // Less bug-prone way to find things by name attribute
-  $.fn.findByName = function(name) {
-    return this.find('[name=' + name + ']');
-  };
-})( jQuery );

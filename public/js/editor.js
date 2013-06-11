@@ -5,6 +5,12 @@ if (!window.apos) {
   window.apos = {};
 }
 
+$( document ).tooltip({   
+  show: { effect: "fadeIn", duration: 200 },
+  hide: { effect: "fadeOut", duration: 200 },
+  position: { my: "left top+10", at: "left bottom" }
+});
+
 var apos = window.apos;
 
 // Hopefully I won't need these again as they trash copy and paste between pages
@@ -86,7 +92,7 @@ apos.Editor = function(options) {
 
       // Don't do this to divs that are or are inside a apos-widget!
 
-      if (jQuery.browser.mozilla) {
+      if (navigator.product === 'Gecko') {
         self.$editable.find('div').each(function() {
           var div = $(this);
 
@@ -1131,7 +1137,7 @@ apos.widgetTypes.slideshow = {
         var $next = $library.find('[data-next]');
         var $removeSearch = $library.find('[data-remove-search]');
 
-        var perPage = 7;
+        var perPage = 21;
         var page = 0;
         var pages = 0;
 
@@ -1361,7 +1367,7 @@ apos.widgetTypes.slideshow = {
           // (TODO: record those in the database and skip this performance-lowering hack)
           $cropImage.css('visibility', 'hidden');
           $cropImage.attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.extension);
-          apos.whenImagesReady($cropImage, function(widthArg, heightArg) {
+          $cropImage.imagesReady(function(widthArg, heightArg) {
             // Now we know the true dimensions, record them and scale down the image
             width = widthArg;
             height = heightArg;
@@ -2165,7 +2171,7 @@ apos.parseArea = function(content) {
       } else {
         // This is a rich text element like <strong> or <h3>.
         // We need the markup for the entire thing
-        richText += apos.outerHTML(child);
+        richText += $(child).getOuterHTML();
       }
     }
   }

@@ -2,10 +2,12 @@
 
 {%- if options.widget -%}
   <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}"
-    {%- for name, value in attributes -%}
-      {# Let some whitespace in for readability and cross-browser confidence #}
-      data-{{ name }}="{{ value | jsonAttribute }}"
-    {%- endfor -%}
+    {% for name, value in attributes %}
+      data-{{ name | css }}="{{ value | jsonAttribute }}"
+    {% endfor %}
+    {% for name, value in jsonOptions %}
+      data-{{ name | css }}="{{ value | jsonAttribute }}"
+    {% endfor %}
   >
 {%- endif -%}
 
