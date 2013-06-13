@@ -23,7 +23,6 @@ Or, drag the existing images shown beneath the dashed area. <br />
     <div class="apos-progress-container">
       <div data-autocropping class="apos-autocropping">Autocropping...</div>
       {% include "progress.html" %}
-
     </div>
 
     {# Main slideshow editor: reordering and removing of images, drop target #}
@@ -37,8 +36,8 @@ Or, drag the existing images shown beneath the dashed area. <br />
           {# Use the smallest possible empty GIF in the meantime #}
           <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="apos-slideshow-editor-image" data-image />
           <div class="apos-slideshow-controls">
-            <a class="apos-slideshow-control apos-remove" data-remove>x</a>
-            <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop>Crop</a>
+            <a class="apos-slideshow-control apos-remove" data-remove></a>
+            <a class="apos-slideshow-control apos-crop" style="top:0px;" data-crop></a>
           </div>
         </div>
 
@@ -98,6 +97,7 @@ Or, drag the existing images shown beneath the dashed area. <br />
       {# I am a template. I get cloned and populated by jQuery. If you #}
       {# leave my data attributes intact you can edit me quite a bit. #}
       <li data-library-item class="apos-media-library-item apos-template">
+        <div class="apos-media-library-add">+</div>
         <div class="apos-media-library-item-box">
           {# jQuery will give this img a proper src #}
           {# Use the smallest possible empty GIF in the meantime #}

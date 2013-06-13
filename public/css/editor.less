@@ -452,6 +452,15 @@ input.apos-control
   height: 170px;
   display: inline-block;
   margin-left: 5px;
+  
+  &.apos-library-drag-enabled .apos-file-styled
+  {
+    border: 5px dashed #fff;
+    background-color: darken(@apos-base, 10%);
+    color: darken(@apos-base, 10%);
+    cursor: pointer;
+    opacity: 0.7;
+  }
 }
 
 .apos-progress-container
@@ -629,7 +638,7 @@ input.apos-control
     .apos-slideshow-controls
     {
       position: absolute;
-      top: 0;
+      top: -1px;
       right: 0;
     }
 
@@ -641,8 +650,8 @@ input.apos-control
     // position: absolute;
     float: right;
     background-color: @apos-base;
-    width: 23px;
-    height: 25px;
+    width: 30px;
+    height: 30px;
     cursor: pointer;
     color: white;
     text-align: center;
@@ -667,21 +676,25 @@ input.apos-control
   }
   .apos-remove
   {
-    right: 0;
-    top: 0;
+    // right: 0;
+    // top: 0;
   }
   .apos-edit,
-  .apos-crop
+  .apos-crop,
+  .apos-remove
   {
     // display: none;
-    right: 24px;
-    top: 0;
-    visibility: hidden;
+    // right: 24px;
+    // top: 0;
+    visibility: visible;
+    font-size: 1em;
+    padding: 4px 2px;
     &:before
     {
-      visibility: visible;
+
     }
   }
+    .apos-remove:before {content: '\2715'; }
     .apos-edit:before { content:'\1f527'; }
     .apos-crop:before { content:'\e746'; }
 
@@ -752,7 +765,31 @@ input.apos-control
   padding: 20px;
   position: relative;
   .apos-media-library-title{font-family:'montserratbold'; font-size: 11px;}
-  
+
+  .apos-media-library-add
+    {
+      padding: 5px 11px;
+      display: inline-block;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-left: -16px;
+      margin-top: -16px;
+      opacity: 0;
+      .transition();
+      color: #FFF;
+      font-weight: bold;
+      background-color: @apos-base;
+    }
+    .apos-media-library-item:hover
+    {
+      cursor: pointer;
+      .apos-media-library-add
+      {
+        opacity: 0.9;
+      }
+    }
+
   .apos-library-pager
   {
     position: absolute;
@@ -816,6 +853,7 @@ input.apos-control
     // Don't float me, it breaks jquery ui sortable connectWith and then we can't
     // drag from the library properly
     padding: 30px 15px 15px 23px;
+    
   }
   .apos-media-library-item
   {
@@ -830,8 +868,17 @@ input.apos-control
             background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    
+    position: relative;
+    &:hover
+    {
+      &:after{
+        content: "ljwefkjewbf";
+      }
+    }
     &:nth-child(7n+8){margin-right: 0;}
+    .apos-media-library-item-box
+    {
+    }
     .apos-media-library-item-box img {
       opacity: 0;
     }

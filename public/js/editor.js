@@ -1137,6 +1137,7 @@ apos.widgetTypes.slideshow = {
         var $next = $library.find('[data-next]');
         var $removeSearch = $library.find('[data-remove-search]');
 
+
         var perPage = 21;
         var page = 0;
         var pages = 0;
@@ -1203,12 +1204,14 @@ apos.widgetTypes.slideshow = {
 
               (function() {
                 var dragging = false;
+                var dropping = false;
                 var origin;
                 var gapX;
                 var gapY;
                 var width;
                 var height;
                 var fileUploadDropZone;
+
                 $item.on('mousedown', function(e) {
                   // Temporarily disable file upload drop zone so it doesn't interfere
                   // with drag and drop of existing "files"
@@ -1245,22 +1248,37 @@ apos.widgetTypes.slideshow = {
                         (e.pageY <= iOffset.top + iHeight) &&
                         (e.pageY + height >= iOffset.top)) {
                         addItem(file);
-                      }
+                      } 
                       // Snap back so we're available in the library again
                       $item.css('top', 'auto');
                       $item.css('left', 'auto');
-                      $item.css('position', 'static');
+                      $item.css('position', 'relative');
+                      $('[data-uploader-container]').removeClass('apos-library-drag-enabled');
                       return false;
                     }
                     return true;
                   });
                   $(document).on('mousemove.aposLibrary', function(e) {
                     if (dragging) {
+                      dropping = true;
+                      $('[data-uploader-container]').addClass('apos-library-drag-enabled');
                       $item.offset({ left: e.pageX - gapX, top: e.pageY - gapY });
                     }
                   });
                   return false;
                 });
+
+                $item.on('click', function(e){
+                  var file = $item.data('file');
+                  if (dropping){
+                    dropping = false;
+                  }
+                  else{
+                    addItem(file);
+                    event.stopPropagation();
+                  }
+                });
+
               })();
 
             });
@@ -1577,7 +1595,7 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
       $item.find('[data-credit]').val(item.credit);
       if (extraFields) {
-        $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit>Edit</a>');
+        $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit></a>');
       }
       $item.data('item', item);
       $item.find('[data-remove]').click(function() {
