@@ -13,7 +13,7 @@
     "request": "~2.12.0",
     "underscore": "~1.4.3",
     "validator": "~0.4.19",
-    "less-middleware": "https://github.com/punkave/less.js-middleware/tarball/master",
+    "less-middleware": "~0.1.12",
     "hash_file": "0.0.8",
     "moment": "~2.0.0",
     "qs": "~0.5.6",
