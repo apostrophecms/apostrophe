@@ -502,6 +502,9 @@ function Apos() {
       };
 
       aposLocals.aposSingletonIsEmpty = function(options) {
+        if (!options.area) {
+          return true;
+        }
         return !_.some(options.area.items, function(item) {
           return item.type === options.type;
         });

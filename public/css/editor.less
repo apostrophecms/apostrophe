@@ -78,7 +78,7 @@
     bottom: 7px;
     text-indent: 0;
     height: auto;
-    
+
     &:before
     {
       content: '\f0b2';
@@ -583,6 +583,7 @@ input.apos-control
   // height: 170px;
   margin: 0 8px 15px;
   background-color: #eee;
+  cursor: move;
   &.apos-template
   {
     display: none;
@@ -789,7 +790,6 @@ input.apos-control
         opacity: 0.9;
       }
     }
-
   .apos-library-pager
   {
     position: absolute;
@@ -863,18 +863,13 @@ input.apos-control
     margin-right:15px;
     margin-bottom: 15px;
     overflow: hidden;
+    cursor: move !important;
     -webkit-background-size: cover;
          -o-background-size: cover;
             background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    &:hover
-    {
-      &:after{
-        content: "ljwefkjewbf";
-      }
-    }
     &:nth-child(7n+8){margin-right: 0;}
     .apos-media-library-item-box
     {
@@ -911,7 +906,7 @@ input.apos-control
     right: 43px;
     padding: 14px 0 5px 20px;
     // margin-top: 10px;
-    
+
     .apos-library-search-label
     {
       clear: right;
@@ -919,7 +914,7 @@ input.apos-control
       padding: 8px 7px 7px;
       background-color: lighten(@apos-grey,30%);
       color: #FFF;
-      
+
     }
     .apos-library-search
     {
@@ -1017,8 +1012,8 @@ input.apos-control
   right: -4px;
   font-size: 9px;
   letter-spacing: 1px;
-  
-  
+
+
 }
 
 .apos-manage-table
@@ -1266,7 +1261,7 @@ ul.ui-autocomplete {
   }
 
   // Tooltip
-  
+
 body .ui-tooltip
 {
   padding: 10px;
@@ -1282,7 +1277,7 @@ body .ui-tooltip
   /*-webkit-box-shadow: 0 0 5px #aaa;*/
   /*box-shadow: 0 0 5px #aaa;*/
   -webkit-border-radius: 0;
-          border-radius: 0; 
+          border-radius: 0;
   border-width: 0px;
   // position: relative;
   // opacity:0;
@@ -1292,7 +1287,7 @@ body .ui-tooltip
     content: " ";
     position: absolute;
     top: -5px;
-    
+
     width: 0px;
     height: 0px;
     border-style: solid;
