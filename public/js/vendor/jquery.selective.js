@@ -12,6 +12,9 @@
 (function( $ ){
   $.fn.selective = function(options) {
     var $el = this;
+    var strikethrough = options.strikethrough || options.propagate;
+    var removed = options.removed || options.propagate;
+    var propagate = options.propagate;
 
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
@@ -35,6 +38,28 @@
       self.$autocomplete.autocomplete({
         minLength: options.minLength || 1,
         source: options.source,
+        // Stomp out suggestions of choices already made
+        response: function(event, ui) {
+          if (options.preventDuplicates) {
+            var content = ui.content;
+            var filtered = [];
+            // Compatible with `removed` and `propagate`
+            var values = self.get({ valuesOnly: true });
+            $.each(content, function(i, datum) {
+              if ($.inArray(datum.value.toString(), values) !== -1) {
+                return;
+              }
+              filtered.push(datum);
+            });
+            // "Why don't you just assign to ui.content?" jquery.ui.autocomplete
+            // is holding a reference to the original array. If I assign to ui.content
+            // I'm not changing that original array and jquery.ui.autocomplete ignores me.
+            content.length = 0;
+            $.each(filtered, function(i, datum) {
+              content.push(datum);
+            });
+          }
+        },
         focus: function(event, ui) {
           self.$autocomplete.val(ui.item.label);
           return false;
@@ -49,15 +74,55 @@
         self.$list.sortable((typeof(options.sortable) === 'object') ? options.sortable : undefined);
       }
       self.$list.on('click', '[data-remove]', function() {
-        $(this).closest('[data-item]').remove();
+        var $item = $(this).closest('[data-item]');
+        if (strikethrough) {
+          var $label = $item.find('[data-label]');
+          if ($item.data('removed')) {
+            // Un-remove it
+            $label.css('textDecoration', 'none');
+            $item.removeClass('apos-removed');
+            $item.data('removed', false);
+          } else {
+            $label.css('textDecoration', 'line-through');
+            $item.addClass('apos-removed');
+            $item.data('removed', true);
+          }
+        } else {
+          $item.remove();
+        }
         return false;
       });
 
       self.populate = function() {
         self.$list.find('[data-item]').remove();
-        $.each(options.data, function(i, datum) {
-          self.add(datum);
-        });
+
+        // options.data contains the user's preexisting selections (not potential future choices).
+        //
+        // If options.data is an array of objects, assume they are ready to rock, with
+        // label and value properties. If not, pass options.data to the source, which should
+        // give us back an array of objects with label and value properties.
+        //
+        // This allows for the common case where we save just an array of IDs but need to
+        // turn this back into an array with label and value properties to display our
+        // selections again.
+
+        if (options.data && options.data[0] && (typeof(options.data[0]) !== 'object')) {
+          if (typeof(options.source) === 'function') {
+            return options.source({ values: options.data }, appendValues);
+          } else if (typeof(options.source) === 'string') {
+            return $.getJSON(options.source, { values: options.data }, appendValues);
+          } else {
+            throw "data is not an array of objects, and source is not a URL or a function. Not sure what to do.";
+          }
+        } else {
+          // The simple case: the data is ready to use
+          return appendValues(options.data);
+        }
+        function appendValues(data) {
+          $.each(data, function(i, datum) {
+            self.add(datum);
+          });
+        }
       };
 
       self.add = function(item) {
@@ -67,10 +132,22 @@
         self.$list.append($item);
       };
 
-      self.get = function() {
+      self.get = function(options) {
+        var valuesOnly = options && options.valuesOnly;
         var result = [];
         $.each(self.$list.find('[data-item]'), function(i, item) {
-          result.push($(item).attr('data-value'));
+          var $item = $(item);
+          if (removed && (!valuesOnly)) {
+            var datum = {};
+            datum.value = $item.attr('data-value');
+            datum.removed = $item.data('removed') ? 1 : 0;
+            if (propagate) {
+              datum.propagate = $item.find('[data-propagate]:checked').length ? 1 : 0;
+            }
+            result.push(datum);
+          } else {
+            result.push($item.attr('data-value'));
+          }
         });
         return result;
       };

@@ -2078,7 +2078,7 @@ apos.enableAreas = function() {
           // Virtual singletons must be saved in other ways. Add it as a
           // data attribute of the singleton, and post an event
           $singleton.attr('data-item', JSON.stringify(itemData));
-          $singleton.trigger('apos-edited', itemData);
+          $singleton.trigger('aposEdited', itemData);
           return callback();
         }
       },

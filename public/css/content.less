@@ -326,6 +326,22 @@ They will need to live somewhere else eventually
 
 .apos-fieldset-selective
 {
+  input
+  {
+    margin-top: 10px;
+    display: block;
+    width: 30%;
+  }
+  ul
+  {
+    list-style: none;
+  }
+  li
+  {
+    // Allow for the x buttons, they are pretty tall guys
+    padding-top: 10px;
+  }
+
   .ui-sortable
   {
     li
@@ -351,6 +367,14 @@ They will need to live somewhere else eventually
     color: #FFF;
     &:hover{cursor: pointer; background-color: darken(@apos-base, 10%); text-decoration: none;}
   }
+}
+
+.apos-propagate input
+{
+  display: inline-block;
+  width: auto;
+  margin: none;
+  margin-left: 20px;
 }
 
 .apos-fieldset-singleton

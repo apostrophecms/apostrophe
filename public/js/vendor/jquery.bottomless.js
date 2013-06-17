@@ -42,7 +42,7 @@
       }
     }, 100);
 
-    $el.on('apos.scroll.reset', function(e, data) {
+    $el.on('aposScrollReset', function(e, data) {
       if (data) {
         criteria = data;
       }
@@ -73,7 +73,7 @@
           var $items = $.parseHTML(data);
           $el.append($items);
           $el.data('page', page);
-          $el.trigger('apos.scroll.loaded');
+          $el.trigger('aposScrollLoaded');
           stop();
         },
         error: function() {
@@ -92,21 +92,21 @@
     function start() {
       $el.data('loading', true);
       loading = true;
-      $el.trigger('apos.scroll.started');
+      $el.trigger('aposScrollStarted');
       $spinner.show();
     }
 
     function stop() {
       $el.data('loading', false);
       loading = false;
-      $el.trigger('apos.scroll.stopped');
+      $el.trigger('aposScrollStopped');
       $spinner.hide();
     }
 
     function end() {
       $el.data('loading', false);
       atEnd = true;
-      $el.trigger('apos.scroll.ended');
+      $el.trigger('aposScrollEnded');
       $spinner.hide();
     }
 

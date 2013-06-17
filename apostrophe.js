@@ -412,17 +412,78 @@ function Apos() {
         self.defaultControls = options.controls;
       }
 
-      // Default is to allow anyone to do anything.
-      // You will probably want to at least check for req.user.
-      // Possible actions are edit-area and edit-media.
-      // edit-area calls will include a slug as the third parameter.
-      // edit-media calls for existing files may include a file, with an
-      // "owner" property set to the id or username property of req.user
-      // at the time the file was last edited. edit-media calls with
-      // no existing file parameter also occur, for new file uploads.
+      // The apos.permissions method is used for access control. The permissions method invokes
+      // its callback with null if the user may carry out the action, otherwise with a permissions
+      // error string. Although this method is async permissions decisions should be made quickly.
+
+      // You can specify an alternate method via the `permissions` option, however the standard
+      // approach works well for most purposes and the apos object emits a `permissions` event
+      // that provides an easier way to extend permissions. The `permissions` event receives
+      // the request object, the action, and a `result` object with a `response` property which is what
+      // will be passed to the callback if no changes are made. To alter the result, just
+      // change `result.response`. (This currently does require that you make a decision immediately,
+      // without async.)
+
+      // The following actions exist so far in the core apostrophe and apostrophe-pages modules:
+
+      // `edit-page`, `add-page`, `delete-page`, `view-page`, `edit-media`, `delete-media`,
+      // `add-media`, `reorganize-pages`
+
+      // If there is no third argument, the question is whether this user can *ever*
+      // perform the action in question. This is used to decide whether the user sees
+      // the pages dropdown menu, has access to the media library, etc.
+
+      // If there is a third argument, this method checks whether the user can
+      // carry out the specified action on that particular object.
+
+      // Snippet subclasses add their own permissions:
+
+      // `edit-snippet`, `edit-blog`, `edit-event`, `edit-person`, `edit-group`
+
+      // These do not take a third argument. They are used to determine whether the user
+      // should see the relevant dropdown menu at all. Since snippets are just a subclass
+      // of pages, the `edit-page` permission is used to determine whether each one is
+      // actually editable by this user.
+
+      // If a third argument is present for `edit-media` it will be a file object
+      // (see the aposFiles collection), with an `ownerId` property set to the id of
+      // req.user at the time the file was last edited.
+
+      // *Responses from apos.permissions must match what would result from
+      // self.getPermissionsCriteria and self.addPermissionsToPages.* Those methods are
+      // used to fetch many pages/snippets in bulk with the correct permissions.
+
       if (!self.permissions) {
-        self.permissions = function(req, action, fileOrSlug, callback) {
-          return callback(null);
+        self.permissions = function(req, action, object, callback) {
+          var userPermissions = (req.user && req.user.permissions) || {};
+          if (userPermissions.admin) {
+            // Admins can do anything
+            return filter(null);
+          } else if (action.match(/\-page$/) && object) {
+            // Separate method for page permissions on specific pages
+            return self.pagePermissions(req, action, object, filter);
+          } else if (action.match(/\-file$/) && object) {
+            // Separate method for file permissions on specific files
+            return self.filePermissions(req, action, object, filter);
+          } else if (action.match(/^view/)) {
+            // We assume everyone can view things in the general case
+            return filter(null);
+          } else if (action.match(/^edit\-/) && (!object)) {
+            // If you have the edit permission as a user, you are a potential editor of things and
+            // should be permitted to see various dropdown menus. Note that we don't apply this
+            // rule if a specific object was passed, in that case an event listener needs to step
+            // up and make a more definitive determination
+            if (userPermissions.edit) {
+              return filter(null);
+            }
+          }
+          return filter('Forbidden');
+          function filter(response) {
+            // Post an event allowing an opportunity to change the result
+            var result = { response: response };
+            self.emit('permissions', req, action, result);
+            return callback(result.response);
+          }
         };
       }
 
@@ -1016,6 +1077,7 @@ function Apos() {
           }
 
           function db(callback) {
+            info.ownerId = req.user && req.user._id;
             files.insert(info, { safe: true }, function(err, docs) {
               if (!err) {
                 infos.push(docs[0]);
@@ -1156,25 +1218,8 @@ function Apos() {
           return res.send('bad arguments');
         }
 
-        function permissions(callback) {
-          if (!slug) {
-            return callback(null);
-          }
-          self.permissions(req, 'edit-area', slug, function(err) {
-            if (err) {
-              return forbid(res);
-            }
-            var isNew = false;
-            if (!slug) {
-              return notfound(req, res);
-            } else {
-              return callback(null);
-            }
-          });
-        }
-
         function getArea(callback) {
-          self.getArea(req, slug, function(err, areaArg) {
+          self.getArea(req, slug, { editable: true }, function(err, areaArg) {
             if (!areaArg) {
               area = {
                 slug: slug,
@@ -1202,7 +1247,7 @@ function Apos() {
           return render(res, 'editArea', area);
         }
 
-        async.series([ permissions, getArea ], sendArea);
+        async.series([ getArea ], sendArea);
 
       });
 
@@ -1541,11 +1586,11 @@ function Apos() {
   // the area object requested if it exists. If the area does not
   // exist, both parameters to the callback are null.
   //
-  // A 'req' object is needed to provide a context for permissions in custom
-  // widget loaders, and for caching for the duration of the current request.
-  // However this need not be a real Express 'req' object. Note that permissions
-  // are NOT checked on the page itself here. You should perform such checks before
-  // invoking this method.
+  // A 'req' object is needed to provide a context for permissions.
+  // If the user does not have permission to view the page on which
+  // the area resides an error is reported. If the `editable` option
+  // is true then an error is reported unless the user has permission
+  // to edit the page on which the area resides.
   //
   // If it exists, the area object is guaranteed to have `slug` and
   // `content` properties. The `content` property contains rich content
@@ -1560,7 +1605,7 @@ function Apos() {
   // object is fetched from the pages collection and the relevant area
   // from its areas property, if present, is delivered.
   //
-  // Slugs of the latter type are an efficient way to store related areas
+  // This is an efficient way to store related areas
   // that are usually desired at the same time, because the getPage method
   // returns the entire page object, including all of its areas.
   //
@@ -1590,10 +1635,11 @@ function Apos() {
     // Retrieve only the desired area
     var projection = {};
     projection['areas.' + areaSlug] = 1;
-    pages.findOne({ slug: pageSlug }, projection, function (err, page) {
+    self.get(req, { slug: pageSlug }, { editable: options.editable, fields: projection }, function (err, results) {
       if (err) {
         return callback(err);
       }
+      var page = results.pages[0];
       if (page && page.areas && page.areas[areaSlug]) {
         // What is stored in the db might be lagging behind the reality
         // if the slug of the page has changed. Always return it in an
@@ -1621,10 +1667,7 @@ function Apos() {
     }
   };
 
-  // putArea stores an area in a "page." We put "page" in quotes here
-  // because it is only a page in the narrowest sense: a mongodb document
-  // with a slug, containing one or more named areas, and open to the storage of
-  // other properties as well.
+  // putArea stores an area in a page.
   //
   // Invokes the callback with an error if any, and if no error,
   // the area object with its slug property set to the slug under
@@ -1650,16 +1693,18 @@ function Apos() {
   //
   // Page objects are stored in the 'pages' collection.
   //
-  // If a page does not exist this method will create it. You should
-  // NOT rely on this for pages that have a type property, including any
-  // page in the page tree, a snippet, etc. Such pages should be created
-  // first with putPage before they are used. It is convenient, however, for
+  // If a page does not exist this method will create it. If the page
+  // has a type property you should create it with putPage rather than
+  // using this method. This behavior is convenient, however, for
   // simple virtual pages used to hold things like a global footer area.
   //
   // A copy of the page is inserted into the versions collection.
   //
   // The req argument is required for permissions checking. The
   // edit-page permission is checked on the page slug.
+  //
+  // TODO: implementation is a little overcomplicated since we're checking permissions
+  // via getPage anyway.
 
   self.putArea = function(req, slug, area, callback) {
     var pageOrSlug;
@@ -1671,8 +1716,18 @@ function Apos() {
     var pageSlug = matches[1];
     var areaSlug = matches[2];
 
+    // To check the permissions properly we're best off just getting the page as the user,
+    // however we can specify that we don't need the areas returned to speed that up
     function permissions(callback) {
-      self.permissions(req, 'edit-page', pageSlug, callback);
+      return self.get(req, { slug: pageSlug }, { editable: true, fields: { areas: 0 } }, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        if (!results.pages.length) {
+          return callback('notfound');
+        }
+        return callback(null);
+      });
     }
 
     function update(callback) {
@@ -1762,6 +1817,11 @@ function Apos() {
       page._id = self.generateId();
       newPage = true;
     }
+
+    // Basic support for mongodb search and sort on the title is always
+    // present, regardless of how indexPage may be overridden for more
+    // complete searches
+    page.sortTitle = self.sortify(page.title);
 
     // Provide the object rather than the slug since we have it and we can
     // avoid extra queries that way and also do meaningful permissions checks
@@ -2072,172 +2132,172 @@ function Apos() {
     });
   };
 
-  // apos.get delivers pages that the current user is permitted to view, with areas fully
-  // populated and ready to render. Pages are also marked with a ._edit property if
-  // they are editable by this user.
+  // apos.get delivers pages that the current user is permitted to
+  // view, with areas fully populated and ready to render if
+  // they are present.
   //
-  // The results are delivered as the second argument of the callback if there is no
-  // error. The results object will have a `pages` property containing 0 or more pages.
+  // Pages are also marked with a ._edit property if they are editable
+  // by this user.
   //
-  // WHO SHOULD USE THIS FUNCTION
+  // The results are delivered as the second argument of the callback
+  // if there is no error. The results object will have a `pages` property
+  // containing 0 or more pages. The results object will also have a
+  // `criteria` property containing the final MongoDB criteria used to
+  // actually fetch the pages. This criteria can be reused for direct
+  // MongoDB queries, for instance `distinct` queries to identify
+  // unique tags relevant to the pages returned.
   //
-  // Developers who need something different from a simple fetch of one page
-  // (use `apos.getPage`), fetch of ancestors, descendants, etc. of tree pages (use
-  // `pages.getAncestors`, `pages.getDescendants`, etc.), or fetch of snippets of
-  // some type such as blog posts or events (use `snippets.get`).
+  // WHO SHOULD USE THIS METHOD
+  //
+  // Developers who need something different from a simple fetch of one
+  // page (use `apos.getPage`), fetch of ancestors, descendants, etc. of
+  // tree pages (use `pages.getAncestors`, `pages.getDescendants`, etc.),
+  // or fetch of snippets of some type such as blog posts or events
+  // (use `snippets.get`, `blog.get`, etc). All of these methods are
+  // built on this method.
   //
   // WARNING
   //
-  // This function doesn't care if a page is a "tree page" (slug starting with a /)
-  // or not. If you are only interested in tree pages and you are not filtering by
-  // page type to achieve that, consider setting .slug to a regular expression
-  // matching a leading /.
+  // This function doesn't care if a page is a "tree page" (slug starting
+  // with a `/`) or not. If you are only interested in tree pages and you
+  // are not filtering by page type, consider setting
+  // `userCriteria.slug` to a regular expression matching a leading /.
   //
-  // SPECIAL OPTIONS
+  // CRITERIA
   //
-  // The following options are treated specially. Any other options become part
-  // of the mongodb query criteria.
+  // A `userCriteria` object can be, and almost always is, passed
+  // as the second argument.
   //
-  // If `options.editable` is true, only pages the current user can edit are
-  // returned.
+  // The `userCriteria` object is included in the MongoDB query made by
+  // this method to fetch pages. This object can contain any
+  // MongoDB userCriteria you wish. For instance, { type: 'default' }
+  // would fetch only pages of that type. Other userCriteria, such as
+  // permissions, are automatically applied as well via MongoDB's
+  // `$and` keyword so that you are not restricted in what you can
+  // do in your own userCriteria object.
   //
-  // If `options.sort` is present, it is passed as the argument to the MongoDB sort()
-  // function. There is no default sort.
+  // OPTIONS
   //
-  // `options.limit` indicates the maximum number of results to return. options.skip
-  // indicates the number of results to skip. These can be used to implement pagination.
+  // An options object can be passed as the third argument.
   //
-  // If `options.fields` is present it is used to limit the fields returned
-  // by MongoDB for performance reasons (the second argument to MongoDB's find()).
+  // If `options.editable` is true, only pages the current user can
+  // edit are returned. Otherwise pages the user can see are returned.
   //
-  // `options.titleSearch` can be used to search the titles of all snippets for a
-  // particular string using a fairly tolerant algorithm. options.q does the same
-  // on the full text.
+  // If `options.sort` is present, it is passed as the argument to the
+  // MongoDB sort() function. The default sort is by title, on the
+  // `sortTitle` property which is always lowercase for case insensitive
+  // results.
+  //
+  // `options.limit` indicates the maximum number of results to return.
+  // `options.skip` indicates the number of results to skip. These can
+  // be used to implement pagination.
+  //
+  // If `options.fields` is present it is used to limit the fields
+  // returned by MongoDB for performance reasons (the second argument
+  // to MongoDB's find()). Set `options.fields` to { areas: 0 } to
+  // retrieve everything *except* areas. This is usually the best way
+  // to limit results.
+  //
+  // `options.titleSearch` can be used to search the titles of all
+  // pages for a particular string using a fairly tolerant algorithm.
+  // options.q does the same on the full text.
   //
   // `options.published` indicates whether to return only published pages
-  // ('1' or true), return only unpublished pages (`0` or false), or return both
-  // ('any' or null). It defaults to 'any', allowing suitable users to preview unpublished
-  // pages.
+  // ('1' or true), return only unpublished pages (`0` or false), or
+  // return both ('any' or null). It defaults to 'any', allowing suitable
+  // users to preview unpublished pages.
   //
-  // `options.trash` indicates whether to return only pages in the trashcan
-  // the trashcan ('1' or true), return only pages not in the trashcan ('0' or false),
-  // or return both ('any' or null). It defaults to '0'.
+  // `options.trash` indicates whether to return only pages in the
+  // trashcan the trashcan ('1' or true), return only pages not in the
+  // trashcan ('0' or false), or return both ('any' or null). It defaults
+  // to '0'.
   //
-  // In any case the user's identity determines what they can see. Permissions are
-  // checked according to the Apostrophe permissions model. The `admin` permission
-  // permits unlimited retrieval. Otherwise the user's `groupIds` array, if any, is
-  // compared to the `viewGroupIds` and `editGroupIds` properites of the page.
-  // Setting `options.published` to '0' or 'any' has no effect if the user is not
-  // logged in and is limited to unpublished pages this particular is allowed to edit
-  // otherwise.
+  // `options.orphan` indicates whether to return only pages that are
+  // accessible yet hidden from normal navigation links ('1' or true),
+  // return only such orphans ('0' or false), or return both
+  // ('any' or null). It defaults to 'any' to ensure such pages
+  // are reachable.
   //
-  // FILTERING ON YOUR OWN CRITERIA
+  // In any case the user's identity limits what they can see.
+  // Permissions are checked according to the Apostrophe permissions
+  // model. The `admin` permission permits unlimited retrieval.
+  // Otherwise the `published`, loginRequired`, `viewGroupIds`,
+  // `viewPersonIds`, `editGroupIds` and `editPersonIds` properties
+  // of the page are considered.
   //
-  // All other properties of options are merged with the MongoDB criteria object
-  // used to select the relevant pages.
+  // You may disable permissions entirely by setting `options.permissions`
+  // to `false`. This can make sense when you are using pages as storage
+  // in a context where Apostrophe's permissions model is not relevant.
+  //
+  // The `criteria` and `options` arguments may be skipped.
+  // (Getting everything is a bit unusual, but it's not forbidden!)
 
-  self.get = function(req, optionsArg, mainCallback) {
-    if (!mainCallback) {
-      mainCallback = optionsArg;
-      optionsArg = {};
+  self.get = function(req, userCriteria, options, mainCallback) {
+    if (arguments.length === 2) {
+      mainCallback = userCriteria;
+      userCriteria = {};
+      options = {};
+    } else if (arguments.length === 3) {
+      mainCallback = options;
+      options = {};
     }
 
-    var options = {};
-    extend(true, options, optionsArg);
+    // Second criteria object based on our processing of `options`
+    var filterCriteria = {};
 
     var editable = options.editable;
-    if (options.editable !== undefined) {
-      delete options['editable'];
-    }
 
     var sort = options.sort || { sortTitle: 1 };
-    delete options.sort;
 
     var limit = options.limit || undefined;
-    // Don't get cute about when to delete, it never hurts, and if you're not very
-    // careful you're going to fail to delete if it was set to '0' (see the or above)
-    delete options.limit;
 
     var skip = options.skip || undefined;
-    delete options.skip;
 
     var fields = options.fields || undefined;
-    delete options.fields;
 
     var titleSearch = options.titleSearch || undefined;
-    if (options.titleSearch !== undefined) {
-      options.sortTitle = self.searchify(titleSearch);
-    }
-    delete options.titleSearch;
 
-    self.convertBooleanFilterCriteria('trash', options, '0');
-    self.convertBooleanFilterCriteria('published', options);
+    var permissions = (options.permissions === false) ? false : true;
+
+    if (options.titleSearch !== undefined) {
+      filterCriteria.sortTitle = self.searchify(titleSearch);
+    }
+
+    self.convertBooleanFilterCriteria('trash', options, filterCriteria, '0');
+    self.convertBooleanFilterCriteria('orphan', options, filterCriteria, 'any');
+    self.convertBooleanFilterCriteria('published', options, filterCriteria);
 
     if (options.q && options.q.length) {
       // Crude fulltext search support. It would be better to present
       // highSearchText results before lowSearchText results, but right now
       // we are doing a single query only
-      options.lowSearchText = self.searchify(options.q);
+      filterCriteria.lowSearchText = self.searchify(options.q);
     }
-    // Don't let an empty or not-so-empty q screw up our query
-    delete options.q;
-    var args = {};
 
-    if (fields !== undefined) {
-      args.fields = fields;
-    }
+    var projection = fields || {};
 
     var results = {};
 
-    async.series([permissions, count, loadPages, markPermissions, loadWidgets], done);
+    var combine = [ userCriteria, filterCriteria ];
 
-    // REFACTOR into apostrophe-people
-    function permissions(callback) {
-      // If they have the admin permission we're done
-      if (req.user && _.contains(req.user.permissions, 'admin')) {
-        return callback(null);
-      }
-
-      // (published AND ((loginRequired is undefined) OR (viewGroups IN userGroups)))
-      // *OR*
-      // (editGroups IN userGroups)
-
-      var groupIds = (req.user && req.user.groupIds) ? req.user.groupIds : [];
-
-      if (!groupIds.length) {
-        // General public and unprivileged users have the simplest criteria
-        options.published = true;
-        options.loginRequired = { $exists: false };
-      } else {
-        // People with groups are more complicated
-        options.$or = [
-          // You can view if you have view privileges...
-          {
-            published: true,
-            $or: [
-              { loginRequired: { $exists: false } },
-              { viewGroupIds: { $in: [ groupIds ] } }
-            ]
-          },
-          // OR you have edit privileges in which case you don't care if it's published
-          {
-            editGroupIds: { $in: groupIds }
-          }
-        ];
-      }
-
-      return callback(null);
+    if (permissions) {
+      combine.push(self.getPermissionsCriteria(req, { editable: editable }));
     }
+    var criteria = {
+      $and: combine
+    };
+
+    async.series([count, loadPages, markPermissions, loadWidgets], done);
 
     function count(callback) {
-      self.pages.find(options).count(function(err, count) {
+      self.pages.find(criteria).count(function(err, count) {
         results.total = count;
         return callback(err);
       });
     }
 
     function loadPages(callback) {
-      var q = self.pages.find(options, args);
+      var q = self.pages.find(criteria, projection);
       // At last we can use skip and limit properly thanks to permissions stored
       // in the document
       if (skip !== undefined) {
@@ -2253,42 +2313,12 @@ function Apos() {
           return callback(err);
         }
         results.pages = pagesArg;
-        // This is a good idea, but we need to figure out how to make sure it all
-        // ends in a browser redirect and doesn't break blog, events or map, and
-        // also guard against loops
-        //
-        // // If this all started with a slug parameter that possibly no longer
-        // // exists, check the redirect table before giving up. If there is a redirect
-        // // recursively invoke the whole thing
-        // if (optionsArg.slug && (!got)) {
-        //   // Check the redirect table
-        //   return self.redirects.findOne({ from: optionsArg.slug }, function(err, redirect) {
-        //     if (redirect) {
-        //       var newOptions = {};
-        //       extend(true, newOptions, optionsArg);
-        //       newOptions.slug = redirect.to;
-        //       return self.get(req, newOptions, mainCallback);
-        //     }
-        //   });
-        // }
         return callback(err);
       });
     }
 
-    // REFACTOR into apostrophe-people
     function markPermissions(callback) {
-      if (!req.user) {
-        return callback(null);
-      }
-      _.each(results.pages, function(page) {
-        if (req.user.permissions && _.contains(req.user.permissions, 'admin')) {
-          page._edit = true;
-        } else {
-          if (page.editGroupIds && _.intersect(req.user.groupIds, page.editGroupIds).length) {
-            page._edit = true;
-          }
-        }
-      });
+      self.addPermissionsToPages(req, results.pages);
       return callback(null);
     }
 
@@ -2304,9 +2334,186 @@ function Apos() {
     }
 
     function done(err) {
-      results.criteria = options;
+      results.criteria = criteria;
       return mainCallback(err, results);
     }
+  };
+
+  // Returns a MongoDB query object that will match pages the
+  // user is permitted to view, based on their identity and the
+  // permissions listed in the page. This object will be combined
+  // with other criteria using $and. See also self.pagePermissions below
+  // which must be compatible
+
+  self.getPermissionsCriteria = function(req, options) {
+    if (!options) {
+      options = {};
+    }
+    var editable = options.editable;
+    // If they have the admin permission we're done
+    if (req.user && req.user.permissions.admin) {
+      return { };
+    }
+
+    var userPermissions = (req.user && req.user.permissions) || {};
+
+    var clauses = [];
+
+    var groupIds = (req.user && req.user.groupIds) ? req.user.groupIds : [];
+
+    // If we are not specifically searching for pages we can edit,
+    // allow for the various ways we can be allowed to view a page
+
+    if (!editable) {
+      // Case #1: it is published and no login is required
+      clauses.push({
+        published: true,
+        loginRequired: { $exists: false }
+      });
+
+      if (req.user) {
+        // Case #2: for logged-in users with the guest permission,
+        // it's OK to show pages with loginRequired set to `loginRequired` but not `certainPeople`
+        // (this is called "Login Required" on the front end)
+        if (userPermissions.guest) {
+          clauses.push({
+            published: true,
+            loginRequired: 'loginRequired'
+          });
+        }
+
+        // Case #3: page is restricted to certain people, see if
+        // we are on the list of people or the list of groups
+
+        clauses.push({
+          published: true,
+          loginRequired: 'certainPeople',
+          $or: [
+            { viewGroupIds: { $in: groupIds } },
+            { viewPersonIds: { $in: [ req.user._id ] } }
+          ]
+        });
+      }
+    }
+
+    if (req.user) {
+      // Case #4: we have edit privileges on the page. Note that
+      // it need not be published
+      clauses.push({
+        $or: [
+          { editGroupIds: { $in: groupIds } },
+          { editPersonIds: { $in: [ req.user._id ] } }
+        ]
+      });
+    }
+
+    return { $or: clauses };
+  };
+
+  // This method determines whether we can carry out an action on a
+  // particular page. It must be in sync with what self.getPermissionsCriteria
+  // would return. This method should invoke its callback with null if the user may
+  // carry out the action or with an error string if they may not.
+
+  self.pagePermissions = function(req, action, page, callback) {
+    // In practice we only check two levels of permissions on pages right now:
+    // permission to view and permission to edit. Reduce the requested action
+    // to one of those
+
+    var editable;
+    if (action === 'view-page') {
+      editable = false;
+    } else {
+      // Currently everything except viewing requires the edit permission
+      editable = true;
+    }
+
+    var userPermissions = (req.user && req.user.permissions) || {};
+
+    // If we are not specifically searching for pages we can edit,
+    // allow for the various ways we can be allowed to view a page
+
+    if (!editable) {
+      // Case #1: it is published and no login is required
+
+      if (page.published && (page.loginRequired === undefined)) {
+        return callback(null);
+      }
+
+      if (req.user) {
+
+        // Case #2: for users who have the viewLoginRequired permission,
+        // it's OK to show pages with loginRequired set but not certainPeople
+        // (this is called "loginRequired" on the front end)
+
+        if (page.published && (page.loginRequired === 'loginRequired') && (_.contains(userPermissions, 'guest'))) {
+          return callback(null);
+        }
+
+        // Case #3: page is restricted to certain people, see if
+        // we are on the list of people or the list of groups
+
+        if (page.published && (page.loginRequired === 'certainPeople')) {
+          if (page.viewGroupIds && _.intersection(req.user.groupIds || [], page.viewGroupIds).length) {
+            return callback(null);
+          }
+          if (page.viewPersonIds && _.contains(page.viewPersonIds, req.user._id)) {
+            return callback(null);
+          }
+        }
+      }
+    }
+
+    // Can we edit the page? (That's also good enough to view it.)
+
+    if (req.user) {
+      // Case #4: we have edit privileges on the page. Note that
+      // it need not be published
+      if (page.editGroupIds && _.intersection(req.user.groupIds || [], page.editGroupIds).length) {
+        return callback(null);
+      }
+      if (page.editPersonIds && _.contains(page.editPersonIds, req.user._id)) {
+        return callback(null);
+      }
+    }
+
+    // No love
+    return callback('Forbidden');
+  };
+
+  self.filePermissions = function(req, action, file, callback) {
+    if (action === 'view-file') {
+      return callback(null);
+    }
+    // Assume everything else is an editing operation
+    // Note that self.permissions already let it through if
+    // the user is an admin
+    if (req.user && (file.ownerId === req.user._id)) {
+      return callback(null);
+    }
+    return callback('Forbidden');
+  };
+
+  // Add a ._edit flag to each page that is editable by the
+  // current user. Must be compatible with the way
+  // apos.getPermissionsCriteria determines permissions.
+
+  self.addPermissionsToPages = function(req, pages) {
+    if (!req.user) {
+      return;
+    }
+    _.each(pages, function(page) {
+      if (req.user.permissions.admin) {
+        page._edit = true;
+      } else {
+        if (page.editGroupIds && _.intersection(req.user.groupIds || [], page.editGroupIds).length) {
+          page._edit = true;
+        }
+        if (page.editPersonIds && _.contains(page.editPersonIds, req.user._id)) {
+          page._edit = true;
+        }
+      }
+    });
   };
 
   // Fetch the "page" with the specified slug. As far as
@@ -2316,11 +2523,11 @@ function Apos() {
   // been saved, then the areas property will be an
   // object with properties named main and sidebar.
   //
-  // A 'req' object is needed to provide a context for permissions in custom
-  // widget loaders, and for caching for the duration of the current request.
-  // However this need not be a real Express 'req' object. Note that permissions
-  // are NOT checked on the page itself here. You should perform such checks before
-  // invoking this method.
+  // A 'req' object is needed to provide a context for permissions.
+  // Permissions are checked on the page based on the user's identity.
+  // A ._edit property will be set on the page if it is editable by
+  // the current user and it will not be returned at all if it is
+  // not viewable by the current user.
   //
   // The first callback parameter is an error or null.
   // In the event of an exact slug match, the second parameter
@@ -2342,8 +2549,18 @@ function Apos() {
   // upcoming events, etc. Usually objects other than
   // webpages do not have a leading / on their slugs
   // (and when using the pages module they must not).
+  //
+  // The `options` parameter may be skipped. If it is not
+  // skipped, it is passed on to `apos.get`.
 
-  self.getPage = function(req, slug, callback) {
+  self.getPage = function(req, slug, optionsArg, callback) {
+    if (!callback) {
+      callback = optionsArg;
+      optionsArg = {};
+    }
+    if (!optionsArg) {
+      optionsArg = {};
+    }
     var orClauses = [];
     var components;
     // Partial matches
@@ -2362,14 +2579,17 @@ function Apos() {
     // sort() and limit() to guarantee that the best result wins
     orClauses.unshift({ slug: slug });
 
+    var options = {
+      sort: { slug: -1 },
+      limit: 1
+    };
+
+    extend(true, options, optionsArg);
+
     // Ordering in reverse order by slug gives us the longest match first
-    self.pages.find({
-      $or: orClauses,
-      // This method never returns pages from the trash
-      trash: { $exists: false }
-    }).sort({ slug: -1 }).limit(1).toArray(function(err, pages) {
-      if (pages.length) {
-        var page = pages[0];
+    self.get(req, { $or: orClauses }, options, function(err, results) {
+      if (results.pages.length) {
+        var page = results.pages[0];
         var bestPage = page;
         if (page.slug !== slug) {
           // partial match only
@@ -3150,6 +3370,14 @@ function Apos() {
     return s;
   };
 
+  // Sanitize a select element
+  self.sanitizeSelect = function(s, choices, def) {
+    if (!_.contains(choices, s)) {
+      return def;
+    }
+    return s;
+  };
+
   // Accepts true, 'true', 't', '1', 1 as true
   // Accepts everything else as false
   // If nothing is submitted the default (def) is returned
@@ -3195,15 +3423,26 @@ function Apos() {
   // def should be set to '0'/false, '1'/true or 'any'/null and defaults to 'any'.
   //
   // This method is most often used with REST API parameters and forms.
+  //
+  // If the `criteria` option is present, the criteria are added to that
+  // object, and the original values are not removed from `options`.
+  // If the `criteria` option is skipped, the criteria are added to
+  // `options`, replacing the original value.
 
-  self.convertBooleanFilterCriteria = function(name, options, def) {
+  self.convertBooleanFilterCriteria = function(name, options, criteria, def) {
+    var deleteYes = false;
+    if (arguments.length === 3) {
+      def = criteria;
+      criteria = options;
+      deleteYes = true;
+    }
     // Consume special options then remove them, turning the rest into mongo criteria
 
     if (def === undefined) {
       def = 'any';
     }
     var value = (options[name] === undefined) ? def : options[name];
-    if (options[name] !== undefined) {
+    if (deleteYes && (options[name] !== undefined)) {
       delete options[name];
     }
 
@@ -3211,10 +3450,10 @@ function Apos() {
       // Don't care, show all
     } else if ((!value) || (value === '0')) {
       // Must be absent or false. Hooray for $ne
-      options[name] = { $ne: true };
+      criteria[name] = { $ne: true };
     } else {
       // Must be true
-      options[name] = true;
+      criteria[name] = true;
     }
   };
 
@@ -3440,8 +3679,8 @@ function Apos() {
   //
   // The `options` argument may be skipped. `options.get` should be the `get` method
   // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getOptions` may contain options to the `get` call in
-  // addition to the ids, such as `permalink` for `snippets.get`.
+  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
+  // criteria and options objects to be passed to the `get` call.
   //
   // The first argument should be an array of pages already fetched.
   //
@@ -3463,11 +3702,10 @@ function Apos() {
     });
     var getter = options.get || self.get;
     var getOptions = options.getOptions || {};
+    var getCriteria = options.getCriteria || {};
     if (otherIds.length) {
-      var finalOptions = {};
-      extend(true, finalOptions, getOptions);
-      finalOptions._id = { $in: otherIds };
-      return getter(req, finalOptions, function(err, results) {
+      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
+      return getter(req, criteria, getOptions, function(err, results) {
         if (err) {
           return callback(err);
         }
@@ -3498,8 +3736,8 @@ function Apos() {
   //
   // The `options` argument may be skipped. `options.get` should be the `get` method
   // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getOptions` may contain options to the `get` call in
-  // addition to the ids, such as `permalink` for `snippets.get`.
+  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
+  // criteria and options objects to be passed to the `get` call.
   //
   // The first argument should be an array of pages already fetched.
   //
@@ -3521,11 +3759,10 @@ function Apos() {
     });
     var getter = options.get || self.get;
     var getOptions = options.getOptions || {};
+    var getCriteria = options.getCriteria || {};
     if (otherIds.length) {
-      var finalOptions = {};
-      extend(true, finalOptions, getOptions);
-      finalOptions._id = { $in: otherIds };
-      return getter(req, finalOptions, function(err, results) {
+      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
+      return getter(req, criteria, getOptions, function(err, results) {
         if (err) {
           return callback(err);
         }
@@ -3563,8 +3800,8 @@ function Apos() {
   //
   // The `options` argument may be skipped. `options.get` should be the `get` method
   // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getOptions` may contain options to the `get` call in
-  // addition to the ids, such as `permalink` for `snippets.get`.
+  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
+  // criteria and options objects to be passed to the `get` call.
   //
   // The first argument should be an array of pages already fetched.
   //
@@ -3580,12 +3817,12 @@ function Apos() {
     var itemIds = _.pluck(items, '_id');
     var getter = options.get || self.get;
     var getOptions = options.getOptions || {};
+    var getCriteria = options.getCriteria || {};
     if (itemIds.length) {
-      // Copy the getOptions object so we don't modify it
-      var finalOptions = {};
-      extend(true, finalOptions, getOptions);
-      finalOptions[idsField] = { $in: itemIds };
-      return getter(req, finalOptions, function(err, results) {
+      var idCriteria = {};
+      idCriteria[idsField] = { $in: itemIds };
+      var criteria = { $and: [ getCriteria, idCriteria ] };
+      return getter(req, criteria, getOptions, function(err, results) {
         if (err) {
           return callback(err);
         }
@@ -3666,6 +3903,12 @@ function Apos() {
   // Call when no longer busy
   self.taskDone = function() {
     taskActive--;
+  };
+
+  // Return a `req` object suitable for use with putPage, getPage, etc.
+  // that has full admin permissions. For use in command line tasks
+  self.getTaskReq = function() {
+    return { user: { permissions: { admin: true } } };
   };
 
   var taskFailed = false;
@@ -4086,7 +4329,22 @@ function Apos() {
       });
     }
 
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata], function(err) {
+    // If there are any pages whose tags property is defined but set
+    // to null, due to inadequate sanitization in the snippets module,
+    // fix them to be empty arrays so templates don't crash
+    function fixNullTags(callback) {
+      return self.pages.findOne({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, function(err, page) {
+        if (err) {
+          return callback(err);
+        }
+        if (!page) {
+          return callback(null);
+        }
+        console.log('Fixing pages whose tags property is defined and set to null');
+        return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
+      });
+    }
+    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags], function(err) {
       return callback(err);
     });
   };
@@ -4185,6 +4443,88 @@ function Apos() {
       }
       return callback(null);
     });
+  };
+
+  self.tasks['drop-test-data'] = function(callback) {
+    console.log('Dropping all test data.');
+    return self.pages.remove({ testData: true }, callback);
+  };
+
+  // INTEGRATING LOGINS WITH APPY
+  //
+  // Pass the result of a call to this method as the `auth` option to appy to allow people
+  // (as managed via the "people" module) to log in as long as they have the "login" box checked.
+  //
+  // You must pass your instance of the `pages` module as the `pages` option so that the login
+  // dialog can be presented.
+  //
+  // If the `adminPassword` option is set then an admin user is automatically provided
+  // regardless of what is in the database, with the password set as specified.
+
+  self.appyAuth = function(options) {
+    var users = {};
+    if (options.adminPassword) {
+      users.admin = {
+        type: 'person',
+        username: 'admin',
+        password: options.adminPassword,
+        firstName: 'Ad',
+        lastName: 'Min',
+        title: 'Admin',
+        _id: 'admin',
+        // Without this login is forbidden
+        login: true,
+        permissions: { admin: true }
+      };
+    }
+    return {
+      strategy: 'local',
+      options: {
+        users: users,
+        // A user is just a snippet page with username and password properties.
+        // (Yes, the password property is hashed and salted.)
+        collection: 'aposPages',
+        // Render the login page
+        template: options.loginPage
+      }
+    };
+  };
+
+  // Pass this function to appy as the `beforeSignin` option to check for login privileges,
+  // then apply the user's permissions obtained via group membership before
+  // completing the login process
+
+  self.appyBeforeSignin = function(user, callback) {
+    if (user.type !== 'person') {
+      // Whaaat the dickens this object is not even a person
+      return callback('error');
+    }
+    if (!user.login) {
+      return callback({ message: 'user does not have login privileges' });
+    } else {
+      user.permissions = user.permissions || {};
+      self.pages.find({ type: 'group', _id: { $in: user.groupIds || [] } }, { permissions: 1 }).toArray(function(err, groups) {
+        if (err) {
+          console.log(err);
+          return callback(err);
+        }
+        _.each(groups, function(group) {
+          _.each(group.permissions || [], function(permission) {
+            if (!_.contains(user.permissions, permission)) {
+              user.permissions[permission] = true;
+            }
+          });
+        });
+        // The standard permissions are progressive
+        if (user.permissions.admin) {
+          user.permissions.edit = true;
+        }
+        if (user.permissions.edit) {
+          user.permissions.guest = true;
+        }
+        return callback(null);
+      });
+    }
   };
 }
 

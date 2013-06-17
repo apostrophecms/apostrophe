@@ -33,7 +33,7 @@ apos.enablePlayers = function(sel) {
 // When apos.change('blog') is invoked, the following things happen:
 //
 // 1. All elements wih the data-apos-trigger-blog attribute receive an
-// apos-change-blog jQuery event.
+// aposChangeBlog jQuery event.
 //
 // 2. The main content area (the data-apos-refreshable div) is
 // refreshed via an AJAX request, without refreshing the entire page.
@@ -51,10 +51,11 @@ apos.change = function(what) {
   var sel = '[data-apos-trigger-' + what + ']';
   $(sel).each(function() {
     var $el = $(this);
-    $(this).trigger('apos-change-' + what);
+    $(this).trigger(apos.eventName('aposChange', what));
   });
   $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
-    // Make sure we run scripts in the returned HTML
+    // Make sure we run scripts in the returned HTML. This will fire
+    // up enableAreas, enablePlayers, and the aposReady event
     $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
   });
 };
@@ -542,7 +543,9 @@ apos.formatTime = function(time, options) {
 // Convert a name to camel case. Only digits and ASCII letters remain.
 // Anything that isn't a digit or an ASCII letter prompts the next character
 // to be uppercase. Useful in converting CSV with friendly headings into
-// sensible property names
+// sensible property names. You can set options.capitalize if you want the
+// first letter capitalized as well.
+
 apos.camelName = function(s) {
   var i;
   var n = '';
@@ -592,6 +595,27 @@ apos.cssName = function(camel) {
     css += c;
   }
   return css;
+};
+
+// Create an event name from one or more strings. The original strings can be
+// CSS names or camelized names, it makes no difference. The end result
+// is always in a consistent format.
+//
+// Examples:
+//
+// apos.eventName('aposChange', 'blog') ---> aposChangeBlog
+// apos.eventName('aposChangeEvents') ---> aposChangeEvents
+// apos.eventName('apos-jump-gleefully') ---> aposJumpGleefully
+//
+// It doesn't matter how many arguments you pass. Each new argument
+// is treated as a word boundary.
+//
+// This method is often useful both when triggering and when listening.
+// No need to remember the correct way to construct an event name.
+
+apos.eventName = function() {
+  var args = Array.prototype.slice.call(arguments, 0);
+  return apos.camelName(args.join('-'));
 };
 
 // Do something after control returns to the browser (after you return from

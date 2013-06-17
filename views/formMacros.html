@@ -34,17 +34,22 @@
 {% macro formSelect(name, label, choices) %}
   <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    <select name="{{ name | e }}">
-      {% for choice in choices %}
-        <option value="{{ choice.name | e }}">{{ choice.label | e }}</option>
-      {% endfor %}
-    </select>
+    {{ formSelectStandalone(name, choices) }}
   </fieldset>
+{% endmacro %}
+
+{# Often useful in a custom fieldset with other controls #}
+{% macro formSelectStandalone(name, choices) %}
+  <select name="{{ name | e }}">
+    {% for choice in choices %}
+      <option value="{{ choice.value | e }}">{{ choice.label | e }}</option>
+    {% endfor %}
+  </select>
 {% endmacro %}
 
 {# Less ambiguous to work with than a checkbox #}
 {% macro formBoolean(name, label) %}
-  {{ formSelect(name, label, [ { name: '1', label: 'Yes' }, { name: '0', label: 'No' }]) }}
+  {{ formSelect(name, label, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }]) }}
 {% endmacro %}
 
 {# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
@@ -68,25 +73,41 @@
 {% endmacro %}
 
 {# See $.selective in content.js for the necessary plumbing #}
-{% macro formSelective(name, label) %}
+{% macro formSelective(name, label, options = {}) %}
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
     <input type="text" data-autocomplete />
     <ul data-list>
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
-      <li data-item><span data-label>Title</span> <a class="apos-remove" data-remove>x</a></li>
+      <li data-item>
+        <span data-label>Title</span>
+        <a class="apos-remove" data-remove>x</a>
+        {% if options.propagate %}
+          <span class="apos-propagate"><input type="checkbox" data-propagate /> Apply to Subpages</span>
+        {% endif %}
+      </li>
     </ul>
   </fieldset>
 {% endmacro %}
 
-{# A pill button with several mutually exclusive choices (a nicer radio button basically). #}
+{# A pill button with several mutually exclusive choices (a nicer radio button basically). This is not a complete fieldset, see formPill. Often used to build filters, several on a line #}
+
+{# Sometimes a pill button group is useful without a fieldset #}
 {# Designed to be plumbed with javascript, note the data attributes #}
-{% macro formPill(name, options) %}
+{% macro formPillStandalone(name, options) %}
   <span class="apos-pill" data-pill data-name="{{ name }}">
     {%- for pill in options -%}
       <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ pill.label }}</a>
     {%- endfor -%}
   </span>
+{% endmacro %}
+
+{# Pill button group wrapped in a fieldset like the rest #}
+{% macro formPill(name, label, options) %}
+  <fieldset class="apos-fieldset apos-fieldset-pill apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+    <label>{{ label | e }}</label>
+    {{ formPillStandalone(name, options) }}
+  </fieldset>
 {% endmacro %}
 
