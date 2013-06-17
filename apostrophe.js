@@ -106,12 +106,12 @@ function Apos() {
     },
     bold: {
       type: 'button',
-      label: 'b',
+      label: 'Bold',
       icon: 'bold'
     },
     italic: {
       type: 'button',
-      label: 'i',
+      label: 'Italic',
       icon: 'italic'
     },
     createLink: {
@@ -563,6 +563,9 @@ function Apos() {
       };
 
       aposLocals.aposSingletonIsEmpty = function(options) {
+        if (!options.area) {
+          return true;
+        }
         return !_.some(options.area.items, function(item) {
           return item.type === options.type;
         });
