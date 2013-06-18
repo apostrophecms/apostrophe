@@ -48,7 +48,7 @@ apos.enablePlayers = function(sel) {
 // when an edit or delete operation succeeds.
 
 apos.change = function(what) {
-  var sel = '[data-apos-trigger-' + what + ']';
+  var sel = '[data-apos-trigger-' + apos.cssName(what) + ']';
   $(sel).each(function() {
     var $el = $(this);
     $(this).trigger(apos.eventName('aposChange', what));
