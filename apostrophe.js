@@ -4109,24 +4109,27 @@ function Apos() {
 
   // Database migration (perform on deploy to address official database changes and fixes)
   self.tasks.migrate = function(callback) {
-    function fixEventEnd(callback) {
-      // ISSUE: 'end' was meant to be a Date object matching
-      // end_date and end_time, for sorting and output purposes, but it
-      // contained start_time instead. Fortunately end_date and end_time are
-      // authoritative so we can just rebuild it
-      self.forEachPage({ type: 'event' }, function(event, callback) {
-        if (event.endTime) {
-          event.end = new Date(event.endDate + ' ' + event.endTime);
-        } else {
-          event.end = new Date(event.endDate);
-        }
-        self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
-          return callback(err);
-        });
-      }, function(err) {
-        return callback(err);
-      });
-    }
+    // There shouldn't be anyone left with this issue, and it
+    // wasn't an efficient migration.
+    //
+    // function fixEventEnd(callback) {
+    //   // ISSUE: 'end' was meant to be a Date object matching
+    //   // end_date and end_time, for sorting and output purposes, but it
+    //   // contained start_time instead. Fortunately end_date and end_time are
+    //   // authoritative so we can just rebuild it
+    //   self.forEachPage({ type: 'event' }, function(event, callback) {
+    //     if (event.endTime) {
+    //       event.end = new Date(event.endDate + ' ' + event.endTime);
+    //     } else {
+    //       event.end = new Date(event.endDate + ' 00:00:00');
+    //     }
+    //     self.pages.update({ _id: event._id }, { $set: { end: event.end }}, function(err, count) {
+    //       return callback(err);
+    //     });
+    //   }, function(err) {
+    //     return callback(err);
+    //   });
+    // }
 
     function addTrash(callback) {
       // ISSUE: old sites might not have a trashcan page as a parent for trashed pages.
@@ -4347,7 +4350,32 @@ function Apos() {
         return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
       });
     }
-    async.series([fixEventEnd, addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags], function(err) {
+
+    function fixTimelessEvents(callback) {
+      var used = false;
+      return self.forEachPage({ type: 'event' }, function(page, callback) {
+        if ((page.startTime === null) || (page.endTime === null)) {
+          // We used to construct these with just the date, which doesn't
+          // convert to GMT, so the timeless events were someodd hours out
+          // of sync with the events that had explicit times
+          var start = new Date(page.startDate + ' ' + ((page.startTime === null) ? '00:00:00' : page.startTime));
+          var end = new Date(page.endDate + ' ' + ((page.endTime === null) ? '00:00:00' : page.endTime));
+          if ((page.start.getTime() !== start.getTime()) || (page.end.getTime() !== end.getTime())) {
+            if (!used) {
+              console.log('Fixing timeless events');
+            }
+            used = true;
+            return self.pages.update({ _id: page._id }, { $set: { start: start, end: end } }, { safe: true }, callback);
+          } else {
+            return callback(null);
+          }
+        } else {
+          return callback(null);
+        }
+      }, callback);
+    }
+
+    async.series([ addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
