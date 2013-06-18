@@ -12,6 +12,6 @@
 
 (function( $ ){
   $.fn.findByName = function(name) {
-    return this.find('[name=' + name + ']');
+    return this.find('[name="' + name + '"]');
   };
 })( jQuery );

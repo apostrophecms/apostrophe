@@ -2260,6 +2260,9 @@ function Apos() {
 
     var titleSearch = options.titleSearch || undefined;
 
+    var tags = options.tags || undefined;
+    var notTags = options.notTags || undefined;
+
     var permissions = (options.permissions === false) ? false : true;
 
     if (options.titleSearch !== undefined) {
@@ -2269,6 +2272,16 @@ function Apos() {
     self.convertBooleanFilterCriteria('trash', options, filterCriteria, '0');
     self.convertBooleanFilterCriteria('orphan', options, filterCriteria, 'any');
     self.convertBooleanFilterCriteria('published', options, filterCriteria);
+
+    if (tags || notTags) {
+      filterCriteria.tags = { };
+      if (tags) {
+        filterCriteria.tags.$in = tags;
+      }
+      if (notTags) {
+        filterCriteria.tags.$nin = notTags;
+      }
+    }
 
     if (options.q && options.q.length) {
       // Crude fulltext search support. It would be better to present
