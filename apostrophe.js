@@ -2221,6 +2221,11 @@ function Apos() {
   // ('any' or null). It defaults to 'any' to ensure such pages
   // are reachable.
   //
+  // `options.tags` is a convenient way to find content that has
+  // at least one of the given array of tags. `options.notTags`
+  // does the reverse: it excludes content that has at least one
+  // of the given array of tags.
+  //
   // In any case the user's identity limits what they can see.
   // Permissions are checked according to the Apostrophe permissions
   // model. The `admin` permission permits unlimited retrieval.
