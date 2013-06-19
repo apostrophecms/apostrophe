@@ -2072,7 +2072,7 @@ apos.enableAreas = function() {
     var type = $singleton.attr('data-type');
 
     var itemData = { position: 'middle', size: 'full' };
-    var $item = $singleton.find('.apos-content .apos-widget :first');
+    var $item = $singleton.find('.apos-content .apos-widget:first');
     if ($item.length) {
       itemData = apos.getWidgetData($item);
     }
