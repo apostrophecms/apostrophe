@@ -54,9 +54,13 @@ apos.change = function(what) {
     $(this).trigger(apos.eventName('aposChange', what));
   });
   $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
-    // Make sure we run scripts in the returned HTML. This will fire
-    // up enableAreas, enablePlayers, and the aposReady event
+    // Make sure we run scripts in the returned HTML
     $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
+    // Trigger the aposReady event so scripts can attach to the
+    // elements just refreshed if needed
+    $(function() {
+      $("body").trigger("aposReady");
+    });
   });
 };
 
@@ -684,3 +688,16 @@ apos.padInteger = function(i, places) {
   return s;
 };
 
+// Enable toggles. Note the use of $('body').on('click', 'selector'...)
+// to avoid problems with elements added later
+
+$(function() {
+  $('body').on('click', '.apos-accordion-title', function(event){
+    $(this).parent().find('.apos-accordion-items').toggleClass('open');
+  });
+
+  $('body').on('click', '.apos-preview-title', function(event){
+    $('.apos-preview-toggle').toggleClass('previewing');
+    $('body').toggleClass('previewing');
+  });
+});
