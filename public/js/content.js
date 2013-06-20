@@ -700,4 +700,9 @@ $(function() {
     $('.apos-preview-toggle').toggleClass('previewing');
     $('body').toggleClass('previewing');
   });
+
+  // Close menus when an item is picked please!
+  $('body').on('click', '.apos-accordion-items .apos-control', function() {
+    $(this).closest('.apos-accordion-items').removeClass('open');
+  });
 });
