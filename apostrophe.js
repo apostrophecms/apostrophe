@@ -2818,6 +2818,48 @@ function Apos() {
     });
   };
 
+  function sanitizeSlideshow(item) {
+    if (!Array.isArray(item.items)) {
+      item.items = [];
+    }
+    var newItems = [];
+    _.each(item.items, function(file) {
+      if (typeof(file) !== 'object') {
+        return;
+      }
+      var newFile = {
+        hyperlink: self.sanitizeUrl(file.hyperlink, undefined),
+        hyperlinkTitle: self.sanitizeString(file.hyperlinkTitle, undefined),
+        description: self.sanitizeString(file.description, undefined),
+        title: self.sanitizeString(file.title, undefined),
+        _id: self.sanitizeString(file._id),
+        name: self.sanitizeString(file.name),
+        extension: self.sanitizeString(file.extension, 'jpg'),
+        length: self.sanitizeInteger(file.length),
+        group: self.sanitizeString(file.group),
+        createdAt: self.sanitizeString(file.createdAt),
+        width: self.sanitizeInteger(file.width),
+        height: self.sanitizeInteger(file.height),
+        landscape: self.sanitizeBoolean(file.landscape),
+        portrait: self.sanitizeBoolean(file.portrait),
+        credit: self.sanitizeString(file.credit),
+        md5: self.sanitizeString(file.md5)
+      };
+
+      if (file.crop) {
+        newFile.crop = {
+          top: self.sanitizeInteger(file.crop.top),
+          left: self.sanitizeInteger(file.crop.left),
+          width: self.sanitizeInteger(file.crop.width),
+          height: self.sanitizeInteger(file.crop.height)
+        };
+      }
+      newItems.push(newFile);
+    });
+    item.items = newItems;
+    return item;
+  }
+
   self.itemTypes = {
     richText: {
       markup: true,
@@ -2857,6 +2899,7 @@ function Apos() {
       label: 'Slideshow',
       icon: 'image',
       // icon: 'slideshow',
+      sanitize: sanitizeSlideshow,
       render: function(data) {
         return partial('slideshow', data);
       },
@@ -2885,6 +2928,7 @@ function Apos() {
       widget: true,
       label: 'Button(s)',
       icon: 'button',
+      sanitize: sanitizeSlideshow,
       // icon: 'slideshow',
       render: function(data) {
         return partial('buttons', data);
@@ -2898,6 +2942,7 @@ function Apos() {
       widget: true,
       label: 'Files',
       icon: 'file',
+      sanitize: sanitizeSlideshow,
       render: function(data) {
         var val = partial('files', data);
         return val;
@@ -3387,6 +3432,25 @@ function Apos() {
       if (s === '') {
         s = def;
       }
+    }
+    return s;
+  };
+
+  self.sanitizeUrl = function(s, def) {
+    s = self.sanitizeString(s, def);
+    // Allow the default to be undefined, null, false, etc.
+    if (s === def) {
+      return s;
+    }
+    if (s.length) {
+      // Add missing prefixes
+      if (!s.match(/^(http:\/\/|https:\/\/|ftp:\/\/)/)) {
+        s = 'http://' + s;
+      }
+    } else {
+      // An empty string is better stored as undefined so it's clear
+      // that we have no URL
+      s = undefined;
     }
     return s;
   };

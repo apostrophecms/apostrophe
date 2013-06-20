@@ -1112,6 +1112,7 @@ apos.widgetTypes.slideshow = {
         self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
         var $button = $(this);
         $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-extra-fields');
+        return false;
       });
 
       // on Extra Fields Save, reflect and close Extra Fields
@@ -1119,6 +1120,7 @@ apos.widgetTypes.slideshow = {
         reflect();
         var $button = $(this);
         $button.closest('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
+        return false;
       });
 
       // on Crop button click, configure and reveal cropping modal
