@@ -4513,16 +4513,15 @@ function Apos() {
                 function(callback) {
                   uploadfs.copyOut(originalFile, tempFile, callback);
                 },
-                // function(callback) {
-                //   uploadfs.copyImageIn(tempFile, originalFile, callback);
-                // }
+                function(callback) {
+                  uploadfs.copyImageIn(tempFile, originalFile, callback);
+                }
               ], callback);
             },
             // Don't forget to recrop as well!
             function(callback) {
               async.forEachSeries(file.crops || [], function(crop, callback) {
                 var originalFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
-                console.log('recropping ' + originalFile);
                 uploadfs.copyImageIn(tempFile, originalFile, { crop: crop }, callback);
               }, callback);
             },
