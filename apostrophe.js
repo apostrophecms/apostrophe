@@ -2624,9 +2624,7 @@ function Apos() {
         var remainder = slug.substr(bestPage.slug.length);
         // Strip trailing slashes for consistent results
         remainder = remainder.replace(/\/+$/, '');
-        self.callLoadersForPage(req, bestPage, function(err) {
-          return callback(err, page, bestPage, remainder);
-        });
+        return callback(err, page, bestPage, remainder);
       } else {
         // Nonexistence is not an error
         return callback(null, null);
@@ -2676,6 +2674,10 @@ function Apos() {
   var maxLoaderRecursion = 3;
 
   self.callLoadersForPage = function(req, page, callback) {
+    // Useful for debugging redundant calls
+    // if (page.areas) {
+    //   console.log(page.type + ':' + page.slug);
+    // }
 
     if (loaderRecursion[page._id]) {
       if (loaderRecursion[page._id] === maxLoaderRecursion) {
