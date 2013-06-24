@@ -308,6 +308,119 @@ function Apos() {
     self._assets[types[type].key].push({ file: filePath, web: webPath, when: when });
   };
 
+  // Beginning in 0.4.66 you must call
+  // apos.endAssets when you are through pushing
+  // assets. This is necessary because the LESS
+  // compiler is no longer asynchronous, so we can't
+  // wait for aposStylesheet calls in Nunjucks to
+  // do the compilation.
+  //
+  // The options argument is not required. If you do
+  // provide one you may specify additional scenes,
+  // and should always specify 'anon' and 'user'. Our official
+  // modules are only concerned with those two cases.
+  // Assets pushed with when set to 'always' are
+  // deployed in both scenes.
+
+  self.endAssets = function(options, callback) {
+    if (typeof(options) === 'function') {
+      callback = options;
+      options = {};
+    }
+    if (!options.scenes) {
+      options.scenes = [ 'anon', 'user' ];
+    }
+    if (!self.options.minify) {
+      // Just use the LESS middleware and direct access to JS
+      // for dev
+      return callback(null);
+    }
+
+    console.log('MINIFYING, this will take a minute...');
+    async.series([
+      function(callback) {
+        return async.forEachSeries(options.scenes, compileSceneStylesheets, callback);
+      },
+      function(callback) {
+        return async.forEachSeries(options.scenes, compileSceneScripts, callback);
+      }
+    ], function(err) {
+      console.log('Minification complete.');
+      return callback(err);
+    });
+
+    function compileSceneStylesheets(scene, callback) {
+      return async.mapSeries(self.filterAssets(self._assets['stylesheets'], scene), compileStylesheet, function(err, stylesheets) {
+        if (err) {
+          return callback(err);
+        }
+        self._minifiedCss[scene] = cleanCss.process(stylesheets.join("\n"));
+        return callback(null);
+      });
+    }
+
+    function compileStylesheet(stylesheet, callback) {
+      var result;
+      var src = stylesheet.file;
+
+      // Make sure we look first for a LESS source file so we're not
+      // just using a (possibly stale) previously compiled version
+      var lessPath = src.replace(/\.css$/, '.less');
+      var exists = false;
+      if (fs.existsSync(lessPath)) {
+        src = lessPath;
+        exists = true;
+      } else if (fs.existsSync(src)) {
+        exists = true;
+      }
+
+      if (!exists) {
+        console.log('WARNING: stylesheet ' + stylesheet.file + ' does not exist');
+        return callback(null, '');
+      }
+      // We run ALL CSS through the LESS compiler, because
+      // it fixes relative paths for us so that a combined file
+      // will still have valid paths to background images etc.
+      return less.render(fs.readFileSync(src, 'utf8'),
+      {
+        filename: src,
+        rootpath: path.dirname(stylesheet.web) + '/',
+        // Without this relative import paths are in trouble
+        paths: [ path.dirname(src) ],
+        // syncImport doesn't seem to work anymore in 1.4, thus
+        // we were pushed to write endAssets, although it makes
+        // sense anyway
+      }, function(err, css) {
+        return callback(err, css);
+      });
+    }
+
+    // For now we don't actually need async for scripts, but now
+    // we have the option of going there
+    function compileSceneScripts(scene, callback) {
+      var scripts = _.filter(self.filterAssets(self._assets['scripts'], scene), function(script) {
+        var exists = fs.existsSync(script.file);
+        if (!exists) {
+          console.log("Warning: " + script.file + " does not exist");
+        }
+        return exists;
+      });
+      self._minifiedJs[scene] = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
+      return callback(null);
+    }
+  };
+
+  self.filterAssets = function(assets, when) {
+    // Support older layouts
+    if (!when) {
+      throw new Error('You must specify the "when" argument (usually either anon or user)');
+    }
+    return _.filter(assets, function(asset) {
+      return (asset.when === 'always') || (when === 'all') || (asset.when === when);
+    });
+  };
+
+
   var i;
   for (i in stylesheets) {
     self.pushAsset('stylesheet', stylesheets[i]);
@@ -497,7 +610,7 @@ function Apos() {
           when = 'all';
         }
         var templates = self._assets['templates'];
-        templates = filterAssets(templates, when);
+        templates = self.filterAssets(templates, when);
         return _.map(templates, function(template) {
           if (template.call) {
             return template.call();
@@ -731,21 +844,11 @@ function Apos() {
         return partial('itemNormalView', { item: item, itemType: itemType, options: options, jsonOptions: jsonOptions, attributes: attributes });
       };
 
-      function filterAssets(assets, when) {
-        // Support older layouts
-        if (!when) {
-          when = 'all';
-        }
-        return _.filter(assets, function(asset) {
-          return (asset.when === 'always') || (when === 'all') || (asset.when === when);
-        });
-      }
-
       aposLocals.aposStylesheets = function(when) {
         if (options.minify) {
           return '<link href="/apos/stylesheets.css?pid=' + self._pid + '&when=' + when + '" rel="stylesheet" />';
         } else {
-          return _.map(filterAssets(self._assets['stylesheets'], when), function(stylesheet) {
+          return _.map(self.filterAssets(self._assets['stylesheets'], when), function(stylesheet) {
             return '<link href="' + stylesheet.web + '" rel="stylesheet" />';
           }).join("\n");
         }
@@ -759,7 +862,7 @@ function Apos() {
         if (options.minify) {
           return '<script src="/apos/scripts.js?pid=' + self._pid + '&when=' + when + '"></script>\n';
         } else {
-          return _.map(filterAssets(self._assets['scripts'], when), function(script) {
+          return _.map(self.filterAssets(self._assets['scripts'], when), function(script) {
             return '<script src="' + script.web + '"></script>';
           }).join("\n");
         }
@@ -1431,47 +1534,9 @@ function Apos() {
       // the /apos/scripts.js route.
       app.get('/apos/stylesheets.css', function(req, res) {
         if (self._minifiedCss[req.query.when] === undefined) {
-          var css = _.map(filterAssets(self._assets['stylesheets'], req.query.when), function(stylesheet) {
-            var result;
-            var src = stylesheet.file;
-
-            // Make sure we look first for a LESS source file so we're not
-            // just using a (possibly stale) previously compiled version
-            var lessPath = src.replace(/\.css$/, '.less');
-            var exists = false;
-            if (fs.existsSync(lessPath)) {
-              src = lessPath;
-              exists = true;
-            } else if (fs.existsSync(src)) {
-              exists = true;
-            }
-
-            if (!exists) {
-              console.log('WARNING: stylesheet ' + stylesheet.file + ' does not exist');
-              return;
-            }
-            // We run ALL CSS through the LESS compiler, because
-            // it fixes relative paths for us so that a combined file
-            // will still have valid paths to background images etc.
-            less.render(fs.readFileSync(src, 'utf8'),
-            {
-              rootpath: path.dirname(stylesheet.web) + '/',
-              // Without this relative import paths are in trouble
-              paths: [ path.dirname(src) ],
-              // Ensures the callback is invoked immediately.
-              // Note we only do this once in production.
-              syncImport: true
-            }, function(err, css) {
-              if (!err) {
-                result = css;
-              }
-            });
-            if (result === undefined) {
-              throw "lessjs has gone asynchronous on us. That should not have happened. See: https://github.com/fson/less.js/commit/e21ddb74de6017cbce7a9cf1f3406697b98774ec";
-            }
-            return result;
-          }).join("\n");
-          self._minifiedCss[req.query.when] = cleanCss.process(css);
+          console.error('CODE CHANGE REQUIRED: you must call apos.endAssets after initializing all modules that might call apos.pushAsset. Be aware it takes a callback.');
+          res.statusCode = 500;
+          return res.send('apos.endAssets not called');
         }
         res.type('text/css');
         res.send(self._minifiedCss[req.query.when]);
@@ -1482,16 +1547,8 @@ function Apos() {
       // Serve minified js. (If we're not minifying, aposScripts won't
       // point here at all.)
       app.get('/apos/scripts.js', function(req, res) {
-        if (self._minifiedJs[req.query.when] === undefined) {
-          // Minify them all!
-          var scripts = _.filter(filterAssets(self._assets['scripts'], req.query.when), function(script) {
-            var exists = fs.existsSync(script.file);
-            if (!exists) {
-              console.log("Warning: " + script.file + " does not exist");
-            }
-            return exists;
-          });
-          self._minifiedJs[req.query.when] = uglifyJs.minify(_.map(scripts, function(script) { return script.file; })).code;
+        if (!self._minifiedJs[req.query.when]) {
+          console.error('CODE CHANGE REQUIRED: you must call apos.endAssets after initializing all modules that might call apos.pushAsset. Be aware it takes a callback.');
         }
         res.contentType = 'text/javascript';
         res.send(self._minifiedJs[req.query.when]);
