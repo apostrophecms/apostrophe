@@ -322,7 +322,10 @@ function Apos() {
   // Assets pushed with when set to 'always' are
   // deployed in both scenes.
 
+  var endAssetsCalled = false;
+
   self.endAssets = function(options, callback) {
+    endAssetsCalled = true;
     if (typeof(options) === 'function') {
       callback = options;
       options = {};
@@ -845,6 +848,9 @@ function Apos() {
       };
 
       aposLocals.aposStylesheets = function(when) {
+        if (!endAssetsCalled) {
+          throw Error('CODE CHANGE REQUIRED: you must call apos.endAssets once after the last call to apos.pushAsset. Add apos.endAssets to the end of the list in your initApos function.');
+        }
         if (options.minify) {
           return '<link href="/apos/stylesheets.css?pid=' + self._pid + '&when=' + when + '" rel="stylesheet" />';
         } else {
@@ -855,6 +861,9 @@ function Apos() {
       };
 
       aposLocals.aposScripts = function(when) {
+        if (!endAssetsCalled) {
+          throw Error('CODE CHANGE REQUIRED: you must call apos.endAssets once after the last call to apos.pushAsset. Add apos.endAssets to the end of the list in your initApos function.');
+        }
         if (!when) {
           // Backwards compatibility with older layouts
           when = 'all';
