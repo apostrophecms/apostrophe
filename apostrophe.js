@@ -914,6 +914,14 @@ function Apos() {
         return pages;
       };
 
+      // Events module needs this available in nunjucks to easily format
+      // events happening this year in a less wordy way
+
+      aposLocals.aposIsCurrentYear = function(date) {
+        var now = new Date();
+        return date.getYear() === now.getYear();
+      };
+
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
       _.extend(app.locals, aposLocals);
@@ -2305,6 +2313,12 @@ function Apos() {
   //
   // The `criteria` and `options` arguments may be skipped.
   // (Getting everything is a bit unusual, but it's not forbidden!)
+  //
+  // If options.getDistinctTags is true, an array of distinct tags
+  // matching the current criteria is delivered in lieu of the usual
+  // results object. This is useful when implementing filters. A
+  // deeper refactoring of the fetchMetadata feature from the snippets
+  // module is probably in order to support more types of filters.
 
   self.get = function(req, userCriteria, options, mainCallback) {
     if (arguments.length === 2) {
@@ -2374,6 +2388,13 @@ function Apos() {
       $and: combine
     };
 
+    if (options.getDistinctTags) {
+      // Just return the distinct tags matching the current criteria,
+      // rather than the normal results. This is a bit of a hack, we need
+      // to consider refactoring all of 'fetchMetadata' here
+      return self.pages.distinct("tags", criteria, mainCallback);
+    }
+
     async.series([count, loadPages, markPermissions, loadWidgets], done);
 
     function count(callback) {
@@ -2421,7 +2442,6 @@ function Apos() {
     }
 
     function done(err) {
-      results.criteria = criteria;
       return mainCallback(err, results);
     }
   };
