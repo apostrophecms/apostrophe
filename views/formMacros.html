@@ -56,7 +56,7 @@
 {# specifying the type we want for the singleton #}
 {% macro formSingleton(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ name | css }}" data-name="{{ name }}">
-    <label>{{ name }}</label>
+    <label>{{ label | e }}</label>
     {# js adds this singleton to the dialog #}
     <div data-{{ name }}-edit-view></div>
   </fieldset>
