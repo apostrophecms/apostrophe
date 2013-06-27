@@ -802,7 +802,7 @@ function Apos() {
         while (p >= 0) {
           var c = t.charAt(p);
           if ((c === ' ') || (c === "\n")) {
-            return t.substr(0, p) + '…';
+            return t.substr(0, p).replace(/,$/, '') + '…';
           }
           p--;
         }
