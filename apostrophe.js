@@ -5,6 +5,7 @@ var async = require('async');
 var sanitize = require('validator').sanitize;
 var fs = require('fs');
 var _ = require('underscore');
+_.str = require('underscore.string');
 var nunjucks = require('nunjucks');
 var async = require('async');
 var lessMiddleware = require('less-middleware');
@@ -791,24 +792,30 @@ function Apos() {
 
       // Truncate a plaintext string at the character count expressed
       // by the limit argument, which defaults to 200. NOT FOR HTML/RICH TEXT!
-      self.truncatePlaintext = function(t, limit) {
-        limit = limit || 200;
-        if (t.length <= limit) {
-          return t;
-        }
-        // Leave room for the ellipsis unicode character
-        // (-2 instead of -1 for the last offset we look at)
-        var p = limit - 2;
-        while (p >= 0) {
-          var c = t.charAt(p);
-          if ((c === ' ') || (c === "\n")) {
-            return t.substr(0, p).replace(/,$/, '') + '…';
-          }
-          p--;
-        }
-        // Saving words failed, do a hard crop
-        return t.substr(0, limit - 1) + '…';
-      };
+      // self.truncatePlaintext = function(t, limit) {
+      //   limit = limit || 200;
+      //   if (t.length <= limit) {
+      //     return t;
+      //   }
+      //   // Leave room for the ellipsis unicode character
+      //   // (-2 instead of -1 for the last offset we look at)
+      //   var p = limit - 2;
+      //   while (p >= 0) {
+      //     var c = t.charAt(p);
+      //     if ((c === ' ') || (c === "\n")) {
+      //       return t.substr(0, p).replace(/,$/, '') + '…';
+      //     }
+      //     p--;
+      //   }
+      //   // Saving words failed, do a hard crop
+      //   return t.substr(0, limit - 1) + '…';
+      // };
+
+      // self.truncatePlaintext = function(t, limit) {
+      //   return _.str.prune(t, limit);
+      // }
+
+      self.truncatePlaintext = _.str.prune;
 
       aposLocals.aposItemNormalView = function(item, options) {
         if (!options) {
