@@ -696,7 +696,7 @@ $(function() {
     $(this).parent().find('.apos-accordion-items').toggleClass('open');
   });
 
-  $('body').on('click', '.apos-preview-title', function(event){
+  $('body').on('click', '.apos-preview-toggle', function(event){
     $('.apos-preview-toggle').toggleClass('previewing');
     $('body').toggleClass('previewing');
   });
