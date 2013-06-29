@@ -2779,7 +2779,7 @@ function Apos() {
     async.map(
       _.values(page.areas),
       function(area, callback) {
-        return self.callLoadersForArea(req, area, callback);
+        return setImmediate(function() { self.callLoadersForArea(req, area, callback); });
       }, function(err, results) {
         loaderRecursion[page._id]--;
         return callback(err);
@@ -3912,7 +3912,7 @@ function Apos() {
   // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
   // criteria and options objects to be passed to the `get` call.
   //
-  // The first argument should be an array of pages already fetched.
+  // The second argument should be an array of pages already fetched.
   //
   // The callback receives an error object if any.
   //
@@ -3927,7 +3927,7 @@ function Apos() {
     var othersById = {};
     _.each(items, function(item) {
       if (item[idsField]) {
-        otherIds.concat(item[idsField]);
+        otherIds = otherIds.concat(item[idsField]);
       }
     });
     var getter = options.get || self.get;
