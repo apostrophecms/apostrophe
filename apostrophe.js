@@ -31,7 +31,6 @@ var qs = require('qs');
 // Needed for A1.5 bc implementation of authentication, normally
 // we go through appy's passwordHash wrapper
 var crypto = require('crypto');
-var passwordHash = require('password-hash');
 
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
