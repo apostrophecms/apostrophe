@@ -28,6 +28,11 @@ var ent = require('ent');
 var argv = require('optimist').argv;
 var qs = require('qs');
 
+// Needed for A1.5 bc implementation of authentication, normally
+// we go through appy's passwordHash wrapper
+var crypto = require('crypto');
+var passwordHash = require('password-hash');
+
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
 
@@ -4692,7 +4697,36 @@ function Apos() {
         // (Yes, the password property is hashed and salted.)
         collection: 'aposPages',
         // Render the login page
-        template: options.loginPage
+        template: options.loginPage,
+        verify: function(password, hash) {
+          if (hash.match(/^a15/)) {
+            // bc with Apostrophe 1.5 hashed passwords. The salt is
+            // implemented differently, it's just prepended to the
+            // password before hashing. Whatever createHmac is doing
+            // in the password-hash module, it's not that. Fortunately
+            // it isn't hard to do directly
+            var components = hash.split(/\$/);
+            console.log(components);
+            if (components.length !== 3) {
+              return false;
+            }
+            // Allow for a variety of algorithms coming over from A1.5
+            var hashType = components[0].substr(3);
+            var salt = components[1];
+            var hashed = components[2];
+            try {
+              var shasum = crypto.createHash(hashType);
+              shasum.update(salt + password);
+              var digest = shasum.digest('hex');
+              return (digest === hashed);
+            } catch (e) {
+              console.log(e);
+              return false;
+            }
+          } else {
+            return passwordHash.verify(password, hash);
+          }
+        }
       }
     };
   };
