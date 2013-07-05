@@ -2349,6 +2349,11 @@ function Apos() {
   // to `false`. This can make sense when you are using pages as storage
   // in a context where Apostrophe's permissions model is not relevant.
   //
+  // Normally all areas associated with a page are included in the
+  // areas property. If `options.areas` is explicitly false, no areas
+  // will be returned. If `options.areas` contains an array of area names,
+  // only those areas will be returned (if present).
+  //
   // The `criteria` and `options` arguments may be skipped.
   // (Getting everything is a bit unusual, but it's not forbidden!)
   //
@@ -2383,6 +2388,8 @@ function Apos() {
 
     var titleSearch = options.titleSearch || undefined;
 
+    var areas = options.areas || true;
+
     var tags = options.tags || undefined;
     var notTags = options.notTags || undefined;
 
@@ -2413,7 +2420,18 @@ function Apos() {
       filterCriteria.lowSearchText = self.searchify(options.q);
     }
 
-    var projection = fields || {};
+
+    var projection = {};
+    extend(true, projection, fields || {});
+    if (!areas) {
+      projection.areas = 0;
+    } else if (areas === true) {
+      // Great, get them all
+    } else {
+      // We need to initially get them all, then prune them, as
+      // MongoDB is not great at fetching specific properties
+      // of subdocuments while still fetching everything else
+    }
 
     var results = {};
 
@@ -2459,6 +2477,15 @@ function Apos() {
           return callback(err);
         }
         results.pages = pagesArg;
+        if (Array.isArray(areas)) {
+          // Prune to specific areas only, alas this can't
+          // happen in mongoland as near as I can tell. -Tom
+          _.each(results.pages, function(page) {
+            if (page.areas) {
+              page.areas = _.pick(page.areas, areas);
+            }
+          });
+        }
         return callback(err);
       });
     }
