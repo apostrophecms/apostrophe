@@ -15,7 +15,8 @@
             {% if file.description %}
               <div class="apos-slideshow-description">
                 <p>
-                 {{ file.description }}
+                  {# Don't render HTML tags, do respect line breaks #}
+                  {{ file.description | e | nlbr }}
                 </p>
               </div>
             {% endif %}

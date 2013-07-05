@@ -1782,18 +1782,19 @@ function Apos() {
   //
   // Page objects are stored in the 'pages' collection.
   //
-  // If a page does not exist this method will create it. If the page
-  // has a type property you should create it with putPage rather than
-  // using this method. This behavior is convenient, however, for
-  // simple virtual pages used to hold things like a global footer area.
+  // If a page does not exist, the user has permission to create pages,
+  // and the slug does not start with /, this method will create it,
+  // as a page with no `type` property. If the page has a type property or
+  // resides in the page tree you should create it with putPage rather
+  // than using this method.
+  //
+  // This create-on-demand behavior is intended for
+  // simple virtual pages used to hold things like a
+  // global footer area.
   //
   // A copy of the page is inserted into the versions collection.
   //
-  // The req argument is required for permissions checking. The
-  // edit-page permission is checked on the page slug.
-  //
-  // TODO: implementation is a little overcomplicated since we're checking permissions
-  // via getPage anyway.
+  // The req argument is required for permissions checking.
 
   self.putArea = function(req, slug, area, callback) {
     var pageOrSlug;
@@ -1805,15 +1806,38 @@ function Apos() {
     var pageSlug = matches[1];
     var areaSlug = matches[2];
 
-    // To check the permissions properly we're best off just getting the page as the user,
-    // however we can specify that we don't need the areas returned to speed that up
+    // To check the permissions properly we're best off just getting the page
+    // as the user, however we can specify that we don't need the properties
+    // returned to speed that up
     function permissions(callback) {
-      return self.get(req, { slug: pageSlug }, { editable: true, fields: { areas: 0 } }, function(err, results) {
+      return self.get(req, { slug: pageSlug }, { editable: true, fields: { _id: 1 } }, function(err, results) {
         if (err) {
           return callback(err);
         }
         if (!results.pages.length) {
-          return callback('notfound');
+          // If it REALLY doesn't exist, but we have the edit-page permission,
+          // and the slug has no leading /, we are allowed to create it.
+
+          // If it is a tree page it must be created via putPage
+          if (pageSlug.substr(0, 1) === '/') {
+            return callback('notfound');
+          }
+
+          // Otherwise it is OK to create it provided it truly does
+          // not exist yet. Check MongoDB to distinguish between not
+          // finding it due to permissions and not finding it
+          // due to nonexistence
+          return self.pages.findOne({ slug: pageSlug }, { _id: 1 }, function(err, page) {
+            if (err) {
+              return callback(err);
+            }
+            if (!page) {
+              // OK, it's really new
+              return callback(null);
+            }
+            // OK if we have permission to create pages
+            return self.permissions(req, 'edit-page', null, callback);
+          });
         }
         return callback(null);
       });
@@ -1890,6 +1914,8 @@ function Apos() {
   // getPage and putPage, or directly manipulate page objects with mongodb.
   //
   // You MUST pass the req object for permissions checking.
+  //
+  // If the page does not already exist this method will create it.
   //
   // A copy of the page is inserted into the versions collection.
   //
