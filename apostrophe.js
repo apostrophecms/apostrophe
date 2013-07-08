@@ -2760,6 +2760,9 @@ function Apos() {
 
     // Ordering in reverse order by slug gives us the longest match first
     self.get(req, { $or: orClauses }, options, function(err, results) {
+      if (err) {
+        return callback(err);
+      }
       if (results.pages.length) {
         var page = results.pages[0];
         var bestPage = page;
