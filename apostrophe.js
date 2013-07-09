@@ -28,6 +28,11 @@ var ent = require('ent');
 var argv = require('optimist').argv;
 var qs = require('qs');
 
+// Needed for A1.5 bc implementation of authentication, normally
+// we go through appy's passwordHash wrapper
+var crypto = require('crypto');
+var passwordHash = require('password-hash');
+
 // MongoDB prefix queries are painful without this
 RegExp.quote = require("regexp-quote");
 
@@ -1777,18 +1782,19 @@ function Apos() {
   //
   // Page objects are stored in the 'pages' collection.
   //
-  // If a page does not exist this method will create it. If the page
-  // has a type property you should create it with putPage rather than
-  // using this method. This behavior is convenient, however, for
-  // simple virtual pages used to hold things like a global footer area.
+  // If a page does not exist, the user has permission to create pages,
+  // and the slug does not start with /, this method will create it,
+  // as a page with no `type` property. If the page has a type property or
+  // resides in the page tree you should create it with putPage rather
+  // than using this method.
+  //
+  // This create-on-demand behavior is intended for
+  // simple virtual pages used to hold things like a
+  // global footer area.
   //
   // A copy of the page is inserted into the versions collection.
   //
-  // The req argument is required for permissions checking. The
-  // edit-page permission is checked on the page slug.
-  //
-  // TODO: implementation is a little overcomplicated since we're checking permissions
-  // via getPage anyway.
+  // The req argument is required for permissions checking.
 
   self.putArea = function(req, slug, area, callback) {
     var pageOrSlug;
@@ -1800,15 +1806,38 @@ function Apos() {
     var pageSlug = matches[1];
     var areaSlug = matches[2];
 
-    // To check the permissions properly we're best off just getting the page as the user,
-    // however we can specify that we don't need the areas returned to speed that up
+    // To check the permissions properly we're best off just getting the page
+    // as the user, however we can specify that we don't need the properties
+    // returned to speed that up
     function permissions(callback) {
-      return self.get(req, { slug: pageSlug }, { editable: true, fields: { areas: 0 } }, function(err, results) {
+      return self.get(req, { slug: pageSlug }, { editable: true, fields: { _id: 1 } }, function(err, results) {
         if (err) {
           return callback(err);
         }
         if (!results.pages.length) {
-          return callback('notfound');
+          // If it REALLY doesn't exist, but we have the edit-page permission,
+          // and the slug has no leading /, we are allowed to create it.
+
+          // If it is a tree page it must be created via putPage
+          if (pageSlug.substr(0, 1) === '/') {
+            return callback('notfound');
+          }
+
+          // Otherwise it is OK to create it provided it truly does
+          // not exist yet. Check MongoDB to distinguish between not
+          // finding it due to permissions and not finding it
+          // due to nonexistence
+          return self.pages.findOne({ slug: pageSlug }, { _id: 1 }, function(err, page) {
+            if (err) {
+              return callback(err);
+            }
+            if (!page) {
+              // OK, it's really new
+              return callback(null);
+            }
+            // OK if we have permission to create pages
+            return self.permissions(req, 'edit-page', null, callback);
+          });
         }
         return callback(null);
       });
@@ -1885,6 +1914,8 @@ function Apos() {
   // getPage and putPage, or directly manipulate page objects with mongodb.
   //
   // You MUST pass the req object for permissions checking.
+  //
+  // If the page does not already exist this method will create it.
   //
   // A copy of the page is inserted into the versions collection.
   //
@@ -2318,6 +2349,11 @@ function Apos() {
   // to `false`. This can make sense when you are using pages as storage
   // in a context where Apostrophe's permissions model is not relevant.
   //
+  // Normally all areas associated with a page are included in the
+  // areas property. If `options.areas` is explicitly false, no areas
+  // will be returned. If `options.areas` contains an array of area names,
+  // only those areas will be returned (if present).
+  //
   // The `criteria` and `options` arguments may be skipped.
   // (Getting everything is a bit unusual, but it's not forbidden!)
   //
@@ -2352,6 +2388,8 @@ function Apos() {
 
     var titleSearch = options.titleSearch || undefined;
 
+    var areas = options.areas || true;
+
     var tags = options.tags || undefined;
     var notTags = options.notTags || undefined;
 
@@ -2382,7 +2420,18 @@ function Apos() {
       filterCriteria.lowSearchText = self.searchify(options.q);
     }
 
-    var projection = fields || {};
+
+    var projection = {};
+    extend(true, projection, fields || {});
+    if (!areas) {
+      projection.areas = 0;
+    } else if (areas === true) {
+      // Great, get them all
+    } else {
+      // We need to initially get them all, then prune them, as
+      // MongoDB is not great at fetching specific properties
+      // of subdocuments while still fetching everything else
+    }
 
     var results = {};
 
@@ -2428,6 +2477,15 @@ function Apos() {
           return callback(err);
         }
         results.pages = pagesArg;
+        if (Array.isArray(areas)) {
+          // Prune to specific areas only, alas this can't
+          // happen in mongoland as near as I can tell. -Tom
+          _.each(results.pages, function(page) {
+            if (page.areas) {
+              page.areas = _.pick(page.areas, areas);
+            }
+          });
+        }
         return callback(err);
       });
     }
@@ -2702,6 +2760,9 @@ function Apos() {
 
     // Ordering in reverse order by slug gives us the longest match first
     self.get(req, { $or: orClauses }, options, function(err, results) {
+      if (err) {
+        return callback(err);
+      }
       if (results.pages.length) {
         var page = results.pages[0];
         var bestPage = page;
@@ -4692,7 +4753,36 @@ function Apos() {
         // (Yes, the password property is hashed and salted.)
         collection: 'aposPages',
         // Render the login page
-        template: options.loginPage
+        template: options.loginPage,
+        verify: function(password, hash) {
+          if (hash.match(/^a15/)) {
+            // bc with Apostrophe 1.5 hashed passwords. The salt is
+            // implemented differently, it's just prepended to the
+            // password before hashing. Whatever createHmac is doing
+            // in the password-hash module, it's not that. Fortunately
+            // it isn't hard to do directly
+            var components = hash.split(/\$/);
+            console.log(components);
+            if (components.length !== 3) {
+              return false;
+            }
+            // Allow for a variety of algorithms coming over from A1.5
+            var hashType = components[0].substr(3);
+            var salt = components[1];
+            var hashed = components[2];
+            try {
+              var shasum = crypto.createHash(hashType);
+              shasum.update(salt + password);
+              var digest = shasum.digest('hex');
+              return (digest === hashed);
+            } catch (e) {
+              console.log(e);
+              return false;
+            }
+          } else {
+            return passwordHash.verify(password, hash);
+          }
+        }
       }
     };
   };
