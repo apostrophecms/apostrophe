@@ -185,6 +185,7 @@ input.apos-control
       color: #FFF;
       z-index: 1;
       position: relative;
+      font-family: Helvetica, sans-serif;
       &:hover{cursor: pointer;}
       &:active option,
       &:focus option
@@ -296,7 +297,8 @@ input.apos-control
 
   select
   {
-    font-family: 'montserratregular' !important;
+    // font-family: 'montserratregular' !important;
+    // Chrome PC doesn't like webfonts in select menus
     font-size: 0.9em !important;
     letter-spacing: 1px;
   }
@@ -457,7 +459,7 @@ input.apos-control
   height: 170px;
   display: inline-block;
   margin-left: 5px;
-  
+
   &.apos-library-drag-enabled .apos-file-styled
   {
     border: 5px dashed #fff;
@@ -858,7 +860,7 @@ input.apos-control
     // Don't float me, it breaks jquery ui sortable connectWith and then we can't
     // drag from the library properly
     padding: 30px 15px 15px 23px;
-    
+
   }
   .apos-media-library-item
   {
