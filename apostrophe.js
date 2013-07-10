@@ -934,6 +934,10 @@ function Apos() {
         return date.getYear() === now.getYear();
       };
 
+      aposLocals.aposContains = function(list, value) {
+        return _.contains(list, value);
+      }
+
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
       _.extend(app.locals, aposLocals);
