@@ -1501,11 +1501,15 @@ function Apos() {
       // here. We're just allowing the browser to leverage the same normal view
       // generator that the server uses for actual page rendering. Renders the
       // body of the widget only since the widget div has already been updated
-      // or created in the browser.
+      // or created in the browser. Options may be passed to the widget
+      // via the query string or via the _options POST parameter.
 
       app.post('/apos/render-widget', function(req, res) {
         var item = req.body;
-        var options = req.query;
+        var options = {};
+        extend(options, req.query, true);
+        extend(options, req.body._options || {}, true);
+        delete item._options;
 
         var itemType = self.itemTypes[item.type];
         if (!itemType) {
@@ -4244,7 +4248,7 @@ function Apos() {
   };
 
   // Iterate over every Apostrophe item in every area in every page in the universe.
-  // iterator receives page object, area name, area object, item offset, item object.
+  // iterator receives page object, area name, area object, item offset, item object, callback.
   // Yes, the area and item objects do refer to the same objects you'd reach if you
   // stepped through the properites of the page object, so updating the one does
   // update the other
@@ -4640,6 +4644,50 @@ function Apos() {
       function(page, callback) {
         return self.indexPage({}, page, callback);
       }, callback);
+  };
+
+  self.tasks.oembed = function(callback) {
+    console.log('Refreshing all oembed data for videos');
+    // iterator receives page object, area name, area object, item offset, item object.
+    var oembedCache = {};
+    var n = 0;
+    return self.forEachItem(function(page, name, area, offset, item, callback) {
+
+      function go(result) {
+        n++;
+        console.log('examining video ' + n);
+        item.thumbnail = result.thumbnail_url;
+        item.title = result.title;
+        return pages.update({ _id: page._id }, page, function(err, count) {
+          return callback(err);
+        });
+      }
+
+      if (item.type !== 'video') {
+        return callback(null);
+      }
+      if (oembedCache[item.video]) {
+        go(oembedCache[item.video]);
+      } else {
+        // 1/10th second pause between oembed hits to avoid being rate limited
+        // (I don't know what their rate limit is, but...)
+        setTimeout(function() {
+          return oembed.fetch(item.video, {}, function (err, result) {
+            if (!err) {
+              oembedCache[item.video] = result;
+              go(result);
+            } else {
+              // A few oembed errors are normal and not cause for panic.
+              // Videos go away, for one thing. If you get a zillion of these
+              // it's possible you have hit a rate limit
+              console.log('Warning: oembed error for ' + item.video + '\n');
+              console.log(err);
+              return callback(null);
+            }
+          });
+        }, 100);
+      }
+    }, callback);
   };
 
   self.tasks.rescale = function(callback) {

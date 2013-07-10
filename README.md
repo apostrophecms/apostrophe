@@ -225,30 +225,9 @@ The [apostrophe-pages module](http://github.com/punkave/apostrophe-pages) uses t
 
 ## Enforcing Permissions
 
-You can hide edit buttons by passing `edit: false` to the `aposArea` function, and you should if the user doesn't have that privilege. But that doesn't actually prevent clever users from making form submissions that update areas. By default, everyone can edit everything if they know the URL. 
+TODO: expand this section. Permissions on pages are enforced via lists of groups and people who have been given editing or viewing privileges, and admins can always edit everything. The permissions method usually should not be overridden because it would be incompatible with the fast database queries that locate pages the user is permitted to see or edit based on permissions.
 
-Of course this is not what you want. Fortunately it is very easy to pass your own custom permissions callback to Apostrophe.
-
-When calling init(), just set the `permissions` option to a function that looks like this:
-
-    function permissions(req, action, fileOrSlug, callback) { ... }
-
-Once you've decided whether `req.user` should be allowed to carry out `action`, invoke `callback` with `null` to let the user complete the action, or with an error to forbid the action.
-
-Currently the possible actions are `edit-area`, `edit-media`, `edit-page` and `view-page` (the latter two are added by the `apostrophe-pages` module). `edit-area` calls will include the slug of the area as the third parameter. `edit-media` calls for existing files may include a `file` object retrieved from Apostrophe's database, with an "owner" property set to the _id, id or username property of `req.user` at the time the file was last edited. `edit-media` calls with no existing file parameter also occur, for new file uploads.
-
-A common case is to restrict editing to a single user but let view actions sail through:
-
-    function permissions(req, action, object, callback) {
-      if (req.user && (!action.match(/^view-/)) && (req.user.username === 'admin')) {
-        // OK
-        return callback(null);
-      } else {
-        return callback('Forbidden');
-      }
-    }
-
-You can see an example of this pattern in `app.js` in the sandbox project.
+You can hide edit buttons by passing `edit: false` to the `aposArea` function, and you should if the user doesn't have that privilege. But that doesn't actually prevent clever users from making form submissions that update areas. Fortunately Apostrophe's apos.permissions function is used to verify that the current user (based on req.user, if present) may carry out the requested action.
 
 ## Extending Apostrophe
 

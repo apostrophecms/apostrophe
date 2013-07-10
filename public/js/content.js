@@ -129,12 +129,18 @@ apos.widgetPlayers.video = function($el)
     // Wait until the thumbnail image size is available otherwise we'll
     // get a tiny size for the widget
     $el.imagesReady(function() {
+      // We want to replace the thumbnail with the video while preserving
+      // other content such as the title
       var e = $(data.html);
       e.removeAttr('width');
       e.removeAttr('height');
-      e.width($el.width());
-      e.height($el.height());
-      $el.html(e);
+      var $thumbnail = $el.find('.apos-video-thumbnail');
+      e.width($thumbnail.width());
+      e.height($thumbnail.height());
+      $el.find('.apos-video-thumbnail').replaceWith(e);
+      // Hoist out of the link that launched us
+      var $kids = $el.find('[data-apos-play] *').detach();
+      $el.find('[data-apos-play]').replaceWith($kids);
     });
   });
 };

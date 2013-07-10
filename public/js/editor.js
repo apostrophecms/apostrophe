@@ -864,6 +864,7 @@ apos.widgetEditor = function(options) {
       // and an inevitable drift into different behavior between browser
       // and server. At some point perhaps we'll run the same rendering code
       // on both client and server
+      info._options = options.options || {};
       $.post('/apos/render-widget?bodyOnly=1&editView=1', info, function(html) {
         self.$widget.append(html);
         callback(null);
@@ -929,6 +930,7 @@ apos.widgetEditor = function(options) {
           } else {
             info.content = undefined;
           }
+          info._options = options.options || {};
           $.post('/apos/render-widget', info, function(html) {
             // jQuery 1.9+ is super fussy about constructing elements from html
             // more explicitly
@@ -1779,6 +1781,7 @@ apos.widgetTypes.video = {
         if (self.exists) {
           self.data.video = url;
           self.data.thumbnail = data.thumbnail_url;
+          self.data.title = data.title;
         }
         if (callback) {
           callback();

@@ -1,4 +1,14 @@
+{# options.title can be set to "before" or "after". If not set #}
+{# titles are not shown, even if present. Titles are discovered via #}
+{# oembed, they come from the hosting service i.e. YouTube #}
+
 <a class="apos-video-thumbnail-wrapper" data-apos-play href="#">
-  <img class="apos-video-thumbnail" 
+  {% if options.title and (options.title != 'after') and item.title %}
+    <h4 class="apos-video-title">{{ item.title | e }}</h4>
+  {% endif %}
+  <img class="apos-video-thumbnail"
     src="{{ item.thumbnail }}" />
+  {% if options.title and (options.title == 'after') and item.title %}
+    <h4 class="apos-video-title">{{ item.title | e }}</h4>
+  {% endif %}
 </a>
