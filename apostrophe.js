@@ -939,7 +939,24 @@ function Apos() {
 
       aposLocals.aposContains = function(list, value) {
         return _.contains(list, value);
-      }
+      };
+
+      aposLocals.aposBeginsWith = function(list, value){
+        if (list instanceof Array){
+          for (var i = 0; i < list.length; i++) {
+            var listItem = list[i];
+            if(listItem.indexOf(value) === 0) {
+              return true;
+            }
+          }
+        }
+        else{
+          if(list.indexOf(value) === 0) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
