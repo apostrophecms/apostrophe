@@ -4779,14 +4779,20 @@ function Apos() {
                   uploadfs.copyOut(originalFile, tempFile, callback);
                 },
                 function(callback) {
-                  uploadfs.copyImageIn(tempFile, originalFile, callback);
+                  if (!argv['crop-only']) {
+                    return uploadfs.copyImageIn(tempFile, originalFile, callback);
+                  } else {
+                    return callback(null);
+                  }
                 }
               ], callback);
             },
             // Don't forget to recrop as well!
             function(callback) {
               async.forEachSeries(file.crops || [], function(crop, callback) {
+                console.log('RECROPPING');
                 var originalFile = '/files/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
+                console.log("Cropping " + tempFile + " to " + originalFile);
                 uploadfs.copyImageIn(tempFile, originalFile, { crop: crop }, callback);
               }, callback);
             },
