@@ -850,10 +850,20 @@ textarea.apos-code {
       margin: 0;
       max-width: 120px;
       cursor: pointer;
+      overflow: hidden;
 
       .apos-accordion-title
       {
         color: #eee;
+      }
+
+      &.open
+      {
+        overflow: visible;
+        .apos-accordion-items
+        {
+          max-height: 600px;
+        }
       }
 
       .apos-accordion-items
@@ -867,10 +877,6 @@ textarea.apos-code {
 
 
         .transition;
-        &.open
-        {
-          max-height: 600px;
-        }
 
         ul
         {
