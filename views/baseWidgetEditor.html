@@ -20,7 +20,9 @@
           <input class="apos-embed"/>
         {% endblock %}
         {% block previewButton %}
-          <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/><img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/>
+          <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/>
+          <!-- <img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/> -->
+          {% include "progress.html" %}
         {% endblock %}
         <div class="apos-widget-preview-container apos-requires-preview">
           {# We decided to move float preview into the main area editor so #}
