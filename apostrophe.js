@@ -938,11 +938,22 @@ function Apos() {
       };
 
       aposLocals.aposContains = function(list, value) {
-        return _.contains(list, value);
+        if (_.isArray(value)) {
+          for (var i = 0; i < value.length; i++) {
+            var valueItem = value[i];
+            if (_.contains(list, valueItem)){
+              return true;
+            }
+          }
+          return false;
+        }
+        else{
+          return _.contains(list, value);
+        }
       };
 
       aposLocals.aposBeginsWith = function(list, value){
-        if (list instanceof Array){
+        if (_.isArray(list)){
           for (var i = 0; i < list.length; i++) {
             var listItem = list[i];
             if(listItem.indexOf(value) === 0) {
