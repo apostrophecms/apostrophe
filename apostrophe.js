@@ -484,8 +484,11 @@ function Apos() {
         function indexSlug(callback) {
           self.pages.ensureIndex({ slug: 1 }, { safe: true, unique: true }, callback);
         }
+        function indexTags(callback) {
+          self.pages.ensureIndex({ tags: 1 }, { safe: true }, callback);
+        }
         self.pages = pages = collection;
-        async.series([indexSlug], callback);
+        async.series([indexSlug, indexTags], callback);
         // ... more index functions
       });
     }
@@ -4702,11 +4705,11 @@ function Apos() {
       }
       var n = 0;
       self.forEachFile({},
-        function(file, callback) {
+        function(file, fileCallback) {
           if (!_.contains(['jpg', 'png', 'gif'], file.extension)) {
             n++;
             console.log('Skipping a non-image file: ' + file.name + '.' + file.extension);
-            return callback(null);
+            return fileCallback(null);
           }
           var tempFile;
           async.series([
@@ -4716,6 +4719,34 @@ function Apos() {
               n++;
               console.log(n + ' of ' + total + ': ' + originalFile);
               async.series([
+                function(resumeCallback) {
+                  // ACHTUNG: the --resume option will skip any image that
+                  // has a one-third size rendering. So it's not very useful
+                  // for resuming the addition of an additional size. But
+                  // it's pretty handy after a full import. --resume takes
+                  // a site URL (no trailing /) to which the relative URL
+                  // to files will be appended. If your media are
+                  // actually on s3 you can skip that part, it'll figure it out.
+                  if (!argv.resume) {
+                    return resumeCallback(null);
+                  }
+                  var url = uploadfs.getUrl() + '/files/' + file._id + '-' + file.name + '.one-third.' + file.extension;
+                  if (url.substr(0, 1) === '/') {
+                    url = argv.resume + url;
+                  }
+                  console.log('Checking ' + url);
+                  return request.head(url, function(err, response, body) {
+                    console.log(err);
+                    console.log(response.statusCode);
+                    if ((!err) && (response.statusCode === 200)) {
+                      // Invoke the MAIN callback, skipping this file
+                      console.log('exists, skipping');
+                      return fileCallback(null);
+                    }
+                    // Continue the pipeline to rescale this file
+                    return resumeCallback(null);
+                  });
+                },
                 function(callback) {
                   uploadfs.copyOut(originalFile, tempFile, callback);
                 },
@@ -4734,7 +4765,7 @@ function Apos() {
             function(callback) {
               fs.unlink(tempFile, callback);
             }
-          ], callback);
+          ], fileCallback);
         },
         callback);
     });
