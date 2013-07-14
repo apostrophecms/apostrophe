@@ -3686,10 +3686,11 @@ function Apos() {
     return false;
   };
 
-  // Given an options object in which options[name] is a string
-  // set to '0', '1', or 'any', this method corrects options[name] to
-  // be suitable for use in a MongoDB criteria object. false, true and null
-  // are also accepted as synonyms for '0', '1' and 'any'.
+  // Given an `options` object in which options[name] is a string
+  // set to '0', '1', or 'any', this method adds mongodb criteria
+  // to the `criteria` object. 
+  //
+  // false, true and null are accepted as synonyms for '0', '1' and 'any'.
   //
   // '0' or false means "the property must be false or absent," '1' or true
   // means "the property must be true," and 'any' or null means "we don't care
@@ -3700,21 +3701,13 @@ function Apos() {
   // This is not the same as apos.sanitizeBoolean which is concerned only with
   // true or false and does not address "any."
   //
-  // def should be set to '0'/false, '1'/true or 'any'/null and defaults to 'any'.
+  // def defaults to `any`.
   //
   // This method is most often used with REST API parameters and forms.
-  //
-  // If the `criteria` option is present, the criteria are added to that
-  // object, and the original values are not removed from `options`.
-  // If the `criteria` option is skipped, the criteria are added to
-  // `options`, replacing the original value.
 
   self.convertBooleanFilterCriteria = function(name, options, criteria, def) {
-    var deleteYes = false;
-    if (arguments.length === 3) {
-      def = criteria;
-      criteria = options;
-      deleteYes = true;
+    if (def === undefined) {
+      def = 'any';
     }
     // Consume special options then remove them, turning the rest into mongo criteria
 
@@ -3722,9 +3715,6 @@ function Apos() {
       def = 'any';
     }
     var value = (options[name] === undefined) ? def : options[name];
-    if (deleteYes && (options[name] !== undefined)) {
-      delete options[name];
-    }
 
     if ((value === 'any') || (value === null)) {
       // Don't care, show all
