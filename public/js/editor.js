@@ -24,27 +24,48 @@ apos.Editor = function(options) {
 
   var areaOptions = options.options || {};
 
-  // Helper functions
+  // Enable the function of a control in the editing menu. `command` is
+  // a unique string identifying the command and also set as a data
+  // attribute on the button in question. `options.keys` is an array of
+  // keyboard combinations that fire this action (see jquery-hotkeys for
+  // the syntax). If `options.promptForLabel` is present, the text of
+  // that option is displayed as a prompt, and the user's response is
+  // passed as the third argument to document.execCommand().
+  //
+  // If `options.callback` is present, it is called, otherwise
+  // `document.execCommand()` is called with the command.
 
-  function enableControl(command, keys, promptForLabel) {
+  function enableControl(command, options) {
+    var keys;
+    var promptForLabel;
+    if (typeof(options) !== 'object') {
+      options = {};
+      options.keys = arguments[1];
+      options.promptForLabel = arguments[2];
+    }
     function doCommand() {
       var arg = null;
 
       self.undoPoint();
 
-      if (promptForLabel) {
-        arg = prompt(promptForLabel);
+      if (options.promptForLabel) {
+        arg = prompt(options.promptForLabel);
         if (!arg) {
           return false;
         }
       }
 
-      document.execCommand(command, false, arg);
-
-      self.$editable.focus();
+      if (options.callback) {
+        self.$editable.focus();
+        options.callback();
+      } else {
+        document.execCommand(command, false, arg);
+        self.$editable.focus();
+      }
 
       return false;
     }
+
     self.$el.find('[data-' + command + ']').click(doCommand).mousedown(function(e) {
       // Must prevent default on mousedown or the rich text editor
       // loses the focus
@@ -144,6 +165,159 @@ apos.Editor = function(options) {
     $widget.prepend($buttons);
   };
 
+  // BEGIN TABLE EDITING
+
+  self.insertTable = function() {
+    var markup = '';
+    var $rows, $columns;
+    var $tableModal = apos.modalFromTemplate('.apos-table-editor', {
+      init: function(callback) {
+        $rows = $tableModal.findByName('rows');
+        $rows.val(3);
+        $columns = $tableModal.findByName('columns');
+        $columns.val(2);
+        return callback(null);
+      },
+      save: function(callback) {
+        markup = '<table>';
+        var row, col;
+        var rows = $rows.val();
+        var columns = $columns.val();
+
+        for (row = 0; (row < rows); row++) {
+          markup += '<tr>';
+          for (col = 0; (col < columns); col++) {
+            markup += '<td></td>';
+          }
+          markup += '</tr>';
+        }
+        markup += '</table>';
+
+        // We need an HTML string for the insertion, but we can still
+        // use our jquery-bsed method to decorate the new table with controls
+        // so we don't have competing implementations of that
+        var $markup = $(markup);
+        self.addTableControls($markup);
+        markup = $markup.getOuterHTML();
+        return callback(null);
+      },
+      afterHide: function(callback) {
+        apos.insertHtmlAtCursor(markup);
+        return callback(null);
+      }
+    });
+  };
+
+  self.$editable.on('click', '[data-add-column]', function(event) {
+    self.undoPoint();
+    var $table = $(this).closest('table');
+    self.dropTableControls($table);
+    var $rows = $table.find('tr');
+    $.each($rows, function(i, row) {
+      var $row = $(row);
+      // Ignore the control rows
+      if ($row.find('th').length) {
+        return;
+      }
+      $row.append('<td></td>');
+    });
+    self.addTableControls($table);
+    return false;
+  });
+
+  self.$editable.on('click', '[data-remove-column]', function(event) {
+    self.undoPoint();
+    // Tables are structured by row, not by column, so this is a little tedious
+    // 1. Figure out what column we're in (0, 1, 2...)
+    var $th = $(this).closest('th');
+    var column = 0;
+    while ($th.prev().length) {
+      $th = $th.prev();
+      column++;
+    }
+    // For each row, remove the cell in the appropriate column, if any
+    var $trs = $(this).closest('table').find('tr');
+    $.each($trs, function(i, tr) {
+      var $tr = $(tr);
+      var $cells = $tr.find('th,td');
+      if ($cells.length > column) {
+        $($cells[column]).remove();
+      }
+    });
+    return false;
+  });
+
+  self.$editable.on('click', '[data-remove-row]', function(event) {
+    self.undoPoint();
+    var $tr = $(this).closest('tr');
+    $tr.remove();
+    return false;
+  });
+
+  self.$editable.on('click', '[data-add-row]', function(event) {
+    self.undoPoint();
+    var $table = $(this).closest('table');
+    self.dropTableControls($table);
+    var columns = self.countTableColumns($table);
+    var $row = $('<tr></tr>');
+    var i;
+    for (i = 0; (i < columns); i++) {
+      $row.append('<td></td>');
+    }
+    $table.append($row);
+    self.addTableControls($table);
+    return false;
+  });
+
+  self.dropTableControls = function($table) {
+    $table.find('[data-control-row]').remove();
+    // all th elements are controls
+    $table.find('th').remove();
+  };
+
+  self.addTableControls = function($table) {
+    var columns = self.countTableColumns($table);
+
+    // First the control columns: remove buttons for rows, and an add
+    // button for a new row
+    var $rows = $table.find('tr');
+
+    $.each($rows, function(i, row) {
+      var $row = $(row);
+      $row.prepend($('<th><a href="#" data-remove-row>-</a></th>'));
+    });
+
+    // Now the top control row: remove buttons for columns, and
+    // an add button for a new column
+    var column;
+    var markup = '<tr data-control-row><th data-corner></th>';
+    // "Remove" buttons for columns
+    for (column = 0; (column < columns); column++) {
+      markup += '<th><a href="#" data-remove-column>-</a></th>';
+    }
+    markup += '<th><a href="#" data-add-column>+</a></th>';
+    markup += '</tr>';
+    $table.prepend($(markup));
+
+    // last the bottom control row: an add button for a new row
+    $table.append($('<tr data-control-row><th><a href="#" data-add-row>+</a></th></tr>'));
+  };
+
+  self.countTableColumns = function($table) {
+    var $rows = $table.find('tr');
+    var max = 0;
+    $.each($rows, function(i, row) {
+      var $row = $(row);
+      var cols = $row.find('td').length;
+      if (cols > max) {
+        max = cols;
+      }
+    });
+    return max;
+  };
+
+  // END TABLE EDITING
+
   // The wrapper is taller than the editor at first, if someone
   // clicks below the editor make sure they still get focus to type
   self.$el.click(function(e) {
@@ -155,7 +329,9 @@ apos.Editor = function(options) {
   });
 
   self.$editable.html(options.data);
-
+  self.$editable.find('table').each(function(i, table) {
+    self.addTableControls($(this));
+  });
   var $widgets = self.$editable.find('.apos-widget');
   $widgets.each(function() {
     var $widget = $(this);
@@ -192,10 +368,11 @@ apos.Editor = function(options) {
   // Restore helper marks for widgets
   self.$editable.find('.apos-widget[data-type]').before(apos.beforeMarker).after(apos.afterMarker);
 
-  enableControl('bold', ['meta+b', 'ctrl+b']);
-  enableControl('italic', ['meta+i', 'ctrl+i']);
-  enableControl('createLink', ['meta+l', 'ctrl+l'], 'URL:');
-  enableControl('insertUnorderedList', []);
+  enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
+  enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
+  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], promptForLabel: 'URL:' });
+  enableControl('insertUnorderedList', { keys: [] });
+  enableControl('insertTable', { keys: [], callback: self.insertTable });
 
   enableMenu('style', 'formatBlock');
 
@@ -2138,6 +2315,21 @@ apos.parseArea = function(content) {
 
   var changedInJquery = false;
   var $content = $($.parseHTML('<div data-apos-hoist-wrapper>' + content + '</div>'));
+
+  // Remove table editing controls
+  $content.find('table').each(function(i, table) {
+    var $table = $(this);
+    if ($table.closest('.apos-widget').length) {
+      return;
+    }
+    // TODO: this duplicates the editor object's dropTableControls, which is
+    // not great
+    $table.find('[data-control-row]').remove();
+    // all th elements are controls
+    $table.find('th').remove();
+    changedInJquery = true;
+  });
+
   // While we have it in jQuery, seize the opportunity to blow out any
   // ui-resizable-handles that are still in the DOM
   var $handles = $content.find('.ui-resizable-handle');

@@ -86,7 +86,7 @@ function Apos() {
   // programmatically
 
   // Removed the code widget for now in favor of giving 'pre' in the format dropdown a try
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'insertTable', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -129,6 +129,11 @@ function Apos() {
       type: 'button',
       label: 'List',
       icon: 'ul'
+    },
+    insertTable: {
+      type: 'button',
+      label: 'Table',
+      icon: 'table'
     }
   };
 
@@ -198,7 +203,8 @@ function Apos() {
     { name: 'videoEditor', when: 'user' },
     { name: 'codeEditor', when: 'user' },
     { name: 'htmlEditor', when: 'user' },
-    { name: 'cropEditor', when: 'user' }
+    { name: 'cropEditor', when: 'user' },
+    { name: 'tableEditor', when: 'user' }
   ];
 
   // Full paths to assets as computed by pushAsset
