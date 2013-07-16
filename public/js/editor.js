@@ -1937,6 +1937,7 @@ apos.widgetTypes.video = {
     };
 
     function getVideoInfo(callback) {
+      apos.log('getVideoInfo');
       var url = self.$embed.val();
       // Lazy URLs
       if (!url.match(/^http/))
@@ -1946,27 +1947,50 @@ apos.widgetTypes.video = {
       self.$el.find('[data-preview]').hide();
       self.$el.find('[data-spinner]').show();
       $.getJSON('/apos/oembed', { url: url }, function(data) {
+        apos.log('oembed response');
         self.$el.find('[data-spinner]').hide();
-      self.$el.find('[data-preview]').show();
+        self.$el.find('[data-preview]').show();
         if (data.err) {
           if (callback) {
-            callback(false);
+            return callback(data.err);
           }
           return;
         }
         self.exists = !!data;
         if (self.exists) {
+          // Make sure the URL is part of the data we pass to our callback
+          data.video = url;
+          // The widget gets stores just the properties we really need to render.
+          // The preSave callback will also stuff in the id of the video
+          // library object created at that point
           self.data.video = url;
           self.data.thumbnail = data.thumbnail_url;
           self.data.title = data.title;
         }
         if (callback) {
-          callback();
+          return callback(null, data);
         }
       });
     }
 
-    self.preSave = getVideoInfo;
+    self.preSave = function(callback) {
+      return getVideoInfo(function(err, data) {
+        if (err) {
+          return callback(err);
+        }
+        // Now that we know it's a keeper, ask the server to remember this
+        // video object for reuse (the implementation of which is forthcoming)
+        var video = {};
+        // Later there will likely be description and credit here
+        video.title = data.title;
+        video.video = data.video;
+
+        $.post('/apos/remember-video', video, function(data) {
+          self.data.videoId = data._id;
+          return callback(null);
+        }, 'json');
+      });
+    };
 
     self.prePreview = getVideoInfo;
 

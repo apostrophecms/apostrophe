@@ -136,7 +136,16 @@ apos.widgetPlayers.video = function($el)
       e.removeAttr('height');
       var $thumbnail = $el.find('.apos-video-thumbnail');
       e.width($thumbnail.width());
-      e.height($thumbnail.height());
+      // If oembed results include width and height we can get the
+      // video aspect ratio right
+      apos.log(data);
+      if (data.width && data.height) {
+        apos.log('applying oembed results to dimensions');
+        e.height((data.height / data.width) * $thumbnail.width());
+      } else {
+        // No, so we have to hope the thumbnail dimensions are a good bet
+        e.height($thumbnail.height());
+      }
       $el.find('.apos-video-thumbnail').replaceWith(e);
       // Hoist out of the link that launched us
       var $kids = $el.find('[data-apos-play] *').detach();

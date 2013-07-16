@@ -42,7 +42,7 @@ function Apos() {
   // Apostrophe is an event emitter/receiver
   require('events').EventEmitter.call(self);
 
-  var app, files, areas, versions, pages, uploadfs, db, aposLocals;
+  var app, files, areas, versions, pages, videos, uploadfs, db, aposLocals;
 
   // Helper functions first to please jshint
 
@@ -525,6 +525,21 @@ function Apos() {
       db.collection('aposFiles', function(err, collection) {
         self.files = files = collection;
         return callback(err);
+      });
+    }
+
+    function setupVideos(callback) {
+      db.collection('aposVideos', function(err, collection) {
+        videos = collection;
+        function searchIndex(callback) {
+          self.videos.ensureIndex({ searchText: 1 }, { safe: true }, callback);
+        }
+        // Index the URLs
+        function videoIndex(callback) {
+          self.videos.ensureIndex({ video: 1 }, { safe: true }, callback);
+        }
+        self.videos = videos = collection;
+        return async.series([searchIndex, videoIndex], callback);
       });
     }
 
@@ -1583,17 +1598,72 @@ function Apos() {
 
       var oembedCache = {};
 
-      app.get('/apos/oembed', function(req, res) {
-        if (oembedCache[req.query.url]) {
-          return res.send(oembedCache[req.query.url]);
+      // Available separately from the REST API
+
+      self.oembed = function(url, callback) {
+        if (oembedCache[url]) {
+          return callback(null, oembedCache[url]);
         }
-        oembed.fetch(req.query.url, {}, function (err, result) {
+        return oembed.fetch(url, {}, function (err, result) {
           if (err) {
-            return res.send({ 'err': err });
+            return callback(err);
           } else {
-            oembedCache[req.query.url] = result;
-            return res.send(result);
+            oembedCache[url] = result;
+            return callback(null, result);
           }
+        });
+      };
+
+      // Simple REST API to self.oembed
+
+      app.get('/apos/oembed', function(req, res) {
+        return self.oembed(self.sanitizeString(req.query.url), function(err, result) {
+          if (err) {
+            console.log(err);
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          return res.send(result);
+        });
+      });
+
+      // Store a video object for potential reuse. This is a component
+      // of the forthcoming video library feature
+      app.post('/apos/remember-video', function(req, res) {
+        var url = self.sanitizeString(req.body.video);
+        return self.oembed(url, function(err, result) {
+          if (err) {
+            console.log(err);
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          var width = result.width;
+          var height = result.height;
+          var video = {
+            title: req.body.title,
+            width: width,
+            height: height,
+            video: url,
+            thumbnail: result.thumbnail_url,
+            landscape: width > height,
+            portrait: height > width
+          };
+          return self.videos.findOne({ video: req.body.video }, function(err, doc) {
+            if (err) {
+              res.statusCode = 500;
+              return res.send('error');
+            }
+            if (doc) {
+              return res.send(doc);
+            }
+            return self.videos.insert(video, function(err, doc) {
+              if (err) {
+                res.statusCode = 500;
+                return res.send('error');
+              }
+              return res.send(doc);
+            });
+          });
         });
       });
 
@@ -1656,7 +1726,7 @@ function Apos() {
 
     self.db = db = options.db;
 
-    async.series([setupPages, setupVersions, setupFiles, setupRedirects, afterDb], callback);
+    async.series([setupPages, setupVersions, setupFiles, setupVideos, setupRedirects, afterDb], callback);
   };
 
   // self.static returns a function for use as a route that
