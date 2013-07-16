@@ -1937,7 +1937,6 @@ apos.widgetTypes.video = {
     };
 
     function getVideoInfo(callback) {
-      apos.log('getVideoInfo');
       var url = self.$embed.val();
       // Lazy URLs
       if (!url.match(/^http/))
@@ -1947,7 +1946,6 @@ apos.widgetTypes.video = {
       self.$el.find('[data-preview]').hide();
       self.$el.find('[data-spinner]').show();
       $.getJSON('/apos/oembed', { url: url }, function(data) {
-        apos.log('oembed response');
         self.$el.find('[data-spinner]').hide();
         self.$el.find('[data-preview]').show();
         if (data.err) {

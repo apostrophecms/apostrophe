@@ -138,9 +138,7 @@ apos.widgetPlayers.video = function($el)
       e.width($thumbnail.width());
       // If oembed results include width and height we can get the
       // video aspect ratio right
-      apos.log(data);
       if (data.width && data.height) {
-        apos.log('applying oembed results to dimensions');
         e.height((data.height / data.width) * $thumbnail.width());
       } else {
         // No, so we have to hope the thumbnail dimensions are a good bet
