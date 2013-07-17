@@ -3374,6 +3374,10 @@ function Apos() {
   // as a second data object.
 
   self.build = function(url, path, data) {
+    // Sometimes necessary with nunjucks, we may otherwise be
+    // exposed to a SafeString object and throw an exception. Not
+    // able to boil this down to a simple test case for jlongster so far
+    url = url.toString();
     var qat = url.indexOf('?');
     var base = url;
     var dataObjects = [];

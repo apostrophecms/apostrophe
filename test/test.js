@@ -81,12 +81,27 @@ describe('apostrophe', function() {
       assert(apos.build("/events", ["year", "month"], { year: '2013', month: '01', tag: 'dance' }, { year: 2012, month: '12' }) === '/events/2012/12?tag=dance');
       return done();
     });
-    it('passes yet another interesting DR use case', function(done) {
-      console.log('DR case');
+    it('DR use case #1', function(done) {
       assert(apos.build('/events',
         [ 'year', 'month' ],
         { year: '2013', month: '05', tag: 'dance' },
         { tag: 'tour' }) === '/events/2013/05?tag=tour');
+      return done();
+    });
+    it('DR use case #2', function(done) {
+      var result = apos.build('/events',
+        [ 'year', 'month' ],
+        { year: '2013', month: '05', tag: 'dance' },
+        { page: '2' });
+      assert(result === '/events/2013/05?page=2&tag=dance');
+      return done();
+    });
+    it('DR use case #3', function(done) {
+      var result = apos.build('/events',
+        [ 'year', 'month' ],
+        { year: '2013', month: '05', tag: 'dance' },
+        {});
+      assert(result === '/events/2013/05?tag=dance');
       return done();
     });
   });
