@@ -284,7 +284,8 @@ apos.Editor = function(options) {
 
     $.each($rows, function(i, row) {
       var $row = $(row);
-      $row.prepend($('<th class="apos-table-button"><a href="#" data-remove-row>-</a></th>'));
+      $row.prepend($('<th class="apos-table-button"><a href="#" title="Remove Row" data-remove-row>-</a></th>'));
+      $row.append($('<th></th>'));
     });
 
     // Now the top control row: remove buttons for columns, and
@@ -293,14 +294,14 @@ apos.Editor = function(options) {
     var markup = '<tr data-control-row><th data-corner></th>';
     // "Remove" buttons for columns
     for (column = 0; (column < columns); column++) {
-      markup += '<th class="apos-table-button"><a href="#" data-remove-column>-</a></th>';
+      markup += '<th class="apos-table-button"><a href="#" title="Remove Column" data-remove-column>-</a></th>';
     }
-    markup += '<th class="apos-table-button"><a href="#" data-add-column>+</a></th>';
+    markup += '<th class="apos-table-button"><a href="#" title="Add Column" data-add-column>+</a></th>';
     markup += '</tr>';
     $table.prepend($(markup));
 
     // last the bottom control row: an add button for a new row
-    $table.append($('<tr data-control-row><th class="apos-table-button"><a href="#" data-add-row>+</a></th></tr>'));
+    $table.append($('<tr data-control-row><th class="apos-table-button"><a href="#" title="Add Row" data-add-row>+</a></th></tr>'));
   };
 
   self.countTableColumns = function($table) {

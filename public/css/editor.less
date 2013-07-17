@@ -344,22 +344,33 @@ input.apos-control
   }
   table td
   {
-    border: 1px solid #ccc;
+    
     padding: 2px;
     margin: 2px;
+  }
+  table tr
+  {
+    border-top: 1px solid #eee;
   }
 
   table .apos-table-button a
   {
     display: block;
     color: white;
-    background-color: #bdf;
-    border-radius: 6px;
-    border: 1px solid #def;
+    background-color: @apos-base;
+    // border-radius: 6px;
+    // border: 1px solid #def;
     width: 1em;
     text-align: center;
     margin: 6px;
     font-weight: bold;
+    font-size:19px;
+    &:hover
+    {
+      cursor: pointer;
+      color: #FFF;
+      background-color: darken(@apos-base, 20%);
+    }
   }
 }
 
