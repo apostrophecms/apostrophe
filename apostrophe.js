@@ -163,8 +163,9 @@ function Apos() {
     // For the RTE
     { name: 'vendor/jquery-hotkeys', when: 'user' },
     // For selections in the RTE
-    { name: 'vendor/rangy-core', when: 'user' },
-    { name: 'vendor/rangy-selectionsaverestore', when: 'user' },
+    // DR uses modals for interaction with logged out users, modals need this
+    { name: 'vendor/rangy-core', when: 'always' },
+    { name: 'vendor/rangy-selectionsaverestore', when: 'always' },
     // For selections in ordinary textareas and inputs (part of Rangy)
     { name: 'vendor/jquery-textinputs', when: 'user' },
     // Graceful fallback for older browsers

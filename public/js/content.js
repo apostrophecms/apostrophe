@@ -370,6 +370,36 @@ apos.modalFromTemplate = function(sel, options) {
   return apos.modal($el, options);
 };
 
+// SELECTIONS
+
+// We use this to save the selection before starting
+// a modal and later restore it
+
+apos.selections = [];
+
+apos.pushSelection = function() {
+  var sel = rangy.getSelection();
+  if (sel && sel.getRangeAt && sel.rangeCount) {
+    var range = rangy.getSelection().getRangeAt(0);
+    apos.selections.push(range);
+  }
+  else
+  {
+    apos.selections.push(null);
+  }
+};
+
+apos.popSelection = function() {
+  var range = apos.selections.pop();
+  if (range) {
+    var sel = rangy.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+};
+
+// DOM TEMPLATES
+
 // Clone the element matching the selector which also has the
 // .apos-template class, remove the apos-template class from the clone, and
 // return the clone. This is convenient for turning invisible templates

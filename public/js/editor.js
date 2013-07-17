@@ -2439,32 +2439,6 @@ apos.parseArea = function(content) {
   return items;
 };
 
-// We use this to save the selection before starting
-// a modal and later restore it
-
-apos.selections = [];
-
-apos.pushSelection = function() {
-  var sel = rangy.getSelection();
-  if (sel && sel.getRangeAt && sel.rangeCount) {
-    var range = rangy.getSelection().getRangeAt(0);
-    apos.selections.push(range);
-  }
-  else
-  {
-    apos.selections.push(null);
-  }
-};
-
-apos.popSelection = function() {
-  var range = apos.selections.pop();
-  if (range) {
-    var sel = rangy.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-};
-
 // The best marker to use as a workaround for webkit selection bugs
 // is an invisible one (the ZERO WIDTH NO-BREAK SPACE character).
 // We tried using 8288 (the WORD JOINER character), but it shows as
