@@ -413,9 +413,29 @@ apos.Editor = function(options) {
     return true;
   });
 
+  self.$editable.bind('keydown', 'return', function() {
+    // Don't let Chrome do bizarre things when new divs or p's are created,
+    // such as trapping widgets inside divs and so forth, as E. saw repeatedly
+    // on the DR site.
+    //
+    // The use of br elements effectively prevents this without highly questionable
+    // DOM-repairing code.
+    //
+    // The hard part here is moving the cursor after the br rather than leaving it
+    // before it so that typing behaves as the user expects.
+
+    apos.insertHtmlAtCursor('<br /><span data-after-insertion></span>');
+    var $afterMark = self.$editable.find('[data-after-insertion]');
+    apos.selectElement($afterMark[0]);
+    var saved = rangy.saveSelection();
+    $afterMark.remove();
+    rangy.restoreSelection(saved);
+    return false;
+  });
+
   // Firefox displays resize handles we don't want.
   // We prefer to do that via the widget editor
-  if(navigator.product == 'Gecko') {
+  if(navigator.product === 'Gecko') {
     //this is a firefox-only thing we need to keep it wrapped in this browser check so it doesn't break IE10
     document.execCommand("enableObjectResizing", false, false);
   }
