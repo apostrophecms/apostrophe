@@ -414,9 +414,29 @@ apos.Editor = function(options) {
     return true;
   });
 
+  self.$editable.bind('keydown', 'return', function() {
+    // Don't let Chrome do bizarre things when new divs or p's are created,
+    // such as trapping widgets inside divs and so forth, as E. saw repeatedly
+    // on the DR site.
+    //
+    // The use of br elements effectively prevents this without highly questionable
+    // DOM-repairing code.
+    //
+    // The hard part here is moving the cursor after the br rather than leaving it
+    // before it so that typing behaves as the user expects.
+
+    apos.insertHtmlAtCursor('<br /><span data-after-insertion></span>');
+    var $afterMark = self.$editable.find('[data-after-insertion]');
+    apos.selectElement($afterMark[0]);
+    var saved = rangy.saveSelection();
+    $afterMark.remove();
+    rangy.restoreSelection(saved);
+    return false;
+  });
+
   // Firefox displays resize handles we don't want.
   // We prefer to do that via the widget editor
-  if(navigator.product == 'Gecko') {
+  if(navigator.product === 'Gecko') {
     //this is a firefox-only thing we need to keep it wrapped in this browser check so it doesn't break IE10
     document.execCommand("enableObjectResizing", false, false);
   }
@@ -579,6 +599,25 @@ apos.Editor = function(options) {
         rangy.restoreSelection(saved);
       });
     });
+
+    // Final thing in the editable must be a br. Without this
+    // it becomes impossible to get out of an h3 and type beyond it,
+    // or press enter after a widget, in a number of situations in Chrome.
+    // Please do not remove this.
+
+    var $placeholder = self.$editable.find('[data-placeholder-br]');
+    if (!$placeholder.length) {
+      var saved = rangy.saveSelection();
+      self.$editable.append($('<br data-placeholder-br />'));
+      rangy.restoreSelection(saved);
+    } else {
+      if ($placeholder[0].nextSibling) {
+        // This br is no longer at the end of the document, so let it be a
+        // regular br and this code will introduce a new placeholder on the
+        // next pass
+        $placeholder.removeAttr('data-placeholder-br');
+      }
+    }
 
     // Cleanups per widget
 
@@ -2353,6 +2392,12 @@ apos.parseArea = function(content) {
     changedInJquery = true;
   });
 
+  var $placeholder = $content.find('[data-placeholder-br]');
+  if ($placeholder.length) {
+    $placeholder.remove();
+    changedInJquery = true;
+  }
+
   // While we have it in jQuery, seize the opportunity to blow out any
   // ui-resizable-handles that are still in the DOM
   var $handles = $content.find('.ui-resizable-handle');
@@ -2418,32 +2463,6 @@ apos.parseArea = function(content) {
   flushRichText();
 
   return items;
-};
-
-// We use this to save the selection before starting
-// a modal and later restore it
-
-apos.selections = [];
-
-apos.pushSelection = function() {
-  var sel = rangy.getSelection();
-  if (sel && sel.getRangeAt && sel.rangeCount) {
-    var range = rangy.getSelection().getRangeAt(0);
-    apos.selections.push(range);
-  }
-  else
-  {
-    apos.selections.push(null);
-  }
-};
-
-apos.popSelection = function() {
-  var range = apos.selections.pop();
-  if (range) {
-    var sel = rangy.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
 };
 
 // The best marker to use as a workaround for webkit selection bugs

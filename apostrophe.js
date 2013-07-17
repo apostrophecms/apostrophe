@@ -163,8 +163,9 @@ function Apos() {
     // For the RTE
     { name: 'vendor/jquery-hotkeys', when: 'user' },
     // For selections in the RTE
-    { name: 'vendor/rangy-core', when: 'user' },
-    { name: 'vendor/rangy-selectionsaverestore', when: 'user' },
+    // DR uses modals for interaction with logged out users, modals need this
+    { name: 'vendor/rangy-core', when: 'always' },
+    { name: 'vendor/rangy-selectionsaverestore', when: 'always' },
     // For selections in ordinary textareas and inputs (part of Rangy)
     { name: 'vendor/jquery-textinputs', when: 'user' },
     // Graceful fallback for older browsers
@@ -3374,6 +3375,10 @@ function Apos() {
   // as a second data object.
 
   self.build = function(url, path, data) {
+    // Sometimes necessary with nunjucks, we may otherwise be
+    // exposed to a SafeString object and throw an exception. Not
+    // able to boil this down to a simple test case for jlongster so far
+    url = url.toString();
     var qat = url.indexOf('?');
     var base = url;
     var dataObjects = [];

@@ -919,3 +919,92 @@ textarea.apos-code {
   font-size:17px;
   padding: 15px;
 }
+
+// BUTTONS AND CONTROLS: used in both logged in and logged out contexts (DR)
+
+/**
+* Buttons and menus both have this class
+*/
+input.apos-control
+{
+ border: none;
+}
+
+.apos-control
+{
+  float: left;
+  padding: 10px;
+  background-color: @apos-base;
+  color: #fff !important;
+  margin-right: 10px;
+  text-decoration: none;
+  font-size: 16px;
+  margin-right: 5px;
+  text-transform: uppercase;
+  font-family: Helvetica, sans-serif;
+  .transition;
+  opacity: 1;
+  font-size: 11px;
+  font-family: 'cabin';
+  letter-spacing: 1px;
+  &.apos-menu-style
+  {
+    background-color: darken(@apos-base, 10%);
+    &:hover
+    {
+      background-color: darken(@apos-base, 15%);
+    }
+    width: 50%;
+    max-width: 170px;
+    select {width: 95%;}
+  }
+  &:hover{text-decoration:none !important;}
+
+  &.apos-menu
+  {
+    position: relative;
+    &:hover {background-color: darken(@apos-base, 10%);}
+    &:after
+    {
+      position: absolute;
+      width: 0px;
+      height: 0px;
+      border-style: solid;
+      border-width: 6px 4px 0 4px;
+      border-color: #ffffff transparent transparent transparent;
+      content: "";
+      right: 9px;
+      top: 40%;
+      z-index: 0;
+
+    }
+    .apos-menu-select
+    {
+      background-color: transparent;
+      outline-style: none;
+      border:none;
+      -webkit-appearance: none;
+      color: #FFF;
+      z-index: 1;
+      position: relative;
+      font-family: Helvetica, sans-serif;
+      &:hover{cursor: pointer;}
+      &:active option,
+      &:focus option
+      {
+        color: #000 !important;
+      }
+    }
+  }
+  &.apos-corner-close
+  {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 0;
+    padding: 14px 13px 12px 13px;
+    background-color: lighten(@apos-base, 8%);
+    font-size: 1.1em;
+
+  }
+}
