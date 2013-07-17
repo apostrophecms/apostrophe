@@ -599,6 +599,25 @@ apos.Editor = function(options) {
       });
     });
 
+    // Final thing in the editable must be a br. Without this
+    // it becomes impossible to get out of an h3 and type beyond it,
+    // or press enter after a widget, in a number of situations in Chrome.
+    // Please do not remove this.
+
+    var $placeholder = self.$editable.find('[data-placeholder-br]');
+    if (!$placeholder.length) {
+      var saved = rangy.saveSelection();
+      self.$editable.append($('<br data-placeholder-br />'));
+      rangy.restoreSelection(saved);
+    } else {
+      if ($placeholder[0].nextSibling) {
+        // This br is no longer at the end of the document, so let it be a
+        // regular br and this code will introduce a new placeholder on the
+        // next pass
+        $placeholder.removeAttr('data-placeholder-br');
+      }
+    }
+
     // Cleanups per widget
 
     var $widgets = self.$editable.find('.apos-widget');
@@ -2371,6 +2390,12 @@ apos.parseArea = function(content) {
     $table.find('th').remove();
     changedInJquery = true;
   });
+
+  var $placeholder = $content.find('[data-placeholder-br]');
+  if ($placeholder.length) {
+    $placeholder.remove();
+    changedInJquery = true;
+  }
 
   // While we have it in jQuery, seize the opportunity to blow out any
   // ui-resizable-handles that are still in the DOM
