@@ -301,7 +301,7 @@ apos.Editor = function(options) {
     $table.prepend($(markup));
 
     // last the bottom control row: an add button for a new row
-    $table.append($('<tr data-control-row><th class="apos-table-button"><a href="#" title="Add Row" data-add-row>+</a></th></tr>'));
+    $table.append($('<tr data-control-row><th colspan="1000" class="apos-table-button"><a href="#" title="Add Row" data-add-row>+</a></th></tr>'));
   };
 
   self.countTableColumns = function($table) {
