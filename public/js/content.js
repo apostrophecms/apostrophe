@@ -747,6 +747,6 @@ $(function() {
 
   // Close menus when an item is picked please!
   $('body').on('click', '.apos-accordion-items .apos-control', function() {
-    $(this).closest('.apos-accordion-items').removeClass('open');
+    $(this).closest('.apos-admin-bar-item').removeClass('open');
   });
 });
