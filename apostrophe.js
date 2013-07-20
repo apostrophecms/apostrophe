@@ -27,6 +27,7 @@ var wordwrap = require('wordwrap');
 var ent = require('ent');
 var argv = require('optimist').argv;
 var qs = require('qs');
+var joinr = require('joinr');
 
 // Needed for A1.5 bc implementation of authentication, normally
 // we go through appy's passwordHash wrapper
@@ -4023,186 +4024,60 @@ function Apos() {
     return items;
   };
 
-  // Perform a one-to-one join with another page type (such as any snippet type).
-  // If you have events and wish to bring a place object into a ._place property
-  // of each event based on a .placeId property, this is what you want. The performance
-  // isn't bad because we tackle them all at once.
+  // Wrappers for conveniently invoking joinr. See the
+  // joinr module for more information about joins.
   //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
+  // Apostrophe-specific features:
   //
-  // The first argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
+  // If options.get is not set, apos.get is used; otherwise
+  // it is usually the get method of a snippet subclass.
+  // Looks for the returned documents in results.snippets,
+  // then results.pages, then results itself. Additional
+  // criteria for the getter can be passed via
+  // options.getCriteria, and options to the getter can be
+  // passed via options.getOptions (often used to prevent
+  // infinite recursion when joining).
 
-  self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
-    if (!callback) {
-      callback = options;
-      options = {};
-    }
-    var otherIds = [];
-    var othersById = {};
-    _.each(items, function(item) {
-      if (item[idField]) {
-        otherIds.push(item[idField]);
-      }
-    });
-    var getter = options.get || self.get;
-    var getOptions = options.getOptions || {};
-    var getCriteria = options.getCriteria || {};
-    if (otherIds.length) {
-      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
-      return getter(req, criteria, getOptions, function(err, results) {
-        if (err) {
-          return callback(err);
-        }
-        var others = results.snippets || results.pages;
-        // Make a lookup table of the others by id
-        _.each(others, function(other) {
-          othersById[other._id] = other;
-        });
-        // Attach the others to the items
-        _.each(items, function(item) {
-          var id = item[idField];
-          if (id && othersById[id]) {
-            item[objectField] = othersById[id];
-          }
-        });
-        return callback(null);
-      });
-    } else {
-      return callback(null);
-    }
+  self.joinByOne = function(req, items, idField, objectField, options, callback) {
+    return self.join(joinr.byOne, false, req, items, idField, objectField, options, callback);
   };
 
-  // Perform a one-to-many join with another page type (such as any snippet type).
-  // If you have users and wish to bring all associated groups into a ._groups property
-  // based on a .groupIds array property, this is what you want. The performance
-  // isn't bad because we tackle them all at once. Note that a
-  // permalink is found for each object and set as the ._url property.
-  //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
-  //
-  // The second argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToMany(req, users, 'groupIds', '_groups', { get: groups.get, getOptions: { } }, callback)
-
-  self.joinOneToMany = function(req, items, idsField, objectsField, options, callback) {
-    if (!callback) {
-      callback = options;
-      options = {};
-    }
-    var otherIds = [];
-    var othersById = {};
-    _.each(items, function(item) {
-      if (item[idsField]) {
-        otherIds = otherIds.concat(item[idsField]);
-      }
-    });
-    var getter = options.get || self.get;
-    var getOptions = options.getOptions || {};
-    var getCriteria = options.getCriteria || {};
-    if (otherIds.length) {
-      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
-      return getter(req, criteria, getOptions, function(err, results) {
-        if (err) {
-          return callback(err);
-        }
-        var others = results.snippets || results.pages;
-        // Make a lookup table of the others by id
-        _.each(others, function(other) {
-          othersById[other._id] = other;
-        });
-        // Attach the others to the items
-        _.each(items, function(item) {
-          _.each(item[idsField] || [], function(id) {
-            if (othersById[id]) {
-              if (!item[objectsField]) {
-                item[objectsField] = [];
-              }
-              item[objectsField].push(othersById[id]);
-            }
-          });
-        });
-        return callback(null);
-      });
-    } else {
-      return callback(null);
-    }
+  self.joinByOneReverse = function(req, items, idField, objectField, options, callback) {
+    return self.join(joinr.byOneReverse, true, req, items, idField, objectField, options, callback);
   };
 
-  // Perform a one-to-many join with another page type (such as any snippet type) when
-  // the relationship is stored on the "many" side.
-  //
-  // If you have groups and wish to bring all associated users into a ._users property
-  // based on a .groupIds array property of each user, this is what you want.
-  //
-  // The performance isn't bad because we tackle them all at once. Note that a
-  // permalink is found for each object and set as the ._url property.
-  //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
-  //
-  // The first argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToManyReverse(req, groups, 'groupIds', '_users', { get: users.get, getOptions: { } }, callback)
+  self.joinByArray = function(req, items, idsField, objectsField, options, callback) {
+    return self.join(joinr.byArray, false, req, items, idsField, objectsField, options, callback);
+  };
 
-  self.joinOneToManyReverse = function(req, items, idsField, objectsField, options, callback) {
+  self.joinByArrayReverse = function(req, items, idsField, objectsField, options, callback) {
+    return self.join(joinr.byArrayReverse, true, req, items, idsField, objectsField, options, callback);
+  };
+
+  // Driver for the above
+  self.join = function(method, reverse, req, items, idField, objectField, options, callback) {
     if (!callback) {
       callback = options;
       options = {};
     }
-    var itemIds = _.pluck(items, '_id');
     var getter = options.get || self.get;
     var getOptions = options.getOptions || {};
     var getCriteria = options.getCriteria || {};
-    if (itemIds.length) {
-      var idCriteria = {};
-      idCriteria[idsField] = { $in: itemIds };
-      var criteria = { $and: [ getCriteria, idCriteria ] };
+    return method(items, idField, objectField, function(ids, callback) {
+      var idsCriteria = {};
+      if (reverse) {
+        idsCriteria[idField] = { $in: ids };
+      } else {
+        idsCriteria._id = { $in: ids };
+      }
+      var criteria = { $and: [ getCriteria, idsCriteria ] };
       return getter(req, criteria, getOptions, function(err, results) {
         if (err) {
           return callback(err);
         }
-        // An array, an object with a snippets property, and an object with a
-        // pages property are all acceptable responses. Compatible with
-        // apos.get, snippets.get, and the obvious thing.
-        var others = Array.isArray(results) ? results : (results.snippets || results.pages);
-
-        var itemsById = {};
-        _.each(items, function (item) {
-          itemsById[item._id] = item;
-        });
-        // Attach the others to the items
-        _.each(others, function(other) {
-          _.each(other[idsField], function(id) {
-            if (itemsById[id]) {
-              var item = itemsById[id];
-              if (!item[objectsField]) {
-                item[objectsField] = [];
-              }
-              item[objectsField].push(other);
-            }
-          });
-        });
-        return callback(null);
+        return callback(null, results.snippets || results.pages || results);
       });
-    } else {
-      return callback(null);
-    }
+    }, callback);
   };
 
   // FILE HELPERS
