@@ -425,6 +425,29 @@ apos.Editor = function(options) {
     // The hard part here is moving the cursor after the br rather than leaving it
     // before it so that typing behaves as the user expects.
 
+    // Exception: don't do this if we're inside a <ul>. Let the browser
+    // insert an <li> for us.
+
+    var sel = rangy.getSelection();
+    if (sel.rangeCount) {
+      var range = sel.getRangeAt(0);
+      var box = range.startContainer;
+      while (box) {
+        if (box.tagName) {
+          var tag = box.tagName.toLowerCase();
+          // Don't look above the editor itself in the DOM tree
+          if ($(box).hasClass('apos-editable')) {
+            break;
+          }
+          if (tag === 'ul') {
+            // Default behavior is best here
+            return true;
+          }
+        }
+        box = box.parentNode;
+      }
+    }
+
     apos.insertHtmlAtCursor('<br /><span data-after-insertion></span>');
     var $afterMark = self.$editable.find('[data-after-insertion]');
     apos.selectElement($afterMark[0]);
@@ -740,6 +763,10 @@ apos.Editor = function(options) {
       var box = range.startContainer;
       while (box) {
         if (box.tagName) {
+          // Never go above the editor itself in the DOM tree
+          if ($(box).hasClass('apos-editable')) {
+            break;
+          }
           var tag = box.tagName.toLowerCase();
           if (_.has(styleBlockElements, tag)) {
             styleMenu.val(tag);
