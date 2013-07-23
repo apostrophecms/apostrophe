@@ -425,6 +425,29 @@ apos.Editor = function(options) {
     // The hard part here is moving the cursor after the br rather than leaving it
     // before it so that typing behaves as the user expects.
 
+    // Exception: don't do this if we're inside a <ul>. Let the browser
+    // insert an <li> for us.
+
+    var sel = rangy.getSelection();
+    if (sel.rangeCount) {
+      var range = sel.getRangeAt(0);
+      var box = range.startContainer;
+      while (box) {
+        if (box.tagName) {
+          var tag = box.tagName.toLowerCase();
+          // Don't look above the editor itself in the DOM tree
+          if ($(box).hasClass('apos-editable')) {
+            break;
+          }
+          if (tag === 'ul') {
+            // Default behavior is best here
+            return true;
+          }
+        }
+        box = box.parentNode;
+      }
+    }
+
     apos.insertHtmlAtCursor('<br /><span data-after-insertion></span>');
     var $afterMark = self.$editable.find('[data-after-insertion]');
     apos.selectElement($afterMark[0]);
@@ -740,6 +763,10 @@ apos.Editor = function(options) {
       var box = range.startContainer;
       while (box) {
         if (box.tagName) {
+          // Never go above the editor itself in the DOM tree
+          if ($(box).hasClass('apos-editable')) {
+            break;
+          }
           var tag = box.tagName.toLowerCase();
           if (_.has(styleBlockElements, tag)) {
             styleMenu.val(tag);
@@ -2005,6 +2032,112 @@ apos.widgetTypes.video = {
       options.messages.missing = 'Paste a video link first.';
     }
 
+    self.enableLibrary = function() {
+      // This is what we drag to. Easier than dragging to a ul that doesn't
+      // know the height of its li's
+      var $library = self.$el.find('[data-library]');
+      var $items = $library.find('[data-library-items]');
+      var $search = $library.find('[name="search"]');
+      var $previous = $library.find('[data-previous]');
+      var $next = $library.find('[data-next]');
+      var $removeSearch = $library.find('[data-remove-search]');
+
+      var perPage = 21;
+      var page = 0;
+      var pages = 0;
+
+      self.refreshLibrary = function() {
+        $.get('/apos/browse-videos', {
+          skip: page * perPage,
+          limit: perPage,
+          q: $search.val()
+        }, function(results) {
+
+          pages = Math.ceil(results.total / perPage);
+
+          // do pretty active/inactive states instead of
+          // hide / show
+
+          if (page + 1 >= pages) {
+            // $next.hide();
+            $next.addClass('inactive');
+          } else {
+            // $next.show();
+            $next.removeClass('inactive');
+          }
+          if (page === 0) {
+            // $previous.hide();
+            $previous.addClass('inactive');
+          } else {
+            // $previous.show();
+            $previous.removeClass('inactive');
+          }
+
+          if ($search.val().length) {
+            $removeSearch.show();
+          } else {
+            $removeSearch.hide();
+          }
+
+          $items.find('[data-library-item]:not(.apos-template)').remove();
+          _.each(results.videos, function(video) {
+            var $item = apos.fromTemplate($items.find('[data-library-item]'));
+            $item.data('video', video);
+            // TODO: look into a good routine for CSS URL escaping
+            $item.css('background-image', 'url(' + video.thumbnail + ')');
+            $item.find('[data-image]').attr('src', video.thumbnail);
+            $item.attr('title', video.title);
+            $items.append($item);
+
+            $item.on('click', function(e) {
+              self.$embed.val(video.video);
+              return false;
+            });
+          });
+        }).error(function() {
+        });
+      };
+
+      $previous.on('click', function() {
+        if (page > 0) {
+          page--;
+          self.refreshLibrary();
+        }
+        return false;
+      });
+      $next.on('click', function() {
+        if ((page + 1) < pages) {
+          page++;
+          self.refreshLibrary();
+        }
+        return false;
+      });
+      $library.on('click', '[name="search-submit"]', function() {
+        search();
+        return false;
+      });
+      $removeSearch.on('click', function() {
+        $search.val('');
+        search();
+        return false;
+      });
+      $search.on('keydown', function(e) {
+        if (e.keyCode === 13) {
+          search();
+          return false;
+        }
+        return true;
+      });
+      function search() {
+        page = 0;
+        self.refreshLibrary();
+      }
+
+      // Initial load of library contents. Do this after yield so that
+      // a subclass like the file widget has time to change self.fileGroup
+      apos.afterYield(function() { self.refreshLibrary(); });
+    };
+
     self.afterCreatingEl = function() {
       self.$embed = self.$el.find('.apos-embed');
       self.$embed.val(self.data.video);
@@ -2039,6 +2172,8 @@ apos.widgetTypes.video = {
         last = next;
 
       }, 500));
+
+      self.enableLibrary();
     };
 
     function getVideoInfo(callback) {

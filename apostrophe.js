@@ -27,6 +27,7 @@ var wordwrap = require('wordwrap');
 var ent = require('ent');
 var argv = require('optimist').argv;
 var qs = require('qs');
+var joinr = require('joinr');
 
 // Needed for A1.5 bc implementation of authentication, normally
 // we go through appy's passwordHash wrapper
@@ -1343,6 +1344,45 @@ function Apos() {
             } else {
               return res.send('OK');
             }
+          });
+        });
+      });
+
+      app.get('/apos/browse-videos', function(req, res) {
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          var criteria = {};
+          var limit = 10;
+          var skip = 0;
+          var q;
+          skip = self.sanitizeInteger(req.query.skip, 0, 0);
+          limit = self.sanitizeInteger(req.query.limit, 0, 0, 100);
+          if (req.query.q) {
+            criteria.searchText = self.searchify(req.query.q);
+          }
+          var result = {};
+          async.series([
+            function(callback) {
+              return videos.count(criteria, function(err, count) {
+                result.total = count;
+                return callback(err);
+              });
+            },
+            function(callback) {
+              return videos.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, videos) {
+                result.videos = videos;
+                return callback(err);
+              });
+            }
+          ], function(err) {
+            if (err) {
+              res.statusCode = 500;
+              return res.send('error');
+            }
+            return res.send(result);
           });
         });
       });
@@ -4039,186 +4079,60 @@ function Apos() {
     return items;
   };
 
-  // Perform a one-to-one join with another page type (such as any snippet type).
-  // If you have events and wish to bring a place object into a ._place property
-  // of each event based on a .placeId property, this is what you want. The performance
-  // isn't bad because we tackle them all at once.
+  // Wrappers for conveniently invoking joinr. See the
+  // joinr module for more information about joins.
   //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
+  // Apostrophe-specific features:
   //
-  // The first argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToOne(req, events, 'placeId', '_place', { get: events.get, getOptions: { permalink: true } }, callback)
+  // If options.get is not set, apos.get is used; otherwise
+  // it is usually the get method of a snippet subclass.
+  // Looks for the returned documents in results.snippets,
+  // then results.pages, then results itself. Additional
+  // criteria for the getter can be passed via
+  // options.getCriteria, and options to the getter can be
+  // passed via options.getOptions (often used to prevent
+  // infinite recursion when joining).
 
-  self.joinOneToOne = function(req, items, idField, objectField, options, callback) {
-    if (!callback) {
-      callback = options;
-      options = {};
-    }
-    var otherIds = [];
-    var othersById = {};
-    _.each(items, function(item) {
-      if (item[idField]) {
-        otherIds.push(item[idField]);
-      }
-    });
-    var getter = options.get || self.get;
-    var getOptions = options.getOptions || {};
-    var getCriteria = options.getCriteria || {};
-    if (otherIds.length) {
-      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
-      return getter(req, criteria, getOptions, function(err, results) {
-        if (err) {
-          return callback(err);
-        }
-        var others = results.snippets || results.pages;
-        // Make a lookup table of the others by id
-        _.each(others, function(other) {
-          othersById[other._id] = other;
-        });
-        // Attach the others to the items
-        _.each(items, function(item) {
-          var id = item[idField];
-          if (id && othersById[id]) {
-            item[objectField] = othersById[id];
-          }
-        });
-        return callback(null);
-      });
-    } else {
-      return callback(null);
-    }
+  self.joinByOne = function(req, items, idField, objectField, options, callback) {
+    return self.join(joinr.byOne, false, req, items, idField, objectField, options, callback);
   };
 
-  // Perform a one-to-many join with another page type (such as any snippet type).
-  // If you have users and wish to bring all associated groups into a ._groups property
-  // based on a .groupIds array property, this is what you want. The performance
-  // isn't bad because we tackle them all at once. Note that a
-  // permalink is found for each object and set as the ._url property.
-  //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
-  //
-  // The second argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToMany(req, users, 'groupIds', '_groups', { get: groups.get, getOptions: { } }, callback)
-
-  self.joinOneToMany = function(req, items, idsField, objectsField, options, callback) {
-    if (!callback) {
-      callback = options;
-      options = {};
-    }
-    var otherIds = [];
-    var othersById = {};
-    _.each(items, function(item) {
-      if (item[idsField]) {
-        otherIds = otherIds.concat(item[idsField]);
-      }
-    });
-    var getter = options.get || self.get;
-    var getOptions = options.getOptions || {};
-    var getCriteria = options.getCriteria || {};
-    if (otherIds.length) {
-      var criteria = { $and: [ getCriteria, { _id: { $in: otherIds } } ] };
-      return getter(req, criteria, getOptions, function(err, results) {
-        if (err) {
-          return callback(err);
-        }
-        var others = results.snippets || results.pages;
-        // Make a lookup table of the others by id
-        _.each(others, function(other) {
-          othersById[other._id] = other;
-        });
-        // Attach the others to the items
-        _.each(items, function(item) {
-          _.each(item[idsField] || [], function(id) {
-            if (othersById[id]) {
-              if (!item[objectsField]) {
-                item[objectsField] = [];
-              }
-              item[objectsField].push(othersById[id]);
-            }
-          });
-        });
-        return callback(null);
-      });
-    } else {
-      return callback(null);
-    }
+  self.joinByOneReverse = function(req, items, idField, objectField, options, callback) {
+    return self.join(joinr.byOneReverse, true, req, items, idField, objectField, options, callback);
   };
 
-  // Perform a one-to-many join with another page type (such as any snippet type) when
-  // the relationship is stored on the "many" side.
-  //
-  // If you have groups and wish to bring all associated users into a ._users property
-  // based on a .groupIds array property of each user, this is what you want.
-  //
-  // The performance isn't bad because we tackle them all at once. Note that a
-  // permalink is found for each object and set as the ._url property.
-  //
-  // The `options` argument may be skipped. `options.get` should be the `get` method
-  // of a snippet subclass, or `apos.get`, or something compatible. It defaults to
-  // `apos.get`. `options.getCriteria` and `options.getOptions` may contain
-  // criteria and options objects to be passed to the `get` call.
-  //
-  // The first argument should be an array of pages already fetched.
-  //
-  // The callback receives an error object if any.
-  //
-  // Example usage: apos.joinOneToManyReverse(req, groups, 'groupIds', '_users', { get: users.get, getOptions: { } }, callback)
+  self.joinByArray = function(req, items, idsField, objectsField, options, callback) {
+    return self.join(joinr.byArray, false, req, items, idsField, objectsField, options, callback);
+  };
 
-  self.joinOneToManyReverse = function(req, items, idsField, objectsField, options, callback) {
+  self.joinByArrayReverse = function(req, items, idsField, objectsField, options, callback) {
+    return self.join(joinr.byArrayReverse, true, req, items, idsField, objectsField, options, callback);
+  };
+
+  // Driver for the above
+  self.join = function(method, reverse, req, items, idField, objectField, options, callback) {
     if (!callback) {
       callback = options;
       options = {};
     }
-    var itemIds = _.pluck(items, '_id');
     var getter = options.get || self.get;
     var getOptions = options.getOptions || {};
     var getCriteria = options.getCriteria || {};
-    if (itemIds.length) {
-      var idCriteria = {};
-      idCriteria[idsField] = { $in: itemIds };
-      var criteria = { $and: [ getCriteria, idCriteria ] };
+    return method(items, idField, objectField, function(ids, callback) {
+      var idsCriteria = {};
+      if (reverse) {
+        idsCriteria[idField] = { $in: ids };
+      } else {
+        idsCriteria._id = { $in: ids };
+      }
+      var criteria = { $and: [ getCriteria, idsCriteria ] };
       return getter(req, criteria, getOptions, function(err, results) {
         if (err) {
           return callback(err);
         }
-        // An array, an object with a snippets property, and an object with a
-        // pages property are all acceptable responses. Compatible with
-        // apos.get, snippets.get, and the obvious thing.
-        var others = Array.isArray(results) ? results : (results.snippets || results.pages);
-
-        var itemsById = {};
-        _.each(items, function (item) {
-          itemsById[item._id] = item;
-        });
-        // Attach the others to the items
-        _.each(others, function(other) {
-          _.each(other[idsField], function(id) {
-            if (itemsById[id]) {
-              var item = itemsById[id];
-              if (!item[objectsField]) {
-                item[objectsField] = [];
-              }
-              item[objectsField].push(other);
-            }
-          });
-        });
-        return callback(null);
+        return callback(null, results.snippets || results.pages || results);
       });
-    } else {
-      return callback(null);
-    }
+    }, callback);
   };
 
   // FILE HELPERS
@@ -4286,43 +4200,96 @@ function Apos() {
     taskFailed = true;
   };
 
-  self.startTask = function() {
+  self.startTask = function(taskGroups) {
+
     if (!argv._.length) {
       return false;
     }
-    var matches = argv._[0].match(/^apostrophe:(.*)$/);
+    if (!taskGroups) {
+      taskGroups = {};
+    }
+    if (!taskGroups.apostrophe) {
+      taskGroups.apostrophe = {};
+    }
+    _.defaults(taskGroups.apostrophe, self.tasks);
+
+    var matches = argv._[0].match(/^(.*?)\:(.*)$/);
     if (!matches) {
       return false;
     }
-    var cmd = matches[1];
-    if (_.has(self.tasks, cmd)) {
-      self.emit('task:' + argv._[0] + ':before');
-      self.tasks[cmd](function(err) {
+    var group = matches[1];
+    var cmd = matches[2];
+    if (!taskGroups[group]) {
+      console.error('There are no tasks in the ' + group + ' group.');
+      return usage();
+    }
+    group = taskGroups[group];
+
+    function wait(callback) {
+      var interval = setInterval(function() {
+        if (!taskActive) {
+          clearInterval(interval);
+          return callback(null);
+        }
+      }, 10);
+    }
+
+    if (_.has(group, cmd)) {
+      // Think about switching to an event emitter that can wait.
+
+      async.series({
+        before: function(callback) {
+          self.emit('task:' + argv._[0] + ':before');
+          return wait(callback);
+        },
+        run: function(callback) {
+          // Tasks can accept apos, argv, and a callback;
+          // or just a callback;
+          // or no arguments at all.
+          //
+          // If they accept no arguments at all, they must
+          // utilize apos.taskBusy() and apos.taskDone(), and
+          // call apos.taskFailed() in the event of an error.
+          var task = group[cmd];
+          if (task.length === 3) {
+            return group[cmd](self, argv, callback);
+          } else if (task.length === 1) {
+            return group[cmd](callback);
+          } else {
+            group[cmd]();
+            return wait(callback);
+          }
+        },
+        after: function(callback) {
+          self.emit('task:' + argv._[0] + ':after');
+          return wait(callback);
+        }
+      }, function(err) {
         if (err) {
-          console.log('Command line task failed:');
-          console.log(err);
+          console.error('Task failed:');
+          console.error(err);
           process.exit(1);
         }
-        self.emit('task:' + argv._[0] + ':after');
-        // Exit when no listeners are busy. Both before and after listeners
-        // need to call apos.taskBusy() and apos.taskDone() to signify that
-        // they are going to do more work asynchronously and when they complete that work.
-        setInterval(function() {
-          if (!taskActive) {
-            process.exit(taskFailed ? 1 : 0);
-          }
-        }, 10);
-        // *Don't* exit. We want to allow things initiated by trigger
-        // to finish. Node will exit for us when the event queue is empty
+        process.exit(taskFailed ? 1 : 0);
       });
+
       return true;
+
     } else {
-      console.error('There is no such Apostrophe task. Available tasks:');
-      console.error();
-      var tasks = _.keys(self.tasks);
-      tasks.sort();
-      _.each(tasks, function(task) {
-        console.error('apostrophe:' + task);
+      console.error('There is no such task.');
+      return usage();
+    }
+
+    function usage() {
+      console.error('Available tasks:');
+      var groups = _.keys(taskGroups);
+      groups.sort();
+      _.each(groups, function(group) {
+        var cmds = _.keys(taskGroups[group]);
+        cmds.sort();
+        _.each(cmds, function(cmd) {
+          console.error(group + ':' + cmd);
+        });
       });
       process.exit(1);
     }
@@ -4762,10 +4729,11 @@ function Apos() {
 
   self.tasks.index = function(callback) {
     console.log('Indexing all pages for search');
-    self.forEachPage({},
+    return self.forEachPage({},
       function(page, callback) {
         return self.indexPage({}, page, callback);
-      }, callback);
+      },
+      callback);
   };
 
   self.tasks.oembed = function(callback) {
