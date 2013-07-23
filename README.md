@@ -297,16 +297,102 @@ If you are not using the `apostrophe-pages` module to render the results, you'll
 
 Keep in mind that all data passed via any of these mechanisms must be JSON-friendly. You cannot pass server-side function objects to browser-side code. That's just life in JavaScriptLand.
 
+## Apostrophe Command-Line Tasks
+
+We often need to carry out command line tasks, such as database migrations, with access to the same database and capabilities that regular Apostrophe code has access to. Apostrophe makes it really easy to register command line tasks as part of your application.
+
+If the command line is:
+
+    node app.js
+
+The app will start listening for connections as normal, while if it is:
+
+    node app.js apostrophe:migrate
+
+The app will execute that task.
+
+To see the available tasks, just type:
+
+    node app.js apostrophe:help
+
+This will list all of the registered tasks.
+
+### Registering Your Own Tasks
+
+You'll find that `app.js` invokes this code just before listening on the port:
+
+    // Command line tasks
+    if (apos.startTask()) {
+      // Chill and let the task run until it's done,
+      // don't try to listen or exit
+      return;
+    }
+    appy.listen();
+
+All you have to do is extend this by passing an object to `apos.startTask`. Each property of that object is a "task group" with one or more tasks. Each "task group" is an object with one or more task functions. Task functions receive three arguments: the `apos` object, an `argv` object with any command line options, and a callback to be invoked when the task is done.
+
+Confused? Here's how to implement a single task called `project:init`:
+
+    // Earlier in app.js
+
+    var myTasks = {
+      project: {
+        init: function(apos, argv, callback) {
+          // Do time consuming, asynchronous things!
+          // When we're finished:
+          return callback(null);
+        }
+      }
+    };
+
+    // In the listen function at the end of app.js
+
+    if (apos.startTask(myTasks)) {
+      return;
+    }
+    appy.listen();
+
+This structure allows for projects with many tasks.
+
+### "What if an error happens?"
+
+Pass something other than null when invoking the callback.
+
+### "What can I do with the argv object?"
+
+The `argv` object comes from the optimist module. You can pick up command line arguments with it in a super-easy, super-friendly way. [See the optimist module for more information.](https://github.com/substack/node-optimist)
+
+### "How do I hook into existing tasks?"
+
+The `apos` object is an EventEmitter. In English, that means you can write:
+
+    apos.on('task:apostrophe:migrate:before', function() {
+      apos.taskBusy();
+      // Do a variety of things asynchronously
+      apos.taskDone();
+    }
+
+Or:
+
+    apos.on('task:apostrophe:migrate:after', function() {
+      apos.taskBusy();
+      // Do a variety of things asynchronously
+      apos.taskDone();
+    }
+
+### "What do apos.taskBusy and apos.taskDone do?"
+
+Apostrophe needs to know when your task is finished. But you're likely to call asynchronous functions (functions with callbacks), so Apostrophe can't just assume that the task is finished when the function returns.
+
+`apos.taskBusy()` solves this problem. If your task needs to do lots of asynchronous stuff, call `apos.taskBusy()`. The process will not exit until you call `apos.taskDone()`.
+
+### "What if something goes wrong and the task should fail?"
+
+Your event handler can call `apos.taskFailed()` in this situation.
+
 ## Roadmap
 
-Apostrophe is a work in progress. Certainly the following things need to improve:
-
-* The built-in oembed proxy should cache thumbnails and markup.
-* The built-in oembed proxy should have a whitelist of sites whose oembed codes are not XSS attack vectors.
-* It should be possible to fetch summaries of areas conveniently and quickly. The new way of storing items as a structured array in MongoDB makes this possible, but a simple API for it should be exposed.
-* It should be possible to fetch just certain rich media from areas conveniently and quickly (technically possible now, see above).
-
-See github issues for more.
+Apostrophe is a work in progress. See github issues for details on some of our plans as well as the Google Group.
 
 ## Conclusion and Contact Information
 

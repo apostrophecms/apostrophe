@@ -4184,43 +4184,96 @@ function Apos() {
     taskFailed = true;
   };
 
-  self.startTask = function() {
+  self.startTask = function(taskGroups) {
+
     if (!argv._.length) {
       return false;
     }
-    var matches = argv._[0].match(/^apostrophe:(.*)$/);
+    if (!taskGroups) {
+      taskGroups = {};
+    }
+    if (!taskGroups.apostrophe) {
+      taskGroups.apostrophe = {};
+    }
+    _.defaults(taskGroups.apostrophe, self.tasks);
+
+    var matches = argv._[0].match(/^(.*?)\:(.*)$/);
     if (!matches) {
       return false;
     }
-    var cmd = matches[1];
-    if (_.has(self.tasks, cmd)) {
-      self.emit('task:' + argv._[0] + ':before');
-      self.tasks[cmd](function(err) {
+    var group = matches[1];
+    var cmd = matches[2];
+    if (!taskGroups[group]) {
+      console.error('There are no tasks in the ' + group + ' group.');
+      return usage();
+    }
+    group = taskGroups[group];
+
+    function wait(callback) {
+      var interval = setInterval(function() {
+        if (!taskActive) {
+          clearInterval(interval);
+          return callback(null);
+        }
+      }, 10);
+    }
+
+    if (_.has(group, cmd)) {
+      // Think about switching to an event emitter that can wait.
+
+      async.series({
+        before: function(callback) {
+          self.emit('task:' + argv._[0] + ':before');
+          return wait(callback);
+        },
+        run: function(callback) {
+          // Tasks can accept apos, argv, and a callback;
+          // or just a callback;
+          // or no arguments at all.
+          //
+          // If they accept no arguments at all, they must
+          // utilize apos.taskBusy() and apos.taskDone(), and
+          // call apos.taskFailed() in the event of an error.
+          var task = group[cmd];
+          if (task.length === 3) {
+            return group[cmd](self, argv, callback);
+          } else if (task.length === 1) {
+            return group[cmd](callback);
+          } else {
+            group[cmd]();
+            return wait(callback);
+          }
+        },
+        after: function(callback) {
+          self.emit('task:' + argv._[0] + ':after');
+          return wait(callback);
+        }
+      }, function(err) {
         if (err) {
-          console.log('Command line task failed:');
-          console.log(err);
+          console.error('Task failed:');
+          console.error(err);
           process.exit(1);
         }
-        self.emit('task:' + argv._[0] + ':after');
-        // Exit when no listeners are busy. Both before and after listeners
-        // need to call apos.taskBusy() and apos.taskDone() to signify that
-        // they are going to do more work asynchronously and when they complete that work.
-        setInterval(function() {
-          if (!taskActive) {
-            process.exit(taskFailed ? 1 : 0);
-          }
-        }, 10);
-        // *Don't* exit. We want to allow things initiated by trigger
-        // to finish. Node will exit for us when the event queue is empty
+        process.exit(taskFailed ? 1 : 0);
       });
+
       return true;
+
     } else {
-      console.error('There is no such Apostrophe task. Available tasks:');
-      console.error();
-      var tasks = _.keys(self.tasks);
-      tasks.sort();
-      _.each(tasks, function(task) {
-        console.error('apostrophe:' + task);
+      console.error('There is no such task.');
+      return usage();
+    }
+
+    function usage() {
+      console.error('Available tasks:');
+      var groups = _.keys(taskGroups);
+      groups.sort();
+      _.each(groups, function(group) {
+        var cmds = _.keys(taskGroups[group]);
+        cmds.sort();
+        _.each(cmds, function(cmd) {
+          console.error(group + ':' + cmd);
+        });
       });
       process.exit(1);
     }
@@ -4660,10 +4713,11 @@ function Apos() {
 
   self.tasks.index = function(callback) {
     console.log('Indexing all pages for search');
-    self.forEachPage({},
+    return self.forEachPage({},
       function(page, callback) {
         return self.indexPage({}, page, callback);
-      }, callback);
+      },
+      callback);
   };
 
   self.tasks.oembed = function(callback) {
