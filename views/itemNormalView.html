@@ -1,7 +1,15 @@
 {# If this item type is a widget output a standard widget wrapper, with data attributes #}
 
 {%- if options.widget -%}
-  <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}"
+
+  {% if options.widgetClass %}
+    {% set widgetClass = options.widgetClass %}
+  {% endif %}
+  {% if item.orientation %}
+    {% set orientation = item.orientation %}
+  {% endif %}
+
+  <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}{%if widgetClass%} apos-{{widgetClass}}{%endif%}{%if orientation %} apos-{{orientation}}{%endif%}"
     {% for name, value in attributes %}
       data-{{ name | css }}="{{ value | jsonAttribute }}"
     {% endfor %}

@@ -199,6 +199,7 @@ function Apos() {
   var templates = [
     { name: 'slideshowEditor', when: 'user' },
     { name: 'buttonsEditor', when: 'user' },
+    { name: 'marqueeEditor', when: 'user' },
     { name: 'filesEditor', when: 'user' },
     { name: 'pullquoteEditor', when: 'user' },
     { name: 'videoEditor', when: 'user' },
@@ -3102,6 +3103,7 @@ function Apos() {
       var newFile = {
         hyperlink: self.sanitizeUrl(file.hyperlink, undefined),
         hyperlinkTitle: self.sanitizeString(file.hyperlinkTitle, undefined),
+        altTag: self.sanitizeString(file.altTag, undefined),
         description: self.sanitizeString(file.description, undefined),
         title: self.sanitizeString(file.title, undefined),
         _id: self.sanitizeString(file._id),
@@ -3194,7 +3196,7 @@ function Apos() {
       // If these options are passed to the widget,
       // set them as JSON data attributes of the
       // widget element
-      jsonOptions: [ 'delay', 'noHeight' ]
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ]
     },
     buttons: {
       widget: true,
@@ -3209,6 +3211,20 @@ function Apos() {
         return !((item.items || []).length);
       },
       css: 'buttons'
+    },
+    marquee: {
+      widget: true,
+      label: 'Marquee',
+      icon: 'slideshow',
+      sanitize: sanitizeSlideshow,
+      // icon: 'slideshow',
+      render: function(data) {
+        return partial('marquee', data);
+      },
+      empty: function(item) {
+        return !((item.items || []).length);
+      },
+      css: 'marquee'
     },
     files: {
       widget: true,

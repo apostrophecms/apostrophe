@@ -92,14 +92,24 @@
   opacity: .5;
   filter: alpha(opacity=70);
 }
-.apos-slideshow { position: relative; }
+.apos-slideshow, .apos-marquee
+{
+  position: relative;
+  overflow: hidden;
+}
 .apos-slideshow .apos-slideshow-items
 {
   display: table-cell;
   vertical-align: middle;
   text-align: center;
 }
-.apos-slideshow .apos-slideshow-item
+.apos-marquee .apos-marquee-items
+{
+  // here
+}
+
+.apos-slideshow .apos-slideshow-item,
+.apos-marquee .apos-marquee-item
 {
   list-style: none;
   display: none;
@@ -110,19 +120,28 @@
           background-size: contain;
   background-repeat: no-repeat;
 }
-.apos-slideshow{overflow: hidden;}
-.apos-slideshow .apos-slideshow-image
+
+.apos-marquee .apos-marquee-item
+{
+  -webkit-background-size: cover;
+     -o-background-size: cover;
+        background-size: cover;
+}
+
+.apos-slideshow .apos-slideshow-image,
+.apos-marquee .apos-marquee-image
 {
   width: 100%;
 }
 
-.apos-slideshow .apos-slideshow-item.apos-current
+.apos-slideshow .apos-slideshow-item.apos-current,
+.apos-marquee .apos-marquee-item.apos-current
 {
   display: block;
 }
 
-.apos-slideshow .apos-slideshow-next,
-.apos-slideshow .apos-slideshow-prev
+.apos-slideshow-next,
+.apos-slideshow-prev
 {
   position: absolute;
   top: 50%;
@@ -159,9 +178,8 @@
   }
 }
 
-.apos-slideshow .apos-slideshow-next
+.apos-slideshow-next
 {
-
    right: 10px;
   &:after
   {
@@ -174,7 +192,7 @@
   }
 }
 
-.apos-slideshow .apos-slideshow-prev
+.apos-slideshow-prev
 {
 
   left: 10px;
@@ -1006,5 +1024,66 @@ input.apos-control
     background-color: lighten(@apos-base, 8%);
     font-size: 1.1em;
 
+  }
+}
+
+.apos-landscape,
+.apos-portrait,
+.apos-square
+{
+  img {opacity: 0;}
+  .apos-slideshow-items,
+  .apos-marquee-items
+  {
+    overflow: hidden;
+    width: 100%;
+    
+    .apos-marquee-item,
+    .apos-slideshow-item
+    {
+      -webkit-background-size: cover;
+           -o-background-size: cover;
+              background-size: cover;
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+.apos-landscape
+{
+  .apos-slideshow-items,
+  .apos-marquee-items
+  {
+    max-height: 300px;
+  }
+}
+.apos-portrait
+{
+  .apos-slideshow-items,
+  .apos-marquee-items
+  {
+    height: 600px;
+  }
+}
+
+.apos-square
+{
+  .apos-slideshow-items,
+  .apos-marquee-items
+  {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    float: left;
+    height: 0;
+    .apos-marquee-item,
+    .apos-slideshow-item
+    {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    }
   }
 }

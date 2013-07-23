@@ -1197,11 +1197,17 @@ apos.widgetTypes.slideshow = {
     }
     // Options passed from template or other context
     var templateOptions = options.options || {};
+    var widgetClass = templateOptions.widgetClass;
     var aspectRatio = templateOptions.aspectRatio;
     var minSize = templateOptions.minSize;
     var limit = templateOptions.limit;
     var extraFields = templateOptions.extraFields;
     var liveItem = '[data-item]:not(.apos-template)';
+    var userOptions = templateOptions.userOptions || {};
+
+    if (userOptions){
+      var orientation = userOptions.orientation || false;
+    }
 
     if (!options.messages) {
       options.messages = {};
@@ -1320,6 +1326,35 @@ apos.widgetTypes.slideshow = {
               dropZone.removeClass('apos-slideshow-file-in apos-slideshow-file-hover');
           }, 100);
       });
+      // if template wants a forced orientation on a slideshow
+      if (orientation.active){
+        self.$el.find('.apos-modal-body').addClass('apos-select-orientation');
+
+        // find out if it has a previously saved orientation, activate it
+        if (typeof(self.data.orientation) !== 'undefined' && self.data.orientation !== ''){
+          self.$el.find('[data-orientation-button="'+self.data.orientation+'"]').addClass('active').attr('data-orientation-active', '');
+        }
+        // find out if it has an explicit default set, activate it
+        else if (orientation.defaultOption){
+          self.$el.find('[data-orientation-button="'+orientation.defaultOption+'"]').addClass('active').attr('data-orientation-active', '');
+          self.data.orientation = orientation.defaultOption;
+        }
+        // else, set to portrait
+        else
+        {
+          self.$el.find('[data-orientation-button="portrait"]').addClass('active').attr('data-orientation-active', '');
+          self.data.orientation = 'portrait';
+        }
+      }
+
+      // if template passed extraFields as an object, it is trying to disable certain fields
+      // it also needs to be enabled
+
+      if (typeof(extraFields) === 'object'){
+        $.each(extraFields, function(key, value) {
+          self.$el.find('.apos-modal-body [data-extra-fields-'+key+']').remove();
+        });
+      }
 
       self.$el.find('[data-enable-extra-fields]').on('click', function(){
        self.$el.find('[data-items]').toggleClass('apos-extra-fields-enabled');
@@ -1345,6 +1380,15 @@ apos.widgetTypes.slideshow = {
       // on Crop button click, configure and reveal cropping modal
       self.$el.on('click', '[data-crop]', function() {
         crop($(this).closest('[data-item]'));
+      });
+
+      // Select new orientation
+      self.$el.on('click', '[data-orientation-button]', function(){
+        self.$el.find('[data-orientation-button]').each(function(){
+          $(this).removeClass('active').removeAttr('data-orientation-active');
+        });
+        $(this).addClass('active').attr('data-orientation-active', $(this).attr('data-orientation-button'));
+        return false;
       });
 
       self.enableLibrary = function() {
@@ -1745,6 +1789,12 @@ apos.widgetTypes.slideshow = {
           return;
         }
       }
+
+      // Save the active orientation
+      if (self.data.orientation) {
+        self.data.orientation = self.$el.find('[data-orientation-active]').attr('data-orientation-active');
+      }
+
       return callback(null);
     };
 
@@ -1815,7 +1865,8 @@ apos.widgetTypes.slideshow = {
       $item.find('[data-hyperlink]').val(item.hyperlink);
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
       $item.find('[data-credit]').val(item.credit);
-      if (extraFields) {
+      $item.find('[data-alt-tag]').val(item.altTag);
+      if (extraFields || typeof(extraFields) === 'object') {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit></a>');
       }
       $item.data('item', item);
@@ -1873,6 +1924,7 @@ apos.widgetTypes.slideshow = {
         info.hyperlink = $item.find('[data-hyperlink]').val();
         info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
         info.credit = $item.find('[data-credit]').val();
+        info.altTag = $item.find('[data-alt-tag]').val();
 
         self.data.items.push(info);
 
@@ -1880,6 +1932,7 @@ apos.widgetTypes.slideshow = {
       // An empty slideshow is allowed, so permit it to be saved
       // even if nothing has been added
       self.exists = true;
+
     }
 
     if(!options.type) {
@@ -1904,6 +1957,18 @@ apos.widgetTypes.buttons = {
     options.type = 'buttons';
     options.options = options.options || {};
     options.options.extraFields = true;
+    apos.widgetTypes.slideshow.editor.call(self, options);
+  }
+};
+
+apos.widgetTypes.marquee = {
+  label: 'Marquee',
+  editor: function(options) {
+    var self = this;
+    options.template = '.apos-marquee-editor';
+    options.type = 'marquee';
+    options.options = options.options || {};
+    // options.options.extraFields = true;
     apos.widgetTypes.slideshow.editor.call(self, options);
   }
 };

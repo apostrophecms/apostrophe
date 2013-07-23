@@ -118,6 +118,11 @@ apos.widgetPlayers.slideshow = function($el)
   // Use our jQuery slideshow plugin
   $el.projector();
 };
+apos.widgetPlayers.marquee = function($el)
+{
+  // Use our jQuery slideshow plugin
+  $el.projector();
+};
 
 // The video player replaces a thumbnail with
 // a suitable player via apos's oembed proxy

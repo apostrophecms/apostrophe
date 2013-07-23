@@ -1,0 +1,15 @@
+{% extends "slideshowEditor.html" %}
+
+{% block widgetVars %}
+{# lots of good stuff comes from apos-slideshow-editor class#}
+  {% set widgetClass = 'apos-buttons-editor apos-marquee-editor apos-slideshow-editor' %}
+{% endblock %}
+
+{% block title %}
+  Edit Button(s)
+{% endblock %}
+
+{% block instructions %}
+Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
+You can also drag images from your computer into the dashed area below.
+{% endblock %}

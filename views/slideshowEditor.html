@@ -42,27 +42,31 @@ Or, drag the existing images shown beneath the dashed area. <br />
         </div>
 
         <div class="apos-slideshow-extra-fields" data-extra-fields>
-          <fieldset class="apos-fieldset apos-fieldset-text">
+          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-title>
             <label class="short">Title</label>
             <input data-title class="apos-slideshow-editor-title" type="text" />
           </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text">
+          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-description>
             <label>Description</label>
             <textarea data-description class="apos-slideshow-editor-description"></textarea>
           </fieldset>
           {% block hyperlink %}
-            <fieldset class="apos-fieldset apos-fieldset-text">
+            <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-link>
               <label>Link</label>
               <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
             </fieldset>
-            <fieldset class="apos-fieldset apos-fieldset-text">
+            <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-linkTitle>
               <label>Link Title</label>
               <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
             </fieldset>
           {% endblock %}
-          <fieldset class="apos-fieldset apos-fieldset-text">
+          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-credit>
             <label>Image Credit</label>
             <input data-credit class="apos-slideshow-editor-credit" type="text" />
+          </fieldset>
+          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-altTag>
+            <label>Image Alt Tag</label>
+            <input data-alt-tag class="apos-slideshow-editor-alt-tag" type="text" />
           </fieldset>
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
@@ -73,6 +77,12 @@ Or, drag the existing images shown beneath the dashed area. <br />
       <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
     </div>
     <div class="apos-clear"></div>
+  </div>
+  <div class="apos-orientation-select-container">
+    <label class='apos-instructions'>Select Orientation</label>
+    <a class="apos-button apos-landscape" title="Landscape" data-orientation-button="landscape" href="#"></a>
+    <a class="apos-button apos-portrait" title="Portrait" data-orientation-button="portrait" href="#"></a>
+    <a class="apos-button apos-square" title="Square" data-orientation-button="square" href="#"></a>
   </div>
 
   {# Media library #}
