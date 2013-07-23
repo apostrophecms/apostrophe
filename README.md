@@ -362,6 +362,14 @@ Pass something other than null when invoking the callback.
 
 The `argv` object comes from the optimist module. You can pick up command line arguments with it in a super-easy, super-friendly way. [See the optimist module for more information.](https://github.com/substack/node-optimist)
 
+### "How do I call methods that need a req object?"
+
+Good question. Lots of Apostrophe methods expect a `req` object, because permissions are tied to the identity of the user, and certain types of caching are tied to the lifetime of a request.
+
+If your task needs to call a function like `snippets.get` which requires a `req` object, call this function to get a `req` object that always has unlimited permissions:
+
+    apos.getTaskReq()
+
 ### "How do I hook into existing tasks?"
 
 The `apos` object is an EventEmitter. In English, that means you can write:
