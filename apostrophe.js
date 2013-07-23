@@ -1347,6 +1347,45 @@ function Apos() {
         });
       });
 
+      app.get('/apos/browse-videos', function(req, res) {
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 404;
+            return res.send('not found');
+          }
+          var criteria = {};
+          var limit = 10;
+          var skip = 0;
+          var q;
+          skip = self.sanitizeInteger(req.query.skip, 0, 0);
+          limit = self.sanitizeInteger(req.query.limit, 0, 0, 100);
+          if (req.query.q) {
+            criteria.searchText = self.searchify(req.query.q);
+          }
+          var result = {};
+          async.series([
+            function(callback) {
+              return videos.count(criteria, function(err, count) {
+                result.total = count;
+                return callback(err);
+              });
+            },
+            function(callback) {
+              return videos.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, videos) {
+                result.videos = videos;
+                return callback(err);
+              });
+            }
+          ], function(err) {
+            if (err) {
+              res.statusCode = 500;
+              return res.send('error');
+            }
+            return res.send(result);
+          });
+        });
+      });
+
       app.get('/apos/browse-files', function(req, res) {
         return self.permissions(req, 'edit-media', null, function(err) {
           if (err) {

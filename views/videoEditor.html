@@ -11,3 +11,38 @@
 {% block instructions %}
   Paste a video link.
 {% endblock %}
+
+{% block formAfterPreview %}
+  {# Video library #}
+
+  <div class="apos-media-library apos-library-drag-peer" data-library>
+    {# I float right #}
+    <a href="#" data-next class="apos-next apos-library-pager"></a>
+    {# I float left #}
+    <a href="#" data-previous class="apos-previous apos-library-pager"></a>
+    {# I sting like a bee #}
+    <h5 class="apos-media-library-title">Recently Added In Video Library:</h5>
+
+    {# UX note: you can pretty up the search submit button but please don't remove it #}
+    {# entirely as some users will not press enter. -Tom #}
+    <div class="apos-media-library-search">
+      <label class="apos-library-search-label">Search</label>
+      <input type="text" name="search" class="apos-library-search" />
+      <input type="submit" class="apos-search-submit" value="Go" name="search-submit" />
+      <a href="#" class="apos-remove-search apos-control apos-button" data-remove-search>x</a>
+    </div>
+    <ul data-library-items class="apos-media-library-items clearfix">
+      {# I am a template. I get cloned and populated by jQuery. If you #}
+      {# leave my data attributes intact you can edit me quite a bit. #}
+      <li data-library-item class="apos-media-library-item apos-template">
+        <div class="apos-media-library-add">+</div>
+        <div class="apos-media-library-item-box">
+          {# jQuery will give this img a proper src #}
+          {# Use the smallest possible empty GIF in the meantime #}
+          <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-image />
+        </div>
+      </li>
+    </ul>
+
+  </div>
+{% endblock %}
