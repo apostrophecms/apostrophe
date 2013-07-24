@@ -592,11 +592,15 @@ apos.formatTime = function(time, options) {
 
 // KEEP IN SYNC WITH SERVER SIDE VERSION IN apostrophe.js
 //
-// Convert a name to camel case. Only digits and ASCII letters remain.
+// Convert a name to camel case.
+//
+// Useful in converting CSV with friendly headings into sensible property names.
+//
+// Only digits and ASCII letters remain.
+//
 // Anything that isn't a digit or an ASCII letter prompts the next character
-// to be uppercase. Useful in converting CSV with friendly headings into
-// sensible property names. You can set options.capitalize if you want the
-// first letter capitalized as well.
+// to be uppercase. Existing uppercase letters also trigger uppercase, unless
+// they are the first character; this preserves existing camelCase names.
 
 apos.camelName = function(s) {
   var i;
@@ -604,6 +608,11 @@ apos.camelName = function(s) {
   var nextUp = false;
   for (i = 0; (i < s.length); i++) {
     var c = s.charAt(i);
+    // If the next character is already uppercase, preserve that, unless
+    // it is the first character
+    if ((i > 0) && c.match(/[A-Z]/)) {
+      nextUp = true;
+    }
     if (c.match(/[A-Za-z0-9]/)) {
       if (nextUp) {
         n += c.toUpperCase();
