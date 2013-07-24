@@ -4061,16 +4061,27 @@ function Apos() {
 
   // KEEP IN SYNC WITH CLIENT SIDE VERSION IN content.js
   //
-  // Convert a name to camel case. Only digits and ASCII letters remain.
+  // Convert a name to camel case.
+  //
+  // Useful in converting CSV with friendly headings into sensible property names.
+  //
+  // Only digits and ASCII letters remain.
+  //
   // Anything that isn't a digit or an ASCII letter prompts the next character
-  // to be uppercase. Useful in converting CSV with friendly headings into
-  // sensible property names
+  // to be uppercase. Existing uppercase letters also trigger uppercase, unless
+  // they are the first character; this preserves existing camelCase names.
+
   self.camelName = function(s) {
     var i;
     var n = '';
     var nextUp = false;
     for (i = 0; (i < s.length); i++) {
       var c = s.charAt(i);
+      // If the next character is already uppercase, preserve that, unless
+      // it is the first character
+      if ((i > 0) && c.match(/[A-Z]/)) {
+        nextUp = true;
+      }
       if (c.match(/[A-Za-z0-9]/)) {
         if (nextUp) {
           n += c.toUpperCase();
@@ -4243,17 +4254,19 @@ function Apos() {
     }
     _.defaults(taskGroups.apostrophe, self.tasks);
 
-    var matches = argv._[0].match(/^(.*?)\:(.*)$/);
+    // Accept . as well as : to please javascriptizens and symfonians
+    var matches = argv._[0].match(/^(.*?)[\:|\.](.*)$/);
     if (!matches) {
       return false;
     }
     var group = matches[1];
     var cmd = matches[2];
-    if (!taskGroups[group]) {
+    var camelGroup = self.camelName(group);
+    if (!taskGroups[camelGroup]) {
       console.error('There are no tasks in the ' + group + ' group.');
       return usage();
     }
-    group = taskGroups[group];
+    group = taskGroups[camelGroup];
 
     function wait(callback) {
       var interval = setInterval(function() {
@@ -4264,7 +4277,10 @@ function Apos() {
       }, 10);
     }
 
-    if (_.has(group, cmd)) {
+    console.log(cmd);
+    var camelCmd = self.camelName(cmd);
+    console.log(camelCmd);
+    if (_.has(group, camelCmd)) {
       // Think about switching to an event emitter that can wait.
 
       async.series({
@@ -4280,13 +4296,13 @@ function Apos() {
           // If they accept no arguments at all, they must
           // utilize apos.taskBusy() and apos.taskDone(), and
           // call apos.taskFailed() in the event of an error.
-          var task = group[cmd];
+          var task = group[camelCmd];
           if (task.length === 3) {
-            return group[cmd](self, argv, callback);
+            return task(self, argv, callback);
           } else if (task.length === 1) {
-            return group[cmd](callback);
+            return task(callback);
           } else {
-            group[cmd]();
+            task();
             return wait(callback);
           }
         },
@@ -4311,16 +4327,19 @@ function Apos() {
     }
 
     function usage() {
-      console.error('Available tasks:');
+      console.error('\nAvailable tasks:\n');
       var groups = _.keys(taskGroups);
       groups.sort();
       _.each(groups, function(group) {
         var cmds = _.keys(taskGroups[group]);
         cmds.sort();
         _.each(cmds, function(cmd) {
-          console.error(group + ':' + cmd);
+          console.error(self.cssName(group) + ':' + self.cssName(cmd));
         });
+        // Separate groups with a blank line
+        console.error('');
       });
+      console.error('\nYou may also use periods (.) as separators and camelCaseForNames.\n');
       process.exit(1);
     }
   };
@@ -4915,7 +4934,7 @@ function Apos() {
     });
   };
 
-  self.tasks['drop-test-data'] = function(callback) {
+  self.tasks.dropTestData = function(callback) {
     console.log('Dropping all test data.');
     return self.pages.remove({ testData: true }, callback);
   };
