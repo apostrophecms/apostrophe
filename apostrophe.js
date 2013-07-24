@@ -2511,14 +2511,24 @@ function Apos() {
   // will be returned. If `options.areas` contains an array of area names,
   // only those areas will be returned (if present).
   //
-  // The `criteria` and `options` arguments may be skipped.
-  // (Getting everything is a bit unusual, but it's not forbidden!)
-  //
   // If options.getDistinctTags is true, an array of distinct tags
   // matching the current criteria is delivered in lieu of the usual
   // results object. This is useful when implementing filters. A
   // deeper refactoring of the fetchMetadata feature from the snippets
   // module is probably in order to support more types of filters.
+  //
+  // `options.lateCriteria`
+  //
+  // Unfortunately at least one MongoDB operator, `$near`, cannot be
+  // combined with other operators using `$and` as this method normally
+  // does to combine permissions checks with other criteria. You may
+  // place such operators in `options.lateCriteria`, a MongoDB criteria
+  // object which is merged into the query at the last possible moment.
+  // This object must not contain an `$and` clause at the top level.
+  // See https://jira.mongodb.org/browse/SERVER-4572 for more information.
+  // The `criteria` and `options` arguments may be skipped.
+  // (Getting everything is a bit unusual, but it's not forbidden!)
+  //
 
   self.get = function(req, userCriteria, options, mainCallback) {
     if (arguments.length === 2) {
@@ -2535,7 +2545,12 @@ function Apos() {
 
     var editable = options.editable;
 
-    var sort = options.sort || { sortTitle: 1 };
+    var sort = options.sort;
+    // Allow sort to be explicitly false. Otherwise there is no way
+    // to get the sorting behavior of the "near" option
+    if (sort === undefined) {
+      sort = { sortTitle: 1 };
+    }
 
     var limit = options.limit || undefined;
 
@@ -2551,6 +2566,8 @@ function Apos() {
     var notTags = options.notTags || undefined;
 
     var permissions = (options.permissions === false) ? false : true;
+
+    var lateCriteria = options.lateCriteria || undefined;
 
     if (options.titleSearch !== undefined) {
       filterCriteria.sortTitle = self.searchify(titleSearch);
@@ -2601,6 +2618,17 @@ function Apos() {
       $and: combine
     };
 
+    // The lateCriteria option is merged with the criteria option last
+    // so that it is not subject to any $and clauses, due to this
+    // limitation of MongoDB which prevents the highly useful $near
+    // clause from being used otherwise:
+    //
+    // https://jira.mongodb.org/browse/SERVER-4572
+
+    if (lateCriteria) {
+      extend(true, criteria, lateCriteria);
+    }
+
     if (options.getDistinctTags) {
       // Just return the distinct tags matching the current criteria,
       // rather than the normal results. This is a bit of a hack, we need
@@ -2627,7 +2655,9 @@ function Apos() {
       if (limit !== undefined) {
         q.limit(limit);
       }
-      q.sort(sort);
+      if (sort) {
+        q.sort(sort);
+      }
       q.toArray(function(err, pagesArg) {
         if (err) {
           console.log(err);
