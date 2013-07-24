@@ -533,7 +533,6 @@ function Apos() {
 
     function setupVideos(callback) {
       db.collection('aposVideos', function(err, collection) {
-        videos = collection;
         function searchIndex(callback) {
           self.videos.ensureIndex({ searchText: 1 }, { safe: true }, callback);
         }
@@ -3054,6 +3053,10 @@ function Apos() {
   self.callLoadersForArea = function(req, area, callback) {
     // Even more async.map goodness
     async.map(area.items, function(item, callback) {
+      if (!self.itemTypes[item.type]) {
+        console.error('WARNING: unrecognized item type ' + item.type + ' encountered in area, URL was ' + req.url);
+        return callback();
+      }
       if (self.itemTypes[item.type].load) {
         return self.itemTypes[item.type].load(req, item, callback);
       } else {
