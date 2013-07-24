@@ -4277,9 +4277,7 @@ function Apos() {
       }, 10);
     }
 
-    console.log(cmd);
     var camelCmd = self.camelName(cmd);
-    console.log(camelCmd);
     if (_.has(group, camelCmd)) {
       // Think about switching to an event emitter that can wait.
 
