@@ -3855,7 +3855,7 @@ function Apos() {
 
   // Given an `options` object in which options[name] is a string
   // set to '0', '1', or 'any', this method adds mongodb criteria
-  // to the `criteria` object. 
+  // to the `criteria` object.
   //
   // false, true and null are accepted as synonyms for '0', '1' and 'any'.
   //
