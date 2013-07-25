@@ -3288,7 +3288,7 @@ function Apos() {
       addSearchTexts: function(item, texts) {
         var items = item.items || [];
         _.each(items, function(item) {
-          texts.push({ weight: 1, text: item.name });
+          texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
@@ -3340,7 +3340,7 @@ function Apos() {
       addSearchTexts: function(item, texts) {
         var items = item.items || [];
         _.each(items, function(item) {
-          texts.push({ weight: 1, text: item.name });
+          texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
