@@ -349,6 +349,7 @@ They will need to live somewhere else eventually
     margin-top: 10px;
     display: block;
     width: 30%;
+    height: 2em;
   }
   ul
   {
@@ -356,8 +357,24 @@ They will need to live somewhere else eventually
   }
   li
   {
+    margin-top: 10px;
+  }
+  .apos-selective-extras
+  {
     // Allow for the x buttons, they are pretty tall guys
     padding-top: 10px;
+    // Extra fields shouldn't be so big or pushy
+    input
+    {
+      display: inline-block;
+      width: 20%;
+      margin-left: 5px;
+    }
+    label
+    {
+      display: inline-block;
+      margin-left: 20px;
+    }
   }
 
   .ui-sortable

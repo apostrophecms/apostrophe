@@ -76,13 +76,22 @@
 {% macro formSelective(name, label, options = {}) %}
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    <input type="text" data-autocomplete />
+    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ options.placeholder | e }}"{%endif %}/>
     <ul data-list>
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
       <li data-item>
-        <span data-label>Title</span>
+        <span class="apos-selective-label" data-label>Title</span>
         <a class="apos-remove" data-remove>x</a>
+        {% if options.extras %}
+          <span class="apos-selective-extras">
+            {# TODO: extend our support for different types of extra fields, #}
+            {# style them meaningfully. Usually on same row with item #}
+            {% for name, attrs in options.extras %}
+              <label>{{ attrs.label | e }}</label><input data-extras name="{{ name }}" type="{{ attrs.type }}" />
+            {% endfor %}
+          </span>
+        {% endif %}
         {% if options.propagate %}
           <span class="apos-propagate"><input type="checkbox" data-propagate /> Apply to Subpages</span>
         {% endif %}
