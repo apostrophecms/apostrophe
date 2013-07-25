@@ -4540,13 +4540,62 @@ function Apos() {
       });
     }
 
-    function spacesInSortTitle(callback) {
-      self.forEachPage({ sortTitle: /\-/ },
+    function trimTitle(callback) {
+      return self.forEachPage({ $or: [ { title: /^ / }, { title: / $/ } ] },
         function(page, callback) {
           return self.pages.update(
             { _id: page._id },
-            { $set: { sortTitle: page.sortTitle.replace(/\-/g, ' ') } },
+            { $set: { title: page.title.trim() } },
             callback);
+        },
+        callback);
+    }
+
+    function trimSlug(callback) {
+      return self.forEachPage({ $or: [ { slug: /^ / }, { slug: / $/ } ] },
+        function(page, callback) {
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { slug: page.slug.trim() } },
+            callback);
+        },
+        callback);
+    }
+
+    function fixSortTitle(callback) {
+      return self.forEachPage({ sortTitle: { $exists: 0 } },
+        function(page, callback) {
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { sortTitle: self.sortify(page.title) } },
+            callback);
+        },
+        callback);
+    }
+
+    // A2 uses plain strings as IDs. This allows true JSON serialization and
+    // also allows known IDs to be used as identifiers which simplifies writing
+    // importers from other CMSes. If someone who doesn't realize this plorps a lot
+    // of ObjectIDs into the pages collection by accident, clean up the mess.
+
+    function fixObjectId(callback) {
+      return self.forEachPage({},
+        function(page, callback) {
+          var id = page._id;
+          // Convert to an actual hex string, see if that makes it different, if so
+          // save it with the new hex string as its ID. We have to remove and reinsert
+          // it, unfortunately.
+          page._id = id.toString();
+          if (id !== page._id) {
+            return self.pages.remove({ _id: id }, function(err) {
+              if (err) {
+                return callback(err);
+              }
+              return self.pages.insert(page, callback);
+            });
+          } else {
+            return callback(null);
+          }
         },
         callback);
     }
@@ -4762,7 +4811,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
+    async.series([ addTrash, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
@@ -4990,7 +5039,6 @@ function Apos() {
             // in the password-hash module, it's not that. Fortunately
             // it isn't hard to do directly
             var components = hash.split(/\$/);
-            console.log(components);
             if (components.length !== 3) {
               return false;
             }
