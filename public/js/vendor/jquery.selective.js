@@ -15,6 +15,7 @@
     var strikethrough = options.strikethrough || options.propagate;
     var removed = options.removed || options.propagate;
     var propagate = options.propagate;
+    var extras = options.extras;
 
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
@@ -25,10 +26,14 @@
     var self = $el.data('aposSelective');
 
     // If 'options' is a string, look for a command there
-    // such as 'get', otherwise set up a new comboList
+    // such as 'get', otherwise set up a new instance
     if (typeof(options) === 'string') {
       if (options === 'get') {
         return self.get();
+      } else if (options === 'set') {
+        return self.set(arguments[1]);
+      } else if (options === 'clear') {
+        return self.clear();
       }
     } else {
       self.$list = $el.find('[data-list]');
@@ -96,27 +101,53 @@
       self.populate = function() {
         self.$list.find('[data-item]').remove();
 
-        // options.data contains the user's preexisting selections (not potential future choices).
-        //
-        // If options.data is an array of objects, assume they are ready to rock, with
-        // label and value properties. If not, pass options.data to the source, which should
-        // give us back an array of objects with label and value properties.
-        //
-        // This allows for the common case where we save just an array of IDs but need to
-        // turn this back into an array with label and value properties to display our
-        // selections again.
+        self.set(options.data);
+      };
 
-        if (options.data && options.data[0] && (typeof(options.data[0]) !== 'object')) {
+      self.add = function(item) {
+        var $item = self.$itemTemplate.clone();
+        $item.attr('data-value', item.value);
+        $item.find('[data-label]').text(item.label);
+        // Also repopulate "extras" if the data is provided
+        $.each(item, function(property, value) {
+          $item.find('[data-extras][name="' + property + '"]').val(value);
+        });
+        self.$list.append($item);
+      };
+
+      self.clear = function() {
+        self.$list.find('[data-item]').remove();
+      };
+
+      // data contains the user's current selections (not potential future
+      // choices).
+      //
+      // If data is an array of objects, assume they are ready to rock, with
+      // label and value properties and any extra properties.
+      //
+      // If not, pass data to the source, which should give us back an array
+      // of objects with label and value properties as well as any "extra"
+      // properties for the extras option.
+      //
+      // This allows for the common case where we save just an array of IDs
+      // but need to turn this back into an array with label and value
+      // properties and possibly extra properties to display our
+      // selections again.
+
+      self.set = function(data) {
+        self.clear();
+
+        if (data && data[0] && (typeof(data[0]) !== 'object')) {
           if (typeof(options.source) === 'function') {
-            return options.source({ values: options.data }, appendValues);
+            return options.source({ values: data }, appendValues);
           } else if (typeof(options.source) === 'string') {
-            return $.getJSON(options.source, { values: options.data }, appendValues);
+            return $.getJSON(options.source, { values: data }, appendValues);
           } else {
             throw "data is not an array of objects, and source is not a URL or a function. Not sure what to do.";
           }
         } else {
           // The simple case: the data is ready to use
-          return appendValues(options.data);
+          return appendValues(data);
         }
         function appendValues(data) {
           $.each(data, function(i, datum) {
@@ -125,28 +156,29 @@
         }
       };
 
-      self.add = function(item) {
-        var $item = self.$itemTemplate.clone();
-        $item.attr('data-value', item.value);
-        $item.find('[data-label]').text(item.label);
-        self.$list.append($item);
-      };
-
       self.get = function(options) {
-        var valuesOnly = options && options.valuesOnly;
+        var valuesOnly = (options && options.valuesOnly) || ((!removed) && (!extras));
         var result = [];
         $.each(self.$list.find('[data-item]'), function(i, item) {
           var $item = $(item);
-          if (removed && (!valuesOnly)) {
+          if (valuesOnly) {
+            result.push($item.attr('data-value'));
+          } else {
             var datum = {};
             datum.value = $item.attr('data-value');
-            datum.removed = $item.data('removed') ? 1 : 0;
+            if (removed) {
+              datum.removed = $item.data('removed') ? 1 : 0;
+            }
             if (propagate) {
               datum.propagate = $item.find('[data-propagate]:checked').length ? 1 : 0;
             }
+            if (extras) {
+              $item.find('[data-extras]').each(function() {
+                var $this = $(this);
+                datum[$this.attr('name')] = $this.val();
+              });
+            }
             result.push(datum);
-          } else {
-            result.push($item.attr('data-value'));
           }
         });
         return result;
