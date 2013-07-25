@@ -1649,6 +1649,12 @@ function Apos() {
           if (err) {
             return callback(err);
           } else {
+            // Hack: fix YouTube iframes to used wmode=opaque so they don't bleed through
+            // dialogs and editors in Windows Chrome. TODO: an elegant way of registering
+            // oembed fixer-uppers for various dodgy oembed services
+            if (url.match(/youtube/)) {
+              result.html = result.html.replace('feature=oembed', 'feature=oembed&wmode=opaque');
+            }
             oembedCache[url] = result;
             return callback(null, result);
           }
