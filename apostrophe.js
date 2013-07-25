@@ -992,6 +992,29 @@ function Apos() {
         return false;
       };
 
+      // Pass as many objects as you want; they will get merged via
+      // `extend` into a new object, without modifying any of them, and
+      // the resulting object will be returned. If several objects have
+      // a last property, the last object wins.
+      //
+      // This is useful to add one more option to an options object
+      // which was passed to you.
+      //
+      // If any argument is null, it is skipped gracefully. This allows
+      // you to pass in an options object without checking if it is null.
+
+      aposLocals.aposMerge = function() {
+        var result = {};
+        var i;
+        for (i = 0; (i < arguments.length); i++) {
+          if (!arguments[i]) {
+            continue;
+          }
+          extend(true, result, arguments[i]);
+        }
+        return result;
+      };
+
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
       _.extend(app.locals, aposLocals);
