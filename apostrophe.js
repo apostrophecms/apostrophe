@@ -1716,7 +1716,8 @@ function Apos() {
             video: url,
             thumbnail: result.thumbnail_url,
             landscape: width > height,
-            portrait: height > width
+            portrait: height > width,
+            searchText: self.sortify(req.body.title)
           };
           return self.videos.findOne({ video: req.body.video }, function(err, doc) {
             if (err) {
@@ -4395,6 +4396,10 @@ function Apos() {
     return self.forEachDocumentInCollection(self.files, criteria, each, callback);
   };
 
+  self.forEachVideo = function(criteria, each, callback) {
+    return self.forEachDocumentInCollection(self.videos, criteria, each, callback);
+  };
+
   // Iterate over every area on every page on the entire site! Not fast. Definitely for
   // major migrations only. Iterator receives page object, area name, area object and
   // callback.
@@ -4856,12 +4861,30 @@ function Apos() {
   };
 
   self.tasks.index = function(callback) {
-    console.log('Indexing all pages for search');
-    return self.forEachPage({},
-      function(page, callback) {
-        return self.indexPage({}, page, callback);
+    return async.series({
+      indexPages: function(callback) {
+        console.log('Indexing all pages for search');
+        return self.forEachPage({},
+          function(page, callback) {
+            return self.indexPage({}, page, callback);
+          },
+          callback);
       },
-      callback);
+      indexFiles: function(callback) {
+        console.log('Indexing all files for search');
+        return self.forEachFile({}, function(file, callback) {
+          file.searchText = fileSearchText(file);
+          files.update({ _id: file._id }, file, callback);
+        }, callback);
+      },
+      indexVideos: function(callback) {
+        console.log('Indexing all videos for search');
+        return self.forEachVideo({}, function(video, callback) {
+          video.searchText = self.sortify(video.title);
+          videos.update({ _id: video._id }, video, callback);
+        }, callback);
+      }
+    }, callback);
   };
 
   self.tasks.oembed = function(callback) {
