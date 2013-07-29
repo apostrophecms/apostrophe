@@ -611,12 +611,32 @@ apos.Editor = function(options) {
           return;
         }
         var saved = rangy.saveSelection();
-        // create next containing former contents of inner
-        var next = inner.clone();
+        var next;
+        var widget = false;
+        if (inner.hasClass('apos-widget')) {
+          // When a widget is the inner element that needs hoisting,
+          // we can't make it the parent of its former successors, we
+          // need to make a clone of its parent the parent of its
+          // former successors
+          widget = true;
+          next = outer.clone();
+          next.html('');
+        } else {
+          next = inner.clone();
+        }
         // Younger siblings of inner become descendants of next
         apos.moveYoungerSiblings(inner[0], next[0]);
         // outer keeps older siblings of inner
         apos.keepOlderSiblings(inner[0]);
+        // inner becomes a successor of outer, just before next, if it
+        // is a widget. Otherwise it's gone baby gone, because we moved
+        // everything interesting about it - cloned it to next and moved
+        // its siblings
+        if (widget) {
+          // Pure DOM seems to do a better job around text elements
+          outer[0].parentNode.insertBefore(inner[0], outer[0]);
+          // inner.insertAfter(outer);
+        }
         // next is now the successor of outer
         next.insertAfter(outer);
         rangy.restoreSelection(saved);
@@ -647,6 +667,16 @@ apos.Editor = function(options) {
     var $widgets = self.$editable.find('.apos-widget');
 
     $widgets.each(function() {
+
+      // If next node after widget is a plaintext node, encase that text
+      // in a div so it doesn't get hoovered into the widget and lost
+
+      // var text = this.nextSibling;
+      // if (text.nodeType === 3) {
+      //   var div = document.createElement('div');
+      //   text.parentNode.insertBefore(text, div);
+      //   div.appendChild(text);
+      // }
 
       var $widget = $(this);
 
@@ -2850,7 +2880,7 @@ apos.keepOlderSiblings = function(node) {
 };
 
 // Append all DOM sibling nodes after node, including
-// text nodes, to target. This includes text nodes
+// text nodes, to target.
 apos.moveYoungerSiblings = function(node, target) {
   var sibling = node.nextSibling;
   while (sibling) {
