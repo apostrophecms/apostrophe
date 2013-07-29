@@ -992,6 +992,29 @@ function Apos() {
         return false;
       };
 
+      // Pass as many objects as you want; they will get merged via
+      // `extend` into a new object, without modifying any of them, and
+      // the resulting object will be returned. If several objects have
+      // a last property, the last object wins.
+      //
+      // This is useful to add one more option to an options object
+      // which was passed to you.
+      //
+      // If any argument is null, it is skipped gracefully. This allows
+      // you to pass in an options object without checking if it is null.
+
+      aposLocals.aposMerge = function() {
+        var result = {};
+        var i;
+        for (i = 0; (i < arguments.length); i++) {
+          if (!arguments[i]) {
+            continue;
+          }
+          extend(true, result, arguments[i]);
+        }
+        return result;
+      };
+
       // In addition to making these available in app.locals we also
       // make them available in our own partials later.
       _.extend(app.locals, aposLocals);
@@ -1693,7 +1716,8 @@ function Apos() {
             video: url,
             thumbnail: result.thumbnail_url,
             landscape: width > height,
-            portrait: height > width
+            portrait: height > width,
+            searchText: self.sortify(req.body.title)
           };
           return self.videos.findOne({ video: req.body.video }, function(err, doc) {
             if (err) {
@@ -3265,7 +3289,7 @@ function Apos() {
       addSearchTexts: function(item, texts) {
         var items = item.items || [];
         _.each(items, function(item) {
-          texts.push({ weight: 1, text: item.name });
+          texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
@@ -3318,7 +3342,7 @@ function Apos() {
       addSearchTexts: function(item, texts) {
         var items = item.items || [];
         _.each(items, function(item) {
-          texts.push({ weight: 1, text: item.name });
+          texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
@@ -4373,6 +4397,10 @@ function Apos() {
     return self.forEachDocumentInCollection(self.files, criteria, each, callback);
   };
 
+  self.forEachVideo = function(criteria, each, callback) {
+    return self.forEachDocumentInCollection(self.videos, criteria, each, callback);
+  };
+
   // Iterate over every area on every page on the entire site! Not fast. Definitely for
   // major migrations only. Iterator receives page object, area name, area object and
   // callback.
@@ -4541,13 +4569,62 @@ function Apos() {
       });
     }
 
-    function spacesInSortTitle(callback) {
-      self.forEachPage({ sortTitle: /\-/ },
+    function trimTitle(callback) {
+      return self.forEachPage({ $or: [ { title: /^ / }, { title: / $/ } ] },
         function(page, callback) {
           return self.pages.update(
             { _id: page._id },
-            { $set: { sortTitle: page.sortTitle.replace(/\-/g, ' ') } },
+            { $set: { title: page.title.trim() } },
             callback);
+        },
+        callback);
+    }
+
+    function trimSlug(callback) {
+      return self.forEachPage({ $or: [ { slug: /^ / }, { slug: / $/ } ] },
+        function(page, callback) {
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { slug: page.slug.trim() } },
+            callback);
+        },
+        callback);
+    }
+
+    function fixSortTitle(callback) {
+      return self.forEachPage({ sortTitle: { $exists: 0 } },
+        function(page, callback) {
+          return self.pages.update(
+            { _id: page._id },
+            { $set: { sortTitle: self.sortify(page.title) } },
+            callback);
+        },
+        callback);
+    }
+
+    // A2 uses plain strings as IDs. This allows true JSON serialization and
+    // also allows known IDs to be used as identifiers which simplifies writing
+    // importers from other CMSes. If someone who doesn't realize this plorps a lot
+    // of ObjectIDs into the pages collection by accident, clean up the mess.
+
+    function fixObjectId(callback) {
+      return self.forEachPage({},
+        function(page, callback) {
+          var id = page._id;
+          // Convert to an actual hex string, see if that makes it different, if so
+          // save it with the new hex string as its ID. We have to remove and reinsert
+          // it, unfortunately.
+          page._id = id.toString();
+          if (id !== page._id) {
+            return self.pages.remove({ _id: id }, function(err) {
+              if (err) {
+                return callback(err);
+              }
+              return self.pages.insert(page, callback);
+            });
+          } else {
+            return callback(null);
+          }
         },
         callback);
     }
@@ -4763,7 +4840,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, spacesInSortTitle, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
+    async.series([ addTrash, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
@@ -4785,12 +4862,30 @@ function Apos() {
   };
 
   self.tasks.index = function(callback) {
-    console.log('Indexing all pages for search');
-    return self.forEachPage({},
-      function(page, callback) {
-        return self.indexPage({}, page, callback);
+    return async.series({
+      indexPages: function(callback) {
+        console.log('Indexing all pages for search');
+        return self.forEachPage({},
+          function(page, callback) {
+            return self.indexPage({}, page, callback);
+          },
+          callback);
       },
-      callback);
+      indexFiles: function(callback) {
+        console.log('Indexing all files for search');
+        return self.forEachFile({}, function(file, callback) {
+          file.searchText = fileSearchText(file);
+          files.update({ _id: file._id }, file, callback);
+        }, callback);
+      },
+      indexVideos: function(callback) {
+        console.log('Indexing all videos for search');
+        return self.forEachVideo({}, function(video, callback) {
+          video.searchText = self.sortify(video.title);
+          videos.update({ _id: video._id }, video, callback);
+        }, callback);
+      }
+    }, callback);
   };
 
   self.tasks.oembed = function(callback) {
@@ -4991,7 +5086,6 @@ function Apos() {
             // in the password-hash module, it's not that. Fortunately
             // it isn't hard to do directly
             var components = hash.split(/\$/);
-            console.log(components);
             if (components.length !== 3) {
               return false;
             }

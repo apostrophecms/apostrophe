@@ -1222,6 +1222,7 @@ apos.widgetTypes.slideshow = {
     if (self.fileGroup === undefined) {
       self.fileGroup = 'images';
     }
+    var showImages = (options.showImages === undefined) ? true : options.showImages;
     // Options passed from template or other context
     var templateOptions = options.options || {};
     var widgetClass = templateOptions.widgetClass;
@@ -1475,9 +1476,11 @@ apos.widgetTypes.slideshow = {
             _.each(results.files, function(file) {
               var $item = apos.fromTemplate($items.find('[data-library-item]'));
               $item.data('file', file);
-              $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
+              if (showImages) {
+                $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
+              }
               $item.attr('title', file.name + '.' + file.extension);
-              if (self.fileGroup === 'images') {
+              if ((self.fileGroup === 'images') && showImages) {
                 $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
               } else {
                 // Display everything like a plain filename, after all we're offering
@@ -2004,6 +2007,7 @@ apos.widgetTypes.files = {
   label: 'Files',
   editor: function(options) {
     var self = this;
+    options.showImages = false;
     options.template = '.apos-files-editor';
     options.type = 'files';
     // We want the default for extra fields to be true rather than false for
