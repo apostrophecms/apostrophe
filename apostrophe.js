@@ -3303,7 +3303,8 @@ function Apos() {
       empty: function(item) {
         return !((item.items || []).length);
       },
-      css: 'marquee'
+      css: 'marquee',
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ]
     },
     files: {
       widget: true,
