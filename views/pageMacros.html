@@ -10,8 +10,12 @@
 
 {# If options.class is set, it is applied to the anchor element. #}
 
+{# If options.span is set, a span is used instead of an anchor. This is #}
+{# useful if you want the other features but don't want a link at all, as is #}
+{# commonly the case for the current page. #}
+
 {% macro pageLink(page, options = {}) %}
-  <a href="
+  <{% if options.span %}span{% else %}a{% endif %} href="
     {%- if options.url -%}
       {{ options.url | e }}
     {%- elif options.void -%}
