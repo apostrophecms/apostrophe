@@ -87,7 +87,7 @@ function Apos() {
   // programmatically
 
   // Removed the code widget for now in favor of giving 'pre' in the format dropdown a try
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'insertTable', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'unlink', 'insertUnorderedList', 'insertTable', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -125,6 +125,11 @@ function Apos() {
       type: 'button',
       label: 'Link',
       icon: 'link'
+    },
+    unlink: {
+      type: 'button',
+      label: 'Unlink',
+      icon: 'unlink'
     },
     insertUnorderedList: {
       type: 'button',

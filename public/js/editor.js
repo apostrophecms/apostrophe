@@ -342,6 +342,7 @@ apos.Editor = function(options) {
         return callback(null);
       },
       save: function(callback) {
+        self.undoPoint();
         if (!$a.length) {
           $a = $('<a></a>');
           try {
@@ -468,6 +469,7 @@ apos.Editor = function(options) {
   enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
   enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
   enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], callback: self.editLink });
+  enableControl('unlink', { keys: ['meta+l', 'ctrl+l'] });
   enableControl('insertUnorderedList', { keys: [] });
   enableControl('insertTable', { keys: [], callback: self.insertTable });
 
