@@ -319,6 +319,102 @@ apos.Editor = function(options) {
 
   // END TABLE EDITING
 
+  self.editLink = function() {
+    var sel, range, $startContainer, $a;
+    var $href;
+    var $target;
+    var $name;
+    var href, target, name;
+    var $el = apos.modalFromTemplate('.apos-link-editor', {
+      init: function(callback) {
+        $a = updateRange();
+        $href = $el.findByName('href');
+        $target = $el.findByName('target');
+        $name = $el.findByName('name');
+        if ($a.length) {
+          href = $a.attr('href');
+          target = $a.attr('target');
+          name = $a.attr('name');
+          $href.val(href);
+          $target.val(target);
+          $name.val(name);
+        }
+        return callback(null);
+      },
+      save: function(callback) {
+        if (!$a.length) {
+          $a = $('<a></a>');
+          try {
+            apos.popSelection();
+            updateRange();
+            range.surroundContents($a[0]);
+            apos.pushSelection();
+          } catch (e) {
+            // Rangy won't surround 'foo<b>something' (note the </b> is not
+            // in the range). We could eventually address this by splitting
+            // into two links automatically
+            apos.log(e);
+          }
+        }
+
+        href = $href.val().trim();
+        target = $target.val().trim();
+        name = $name.val().trim();
+
+        // Fix lame URLs
+        //
+        // Valid URLs and relative URLS:
+        // Has protocol,
+        // Starts with #,
+        // Starts with /,
+        // starts with non-slash, non-period characters followed by /,
+        // consists of non-slash, non-period characters followed by end of line
+        if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+          // All good
+        } else if (/^[^\/\.]+\.[^\/\.]+/) {
+          // Smells like a domain name. Educated guess: they left off http://
+          href = 'http://' + href;
+        } else {
+          // No href at all is perfectly valid as long as there
+          // is a name (for creating an anchor, not a link)
+          if (!name.length) {
+            alert('You must specify a link, a name, or both.');
+            return callback('invalid');
+          } else {
+            alert('That link is not valid. Examples of valid links: /my/page, http://google.com/, mailto:tom@example.com');
+            return callback('invalid');
+          }
+        }
+
+        if (href.length) {
+          $a.attr('href', href);
+        } else {
+          $a.removeAttr('href');
+        }
+        if (target.length) {
+          $a.attr('target', target);
+        } else {
+          $a.removeAttr('target');
+        }
+        if (name.length) {
+          $a.attr('name', name);
+        } else {
+          $a.removeAttr('name');
+        }
+        return callback(null);
+      },
+      afterHide: function(callback) {
+        return callback(null);
+      }
+    });
+    function updateRange() {
+      sel = rangy.getSelection();
+      range = sel.getRangeAt(0);
+      $startContainer = $(range.startContainer);
+      return $startContainer.closest('a');
+    }
+  };
+
   // The wrapper is taller than the editor at first, if someone
   // clicks below the editor make sure they still get focus to type
   self.$el.click(function(e) {
@@ -371,7 +467,7 @@ apos.Editor = function(options) {
 
   enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
   enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
-  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], promptForLabel: 'URL:' });
+  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], callback: self.editLink });
   enableControl('insertUnorderedList', { keys: [] });
   enableControl('insertTable', { keys: [], callback: self.insertTable });
 

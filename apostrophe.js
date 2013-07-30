@@ -207,7 +207,8 @@ function Apos() {
     { name: 'codeEditor', when: 'user' },
     { name: 'htmlEditor', when: 'user' },
     { name: 'cropEditor', when: 'user' },
-    { name: 'tableEditor', when: 'user' }
+    { name: 'tableEditor', when: 'user' },
+    { name: 'linkEditor', when: 'user' }
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -4592,11 +4593,11 @@ function Apos() {
     }
 
     function fixSortTitle(callback) {
-      return self.forEachPage({ sortTitle: { $exists: 0 } },
+      return self.forEachPage({ $or: [ { sortTitle: { $exists: 0 } }, { sortTitle: /^ / }, { sortTitle: / $/} ] },
         function(page, callback) {
           return self.pages.update(
             { _id: page._id },
-            { $set: { sortTitle: self.sortify(page.title) } },
+            { $set: { sortTitle: self.sortify(page.title.trim()) } },
             callback);
         },
         callback);
