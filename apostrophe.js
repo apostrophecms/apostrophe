@@ -4567,9 +4567,45 @@ function Apos() {
             slug: '/trash',
             type: 'trash',
             title: 'Trash',
-            rank: 9999,
+            // Max home page direct kids on one site: 1 million. Max special
+            // purpose admin pages: 999. That ought to be enough for
+            // anybody... I hope!
+            rank: 1000999,
             trash: true,
           }, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    // Moved page rank of trash and search well beyond any reasonable
+    // number of legit kids of the home page
+    function moveTrash(callback) {
+      return self.pages.findOne({ type: 'trash' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.rank !== 1000999) {
+          page.rank = 1000999;
+          return self.pages.update({ _id: page._id }, page, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    function moveSearch(callback) {
+      return self.pages.findOne({ type: 'search' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.path !== 'home/search') {
+          // This is some strange search page we don't know about and
+          // probably shouldn't tamper with
+          return callback(null);
+        }
+        if (page.rank !== 1000998) {
+          page.rank = 1000998;
+          return self.pages.update({ _id: page._id }, page, callback);
         }
         return callback(null);
       });
@@ -4846,7 +4882,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
@@ -5034,7 +5070,10 @@ function Apos() {
             type: 'search',
             title: 'Search',
             published: true,
-            rank: 9998
+            // Max home page direct kids on one site: 1 million. Max special
+            // purpose admin pages: 999. That ought to be enough for
+            // anybody... I hope!
+            rank: 1000998
         }, callback);
       } else {
         console.log('We already have one');
