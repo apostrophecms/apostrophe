@@ -1,0 +1,26 @@
+{# Outputs a simple link tag pointing to a page. #}
+
+{# The title is correctly escaped. #}
+
+{# If the page is unpublished, the unpublished class is added to the link. #}
+
+{# If options.url is set, it is used instead of the page URL. #}
+
+{# If options.void is set, javascript:void(0) is used as the URL. #}
+
+{# If options.class is set, it is applied to the anchor element. #}
+
+{% macro pageLink(page, options = {}) %}
+  <a href="
+    {%- if options.url -%}
+      {{ options.url | e }}
+    {%- elif options.void -%}
+      javascript:void(0)
+    {%- else -%}
+      {{ page.url | e }}
+    {%- endif -%}"
+    class="apos-page-link {{ options.class }} {%- if not page.published -%}apos-unpublished{%- endif -%}"
+  >
+    {{ page.title | e }}
+  </a>
+{% endmacro %}
