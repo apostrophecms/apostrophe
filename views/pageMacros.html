@@ -15,7 +15,10 @@
 {# commonly the case for the current page. #}
 
 {% macro pageLink(page, options = {}) %}
-  <{% if options.span %}span{% else %}a{% endif %} href="
+  <{%- if options.span -%}
+    span
+  {%- else -%}
+    a href="
     {%- if options.url -%}
       {{ options.url | e }}
     {%- elif options.void -%}
@@ -23,8 +26,13 @@
     {%- else -%}
       {{ page.url | e }}
     {%- endif -%}"
-    class="apos-page-link {{ options.class }} {%- if not page.published -%}apos-unpublished{%- endif -%}"
+  {% endif %}
+  class="apos-page-link {{ options.class }} {%- if not page.published -%}apos-unpublished{%- endif -%}"
   >
     {{ page.title | e }}
-  </a>
+  {%- if options.span -%}
+    </span>
+  {%- else -%}
+    </a>
+  {%- endif -%}
 {% endmacro %}
