@@ -2737,7 +2737,7 @@ apos.parseArea = function(content) {
 
     for (var i = 0; (i < children.length); i++) {
       child = children[i];
-      if (_.contains([ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'P', 'PRE', 'TABLE' ], child.nodeName))
+      if (_.contains([ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'pre', 'table', 'ul', 'ol', 'nl' ], child.nodeName.toLowerCase()))
       {
         flushNewDiv();
         newBox.appendChild(child);
