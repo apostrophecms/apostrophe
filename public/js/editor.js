@@ -2690,19 +2690,64 @@ apos.enableAreas = function() {
 };
 
 apos.parseArea = function(content) {
+  var items = [];
+
   // Helper functions
 
+  // We build up richText as we sweep through DOM nodes that are
+  // not widgets. Flush it by creating a new apostrophe item if it is
+  // not empty.
+
+  var richText = '';
+
   function flushRichText() {
-    if (richText.length) {
-      // Remove invisible markers used to ensure good behavior of
-      // webkit inside contenteditable. Some browsers render these
-      // as boxes (Windows Chrome) if they see them and the font is
-      // a custom one that doesn't explicitly address this code point
-      richText = apos.globalReplace(richText, apos.beforeMarker, '');
-      richText = apos.globalReplace(richText, apos.afterMarker, '');
-      items.push({ type: 'richText', content: richText });
-      richText = '';
+    if (!richText.length) {
+      return;
     }
+    // Remove invisible markers used to ensure good behavior of
+    // webkit inside contenteditable. Some browsers render these
+    // as boxes (Windows Chrome) if they see them and the font is
+    // a custom one that doesn't explicitly address this code point
+    richText = apos.globalReplace(richText, apos.beforeMarker, '');
+    richText = apos.globalReplace(richText, apos.afterMarker, '');
+
+    // One more pass through the DOM (sorry!) to locate runs of
+    // elements that are not block elements and box them in divs
+    // so that styling content is much easier
+
+    var oldBox = document.createElement('div');
+    var newBox = document.createElement('div');
+    oldBox.innerHTML = richText;
+    var children = oldBox.childNodes;
+    var child;
+
+    var steal = [];
+    function flushNewDiv() {
+      var i;
+      var newDiv;
+      if (steal.length) {
+        newDiv = document.createElement('div');
+        for (i = 0; (i < steal.length); i++) {
+          newDiv.appendChild(steal[i]);
+        }
+        steal = [];
+        newBox.appendChild(newDiv);
+      }
+    }
+
+    for (var i = 0; (i < children.length); i++) {
+      child = children[i];
+      if (_.contains([ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'P', 'PRE', 'TABLE' ], child.nodeName))
+      {
+        flushNewDiv();
+        newBox.appendChild(child);
+      } else {
+        steal.push(child);
+      }
+    }
+    flushNewDiv();
+    items.push({ type: 'richText', content: newBox.innerHTML });
+    richText = '';
   }
 
   // Pull it into jQuery land for a few cleanups best done there
@@ -2758,15 +2803,17 @@ apos.parseArea = function(content) {
     content = $content.html();
   }
 
+  // Push it into the DOM and loop over all nodes, including
+  // text nodes, building apostrophe items
+
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
-  var items = [];
-  var richText = '';
   for (var i = 0; (i < children.length); i++) {
     var child = node.childNodes[i];
     if (child.nodeType === 3) {
-      // This is a text node. Take care to escape when appending it to the rich text
+      // This is a text node. Take care to escape when appending it
+      // to the rich text
       richText += apos.escapeHtml(child.nodeValue);
 
     } else if (child.nodeType === 1) {
