@@ -694,8 +694,10 @@ apos.Editor = function(options) {
     // as a result of copy and paste operations and formatBlock actions.
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
+    // ul's should be hoisted themselves but are not considered
+    // grounds for hoisting something else.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
@@ -703,11 +705,26 @@ apos.Editor = function(options) {
       // Use first() because the first call usually resolves the rest, and if
       // we keep going with the old result set we'll wind up reversing the order
       // of the elements
-      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre').first().each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').first().each(function() {
         var inner = $(this);
+        var i;
+
         if (inner.parents('.apos-widget').length) {
           return;
         }
+
+        // If we are nested in an li before we are nested in 'outer',
+        // don't migrate.
+        var parents = inner.parents();
+        for (i = 0; (i < parents.length); i++) {
+          if (parents[i] === outer[0]) {
+            break;
+          }
+          if (parents[i].nodeName.toLowerCase() === 'li') {
+            return;
+          }
+        }
+
         var saved = rangy.saveSelection();
         var next;
         var widget = false;
@@ -2690,19 +2707,65 @@ apos.enableAreas = function() {
 };
 
 apos.parseArea = function(content) {
+  var items = [];
+
   // Helper functions
 
+  // We build up richText as we sweep through DOM nodes that are
+  // not widgets. Flush it by creating a new apostrophe item if it is
+  // not empty.
+
+  var richText = '';
+
   function flushRichText() {
-    if (richText.length) {
-      // Remove invisible markers used to ensure good behavior of
-      // webkit inside contenteditable. Some browsers render these
-      // as boxes (Windows Chrome) if they see them and the font is
-      // a custom one that doesn't explicitly address this code point
-      richText = apos.globalReplace(richText, apos.beforeMarker, '');
-      richText = apos.globalReplace(richText, apos.afterMarker, '');
-      items.push({ type: 'richText', content: richText });
-      richText = '';
+    if (!richText.length) {
+      return;
     }
+    // Remove invisible markers used to ensure good behavior of
+    // webkit inside contenteditable. Some browsers render these
+    // as boxes (Windows Chrome) if they see them and the font is
+    // a custom one that doesn't explicitly address this code point
+    richText = apos.globalReplace(richText, apos.beforeMarker, '');
+    richText = apos.globalReplace(richText, apos.afterMarker, '');
+
+    // One more pass through the DOM (sorry!) to locate runs of
+    // elements that are not block elements and box them in divs
+    // so that styling content is much easier
+
+    var oldBox = document.createElement('div');
+    var newBox = document.createElement('div');
+    oldBox.innerHTML = richText;
+    var children = oldBox.childNodes;
+    var child;
+
+    var steal = [];
+    function flushNewDiv() {
+      var i;
+      var newDiv;
+      if (steal.length) {
+        newDiv = document.createElement('div');
+        for (i = 0; (i < steal.length); i++) {
+          newDiv.appendChild(steal[i]);
+        }
+        steal = [];
+        newBox.appendChild(newDiv);
+      }
+    }
+
+    for (var i = 0; (i < children.length); i++) {
+      child = children[i];
+      if (_.contains([ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'pre', 'table', 'ul', 'ol', 'nl' ], child.nodeName.toLowerCase()))
+      {
+        flushNewDiv();
+        // Clone it so we don't mess with the length of "children"
+        newBox.appendChild(child.cloneNode(true));
+      } else {
+        steal.push(child);
+      }
+    }
+    flushNewDiv();
+    items.push({ type: 'richText', content: newBox.innerHTML });
+    richText = '';
   }
 
   // Pull it into jQuery land for a few cleanups best done there
@@ -2758,15 +2821,17 @@ apos.parseArea = function(content) {
     content = $content.html();
   }
 
+  // Push it into the DOM and loop over all nodes, including
+  // text nodes, building apostrophe items
+
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
-  var items = [];
-  var richText = '';
   for (var i = 0; (i < children.length); i++) {
     var child = node.childNodes[i];
     if (child.nodeType === 3) {
-      // This is a text node. Take care to escape when appending it to the rich text
+      // This is a text node. Take care to escape when appending it
+      // to the rich text
       richText += apos.escapeHtml(child.nodeValue);
 
     } else if (child.nodeType === 1) {
@@ -2793,7 +2858,6 @@ apos.parseArea = function(content) {
   // Don't forget to flush any rich text that appeared after the last widget,
   // and/or if there are no widgets!
   flushRichText();
-
   return items;
 };
 

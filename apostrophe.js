@@ -1665,6 +1665,33 @@ function Apos() {
         }
       });
 
+      // Fetch tags. Optional limit parameter. "prefix" parameter
+      // limits to tags with that prefix.
+      app.get('/apos/tags', function(req, res) {
+        var prefix = self.sanitizeString(req.query.prefix);
+        var r = new RegExp('^' + RegExp.quote(prefix.toLowerCase()));
+        return self.pages.distinct("tags", { tags: r }, function(err, tags) {
+          if (err) {
+            return fail(req, res);
+          }
+          // "Why do we have to apply the regular expression twice?"
+          // The query above just limits the documents whose distinct tags are
+          // returned. If one of the documents that has at least one tag
+          // starting with "m" also has other tags not starting with "m," we
+          // still have them at this point. The query is still worthwhile
+          // because it cuts back the number of documents examined.
+          tags = _.filter(tags, function(tag) {
+            return tag.toString().match(r);
+          });
+          tags.sort();
+          if (req.query.limit) {
+            var limit = self.sanitizeInteger(req.query.limit);
+            tags = tags.slice(0, limit);
+          }
+          return res.send(tags);
+        });
+      });
+
       // A simple oembed proxy to avoid cross-site scripting restrictions.
       // Includes bare-bones caching to avoid hitting rate limits.
       // TODO: expiration for caching.
@@ -4862,6 +4889,44 @@ function Apos() {
       });
     }
 
+    // If there are any pages whose tags property is defined but set
+    // to null, due to inadequate sanitization in the snippets module,
+    // fix them to be empty arrays so templates don't crash
+    function fixNullTags(callback) {
+      return self.pages.findOne({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, function(err, page) {
+        if (err) {
+          return callback(err);
+        }
+        if (!page) {
+          return callback(null);
+        }
+        console.log('Fixing pages whose tags property is defined and set to null');
+        return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
+      });
+    }
+
+    // Tags that are numbers can be a consequence of an import.
+    // Clean that up so they match regexes properly.
+    function fixNumberTags(callback) {
+      return self.pages.distinct("tags", {}, function(err, tags) {
+        if (err) {
+          return callback(err);
+        }
+        return async.eachSeries(tags, function(tag, callback) {
+          if (typeof(tag) === 'number') {
+            return self.forEachPage({ tags: { $in: [ tag ] } }, function(page, callback) {
+              page.tags = _.without(page.tags, tag);
+              page.tags.push(tag.toString());
+              return self.pages.update({ slug: page.slug }, { $set: { tags: page.tags } }, callback);
+            }, callback);
+          } else {
+            return callback(null);
+          }
+        }, callback);
+      });
+        // return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
+    }
+
     function fixTimelessEvents(callback) {
       var used = false;
       return self.forEachPage({ type: 'event' }, function(page, callback) {
@@ -4886,7 +4951,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixNumberTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
