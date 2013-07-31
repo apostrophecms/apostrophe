@@ -694,8 +694,10 @@ apos.Editor = function(options) {
     // as a result of copy and paste operations and formatBlock actions.
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
+    // ul's should be hoisted themselves but are not considered
+    // grounds for hoisting something else.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
@@ -703,11 +705,26 @@ apos.Editor = function(options) {
       // Use first() because the first call usually resolves the rest, and if
       // we keep going with the old result set we'll wind up reversing the order
       // of the elements
-      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre').first().each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').first().each(function() {
         var inner = $(this);
+        var i;
+
         if (inner.parents('.apos-widget').length) {
           return;
         }
+
+        // If we are nested in an li before we are nested in 'outer',
+        // don't migrate.
+        var parents = inner.parents();
+        for (i = 0; (i < parents.length); i++) {
+          if (parents[i] === outer[0]) {
+            break;
+          }
+          if (parents[i].nodeName.toLowerCase() === 'li') {
+            return;
+          }
+        }
+
         var saved = rangy.saveSelection();
         var next;
         var widget = false;
@@ -2740,7 +2757,8 @@ apos.parseArea = function(content) {
       if (_.contains([ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'pre', 'table', 'ul', 'ol', 'nl' ], child.nodeName.toLowerCase()))
       {
         flushNewDiv();
-        newBox.appendChild(child);
+        // Clone it so we don't mess with the length of "children"
+        newBox.appendChild(child.cloneNode(true));
       } else {
         steal.push(child);
       }
@@ -2840,7 +2858,6 @@ apos.parseArea = function(content) {
   // Don't forget to flush any rich text that appeared after the last widget,
   // and/or if there are no widgets!
   flushRichText();
-
   return items;
 };
 
