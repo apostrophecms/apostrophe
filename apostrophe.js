@@ -981,6 +981,10 @@ function Apos() {
         }
       };
 
+      aposLocals.aposReverse = function(array){
+        return array.reverse();
+      };
+
       aposLocals.aposBeginsWith = function(list, value){
         if (_.isArray(list)){
           for (var i = 0; i < list.length; i++) {
