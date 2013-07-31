@@ -1661,14 +1661,21 @@ function Apos() {
         }
       });
 
-      // Fetch tags. Optional limit parameter. "prefix" parameter
-      // limits to tags with that prefix.
-      app.get('/apos/tags', function(req, res) {
-        var prefix = self.sanitizeString(req.query.prefix);
+      // Returns all tags used on pages, snippets, etc. Accepts prefix and
+      // limit options (neither is required). Sanitizes options.
+      // Use options.prefix for autocomplete. options argument is not
+      // required.
+
+      self.getTags = function(options, callback) {
+        if (!callback) {
+          callback = options;
+          options = {};
+        }
+        var prefix = self.sanitizeString(options.prefix);
         var r = new RegExp('^' + RegExp.quote(prefix.toLowerCase()));
         return self.pages.distinct("tags", { tags: r }, function(err, tags) {
           if (err) {
-            return fail(req, res);
+            return callback(err);
           }
           // "Why do we have to apply the regular expression twice?"
           // The query above just limits the documents whose distinct tags are
@@ -1680,10 +1687,43 @@ function Apos() {
             return tag.toString().match(r);
           });
           tags.sort();
-          if (req.query.limit) {
-            var limit = self.sanitizeInteger(req.query.limit);
+          if (options.limit) {
+            var limit = self.sanitizeInteger(options.limit);
             tags = tags.slice(0, limit);
           }
+          return callback(null, tags);
+        });
+      };
+
+      // Fetch all tags. Accepts options supported by apos.getTags
+      // as query parameters. Useful for creating tag admin tools.
+      app.get('/apos/tags', function(req, res) {
+        return self.getTags(req.query, function(err, tags) {
+          if (err) {
+            return fail(req, res);
+          }
+          return res.send(tags);
+        });
+      });
+
+      // Provides tag autocomplete in the format expected by jquery selective.
+      app.get('/apos/autocomplete-tag', function(req, res) {
+        // Special case: selective is asking for complete objects with
+        // label and value properties for existing values. For tags these
+        // are one and the same so just do a map call
+        if (req.query.values) {
+          return res.send(_.map(req.query.values, function(value) {
+            return { value: value, label: value };
+          }));
+        }
+
+        return self.getTags({ prefix: req.query.term, limit: 100 }, function(err, tags) {
+          if (err) {
+            return fail(req, res);
+          }
+          tags = _.map(tags, function(tag) {
+            return { value: tag, label: tag };
+          });
           return res.send(tags);
         });
       });
@@ -4920,7 +4960,6 @@ function Apos() {
           }
         }, callback);
       });
-        // return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
     }
 
     function fixTimelessEvents(callback) {

@@ -3051,3 +3051,12 @@ apos.moveYoungerSiblings = function(node, target) {
     sibling = next;
   }
 };
+
+// Enable autocomplete of tags. Expects the fieldset element
+// (not the input element) and an array of existing tags already
+// assigned to this item.
+apos.enableTags = function($el, tags) {
+  tags = tags || [];
+  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 188] });
+};
+

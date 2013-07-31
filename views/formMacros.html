@@ -15,8 +15,20 @@
 {% endmacro %}
 
 {% macro formTags(name, label) %}
-  {# Later this will be customized with autocomplete and such #}
-  {{ formText(name, label) }}
+  <fieldset class="apos-fieldset apos-fieldset-tags apos-fieldset-{{ name | css}}" data-name="{{ name }}">
+    <label>{{ label | e }}</label>
+    <ul data-list>
+      <li data-item>
+        <span class="label-and-remove">
+          <span data-label>Example label</span>
+          <!-- Link to remove this choice -->
+          <a href="#" data-remove>x</a>
+        </span>
+      </li>
+    </ul>
+    <!-- Text entry for autocompleting the next item -->
+    <input name="{{ name | e }}" data-autocomplete placeholder="Type Here" class="autocomplete" />
+  </fieldset>
 {% endmacro %}
 
 {# Maybe fancier later #}
