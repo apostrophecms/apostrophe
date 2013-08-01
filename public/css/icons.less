@@ -22,6 +22,18 @@
   font-weight: normal;
   font-style: normal;
 }
+
+@font-face {
+  font-family: 'apos-icons-additional';
+  src: url("../fonts/apos-icons-additional.eot?68826396");
+  src: url("../fonts/apos-icons-additional.eot?68826396#iefix") format('embedded-opentype'),
+       url("../fonts/apos-icons-additional.woff?68826396") format('woff'),
+       url("../fonts/apos-icons-additional.ttf?68826396") format('truetype'),
+       url("../fonts/apos-icons-additional.svg?68826396#apos-icons") format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* Chrome hack: SVG is rendered more smooth in Windozze. 100% magic ,uncomment if you need it. */
 /* Note, that will break hinting! In other OS-es font will be not as sharp as it could be */
 /*
@@ -57,6 +69,35 @@
 /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
 }
 
+.icon-unlink:before {
+  font-family: 'apos-icons-additional';
+  font-style: normal;
+  font-weight: normal;
+  speak: none;
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: 0.2em;
+  text-align: center;
+  color: #fff;
+  /*font-size: 28px;*/
+/* opacity .8 */
+/* fix buttons height, for twitter bootstrap */
+  line-height: 1em;
+/* Animation center compensation - magrins should be symmetric */
+/* remove if not needed */
+  margin-left: 0.2em;
+/* you can be more comfortable with increased icons size */
+/* font-size: 120%; */
+/* Uncomment for 3D effect */
+/* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+
+// Temporary New Icons
+.icon-unlink {font-size: 1em !important}
+.icon-unlink:before { content: '\e899'; } /* '' */
+
+// Old Standards
 .icon-plus:before { content: '\2b'; } /* '+' */
 .icon-minus:before { content: '\2d'; } /* '-' */
 .icon-youtube:before { content: '\55'; } /* 'U' */

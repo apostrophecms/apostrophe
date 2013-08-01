@@ -1,0 +1,14 @@
+{
+  "name": "eno",
+  "css_prefix_text": "icon-",
+  "css_use_suffix": false,
+  "hinting": true,
+  "glyphs": [
+    {
+      "uid": "1dcd2b2148b7f086a4eb47f6a746bdee",
+      "css": "unlink",
+      "code": 59545,
+      "src": "fontawesome"
+    }
+  ]
+}
