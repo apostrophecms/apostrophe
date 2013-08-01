@@ -87,7 +87,7 @@ function Apos() {
   // programmatically
 
   // Removed the code widget for now in favor of giving 'pre' in the format dropdown a try
-  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'insertUnorderedList', 'insertTable', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
+  self.defaultControls = [ 'style', 'bold', 'italic', 'createLink', 'unlink', 'insertUnorderedList', 'insertTable', 'slideshow', 'buttons', 'video', 'files', 'pullquote', 'html' ];
 
   // These are the controls that map directly to standard document.executeCommand
   // rich text editor actions. You can modify these to introduce other simple verbs that
@@ -125,6 +125,11 @@ function Apos() {
       type: 'button',
       label: 'Link',
       icon: 'link'
+    },
+    unlink: {
+      type: 'button',
+      label: 'Unlink',
+      icon: 'unlink'
     },
     insertUnorderedList: {
       type: 'button',
@@ -207,7 +212,8 @@ function Apos() {
     { name: 'codeEditor', when: 'user' },
     { name: 'htmlEditor', when: 'user' },
     { name: 'cropEditor', when: 'user' },
-    { name: 'tableEditor', when: 'user' }
+    { name: 'tableEditor', when: 'user' },
+    { name: 'linkEditor', when: 'user' }
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -975,6 +981,10 @@ function Apos() {
         }
       };
 
+      aposLocals.aposReverse = function(array){
+        return array.reverse();
+      };
+
       aposLocals.aposBeginsWith = function(list, value){
         if (_.isArray(list)){
           for (var i = 0; i < list.length; i++) {
@@ -1655,6 +1665,87 @@ function Apos() {
         }
       });
 
+      // Returns all tags used on pages, snippets, etc. Accepts prefix and
+      // limit options (neither is required). Sanitizes options.
+      // Use options.prefix for autocomplete. options argument is not
+      // required.
+
+      self.getTags = function(options, callback) {
+        if (!callback) {
+          callback = options;
+          options = {};
+        }
+        var prefix = self.sanitizeString(options.prefix);
+        var r = new RegExp('^' + RegExp.quote(prefix.toLowerCase()));
+        return self.pages.distinct("tags", { tags: r }, function(err, tags) {
+          if (err) {
+            return callback(err);
+          }
+          // "Why do we have to apply the regular expression twice?"
+          // The query above just limits the documents whose distinct tags are
+          // returned. If one of the documents that has at least one tag
+          // starting with "m" also has other tags not starting with "m," we
+          // still have them at this point. The query is still worthwhile
+          // because it cuts back the number of documents examined.
+          tags = _.filter(tags, function(tag) {
+            return tag.toString().match(r);
+          });
+          tags.sort();
+          if (options.limit) {
+            var limit = self.sanitizeInteger(options.limit);
+            tags = tags.slice(0, limit);
+          }
+          return callback(null, tags);
+        });
+      };
+
+      // Remove a tag from all pages. The optional criteria argument can
+      // be used to limit the pages from which it is removed
+      // (example: { type: 'person' })
+      self.removeTag = function(tag, criteria, callback) {
+        if (!callback) {
+          callback = criteria;
+          criteria = {};
+        }
+        var mergedCriteria = {};
+        extend(true, mergedCriteria, criteria);
+        mergedCriteria.tags = { $in: [ tag ] };
+        return self.pages.update(mergedCriteria, { $pull: { tags: tag } }, { multi: true }, callback);
+      };
+
+      // Fetch all tags. Accepts options supported by apos.getTags
+      // as query parameters. Useful for creating tag admin tools.
+      app.get('/apos/tags', function(req, res) {
+        return self.getTags(req.query, function(err, tags) {
+          if (err) {
+            return fail(req, res);
+          }
+          return res.send(tags);
+        });
+      });
+
+      // Provides tag autocomplete in the format expected by jquery selective.
+      app.get('/apos/autocomplete-tag', function(req, res) {
+        // Special case: selective is asking for complete objects with
+        // label and value properties for existing values. For tags these
+        // are one and the same so just do a map call
+        if (req.query.values) {
+          return res.send(_.map(req.query.values, function(value) {
+            return { value: value, label: value };
+          }));
+        }
+
+        return self.getTags({ prefix: req.query.term, limit: 100 }, function(err, tags) {
+          if (err) {
+            return fail(req, res);
+          }
+          tags = _.map(tags, function(tag) {
+            return { value: tag, label: tag };
+          });
+          return res.send(tags);
+        });
+      });
+
       // A simple oembed proxy to avoid cross-site scripting restrictions.
       // Includes bare-bones caching to avoid hitting rate limits.
       // TODO: expiration for caching.
@@ -1716,7 +1807,8 @@ function Apos() {
             video: url,
             thumbnail: result.thumbnail_url,
             landscape: width > height,
-            portrait: height > width
+            portrait: height > width,
+            searchText: self.sortify(req.body.title)
           };
           return self.videos.findOne({ video: req.body.video }, function(err, doc) {
             if (err) {
@@ -3326,7 +3418,8 @@ function Apos() {
       empty: function(item) {
         return !((item.items || []).length);
       },
-      css: 'marquee'
+      css: 'marquee',
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ]
     },
     files: {
       widget: true,
@@ -4395,6 +4488,10 @@ function Apos() {
     return self.forEachDocumentInCollection(self.files, criteria, each, callback);
   };
 
+  self.forEachVideo = function(criteria, each, callback) {
+    return self.forEachDocumentInCollection(self.videos, criteria, each, callback);
+  };
+
   // Iterate over every area on every page on the entire site! Not fast. Definitely for
   // major migrations only. Iterator receives page object, area name, area object and
   // callback.
@@ -4555,9 +4652,45 @@ function Apos() {
             slug: '/trash',
             type: 'trash',
             title: 'Trash',
-            rank: 9999,
+            // Max home page direct kids on one site: 1 million. Max special
+            // purpose admin pages: 999. That ought to be enough for
+            // anybody... I hope!
+            rank: 1000999,
             trash: true,
           }, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    // Moved page rank of trash and search well beyond any reasonable
+    // number of legit kids of the home page
+    function moveTrash(callback) {
+      return self.pages.findOne({ type: 'trash' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.rank !== 1000999) {
+          page.rank = 1000999;
+          return self.pages.update({ _id: page._id }, page, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    function moveSearch(callback) {
+      return self.pages.findOne({ type: 'search' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.path !== 'home/search') {
+          // This is some strange search page we don't know about and
+          // probably shouldn't tamper with
+          return callback(null);
+        }
+        if (page.rank !== 1000998) {
+          page.rank = 1000998;
+          return self.pages.update({ _id: page._id }, page, callback);
         }
         return callback(null);
       });
@@ -4586,11 +4719,11 @@ function Apos() {
     }
 
     function fixSortTitle(callback) {
-      return self.forEachPage({ sortTitle: { $exists: 0 } },
+      return self.forEachPage({ $or: [ { sortTitle: { $exists: 0 } }, { sortTitle: /^ / }, { sortTitle: / $/} ] },
         function(page, callback) {
           return self.pages.update(
             { _id: page._id },
-            { $set: { sortTitle: self.sortify(page.title) } },
+            { $set: { sortTitle: self.sortify(page.title.trim()) } },
             callback);
         },
         callback);
@@ -4810,6 +4943,43 @@ function Apos() {
       });
     }
 
+    // If there are any pages whose tags property is defined but set
+    // to null, due to inadequate sanitization in the snippets module,
+    // fix them to be empty arrays so templates don't crash
+    function fixNullTags(callback) {
+      return self.pages.findOne({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, function(err, page) {
+        if (err) {
+          return callback(err);
+        }
+        if (!page) {
+          return callback(null);
+        }
+        console.log('Fixing pages whose tags property is defined and set to null');
+        return self.pages.update({ $and: [ { tags: null }, { tags: { $exists: true } } ] }, { $set: { tags: [] }}, { multi: true }, callback);
+      });
+    }
+
+    // Tags that are numbers can be a consequence of an import.
+    // Clean that up so they match regexes properly.
+    function fixNumberTags(callback) {
+      return self.pages.distinct("tags", {}, function(err, tags) {
+        if (err) {
+          return callback(err);
+        }
+        return async.eachSeries(tags, function(tag, callback) {
+          if (typeof(tag) === 'number') {
+            return self.forEachPage({ tags: { $in: [ tag ] } }, function(page, callback) {
+              page.tags = _.without(page.tags, tag);
+              page.tags.push(tag.toString());
+              return self.pages.update({ slug: page.slug }, { $set: { tags: page.tags } }, callback);
+            }, callback);
+          } else {
+            return callback(null);
+          }
+        }, callback);
+      });
+    }
+
     function fixTimelessEvents(callback) {
       var used = false;
       return self.forEachPage({ type: 'event' }, function(page, callback) {
@@ -4834,7 +5004,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixTimelessEvents], function(err) {
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixNumberTags, fixTimelessEvents], function(err) {
       return callback(err);
     });
   };
@@ -4856,12 +5026,30 @@ function Apos() {
   };
 
   self.tasks.index = function(callback) {
-    console.log('Indexing all pages for search');
-    return self.forEachPage({},
-      function(page, callback) {
-        return self.indexPage({}, page, callback);
+    return async.series({
+      indexPages: function(callback) {
+        console.log('Indexing all pages for search');
+        return self.forEachPage({},
+          function(page, callback) {
+            return self.indexPage({}, page, callback);
+          },
+          callback);
       },
-      callback);
+      indexFiles: function(callback) {
+        console.log('Indexing all files for search');
+        return self.forEachFile({}, function(file, callback) {
+          file.searchText = fileSearchText(file);
+          files.update({ _id: file._id }, file, callback);
+        }, callback);
+      },
+      indexVideos: function(callback) {
+        console.log('Indexing all videos for search');
+        return self.forEachVideo({}, function(video, callback) {
+          video.searchText = self.sortify(video.title);
+          videos.update({ _id: video._id }, video, callback);
+        }, callback);
+      }
+    }, callback);
   };
 
   self.tasks.oembed = function(callback) {
@@ -5004,7 +5192,10 @@ function Apos() {
             type: 'search',
             title: 'Search',
             published: true,
-            rank: 9998
+            // Max home page direct kids on one site: 1 million. Max special
+            // purpose admin pages: 999. That ought to be enough for
+            // anybody... I hope!
+            rank: 1000998
         }, callback);
       } else {
         console.log('We already have one');

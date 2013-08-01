@@ -319,6 +319,103 @@ apos.Editor = function(options) {
 
   // END TABLE EDITING
 
+  self.editLink = function() {
+    var sel, range, $startContainer, $a;
+    var $href;
+    var $target;
+    var $name;
+    var href, target, name;
+    var $el = apos.modalFromTemplate('.apos-link-editor', {
+      init: function(callback) {
+        $a = updateRange();
+        $href = $el.findByName('href');
+        $target = $el.findByName('target');
+        $name = $el.findByName('name');
+        if ($a.length) {
+          href = $a.attr('href');
+          target = $a.attr('target');
+          name = $a.attr('name');
+          $href.val(href);
+          $target.val(target);
+          $name.val(name);
+        }
+        return callback(null);
+      },
+      save: function(callback) {
+        self.undoPoint();
+        if (!$a.length) {
+          $a = $('<a></a>');
+          try {
+            apos.popSelection();
+            updateRange();
+            range.surroundContents($a[0]);
+            apos.pushSelection();
+          } catch (e) {
+            // Rangy won't surround 'foo<b>something' (note the </b> is not
+            // in the range). We could eventually address this by splitting
+            // into two links automatically
+            apos.log(e);
+          }
+        }
+
+        href = $href.val().trim();
+        target = $target.val().trim();
+        name = $name.val().trim();
+
+        // Fix lame URLs
+        //
+        // Valid URLs and relative URLS:
+        // Has protocol,
+        // Starts with #,
+        // Starts with /,
+        // starts with non-slash, non-period characters followed by /,
+        // consists of non-slash, non-period characters followed by end of line
+        if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+          // All good
+        } else if (/^[^\/\.]+\.[^\/\.]+/) {
+          // Smells like a domain name. Educated guess: they left off http://
+          href = 'http://' + href;
+        } else {
+          // No href at all is perfectly valid as long as there
+          // is a name (for creating an anchor, not a link)
+          if (!name.length) {
+            alert('You must specify a link, a name, or both.');
+            return callback('invalid');
+          } else {
+            alert('That link is not valid. Examples of valid links: /my/page, http://google.com/, mailto:tom@example.com');
+            return callback('invalid');
+          }
+        }
+
+        if (href.length) {
+          $a.attr('href', href);
+        } else {
+          $a.removeAttr('href');
+        }
+        if (target.length) {
+          $a.attr('target', target);
+        } else {
+          $a.removeAttr('target');
+        }
+        if (name.length) {
+          $a.attr('name', name);
+        } else {
+          $a.removeAttr('name');
+        }
+        return callback(null);
+      },
+      afterHide: function(callback) {
+        return callback(null);
+      }
+    });
+    function updateRange() {
+      sel = rangy.getSelection();
+      range = sel.getRangeAt(0);
+      $startContainer = $(range.startContainer);
+      return $startContainer.closest('a');
+    }
+  };
+
   // The wrapper is taller than the editor at first, if someone
   // clicks below the editor make sure they still get focus to type
   self.$el.click(function(e) {
@@ -371,7 +468,8 @@ apos.Editor = function(options) {
 
   enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
   enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
-  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], promptForLabel: 'URL:' });
+  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], callback: self.editLink });
+  enableControl('unlink', { keys: ['meta+l', 'ctrl+l'] });
   enableControl('insertUnorderedList', { keys: [] });
   enableControl('insertTable', { keys: [], callback: self.insertTable });
 
@@ -596,8 +694,10 @@ apos.Editor = function(options) {
     // as a result of copy and paste operations and formatBlock actions.
     // Flatten the DOM, but don't tangle with anything inside a
     // apos-widget. apos-widgets themselves are fair game.
+    // ul's should be hoisted themselves but are not considered
+    // grounds for hoisting something else.
 
-    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre').each(function() {
+    self.$editable.find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').each(function() {
       var outer = $(this);
       if (outer.closest('.apos-widget').length) {
         return;
@@ -605,18 +705,53 @@ apos.Editor = function(options) {
       // Use first() because the first call usually resolves the rest, and if
       // we keep going with the old result set we'll wind up reversing the order
       // of the elements
-      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre').first().each(function() {
+      $(this).find('h1, h2, h3, h4, h5, h6, div, p, pre, ul').first().each(function() {
         var inner = $(this);
+        var i;
+
         if (inner.parents('.apos-widget').length) {
           return;
         }
+
+        // If we are nested in an li before we are nested in 'outer',
+        // don't migrate.
+        var parents = inner.parents();
+        for (i = 0; (i < parents.length); i++) {
+          if (parents[i] === outer[0]) {
+            break;
+          }
+          if (parents[i].nodeName.toLowerCase() === 'li') {
+            return;
+          }
+        }
+
         var saved = rangy.saveSelection();
-        // create next containing former contents of inner
-        var next = inner.clone();
+        var next;
+        var widget = false;
+        if (inner.hasClass('apos-widget')) {
+          // When a widget is the inner element that needs hoisting,
+          // we can't make it the parent of its former successors, we
+          // need to make a clone of its parent the parent of its
+          // former successors
+          widget = true;
+          next = outer.clone();
+          next.html('');
+        } else {
+          next = inner.clone();
+        }
         // Younger siblings of inner become descendants of next
         apos.moveYoungerSiblings(inner[0], next[0]);
         // outer keeps older siblings of inner
         apos.keepOlderSiblings(inner[0]);
+        // inner becomes a successor of outer, just before next, if it
+        // is a widget. Otherwise it's gone baby gone, because we moved
+        // everything interesting about it - cloned it to next and moved
+        // its siblings
+        if (widget) {
+          // Pure DOM seems to do a better job around text elements
+          outer[0].parentNode.insertBefore(inner[0], outer[0]);
+          // inner.insertAfter(outer);
+        }
         // next is now the successor of outer
         next.insertAfter(outer);
         rangy.restoreSelection(saved);
@@ -647,6 +782,16 @@ apos.Editor = function(options) {
     var $widgets = self.$editable.find('.apos-widget');
 
     $widgets.each(function() {
+
+      // If next node after widget is a plaintext node, encase that text
+      // in a div so it doesn't get hoovered into the widget and lost
+
+      // var text = this.nextSibling;
+      // if (text.nodeType === 3) {
+      //   var div = document.createElement('div');
+      //   text.parentNode.insertBefore(text, div);
+      //   div.appendChild(text);
+      // }
 
       var $widget = $(this);
 
@@ -1222,6 +1367,7 @@ apos.widgetTypes.slideshow = {
     if (self.fileGroup === undefined) {
       self.fileGroup = 'images';
     }
+    var showImages = (options.showImages === undefined) ? true : options.showImages;
     // Options passed from template or other context
     var templateOptions = options.options || {};
     var widgetClass = templateOptions.widgetClass;
@@ -1475,9 +1621,11 @@ apos.widgetTypes.slideshow = {
             _.each(results.files, function(file) {
               var $item = apos.fromTemplate($items.find('[data-library-item]'));
               $item.data('file', file);
-              $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
+              if (showImages) {
+                $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
+              }
               $item.attr('title', file.name + '.' + file.extension);
-              if (self.fileGroup === 'images') {
+              if ((self.fileGroup === 'images') && showImages) {
                 $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
               } else {
                 // Display everything like a plain filename, after all we're offering
@@ -2004,6 +2152,7 @@ apos.widgetTypes.files = {
   label: 'Files',
   editor: function(options) {
     var self = this;
+    options.showImages = false;
     options.template = '.apos-files-editor';
     options.type = 'files';
     // We want the default for extra fields to be true rather than false for
@@ -2558,19 +2707,67 @@ apos.enableAreas = function() {
 };
 
 apos.parseArea = function(content) {
+  var items = [];
+
   // Helper functions
 
+  // We build up richText as we sweep through DOM nodes that are
+  // not widgets. Flush it by creating a new apostrophe item if it is
+  // not empty.
+
+  var richText = '';
+
   function flushRichText() {
-    if (richText.length) {
-      // Remove invisible markers used to ensure good behavior of
-      // webkit inside contenteditable. Some browsers render these
-      // as boxes (Windows Chrome) if they see them and the font is
-      // a custom one that doesn't explicitly address this code point
-      richText = apos.globalReplace(richText, apos.beforeMarker, '');
-      richText = apos.globalReplace(richText, apos.afterMarker, '');
-      items.push({ type: 'richText', content: richText });
-      richText = '';
+    if (!richText.length) {
+      return;
     }
+    // Remove invisible markers used to ensure good behavior of
+    // webkit inside contenteditable. Some browsers render these
+    // as boxes (Windows Chrome) if they see them and the font is
+    // a custom one that doesn't explicitly address this code point
+    richText = apos.globalReplace(richText, apos.beforeMarker, '');
+    richText = apos.globalReplace(richText, apos.afterMarker, '');
+
+    // One more pass through the DOM (sorry!) to locate runs of
+    // elements that are not block elements and box them in divs
+    // so that styling content is much easier
+
+    var oldBox = document.createElement('div');
+    var newBox = document.createElement('div');
+    oldBox.innerHTML = richText;
+    var children = oldBox.childNodes;
+    var child;
+
+    var fold = [];
+    function flushNewDiv() {
+      var i;
+      var newDiv;
+      if (fold.length) {
+        newDiv = document.createElement('div');
+        for (i = 0; (i < fold.length); i++) {
+          // Never just fold the node, always clone it, because
+          // otherwise are still messing up the length of the children array
+          newDiv.appendChild(fold[i].cloneNode(true));
+        }
+        fold = [];
+        newBox.appendChild(newDiv);
+      }
+    }
+
+    for (var i = 0; (i < children.length); i++) {
+      child = children[i];
+      if (_.contains([ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'pre', 'table', 'ul', 'ol', 'nl' ], child.nodeName.toLowerCase()))
+      {
+        flushNewDiv();
+        // Clone it so we don't mess with the length of "children"
+        newBox.appendChild(child.cloneNode(true));
+      } else {
+        fold.push(child);
+      }
+    }
+    flushNewDiv();
+    items.push({ type: 'richText', content: newBox.innerHTML });
+    richText = '';
   }
 
   // Pull it into jQuery land for a few cleanups best done there
@@ -2626,15 +2823,17 @@ apos.parseArea = function(content) {
     content = $content.html();
   }
 
+  // Push it into the DOM and loop over all nodes, including
+  // text nodes, building apostrophe items
+
   var node = document.createElement('div');
   node.innerHTML = content;
   var children = node.childNodes;
-  var items = [];
-  var richText = '';
   for (var i = 0; (i < children.length); i++) {
     var child = node.childNodes[i];
     if (child.nodeType === 3) {
-      // This is a text node. Take care to escape when appending it to the rich text
+      // This is a text node. Take care to escape when appending it
+      // to the rich text
       richText += apos.escapeHtml(child.nodeValue);
 
     } else if (child.nodeType === 1) {
@@ -2661,7 +2860,6 @@ apos.parseArea = function(content) {
   // Don't forget to flush any rich text that appeared after the last widget,
   // and/or if there are no widgets!
   flushRichText();
-
   return items;
 };
 
@@ -2846,7 +3044,7 @@ apos.keepOlderSiblings = function(node) {
 };
 
 // Append all DOM sibling nodes after node, including
-// text nodes, to target. This includes text nodes
+// text nodes, to target.
 apos.moveYoungerSiblings = function(node, target) {
   var sibling = node.nextSibling;
   while (sibling) {
@@ -2855,3 +3053,12 @@ apos.moveYoungerSiblings = function(node, target) {
     sibling = next;
   }
 };
+
+// Enable autocomplete of tags. Expects the fieldset element
+// (not the input element) and an array of existing tags already
+// assigned to this item.
+apos.enableTags = function($el, tags) {
+  tags = tags || [];
+  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 188] });
+};
+

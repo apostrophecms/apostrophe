@@ -16,6 +16,10 @@
     var removed = options.removed || options.propagate;
     var propagate = options.propagate;
     var extras = options.extras;
+    var addKeyCodes = options.addKeyCodes || 13;
+    if (!$.isArray(addKeyCodes)) {
+      addKeyCodes = [ addKeyCodes ];
+    }
 
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
@@ -40,6 +44,19 @@
       self.$autocomplete = $el.find('[data-autocomplete]');
       self.$itemTemplate = $el.find('[data-item]');
       self.$itemTemplate.remove();
+      if (options.add) {
+        self.$autocomplete.on('keydown', function(e) {
+          if ($.inArray(e.which, addKeyCodes) !== -1)
+          {
+            var val = self.$autocomplete.val();
+            self.add({ label: val, value: val });
+            self.$autocomplete.val('');
+            self.$autocomplete.autocomplete('close');
+            return false;
+          }
+          return true;
+        });
+      }
       self.$autocomplete.autocomplete({
         minLength: options.minLength || 1,
         source: options.source,
@@ -105,6 +122,21 @@
       };
 
       self.add = function(item) {
+        var i;
+        var duplicate = false;
+        if (options.preventDuplicates) {
+          // Use find and each to avoid problems with values that
+          // contain quotes
+          self.$list.find('[data-item]').each(function() {
+            var $item = $(this);
+            if ($item.attr('data-value') === item.value) {
+              duplicate = true;
+            }
+          });
+        }
+        if (duplicate) {
+          return;
+        }
         var $item = self.$itemTemplate.clone();
         $item.attr('data-value', item.value);
         $item.find('[data-label]').text(item.label);
