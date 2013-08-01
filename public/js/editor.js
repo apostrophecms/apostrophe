@@ -2738,16 +2738,18 @@ apos.parseArea = function(content) {
     var children = oldBox.childNodes;
     var child;
 
-    var steal = [];
+    var fold = [];
     function flushNewDiv() {
       var i;
       var newDiv;
-      if (steal.length) {
+      if (fold.length) {
         newDiv = document.createElement('div');
-        for (i = 0; (i < steal.length); i++) {
-          newDiv.appendChild(steal[i]);
+        for (i = 0; (i < fold.length); i++) {
+          // Never just fold the node, always clone it, because
+          // otherwise are still messing up the length of the children array
+          newDiv.appendChild(fold[i].cloneNode(true));
         }
-        steal = [];
+        fold = [];
         newBox.appendChild(newDiv);
       }
     }
@@ -2760,7 +2762,7 @@ apos.parseArea = function(content) {
         // Clone it so we don't mess with the length of "children"
         newBox.appendChild(child.cloneNode(true));
       } else {
-        steal.push(child);
+        fold.push(child);
       }
     }
     flushNewDiv();
