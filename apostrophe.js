@@ -1699,6 +1699,20 @@ function Apos() {
         });
       };
 
+      // Remove a tag from all pages. The optional criteria argument can
+      // be used to limit the pages from which it is removed
+      // (example: { type: 'person' })
+      self.removeTag = function(tag, criteria, callback) {
+        if (!callback) {
+          callback = criteria;
+          criteria = {};
+        }
+        var mergedCriteria = {};
+        extend(true, mergedCriteria, criteria);
+        mergedCriteria.tags = { $in: [ tag ] };
+        return self.pages.update(mergedCriteria, { $pull: { tags: tag } }, { multi: true }, callback);
+      };
+
       // Fetch all tags. Accepts options supported by apos.getTags
       // as query parameters. Useful for creating tag admin tools.
       app.get('/apos/tags', function(req, res) {
