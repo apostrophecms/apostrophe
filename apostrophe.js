@@ -5220,7 +5220,7 @@ function Apos() {
   // If the `adminPassword` option is set then an admin user is automatically provided
   // regardless of what is in the database, with the password set as specified.
 
-  self.appyAuth = function(options) {
+  self.appyAuth = function(options, user) {
     var users = {};
     if (options.adminPassword) {
       users.admin = {
@@ -5245,6 +5245,15 @@ function Apos() {
         collection: 'aposPages',
         // Render the login page
         template: options.loginPage,
+        // Set the redirect for after login passing req.user from Appy l.~208
+        redirect: function(user){
+          if (options.redirect) {
+            return options.redirect(user);
+          } else {
+            // This feels like overkill, because we're checking in Appy as well.
+            return '/';
+          }
+        },
         verify: function(password, hash) {
           if (hash.match(/^a15/)) {
             // bc with Apostrophe 1.5 hashed passwords. The salt is
@@ -5290,11 +5299,12 @@ function Apos() {
       return callback({ message: 'user does not have login privileges' });
     } else {
       user.permissions = user.permissions || {};
-      self.pages.find({ type: 'group', _id: { $in: user.groupIds || [] } }, { permissions: 1 }).toArray(function(err, groups) {
+      self.pages.find({ type: 'group', _id: { $in: user.groupIds || [] } }).toArray(function(err, groups) {
         if (err) {
           console.log(err);
           return callback(err);
         }
+        user._groups = groups;
         _.each(groups, function(group) {
           _.each(group.permissions || [], function(permission) {
             if (!_.contains(user.permissions, permission)) {
