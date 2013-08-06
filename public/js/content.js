@@ -329,7 +329,7 @@ apos.modal = function(sel, options) {
       $el.data('aposSavedScrollTop', $(window).scrollTop());
       apos._modalStack.push($el);
       $('body').append($el);
-      $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
+      $el.offset({ top: $('body').scrollTop() + $el.css('top'), left: ($(window).width() - $el.outerWidth()) / 2 });
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
