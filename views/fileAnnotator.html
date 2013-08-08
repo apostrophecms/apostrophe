@@ -1,0 +1,39 @@
+{% include "formMacros.html" %}
+
+<div class="apos-file-annotator apos-modal apos-template">
+  <h3>
+    {% block title %}
+    Edit Details
+    {% endblock %}
+  </h3>
+  <div class="apos-modal-body">
+    <form>
+      <label class="apos-instructions">
+        {% block instructions %}
+          You have uploaded these files. Please take the time to title and tag them so that you can search for them at a later date.
+        {% endblock %}
+      </label>
+      {% block formAll %}
+        {% block formBody %}
+          <div data-items>
+            <div data-item class="apos-annotate-file apos-template">
+              <div data-preview>Filename or image</div>
+              {{ formText('title', 'Title') }}
+              {{ formTextarea('description', 'Description') }}
+              {{ formText('credit', 'Credit') }}
+              {{ formTags('tags', 'Tags') }}
+            </div>
+          </div>
+        {% endblock %}
+      {% endblock %}
+    </form>
+  </div>
+  <div class="apos-modal-footer">
+    {% block additionalFooterItems %}
+    {% endblock %}
+    <div class="apos-modal-footer-buttons">
+      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
+      <a href="#" class="apos-control apos-button apos-save">Save Changes</a>
+    </div>
+  </div>
+</div>

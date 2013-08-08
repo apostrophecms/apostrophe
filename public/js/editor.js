@@ -5,7 +5,7 @@ if (!window.apos) {
   window.apos = {};
 }
 
-$( document ).tooltip({   
+$( document ).tooltip({
   show: { effect: "fadeIn", duration: 200 },
   hide: { effect: "fadeOut", duration: 200 },
   position: { my: "left top+10", at: "left bottom" }
@@ -1461,6 +1461,7 @@ apos.widgetTypes.slideshow = {
           if (data.result.files) {
             _.each(data.result.files, function (file) {
               addItem(file);
+              annotateItem(file);
             });
             reflect();
             self.preview();
@@ -1564,23 +1565,23 @@ apos.widgetTypes.slideshow = {
         return false;
       });
 
-      self.enableLibrary = function() {
+      self.enableChooser = function() {
         // This is what we drag to. Easier than dragging to a ul that doesn't
         // know the height of its li's
         var $target = self.$el.find('[data-drag-container]');
-        var $library = self.$el.find('[data-library]');
-        var $items = $library.find('[data-library-items]');
-        var $search = $library.find('[name="search"]');
-        var $previous = $library.find('[data-previous]');
-        var $next = $library.find('[data-next]');
-        var $removeSearch = $library.find('[data-remove-search]');
+        var $chooser = self.$el.find('[data-chooser]');
+        var $items = $chooser.find('[data-chooser-items]');
+        var $search = $chooser.find('[name="search"]');
+        var $previous = $chooser.find('[data-previous]');
+        var $next = $chooser.find('[data-next]');
+        var $removeSearch = $chooser.find('[data-remove-search]');
 
 
         var perPage = 21;
         var page = 0;
         var pages = 0;
 
-        self.refreshLibrary = function() {
+        self.refreshChooser = function() {
           self.busy(true);
           $.get('/apos/browse-files', {
             skip: page * perPage,
@@ -1617,9 +1618,9 @@ apos.widgetTypes.slideshow = {
               $removeSearch.hide();
             }
 
-            $items.find('[data-library-item]:not(.apos-template)').remove();
+            $items.find('[data-chooser-item]:not(.apos-template)').remove();
             _.each(results.files, function(file) {
-              var $item = apos.fromTemplate($items.find('[data-library-item]'));
+              var $item = apos.fromTemplate($items.find('[data-chooser-item]'));
               $item.data('file', file);
               if (showImages) {
                 $item.css('background-image', 'url(' + apos.filePath(file, { size: 'one-sixth' }) + ')');
@@ -1630,7 +1631,7 @@ apos.widgetTypes.slideshow = {
               } else {
                 // Display everything like a plain filename, after all we're offering
                 // a download interface only here and we need to accommodate all types of
-                // files in the same media library list
+                // files in the same media chooser list
                 $item.addClass('apos-not-image');
                 $item.text(file.name + '.' + file.extension);
               }
@@ -1668,14 +1669,14 @@ apos.widgetTypes.slideshow = {
                   var file = $item.data('file');
                   // Track on document so we can see it even if
                   // something steals our event
-                  $(document).on('mouseup.aposLibrary', function(e) {
+                  $(document).on('mouseup.aposChooser', function(e) {
                     if (dragging) {
                       dragging = false;
                       // Restore file uploader drop zone
                       $uploader.fileupload('option', 'dropZone', fileUploadDropZone);
                       // Kill our document-level events
-                      $(document).off('mouseup.aposLibrary');
-                      $(document).off('mousemove.aposLibrary');
+                      $(document).off('mouseup.aposChooser');
+                      $(document).off('mousemove.aposChooser');
                       var iOffset = $target.offset();
                       var iWidth = $target.width();
                       var iHeight = $target.height();
@@ -1689,19 +1690,19 @@ apos.widgetTypes.slideshow = {
                         (e.pageY + height >= iOffset.top)) {
                         addItem(file);
                       } 
-                      // Snap back so we're available in the library again
+                      // Snap back so we're available in the chooser again
                       $item.css('top', 'auto');
                       $item.css('left', 'auto');
                       $item.css('position', 'relative');
-                      $('[data-uploader-container]').removeClass('apos-library-drag-enabled');
+                      $('[data-uploader-container]').removeClass('apos-chooser-drag-enabled');
                       return false;
                     }
                     return true;
                   });
-                  $(document).on('mousemove.aposLibrary', function(e) {
+                  $(document).on('mousemove.aposChooser', function(e) {
                     if (dragging) {
                       dropping = true;
-                      $('[data-uploader-container]').addClass('apos-library-drag-enabled');
+                      $('[data-uploader-container]').addClass('apos-chooser-drag-enabled');
                       $item.offset({ left: e.pageX - gapX, top: e.pageY - gapY });
                     }
                   });
@@ -1729,18 +1730,18 @@ apos.widgetTypes.slideshow = {
         $previous.on('click', function() {
           if (page > 0) {
             page--;
-            self.refreshLibrary();
+            self.refreshChooser();
           }
           return false;
         });
         $next.on('click', function() {
           if ((page + 1) < pages) {
             page++;
-            self.refreshLibrary();
+            self.refreshChooser();
           }
           return false;
         });
-        $library.on('click', '[name="search-submit"]', function() {
+        $chooser.on('click', '[name="search-submit"]', function() {
           search();
           return false;
         });
@@ -1758,15 +1759,15 @@ apos.widgetTypes.slideshow = {
         });
         function search() {
           page = 0;
-          self.refreshLibrary();
+          self.refreshChooser();
         }
 
-        // Initial load of library contents. Do this after yield so that
+        // Initial load of chooser contents. Do this after yield so that
         // a subclass like the file widget has time to change self.fileGroup
-        apos.afterYield(function() { self.refreshLibrary(); });
+        apos.afterYield(function() { self.refreshChooser(); });
       };
 
-      self.enableLibrary();
+      self.enableChooser();
     };
 
     function crop($item) {
@@ -2107,7 +2108,32 @@ apos.widgetTypes.slideshow = {
       // An empty slideshow is allowed, so permit it to be saved
       // even if nothing has been added
       self.exists = true;
+    }
 
+    function annotateItem(item) {
+      if (!self.annotator) {
+        var Annotator = options.Annotator || window.AposAnnotator;
+        self.annotator = new Annotator({
+          receive: function(aItems, callback) {
+            apos.log(aItems);
+            _.each(aItems, function(aItem) {
+              var $itemElements = $items.find(liveItem);
+              $.each($itemElements, function() {
+                var $eItem = $(this);
+                var eItem = $eItem.data('item');
+                if (aItem._id === eItem._id) {
+                  $eItem.find('[data-title]').val(aItem.title);
+                  $eItem.find('[data-description]').val(aItem.description);
+                  $eItem.find('[data-credit]').val(aItem.credit);
+                }
+              });
+            });
+            return callback(null);
+          }
+        });
+        self.annotator.modal();
+      }
+      self.annotator.addItem(item);
     }
 
     if(!options.type) {
@@ -2181,21 +2207,21 @@ apos.widgetTypes.video = {
       options.messages.missing = 'Paste a video link first.';
     }
 
-    self.enableLibrary = function() {
+    self.enableChooser = function() {
       // This is what we drag to. Easier than dragging to a ul that doesn't
       // know the height of its li's
-      var $library = self.$el.find('[data-library]');
-      var $items = $library.find('[data-library-items]');
-      var $search = $library.find('[name="search"]');
-      var $previous = $library.find('[data-previous]');
-      var $next = $library.find('[data-next]');
-      var $removeSearch = $library.find('[data-remove-search]');
+      var $chooser = self.$el.find('[data-chooser]');
+      var $items = $chooser.find('[data-chooser-items]');
+      var $search = $chooser.find('[name="search"]');
+      var $previous = $chooser.find('[data-previous]');
+      var $next = $chooser.find('[data-next]');
+      var $removeSearch = $chooser.find('[data-remove-search]');
 
       var perPage = 21;
       var page = 0;
       var pages = 0;
 
-      self.refreshLibrary = function() {
+      self.refreshChooser = function() {
         $.get('/apos/browse-videos', {
           skip: page * perPage,
           limit: perPage,
@@ -2228,9 +2254,9 @@ apos.widgetTypes.video = {
             $removeSearch.hide();
           }
 
-          $items.find('[data-library-item]:not(.apos-template)').remove();
+          $items.find('[data-chooser-item]:not(.apos-template)').remove();
           _.each(results.videos, function(video) {
-            var $item = apos.fromTemplate($items.find('[data-library-item]'));
+            var $item = apos.fromTemplate($items.find('[data-chooser-item]'));
             $item.data('video', video);
             // TODO: look into a good routine for CSS URL escaping
             $item.css('background-image', 'url(' + video.thumbnail + ')');
@@ -2250,18 +2276,18 @@ apos.widgetTypes.video = {
       $previous.on('click', function() {
         if (page > 0) {
           page--;
-          self.refreshLibrary();
+          self.refreshChooser();
         }
         return false;
       });
       $next.on('click', function() {
         if ((page + 1) < pages) {
           page++;
-          self.refreshLibrary();
+          self.refreshChooser();
         }
         return false;
       });
-      $library.on('click', '[name="search-submit"]', function() {
+      $chooser.on('click', '[name="search-submit"]', function() {
         search();
         return false;
       });
@@ -2279,12 +2305,12 @@ apos.widgetTypes.video = {
       });
       function search() {
         page = 0;
-        self.refreshLibrary();
+        self.refreshChooser();
       }
 
-      // Initial load of library contents. Do this after yield so that
+      // Initial load of chooser contents. Do this after yield so that
       // a subclass like the file widget has time to change self.fileGroup
-      apos.afterYield(function() { self.refreshLibrary(); });
+      apos.afterYield(function() { self.refreshChooser(); });
     };
 
     self.afterCreatingEl = function() {
@@ -2322,7 +2348,7 @@ apos.widgetTypes.video = {
 
       }, 500));
 
-      self.enableLibrary();
+      self.enableChooser();
     };
 
     function getVideoInfo(callback) {
@@ -2349,7 +2375,7 @@ apos.widgetTypes.video = {
           data.video = url;
           // The widget gets stores just the properties we really need to render.
           // The preSave callback will also stuff in the id of the video
-          // library object created at that point
+          // chooser object created at that point
           self.data.video = url;
           self.data.thumbnail = data.thumbnail_url;
           self.data.title = data.title;
@@ -3061,4 +3087,26 @@ apos.enableTags = function($el, tags) {
   tags = tags || [];
   $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 188] });
 };
+
+// Set things up to instantiate the media library when the button is clicked. This is set up
+// to allow subclassing with an alternate constructor function
+
+apos.enableMediaLibrary = function() {
+  $('body').on('click', '.apos-media-library-button', function() {
+    if (!apos.data.mediaLibraryOptions) {
+      apos.data.mediaLibraryOptions = {};
+    }
+    var Construct = apos.data.mediaLibraryOptions.construct || AposMediaLibrary;
+    var mediaLibrary = new (Construct)(apos.mediaLibraryOptions);
+    mediaLibrary.modal();
+    return false;
+  });
+};
+
+// Do this late so that other code has a chance to set apos.mediaLibraryOptions
+$(function() {
+  apos.afterYield(function() {
+    apos.enableMediaLibrary();
+  });
+});
 
