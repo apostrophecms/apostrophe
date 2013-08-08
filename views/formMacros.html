@@ -15,19 +15,19 @@
 {% endmacro %}
 
 {% macro formTags(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-tags apos-fieldset-{{ name | css}}" data-name="{{ name }}">
+  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    <ul data-list>
+    <!-- Text entry for autocompleting the next item -->
+    <input name="{{ name | e }}" data-autocomplete placeholder="Type Here" class="autocomplete" />
+    <ul data-list class="apos-tag-list">
       <li data-item>
         <span class="label-and-remove">
+          <a href="#" class="apos-tag-remove" data-remove>x</a>
           <span data-label>Example label</span>
           <!-- Link to remove this choice -->
-          <a href="#" data-remove>x</a>
         </span>
       </li>
     </ul>
-    <!-- Text entry for autocompleting the next item -->
-    <input name="{{ name | e }}" data-autocomplete placeholder="Type Here" class="autocomplete" />
   </fieldset>
 {% endmacro %}
 

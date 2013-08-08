@@ -443,6 +443,40 @@
     opacity: 0.7;
   }
 }
+.apos-tag-list
+{
+  font-family: cabin !important;
+  margin-top: 10px;
+ li
+ {
+  display: inline-block;
+  font-size: 10px;
+  color: #FFF;
+  background-color: @apos-base;
+  // padding: 5px;
+  -webkit-border-radius: 1px;
+          border-radius: 1px;
+  margin-right: 10px;
+  padding-right: 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+ }
+ .apos-tag-remove
+ {
+   color: #FFF;
+   // font-size: 10px;
+   font-weight: bold;
+   background-color: darken(@apos-base, 12%);
+   padding: 8px;
+   display: inline-block;
+   margin-right: 5px;
+   &:hover
+   {
+     background-color: darken(@apos-base, 15%);
+   }
+ }
+}
+
 .apos-modal .apos-orientation-select-container
 {
   display: none;
