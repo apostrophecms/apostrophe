@@ -14,6 +14,7 @@ function AposMediaLibrary(options) {
     self.$index = self.$el.find('[data-index]');
     self.$show = self.$el.find('[data-show]');
     self.$normal = self.$show.find('[data-normal-view]');
+    self.$bar = self.$el.find('[data-bar]');
     self.$index.bottomless({
       url: options.browseUrl || '/apos/browse-files',
       now: true,
@@ -246,7 +247,13 @@ function AposMediaLibrary(options) {
 
   self.moveToScrollTop = function($el) {
     var offset = $el.offset();
-    offset.top = $(document).scrollTop();
+    var scrollTop = $(document).scrollTop();
+    var showTop = self.$show.offset().top;
+    if (scrollTop > (showTop + 20)) {
+      offset.top = scrollTop + 20;
+    } else {
+      offset.top = showTop;
+    }
     $el.offset(offset);
   };
 
