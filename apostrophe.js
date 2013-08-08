@@ -180,6 +180,8 @@ function Apos() {
     { name: 'vendor/blueimp-fileupload', when: 'user' },
     // imaging cropping plugin
     { name: 'vendor/jquery.Jcrop.min', when: 'user' },
+    // textchange event, detects actual typing activity, not just focus change
+    { name: 'vendor/jquery-textchange', when: 'always' },
 
     // PUNKAVE-MAINTAINED, GENERAL PURPOSE JQUERY PLUGINS
 
@@ -190,13 +192,16 @@ function Apos() {
     { name: 'vendor/jquery.selective', when: 'always' },
     { name: 'vendor/jquery.images-ready', when: 'always' },
     { name: 'vendor/jquery.radio', when: 'always' },
+    { name: 'vendor/jquery.json-call', when: 'always' },
 
     // APOSTROPHE CORE JS
 
+    // Viewers for standard content types
+    { name: 'content', when: 'always' },
     // Editing functionality
     { name: 'editor', when: 'user' },
-    // Viewers for standard content types
-    { name: 'content', when: 'always' }
+    { name: 'annotator', when: 'user' },
+    { name: 'mediaLibrary', when: 'user' }
   ];
 
   // Templates pulled into the page by the aposTemplates() Express local
@@ -213,7 +218,9 @@ function Apos() {
     { name: 'htmlEditor', when: 'user' },
     { name: 'cropEditor', when: 'user' },
     { name: 'tableEditor', when: 'user' },
-    { name: 'linkEditor', when: 'user' }
+    { name: 'linkEditor', when: 'user' },
+    { name: 'fileAnnotator', when: 'user' },
+    { name: 'mediaLibrary', when: 'user' }
   ];
 
   // Full paths to assets as computed by pushAsset
@@ -748,6 +755,10 @@ function Apos() {
         return self.areaFindFile(options);
       };
 
+      aposLocals.aposMediaMenu = function(options) {
+        return partial('mediaMenu', options);
+      };
+
       self.areaFindFile = function(options) {
         if (!options) {
           options = {};
@@ -1243,6 +1254,7 @@ function Apos() {
             group: group.name,
             createdAt: new Date(),
             name: self.slugify(path.basename(file.name, path.extname(file.name))),
+            title: self.sortify(path.basename(file.name, path.extname(file.name))),
             extension: extension
           };
 
@@ -1435,6 +1447,7 @@ function Apos() {
           if (req.query.extension) {
             criteria.extension = self.sanitizeString(req.query.extension);
           }
+          self.convertBooleanFilterCriteria('trash', req.query, criteria, '0');
           if (req.query.minSize) {
             criteria.width = { $gte: self.sanitizeInteger(req.query.minSize[0], 0, 0) };
             criteria.height = { $gte: self.sanitizeInteger(req.query.minSize[1], 0, 0) };
@@ -1464,6 +1477,117 @@ function Apos() {
               return res.send('error');
             }
             return res.send(result);
+          });
+        });
+      });
+
+      // Annotate previously uploaded files
+      app.post('/apos/annotate-files', function(req, res) {
+        // make sure we have permission to edit files at all
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          if (!Array.isArray(req.body)) {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          var criteria = { _id: { $in: _.pluck(req.body, '_id') } };
+          // Verify permission to edit this particular file. TODO: this
+          // should not be hardcoded here, but it does need to remain an
+          // efficient query. Classic Apostrophe media permissions: if you
+          // put it here, you can edit it. If you're an admin, you can edit it.
+          if (!req.user.permissions.admin) {
+            criteria.ownerId = req.user._id;
+          }
+          var results = [];
+          return self.files.find(criteria).toArray(function(err, files) {
+            return async.eachSeries(files, function(file, callback) {
+              var annotation = _.find(req.body, function(item) {
+                return item._id === file._id;
+              });
+              if (!annotation) {
+                return callback('unexpected');
+              }
+              file.title = self.sanitizeString(annotation.title);
+              file.description = self.sanitizeString(annotation.description);
+              file.credit = self.sanitizeString(annotation.credit);
+              file.tags = self.sanitizeTags(annotation.tags);
+              results.push(file);
+              return self.files.update({ _id: file._id }, file, callback);
+            }, function(err) {
+              if (err) {
+                res.statusCode = 500;
+                return res.send('error');
+              }
+              return res.send(results);
+            });
+          });
+        });
+      });
+
+      // Delete previously uploaded file
+      app.post('/apos/delete-file', function(req, res) {
+        // make sure we have permission to edit files at all
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          if (typeof(req.body) !== 'object') {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          var criteria = { _id: req.body._id };
+          // Verify permission to edit this particular file. TODO: this
+          // should not be hardcoded here, but it does need to remain an
+          // efficient query. Classic Apostrophe media permissions: if you
+          // put it here, you can edit it. If you're an admin, you can edit it.
+          if (!req.user.permissions.admin) {
+            criteria.ownerId = req.user._id;
+          }
+          var results = [];
+          return self.files.update(criteria, { $set: { trash: true } }, function(err, count) {
+            if (err || (!count)) {
+              res.statusCode = 404;
+              return res.send('not found');
+            } else {
+              return res.send({ 'status': 'deleted' });
+            }
+          });
+        });
+      });
+
+      // Undelete previously uploaded file TODO refactor these two methods
+      // to use the same implementation
+      app.post('/apos/rescue-file', function(req, res) {
+        // make sure we have permission to edit files at all
+        return self.permissions(req, 'edit-media', null, function(err) {
+          if (err) {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          if (typeof(req.body) !== 'object') {
+            res.statusCode = 400;
+            return res.send('invalid');
+          }
+          var criteria = { _id: req.body._id };
+          // Verify permission to edit this particular file. TODO: this
+          // should not be hardcoded here, but it does need to remain an
+          // efficient query. Classic Apostrophe media permissions: if you
+          // put it here, you can edit it. If you're an admin, you can edit it.
+          if (!req.user.permissions.admin) {
+            criteria.ownerId = req.user._id;
+          }
+          var results = [];
+          return self.files.update(criteria, { $unset: { trash: true } }, function(err, count) {
+            if (err || (!count)) {
+              res.statusCode = 404;
+              return res.send('not found');
+            } else {
+              return res.send({ 'status': 'rescued' });
+            }
           });
         });
       });

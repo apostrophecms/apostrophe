@@ -15,10 +15,13 @@
     var url = options.url;
     var now = options.now || false;
     var page = options.page || 1;
+    var skipAndLimit = options.skipAndLimit;
+    // Consulted only if skipAndLimit is true, otherwise we just send a page parameter
+    var perPage = options.perPage || 20;
     if (now) {
       if (options.page === undefined) {
         // loadPage will increment this and load page one immediately
-        options.page = 0;
+        page = 0;
       }
     }
     var criteria = options.criteria || {};
@@ -29,15 +32,20 @@
     var loading = false;
 
     // Infinite scroll
-    setInterval(function() {
-      if ((!atEnd) && (!loading)) {
-        // Allow for an intentional gap between the content of the
-        // infinitely scrolled element and the bottom of the page
-        // (although it's foolish to expect anyone to see it...!)
-        var footerHeight = $(document).height() - ($el.offset().top + $el.height());
-        if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height() - footerHeight)
-        {
-          loadPage();
+    var interval = setInterval(function() {
+      // Don't try anything fancy when we're not in the DOM, avoids
+      // heavy background activity after removal. Also see
+      // the aposScrollDestroy event
+      if ($el.parents('body').length) {
+        if ((!atEnd) && (!loading)) {
+          // Allow for an intentional gap between the content of the
+          // infinitely scrolled element and the bottom of the page
+          // (although it's foolish to expect anyone to see it...!)
+          var footerHeight = $(document).height() - ($el.offset().top + $el.height());
+          if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height() - footerHeight)
+          {
+            loadPage();
+          }
         }
       }
     }, 100);
@@ -49,8 +57,22 @@
       reset();
     });
 
+    $el.on('aposScrollEnded', function(e) {
+      end();
+    });
+
+    $el.on('aposScrollDestroy', function(e) {
+      end();
+      // Go away!
+      clearInterval(interval);
+    });
+
     function reset() {
-      $el.html('');
+      if (!options.reset) {
+        $el.html('');
+      } else {
+        options.reset();
+      }
       page = 0;
       atEnd = false;
       start();
@@ -62,19 +84,27 @@
       loading = true;
       $el.data('loading', true);
       // Copy the criteria and add the page
-      var query = $.extend(true, criteria, {
-        page: page
-      });
+      var query = {};
+      $.extend(true, query, criteria);
+      if (skipAndLimit) {
+        query.skip = (page - 1) * perPage;
+        query.limit = perPage;
+      } else {
+        query.page = page;
+      }
       $.ajax({
         url: url,
         type: method,
         data: query,
+        dataType: options.dataType || 'html',
         success: function(data) {
-          var $items = $.parseHTML(data);
-          $el.append($items);
-          $el.data('page', page);
-          $el.trigger('aposScrollLoaded');
+          (options.success || function(data) {
+            var $items = $.parseHTML(data);
+            $el.append($items);
+            $el.data('page', page);
+          })(data);
           stop();
+          $el.trigger('aposScrollLoaded');
         },
         error: function() {
           $el.data('loading', false);
@@ -82,8 +112,7 @@
         },
         statusCode: {
           404: function() {
-            stop();
-            end();
+            $el.trigger('aposScrollEnded');
           }
         }
       });
@@ -104,9 +133,10 @@
     }
 
     function end() {
-      $el.data('loading', false);
+      if (loading) {
+        stop();
+      }
       atEnd = true;
-      $el.trigger('aposScrollEnded');
       $spinner.hide();
     }
 

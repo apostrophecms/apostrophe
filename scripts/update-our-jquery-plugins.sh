@@ -8,7 +8,7 @@
 # We use it only when the plugins' latest published releases are
 # reflected in the master branch.
 
-plugins=(find-by-name selective get-outer-html bottomless radio images-ready projector)
+plugins=(find-by-name selective get-outer-html bottomless radio images-ready projector json-call)
 for plugin in "${plugins[@]}"
 do
   wget --no-check-certificate "https://raw.github.com/punkave/jquery-${plugin}/master/jquery.${plugin}.js" -O public/js/vendor/jquery.${plugin}.js

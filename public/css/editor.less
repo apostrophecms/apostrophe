@@ -882,14 +882,14 @@
   }
 }
 
-.apos-slideshow-editor .apos-media-library, .apos-video-editor .apos-media-library
+.apos-slideshow-editor .apos-media-chooser, .apos-video-editor .apos-media-chooser
 {
   background-color: lighten(@apos-grey,90%);
   padding: 20px;
   position: relative;
-  .apos-media-library-title{font-family:'montserratbold'; font-size: 11px;}
+  .apos-media-chooser-title{font-family:'montserratbold'; font-size: 11px;}
 
-  .apos-media-library-add
+  .apos-media-chooser-add
     {
       padding: 5px 11px;
       display: inline-block;
@@ -904,10 +904,10 @@
       font-weight: bold;
       background-color: @apos-base;
     }
-    .apos-media-library-item:hover
+    .apos-media-chooser-item:hover
     {
       cursor: pointer;
-      .apos-media-library-add
+      .apos-media-chooser-add
       {
         opacity: 0.9;
       }
@@ -970,14 +970,14 @@
   //   float: right;
   //   padding-left: 10px;
   // }
-  .apos-media-library-items
+  .apos-media-chooser-items
   {
     // Don't float me, it breaks jquery ui sortable connectWith and then we can't
     // drag from the library properly
     padding: 30px 15px 15px 23px;
 
   }
-  .apos-media-library-item
+  .apos-media-chooser-item
   {
     float: left;
     width: 85px;
@@ -993,10 +993,10 @@
     background-position: center;
     position: relative;
     &:nth-child(7n+8){margin-right: 0;}
-    .apos-media-library-item-box
+    .apos-media-chooser-item-box
     {
     }
-    .apos-media-library-item-box img {
+    .apos-media-chooser-item-box img {
       opacity: 0;
     }
     // Plain old list of filenames
@@ -1015,12 +1015,12 @@
       margin-bottom: 4px;
       background-color: white;
       border: 1px solid #def;
-      .apos-media-library-item-box img {
+      .apos-media-chooser-item-box img {
         display: none;
       }
     }
   }
-  .apos-media-library-search
+  .apos-media-chooser-search
   {
     // clear: left;
     position: absolute;
@@ -1423,3 +1423,4 @@ body .ui-tooltip
     border-color: transparent transparent #262626 transparent;
   }
 }
+

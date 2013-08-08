@@ -175,6 +175,9 @@ apos.getTopModalOrBody = function() {
 // apos.modal displays the element specified by sel as a modal dialog. Goes 
 // away when the user clicks .apos-save or .apos-cancel, or submits the form
 // element in the modal (implicitly saving), or presses escape.
+//
+// data-save and data-cancel attributes are accepted as synonyms for .apos-save
+// and .apos-cancel classes and are preferred in new code.
 
 // options.init can be an async function to populate the
 // modal with content (usually used with apos.modalFromTemplate, below).
@@ -294,9 +297,9 @@ apos.modal = function(sel, options) {
     return false;
   });
 
-  $el.on('click', '.apos-cancel', hideModal);
+  $el.on('click', '.apos-cancel,[data-cancel]', hideModal);
 
-  $el.on('click', '.apos-save', function() {
+  $el.on('click', '.apos-save,[data-save]', function() {
     var $button = $(this);
     saveModal($button.is('[data-next]'));
     return false;
@@ -329,7 +332,13 @@ apos.modal = function(sel, options) {
       $el.data('aposSavedScrollTop', $(window).scrollTop());
       apos._modalStack.push($el);
       $('body').append($el);
-      $el.offset({ top: $('body').scrollTop() + 100, left: ($(window).width() - $el.outerWidth()) / 2 });
+      var offset;
+      if ($el.hasClass('apos-modal-full-page')) {
+        offset = $('.apos-admin-bar').height();
+      } else {
+        offset = 100;
+      }
+      $el.offset({ top: $('body').scrollTop() + offset, left: ($(window).width() - $el.outerWidth()) / 2 });
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
