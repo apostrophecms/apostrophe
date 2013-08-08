@@ -24,7 +24,7 @@ function AposAnnotator(options) {
     var $item = apos.fromTemplate(self.$el.find('[data-item].apos-template'));
     if (item.group === 'images') {
       var $img = $('<img class="apos-preview-image" />');
-      $img.attr('src', apos.filePath(item, { size: 'one-sixth' }));
+      $img.attr('src', apos.filePath(item, { size: 'one-third' }));
       $item.find('[data-preview]').html($img);
     }
     $item.data('id', item._id);

@@ -452,27 +452,22 @@
   display: inline-block;
   font-size: 10px;
   color: #FFF;
-  background-color: @apos-base;
-  // padding: 5px;
-  -webkit-border-radius: 1px;
-          border-radius: 1px;
+  background-color: @apos-grey10;
   margin-right: 10px;
-  padding-right: 8px;
-  text-transform: uppercase;
-  font-weight: bold;
+  padding-right: 11px;
+  letter-spacing: 1px;
  }
  .apos-tag-remove
  {
    color: #FFF;
-   // font-size: 10px;
    font-weight: bold;
-   background-color: darken(@apos-base, 12%);
-   padding: 8px;
+   
+   padding: 9px 4px;
    display: inline-block;
-   margin-right: 5px;
+   font-size:10px;
    &:hover
    {
-     background-color: darken(@apos-base, 15%);
+     background-color: @apos-grey20;
    }
  }
 }
@@ -1424,3 +1419,86 @@ body .ui-tooltip
   }
 }
 
+.apos-modal-inner
+{
+  background-color: @apos-grey60;
+}
+/* File Annotator */
+
+.apos-file-annotator.apos-modal .apos-modal-body
+{
+  .apos-fieldset-editor{padding: 0;}
+  .apos-annotate-file
+  {
+    padding: 20px;
+    
+    border-bottom: 1px solid @apos-grey70;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    .clearfix;
+    
+    .apos-fieldset
+    {
+      margin-bottom: 10px;  
+    }
+    label
+    {
+      background-color: @apos-grey50;
+      color: @apos-grey10;
+    }
+
+    .apos-fieldset-description textarea
+    {
+      width: 100%;
+      min-height: 78px;
+      padding: 10px;
+    }
+  }
+  .apos-annotator-preview,
+  .apos-annotator-column
+  {
+    float: left;
+    // width: 31%;
+    margin-right: 3%;
+
+  }
+  .apos-annotator-preview
+  {
+    height: 175px;
+    overflow: hidden;
+    width: 24%;
+    img
+    {
+      height: 120%;
+      margin-top: -10%;
+      // pos
+    }
+  }
+  .apos-annotator-column
+  {
+    width: 35%;
+    &:last-child
+    {
+      margin-right: 0;
+    }
+  }
+}
+
+.apos-button-back
+{
+  padding: 15px;
+  background-color: darken(@apos-base,10%);
+  margin: 0 15px 0 -15px;
+  &:before{padding-right: 5px;}
+  &:hover{background-color: darken(@apos-base,20%);}
+}
+
+.apos-close-modal
+{
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 15px;
+  background-color: darken(@apos-base,10%);
+  &:hover{background-color: darken(@apos-base,20%);}
+}
