@@ -32,15 +32,20 @@
     var loading = false;
 
     // Infinite scroll
-    setInterval(function() {
-      if ((!atEnd) && (!loading)) {
-        // Allow for an intentional gap between the content of the
-        // infinitely scrolled element and the bottom of the page
-        // (although it's foolish to expect anyone to see it...!)
-        var footerHeight = $(document).height() - ($el.offset().top + $el.height());
-        if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height() - footerHeight)
-        {
-          loadPage();
+    var interval = setInterval(function() {
+      // Don't try anything fancy when we're not in the DOM, avoids
+      // heavy background activity after removal. Also see
+      // the aposScrollDestroy event
+      if ($el.parents('body').length) {
+        if ((!atEnd) && (!loading)) {
+          // Allow for an intentional gap between the content of the
+          // infinitely scrolled element and the bottom of the page
+          // (although it's foolish to expect anyone to see it...!)
+          var footerHeight = $(document).height() - ($el.offset().top + $el.height());
+          if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height() - footerHeight)
+          {
+            loadPage();
+          }
         }
       }
     }, 100);
@@ -54,6 +59,12 @@
 
     $el.on('aposScrollEnded', function(e) {
       end();
+    });
+
+    $el.on('aposScrollDestroy', function(e) {
+      end();
+      // Go away!
+      clearInterval(interval);
     });
 
     function reset() {

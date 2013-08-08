@@ -68,10 +68,11 @@ function AposAnnotator(options) {
     };
   };
 
-  self.afterHide = function() {
+  self.afterHide = function(callback) {
     if (options.destroyed) {
       options.destroyed();
     }
+    return callback(null);
   };
 }
 

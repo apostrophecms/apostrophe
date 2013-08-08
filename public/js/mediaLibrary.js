@@ -262,5 +262,11 @@ function AposMediaLibrary(options) {
   self.init = function(callback) {
     return callback(null);
   };
+
+  self.afterHide = function(callback) {
+    // Stop bottomless interval timer
+    self.$el.trigger('aposScrollDestroy');
+    return callback(null);
+  };
 }
 
