@@ -1,7 +1,11 @@
 /* global apos, _ */
 
 /* options.receive must be a function that accepts an array of
-  the annotated file objects. Use the _id property to identify them. */
+  the annotated file objects. Use the _id property to identify them.
+
+  options.destroyed should be a function to be called when the annotator
+  destroys itself on close. This is a useful way to know it's necessary to open
+  a new annotator for the next file. */
 
 function AposAnnotator(options) {
   var self = this;
@@ -46,7 +50,6 @@ function AposAnnotator(options) {
       var $item = $(this);
       data.push(self.debriefItem($item));
     });
-    apos.log(data);
     return $.jsonCall(options.annotateUrl || '/apos/annotate-files',
       data,
       function(results) {
@@ -63,6 +66,12 @@ function AposAnnotator(options) {
       tags: $item.find('[data-name="tags"]').selective('get'),
       credit: $item.findByName('credit').val()
     };
+  };
+
+  self.afterHide = function() {
+    if (options.destroyed) {
+      options.destroyed();
+    }
   };
 }
 

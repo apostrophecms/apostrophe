@@ -2129,6 +2129,11 @@ apos.widgetTypes.slideshow = {
               });
             });
             return callback(null);
+          },
+          destroyed: function() {
+            // End of life cycle for previous annotator, note that so
+            // we can open another one
+            self.annotator = undefined;
           }
         });
         self.annotator.modal();
