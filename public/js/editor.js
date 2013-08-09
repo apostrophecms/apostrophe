@@ -362,32 +362,18 @@ apos.Editor = function(options) {
         target = $target.val().trim();
         name = $name.val().trim();
 
-        // Fix lame URLs
-        //
-        // Valid URLs and relative URLS:
-        // Has protocol,
-        // Starts with #,
-        // Starts with /,
-        // starts with non-slash, non-period characters followed by /,
-        // consists of non-slash, non-period characters followed by end of line
-        if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
-          // All good
-        } else if (/^[^\/\.]+\.[^\/\.]+/) {
-          // Smells like a domain name. Educated guess: they left off http://
-          href = 'http://' + href;
-        } else {
-          // No href at all is perfectly valid as long as there
-          // is a name (for creating an anchor, not a link)
-          if (!name.length) {
-            alert('You must specify a link, a name, or both.');
-            return callback('invalid');
-          } else {
-            alert('That link is not valid. Examples of valid links: /my/page, http://google.com/, mailto:tom@example.com');
-            return callback('invalid');
-          }
+        if (!href.length) {
+          alert('You must specify a link, a name, or both.');
+          return callback('invalid');
         }
 
-        if (href.length) {
+        href = apos.fixUrl(href);
+        if (!href) {
+          alert('That link is not valid. Examples of valid links: /my/page, http://google.com/, mailto:tom@example.com');
+          return callback('invalid');
+        }
+
+        if (href) {
           $a.attr('href', href);
         } else {
           $a.removeAttr('href');
@@ -3063,6 +3049,25 @@ apos.tagsToString = function(s) {
   }
   var result = s.join(', ');
   return result;
+};
+
+// Fix lame URLs. If we can't fix the URL, return null.
+//
+// Accepts valid URLs and relative URLs. If the URL smells like
+// it starts with a domain name, supplies an http:// prefix.
+//
+// KEEP IN SYNC WITH apostrophe.js SERVER SIDE VERSION
+
+apos.fixUrl = function(href) {
+  if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+    // All good - no change required
+    return href;
+  } else if (/^[^\/\.]+\.[^\/\.]+/) {
+    // Smells like a domain name. Educated guess: they left off http://
+    return 'http://' + href;
+  } else {
+    return null;
+  }
 };
 
 // Keep all older siblings of node, remove the rest (including node) from the DOM.
