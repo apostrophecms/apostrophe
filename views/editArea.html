@@ -64,6 +64,7 @@
     apos.afterYield(function() {
       // Pass in the options from the area partial
       var editor = new apos.Editor({ selector: '#{{ wid }}', options: {{ options | json }} });
+      editor.init();
       $(function() {
 {% if standalone %}
         $('#{{ wid }} [data-editable]').focus();

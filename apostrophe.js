@@ -4053,17 +4053,30 @@ function Apos() {
     if (s === def) {
       return s;
     }
-    if (s.length) {
-      // Add missing prefixes
-      if (!s.match(/^(http:\/\/|https:\/\/|ftp:\/\/)/)) {
-        s = 'http://' + s;
-      }
-    } else {
-      // An empty string is better stored as undefined so it's clear
-      // that we have no URL
-      s = undefined;
+    s = self.fixUrl(s);
+    if (s === null) {
+      return def;
     }
     return s;
+  };
+
+  // Fix lame URLs. If we can't fix the URL, return null.
+  //
+  // Accepts valid URLs and relative URLs. If the URL smells like
+  // it starts with a domain name, supplies an http:// prefix.
+  //
+  // KEEP IN SYNC WITH editor.js BROWSER SIDE VERSION
+
+  self.fixUrl = function(href) {
+    if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+      // All good - no change required
+      return href;
+    } else if (/^[^\/\.]+\.[^\/\.]+/) {
+      // Smells like a domain name. Educated guess: they left off http://
+      return 'http://' + href;
+    } else {
+      return null;
+    }
   };
 
   // Sanitize a select element
