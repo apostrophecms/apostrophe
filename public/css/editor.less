@@ -1620,8 +1620,18 @@ body .ui-tooltip
 /* Media Library */
 .apos-media-library.apos-modal
 {
+  .apos-button-back
+  {
+    background-color: @apos-base;
+    padding: 36px 20px;  
+    &:hover
+    {
+      background-color: darken(@apos-base, 10%);
+    }
+  }
+
   background-color: darken(@apos-grey70,6%);
-  .apos-item-description{display: none;}
+  .apos-item-list-details{display: none;}
   .apos-fieldset-editor{padding: 0; textarea{padding: 10px;}}
   .apos-preview-inner{position: relative;}
   .apos-modal-body
@@ -1654,9 +1664,22 @@ body .ui-tooltip
   }
   .apos-index-pane.apos-list-view
   {
-    .apos-item-description{display: block;}
+    .apos-item-list-details
+    {
+      display: block;
+      span
+      {
+        display: block;
+        text-align: left;
+        font-family: inherit;
+        font-size: 12px;
+        color: @apos-grey30;
+        padding: 1px 0;
+      }
+    }
     .apos-index-item
     {
+      max-height: 80px;
       width: 48%;
       background-color: transparent;
       border-top: 0;
@@ -1664,7 +1687,7 @@ body .ui-tooltip
       &.active
       {
         background-color: @apos-base;
-        h4, p {color: #FFF};
+        h4, p, span {color: #FFF};
         .apos-preview { border: 0; }
         .apos-preview-image {
           background-position: center;
@@ -1690,7 +1713,7 @@ body .ui-tooltip
       {
         position: relative;
         font-size: 14px;
-        margin: 5px 0;
+        margin: 5px 0 2px;
         padding: 0;
         width: auto;
         background-color: transparent;
@@ -1975,7 +1998,7 @@ body .ui-tooltip
         {
           float: left;
           width: 35%;
-          line-height: 1.8em;
+          line-height: 1.9em;
           text-transform: uppercase;
         }
         .apos-value{

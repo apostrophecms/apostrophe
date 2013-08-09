@@ -113,15 +113,18 @@ function AposMediaLibrary(options) {
       // $img.attr('src', apos.filePath(item, { size: 'one-third' }));
       $item.find('[data-preview]').html($img);
     } else {
-      $item.find('[data-preview]').html('<span class="apos-file-format '+item.extension+'"></span>');
+      $item.find('[data-preview]').html('<span class="apos-file-format apos-'+item.extension+'"></span>');
       $item.addClass('apos-file');
     }
     $item.find('[data-title]').text(item.title || item.name);
-    // $item.find('[data-description]').text(item.description || " - ");
+    $item.find('[data-list-details]').append('<span>Group: ' + item.group || + '</span>');
+    $item.find('[data-list-details]').append('<span>Extension: ' + item.extension || + '</span>');
+    $item.find('[data-list-details]').append('<span>Tags: ' + (item.tags || []).join(', ') + '</span>');
   };
 
   self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'credit', 'extension' ];
   self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'credit', 'extension' ];
+  // self.listShow = [ 'title', 'name', 'group', 'type'];
 
   self.simpleEditable = [ 'title', 'credit', 'description' ];
 
