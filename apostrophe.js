@@ -759,10 +759,6 @@ function Apos() {
         return self.areaFindFile(options);
       };
 
-      aposLocals.aposMediaMenu = function(options) {
-        return partial('mediaMenu', options);
-      };
-
       self.areaFindFile = function(options) {
         if (!options) {
           options = {};
@@ -803,6 +799,10 @@ function Apos() {
           }
         });
         return winningFile;
+      };
+
+      aposLocals.aposMediaMenu = function(options) {
+        return partial('mediaMenu', options);
       };
 
       // Convert an area to plaintext. This will only contain text for items that
@@ -4075,7 +4075,7 @@ function Apos() {
     if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
       // All good - no change required
       return href;
-    } else if (/^[^\/\.]+\.[^\/\.]+/) {
+    } else if (href.match(/^[^\/\.]+\.[^\/\.]+/)) {
       // Smells like a domain name. Educated guess: they left off http://
       return 'http://' + href;
     } else {
