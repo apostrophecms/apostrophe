@@ -1,4 +1,4 @@
-/* global apos, _ */
+/* global apos, _, confirm */
 
 function AposMediaLibrary(options) {
   var self = this;
@@ -177,6 +177,58 @@ function AposMediaLibrary(options) {
     _.each(self.simpleEditable, function(field) {
       self.$edit.findByName(field).val(item[field]);
     });
+
+    self.busy = function(status) {
+      // TODO spinner for uploads and saves (it's mostly uploads that take time,
+      // sometimes quite a lot of it due to image scaling work). true means busy,
+      // false means done
+    };
+
+    var url = options.replaceFileUrl || '/apos/replace-file';
+    url += '?id=' + item._id;
+    var $upload = self.$edit.find('[data-upload]');
+    $upload.attr('data-url', url);
+    $upload.fileupload({
+      dataType: 'json',
+      dropZone: self.$edit,
+      sequentialUploads: true,
+      add: function(e, data) {
+        // TODO think about a way to undo even this
+        if (!confirm('Are you sure you want to replace this file? This cannot be undone!')) {
+          return false;
+        }
+        return data.submit();
+      },
+      start: function (e) {
+        self.busy(true);
+      },
+      // Even on an error we should note we're not spinning anymore
+      always: function (e, data) {
+        self.busy(false);
+      },
+      // This is not the same thing as really being ready to work with the files,
+      // so wait for 'done'
+      // stop: function (e) {
+      // },
+      // Progress percentages are just misleading due to image rendering time,
+      // so just show a spinner
+      // progressall: function (e, data) {
+      //   var progress = parseInt(data.loaded / data.total * 100, 10);
+      //   self.$el.find('[data-progress-percentage]').text(progress);
+      // },
+      done: function (e, data) {
+        if (data.result.status === 'ok') {
+          // Refresh our knowledge of this file
+          self.updateItem(data.result.file);
+          // Make sure both views are updated. This could flash a
+          // little but it's sure to be correct
+          self.showItem(data.result.file);
+          self.editItem(data.result.file);
+          apos.change('media');
+        }
+      },
+    });
+
     apos.enableTags(self.$edit.find('[data-name="tags"]'), item.tags);
     self.$normal.hide();
     self.$show.append(self.$edit);
@@ -196,6 +248,7 @@ function AposMediaLibrary(options) {
         self.updateItem(item);
         self.showItem(item);
       });
+      apos.change('media');
       return callback();
     });
   };
@@ -209,6 +262,7 @@ function AposMediaLibrary(options) {
       // infinite scroll - is this page empty now? Simplest to reload.
       // Later we might finesse this more
       self.resetIndex();
+      apos.change('media');
       return callback();
     });
   };

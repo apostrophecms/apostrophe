@@ -81,6 +81,10 @@
       </div>
       <div data-edit-view class="apos-edit-view apos-template">
         <div class="apos-preview" data-preview></div>
+        <div class="apos-replace-file">
+          <h4>Replace File</h4>
+          <input data-upload type="file" name="files[]" class="apos-file-input"  multiple />
+        </div>
         <form>
           {{ formText('title', 'Title') }}
           {{ formTags('tags', 'Tags') }}

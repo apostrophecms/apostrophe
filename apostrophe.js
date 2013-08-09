@@ -1278,19 +1278,25 @@ function Apos() {
 
           // If a duplicate file is uploaded, quietly reuse the old one to
           // avoid filling the hard drive
-          function reuseOrUpload(callback) {
-            return files.findOne({ md5: info.md5 }, function(err, existing) {
-              if (err) {
-                return callback(err);
-              }
-              if (existing) {
-                infos.push(existing);
-                return callback(null);
-              } else {
-                async.series([upload, db], callback);
-              }
-            });
-          }
+          //
+          // This has been quietly removed for now. It could be an option
+          // later, but at the moment on rare occasions people will need
+          // two copies in order to have two titles. TODO: address that
+          // more gracefully.
+          //
+          // function reuseOrUpload(callback) {
+          //   return files.findOne({ md5: info.md5 }, function(err, existing) {
+          //     if (err) {
+          //       return callback(err);
+          //     }
+          //     if (existing) {
+          //       infos.push(existing);
+          //       return callback(null);
+          //     } else {
+          //       async.series([upload, db], callback);
+          //     }
+          //   });
+          // }
 
           function upload(callback) {
             if (image) {
@@ -1328,10 +1334,140 @@ function Apos() {
             });
           }
 
-          async.series([ permissions, md5, reuseOrUpload ], callback);
+          async.series([ permissions, md5, upload, db ], callback);
 
         }, function(err) {
           return res.send({ files: infos, status: 'ok' });
+        });
+      });
+
+      // Replace one file. TODO: reduce redundancy with
+      // /apos/upload-files
+
+      app.post('/apos/replace-file', function(req, res) {
+        var id = req.query.id;
+        return self.files.findOne({ _id: id }, function(err, file) {
+          if (err || (!file)) {
+            return fail();
+          }
+          // Permissions: if you're not an admin you must own the file
+          if (!req.user.permissions.admin) {
+            if (file.ownerId !== req.user._id) {
+              return fail();
+            }
+          }
+          var newFiles = req.files.files;
+          if (!(newFiles instanceof Array)) {
+            newFiles = [ newFiles ];
+          }
+          if (!newFiles.length) {
+            return fail();
+          }
+          // The last file is the one we're interested in if they
+          // somehow send more than one
+          var upload = newFiles.pop();
+          var extension = path.extname(upload.name);
+          if (extension && extension.length) {
+            extension = extension.substr(1);
+          }
+          extension = extension.toLowerCase();
+          // Do we accept this file extension?
+          var accepted = [];
+          var group = _.find(self.fileGroups, function(group) {
+            accepted.push(group.extensions);
+            var candidate = group.extensionMaps[extension] || extension;
+            if (_.contains(group.extensions, candidate)) {
+              return true;
+            }
+          });
+          if (!group) {
+            res.statusCode = 400;
+            return res.send("File extension not accepted. Acceptable extensions: " + accepted.join(", "));
+          }
+          // Don't mess with previously edited metadata, but do allow
+          // the actual filename, extension, etc. to be updated
+          var image = group.image;
+          extend(file, {
+            length: file.length,
+            group: group.name,
+            createdAt: new Date(),
+            name: self.slugify(path.basename(upload.name, path.extname(upload.name))),
+            extension: extension
+          });
+
+          function permissions(callback) {
+            self.permissions(req, 'edit-media', null, callback);
+          }
+
+          function md5(callback) {
+            return self.md5File(upload.path, function(err, md5) {
+              if (err) {
+                return callback(err);
+              }
+              file.md5 = md5;
+              return callback(null);
+            });
+          }
+
+          // If a duplicate file is uploaded, quietly reuse the old one to
+          // avoid filling the hard drive
+          //
+          // Quietly removed for now due to issues with the occasional need
+          // for two copies to allow two titles. Now that we have a good
+          // media library automatic duplicate prevention is less urgent.
+          //
+          // function reuseOrUpload(callback) {
+          //   return files.findOne({ md5: info.md5 }, function(err, existing) {
+          //     if (err) {
+          //       return callback(err);
+          //     }
+          //     if (existing) {
+          //       infos.push(existing);
+          //       return callback(null);
+          //     } else {
+          //       async.series([upload, db], callback);
+          //     }
+          //   });
+          // }
+
+          function copyIn(callback) {
+            if (image) {
+              // For images we correct automatically for common file extension mistakes
+              return uploadfs.copyImageIn(upload.path, '/files/' + file._id + '-' + file.name, function(err, result) {
+                if (err) {
+                  return callback(err);
+                }
+                file.extension = result.extension;
+                file.width = result.width;
+                file.height = result.height;
+                file.searchText = fileSearchText(file);
+                if (file.width > file.height) {
+                  file.landscape = true;
+                } else {
+                  file.portrait = true;
+                }
+                return callback(null);
+              });
+            } else {
+              // For non-image files we have to trust the file extension
+              // (but we only serve it as that content type, so this should
+              // be reasonably safe)
+              return uploadfs.copyIn(upload.path, '/files/' + file._id + '-' + file.name + '.' + file.extension, callback);
+            }
+          }
+
+          function db(callback) {
+            files.update({ _id: file._id }, file, function(err, count) {
+              return callback(err);
+            });
+          }
+
+          async.series([ permissions, md5, copyIn, db ], function(err) {
+            if (err) {
+              return fail();
+            }
+            return res.send({ file: file, status: 'ok' });
+          });
         });
       });
 
