@@ -728,7 +728,11 @@ function Apos() {
           return true;
         }
         return !_.some(options.area.items, function(item) {
-          return item.type === options.type;
+          if (self.itemTypes[item.type] && (item.type === options.type) && self.itemTypes[item.type].empty) {
+            return !self.itemTypes[item.type].empty(item);
+          } else {
+            return true;
+          }
         });
       };
 
