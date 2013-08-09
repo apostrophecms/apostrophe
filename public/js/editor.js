@@ -35,14 +35,14 @@ apos.Editor = function(options) {
   // If `options.callback` is present, it is called, otherwise
   // `document.execCommand()` is called with the command.
 
-  function enableControl(command, options) {
-    var keys;
-    var promptForLabel;
+  self.enableControl = function(command, options) {
     if (typeof(options) !== 'object') {
+      // bc
       options = {};
       options.keys = arguments[1];
       options.promptForLabel = arguments[2];
     }
+
     function doCommand() {
       var arg = null;
 
@@ -73,8 +73,8 @@ apos.Editor = function(options) {
       return false;
     });
 
-    if (keys) {
-      _.each(keys, function(key) {
+    if (options.keys) {
+      _.each(options.keys, function(key) {
         self.$editable.bind('keydown', key, doCommand);
       });
     }
@@ -90,7 +90,7 @@ apos.Editor = function(options) {
 
     // }
 
-  }
+  };
 
   function enableMenu(name, action) {
     self.$el.find('[data-' + name + ']').change(function() {
@@ -412,6 +412,17 @@ apos.Editor = function(options) {
     return false;
   });
 
+  self.enableControls = function() {
+    self.enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
+    self.enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
+    self.enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], callback: self.editLink });
+    self.enableControl('unlink', { keys: ['meta+l', 'ctrl+l'] });
+    self.enableControl('insertUnorderedList', { keys: [] });
+    self.enableControl('insertTable', { keys: [], callback: self.insertTable });
+  };
+
+  enableMenu('style', 'formatBlock');
+
   self.$editable.html(options.data);
   self.$editable.find('table').each(function(i, table) {
     self.addTableControls($(this));
@@ -452,14 +463,7 @@ apos.Editor = function(options) {
   // Restore helper marks for widgets
   self.$editable.find('.apos-widget[data-type]').before(apos.beforeMarker).after(apos.afterMarker);
 
-  enableControl('bold', { keys: ['meta+b', 'ctrl+b'] });
-  enableControl('italic', { keys: ['meta+i', 'ctrl+i'] });
-  enableControl('createLink', { keys: ['meta+l', 'ctrl+l'], callback: self.editLink });
-  enableControl('unlink', { keys: ['meta+l', 'ctrl+l'] });
-  enableControl('insertUnorderedList', { keys: [] });
-  enableControl('insertTable', { keys: [], callback: self.insertTable });
-
-  enableMenu('style', 'formatBlock');
+  self.enableControls();
 
   // Make a note of the style menu element so we can
   // quickly update its value. Also make a map of the
