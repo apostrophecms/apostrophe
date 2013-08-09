@@ -3066,7 +3066,7 @@ apos.fixUrl = function(href) {
   if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
     // All good - no change required
     return href;
-  } else if (/^[^\/\.]+\.[^\/\.]+/) {
+  } else if (href.match(/^[^\/\.]+\.[^\/\.]+/)) {
     // Smells like a domain name. Educated guess: they left off http://
     return 'http://' + href;
   } else {
