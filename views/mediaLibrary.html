@@ -7,22 +7,30 @@
   </div>
 {% endmacro %}
 
+
 <div class="apos-media-library apos-modal apos-modal-full-page apos-template">
+<!-- <div class="apos-media-library apos-modal apos-template"> -->
   <div class="apos-modal-bar" data-bar>
-    <a href="#" data-cancel class="apos-back">&laquo; Back</a>
-    Browse: {{ formSelectStandalone('group',
-      [
-        { label: 'All', value: '' },
-        { label: 'Images', value: 'images' },
-        { label: 'Office', value: 'office' }
-      ]
-    ) }}
-    Status: {{ formSelectStandalone('trash',
-      [
-        { label: 'Live', value: '0' },
-        { label: 'Trash', value: '1' }
-      ]
-    ) }}
+    <!-- <a class="apos-button-back icon-left-open apos-button" data-cancel href="#">Back</a> -->
+    <div class="apos-select-wrapper">
+      Browse: {{ formSelectStandalone('group',
+        [
+          { label: 'All Media Types', value: '' },
+          { label: 'Images', value: 'images' },
+          { label: 'Office', value: 'office' }
+        ]
+      ) }}
+      <div class="apos-select-arrow"></div>
+    </div>
+    <div class="apos-select-wrapper">
+      Status: {{ formSelectStandalone('trash',
+        [
+          { label: 'Live', value: '0' },
+          { label: 'Trash', value: '1' }
+        ]
+      ) }}
+      <div class="apos-select-arrow"></div>
+    </div>
     {#
     MAYBE LATER
     Sort By: {{ formSelectStandalone('sort',
@@ -32,30 +40,44 @@
       ]
     ) }}
     #}
-    <input type="search" placeholder="Search" name="search" />
+    <div class="apos-search-field icon-search">
+      <input type="search" placeholder="Search" name="search" />
+    </div>
+    
   </div>
   <div class="apos-modal-body">
-    <div class="apos-index-pane" data-index>
+    <div class="apos-index-pane apos-grid-view" data-index>
+      <div class="apos-view-picker">
+        <a href="javascript:void(0)" class="apos-view-grid apos-generic-button active" data-grid data-view>Grid View</a>
+        <a href="javascript:void(0)" class="apos-view-list apos-generic-button" data-list data-view>List View</a>
+      </div>
       <div class="apos-index-item apos-template" data-item>
         {# Populates with an img element when appropriate #}
         <div data-preview class="apos-preview"></div>
         <h4 data-title>Title</h4>
+        <!-- <p class="apos-item-description" data-description>Description</p> -->
       </div>
     </div>
     <div class="apos-show-pane" data-show>
       <div data-normal-view class="apos-normal-view">
         {# Image element will populate inside data-preview if type is appropriate #}
-        <div class="apos-preview" data-preview></div>
-        {{ showField('title', 'Title') }}
-        {{ showField('name', 'Filename') }}
-        {{ showField('tags', 'Tags') }}
-        {{ showField('credit', 'Credit') }}
-        {{ showField('description', 'Description') }}
-        {{ showField('group', 'Media Type') }}
-        {{ showField('extension', 'Media Format') }}
-        {{ showField('createdAt', 'Date Added') }}
-        <a href="#" data-rescue class="apos-control apos-button apos-rescue">Rescue From Trash</a>
-        <a href="#" data-edit class="apos-control apos-button apos-edit">Edit Details</a>
+        <div class="apos-preview" >
+          <div class="apos-preview-inner" >
+            <div class="apos-preview-image" data-preview></div>
+            <div class="apos-preview-info">
+              {{ showField('title', 'Title') }}
+              {{ showField('name', 'Filename') }}
+              {{ showField('tags', 'Tags') }}
+              {{ showField('credit', 'Credit') }}
+              {{ showField('description', 'Description') }}
+              {{ showField('group', 'Media Type') }}
+              {{ showField('extension', 'Media Format') }}
+              {{ showField('createdAt', 'Date Added') }}
+            </div>
+            <a href="#" data-rescue class="apos-control apos-button apos-rescue">Rescue From Trash</a>
+            <a href="#" data-edit class="apos-control apos-button apos-edit">Edit Details</a>
+          </div>
+        </div>
       </div>
       <div data-edit-view class="apos-edit-view apos-template">
         <div class="apos-preview" data-preview></div>

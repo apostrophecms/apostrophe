@@ -26,9 +26,28 @@ function AposMediaLibrary(options) {
       reset: self.resetCallback
     });
     self.$el.on('click', '[data-index] [data-item]', function() {
+      $.each($('[data-index] [data-item]'), function() {
+        var $item = $(this);
+        $item.removeClass('active');
+      });
+      $(this).addClass('active');
       self.showItem($(this).data('item'));
       return false;
     });
+
+    self.$el.on('click', '[data-grid]', function() {
+      self.$el.find('[data-index]').removeClass('apos-list-view').addClass('apos-grid-view');
+      self.$el.find('.apos-generic-button').removeClass('active');
+      $(this).addClass('active');
+      return false;
+    });
+    self.$el.on('click', '[data-list]', function() {
+      self.$el.find('[data-index]').removeClass('apos-grid-view').addClass('apos-list-view');
+      self.$el.find('.apos-generic-button').removeClass('active');
+      $(this).addClass('active');
+      return false;
+    });
+
     self.$el.on('click', '[data-show] [data-edit]', function() {
       self.editItem(self.$el.find('[data-show]').data('item'));
       return false;
@@ -90,13 +109,15 @@ function AposMediaLibrary(options) {
   self.populateItem = function($item, item) {
     $item.data('item', item);
     if (item.group === 'images') {
-      var $img = $('<img class="apos-preview-image" />');
-      $img.attr('src', apos.filePath(item, { size: 'one-sixth' }));
+      var $img = $('<div class="apos-preview-image" style="background-image:url('+apos.filePath(item, { size: 'one-third' })+');" ></div>');
+      // $img.attr('src', apos.filePath(item, { size: 'one-third' }));
       $item.find('[data-preview]').html($img);
     } else {
-      $item.find('[data-preview]').html('<span class="apos-file-format">item.format</span>');
+      $item.find('[data-preview]').html('<span class="apos-file-format '+item.extension+'"></span>');
+      $item.addClass('apos-file');
     }
     $item.find('[data-title]').text(item.title || item.name);
+    // $item.find('[data-description]').text(item.description || " - ");
   };
 
   self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'credit', 'extension' ];
@@ -109,7 +130,6 @@ function AposMediaLibrary(options) {
     if (self.$edit) {
       self.$edit.remove();
     }
-
     self.moveToScrollTop(self.$normal);
     self.$normal.show();
 
@@ -121,7 +141,12 @@ function AposMediaLibrary(options) {
       self.$normal.find('[data-preview]').html('');
     }
     _.each(self.simpleShow, function(field) {
-      self.$normal.find('[data-name="' + field + '"]').text(item[field]);
+      if (item[field]){
+        self.$normal.find('[data-name="' + field + '"]').text(item[field]);
+      } else{
+        self.$normal.find('[data-name="' + field + '"]').html("&mdash;");
+      }
+      
     });
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
     // Show the edit button or the rescue button
