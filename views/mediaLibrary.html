@@ -85,6 +85,9 @@
           <h4>Replace File</h4>
           <input data-upload type="file" name="files[]" class="apos-file-input"  multiple />
         </div>
+        <div class="apos-progress-container">
+          {% include "progress.html" %}
+        </div>
         <form>
           {{ formText('title', 'Title') }}
           {{ formTags('tags', 'Tags') }}

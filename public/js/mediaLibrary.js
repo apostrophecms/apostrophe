@@ -179,9 +179,7 @@ function AposMediaLibrary(options) {
     });
 
     self.busy = function(status) {
-      // TODO spinner for uploads and saves (it's mostly uploads that take time,
-      // sometimes quite a lot of it due to image scaling work). true means busy,
-      // false means done
+      return apos.busy(self.$edit, status);
     };
 
     var url = options.replaceFileUrl || '/apos/replace-file';

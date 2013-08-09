@@ -1388,19 +1388,7 @@ apos.widgetTypes.slideshow = {
     self._busy = 0;
 
     self.busy = function(state) {
-      if (state) {
-        self._busy++;
-        if (self._busy === 1) {
-          self.$el.find('[data-progress]').show();
-          self.$el.find('[data-finished]').hide();
-        }
-      } else {
-        self._busy--;
-        if (!self._busy) {
-          self.$el.find('[data-progress]').hide();
-          self.$el.find('[data-finished]').show();
-        }
-      }
+      apos.busy(self.$el, state);
     };
 
     // Our current thinking is that preview is redundant for slideshows.
@@ -3127,6 +3115,30 @@ apos.enableMediaLibrary = function() {
     mediaLibrary.modal();
     return false;
   });
+};
+
+// Simple progress display. Locates a progress display inside the given
+// element. If state is true, indicates activity, otherwise indicates
+// complete. Supports nested calls; does not revert to indicating complete
+// until the nesting level is 0.
+
+apos.busy = function($el, state) {
+  var busy = $el.data('busy') || 0;
+  if (state) {
+    busy++;
+    $el.data('busy', busy);
+    if (busy === 1) {
+      $el.find('[data-progress]').show();
+      $el.find('[data-finished]').hide();
+    }
+  } else {
+    busy--;
+    $el.data('busy', busy);
+    if (!busy) {
+      $el.find('[data-progress]').hide();
+      $el.find('[data-finished]').show();
+    }
+  }
 };
 
 // Do this late so that other code has a chance to set apos.mediaLibraryOptions
