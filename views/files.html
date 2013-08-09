@@ -4,10 +4,10 @@
   {% for file in item.items %}
     {% if ((loop.index0 < options.limit) or (not options.limit)) %}
       <li data-slideshow-item class="apos-files-item apos-file-extension-{{ file.extension | e }} {% if loop.first %}apos-first{% endif %} {% if loop.last %}apos-last{% endif %}">
-        {% if file.description or file.title %}
+        {% if (item.showDescriptions and file.description) or (item.showTitles and file.title) %}
         <div class="apos-files-description-container">
-          {% if file.title %}<h1 class="apos-files-title">{{ file.title }}</h1>{% endif %}
-          {% if file.description %}
+          {% if item.showTitles and file.title %}<h1 class="apos-files-title">{{ file.title }}</h1>{% endif %}
+          {% if item.showDescriptions and file.description %}
             <div class="apos-files-description">
               <p>
                 {# Don't render HTML tags, do respect line breaks #}

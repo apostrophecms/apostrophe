@@ -1437,41 +1437,7 @@ function Apos() {
             res.statusCode = 404;
             return res.send('not found');
           }
-          var criteria = {};
-          var limit = 10;
-          var skip = 0;
-          var q;
-          if (req.query.group) {
-            criteria.group = self.sanitizeString(req.query.group);
-          }
-          if (req.query.extension) {
-            criteria.extension = self.sanitizeString(req.query.extension);
-          }
-          self.convertBooleanFilterCriteria('trash', req.query, criteria, '0');
-          if (req.query.minSize) {
-            criteria.width = { $gte: self.sanitizeInteger(req.query.minSize[0], 0, 0) };
-            criteria.height = { $gte: self.sanitizeInteger(req.query.minSize[1], 0, 0) };
-          }
-          skip = self.sanitizeInteger(req.query.skip, 0, 0);
-          limit = self.sanitizeInteger(req.query.limit, 0, 0, 100);
-          if (req.query.q) {
-            criteria.searchText = self.searchify(req.query.q);
-          }
-          var result = {};
-          async.series([
-            function(callback) {
-              return files.count(criteria, function(err, count) {
-                result.total = count;
-                return callback(err);
-              });
-            },
-            function(callback) {
-              return files.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, files) {
-                result.files = files;
-                return callback(err);
-              });
-            }
-          ], function(err) {
+          return self.getFilesSanitized(req, req.query, function(err, result) {
             if (err) {
               res.statusCode = 500;
               return res.send('error');
@@ -1480,6 +1446,99 @@ function Apos() {
           });
         });
       });
+
+      self.getFilesSanitized = function(req, options, callback) {
+        var newOptions = {};
+        if (options.group) {
+          newOptions.group = self.sanitizeString(options.group);
+        }
+        if (options.extension) {
+          newOptions.extension = self.sanitizeString(options.extension);
+        }
+        if (options.ids) {
+          newOptions.ids = [];
+          _.each(Array.isArray(options.ids) || [], function(id) {
+            newOptions.ids.push(self.sanitizeString(id));
+          });
+        }
+        if (options.q) {
+          newOptions.q = self.sanitizeString(options.q);
+        }
+        if (options.limit) {
+          newOptions.limit = self.sanitizeInteger(options.limit, 0, 0);
+        }
+        if (options.skip) {
+          newOptions.skip = self.sanitizeInteger(options.skip, 0, 0);
+        }
+        if (options.minSize) {
+          newOptions.minSize = [
+            options.sanitizeInteger(options.minSize[0], 0, 0),
+            options.sanitizeInteger(options.minSize[1], 0, 0)
+          ];
+        }
+        // trash is always sanitized in getFiles
+        return self.getFiles(req, options, callback);
+      };
+
+      // Options are:
+      //
+      // group, extension, trash, skip, limit, q, minSize, ids
+      //
+      // The minSize option should be an array: [width, height]
+      //
+      // req is present to check view permissions (not yet needed, but
+      // required for compatibility).
+      //
+      // Options must be pre-sanitized. See self.getFilesSanitized
+      // for a wrapper that sanitizes the options so you can pass req.query.
+      // For performance we don't want to sanitize on every page render that
+      // just needs to join with previously chosen files.
+
+      self.getFiles = function(req, options, callback) {
+        var criteria = {};
+        var limit = 10;
+        var skip = 0;
+        var q;
+        if (options.group) {
+          criteria.group = options.group;
+        }
+        if (options.extension) {
+          criteria.extension = options.extension;
+        }
+        if (options.ids) {
+          criteria._id = { $in: options.ids };
+        }
+        self.convertBooleanFilterCriteria('trash', options, criteria, '0');
+        if (options.minSize) {
+          criteria.width = { $gte: options.minSize[0] };
+          criteria.height = { $gte: options.minSize[1] };
+        }
+        skip = self.sanitizeInteger(options.skip, 0, 0);
+        limit = self.sanitizeInteger(options.limit, 0, 0, 100);
+        if (options.q) {
+          criteria.searchText = self.searchify(options.q);
+        }
+        var result = {};
+        async.series([
+          function(callback) {
+            return files.count(criteria, function(err, count) {
+              result.total = count;
+              return callback(err);
+            });
+          },
+          function(callback) {
+            return files.find(criteria).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(function(err, files) {
+              result.files = files;
+              return callback(err);
+            });
+          }
+        ], function(err) {
+          if (err) {
+            return callback(err);
+          }
+          return callback(null, result);
+        });
+      };
 
       // Annotate previously uploaded files
       app.post('/apos/annotate-files', function(req, res) {
@@ -3410,46 +3469,74 @@ function Apos() {
   };
 
   function sanitizeSlideshow(item) {
-    if (!Array.isArray(item.items)) {
-      item.items = [];
+    if (!Array.isArray(item.ids)) {
+      item.ids = [];
     }
-    var newItems = [];
-    _.each(item.items, function(file) {
-      if (typeof(file) !== 'object') {
+    item.showTitles = self.sanitizeBoolean(item.showTitles);
+    item.showDescriptions = self.sanitizeBoolean(item.showDescriptions);
+    if (typeof(item.extras) !== 'object') {
+      item.extras = {};
+    }
+    var ids = [];
+    var extras = {};
+    _.each(item.ids, function(id) {
+      id = self.sanitizeString(id);
+      if (!id) {
         return;
       }
-      var newFile = {
-        hyperlink: self.sanitizeUrl(file.hyperlink, undefined),
-        hyperlinkTitle: self.sanitizeString(file.hyperlinkTitle, undefined),
-        altTag: self.sanitizeString(file.altTag, undefined),
-        description: self.sanitizeString(file.description, undefined),
-        title: self.sanitizeString(file.title, undefined),
-        _id: self.sanitizeString(file._id),
-        name: self.sanitizeString(file.name),
-        extension: self.sanitizeString(file.extension, 'jpg'),
-        length: self.sanitizeInteger(file.length),
-        group: self.sanitizeString(file.group),
-        createdAt: self.sanitizeString(file.createdAt),
-        width: self.sanitizeInteger(file.width),
-        height: self.sanitizeInteger(file.height),
-        landscape: self.sanitizeBoolean(file.landscape),
-        portrait: self.sanitizeBoolean(file.portrait),
-        credit: self.sanitizeString(file.credit),
-        md5: self.sanitizeString(file.md5)
+      var extra = item.extras[id];
+      if (typeof(extra) !== 'object') {
+        extra = {};
+      }
+      var newExtra = {
+        hyperlink: self.sanitizeUrl(extra.hyperlink, undefined),
+        hyperlinkTitle: self.sanitizeString(extra.hyperlinkTitle, undefined)
       };
 
-      if (file.crop) {
-        newFile.crop = {
-          top: self.sanitizeInteger(file.crop.top),
-          left: self.sanitizeInteger(file.crop.left),
-          width: self.sanitizeInteger(file.crop.width),
-          height: self.sanitizeInteger(file.crop.height)
+      if (extra.crop) {
+        newExtra.crop = {
+          top: self.sanitizeInteger(extra.crop.top),
+          left: self.sanitizeInteger(extra.crop.left),
+          width: self.sanitizeInteger(extra.crop.width),
+          height: self.sanitizeInteger(extra.crop.height)
         };
       }
-      newItems.push(newFile);
+      extras[id] = newExtra;
+      ids.push(id);
     });
-    item.items = newItems;
+    item.ids = ids;
+    item.extras = extras;
     return item;
+  }
+
+  function loadSlideshow(req, item, callback) {
+    return self.getFiles(req, { ids: item.ids }, function(err, result) {
+      if (err) {
+        return callback(err);
+      }
+
+      // Put them in the desired order, tolerating files that have
+      // been removed
+      var files = {};
+      _.each(result.files, function(file) {
+        files[file._id] = file;
+      });
+      item.items = [];
+      _.each(item.ids, function(id) {
+        if (files[id]) {
+          item.items.push(files[id]);
+        }
+      });
+
+      // Pull in placement specific fields like hyperlink and
+      // hyperlinkTitle
+      _.each(item.items, function(file) {
+        if (item.extras && item.extras[file._id]) {
+          extend(true, file, item.extras[file._id]);
+        }
+      });
+      return callback(null);
+    });
   }
 
   self.itemTypes = {
@@ -3514,7 +3601,8 @@ function Apos() {
       // If these options are passed to the widget,
       // set them as JSON data attributes of the
       // widget element
-      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ]
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
+      load: loadSlideshow
     },
     buttons: {
       widget: true,
@@ -3528,7 +3616,8 @@ function Apos() {
       empty: function(item) {
         return !((item.items || []).length);
       },
-      css: 'buttons'
+      css: 'buttons',
+      load: loadSlideshow
     },
     marquee: {
       widget: true,
@@ -3543,7 +3632,8 @@ function Apos() {
         return !((item.items || []).length);
       },
       css: 'marquee',
-      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ]
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
+      load: loadSlideshow
     },
     files: {
       widget: true,
@@ -3563,7 +3653,8 @@ function Apos() {
       empty: function(item) {
         return !((item.items || []).length);
       },
-      css: 'files'
+      css: 'files',
+      load: loadSlideshow
     },
     video: {
       widget: true,

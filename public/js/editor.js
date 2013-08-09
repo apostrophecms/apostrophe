@@ -1423,6 +1423,15 @@ apos.widgetTypes.slideshow = {
 
       self.files = [];
 
+      self.$showTitles = self.$el.findByName('showTitles');
+      self.$showDescriptions = self.$el.findByName('showDescriptions');
+      self.$showCredits = self.$el.findByName('showCredits');
+      // The pain of individual attributes is that they don't know
+      // true from "true"
+      self.$showTitles.val((self.data.showTitles === 'true') || '0');
+      self.$showDescriptions.val((self.data.showDescriptions === 'true') || '0');
+      self.$showCredits.val((self.data.showCredits === 'true') || '0');
+
       var $uploader = self.$el.find('[data-uploader]');
       $uploader.fileupload({
         dataType: 'json',
@@ -1877,18 +1886,28 @@ apos.widgetTypes.slideshow = {
     };
 
     // The server will render an actual slideshow, but we also want to see
-    // thumbnails of everything with draggability for reordering and remove buttons
+    // thumbnails of everything with draggability for reordering and
+    // remove buttons.
+    //
+    // The ids and extras properties are what matters to the server, but we
+    // need to use the maintain self.data.items field to get the name
+    // of the file, etc. for preview purposes.
+
     self.prePreview = function(callback) {
 
       $items.find(liveItem).remove();
-      var items = self.data.items;
-      if (!items) {
-        items = [];
-      }
-      _.each(items, function(item) {
-        // The existing items are not subject to complaints about being too small,
-        // pass the existing flag
-        addItem(item, true);
+      var ids = self.data.ids || [];
+      var extras = self.data.extras || {};
+      var items = self.data.items || [];
+      _.each(ids, function(id) {
+        var item = _.find(items, function(item) { return item._id === id; });
+        // ALWAYS tolerate files that have been removed, as the
+        // pages collection doesn't know they are gone
+        if (item) {
+          // The existing items are not subject to complaints about being too small,
+          // pass the existing flag
+          addItem(item, true);
+        }
       });
     };
 
@@ -1961,6 +1980,9 @@ apos.widgetTypes.slideshow = {
       if (self.data.orientation) {
         self.data.orientation = self.$el.find('[data-orientation-active]').attr('data-orientation-active');
       }
+      self.data.showTitles = self.$showTitles.val();
+      self.data.showDescriptions = self.$showDescriptions.val();
+      self.data.showCredits = self.$showCredits.val();
 
       return callback(null);
     };
@@ -2020,19 +2042,13 @@ apos.widgetTypes.slideshow = {
       }
       // $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
 
-      $item.find('[data-title]').val(item.title);
-
       // Some derivatives of slideshows use these, some don't. These are
       // not editable fields, they are immutable facts about the file
       $item.find('[data-extension]').text(item.extension);
       $item.find('[data-name]').text(item.name);
 
-      // These are editing fields
-      $item.find('[data-description]').val(item.description);
       $item.find('[data-hyperlink]').val(item.hyperlink);
       $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
-      $item.find('[data-credit]').val(item.credit);
-      $item.find('[data-alt-tag]').val(item.altTag);
       if (extraFields || typeof(extraFields) === 'object') {
         $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit></a>');
       }
@@ -2080,21 +2096,27 @@ apos.widgetTypes.slideshow = {
     function reflect() {
 
       var $itemElements = $items.find(liveItem);
+
+      // What really matters is self.data.ids and self.data.extras.
+      // self.data.items is just a copy of the file object with its
+      // extras merged in, provided for read only convenience. But we
+      // keep that up to date too so we can render previews and display
+      // fields that come from the file.
+
+      self.data.ids = [];
+      self.data.extras = {};
       self.data.items = [];
 
       $.each($itemElements, function(i, item) {
         var $item = $(item);
 
         var info = $item.data('item');
-        info.title = $item.find('[data-title]').val();
-        info.description = $item.find('[data-description]').val();
-        info.hyperlink = $item.find('[data-hyperlink]').val();
-        info.hyperlinkTitle = $item.find('[data-hyperlink-title]').val();
-        info.credit = $item.find('[data-credit]').val();
-        info.altTag = $item.find('[data-alt-tag]').val();
-
+        self.data.ids.push(info._id);
+        self.data.extras[info._id] = {
+          hyperlink: $item.find('[data-hyperlink]').val(),
+          hyperlinkTitle: $item.find('[data-hyperlink-title]').val()
+        };
         self.data.items.push(info);
-
       });
       // An empty slideshow is allowed, so permit it to be saved
       // even if nothing has been added
@@ -2106,18 +2128,8 @@ apos.widgetTypes.slideshow = {
         var Annotator = options.Annotator || window.AposAnnotator;
         self.annotator = new Annotator({
           receive: function(aItems, callback) {
-            _.each(aItems, function(aItem) {
-              var $itemElements = $items.find(liveItem);
-              $.each($itemElements, function() {
-                var $eItem = $(this);
-                var eItem = $eItem.data('item');
-                if (aItem._id === eItem._id) {
-                  $eItem.find('[data-title]').val(aItem.title);
-                  $eItem.find('[data-description]').val(aItem.description);
-                  $eItem.find('[data-credit]').val(aItem.credit);
-                }
-              });
-            });
+            // If we wanted we could display the title, description and
+            // credit somewhere in our preview and editing interface
             return callback(null);
           },
           destroyed: function() {

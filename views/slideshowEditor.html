@@ -1,4 +1,5 @@
 {% extends "baseWidgetEditor.html" %}
+{% include "formMacros.html" %}
 
 {% block widgetVars %}
   {% set widgetClass = 'apos-slideshow-editor' %}
@@ -42,14 +43,6 @@ Or, drag the existing images shown beneath the dashed area. <br />
         </div>
 
         <div class="apos-slideshow-extra-fields" data-extra-fields>
-          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-title>
-            <label class="short">Title</label>
-            <input data-title class="apos-slideshow-editor-title" type="text" />
-          </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-description>
-            <label>Description</label>
-            <textarea data-description class="apos-slideshow-editor-description"></textarea>
-          </fieldset>
           {% block hyperlink %}
             <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-link>
               <label>Link</label>
@@ -60,14 +53,8 @@ Or, drag the existing images shown beneath the dashed area. <br />
               <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
             </fieldset>
           {% endblock %}
-          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-credit>
-            <label>Image Credit</label>
-            <input data-credit class="apos-slideshow-editor-credit" type="text" />
-          </fieldset>
-          <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-altTag>
-            <label>Image Alt Tag</label>
-            <input data-alt-tag class="apos-slideshow-editor-alt-tag" type="text" />
-          </fieldset>
+          {% block otherExtraFields %}
+          {% endblock %}
           <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
         </div>
       </li>
@@ -78,6 +65,15 @@ Or, drag the existing images shown beneath the dashed area. <br />
     </div>
     <div class="apos-clear"></div>
   </div>
+
+  {# ADDITIONAL CONTROLS FOR THE ENTIRE SLIDESHOW'S PRESENTATION #}
+
+  {# TODO: you can make these snazzier, but remember the JS expects to #}
+  {# set a val() of '0' or '1' on a select element #}
+  {{ formBoolean('showTitles', 'Show Titles') }}
+  {{ formBoolean('showDescriptions', 'Show Descriptions') }}
+  {{ formBoolean('showCredit', 'Show Credits') }}
+
   <div class="apos-orientation-select-container">
     <label class='apos-instructions'>Select Orientation</label>
     <a class="apos-button apos-landscape" title="Landscape" data-orientation-button="landscape" href="#"></a>
