@@ -1,7 +1,7 @@
 {# Downloadable files. They do not have preview images. They always have a download #}
 {# link, and may or may not have a description and title. #}
 <ul class="apos-files-items">
-  {% for file in item.items %}
+  {% for file in item._items %}
     {% if ((loop.index0 < options.limit) or (not options.limit)) %}
       <li data-slideshow-item class="apos-files-item apos-file-extension-{{ file.extension | e }} {% if loop.first %}apos-first{% endif %} {% if loop.last %}apos-last{% endif %}">
         {% if (item.showDescriptions and file.description) or (item.showTitles and file.title) %}

@@ -2,7 +2,7 @@
 <div class="apos-no-player">
   {% block items %}
     <ul data-slideshow-items class="apos-buttons">
-      {% for file in item.items %}
+      {% for file in item._items %}
         {% if ((loop.index0 < options.limit) or (not options.limit)) %}
           <li data-slideshow-item class="apos-buttons-item {% if loop.first %}apos-first{% endif %} {% if loop.last %}apos-last{% endif %}">
             {% if file.hyperlink %}

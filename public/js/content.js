@@ -84,8 +84,8 @@ apos.getFirstImage = function(page, areaName) {
   if (!item) {
     return undefined;
   }
-  if (item.items.length) {
-    return item.items[0];
+  if (item._items && item._items.length) {
+    return item._items[0];
   }
   return undefined;
 };

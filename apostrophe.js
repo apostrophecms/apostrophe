@@ -775,10 +775,10 @@ function Apos() {
           // we also must make sure the items are actually files by making
           // sure they have an `extension` property. (TODO: this is a hack,
           // think about having widgets register to participate in this.)
-          if (!(item.items || item._items)) {
+          if (!item._items) {
             return false;
           }
-          var file = _.find(item.items || item._items, function(file) {
+          var file = _.find(item._items, function(file) {
             if (file.extension === undefined) {
               return false;
             }
@@ -3650,6 +3650,10 @@ function Apos() {
   }
 
   function loadSlideshow(req, item, callback) {
+    if (!item.ids) {
+      console.error('WARNING: you need to run "node app apostrophe:migrate"');
+      return callback(null);
+    }
     return self.getFiles(req, { ids: item.ids }, function(err, result) {
       if (err) {
         return callback(err);
@@ -3661,16 +3665,16 @@ function Apos() {
       _.each(result.files, function(file) {
         files[file._id] = file;
       });
-      item.items = [];
+      item._items = [];
       _.each(item.ids, function(id) {
         if (files[id]) {
-          item.items.push(files[id]);
+          item._items.push(files[id]);
         }
       });
 
       // Pull in placement specific fields like hyperlink and
       // hyperlinkTitle
-      _.each(item.items, function(file) {
+      _.each(item._items, function(file) {
         if (item.extras && item.extras[file._id]) {
           extend(true, file, item.extras[file._id]);
         }
@@ -3723,19 +3727,19 @@ function Apos() {
         return partial('slideshow', data);
       },
       addDiffLines: function(item, lines) {
-        var items = item.items || [];
+        var items = item._items || [];
         _.each(items, function(item) {
           lines.push('image: ' + item.name);
         });
       },
       addSearchTexts: function(item, texts) {
-        var items = item.items || [];
+        var items = item._items || [];
         _.each(items, function(item) {
           texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
-        return !((item.items || []).length);
+        return !((item._items || []).length);
       },
       css: 'slideshow',
       // If these options are passed to the widget,
@@ -3754,7 +3758,7 @@ function Apos() {
         return partial('buttons', data);
       },
       empty: function(item) {
-        return !((item.items || []).length);
+        return !((item._items || []).length);
       },
       css: 'buttons',
       load: loadSlideshow
@@ -3769,7 +3773,7 @@ function Apos() {
         return partial('marquee', data);
       },
       empty: function(item) {
-        return !((item.items || []).length);
+        return !((item._items || []).length);
       },
       css: 'marquee',
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
@@ -3785,13 +3789,13 @@ function Apos() {
         return val;
       },
       addSearchTexts: function(item, texts) {
-        var items = item.items || [];
+        var items = item._items || [];
         _.each(items, function(item) {
           texts.push({ weight: 1, text: item.name, silent: true });
         });
       },
       empty: function(item) {
-        return !((item.items || []).length);
+        return !((item._items || []).length);
       },
       css: 'files',
       load: loadSlideshow
@@ -4904,38 +4908,6 @@ function Apos() {
     });
   };
 
-  // Iterate over all denormalized copies of file objects residing in widgets
-  // in areas in pages.
-  //
-  // Useful if you need to copy new metadata from the files collection to the denormalized
-  // copies of that data that are living in widgets.
-  //
-  // 'each' receives the page object, the denormalized file object and the callback.
-  // The page object is provided so that you can update it in MongoDB (the only way to
-  // update the denormalized file object).
-
-  self.forEachFileInPages = function(each, callback) {
-    return self.forEachItem(function(page, name, area, n, item, callback) {
-      var files = item.files || item.items;
-      if (!files) {
-        return callback(null);
-      }
-      return async.forEachSeries(files, function(file, callback) {
-        // '.items' is ambiguous, so make sure they are really files
-        if ((!file.extension) || (!file._id)) {
-          return callback(null);
-        }
-        // Make sure we don't crash the stack if 'each' invokes 'callback' directly
-        // for many consecutive invocations
-        return setImmediate(function() {
-          return each(page, file, callback);
-        });
-      }, callback);
-    }, function(err) {
-      return callback(err);
-    });
-  };
-
   self.forEachDocumentInCollection = function(collection, criteria, each, callback) {
     collection.find(criteria, function(err, cursor) {
       if (err) {
@@ -5031,39 +5003,6 @@ function Apos() {
       });
     }
 
-    // Moved page rank of trash and search well beyond any reasonable
-    // number of legit kids of the home page
-    function moveTrash(callback) {
-      return self.pages.findOne({ type: 'trash' }, function(err, page) {
-        if (!page) {
-          return callback(null);
-        }
-        if (page.rank !== 1000999) {
-          page.rank = 1000999;
-          return self.pages.update({ _id: page._id }, page, callback);
-        }
-        return callback(null);
-      });
-    }
-
-    function moveSearch(callback) {
-      return self.pages.findOne({ type: 'search' }, function(err, page) {
-        if (!page) {
-          return callback(null);
-        }
-        if (page.path !== 'home/search') {
-          // This is some strange search page we don't know about and
-          // probably shouldn't tamper with
-          return callback(null);
-        }
-        if (page.rank !== 1000998) {
-          page.rank = 1000998;
-          return self.pages.update({ _id: page._id }, page, callback);
-        }
-        return callback(null);
-      });
-    }
-
     function trimTitle(callback) {
       return self.forEachPage({ $or: [ { title: /^ / }, { title: / $/ } ] },
         function(page, callback) {
@@ -5124,39 +5063,42 @@ function Apos() {
         callback);
     }
 
-    // Early versions of Apostrophe didn't clean up their Unicode word joiner characters
-    // on save. These were present to prevent (Mac?) Chrome from selecting only half the widget
-    // when copying and pasting. To make matters worse, in Windows Chrome they turn out to
-    // show up as "I don't have this in my font" boxes. New versions use the 65279
-    // "zero-width non-break space" character, which is invisible on both platforms. And
-    // in addition they filter it out on save. Filter it out for existing pages on migrate.
-    function removeWidgetSaversOnSave(callback) {
-      var used = false;
-      self.forEachPage({},
-        function(page, callback) {
-          var modified = false;
-          _.each(page.areas || [], function(area, name) {
-            _.each(area.items, function(item) {
-              if ((item.type === 'richText') && (item.content.indexOf(String.fromCharCode(8288)) !== -1)) {
-                if (!modified) {
-                  modified = true;
-                  if (!used) {
-                    used = true;
-                    console.log('Removing widget-saver unicode characters');
-                  }
-                }
-                item.content = globalReplace(item.content, String.fromCharCode(8288), '');
-              }
-            });
-          });
-          if (modified) {
-            return self.pages.update({ _id: page._id }, page, callback);
-          } else {
-            return callback(null);
-          }
-        }, callback
-      );
-    }
+    // Reasonably certain we there are no projects left that need
+    // this slow migration. -Tom
+    //
+    // // Early versions of Apostrophe didn't clean up their Unicode word joiner characters
+    // // on save. These were present to prevent (Mac?) Chrome from selecting only half the widget
+    // // when copying and pasting. To make matters worse, in Windows Chrome they turn out to
+    // // show up as "I don't have this in my font" boxes. New versions use the 65279
+    // // "zero-width non-break space" character, which is invisible on both platforms. And
+    // // in addition they filter it out on save. Filter it out for existing pages on migrate.
+    // function removeWidgetSaversOnSave(callback) {
+    //   var used = false;
+    //   self.forEachPage({},
+    //     function(page, callback) {
+    //       var modified = false;
+    //       _.each(page.areas || [], function(area, name) {
+    //         _.each(area.items, function(item) {
+    //           if ((item.type === 'richText') && (item.content.indexOf(String.fromCharCode(8288)) !== -1)) {
+    //             if (!modified) {
+    //               modified = true;
+    //               if (!used) {
+    //                 used = true;
+    //                 console.log('Removing widget-saver unicode characters');
+    //               }
+    //             }
+    //             item.content = globalReplace(item.content, String.fromCharCode(8288), '');
+    //           }
+    //         });
+    //       });
+    //       if (modified) {
+    //         return self.pages.update({ _id: page._id }, page, callback);
+    //       } else {
+    //         return callback(null);
+    //       }
+    //     }, callback
+    //   );
+    // }
 
     function explodePublishedAt(callback) {
       // the publishedAt property of articles must also be available in
@@ -5258,43 +5200,6 @@ function Apos() {
       }, callback);
     }
 
-    // Now we have it in the aposFiles collection but we need to sync it to our
-    // denormalized copies too
-
-    function missingPageImageMetadata(callback) {
-      var n = 0;
-      return self.forEachFileInPages(function(page, file, callback) {
-        if (file.md5) {
-          return callback(null);
-        }
-        files.findOne({ _id: file._id }, function(err, originalFile) {
-          if (err) {
-            console.log('error');
-            return callback(err);
-          }
-          if (!file) {
-            // I could remove it here too but let's not be greedy yet
-            console.log('no file');
-            return callback(null);
-          }
-          n++;
-          if (n === 1) {
-            console.log('Supplying missing metadata for denormalized file objects');
-          }
-          file.width = originalFile.width;
-          file.height = originalFile.height;
-          file.md5 = originalFile.md5;
-          file.portrait = originalFile.portrait;
-          file.landscape = originalFile.landscape;
-          return pages.update({ _id: page._id }, page, function(err, count) {
-            return callback(err);
-          });
-        });
-      }, function(err) {
-        return callback(err);
-      });
-    }
-
     // If there are any pages whose tags property is defined but set
     // to null, due to inadequate sanitization in the snippets module,
     // fix them to be empty arrays so templates don't crash
@@ -5372,7 +5277,129 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, removeWidgetSaversOnSave, explodePublishedAt, missingImageMetadata, missingFileSearch, missingPageImageMetadata, fixNullTags, fixNumberTags, fixTimelessEvents], function(err) {
+    // Moved page rank of trash and search well beyond any reasonable
+    // number of legit kids of the home page
+    function moveTrash(callback) {
+      return self.pages.findOne({ type: 'trash' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.rank !== 1000999) {
+          page.rank = 1000999;
+          return self.pages.update({ _id: page._id }, page, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    function moveSearch(callback) {
+      return self.pages.findOne({ type: 'search' }, function(err, page) {
+        if (!page) {
+          return callback(null);
+        }
+        if (page.path !== 'home/search') {
+          // This is some strange search page we don't know about and
+          // probably shouldn't tamper with
+          return callback(null);
+        }
+        if (page.rank !== 1000998) {
+          page.rank = 1000998;
+          return self.pages.update({ _id: page._id }, page, callback);
+        }
+        return callback(null);
+      });
+    }
+
+    function normalizeFiles(callback) {
+      var count = 0;
+      // We used to store denormalized copies of file objects in slideshow
+      // widgets. This made it difficult to tell if a file was in the trash.
+      // At some point we might bring it back but only if we have a scheme
+      // in place to keep backreferences so the denormalized copies can be
+      // efficiently found and updated.
+      //
+      // Migrate the truly slideshow-specific parts of that data to
+      // .ids and .extras, and copy any titles and descriptions and credits
+      // found in .items to the original file object (because they have
+      // been manually edited and should therefore be better than what is in
+      // the global object).
+      //
+      // This means two placements can't have different titles, but that
+      // feature was little used and only lead to upset when users couldn't
+      // change the title globally for an image.
+      return self.forEachItem(function(page, name, area, n, item, callback) {
+        self.slideshowTypes = self.slideshowTypes || [ 'slideshow', 'marquee', 'files', 'buttons' ];
+        if (!_.contains(self.slideshowTypes, item.type)) {
+          return callback(null);
+        }
+        if (!item.items) {
+          // Already migrated
+          return callback(null);
+        }
+        var ids = [];
+        var extras = {};
+        count++;
+        if (count === 1) {
+          console.log('Normalizing file references in slideshows etc.');
+        }
+        async.each(item.items, function(file, callback) {
+          ids.push(file._id);
+          var extra = {};
+          item.showTitles = !!(item.showTitles || (file.title));
+          item.showCredits = !!(item.showCredits || (file.credit));
+          item.showDescriptions = !!(item.showDescriptions || (file.description));
+          extra.hyperlink = item.hyperlink;
+          extra.hyperlinkTitle = item.hyperlinkTitle;
+          extras[file._id] = extra;
+          if (!(file.title || file.credit || file.description)) {
+            return callback(null);
+          }
+          // Merge the metadata found in this placement back to
+          // the global file object
+          return self.files.findOne({ _id: file._id }, function(err, realFile) {
+            if (err) {
+              return callback(err);
+            }
+            if (!realFile) {
+              return callback(null);
+            }
+            if ((file.title === realFile.title) && (file.description === realFile.description) && (file.credit === realFile.credit)) {
+              // We have values but they are not more exciting than what's
+              // already in the file object
+              return callback(null);
+            }
+            var value = { $set: {} };
+            if (file.title) {
+              value.$set.title = file.title;
+            }
+            if (file.description) {
+              value.$set.description = file.description;
+            }
+            if (file.credit) {
+              value.$set.credit = file.credit;
+            }
+            return self.files.update({ _id: file._id }, value, callback);
+          });
+        }, function(err) {
+          if (err) {
+            return callback(err);
+          }
+          item.ids = ids;
+          item.extras = extras;
+          // Just in case we didn't get this migration quite so right
+          item.legacyItems = item.items;
+          // Removed so we don't keep attempting this migration and
+          // smooshing newer data
+          delete item.items;
+          var value = { $set: {} };
+          // ♥ dot notation
+          value.$set['areas.' + name + '.items.' + n] = item;
+          return self.pages.update({ _id: page._id }, value, callback);
+        });
+      }, callback);
+    }
+
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, explodePublishedAt, missingImageMetadata, missingFileSearch, fixNullTags, fixNumberTags, fixTimelessEvents, normalizeFiles ], function(err) {
       return callback(err);
     });
   };
