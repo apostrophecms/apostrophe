@@ -3063,7 +3063,7 @@ apos.tagsToString = function(s) {
 // KEEP IN SYNC WITH apostrophe.js SERVER SIDE VERSION
 
 apos.fixUrl = function(href) {
-  if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+  if (href.match(/^(((https?|ftp)\:\/\/)|mailto\:|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
     // All good - no change required
     return href;
   } else if (href.match(/^[^\/\.]+\.[^\/\.]+/)) {

@@ -4330,7 +4330,7 @@ function Apos() {
   // KEEP IN SYNC WITH editor.js BROWSER SIDE VERSION
 
   self.fixUrl = function(href) {
-    if (href.match(/^(((https?|ftp|mailto)\:\/\/)|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
+    if (href.match(/^(((https?|ftp)\:\/\/)|mailto\:|\#|([^\/\.]+)?\/|[^\/\.]+$)/)) {
       // All good - no change required
       return href;
     } else if (href.match(/^[^\/\.]+\.[^\/\.]+/)) {
