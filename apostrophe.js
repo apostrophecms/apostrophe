@@ -3661,7 +3661,7 @@ function Apos() {
     return item;
   }
 
-  function loadSlideshow(req, item, callback) {
+  self.loadSlideshow = function(req, item, callback) {
     if (!item.ids) {
       console.error('WARNING: you need to run "node app apostrophe:migrate"');
       return callback(null);
@@ -3759,7 +3759,9 @@ function Apos() {
       // widget element
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
       jsonProperties: [ '_items' ],
-      load: loadSlideshow
+      load: function(req, item, callback) {
+        return self.loadSlideshow(req, item, callback);
+      }
     },
     buttons: {
       widget: true,
@@ -3779,7 +3781,9 @@ function Apos() {
       // widget element
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
       jsonProperties: [ '_items' ],
-      load: loadSlideshow
+      load: function(req, item, callback) {
+        return self.loadSlideshow(req, item, callback);
+      }
     },
     marquee: {
       widget: true,
@@ -3799,7 +3803,9 @@ function Apos() {
       // widget element
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
       jsonProperties: [ '_items' ],
-      load: loadSlideshow
+      load: function(req, item, callback) {
+        return self.loadSlideshow(req, item, callback);
+      }
     },
     files: {
       widget: true,
@@ -3825,7 +3831,9 @@ function Apos() {
       // widget element
       jsonOptions: [ 'widgetClass' ],
       jsonProperties: [ '_items' ],
-      load: loadSlideshow
+      load: function(req, item, callback) {
+        return self.loadSlideshow(req, item, callback);
+      }
     },
     video: {
       widget: true,
