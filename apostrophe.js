@@ -885,11 +885,23 @@ function Apos() {
         }
 
         // The content property doesn't belong in a data attribute,
-        // and neither does any property beginning with an _
+        // and neither does any property beginning with an _, unless
+        // whitelisted
         var attributes = {};
         _.each(item, function(value, key) {
-          if ((key === 'content') || (key.substr(0, 1) === '_')) {
-            return;
+          if (_.contains(itemType.jsonProperties, key)) {
+            // Whitelisted properties beginning with an _ will
+            // not be valid attribute names, so lop off the _
+            if (key.substr(0, 1) === '_') {
+              key = key.substr(1);
+            }
+          } else {
+            // By default, all properties that do not start with _ and
+            // are not the "content" property are made available on
+            // the element as JSON attributes
+            if ((key === 'content') || (key.substr(0, 1) === '_')) {
+              return;
+            }
           }
           attributes[key] = value;
         });
@@ -3746,6 +3758,7 @@ function Apos() {
       // set them as JSON data attributes of the
       // widget element
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
+      jsonProperties: [ '_items' ],
       load: loadSlideshow
     },
     buttons: {
@@ -3761,6 +3774,11 @@ function Apos() {
         return !((item._items || []).length);
       },
       css: 'buttons',
+      // If these options are passed to the widget,
+      // set them as JSON data attributes of the
+      // widget element
+      jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
+      jsonProperties: [ '_items' ],
       load: loadSlideshow
     },
     marquee: {
@@ -3776,7 +3794,11 @@ function Apos() {
         return !((item._items || []).length);
       },
       css: 'marquee',
+      // If these options are passed to the widget,
+      // set them as JSON data attributes of the
+      // widget element
       jsonOptions: [ 'delay', 'noHeight', 'widgetClass' ],
+      jsonProperties: [ '_items' ],
       load: loadSlideshow
     },
     files: {
@@ -3798,6 +3820,11 @@ function Apos() {
         return !((item._items || []).length);
       },
       css: 'files',
+      // If these options are passed to the widget,
+      // set them as JSON data attributes of the
+      // widget element
+      jsonOptions: [ 'widgetClass' ],
+      jsonProperties: [ '_items' ],
       load: loadSlideshow
     },
     video: {

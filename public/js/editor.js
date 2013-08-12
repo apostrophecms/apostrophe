@@ -1369,7 +1369,7 @@ apos.widgetTypes.slideshow = {
     var liveItem = '[data-item]:not(.apos-template)';
     var userOptions = templateOptions.userOptions || {};
 
-    if (userOptions){
+    if (userOptions) {
       var orientation = userOptions.orientation || false;
     }
 
