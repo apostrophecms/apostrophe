@@ -5063,6 +5063,10 @@ function Apos() {
     function fixSortTitle(callback) {
       return self.forEachPage({ $or: [ { sortTitle: { $exists: 0 } }, { sortTitle: /^ / }, { sortTitle: / $/} ] },
         function(page, callback) {
+          if (!page.title) {
+            // Virtual pages will do this. Don't crash.
+            return callback(null);
+          }
           return self.pages.update(
             { _id: page._id },
             { $set: { sortTitle: self.sortify(page.title.trim()) } },
