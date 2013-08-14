@@ -2575,10 +2575,14 @@ function Apos() {
         return callback(err);
       }
 
+      var copy = {};
+      extend(true, copy, page);
+      self.pruneTemporaryProperties(copy);
+
       if (newPage) {
-        self.pages.insert(page, { safe: true }, afterUpdate);
+        self.pages.insert(copy, { safe: true }, afterUpdate);
       } else {
-        self.pages.update({ slug: slug }, page, { safe: true }, afterUpdate);
+        self.pages.update({ slug: slug }, copy, { safe: true }, afterUpdate);
       }
     }
 
@@ -2597,6 +2601,25 @@ function Apos() {
       return callback(null, page);
     }
     async.series([permissions, save, versioning, indexing], finish);
+  };
+
+  // Except for ._id, no property beginning with a _ should be
+  // loaded from the database. These are reserved for dynamically
+  // determined properties like permissions and joins
+  self.pruneTemporaryProperties = function(page) {
+    var remove = [];
+    _.each(page, function(val, key) {
+      if ((key.substr(0, 1) === '_') && (key !== '_id')) {
+        remove.push(key);
+      } else {
+        if ((typeof(val) === 'object') && (!Array.isArray(val))) {
+          self.pruneTemporaryProperties(val);
+        }
+      }
+    });
+    _.each(remove, function(key) {
+      delete page[key];
+    });
   };
 
   // Given a request object (for permissions), a page object, and a version
@@ -3097,6 +3120,7 @@ function Apos() {
 
     function loadPages(callback) {
       var q = self.pages.find(criteria, projection);
+
       // At last we can use skip and limit properly thanks to permissions stored
       // in the document
       if (skip !== undefined) {
@@ -3114,6 +3138,14 @@ function Apos() {
           return callback(err);
         }
         results.pages = pagesArg;
+
+        // Except for ._id, no property beginning with a _ should be
+        // loaded from the database. These are reserved for dynamically
+        // determined properties like permissions and joins
+        _.each(results.pages, function(page) {
+          self.pruneTemporaryProperties(page);
+        });
+
         if (Array.isArray(areas)) {
           // Prune to specific areas only, alas this can't
           // happen in mongoland as near as I can tell. -Tom
