@@ -5345,6 +5345,60 @@ function Apos() {
       });
     }
 
+    function fixButtons(callback) {
+      var count = 0;
+      // There was briefly a bug in our re-normalizer where the hyperlink and
+      // hyperlinkTitle properties were concerned. We can fix this, but
+      // we can't detect whether the fix is necessary, and we don't want
+      // to annoy people who have gone on with their lives and deliberately
+      // removed hyperlinks. So we do this only if --fix-buttons is on the
+      // command line
+
+      if (!argv['fix-buttons']) {
+        return callback(null);
+      }
+      return self.forEachItem(function(page, name, area, n, item, callback) {
+        self.slideshowTypes = self.slideshowTypes || [ 'slideshow', 'marquee', 'files', 'buttons' ];
+        if (!_.contains(self.slideshowTypes, item.type)) {
+          return callback(null);
+        }
+        var ids = [];
+        var extras = {};
+        if (!item.legacyItems) {
+          // This was created after the migration we're fixing so it's OK
+          return callback(null);
+        }
+        count++;
+        if (count === 1) {
+          console.log('Fixing buttons damaged by buggy normalizer');
+        }
+        var interesting = 0;
+        async.each(item.legacyItems, function(file, callback) {
+          ids.push(file._id);
+          var extra = {};
+          extra.hyperlink = file.hyperlink;
+          extra.hyperlinkTitle = file.hyperlinkTitle;
+          if (extra.hyperlink || extra.hyperlinkTitle) {
+            extras[file._id] = extra;
+            interesting++;
+          }
+          return callback(null);
+        }, function(err) {
+          if (err) {
+            return callback(err);
+          }
+          item.extras = extras;
+          if (!interesting) {
+            return callback(null);
+          }
+          var value = { $set: {} };
+          // ♥ dot notation
+          value.$set['areas.' + name + '.items.' + n + '.extras'] = item.extras;
+          return self.pages.update({ _id: page._id }, value, callback);
+        });
+      }, callback);
+    }
+
     function normalizeFiles(callback) {
       var count = 0;
       // We used to store denormalized copies of file objects in slideshow
@@ -5383,8 +5437,8 @@ function Apos() {
           item.showTitles = !!(item.showTitles || (file.title));
           item.showCredits = !!(item.showCredits || (file.credit));
           item.showDescriptions = !!(item.showDescriptions || (file.description));
-          extra.hyperlink = item.hyperlink;
-          extra.hyperlinkTitle = item.hyperlinkTitle;
+          extra.hyperlink = file.hyperlink;
+          extra.hyperlinkTitle = file.hyperlinkTitle;
           extras[file._id] = extra;
           if (!(file.title || file.credit || file.description)) {
             return callback(null);
@@ -5434,7 +5488,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, explodePublishedAt, missingImageMetadata, missingFileSearch, fixNullTags, fixNumberTags, fixTimelessEvents, normalizeFiles ], function(err) {
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, explodePublishedAt, missingImageMetadata, missingFileSearch, fixNullTags, fixNumberTags, fixTimelessEvents, normalizeFiles, fixButtons ], function(err) {
       return callback(err);
     });
   };
