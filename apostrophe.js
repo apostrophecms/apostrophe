@@ -3626,6 +3626,7 @@ function Apos() {
     }
     item.showTitles = self.sanitizeBoolean(item.showTitles);
     item.showDescriptions = self.sanitizeBoolean(item.showDescriptions);
+    item.showCredits = self.sanitizeBoolean(item.showCredits);
     if (typeof(item.extras) !== 'object') {
       item.extras = {};
     }
