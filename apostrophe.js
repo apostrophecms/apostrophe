@@ -5371,7 +5371,7 @@ function Apos() {
         if (!_.contains(self.slideshowTypes, item.type)) {
           return callback(null);
         }
-        if (!item.items) {
+        if (item.ids) {
           // Already migrated
           return callback(null);
         }
