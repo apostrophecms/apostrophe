@@ -1083,7 +1083,7 @@ apos.widgetEditor = function(options) {
   // our placeholder div in that editor to get our current attributes
   if (options.widgetId) {
     self.$widget = options.editor.$editable.find('.apos-widget[data-id="' + options.widgetId + '"]');
-    self.data = apos.cleanWidgetData(self.$widget.data());
+    self.data = apos.getWidgetData(self.$widget);
   }
 
   // When displayed as a singleton or an area that does not involve a
@@ -1214,13 +1214,10 @@ apos.widgetEditor = function(options) {
       if (!self.editor) {
         return;
       }
-      _.each(self.data, function(val, key) {
-        // Watch out for unserializable stuff
-        if (key === 'uiResizable') {
-          return;
-        }
-        self.$widget.attr('data-' + key, apos.jsonAttribute(val));
-      });
+      self.$widget.attr('data', apos.jsonAttribute(self.data));
+      // These need to be visible separately
+      self.$widget.attr('data-id', self.data.id);
+      self.$widget.attr('data-type', self.data.type);
     },
 
     // Ask the server to render the widget's contents, stuff them into the placeholder
@@ -1414,11 +1411,9 @@ apos.widgetTypes.slideshow = {
       self.$showTitles = self.$el.findByName('showTitles');
       self.$showDescriptions = self.$el.findByName('showDescriptions');
       self.$showCredits = self.$el.findByName('showCredits');
-      // The pain of individual attributes is that they don't know
-      // true from "true"
-      self.$showTitles.val((self.data.showTitles === 'true') || '0');
-      self.$showDescriptions.val((self.data.showDescriptions === 'true') || '0');
-      self.$showCredits.val((self.data.showCredits === 'true') || '0');
+      self.$showTitles.val(self.data.showTitles ? '1' : '0');
+      self.$showDescriptions.val(self.data.showDescriptions ? '1' : '0');
+      self.$showCredits.val(self.data.showCredits ? '1' : '0');
 
       var $uploader = self.$el.find('[data-uploader]');
       $uploader.fileupload({
@@ -1878,7 +1873,7 @@ apos.widgetTypes.slideshow = {
     // remove buttons.
     //
     // The ids and extras properties are what matters to the server, but we
-    // need to use the maintain self.data.items field to get the name
+    // need to maintain the self.data._items field to get the name
     // of the file, etc. for preview purposes.
 
     self.prePreview = function(callback) {
@@ -1886,7 +1881,7 @@ apos.widgetTypes.slideshow = {
       $items.find(liveItem).remove();
       var ids = self.data.ids || [];
       var extras = self.data.extras || {};
-      var items = self.data.items || [];
+      var items = self.data._items || [];
       _.each(ids, function(id) {
         var item = _.find(items, function(item) { return item._id === id; });
         // ALWAYS tolerate files that have been removed, as the
@@ -1968,9 +1963,9 @@ apos.widgetTypes.slideshow = {
       if (self.data.orientation) {
         self.data.orientation = self.$el.find('[data-orientation-active]').attr('data-orientation-active');
       }
-      self.data.showTitles = self.$showTitles.val();
-      self.data.showDescriptions = self.$showDescriptions.val();
-      self.data.showCredits = self.$showCredits.val();
+      self.data.showTitles = (self.$showTitles.val() === '1');
+      self.data.showDescriptions = (self.$showDescriptions.val() === '1');
+      self.data.showCredits = (self.$showCredits.val() === '1');
 
       return callback(null);
     };
@@ -2086,14 +2081,14 @@ apos.widgetTypes.slideshow = {
       var $itemElements = $items.find(liveItem);
 
       // What really matters is self.data.ids and self.data.extras.
-      // self.data.items is just a copy of the file object with its
+      // self.data._items is just a copy of the file object with its
       // extras merged in, provided for read only convenience. But we
       // keep that up to date too so we can render previews and display
       // fields that come from the file.
 
       self.data.ids = [];
       self.data.extras = {};
-      self.data.items = [];
+      self.data._items = [];
 
       $.each($itemElements, function(i, item) {
         var $item = $(item);
@@ -2104,7 +2099,7 @@ apos.widgetTypes.slideshow = {
           hyperlink: $item.find('[data-hyperlink]').val(),
           hyperlinkTitle: $item.find('[data-hyperlink-title]').val()
         };
-        self.data.items.push(info);
+        self.data._items.push(info);
       });
       // An empty slideshow is allowed, so permit it to be saved
       // even if nothing has been added
@@ -2952,32 +2947,13 @@ apos.jsonAttribute = function(value) {
   }
 };
 
-// Get data attributes, camelized, so data-id-list becomes idList. JSON-decode anything
-// that starts with [ or {. This matches the behavior of $.data, except that $.data has
-// caching behaviors that make it unsuitable for use once you start updating data attributes.
-// One difference from $.data: we don't try to coerce number-ish things to be numbers.
-
 apos.getWidgetData = function($widget) {
-  var data = {};
-  _.each($widget[0].attributes, function(attr) {
-    if (attr.name.substr(0,5) === 'data-') {
-      var value = attr.value;
-      if ((value[0] === '{') || (value[0] === '[')) {
-        try {
-          value = JSON.parse(value);
-        } catch(e) {
-          // OK, so it wasn't JSON, leave it alone
-        }
-      }
-      data[apos.camelName(attr.name.substr(5))] = value;
-    }
-  });
-  return apos.cleanWidgetData(data);
-};
-
-apos.cleanWidgetData = function(data) {
-  // Take widget data and remove attributes not meant for serialization
-  delete data['uiResizable'];
+  var data = $widget.attr('data');
+  if (data && data.length) {
+    data = JSON.parse(data);
+  } else {
+    data = {};
+  }
   return data;
 };
 

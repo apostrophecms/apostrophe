@@ -706,7 +706,6 @@ function Apos() {
         }
         // Options to pass on to the widget
         options.options = _.omit(options, 'area', 'item', 'slug', 'type');
-
         return partial('singleton', options);
       };
 
@@ -890,11 +889,7 @@ function Apos() {
         var attributes = {};
         _.each(item, function(value, key) {
           if (_.contains(itemType.jsonProperties, key)) {
-            // Whitelisted properties beginning with an _ will
-            // not be valid attribute names, so lop off the _
-            if (key.substr(0, 1) === '_') {
-              key = key.substr(1);
-            }
+            // Whitelisted
           } else {
             // By default, all properties that do not start with _ and
             // are not the "content" property are made available on

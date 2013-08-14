@@ -116,12 +116,20 @@ apos.widgetPlayers = {};
 apos.widgetPlayers.slideshow = function($el)
 {
   // Use our jQuery slideshow plugin
-  $el.projector();
+  var data = apos.getWidgetData($el);
+  $el.projector({
+    noHeight: data.noHeight,
+    delay: data.delay
+  });
 };
 apos.widgetPlayers.marquee = function($el)
 {
   // Use our jQuery slideshow plugin
-  $el.projector();
+  var data = apos.getWidgetData($el);
+  $el.projector({
+    noHeight: data.noHeight,
+    delay: data.delay
+  });
 };
 
 // The video player replaces a thumbnail with
@@ -129,7 +137,8 @@ apos.widgetPlayers.marquee = function($el)
 
 apos.widgetPlayers.video = function($el)
 {
-  var videoUrl = $el.attr('data-video');
+  var data = apos.getWidgetData($el);
+  var videoUrl = data.video;
   $.get('/apos/oembed', { url: videoUrl }, function(data) {
     // Wait until the thumbnail image size is available otherwise we'll
     // get a tiny size for the widget

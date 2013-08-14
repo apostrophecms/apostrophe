@@ -10,12 +10,9 @@
   {% endif %}
 
   <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}{%if widgetClass%} apos-{{widgetClass}}{%endif%}{%if orientation %} apos-{{orientation}}{%endif%}"
-    {% for name, value in attributes %}
-      data-{{ name | css }}="{{ value | jsonAttribute }}"
-    {% endfor %}
-    {% for name, value in jsonOptions %}
-      data-{{ name | css }}="{{ value | jsonAttribute }}"
-    {% endfor %}
+    data="{{ aposMerge(jsonOptions, attributes) | jsonAttribute }}"
+    data-id="{{ item.id }}"
+    data-type="{{ item.type }}"
   >
 {%- endif -%}
 
