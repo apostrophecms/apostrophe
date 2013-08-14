@@ -2947,16 +2947,6 @@ apos.jsonAttribute = function(value) {
   }
 };
 
-apos.getWidgetData = function($widget) {
-  var data = $widget.attr('data');
-  if (data && data.length) {
-    data = JSON.parse(data);
-  } else {
-    data = {};
-  }
-  return data;
-};
-
 // We often submit the content of an area as part of a regular POST. This is
 // a good way to pack it up
 apos.stringifyArea = function($editable) {

@@ -8,6 +8,17 @@ if (!window.apos) {
 
 var apos = window.apos;
 
+// Correct way to get data associated with a widget in the DOM
+apos.getWidgetData = function($widget) {
+  var data = $widget.attr('data');
+  if (data && data.length) {
+    data = JSON.parse(data);
+  } else {
+    data = {};
+  }
+  return data;
+};
+
 // An extensible way to fire up javascript-powered players for
 // the normal views of widgets that need them
 
