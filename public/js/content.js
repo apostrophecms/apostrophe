@@ -16,6 +16,10 @@ apos.getWidgetData = function($widget) {
   } else {
     data = {};
   }
+  // These two separate properties are authoritative for now
+  // so that we can pace ourselves in refactoring the relevant code
+  data.position = $widget.attr('data-position');
+  data.size = $widget.attr('data-size');
   return data;
 };
 
