@@ -122,7 +122,7 @@ function AposMediaLibrary(options) {
     $item.find('[data-list-details]').append('<span>Tags: ' + (item.tags || []).join(', ') + '</span>');
   };
 
-  self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'credit', 'extension' ];
+  self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'credit', 'extension', 'downloadOriginal' ];
   self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'credit', 'extension' ];
   // self.listShow = [ 'title', 'name', 'group', 'type'];
 
@@ -149,9 +149,16 @@ function AposMediaLibrary(options) {
       } else{
         self.$normal.find('[data-name="' + field + '"]').html("&mdash;");
       }
-      
     });
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
+
+    var $link = $('<a></a>');
+    $link.attr('href', apos.filePath(item));
+    $link.text(apos.filePath(item));
+    var $downloadOriginal = self.$normal.find('[data-name="downloadOriginal"]');
+    $downloadOriginal.html('');
+    $downloadOriginal.append($link);
+
     // Show the edit button or the rescue button
     if (item.trash) {
       self.$show.find('[data-rescue]').show();
