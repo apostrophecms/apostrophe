@@ -2097,7 +2097,8 @@ apos.widgetTypes.slideshow = {
         self.data.ids.push(info._id);
         self.data.extras[info._id] = {
           hyperlink: $item.find('[data-hyperlink]').val(),
-          hyperlinkTitle: $item.find('[data-hyperlink-title]').val()
+          hyperlinkTitle: $item.find('[data-hyperlink-title]').val(),
+          crop: info.crop
         };
         self.data._items.push(info);
       });

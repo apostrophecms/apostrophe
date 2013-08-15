@@ -3721,7 +3721,7 @@ function Apos() {
       });
       return callback(null);
     });
-  }
+  };
 
   self.itemTypes = {
     richText: {
@@ -5431,6 +5431,53 @@ function Apos() {
       }, callback);
     }
 
+    function fixCrops(callback) {
+      var count = 0;
+      // There was briefly a bug in our re-normalizer where the hyperlink and
+      // hyperlinkTitle properties were concerned. We can fix this, but
+      // we can't detect whether the fix is necessary, and we don't want
+      // to annoy people who have gone on with their lives and deliberately
+      // redone crops. So we do this only if --fix-crops is on the
+      // command line
+
+      if (!argv['fix-crops']) {
+        return callback(null);
+      }
+      return self.forEachItem(function(page, name, area, n, item, callback) {
+        self.slideshowTypes = self.slideshowTypes || [ 'slideshow', 'marquee', 'files', 'buttons' ];
+        if (!_.contains(self.slideshowTypes, item.type)) {
+          return callback(null);
+        }
+        var ids = [];
+        var extras = {};
+        if (!item.legacyItems) {
+          // This was created after the migration we're fixing so it's OK
+          return callback(null);
+        }
+        count++;
+        if (count === 1) {
+          console.log('Fixing crops damaged by buggy normalizer');
+        }
+        var interesting = 0;
+        async.each(item.legacyItems, function(file, callback) {
+          var value;
+          if (file.crop) {
+            var extra = item.extras[file._id];
+            if (!extra) {
+              extra = {};
+            }
+            if (!extra.crop) {
+              extra.crop = file.crop;
+              value = { $set: {} };
+              value.$set['areas.' + name + '.items.' + n + '.extras.' + file._id] = extra;
+              return self.pages.update({ _id: page._id }, value, callback);
+            }
+          }
+          return callback(null);
+        }, callback);
+      }, callback);
+    }
+
     function normalizeFiles(callback) {
       var count = 0;
       // We used to store denormalized copies of file objects in slideshow
@@ -5471,6 +5518,7 @@ function Apos() {
           item.showDescriptions = !!(item.showDescriptions || (file.description));
           extra.hyperlink = file.hyperlink;
           extra.hyperlinkTitle = file.hyperlinkTitle;
+          extra.crop = file.crop;
           extras[file._id] = extra;
           if (!(file.title || file.credit || file.description)) {
             return callback(null);
@@ -5520,7 +5568,7 @@ function Apos() {
       }, callback);
     }
 
-    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, explodePublishedAt, missingImageMetadata, missingFileSearch, fixNullTags, fixNumberTags, fixTimelessEvents, normalizeFiles, fixButtons ], function(err) {
+    async.series([ addTrash, moveTrash, moveSearch, trimTitle, trimSlug, fixSortTitle, fixObjectId, explodePublishedAt, missingImageMetadata, missingFileSearch, fixNullTags, fixNumberTags, fixTimelessEvents, normalizeFiles, fixButtons, fixCrops ], function(err) {
       return callback(err);
     });
   };
