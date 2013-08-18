@@ -786,6 +786,11 @@ function Apos() {
                 return false;
               }
             }
+            if (options.group) {
+              if (file.group !== options.group) {
+                return false;
+              }
+            }
             if (options.extensions) {
               if (!_.contains(options.extensions, file.extension)) {
                 return false;
