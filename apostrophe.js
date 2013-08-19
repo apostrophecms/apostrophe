@@ -3452,6 +3452,12 @@ function Apos() {
         var remainder = slug.substr(bestPage.slug.length);
         // Strip trailing slashes for consistent results
         remainder = remainder.replace(/\/+$/, '');
+        // For consistency, guarantee a leading / if the remainder
+        // is not empty. This way parsing remainders attached to the
+        // home page (the slug of which is '/') is not a special case
+        if (remainder.length && (remainder.charAt(0) !== '/')) {
+          remainder = '/' + remainder;
+        }
         return callback(err, page, bestPage, remainder);
       } else {
         // Nonexistence is not an error
@@ -3979,6 +3985,8 @@ function Apos() {
     return nunjucksEnv;
   };
 
+  // TODO MAKE ME AN NPM MODULE
+  //
   // Add and modify query parameters of a url. data is an object whose properties
   // become new query parameters. These parameters override any existing
   // parameters of the same name in the URL. If you pass a property with
@@ -4023,6 +4031,7 @@ function Apos() {
     var pathKeys;
     var original;
     var query = {};
+
     if (qat !== -1) {
       original = qs.parse(url.substr(qat + 1));
       base = url.substr(0, qat);
@@ -4066,7 +4075,11 @@ function Apos() {
           }
           var s = dataObject[key].toString();
           if (s === self.slugify(s)) {
-            base += '/' + s;
+            // Don't append double /
+            if (base !== '/') {
+              base += '/';
+            }
+            base += s;
             done[key] = true;
             return true;
           }
