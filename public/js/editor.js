@@ -1672,7 +1672,7 @@ apos.widgetTypes.slideshow = {
                         (e.pageY <= iOffset.top + iHeight) &&
                         (e.pageY + height >= iOffset.top)) {
                         addItem(file);
-                      } 
+                      }
                       // Snap back so we're available in the chooser again
                       $item.css('top', 'auto');
                       $item.css('left', 'auto');
