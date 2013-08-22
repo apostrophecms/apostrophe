@@ -70,9 +70,12 @@ Or, drag the existing images shown beneath the dashed area. <br />
 
   {# TODO: you can make these snazzier, but remember the JS expects to #}
   {# set a val() of '0' or '1' on a select element #}
-  {{ formBoolean('showTitles', 'Show Titles') }}
-  {{ formBoolean('showDescriptions', 'Show Descriptions') }}
-  {{ formBoolean('showCredits', 'Show Credits') }}
+  <div class="apos-slideshow-user-options">
+    {{ formBoolean('showTitles', 'Show Titles') }}
+    {{ formBoolean('showDescriptions', 'Show Descriptions') }}
+    {{ formBoolean('showCredits', 'Show Credits') }}
+  </div>
+
 
   <div class="apos-orientation-select-container">
     <label class='apos-instructions'>Select Orientation</label>

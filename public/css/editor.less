@@ -471,7 +471,11 @@
    }
  }
 }
-
+.apos-modal .apos-slideshow-user-options
+{
+  padding: 10px;
+  background-color: #eee;
+}
 .apos-modal .apos-orientation-select-container
 {
   display: none;
@@ -1562,12 +1566,12 @@ body .ui-tooltip
   .apos-select-arrow
   {
     position: absolute;
-    background-color: @apos-grey60;
+    background-color: @apos-grey50;
     right: 0;
     top: 0px;
     padding: 15px;
     pointer-events: none;
-    margin-top: -10px;
+    margin-top: -6px;
     
     &:before
     {
@@ -1621,6 +1625,7 @@ body .ui-tooltip
 /* Media Library */
 .apos-media-library.apos-modal
 {
+  .apos-select-arrow{margin-top: -11px;}
   .apos-button-back
   {
     background-color: @apos-base;
