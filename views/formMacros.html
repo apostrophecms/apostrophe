@@ -46,7 +46,10 @@
 {% macro formSelect(name, label, choices) %}
   <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    {{ formSelectStandalone(name, choices) }}
+      <div class="apos-select-wrapper">
+      {{ formSelectStandalone(name, choices) }}
+      <div class="apos-select-arrow"></div>
+    </div>
   </fieldset>
 {% endmacro %}
 
