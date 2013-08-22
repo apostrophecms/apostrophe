@@ -8,12 +8,15 @@
   {# content if and only if we are rendering a full page so document.write does not #}
   {# blow up the world #}
   <!-- APOS-RAW-HTML-BEFORE -->
-  <p class="apos-html-help">To see this code in action you must save your work and refresh the page. If the page becomes unreadable, add ?safe_mode to the end of the URL and load the page again.</p>
-  <pre>
-  <!-- APOS-RAW-HTML-START -->
-  {# Do not remove the escaping, see above #}
-  {{ item.code | e }}
-  <!-- APOS-RAW-HTML-END -->
-  </pre>
+  <p class="apos-html-help">To see your raw HTML code in action you must save your work and refresh the page. If the page becomes unreadable, add ?safe_mode to the end of the URL and load the page again.</p>
+  {% if (not options.editView) %}
+    {# Hides its content #}
+    <div class="apos-raw-html-source">
+    <!-- APOS-RAW-HTML-START -->
+    {# Do not remove the escaping, see above #}
+    {{ item.code | e }}
+    <!-- APOS-RAW-HTML-END -->
+    </div>
+  {% endif %}
   <!-- APOS-RAW-HTML-AFTER -->
 </div>
