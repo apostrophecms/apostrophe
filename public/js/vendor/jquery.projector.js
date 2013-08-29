@@ -87,18 +87,17 @@
     }
 
     function adjustSize() {
-      $el.find('[data-image]').imagesReady(function(maxWidth, maxHeight, maxHeightToWidth) {
-        var effectiveWidth = $el.width();
-        // If all of the images are narrower than the widget,
-        // use the maximum width of an image
-        if (maxWidth < effectiveWidth) {
-          effectiveWidth = maxWidth;
-        }
-        var proportion = effectiveWidth * maxHeightToWidth;
+      $el.find('[data-image]').imagesReady(function() {
+        var tallest = 0;
+        $el.find('[data-slideshow-item]').each(function() {
+          var $item = $(this);
+          if ($item.height() > tallest) {
+            tallest = $item.height();
+          }
+        });
 
         if (!noHeight) {
-          $el.find('[data-slideshow-items]').height(proportion);
-          $el.height(proportion);
+          $el.find('[data-slideshow-items]').height(tallest);
         }
 
       });
