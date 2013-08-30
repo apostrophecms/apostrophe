@@ -292,6 +292,16 @@
   {
     .apos-slideshow-items{height: auto;}
   }
+  // Without these rules, you cannot un-bold or un-italic anything
+  // inside the content editor in Chrome! So don't remove or override 'em!
+  strong, b
+  {
+    font-weight: bold !important;
+  }
+  em, i
+  {
+    font-style: italic !important;
+  }
 }
 
 /* Don't know why bootstrap puts a 4 pixel margin here and hoses
