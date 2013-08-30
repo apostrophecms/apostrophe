@@ -141,6 +141,12 @@ This `aposArea` call turns on all of the controls. You can leave anything you li
 
     {{ aposArea({ slug: 'global:footer', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
 
+You can also change the "styles" menu. However keep in mind that each "style" must be a legitimate HTML block element name and that not all browsers may support every block element in the rich text editor:
+
+    {{ aposArea({ slug: 'global:footer', items: main, edit: true, styles: [ { value: 'div', label: 'Normal' }, { value: 'h3', label: 'Heading' } ] }) }}
+
+*Please note: at this time you should always list `div` as the first style.* We intend to remove this requirement in the future.
+
 "What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. The slug is broken up into two parts: the "page slug" and the "area name." "Page" here is meant in the loosest sense of the word in Apostrophe: a set of areas grouped together which are typically loaded together. 
 
 In the above examples, the "page slug" is `global` and the "area name" is `footer`. For instance, most site designs call for a few editable elements that are shared across every pageview on the site. We group these together with the page slug `global` so they can be loaded as a single MongoDB document.

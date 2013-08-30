@@ -1242,9 +1242,20 @@ apos.widgetEditor = function(options) {
       // and server. At some point perhaps we'll run the same rendering code
       // on both client and server
       info._options = options.options || {};
-      $.post('/apos/render-widget?bodyOnly=1&editView=1', info, function(html) {
-        self.$widget.append(html);
-        callback(null);
+      // Transmit the data as JSON so objects with
+      // property names that look like numbers don't get
+      // converted into flat arrays
+      return $.ajax({
+        type: 'POST',
+        url: '/apos/render-widget?bodyOnly=1&editView=1',
+        processData: false,
+        contentType: 'application/json',
+        data: JSON.stringify(info),
+        dataType: 'html',
+        success: function(html) {
+          self.$widget.append(html);
+          return callback(null);
+        }
       });
     },
 
@@ -2084,7 +2095,8 @@ apos.widgetTypes.slideshow = {
       // self.data._items is just a copy of the file object with its
       // extras merged in, provided for read only convenience. But we
       // keep that up to date too so we can render previews and display
-      // fields that come from the file.
+      // fields that come from the file and reopen widgets after saving
+      // them to the editor but not all the way to the server.
 
       self.data.ids = [];
       self.data.extras = {};
@@ -2100,6 +2112,8 @@ apos.widgetTypes.slideshow = {
           hyperlinkTitle: $item.find('[data-hyperlink-title]').val(),
           crop: info.crop
         };
+        // Make sure it's all also visible in ._items
+        $.extend(true, info, self.data.extras[info._id]);
         self.data._items.push(info);
       });
       // An empty slideshow is allowed, so permit it to be saved
