@@ -27,7 +27,8 @@
     "password-hash": "~1.2.1",
     "joinr": "~0.1.0",
     "async": "~0.2.9",
-    "underscore": "1.5.1"
+    "underscore": "1.5.1",
+    "sanitize-html": "~0.1.2"
   },
   "devDependencies": {},
   "scripts": {
