@@ -23,6 +23,15 @@
       <div class="apos-select-arrow"></div>
     </div>
     <div class="apos-select-wrapper">
+      Uploaded By: {{ formSelectStandalone('owner',
+        [
+          { label: 'Me', value: 'user' },
+          { label: 'Everyone', value: 'all' }
+        ]
+      ) }}
+      <div class="apos-select-arrow"></div>
+    </div>
+    <div class="apos-select-wrapper">
       Status: {{ formSelectStandalone('trash',
         [
           { label: 'Live', value: '0' },
@@ -43,7 +52,7 @@
     <div class="apos-search-field icon-search">
       <input type="search" placeholder="Search" name="search" />
     </div>
-    
+
   </div>
   <div class="apos-modal-body">
     <div class="apos-index-pane apos-grid-view" data-index>

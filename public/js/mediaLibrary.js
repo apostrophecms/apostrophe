@@ -77,7 +77,7 @@ function AposMediaLibrary(options) {
     });
 
     // Filters
-    self.$el.on('change', '[name="trash"],[name="sort"],[name="group"]', function() {
+    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"]', function() {
       self.resetIndex();
       return false;
     });
@@ -325,6 +325,7 @@ function AposMediaLibrary(options) {
 
   self.getCriteria = function() {
     return {
+      owner: self.$el.findByName('owner').val(),
       sort: self.$el.findByName('sort').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),
@@ -344,6 +345,10 @@ function AposMediaLibrary(options) {
     $el.offset(offset);
   };
 
+  self.fixedHeader = function() {
+
+  }
+
   // MODAL CALLBACKS
 
   self.init = function(callback) {
@@ -356,4 +361,5 @@ function AposMediaLibrary(options) {
     return callback(null);
   };
 }
+
 
