@@ -1321,8 +1321,9 @@ apos.widgetEditor = function(options) {
           info._options = options.options || {};
           $.post('/apos/render-widget', info, function(html) {
             // jQuery 1.9+ is super fussy about constructing elements from html
-            // more explicitly
-            var previewWidget = $($.parseHTML(html));
+            // more explicitly. Trim the markup so we don't wind up with a
+            // text node instead of a widget due to whitespace, sigh
+            var previewWidget = $($.parseHTML($.trim(html)));
             previewWidget.addClass('apos-widget-preview');
             self.$previewContainer.prepend(previewWidget);
             self.$el.find('.apos-requires-preview').show();
