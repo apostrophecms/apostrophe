@@ -72,8 +72,11 @@ apos.change = function(what) {
     // Make sure we run scripts in the returned HTML
     $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
     // Trigger the aposReady event so scripts can attach to the
-    // elements just refreshed if needed
+    // elements just refreshed if needed. Also trigger apos.enablePlayers.
+    // Note that calls pushed by pushGlobalCalls are NOT run on a refresh as
+    // they generally have to do with one-time initialization of the page
     $(function() {
+      apos.enablePlayers();
       $("body").trigger("aposReady");
     });
   });
