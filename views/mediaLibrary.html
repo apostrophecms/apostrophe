@@ -56,9 +56,16 @@
   </div>
   <div class="apos-modal-body">
     <div class="apos-index-pane apos-grid-view" data-index>
-      <div class="apos-view-picker">
-        <a href="javascript:void(0)" class="apos-view-grid apos-generic-button active" data-grid data-view>Grid View</a>
-        <a href="javascript:void(0)" class="apos-view-list apos-generic-button" data-list data-view>List View</a>
+      <div class="apos-index-header">
+        <div class="apos-view-picker">
+          <a href="javascript:void(0)" class="apos-view-grid apos-generic-button active" data-grid data-view>Grid View</a>
+          <a href="javascript:void(0)" class="apos-view-list apos-generic-button" data-list data-view>List View</a>
+        </div>
+        <div class="apos-add-files">Add Files <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+          {# I want to use progress.html here, but its styles are complex and don't seem #}
+          {# to work in this context #}
+          <span data-progress style="display: none">Uploading...</span>
+        </div>
       </div>
       <div class="apos-index-item apos-template" data-item>
         {# Populates with an img element when appropriate #}
@@ -97,9 +104,9 @@
         <div class="apos-replace-file">
           <h4>Replace File</h4>
           <input data-upload type="file" name="files[]" class="apos-file-input"  multiple />
-        </div>
-        <div class="apos-progress-container">
-          {% include "progress.html" %}
+          {# I want to use progress.html here, but its styles are complex and don't seem #}
+          {# to work in this context #}
+          <span data-progress style="display: none">Uploading...</span>
         </div>
         <form>
           {{ formText('title', 'Title') }}

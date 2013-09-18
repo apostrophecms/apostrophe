@@ -15,6 +15,7 @@ function AposMediaLibrary(options) {
     self.$show = self.$el.find('[data-show]');
     self.$normal = self.$show.find('[data-normal-view]');
     self.$bar = self.$el.find('[data-bar]');
+    self.enableUploads();
     self.$index.bottomless({
       url: options.browseUrl || '/apos/browse-files',
       now: true,
@@ -89,6 +90,60 @@ function AposMediaLibrary(options) {
     // Buttons in the show view that make sense only after an item is chosen
     self.$show.find('[data-edit]').hide();
     self.$show.find('[data-rescue]').hide();
+  };
+
+  self.enableUploads = function() {
+    var $uploader = self.$el.find('[data-uploader]');
+    $uploader.fileupload({
+      dataType: 'json',
+      dropZone: self.$el.find('.apos-index-pane'),
+      // Best to keep it this way to avoid slamming when multiple users are active
+      sequentialUploads: true,
+      start: function (e) {
+        busy(true);
+      },
+      // Even on an error we should note we're not spinning anymore
+      always: function (e, data) {
+        busy(false);
+      },
+      done: function (e, data) {
+        if (data.result.files) {
+          _.each(data.result.files, function (file) {
+            self.annotateItem(file);
+          });
+          // Simplest way to show the new files
+          self.resetIndex();
+          apos.change('media');
+        }
+      },
+      add: function(e, data) {
+        return data.submit();
+      }
+    });
+    function busy(state) {
+      apos.busy(self.$el.find('.apos-add-files'), state);
+    }
+  };
+
+  self.annotateItem = function(item) {
+    if (!self.annotator) {
+      var Annotator = options.Annotator || window.AposAnnotator;
+      self.annotator = new Annotator({
+        receive: function(aItems, callback) {
+          // Modified the files, so reset the list view
+          self.resetIndex();
+          apos.change('media');
+          return callback(null);
+        },
+        destroyed: function() {
+          // End of life cycle for previous annotator, note that so
+          // we can open another one
+          self.annotator = undefined;
+        }
+      });
+      self.annotator.modal();
+    }
+    self.annotator.addItem(item);
   };
 
   self.addResults = function(results) {
@@ -185,10 +240,6 @@ function AposMediaLibrary(options) {
       self.$edit.findByName(field).val(item[field]);
     });
 
-    self.busy = function(status) {
-      return apos.busy(self.$edit, status);
-    };
-
     var url = options.replaceFileUrl || '/apos/replace-file';
     url += '?id=' + item._id;
     var $upload = self.$edit.find('[data-upload]');
@@ -205,11 +256,11 @@ function AposMediaLibrary(options) {
         return data.submit();
       },
       start: function (e) {
-        self.busy(true);
+        busy(true);
       },
       // Even on an error we should note we're not spinning anymore
       always: function (e, data) {
-        self.busy(false);
+        busy(false);
       },
       // This is not the same thing as really being ready to work with the files,
       // so wait for 'done'
@@ -233,6 +284,10 @@ function AposMediaLibrary(options) {
         }
       },
     });
+
+    function busy(state) {
+      apos.busy(self.$el.find('.apos-replace-file'), state);
+    }
 
     apos.enableTags(self.$edit.find('[data-name="tags"]'), item.tags);
     self.$normal.hide();
@@ -347,7 +402,7 @@ function AposMediaLibrary(options) {
 
   self.fixedHeader = function() {
 
-  }
+  };
 
   // MODAL CALLBACKS
 

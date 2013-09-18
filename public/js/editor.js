@@ -3109,6 +3109,7 @@ apos.busy = function($el, state) {
     busy++;
     $el.data('busy', busy);
     if (busy === 1) {
+      apos.log($el.find('[data-progress]').length);
       $el.find('[data-progress]').show();
       $el.find('[data-finished]').hide();
     }
