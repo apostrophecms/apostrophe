@@ -1,0 +1,22 @@
+<div class="apos-tag-editor apos-modal apos-template">
+  <h3>Edit Tags</h3>
+  <div class="apos-modal-body">
+    <p>You may rename or delete any tag. To combine two tags, just rename one to match the other.</p>
+    <div class="apos-tags" data-tags>
+      <div class="apos-tag apos-template" data-tag>
+        <span class="apos-tag-text" data-tag-text>tag</span>
+        <a href="#" data-rename-open>Rename</a>
+        <span style="display: none" class="apos-tag-rename-form" data-rename-form>
+          <input name="name" />
+          <a href="#" data-rename-go>Rename</a>
+          <a href="#" data-rename-cancel>Cancel</a>
+        </span>
+        <a href="#" data-delete>Delete</a></div>
+    </div>
+  </div>
+
+  <div class="apos-modal-footer">
+    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Done</a>
+  </div>
+  <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel apos-corner-close">x</a>
+</div>

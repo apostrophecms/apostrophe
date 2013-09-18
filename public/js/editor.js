@@ -1,5 +1,5 @@
 /* global rangy, $, _ */
-/* global alert, prompt */
+/* global alert, prompt, AposMediaLibrary, AposTagEditor */
 
 if (!window.apos) {
   window.apos = {};
@@ -3099,6 +3099,21 @@ apos.enableMediaLibrary = function() {
   });
 };
 
+// Set things up to instantiate the tag editor when the button is clicked. This is set up
+// to allow subclassing with an alternate constructor function
+
+apos.enableTagEditor = function() {
+  $('body').on('click', '.apos-tag-editor-button', function() {
+    if (!apos.data.tagEditorOptions) {
+      apos.data.tagEditorOptions = {};
+    }
+    var Construct = apos.data.tagEditorOptions.construct || AposTagEditor;
+    var tagEditor = new (Construct)(apos.tagEditorOptions);
+    tagEditor.modal();
+    return false;
+  });
+};
+
 // Simple progress display. Locates a progress display inside the given
 // element. If state is true, indicates activity, otherwise indicates
 // complete. Supports nested calls; does not revert to indicating complete
@@ -3124,10 +3139,11 @@ apos.busy = function($el, state) {
   }
 };
 
-// Do this late so that other code has a chance to set apos.mediaLibraryOptions
+// Do this late so that other code has a chance to set apos.mediaLibraryOptions, etc.
 $(function() {
   apos.afterYield(function() {
     apos.enableMediaLibrary();
+    apos.enableTagEditor();
   });
 });
 
