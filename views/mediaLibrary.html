@@ -57,14 +57,24 @@
   <div class="apos-modal-body">
     <div class="apos-index-pane apos-grid-view" data-index>
       <div class="apos-index-header">
+
+        <div class="apos-add-files">
+          <!-- <h4 class="apos-add-files-title">Add Files</h4> -->
+          <div class="apos-file-styled-container" data-uploader-container>
+            <div class="apos-file-styled icon-plus">Upload Media</div>
+            <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+          </div>
+          <div class="apos-media-file-in-message" data-drag-droparea><span data-drag-message>Drop Files Here</span></div>
+          {# I want to use progress.html here, but its styles are complex and don't seem #}
+          {# to work in this context #}
+          <!-- <span data-progress style="display: none">Uploading...</span> -->
+          {% include "progress.html" %}
+
+        </div>
+
         <div class="apos-view-picker">
           <a href="javascript:void(0)" class="apos-view-grid apos-generic-button active" data-grid data-view>Grid View</a>
           <a href="javascript:void(0)" class="apos-view-list apos-generic-button" data-list data-view>List View</a>
-        </div>
-        <div class="apos-add-files">Add Files <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
-          {# I want to use progress.html here, but its styles are complex and don't seem #}
-          {# to work in this context #}
-          <span data-progress style="display: none">Uploading...</span>
         </div>
       </div>
       <div class="apos-index-item apos-template" data-item>
