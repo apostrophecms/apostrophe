@@ -1599,6 +1599,36 @@ body .ui-tooltip
     }
   }
 }
+/* Selective Styles */
+.apos-fieldset-selective
+{
+  .apos-selective-label
+  {
+    display: inline-block;
+    background: #cdcdcd;
+    padding: 7px;
+    margin-bottom: 5px;
+    // margin-right: -4px;
+    float: left;
+    clear: left;
+    font-family: "Lucida Grande";
+    // text-transform: uppercase;
+    + .apos-remove
+    {
+      margin-top: 0px;
+      display: inline-block;
+      float: left;
+      padding: 7px;
+      &:hover
+      {
+        // This might be project-specific, but I was getting green here.
+        color: white;
+      }
+    }
+  }
+}
+
+
 
 /* Search Input */
 .apos-search-field
