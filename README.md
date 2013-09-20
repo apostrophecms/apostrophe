@@ -10,6 +10,8 @@ In addition to rich text, Apostrophe allows you to add rich media to documents. 
 
 [You can try a live demo of the Apostrophe 2 sandbox app here.](http://demo2.apostrophenow.com/) (Note: the demo site resets at the top of the hour.) See also the [apostrophe-sandbox github project](http://github.com/punkave/apostrophe-sandbox).
 
+*The sandbox provides a much simpler getting-started guide.* We recommend you start reading there. The rest of this document is mostly concerned with features of the apostrophe module itself and not the system as a whole.
+
 Apostrophe introduces "widgets," separate editors for rich media items like photos, videos, pullquotes and code samples. Apostrophe's widgets handle these items much better than a rich text editor on its own.
 
 Apostrophe also supports floating content properly, including wrapping text around images and video. Unlike other rich text editors, Apostrophe addresses the usability problems that go with floating content. Apostrophe users can see exactly where to add text above the floated element and where to add text after it so that it wraps around. When editing, Apostrophe displays positioning arrows before and after rich media elements that make it clear where they connect to the text and ensure it is always possible to add content above and below them. Apostrophe users can also easily select, cut, copy and paste rich content widgets exactly as if they were part of the text, without breaking them. You can even copy a video widget from one page of a site to another.
@@ -36,7 +38,7 @@ Apostrophe is intended to work in all major browsers from IE7 up, with best resu
 
 Apostrophe's server-side components are built in Node and require Express 3.0. Although in principle browser-side components of Apostrophe could talk to other languages, right now a close partnership with Node code on the server is driving the flow of development.
 
-Apostrophe's server-side code uses uploadfs to store media files. uploadfs allows you to decide whether to keep them in a local filesystem, Amazon S3 or a custom backend. 
+Apostrophe's server-side code uses uploadfs to store media files. uploadfs allows you to decide whether to keep them in a local filesystem, Amazon S3 or a custom backend.
 
 Apostrophe does not require any external CSS framework. Apostrophe's internal templates are processed with Nunjucks, which is awesome, but your Node application does not have to use Nunjucks.
 
@@ -127,59 +129,42 @@ Note the `body` block, which can be overridden in any template that `extend`s th
 
 ### Adding Editable Areas To Your Templates
 
-The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example:
+The easiest way to add Apostrophe-powered editable rich content areas to your Node Express 3.0 project is to use Apostrophe's `aposArea` function, which is made available to your Express templates when you configure Apostrophe. Here's a simple example. Here we are using the `global` page, a convenient virtual "page" for storing areas that are used throughout the site, like a shared footer:
 
-    {{ aposArea({ slug: 'global:footer', items: main, edit: true }) }}
+    {{ aposArea(global, 'content1', {
+      edit: edit
+    }) }}
 
-This is from a Nunjucks template. If you're using Twig, you'll write:
-
-!= aposArea({ slug: 'global:footer', items: main, edit: true })
+This is from a Nunjucks template. The Nunjucks template language, which is compatible with the popular Jinja and Twig languages, is used throughout Apostrophe.
 
 Sometimes Apostrophe's default set of controls include features that don't make sense in a sidebar or otherwise don't suit a design. In these cases you can limit the list.
 
 This `aposArea` call turns on all of the controls. You can leave anything you like off the `controls` list:
 
-    {{ aposArea({ slug: 'global:footer', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ] }) }}
+    {{ aposArea(global, 'footer', {
+      controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ]
+    }) }}
 
 You can also change the "styles" menu. However keep in mind that each "style" must be a legitimate HTML block element name and that not all browsers may support every block element in the rich text editor:
 
-    {{ aposArea({ slug: 'global:footer', items: main, edit: true, styles: [ { value: 'div', label: 'Normal' }, { value: 'h3', label: 'Heading' } ] }) }}
+    {{ aposArea(global, 'footer', {
+      controls: [ 'style', 'bold', 'italic', 'createLink', 'image', 'video', 'pullquote', 'code' ],
+      styles: [ { value: 'div', label: 'Normal' }, { value: 'h3', label: 'Heading' }]
+    }) }}
 
 *Please note: at this time you should always list `div` as the first style.* We intend to remove this requirement in the future.
-
-"What does `slug` mean?" Each area needs a unique "slug" to distinguish it from other editable content areas on your site. The slug is broken up into two parts: the "page slug" and the "area name." "Page" here is meant in the loosest sense of the word in Apostrophe: a set of areas grouped together which are typically loaded together. 
-
-In the above examples, the "page slug" is `global` and the "area name" is `footer`. For instance, most site designs call for a few editable elements that are shared across every pageview on the site. We group these together with the page slug `global` so they can be loaded as a single MongoDB document.
-
-You might think you can use page slugs to represent pages that are part of a tree of pages, and you would be right, but to do so easily make sure you [start with the `apostrophe-pages` module.](http://github.com/punkave/apostrophe-pages)
-
-"Where does `items` come from?" Good question. You are responsible for fetching the content as part of the Express route code that renders your template. You do this with Apostrophe's `getArea` and `getPage` methods. [Note: you probably want to use the apostrophe-pages module to do most of this work, including loading common shared elements like the `global` page.](http://github.com/punkave/apostrophe-pages)
-
-Naturally `getArea` is asynchronous:
-
-    app.get(req, 'global:footer', function(req, res) {
-      apos.getArea(req, 'main', function(err, area) {
-        return res.render('home', { content: area ? area.items : [] });
-      });
-    });
-
-The `req` object is needed so that widget loaders can consider permissions and have an opportunity to perform caching when multiple queries occur during the lifetime of a single page request.
-
-Note the code that checks whether `area` is actually set before attempting to access its content. If no area with that slug has ever been saved, the `area` callback parameter will be null.
-
-Also note that there is an `err` parameter to the callback. Real-world applications should check for errors (and the `app.js` sample application does).
 
 ## Displaying Single Widgets ("Singletons")
 
 Of course, sometimes you want to enforce a more specific design for an editable page. You might, for instance, want to require the user to pick a video for the upper right corner. You can do that with `aposSingleton`:
 
-    {{ aposSingleton({ slug: 'global:my-video', type: 'video', area: page.areas.sidebarVideo, edit: edit }) }}
+    {{ aposSingleton(global, 'my-video', { type: 'video' }) }}
 
 Note that singletons are stored as areas. The only difference is that the interface only displays and edits the first item of the specified type found in the area. There is no rich text editor "wrapped around" the widget, so clicking "edit" for a video immediately displays the video dialog box.
 
 Only widgets (images, videos and the like) may be specified as types for singletons. For a standalone rich-text editor that doesn't allow any widgets, just limit the set of controls to those that are not widgets:
 
-    {{ aposArea({ slug: 'global:sidebar', items: main, edit: true, controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
+    {{ aposArea(page, 'main', { controls: [ 'style', 'bold', 'italic', 'createLink' ] }) }}
 
 ## Detecting Empty Areas and Singletons
 
