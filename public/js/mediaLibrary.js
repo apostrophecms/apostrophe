@@ -123,6 +123,26 @@ function AposMediaLibrary(options) {
     function busy(state) {
       apos.busy(self.$el.find('.apos-add-files'), state);
     }
+
+    // setup drag-over states
+    self.$el.find('.apos-modal-body').bind('dragover', function (e) {
+      var dropZone = self.$el.find('.apos-add-files'),
+          timeout = window.dropZoneTimeout;
+      if (!timeout) {
+          dropZone.addClass('apos-media-file-in');
+      } else {
+          clearTimeout(timeout);
+      }
+      if (e.target === dropZone[0]) {
+          dropZone.addClass('apos-media-file-hover');
+      } else {
+          dropZone.removeClass('apos-media-file-hover');
+      }
+      window.dropZoneTimeout = setTimeout(function () {
+          window.dropZoneTimeout = null;
+          dropZone.removeClass('apos-media-file-in apos-media-file-hover');
+      }, 100);
+    });
   };
 
   self.annotateItem = function(item) {
