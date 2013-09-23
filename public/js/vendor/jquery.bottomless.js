@@ -75,14 +75,12 @@
       }
       page = 0;
       atEnd = false;
-      start();
       loadPage();
     }
 
     function loadPage() {
+      start();
       page++;
-      loading = true;
-      $el.data('loading', true);
       // Copy the criteria and add the page
       var query = {};
       $.extend(true, query, criteria);
