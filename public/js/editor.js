@@ -1,20 +1,22 @@
 /* global rangy, $, _ */
 /* global alert, prompt, apos */
 
-// @class An editor for Apostrophe areas. Integrates rich content editing with the editing
-// of multimedia widgets such as slideshows and videos, with mixed success. We're moving toward
-// a new implementation, and beginning by factoring this one out so its interface can be
-// seen clearly.
-//
-// Constructing the editor is a two-step process:
-//
-// 1. var editor = new AposEditor(options);
-// 2. editor.init()
-//
-// This makes it significantly easier to override methods when subclassing
-// the editor.
+/**
+ * @class An editor for Apostrophe areas. Integrates rich content editing with the editing
+ * of multimedia widgets such as slideshows and videos, with mixed success. We're moving toward
+ * a new implementation, and beginning by factoring this one out so its interface can be
+ * seen clearly.
+ *
+ * Constructing the editor is a two-step process:
+ *
+ *     var editor = new AposEditor(options);
+ *     editor.init()
+ *
+ * This makes it significantly easier to override methods when subclassing
+ * the editor.
+ */
 
-window.AposEditor = function(options) {
+function AposEditor(options) {
   var self = this;
   var styleMenu;
   var styleBlockElements;
@@ -199,7 +201,7 @@ window.AposEditor = function(options) {
 
   };
 
- // We need to be able to do this to every sing widget preview quickly when
+ // We need to be able to do this to every single widget preview quickly when
   // the edit view starts up
 
   self.addButtonsToWidget = function($widget) {
