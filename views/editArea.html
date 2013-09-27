@@ -62,8 +62,9 @@
     // I have seen jquery domready fail to see this id yet, so
     // wait for "next tick" as well (Chrome)
     apos.afterYield(function() {
-      // Pass in the options from the area partial
-      var editor = new apos.Editor({ selector: '#{{ wid }}', options: {{ options | json }} });
+      // Pass in the options from the area partial. Allow the constructor name to be overridden
+      var constructorName = (apos.data.editorOptions && apos.data.editorOptions.constructorName) || 'AposEditor';
+      var editor = new window[constructorName]({ selector: '#{{ wid }}', options: {{ options | json }} });
       editor.init();
       $(function() {
 {% if standalone %}

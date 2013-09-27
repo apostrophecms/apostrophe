@@ -781,6 +781,13 @@ apos.padInteger = function(i, places) {
   return s;
 };
 
+/**
+ * Capitalize the first letter of a string
+ */
+apos.capitalizeFirst = function(s) {
+  return s.charAt(0).toUpperCase() + s.substr(1);
+};
+
 // Enable toggles. Note the use of $('body').on('click', 'selector'...)
 // to avoid problems with elements added later
 
