@@ -174,7 +174,7 @@ apos.enableAreas = function() {
     if ($item.length) {
       itemData = apos.getWidgetData($item);
     }
-    var $editor = new apos.widgetTypes[type].editor({
+    var editor = new apos.widgetTypes[type].editor({
       data: itemData,
       save: function(callback) {
         if (slug) {
@@ -207,6 +207,7 @@ apos.enableAreas = function() {
       // Options passed from the template or other environment
       options: $singleton.data('options')
     });
+    editor.init();
     return false;
   });
 };
