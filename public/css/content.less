@@ -6,7 +6,13 @@
 @import 'typography.less';
 
 // body {background: red;}
-
+.apos-input()
+{
+  width: 100%;
+  max-width: 385px;
+  padding: 8px 8px 10px 8px;
+  border: none;
+}
 .apos-one-third
 {
   width: 33.33333%;
@@ -314,10 +320,7 @@ They will need to live somewhere else eventually
   input, textarea
   {
     display: block;
-    width: 100%;
-    max-width: 385px;
-    padding: 8px 8px 10px 8px;
-    border: none;
+    .apos-input();
   }
   textarea {height: 180px;}
 }
@@ -1045,6 +1048,11 @@ input.apos-control
     background-color: lighten(@apos-base, 8%);
     font-size: 1.1em;
 
+  }
+  &.apos-inline
+  {
+    float: none;
+    display: inline-block;
   }
 }
 
