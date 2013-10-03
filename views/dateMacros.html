@@ -9,28 +9,28 @@
 {# pass the time (if the time is null, it is not output). #}
 
 {% macro formatDateAndTime(when, timePresent) %}
-  {% if aposIsCurrentYear(when) %}
+  {%- if aposIsCurrentYear(when) -%}
     {{ when | date('MMM DD') }}
-  {% else %}
+  {%- else -%}
     {{ when | date('MMM DD [\']YY') }}
-  {% endif %}
-  {% if (timePresent) %}
-    {{ when | date('h:mm a') }}
-  {% endif %}
+  {%- endif -%}
+  {%- if (timePresent) -%}
+    {{ ' ' }}{{ when | date('h:mm a') }}
+  {%- endif -%}
 {% endmacro %}
 
 {# Given an item, copes with startDate, startTime, endDate and endTime, all but the first of which #}
 {# are optional, and outputs something reasonable for each combination. Used by RSS feeds, search results, #}
 {# and (by default) events. #}
 
-{% macro formatDateRange(item) %}
+{%- macro formatDateRange(item) -%}
   {{ formatDateAndTime(item.start, item.startTime) }}
-  {% if (item.startDate == item.endDate) and (item.startTime != item.endTime) %}
-    &ndash;
+  {%- if (item.startDate == item.endDate) and (item.startTime != item.endTime) -%}
+    {{ ' ' }}&ndash;{{ ' ' }}
     {{ formatTime(item.end) }}
-  {% elif (item.startDate != item.endDate) %}
-    &ndash;
+  {%- elif (item.startDate != item.endDate) -%}
+    {{ ' ' }}&ndash;{{ ' ' }}
     {{ formatDateAndTime(item.end, item.endTime) }}
-  {% endif %}
-{% endmacro %}
+  {%- endif -%}
+{%- endmacro -%}
 
