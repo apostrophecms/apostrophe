@@ -26,6 +26,14 @@ function AposMediaLibrary(options) {
       success: self.addResults,
       reset: self.resetCallback
     });
+
+    // Make sure we can indirectly click on an upload button that's been visually replaced with
+    // another element. Otherwise only dragging is permissible and in IE nothing is permissible
+    self.$el.on('click', '.apos-file-styled', function() {
+      $(this).parent().children('input').click();
+      return false;
+    });
+
     self.$el.on('click', '[data-index] [data-item]', function() {
       $.each($('[data-index] [data-item]'), function() {
         var $item = $(this);
