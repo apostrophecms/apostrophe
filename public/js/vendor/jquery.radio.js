@@ -16,7 +16,15 @@
       return $els.filter(':checked').val();
     } else {
       $.each($els, function() {
-        $(this).attr('checked', $(this).attr('value') === value);
+        var checked = ($(this).attr('value') === value);
+        // The attribute should be set or unset...
+        if (checked) {
+          this.setAttribute('checked', 'checked');
+        } else {
+          this.removeAttribute('checked');
+        }
+        // And also the property
+        this.checked = checked;
       });
     }
   };
