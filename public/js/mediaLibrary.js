@@ -134,7 +134,7 @@ function AposMediaLibrary(options) {
 
     // setup drag-over states
     self.$el.find('.apos-modal-body').bind('dragover', function (e) {
-      var dropZone = self.$el.find('.apos-add-files'),
+      var dropZone = self.$el.find('.apos-file-container'),
           timeout = window.dropZoneTimeout;
       if (!timeout) {
           dropZone.addClass('apos-media-file-in');
