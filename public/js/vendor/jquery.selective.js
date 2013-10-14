@@ -43,6 +43,8 @@
       self.$list = $el.find('[data-list]');
       self.$autocomplete = $el.find('[data-autocomplete]');
       self.$itemTemplate = $el.find('[data-item]');
+      self.$limitIndicator = $el.find('[data-limit-indicator]');
+
       self.$itemTemplate.remove();
       if (options.add) {
         self.$autocomplete.on('keydown', function(e) {
@@ -52,6 +54,7 @@
             self.add({ label: val, value: val });
             self.$autocomplete.val('');
             self.$autocomplete.autocomplete('close');
+            self.checkLimit();
             return false;
           }
           return true;
@@ -89,6 +92,7 @@
         select: function(event, ui) {
           self.$autocomplete.val('');
           self.add(ui.item);
+          self.checkLimit();
           return false;
         }
       });
@@ -112,6 +116,7 @@
         } else {
           $item.remove();
         }
+        self.checkLimit();
         return false;
       });
 
@@ -149,6 +154,7 @@
 
       self.clear = function() {
         self.$list.find('[data-item]').remove();
+        self.checkLimit();
       };
 
       // data contains the user's current selections (not potential future
@@ -185,6 +191,7 @@
           $.each(data, function(i, datum) {
             self.add(datum);
           });
+          self.checkLimit();
         }
       };
 
@@ -214,6 +221,26 @@
           }
         });
         return result;
+      };
+
+      self.checkLimit = function() {
+        if (options.limit === undefined) {
+          return;
+        }
+        var count = 0;
+        self.$list.find('[data-item]').each(function() {
+          var $item = $(this);
+          if (!$item.data('removed')) {
+            count++;
+          }
+        });
+        var limited = (count >= options.limit);
+        self.$autocomplete.prop('disabled', limited);
+        if (limited) {
+          self.$limitIndicator.show();
+        } else {
+          self.$limitIndicator.hide();
+        }
       };
 
       self.populate();

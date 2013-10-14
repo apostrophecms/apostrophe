@@ -701,7 +701,7 @@ function AposSlideshowWidgetEditor(options)
     $item.find('[data-hyperlink]').val(item.hyperlink);
     $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
     if (extraFields || typeof(extraFields) === 'object') {
-      $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit></a>');
+      $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit><i class="icon-cog"></i></a>');
     }
     $item.data('item', item);
     $item.find('[data-remove]').click(function() {

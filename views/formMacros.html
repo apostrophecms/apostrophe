@@ -22,7 +22,7 @@
     <ul data-list class="apos-tag-list">
       <li data-item>
         <span class="label-and-remove">
-          <a href="#" class="apos-tag-remove icon-cancel" data-remove></a>
+          <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
           <span data-label>Example label</span>
           <!-- Link to remove this choice -->
         </span>
@@ -92,6 +92,7 @@
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
     <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ options.placeholder | e }}"{%endif %}/>
+    <span class="apos-limit-indicator" data-limit-indicator>Limit Reached!</span>
     <ul data-list>
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
