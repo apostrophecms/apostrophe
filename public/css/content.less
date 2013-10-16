@@ -1,5 +1,5 @@
 /* Everything must have a apos- prefix */
-
+@import '../font-awesome/less/font-awesome.less';
 @import 'utils.less';
 @import 'colors.less';
 @import 'icons.less';
@@ -857,6 +857,7 @@ textarea.apos-code {
     text-transform: uppercase;
     border-right: 1px dotted @apos-grey50;
     cursor: pointer;
+    a {color: #fff !important;}
 
     &:last-child
     {
@@ -868,7 +869,15 @@ textarea.apos-code {
       padding: 0 10px;
       .icon-eye {display: block;}
       .icon-wrench {display: none;}
-
+      i
+      {
+        color: #fff;
+        &:before
+        {
+          font-size:15px;
+          padding-top: 13px;
+        }
+      }
       &.previewing
       {
         .icon-eye {display: none;}
@@ -989,6 +998,7 @@ input.apos-control
   font-size: 11px;
   font-family: 'cabin';
   letter-spacing: 1px;
+  line-height: 1em;
   &.apos-menu-style
   {
     background-color: darken(@apos-base, 10%);
