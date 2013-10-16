@@ -19,6 +19,7 @@ function AposAnnotator(options) {
   self.modal = function() {
     self.$el = apos.modalFromTemplate(options.template || '.apos-file-annotator', self);
   };
+  
 
   self.addItem = function(item) {
     var $item = apos.fromTemplate(self.$el.find('[data-item].apos-template'));
