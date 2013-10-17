@@ -58,7 +58,7 @@
     <div class="apos-index-pane apos-grid-view" data-index>
       <div class="apos-index-header">
 
-        <div class="apos-add-files">
+        <div class="apos-add-files apos-file-container">
           <!-- <h4 class="apos-add-files-title">Add Files</h4> -->
           <div class="apos-file-styled-container" data-uploader-container>
             <div class="apos-file-styled icon-plus">Upload Media</div>
@@ -111,9 +111,11 @@
       </div>
       <div data-edit-view class="apos-edit-view apos-template">
         <div class="apos-preview" data-preview></div>
-        <div class="apos-replace-file">
+        <div class="apos-replace-file apos-file-container">
           <h4>Replace File</h4>
+          <div class="apos-file-styled">Upload Media</div>
           <input data-upload type="file" name="files[]" class="apos-file-input"  multiple />
+          <div class="apos-media-file-in-message" data-drag-droparea><span data-drag-message>Drop Files Here</span></div>
           {# I want to use progress.html here, but its styles are complex and don't seem #}
           {# to work in this context #}
           <span data-progress style="display: none">Uploading...</span>
