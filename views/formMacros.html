@@ -54,8 +54,12 @@
 {% endmacro %}
 
 {# Often useful in a custom fieldset with other controls #}
-{% macro formSelectStandalone(name, choices) %}
-  <select name="{{ name | e }}">
+{% macro formSelectStandalone(name, choices, _attrs = {}) %}
+  <select name="{{ name | e }}"
+    {% for key, val in _attrs %}
+      {{ key }}="{{ val | e }}"
+    {% endfor %}
+  >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}">{{ choice.label | e }}</option>
     {% endfor %}
@@ -65,6 +69,10 @@
 {# Less ambiguous to work with than a checkbox #}
 {% macro formBoolean(name, label) %}
   {{ formSelect(name, label, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }]) }}
+{% endmacro %}
+
+{% macro formBooleanStandalone(name, attrs) %}
+  {{ formSelectStandalone(name, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }], attrs) }}
 {% endmacro %}
 
 {# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
@@ -103,8 +111,18 @@
           <span class="apos-selective-extras">
             {# TODO: extend our support for different types of extra fields, #}
             {# style them meaningfully. Usually on same row with item #}
-            {% for name, attrs in options.extras %}
-              <label>{{ attrs.label | e }}</label><input data-extras name="{{ name }}" type="{{ attrs.type }}" />
+            {% for extra in options.extras %}
+              <label>{{ extra.label | e }}</label>
+              {% if (extra.type == 'string') or (extra.type == 'text') %}
+                <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
+              {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
+                {{ formBooleanStandalone(extra.name, { 'data-extras': '' }) }}
+              {% elif (extra.type == 'select') %}
+                {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+              {% else %}
+                {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
+                {{ aposLog(extra) }}
+              {% endif %}
             {% endfor %}
           </span>
         {% endif %}

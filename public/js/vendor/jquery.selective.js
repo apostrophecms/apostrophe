@@ -225,6 +225,7 @@
 
       self.checkLimit = function() {
         if (options.limit === undefined) {
+          self.$limitIndicator.hide();
           return;
         }
         var count = 0;
