@@ -49,9 +49,5 @@ function AposPullquoteWidgetEditor(options)
   };
 }
 
-AposPullquoteWidgetEditor.getContent = function($el) {
-  return $el.find('.apos-pullquote-text').text();
-};
-
 AposPullquoteWidgetEditor.label = 'Pullquote';
 

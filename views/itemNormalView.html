@@ -9,13 +9,17 @@
     {% set orientation = item.orientation %}
   {% endif %}
 
-  <div class="apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}{%if widgetClass%} apos-{{widgetClass}}{%endif%}{%if orientation %} apos-{{orientation}}{%endif%}"
+  <div class="apos-item apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}{%if widgetClass%} apos-{{widgetClass}}{%endif%}{%if orientation %} apos-{{orientation}}{%endif%}"
     data="{{ aposMerge(jsonOptions, attributes) | jsonAttribute }}"
     data-id="{{ item.id }}"
     data-type="{{ item.type }}"
     data-position="{{ item.position }}"
     data-size="{{ item.size }}"
   >
+{%- elif alwaysEditing and item.type == 'richText'  -%}
+  {# This outer wrapper must exist for rich text too, to contain buttons #}
+  {# Keep in sync with richText.html #}
+  <div data-type="richText" class="apos-rich-text-item apos-item">
 {%- endif -%}
 
 {# If this item type has a wrapper element output that element, with an optional #}
@@ -23,6 +27,11 @@
 {%- if itemType.wrapper -%}
   <{{ itemType.wrapper }}{%- if itemType.wrapperClass %} class="{{ itemType.wrapperClass }}" {% endif -%}>
 {%- endif -%}
+
+{% if alwaysEditing and item.type == 'richText'  %}
+{# This is the div that actually becomes contenteditable. Cannot contain anything but rich text #}
+<div class="apos-rich-text" data-rich-text>
+{% endif %}
 
 {# If this item type has plaintext content, output that content, escaped for HTML #}
 {%- if itemType.plaintext -%}
@@ -41,12 +50,16 @@
   {{ itemType.render({ item: item, options: options }) }}
 {%- endif -%}
 
+{% if alwaysEditing and item.type == 'richText'  %}
+</div>
+{% endif %}
+
 {# If this item type has a wrapper close the wrapper #}
 {%- if itemType.wrapper -%}
   </{{itemType.wrapper }}>
 {%- endif -%}
 
-{# If this item type is a widget close the div #}
-{%- if options.widget -%}
+{% if options.widget or (alwaysEditing and item.type == 'richText' ) %}
   </div>
-{%- endif -%}
+{% endif %}
+{# Widgets and rich texts both are wrapped in divs #}

@@ -49,9 +49,5 @@ function AposCodeWidgetEditor(options)
   };
 }
 
-AposCodeWidgetEditor.getContent = function($el) {
-  return $el.find('pre').text();
-};
-
 AposCodeWidgetEditor.label = 'Code';
 

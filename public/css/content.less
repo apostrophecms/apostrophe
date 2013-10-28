@@ -1128,3 +1128,11 @@ input.apos-control
   }
 }
 
+// A lockup of a widget and a rich text item. Must contain its floats.
+// Whether it actually does any floating is a per-site decision but an iron
+// law of lockupdom is that they shalt not interfere with the items that
+// are outside the lockup, so clearfix always makes sense. -Tom
+.apos-lockup
+{
+  .clearfix;
+}

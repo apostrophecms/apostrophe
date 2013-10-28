@@ -219,6 +219,39 @@ function AposEditor(options) {
     $widget.prepend($buttons);
   };
 
+  // Insert a newly created apos-widget
+  self.insertWidget = function($widget) {
+    // Newly created widgets need default position and size
+    $widget.attr('data-position', 'middle');
+    $widget.attr('data-size', 'full');
+    $widget.addClass('apos-middle');
+    $widget.addClass('apos-full');
+
+    var markup = '';
+
+    // Work around serious widget selection bugs in Chrome by introducing
+    // characters before and after the widget that become part of selecting it
+    var before = apos.beforeMarker;
+    var after = apos.afterMarker;
+
+    markup = before;
+
+    var widgetWrapper = $('<div></div>').append($widget);
+    markup += widgetWrapper.html();
+
+    markup += after;
+
+    // markup = markup + String.fromCharCode(65279);
+
+    // Restore the selection to insert the markup into it
+    apos.popSelection();
+    // Not we can insert the markup
+    apos.insertHtmlAtCursor(markup);
+    // Push the selection again, leaving it up to modal('hide')
+    // to do the final restore
+    apos.pushSelection();
+  };
+
   // BEGIN TABLE EDITING
 
   self.insertTable = function() {

@@ -43,7 +43,6 @@ apos.addWidgetType = function(typeName, defaultConstructorName) {
     try {
       apos.widgetTypes[typeName] = {
         label: Constructor.label,
-        getContent: Constructor.getContent,
         editor: Constructor
       };
     } catch (e) {
@@ -349,8 +348,14 @@ apos.parseArea = function(content) {
 
         var type = child.getAttribute('data-type');
         var item = {};
-        if (apos.widgetTypes[type].getContent) {
-          item.content = apos.widgetTypes[type].getContent($(child));
+        // If the widget has content that lives in the markup, fetch it via the
+        // appropriate selector or get all of the text
+        if (apos.widgetTypes[type].content) {
+          if (apos.widgetTypes[type].contentSelector) {
+            item.content = $(child).find(apos.widgetTypes[type].contentSelector).text();
+          } else {
+            item.content = $(child).text();
+          }
         }
 
         var data = apos.getWidgetData($(child));
