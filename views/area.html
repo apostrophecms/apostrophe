@@ -1,6 +1,6 @@
-<div {% if options.edit %}data-editable data-save{% endif %} class="apos-area" data-slug="{{ options.slug }}" data-options="{{ options | jsonAttribute }}" id="{{ id }}">
+<div {% if options.edit %}data-editable {% if not options.virtual %}data-save{% endif %}{% endif %} class="apos-area" {% if not options.virtual %}data-slug="{{ options.slug }}"{% endif %} data-options="{{ options | jsonAttribute }}" id="{{ id }}">
   <div class="apos-normal-view">
-    {% if (not alwaysEditing) and options.edit %}
+    {% if (not alwaysEditing) and (not options.virtual) and options.edit %}
       <div class="apos-area-controls">
         <a class="apos-control apos-button apos-edit-area" href="#"><i class="icon-pencil"></i></a>
       </div>
@@ -9,3 +9,9 @@
     <div class="apos-content">{{ aposAreaContent(area.items, options) }}</div>
   </div>
 </div>
+{% if options.virtual %}
+  {# Provide a way for frontend code to know this virtual area is here #}
+  <script type="text/javascript">
+    $('body').trigger('aposNewArea', {{ id | json }});
+  </script>
+{% endif %}
