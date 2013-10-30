@@ -91,13 +91,28 @@ function AposMediaLibrary(options) {
       return false;
     });
     self.$search = self.$el.find('[name="search"]');
-    self.$search.bind('textchange', function() {
-      self.resetIndex();
-    });
+
+    self.enableSearchField();
 
     // Buttons in the show view that make sense only after an item is chosen
     self.$show.find('[data-edit]').hide();
     self.$show.find('[data-rescue]').hide();
+  };
+
+  self.enableSearchField = function() {
+    // Debounce the textchange event. If we let it fire rapidly,
+    // the second set of results may arrive before the first, with
+    // irrational results
+    var pending = false;
+    self.$search.bind('textchange', function() {
+      if (!pending) {
+        pending = true;
+        setTimeout(function() {
+          self.resetIndex();
+          pending = false;
+        }, 500);
+      }
+    });
   };
 
   self.enableUploads = function() {
