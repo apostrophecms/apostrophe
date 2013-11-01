@@ -83,7 +83,7 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 ### Configuring Apostrophe
 
-You'll need to `npm install` the `node-apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
+You'll need to `npm install` the `apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
 
 Here's the `initApos` function of the sample application [http://github.com/punkave/apostrophe-sandbox](apostrophe-sandbox). Notice this function invokes a callback when it's done. `app.js` makes good use of the `async` module to carry out its initialization tasks elegantly. Here we also initialize other modules that snap into Apostrophe:
 
