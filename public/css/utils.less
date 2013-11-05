@@ -16,6 +16,28 @@
       -webkit-backface-visibility: hidden;
 }
 
+.apos-bg-gradient {
+  /* fallback */
+  background-color: @apos-base;
+  /* Safari 4-5, Chrome 1-9 */
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(@apos-base), to(@apos-lighten-10));
+  /* Safari 5.1, Chrome 10+ */
+  background: -webkit-linear-gradient(top, @apos-base, @apos-lighten-10);
+  /* Firefox 3.6+ */
+  background: -moz-linear-gradient(top, @apos-base, @apos-lighten-10);
+  /* IE 10 */
+  background: -ms-linear-gradient(top, @apos-base, @apos-lighten-10);
+}
+
+.apos-border-clip
+{
+  -moz-background-clip: padding;     /* Firefox 3.6 */
+  -webkit-background-clip: padding;  /* Safari 4? Chrome 6? */
+  background-clip: padding-box;      /* Firefox 4, Safari 5, Opera 10, IE 9 */
+}
+
+
+
 .clearfix
 {
   zoom: 1;
