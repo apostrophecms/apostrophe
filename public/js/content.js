@@ -248,17 +248,32 @@ apos.modal = function(sel, options) {
 
     // Escape key should dismiss the top modal, if any
 
-    $(document).on('keyup.aposModal', function(e) {
-      if (e.keyCode === 27) {
-        var topModal = apos.getTopModalOrBody();
-        if (topModal.filter('.apos-modal')) {
-          topModal.trigger('aposModalHide');
-          return false;
-        } else {
-          return true;
+    // $(document).on('keyup.aposModal', function(e) {
+    //   // console.log(e);
+
+    // });
+
+    function closeModal() {
+      var topModal = apos.getTopModalOrBody();
+      if (topModal.filter('.apos-modal')) {
+        topModal.trigger('aposModalHide');
+        return false;
+      } else {
+        return true;
+      }
+    }
+    
+    $( document ).on({
+      'keyup.aposModal': function(e) {
+        if (e.keyCode === 27) {
+          closeModal();
+        }
+      },
+      click: function(e) {
+        if (e.target.className === 'apos-modal-blackout'){
+          closeModal();
         }
       }
-      return true;
     });
   }
 
