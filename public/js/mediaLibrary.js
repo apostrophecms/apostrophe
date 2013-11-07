@@ -15,6 +15,8 @@ function AposMediaLibrary(options) {
     self.$show = self.$el.find('[data-show]');
     self.$normal = self.$show.find('[data-normal-view]');
     self.$bar = self.$el.find('[data-bar]');
+    self.$owner = self.$el.findByName('owner');
+    self.$owner.val(options.owner || 'all');
     self.enableUploads();
     self.$index.bottomless({
       url: options.browseUrl || '/apos/browse-files',
@@ -91,13 +93,28 @@ function AposMediaLibrary(options) {
       return false;
     });
     self.$search = self.$el.find('[name="search"]');
-    self.$search.bind('textchange', function() {
-      self.resetIndex();
-    });
+
+    self.enableSearchField();
 
     // Buttons in the show view that make sense only after an item is chosen
     self.$show.find('[data-edit]').hide();
     self.$show.find('[data-rescue]').hide();
+  };
+
+  self.enableSearchField = function() {
+    // Debounce the textchange event. If we let it fire rapidly,
+    // the second set of results may arrive before the first, with
+    // irrational results
+    var pending = false;
+    self.$search.bind('textchange', function() {
+      if (!pending) {
+        pending = true;
+        setTimeout(function() {
+          self.resetIndex();
+          pending = false;
+        }, 500);
+      }
+    });
   };
 
   self.enableUploads = function() {
@@ -408,7 +425,7 @@ function AposMediaLibrary(options) {
 
   self.getCriteria = function() {
     return {
-      owner: self.$el.findByName('owner').val(),
+      owner: self.$owner.val(),
       sort: self.$el.findByName('sort').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),

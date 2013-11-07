@@ -83,7 +83,7 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 ### Configuring Apostrophe
 
-You'll need to `npm install` the `node-apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
+You'll need to `npm install` the `apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
 
 Here's the `initApos` function of the sample application [http://github.com/punkave/apostrophe-sandbox](apostrophe-sandbox). Notice this function invokes a callback when it's done. `app.js` makes good use of the `async` module to carry out its initialization tasks elegantly. Here we also initialize other modules that snap into Apostrophe:
 
@@ -198,10 +198,12 @@ You can also change the "styles" menu. However keep in mind that each "style" mu
 Of course, sometimes you want to enforce a more specific design for an editable page. You might, for instance, want to require the user to pick a video for the upper right corner. You can do that with `aposSingleton`:
 
 ```twig
-{{ aposSingleton(global, 'my-video', { type: 'video' }) }}
+{{ aposSingleton(global, 'my-video', 'video') }}
 ```
 
-Note that singletons are stored as areas. The only difference is that the interface only displays and edits the first item of the specified type found in the area. There is no rich text editor "wrapped around" the widget, so clicking "edit" for a video immediately displays the video dialog box.
+*Note that you may pass additional options to the widget by passing an object as the fourth argument.*
+
+Singletons are stored as areas. The only difference is that the interface only displays and edits the first item of the specified type found in the area. There is no rich text editor "wrapped around" the widget, so clicking "edit" for a video immediately displays the video dialog box.
 
 Only widgets (images, videos and the like) may be specified as types for singletons. For a standalone rich-text editor that doesn't allow any widgets, just limit the set of controls to those that are not widgets:
 

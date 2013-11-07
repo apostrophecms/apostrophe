@@ -1,3 +1,4 @@
+
 // selective: a jQuery plugin that makes it easy to set or get the
 // current value of a group of selective buttons.
 //
@@ -28,6 +29,19 @@
       $el.data('aposSelective', {});
     }
     var self = $el.data('aposSelective');
+    if (!self) {
+      // There were no matching elements. For instance something
+      // like this happened:
+      //
+      // $('.foo').selective({...})
+      //
+      // And there were no elements with the class foo.
+      //
+      // Standard jQuery practice in this situation is to
+      // be tolerant and not crash (look at what .css does when
+      // find returns no elements).
+      return;
+    }
 
     // If 'options' is a string, look for a command there
     // such as 'get', otherwise set up a new instance

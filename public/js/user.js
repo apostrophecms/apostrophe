@@ -563,11 +563,12 @@ apos.enableTags = function($el, tags) {
 
 apos.enableMediaLibrary = function() {
   $('body').on('click', '.apos-media-library-button', function() {
-    if (!apos.data.mediaLibraryOptions) {
-      apos.data.mediaLibraryOptions = {};
+    apos.log(apos.data.mediaLibrary);
+    if (!apos.data.mediaLibrary) {
+      apos.data.mediaLibrary = {};
     }
-    var constructorName = apos.data.mediaLibraryOptions.constructorName || 'AposMediaLibrary';
-    var mediaLibrary = new window[constructorName](apos.mediaLibraryOptions);
+    var constructorName = apos.data.mediaLibrary.constructorName || 'AposMediaLibrary';
+    var mediaLibrary = new window[constructorName](apos.data.mediaLibrary);
     mediaLibrary.modal();
     return false;
   });
@@ -612,7 +613,7 @@ apos.busy = function($el, state) {
   }
 };
 
-// Do this late so that other code has a chance to set apos.mediaLibraryOptions, etc.
+// Do this late so that other code has a chance to override
 $(function() {
   apos.afterYield(function() {
     apos.enableMediaLibrary();
