@@ -15,6 +15,8 @@ function AposMediaLibrary(options) {
     self.$show = self.$el.find('[data-show]');
     self.$normal = self.$show.find('[data-normal-view]');
     self.$bar = self.$el.find('[data-bar]');
+    self.$owner = self.$el.findByName('owner');
+    self.$owner.val(options.owner || 'all');
     self.enableUploads();
     self.$index.bottomless({
       url: options.browseUrl || '/apos/browse-files',
@@ -423,7 +425,7 @@ function AposMediaLibrary(options) {
 
   self.getCriteria = function() {
     return {
-      owner: self.$el.findByName('owner').val(),
+      owner: self.$owner.val(),
       sort: self.$el.findByName('sort').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),
