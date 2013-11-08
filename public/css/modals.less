@@ -1,0 +1,544 @@
+// MODALS AND DIALOGS
+//
+// These are not restricted to logged-in users, they do get used in
+// other situations
+
+.apos-modal .apos-modal-body
+{
+  // max-height: 450px;
+}
+
+.apos-modal-body .apos-fieldset
+{
+  margin-bottom: 20px;
+  .clearfix;
+
+  label { display: inline-block; }
+}
+
+.apos-hr
+{
+  margin: 10px 0;
+  border-top: 1px solid @apos-grey60;
+}
+
+.apos-modal-body .apos-hr
+{
+  margin: 15px 0px 20px;
+}
+
+.apos-fieldset-text
+{
+  input, textarea
+  {
+    display: block;
+    .apos-input();
+  }
+  textarea {height: 180px;}
+}
+
+.apos-fieldset-radio
+{
+  input
+  {
+    margin-left: 10px;
+  }
+}
+
+.apos-fieldset-select
+{
+  .apos-menu-style
+  {
+    float:none;
+    padding: 0px 20px 0 0;
+    display: inline-block;
+  }
+  select {
+    padding: 7px 28px 8px 11px;
+    top: 1px;
+    margin-left: -4px;
+  }
+}
+
+.apos-fieldset-selective
+{
+  input
+  {
+    // margin-top: 10px;
+    display: block;
+    width: 30%;
+    // height: 2em;
+    padding: 10px;
+  }
+  ul
+  {
+    list-style: none;
+  }
+  li
+  {
+    margin-top: 10px;
+  }
+  .apos-selective-extras
+  {
+    // Allow for the x buttons, they are pretty tall guys
+    padding-top: 10px;
+    // Extra fields shouldn't be so big or pushy
+    input
+    {
+      display: inline-block;
+      width: 20%;
+      margin-left: 5px;
+    }
+    label
+    {
+      display: inline-block;
+      margin-left: 20px;
+    }
+  }
+
+  .ui-sortable
+  {
+    li
+    {
+      background-color: lighten(@apos-base, 30%);
+      padding: 10px 0;
+      border-bottom: 1px solid lighten(@apos-base, 35%);
+      text-transform: uppercase;
+      color: @apos-grey20;
+      letter-spacing: 1px;
+      font-size: 11px;
+
+      &:hover{ cursor: move}
+      &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
+    }
+  }
+
+  .apos-remove
+  {
+    background-color: lighten(@apos-base, 15%);
+    padding: 9px 8px;
+    margin-right: 5px;
+    color: #FFF;
+    &:hover{cursor: pointer; background-color: darken(@apos-base, 10%); text-decoration: none;}
+  }
+}
+
+.apos-propagate input
+{
+  display: inline-block;
+  width: auto;
+  margin: none;
+  margin-left: 20px;
+}
+
+.apos-fieldset-singleton
+{
+  label
+  {
+    float: left;
+  }
+  .apos-area-controls
+  {
+    position: relative;
+    top: inherit;
+    left: inherit;
+  }
+  .apos-slideshow
+  {
+    max-width: 300px;
+    margin: inherit;
+  }
+}
+
+.apos-fieldset-icon
+{
+  height: 50px;
+  label
+  {
+    visibility: hidden;
+    width: 0px;
+    &:before
+    {
+      visibility: visible;
+      color: lighten(@apos-grey, 15%);
+      width: auto;
+      padding: 12px 14px;
+      background: lighten(@apos-grey, 75%);
+      font-size: 1.2em;
+      width: 14px
+    }
+  }
+  input
+  {
+    display: inline;
+    width: inherit;
+    -webkit-appearance: none;
+    border: 0;
+    background-color: #FFF !important;
+    height: 39px;
+    position: relative;
+    top: -3px;
+    left: -10px;
+    width: 266px;
+    &:focus{border:none; outline: none; background-color: #FFF;}
+  }
+  input:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px white inset;
+    }
+
+}
+
+.apos-fieldset-editor
+{
+  background-color: inherit;
+  label
+  {
+    float:left;
+    display: inline-block;
+  }
+  > div
+  {
+    float: left;
+    width: 100%;
+  }
+  textarea
+  {
+    width: 80%;
+    border: 0;
+    min-height: 180px;
+  }
+  textarea{display: block; clear: both;}
+}
+
+.apos-modal .apos-modal-body .apos-position input,
+.apos-modal .apos-modal-body .apos-size input
+{
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.apos-modal .apos-modal-footer
+{
+  margin-top: 10px;
+}
+
+
+.apos-modal-blackout
+{
+  background-color: black;
+  opacity: 0.6;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  // Just below first modal, do not use >= 899 for other things please
+  z-index: 899;
+}
+
+.apos-modal
+{
+  top: 100px;
+  position: absolute;
+  width: 800px;
+  background-color: #ddd;
+  opacity: 1.0;
+  // Do not use >= 899 for other things please
+  z-index: 900;
+  // padding: 10px;
+  // * {.apos-montserrat; color: @apos-grey;}
+  strong {.apos-montserrat-bold;}
+  .apos-button{color: #FFF;}
+  h3
+  {
+    background: @apos-base;
+    color: #fff;
+    padding: 15px;
+    margin-bottom: 0px;
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .apos-modal-body
+  {
+    padding: 15px;
+
+    .apos-instructions
+    {
+      display: block;
+      // margin-bottom: 20px;
+      line-height: 1.7em;
+      background-color: lighten(@apos-grey,90%);
+      font-family:'cabinmedium';
+      font-size: 12px;
+      text-transform: none;
+      padding: 11px 14px;
+    }
+
+    form
+    {
+      input
+      {
+        border: none;
+      }
+
+      label
+      {
+        color: @apos-grey10;
+        letter-spacing: 1px;
+        background: @apos-grey60;
+        padding: 9px 12px;
+        font-size: 12px;
+        font-family: 'cabinbold';
+        text-transform: uppercase;
+        font-size: 10px;
+        &.short
+        {
+          display: inline-block;
+          .clearfix;
+        }
+      }
+
+
+      select
+      {
+        position: relative;
+        -webkit-appearance:none;
+           -moz-appearance:none;
+        border: none;
+        background: @apos-base;
+        border-radius: 0px;
+        color: #FFF;
+
+
+        option
+        {
+          &:hover
+          {
+            background: red;
+          }
+        }
+      }
+
+      input, select, option
+      {
+        &:focus
+        {
+          outline: none;
+        }
+      }
+      .apos-stacked-fieldset
+      {
+        background-color: transparent;
+        label
+        {
+          display: inline-block;
+        }
+        input, textarea
+        {
+          max-width: none;
+          width: 100%;
+          margin-left: 0;
+          outline:none;
+          border:none;
+        }
+        textarea
+        {
+          height: 180px;
+        }
+      }
+    }
+  }
+
+  .apos-modal-footer
+  {
+    padding: 15px;
+    .clearfix;
+
+    .apos-modal-footer-buttons
+    {
+      float: right;
+    }
+
+    .apos-button
+    {
+      font-family: 'cabin';
+      font-size:10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 25px;
+    }
+  }
+  // padding: 10px;
+  // border: 3px solid #ccc;
+  // color: black;
+}
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+// NEW MODAL STYLES /////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+.apos-modal
+{
+  .clearfix;
+  color: #6d6e70;
+  
+  .apos-modal-body { padding: 0px; .clearfix; }
+
+  .apos-modal-header
+  {
+    .clearfix;
+    padding: 25px;
+    background: #eee;
+    
+    .apos-modal-header-label
+    {
+      width: 20%;
+      float: left;
+    }
+    .apos-title-and-slug
+    {
+      float: left;
+      width: 60%;
+    }
+
+    .apos-slug-label
+    {
+      display: inline-block;
+      text-transform: none;
+      width: 58%;
+    }
+
+    .apos-fieldset
+    {
+      label, input { display: inline-block; }
+      label { display: none; }
+      input[type="text"]{ width: 100%; max-width: none; }
+
+      &.apos-fieldset-slug
+      {
+        display: inline-block;
+        margin-top: 5px;
+        width: 40%;
+        input { padding: 4px; width: 100%; }
+      }
+    }
+  }
+
+  // MODAL TAB COMPONENT ///////////////////////////////////////////////////
+
+  .apos-modal-tabs
+  {
+    .clearfix;
+    clear: both;
+    background: #fff;
+    border-top: 1px solid #ddd;
+
+    .apos-modal-tab-control
+    {
+      float: left;
+      width: 20%;
+      min-height: 480px;
+      background: #eee;
+
+      .apos-modal-tab-title
+      {
+        display: block;
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        padding: 15px 25px;
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+        cursor: pointer;
+        font-family: 'Montserrat';
+        // background: #eee;
+
+        &.apos-active
+        {
+          padding-left: 20px;
+          border-left: 5px solid @apos-base;
+          background: #fff;
+          border-right: 1px solid transparent;
+          -webkit-box-shadow: 0px 1px 5px rgba(0,0,0,0.1); 
+                  box-shadow: 0px 1px 5px rgba(0,0,0,0.1); 
+          
+          
+          &:hover
+          {
+            color: @apos-base;
+            
+          }
+        }
+
+        &:hover
+        {
+          color: @apos-base;
+        }
+      }
+    }
+
+    .apos-modal-tab
+    {
+      float: left;
+      position: relative;
+      z-index: 100;
+      width: 80%;
+      background: #FFF;
+      display: none;
+
+      &.apos-active
+      {
+        display: block;
+      }
+       
+      .apos-modal-tab-content
+      {
+        padding: 25px 40px;
+      }     
+    }
+  }
+
+  ///////// END TABS
+
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// BASE FORM STYLES //////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+.apos-modal
+{
+  form
+  {
+    .apos-fieldset,
+    .apos-fieldset-text
+    {
+      label
+      {
+        font-family: 'Montserrat';
+      }
+      input
+      {
+        border: 1px solid #ddd;
+        -webkit-box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+                box-shadow: 0px 1px 5px rgba(0,0,0,0.1);   
+      }
+
+      .apos-select-wrapper
+      {
+        select { border: 1px solid @apos-base; }
+        .apos-select-arrow { margin-top: -8px; background-color:@apos-base; }
+      }
+    }
+  }
+}

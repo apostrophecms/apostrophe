@@ -788,10 +788,13 @@ apos.capitalizeFirst = function(s) {
   return s.charAt(0).toUpperCase() + s.substr(1);
 };
 
-// Enable toggles. Note the use of $('body').on('click', 'selector'...)
-// to avoid problems with elements added later
+// Everything in this DOMready block must be an event handler
+// on 'body', optionally filtered to apply to specific elements,
+// so that it can work on elements that don't exist yet.
 
 $(function() {
+  // Enable toggles. Note the use of $('body').on('click', 'selector'...)
+  // to avoid problems with elements added later
   $('body').on('click', '.apos-accordion-title', function(event){
     // $(this).parent().find('.apos-accordion-items').toggleClass('open');
     $(this).parent().toggleClass('open');
@@ -806,4 +809,12 @@ $(function() {
   $('body').on('click', '.apos-accordion-items .apos-control', function() {
     $(this).closest('.apos-admin-bar-item').removeClass('open');
   });
+
+  //sets up listeners for tabbed modalS
+  $('body').on('click', '.apos-modal-tab-title', function(){
+    $(this).closest('.apos-modal-tabs').find('.apos-active').removeClass('apos-active');
+    $(this).closest('.apos-modal-tabs').find('[data-tab-id="'+$(this).attr('data-tab')+'"]').addClass('apos-active');
+    $(this).addClass('apos-active');
+  });
+
 });
