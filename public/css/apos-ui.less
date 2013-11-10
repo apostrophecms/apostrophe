@@ -5,12 +5,17 @@
   display: inline-block;
   background: rgba(255,255,255,0.25);
   padding: 4px;
-  
   -webkit-border-radius: 2px;
           border-radius: 2px;
   -webkit-box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
           box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
 
+
+  &.left
+  {
+    top: 8px;
+    left: 8px;
+  }
 
   &.right
   {
@@ -27,14 +32,12 @@
 
 .apos-ui
 {
-  color: white;
   text-transform: uppercase;
   font-family: 'Cabin';  
   letter-spacing: 0.25em;
   font-size: 11px;
   font-weight: bold;  
 }
-
 
 .apos-singleton .apos-ui-container
 {
@@ -46,10 +49,12 @@
 .apos-ui-container .apos-button
 {
   .apos-ui;
+  color: white;
   display: inline-block;
   min-width: 36px;
   line-height: 14px;
   background: @apos-base;
+  margin-right: 0px;
   
   text-shadow: 0.2em 0.1em rgba(0,0,0,0.2);
   padding: 0.65em 1em;

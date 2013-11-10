@@ -1,0 +1,41 @@
+.apos-ui-dropdown
+{
+  position: relative;
+  z-index: 5;
+  margin-bottom: 10px;
+
+  .apos-ui-menu
+  {
+    z-index: 2;
+    position: absolute;
+    overflow: hidden;
+    -webkit-border-radius: 2px;
+            border-radius: 2px;
+    
+    padding-top: 16px;
+    
+    &::before
+    {
+      content: '';
+      position: absolute;
+      border: 6px solid transparent;
+      border-bottom: 6px solid #282E2D;
+      top: 4px;
+      left: 12px;
+    }
+
+    li
+    {
+      min-width: 200px;
+      padding: 5px 10px;
+      background: #282E2D;
+      cursor: pointer;
+      &:hover { background: #1B1D1C; }
+      border-bottom: 1px solid #393D3D;
+      &:last-child
+      {
+        border-bottom: 0px;
+      }
+    }
+  }
+}

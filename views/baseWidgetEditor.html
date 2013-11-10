@@ -7,33 +7,22 @@
       Edit Widget
     {% endblock %}
   </h3>
-  <div class="apos-modal-body">
-    <form>
+
+  <form>
+    <div class="apos-modal-body apos-ui">    
       <label class='apos-instructions'>
         {% block instructions %}
           Paste a widget link.
         {% endblock %}
       </label>
-      {# Certain widgets, like the slideshow, are best off overriding all of this at one go #}
       {% block formAll %}
         {% block formBody %}
           <input class="apos-embed"/>
         {% endblock %}
-        {% block previewButton %}
-          <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/>
-          <!-- <img data-spinner="data-spinner" src="/apos/images/spinner.gif" class="apos-spinner"/> -->
-          {% include "progress.html" %}
-        {% endblock %}
-        <div class="apos-widget-preview-container apos-requires-preview">
-          {# We decided to move float preview into the main area editor so #}
-          {# this preview is just for things whose appearance is not obvious #}
-          {# or which require custom settings be tweaked (example: RSS feed) #}
-        </div>
-        {% block formAfterPreview %}
-        {% endblock %}
       {% endblock %}
-    </form>
-  </div>
+    </div>
+  </form>
+
   <div class="apos-modal-footer">
     {% block additionalFooterItems %}
     {% endblock %}

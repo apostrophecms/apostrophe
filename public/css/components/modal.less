@@ -494,6 +494,22 @@
       width: 80%;
       background: #FFF;
       display: none;
+      max-height: 480px;
+      overflow-y: scroll;
+      
+      &::-webkit-scrollbar {
+          width: 10px;
+      }
+       
+      &::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2); 
+      }
+       
+      &::-webkit-scrollbar-thumb {
+        background-color: @apos-base;
+          -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.3); 
+      }
+      
 
       &.apos-active
       {
@@ -506,9 +522,7 @@
       }     
     }
   }
-
   ///////// END TABS
-
 }
 
 
@@ -530,8 +544,15 @@
       input
       {
         border: 1px solid #ddd;
+        -webkit-transition: border 0.2s ease;
         -webkit-box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
-                box-shadow: 0px 1px 5px rgba(0,0,0,0.1);   
+                box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+        
+        &:focus
+        {
+          outline: none;
+          border: 1px solid @apos-base;
+        }
       }
 
       .apos-select-wrapper
