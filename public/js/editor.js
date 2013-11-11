@@ -658,8 +658,11 @@ function AposEditor(options) {
 
   self.init = function() {
     self.$el = $(options.selector);
-    // So serialize can be invoked from the outside world
+    // So serialize can be invoked from the outside world in a standardized way
+    // For code expecting a standalone editor
     self.$el.data('editor', self);
+    // For code expecting an apos-area as the wrapper
+    self.$el.closest('.apos-area').data('editor', self);
     // The contenteditable element inside the wrapper div
     self.$editable = self.$el.find('[data-editable]');
 
