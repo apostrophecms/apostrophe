@@ -43,7 +43,6 @@ apos.addWidgetType = function(typeName, defaultConstructorName) {
     try {
       apos.widgetTypes[typeName] = {
         label: Constructor.label,
-        getContent: Constructor.getContent,
         editor: Constructor
       };
     } catch (e) {
@@ -144,7 +143,7 @@ apos.enableAreas = function() {
           {
             slug: slug,
             options: area.attr('data-options'),
-            content: apos.stringifyArea(area.find('[data-editable]'))
+            content: apos.stringifyArea(area)
           }, function(data) {
             area.find('.apos-content').html(data);
             destroyEditorAndShowNormalView();
@@ -212,171 +211,6 @@ apos.enableAreas = function() {
   });
 };
 
-apos.parseArea = function(content) {
-  var items = [];
-
-  // Helper functions
-
-  // We build up richText as we sweep through DOM nodes that are
-  // not widgets. Flush it by creating a new apostrophe item if it is
-  // not empty.
-
-  var richText = '';
-
-  function flushRichText() {
-    if (!richText.length) {
-      return;
-    }
-    // Remove invisible markers used to ensure good behavior of
-    // webkit inside contenteditable. Some browsers render these
-    // as boxes (Windows Chrome) if they see them and the font is
-    // a custom one that doesn't explicitly address this code point
-    richText = apos.globalReplace(richText, apos.beforeMarker, '');
-    richText = apos.globalReplace(richText, apos.afterMarker, '');
-
-    // One more pass through the DOM (sorry!) to locate runs of
-    // elements that are not block elements and box them in divs
-    // so that styling content is much easier
-
-    var oldBox = document.createElement('div');
-    var newBox = document.createElement('div');
-    oldBox.innerHTML = richText;
-    var children = oldBox.childNodes;
-    var child;
-
-    var fold = [];
-    function flushNewDiv() {
-      var i;
-      var newDiv;
-      if (fold.length) {
-        newDiv = document.createElement('div');
-        for (i = 0; (i < fold.length); i++) {
-          // Never just fold the node, always clone it, because
-          // otherwise are still messing up the length of the children array
-          newDiv.appendChild(fold[i].cloneNode(true));
-        }
-        fold = [];
-        newBox.appendChild(newDiv);
-      }
-    }
-
-    for (var i = 0; (i < children.length); i++) {
-      child = children[i];
-      if (_.contains([ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'p', 'pre', 'table', 'ul', 'ol', 'nl' ], child.nodeName.toLowerCase()))
-      {
-        flushNewDiv();
-        // Clone it so we don't mess with the length of "children"
-        newBox.appendChild(child.cloneNode(true));
-      } else {
-        fold.push(child);
-      }
-    }
-    flushNewDiv();
-    items.push({ type: 'richText', content: newBox.innerHTML });
-    richText = '';
-  }
-
-  // Pull it into jQuery land for a few cleanups best done there
-
-  var changedInJquery = false;
-  var $content = $($.parseHTML('<div data-apos-hoist-wrapper>' + content + '</div>'));
-
-  // Remove table editing controls
-  $content.find('table').each(function(i, table) {
-    var $table = $(this);
-    if ($table.closest('.apos-widget').length) {
-      return;
-    }
-    // TODO: this duplicates the editor object's dropTableControls, which is
-    // not great
-    $table.find('[data-control-row]').remove();
-    // all th elements are controls
-    $table.find('th').remove();
-    changedInJquery = true;
-  });
-
-  var $placeholder = $content.find('[data-placeholder-br]');
-  if ($placeholder.length) {
-    $placeholder.remove();
-    changedInJquery = true;
-  }
-
-  // While we have it in jQuery, seize the opportunity to blow out any
-  // ui-resizable-handles that are still in the DOM
-  var $handles = $content.find('.ui-resizable-handle');
-  if ($handles.length) {
-    $handles.remove();
-    changedInJquery = true;
-  }
-  var $widgets = $content.find('[data-type]');
-  $widgets.each(function() {
-    var $widget = $(this);
-    if ($widget.parents('[data-type]').length) {
-      // Ignore widgets nested in widgets, which may be present when we
-      // work with reuse tools like the blog widget but are not really
-      // being edited
-      return;
-    }
-    var $parent = $widget.parent();
-    if (!$parent.is('[data-apos-hoist-wrapper]')) {
-      // Hoist the widget
-      $widget.detach();
-      $parent.before($widget);
-      changedInJquery = true;
-    }
-  });
-  if (changedInJquery) {
-    content = $content.html();
-  }
-
-  // Push it into the DOM and loop over all nodes, including
-  // text nodes, building apostrophe items
-
-  var node = document.createElement('div');
-  node.innerHTML = content;
-  var children = node.childNodes;
-  for (var i = 0; (i < children.length); i++) {
-    var child = node.childNodes[i];
-    if (child.nodeType === 3) {
-      // This is a text node. Take care to escape when appending it
-      // to the rich text
-      richText += apos.escapeHtml(child.nodeValue);
-
-    } else if (child.nodeType === 1) {
-      if (child.getAttribute('data-type')) {
-        // This is a widget, it gets its own entry in items
-        flushRichText();
-
-        var type = child.getAttribute('data-type');
-        var item = {};
-        if (apos.widgetTypes[type].getContent) {
-          item.content = apos.widgetTypes[type].getContent($(child));
-        }
-
-        var data = apos.getWidgetData($(child));
-        _.extend(item, data);
-        items.push(item);
-      } else {
-        // This is a rich text element like <strong> or <h3>.
-        // We need the markup for the entire thing
-        richText += $(child).getOuterHTML();
-      }
-    }
-  }
-  // Don't forget to flush any rich text that appeared after the last widget,
-  // and/or if there are no widgets!
-  flushRichText();
-  return items;
-};
-
-// The best marker to use as a workaround for webkit selection bugs
-// is an invisible one (the ZERO WIDTH NO-BREAK SPACE character).
-// We tried using 8288 (the WORD JOINER character), but it shows as
-// a box in Windows Chrome regardless of font. -Tom
-
-apos.beforeMarker = String.fromCharCode(65279); // was '↢';
-apos.afterMarker = String.fromCharCode(65279); // was '↣';
-
 (function() {
   /* jshint devel: true */
   apos.log = function(msg) {
@@ -439,8 +273,8 @@ apos.jsonAttribute = function(value) {
 
 // We often submit the content of an area as part of a regular POST. This is
 // a good way to pack it up
-apos.stringifyArea = function($editable) {
-  return JSON.stringify(apos.parseArea($editable.html()));
+apos.stringifyArea = function($area) {
+  return JSON.stringify($area.data('editor').serialize());
 };
 
 // Reusable utility to watch one jquery element's value and use it to

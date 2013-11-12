@@ -16,10 +16,15 @@ function AposWidgetEditor(options) {
   // What will be in the data attributes of the widget
   self.data = {};
 
-  // When present in the context of a rich text editor, we interrogate
-  // our placeholder div in that editor to get our current attributes
-  if (options.widgetId) {
+  // Figure out our existing properties from our DOM attributes
+  if (options.$widget) {
+    // AposEditor2 just passes us a jQuery element
+    self.$widget = options.$widget;
+  } else if (options.widgetId) {
+    // AposEditor classic insists on making us drive
     self.$widget = options.editor.$editable.find('.apos-widget[data-id="' + options.widgetId + '"]');
+  }
+  if (self.$widget) {
     self.data = apos.getWidgetData(self.$widget);
   }
 
@@ -40,7 +45,7 @@ function AposWidgetEditor(options) {
   }
 
   // Careful, relevant only when we are in a rich text editor context
-  if (self.editor) {
+  if (self.editor && self.editor.$editable) {
     // Make sure the selection we return to
     // is actually on the editor
     self.editor.$editable.focus();
@@ -140,36 +145,7 @@ function AposWidgetEditor(options) {
     if (!self.editor) {
       return;
     }
-
-    // Newly created widgets need default position and size
-    self.$widget.attr('data-position', 'middle');
-    self.$widget.attr('data-size', 'full');
-    self.$widget.addClass('apos-middle');
-    self.$widget.addClass('apos-full');
-
-    var markup = '';
-
-    // Work around serious widget selection bugs in Chrome by introducing
-    // characters before and after the widget that become part of selecting it
-    var before = apos.beforeMarker;
-    var after = apos.afterMarker;
-
-    markup = before;
-
-    var widgetWrapper = $('<div></div>').append(self.$widget);
-    markup += widgetWrapper.html();
-
-    markup += after;
-
-    // markup = markup + String.fromCharCode(65279);
-
-    // Restore the selection to insert the markup into it
-    apos.popSelection();
-    // Not we can insert the markup
-    apos.insertHtmlAtCursor(markup);
-    // Push the selection again, leaving it up to modal('hide')
-    // to do the final restore
-    apos.pushSelection();
+    self.editor.insertWidget(self.$widget);
   };
 
   // Populate self.$previewContainer with a preview of the widget's appearance. Used to
@@ -259,7 +235,9 @@ function AposWidgetEditor(options) {
             return callback('error');
           }
           if (self.editor) {
-            self.editor.undoPoint();
+            if (self.editor.undoPoint) {
+              self.editor.undoPoint();
+            }
             var _new = false;
             if (!self.$widget) {
               self.createWidget();
@@ -296,5 +274,5 @@ function AposWidgetEditor(options) {
       }
     });
   };
-};
+}
 
