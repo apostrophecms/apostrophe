@@ -624,7 +624,7 @@
   height: 100%;
   width: 100%;
   top: 0;
-  font-size: 3em;
+  font-size: 2.5em;
   right: 0;
   position: absolute;
   border: 7px dashed darken(@apos-base, 20%);
@@ -636,23 +636,56 @@
     bottom: 0;
     right: 0;
     left: 0;
+    width: 40%;
     display: block;
+    line-height: 1.1em;
     margin: auto;
   }
 }
+
 .apos-upload-disabled
 {
+  .apos-file-styled{opacity: 0.5 !important;}
+  .apos-file-styled:hover,
+  .apos-file-styled-container .apos-file-input:hover
+  {
+    cursor: auto;
+  }
+  .apos-file-styled
+  {
+    &:after
+    {
+      content: "Oops! This slideshow is full.";
+      width: 75%;
+      text-align: center;
+      color: #B8B8B8;
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      margin: auto;
+      font-weight: 700;
+    }
+  }
   .apos-media-file-in-message,
   .apos-slideshow-file-in-message
   {
-    background-color: fade(red, 60%);
-    border: 7px dashed fade(red, 80%);
+    background-color: fade(@apos-grey10, 95%);
+    border: 7px dashed black;
     span
     {
       height: 100px;
-      width: 70%;
+      width: 40%;
     }
   }
+  .apos-file-styled-container
+  {
+    .apos-file-styled
+    {
+      background-color: @apos-grey70;
+    }
+  }
+  .apos-file-styled { opacity: 0.8; }
 }
 
 .apos-limit-reached
@@ -956,6 +989,14 @@
       .apos-media-chooser-add
       {
         opacity: 0.9;
+      }
+    }
+    .apos-upload-disabled .apos-media-chooser-item:hover
+    {
+      cursor: auto;
+      .apos-media-chooser-add
+      {
+        opacity: 0;
       }
     }
   .apos-library-pager,
