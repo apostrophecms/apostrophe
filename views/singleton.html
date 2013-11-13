@@ -1,8 +1,8 @@
 <div class="apos-singleton" {% if slug %} data-slug="{{ slug }}" {% endif %} data-type="{{ type }}" data-options="{{ options | jsonAttribute }}">
   <div class="apos-normal-view">
     {%- if edit -%}
-      <div class="apos-area-controls">
-        <a class="apos-control apos-button apos-edit-singleton" href="#">{{ options.verb or itemType.verb or 'Edit' }} {{ options.label or itemType.label }}</a>
+      <div class="apos-ui-container">
+        <a class="apos-control apos-button apos-edit-singleton" href="#"><i class="icon-pencil"></i> {{ options.verb or itemType.verb or 'Edit' }} {{ options.label or itemType.label }}</a>
       </div>
       <div class="apos-clear"></div>
     {%- endif -%}

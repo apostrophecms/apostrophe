@@ -1,6 +1,6 @@
-@import 'utils.less';
 @import 'colors.less';
-//@import 'icons.less';
+@import 'utils.less';
+// @import 'icons.less';
 @import 'typography.less';
 @import '../jcrop/css/jquery.Jcrop.less';
 
@@ -107,18 +107,6 @@
   }
 }
 
-.apos-toolbar
-{
-  .apos-control
-  {
-    // margin-right: 2px;
-    // padding: 5px;
-    // margin-right: 0px;
-    // border-left: 1px solid #fff;
-    // border-top: 1px solid #fff;
-  }
-
-}
 
 /* apos buttons for areas */
 .apos-area,
@@ -613,21 +601,19 @@
 {
   // padding: ;
 }
+
+.apos-media-file-in,
 .apos-slideshow-file-in
 {
+  .apos-media-file-in-message,
   .apos-slideshow-file-in-message
+
   {
     display: block;
   }
 }
-.apos-media-file-in
-{
-  .apos-media-file-in-message
-  {
-    display: block;
-  }
-}
-.apos-media-file-in-message
+.apos-media-file-in-message,
+.apos-slideshow-file-in-message
 {
   display:none;
   z-index: 20;
@@ -638,15 +624,68 @@
   height: 100%;
   width: 100%;
   top: 0;
-  font-size: 3em;
+  font-size: 2.5em;
   right: 0;
   position: absolute;
+  border: 7px dashed darken(@apos-base, 20%);
   span
   {
-    position: relative;
+    position: absolute;
+    height: 56px;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 40%;
     display: block;
-    padding-top: 30px;
+    line-height: 1.1em;
+    margin: auto;
   }
+}
+
+.apos-upload-disabled
+{
+  .apos-file-styled{opacity: 0.5 !important;}
+  .apos-file-styled:hover,
+  .apos-file-styled-container .apos-file-input:hover
+  {
+    cursor: auto;
+  }
+  .apos-file-styled
+  {
+    &:after
+    {
+      content: "Oops! This slideshow is full.";
+      width: 75%;
+      text-align: center;
+      color: #B8B8B8;
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      margin: auto;
+      font-weight: 700;
+    }
+  }
+  .apos-media-file-in-message,
+  .apos-slideshow-file-in-message
+  {
+    background-color: fade(@apos-grey10, 95%);
+    border: 7px dashed black;
+    span
+    {
+      height: 100px;
+      width: 40%;
+    }
+  }
+  .apos-file-styled-container
+  {
+    .apos-file-styled
+    {
+      background-color: @apos-grey70;
+    }
+  }
+  .apos-file-styled { opacity: 0.8; }
 }
 
 .apos-limit-reached
@@ -717,7 +756,16 @@
       left: 0;
     }
   }
-  &.apos-upload-disabled .apos-slideshow-file-in-message { background-color: red; &:hover{cursor: wait; } }
+  &.apos-upload-disabled 
+  {
+    // background-color: fade(red, 20%);
+    .apos-slideshow-file-in-message
+    { 
+      // background-color: red; 
+      &:hover{cursor: wait; }
+    }
+  }
+  
 }
 
 
@@ -941,6 +989,14 @@
       .apos-media-chooser-add
       {
         opacity: 0.9;
+      }
+    }
+    .apos-upload-disabled .apos-media-chooser-item:hover
+    {
+      cursor: auto;
+      .apos-media-chooser-add
+      {
+        opacity: 0;
       }
     }
   .apos-library-pager,
@@ -2184,13 +2240,13 @@ body .ui-tooltip
     }
   }
   // Tom's simple buttons
-  a:not(.apos-control)
-  {
-    display: inline-block;
-    padding: 4px;
-    background-color: white;
-    margin-right: 10px;
-  }
+  // a:not(.apos-control)
+  // {
+  //   display: inline-block;
+  //   padding: 4px;
+  //   background-color: white;
+  //   margin-right: 10px;
+  // }
   .apos-tag-rename-form
   {
     input
