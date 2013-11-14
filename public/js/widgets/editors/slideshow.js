@@ -709,9 +709,9 @@ function AposSlideshowWidgetEditor(options)
       reflect();
       self.preview();
       self.$el.find('[data-limit-reached]').hide();
-      self.$el.find('[data-uploader-container]').show();
+      self.$el.find('[data-uploader]').prop('disabled',false);
       self.$el.find('[data-drag-container]').removeClass('apos-upload-disabled');
-      self.$el.find('[data-drag-message]').text('Drop Files Here');
+      self.$el.find('[data-drag-message]').text('Drop Files Here.');
       self.$el.find('[data-drag-container]').off('drop');
       return false;
     });
@@ -722,9 +722,9 @@ function AposSlideshowWidgetEditor(options)
     if (limit && (count >= limit)) {
       self.$el.find('[data-limit]').text(limit);
       self.$el.find('[data-limit-reached]').show();
-      self.$el.find('[data-uploader-container]').hide();
+      self.$el.find('[data-uploader]').prop('disabled',true);
       self.$el.find('[data-drag-container]').addClass('apos-upload-disabled');
-      self.$el.find('[data-drag-message]').text('The Upload Limit Has Been Reached');
+      self.$el.find('[data-drag-message]').text('Oops! This slideshow is full.');
 
       // prevents drop action so that users dropping files into
       // a a 'full' slideshow dont get thrown to an image file
