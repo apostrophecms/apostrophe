@@ -28,7 +28,7 @@
           {% if message %}<div class="warning">{{ message }}</div>{% endif %}
           {% block fields %}
             <div class="login-username">
-              <label>Username or Email {% block usernameHint %}{% endblock %}</label>
+              <label>Username<br />or Email {% block usernameHint %}{% endblock %}</label>
               <input type="text" name="username" />
             </div>
             <div class="login-password">
