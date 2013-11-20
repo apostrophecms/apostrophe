@@ -259,13 +259,18 @@ function AposMediaLibrary(options) {
     $downloadOriginal.html('');
     $downloadOriginal.append($link);
 
-    // Show the edit button or the rescue button
-    if (item.trash) {
-      self.$show.find('[data-rescue]').show();
-      self.$show.find('[data-edit]').hide();
+    // Show the edit button or the rescue button, but only if we can edit
+    if (item._edit) {
+      if (item.trash) {
+        self.$show.find('[data-rescue]').show();
+        self.$show.find('[data-edit]').hide();
+      } else {
+        self.$show.find('[data-rescue]').hide();
+        self.$show.find('[data-edit]').show();
+      }
     } else {
       self.$show.find('[data-rescue]').hide();
-      self.$show.find('[data-edit]').show();
+      self.$show.find('[data-edit]').hide();
     }
   };
 
