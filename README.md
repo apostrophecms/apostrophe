@@ -83,82 +83,8 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 ### Configuring Apostrophe
 
-You'll need to `npm install` the `apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
-
-Here's the `initApos` function of the sample application [http://github.com/punkave/apostrophe-sandbox](apostrophe-sandbox). Notice this function invokes a callback when it's done. `app.js` makes good use of the `async` module to carry out its initialization tasks elegantly. Here we also initialize other modules that snap into Apostrophe:
-
-```javascript
-function initApos(callback) {
-  require('apostrophe-twitter')({ apos: apos, app: app });
-  require('apostrophe-rss')({ apos: apos, app: app });
-
-  async.series([initAposMain, initAposPages], callback);
-
-  function initAposMain(callback) {
-    console.log('initAposMain');
-    return apos.init({
-      db: db,
-      app: app,
-      uploadfs: uploadfs,
-      permissions: aposPermissions,
-      // Allows us to extend shared layouts
-      partialPaths: [ __dirname + '/views/global' ]
-    }, callback);
-  }
-
-  function initAposPages(callback) {
-    console.log('initAposPages');
-    pages = require('apostrophe-pages')({ apos: apos, app: app }, callback);
-  }
-}
-```
-
-"Where does db come from?" It's a MongoDB native database connection. (Hint: convenient to set up with Appy, or just use mongodb-native yourself.) Apostrophe's `getArea`, `putArea`, `getPage`, `putPage` and `get` methods utilize these.
-
-"What is `app`?" `app` is your Express 3.0 app object. See the Express documentation for how to create an application. Again, Appy helps here.
-
-"What is `uploadfs`?" [http://github.com/punkave/uploadfs](uploadfs) is a module that conveniently stores uploaded files in either the local filesystem or S3, whichever you like. See `app.js` in the `apostrophe-sandbox` project for an example of configuration. You'll create an `uploadfs` instance, initialize it and then pass it in here.
-
-"What is `aposPermissions`?" A function you define to decide who is allowed to edit content. If you skip this parameter, Apostrophe allows everyone to edit everything - not safe in production of course, but convenient in the early development stages.
-
-To understand configuration in detail, you should really check out `app.js`. Please don't suffer without reading that simple and well-commented example.
-
-### Making Sure Apostrophe Is In The Browser
-
-Before we can add rich content areas to a webpage with Apostrophe, we need to make sure Apostrophe's CSS, JavaScript and widget editor templates are present in the page. Apostrophe adds convenience functions to your template language to accomplish that without a fuss.
-
-You will also need to make appropriate browser-side JavaScript calls to enable the "edit" buttons of areas and to enable video players in Apostrophe content.
-
-Here's a simple `layout.html` Nunjucks template that includes everything Apostrophe needs:
-
-```twig
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    {{ aposStylesheets() }}
-    <link href="/css/my.css" rel="stylesheet" />
-    {{ aposScripts() }}
-  </head>
-  <body>
-    {% block body %}
-    {% endblock %}
-    {{ aposTemplates() }}
-  </body>
-  <script type="text/javascript">
-    // Wait for domready!
-    $(function() {
-      apos.enableAreas();
-      apos.enablePlayers();
-    });
-  </script>
-</html>
-```
-
-Note the `body` block, which can be overridden in any template that `extend`s this template. Jade has an identical feature.
-
-"What if I hate the way you're loading CSS and JavaScript? What if I hate the version of jQuery you're loading?" Don't use the convenience functions. Instead examine Apostrophe's `scripts.html` and `stylesheets.html` templates and make sure you are loading the same functionality.
-
-"Do I have to load all this stuff if I am certain the user has no editing privileges?" No. To make your pages lighter, if you know the user won't be editing, you can get by with just `content.css`, jQuery and `content.js`. We haven't spent much time testing this scenario yet. Pull requests to make it more convenient are welcome.
+Use the [http://github.com/punkave/apostrophe-site](apostrophe-site) module to configure your project. It is possible to configure a site without it; if you
+really want to, check out the source of the apostrophe-site module. But you really don't want to.
 
 ### Adding Editable Areas To Your Templates
 
