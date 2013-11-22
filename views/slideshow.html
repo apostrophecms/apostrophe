@@ -10,10 +10,10 @@
         {# Make the first image initially current #}
         <li data-slideshow-item class="apos-slideshow-item {% if loop.first %}apos-current apos-first {% endif %}{% if loop.last %}apos-last {% endif %}" style="background-image:url({{ aposFilePath(file, { size: size, crop: item.crop }) }});">
           <img class="apos-slideshow-image" alt="{{file.title | e}}" data-image src="{{ aposFilePath(file, { size: size, crop: item.crop }) }}" />
-          {% if (item.showDescriptions and file.description) or file.hyperlink or (item.showTitles and file.title) %}
+          {% if (item.showDescriptions and file.description and (not options.userOptions.disableDescriptions)) or file.hyperlink or (item.showTitles and file.title and (not options.userOptions.disableTitles)) %}
             <div class="apos-slideshow-description-container{% if not file.hyperlink %} no-link {% endif %}">
-              {% if item.showTitles and file.title %}<h1 class="apos-slideshow-title">{{ file.title | e }}</h1>{% endif %}
-              {% if item.showDescriptions and file.description %}
+              {% if item.showTitles and file.title and (not options.userOptions.disableTitles) %}<h1 class="apos-slideshow-title">{{ file.title | e }}</h1>{% endif %}
+              {% if item.showDescriptions and file.description and (not options.userOptions.disableDescriptions) %}
                 <div class="apos-slideshow-description">
                   <p>
                     {# Don't render HTML tags, do respect line breaks #}
@@ -32,9 +32,9 @@
               {% endif %}
             </div>
           {% endif %}
-          {% if item.showCredit and file.credit %}
+          {% if item.showCredits and file.credit and (not options.userOptions.disableCredits) %}
             <div class="apos-slideshow-credit">
-              {{ file.credit }}
+              {{ file.credit | e }}
             </div>
           {% endif %}
         </li>
