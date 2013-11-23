@@ -36,6 +36,15 @@
   {{ formText(name, label) }}
 {% endmacro %}
 
+{# Typically we enhance this with jquery ui datepicker later #}
+{% macro formDate(name, label) %}
+  {{ formText(name, label) }}
+{% endmacro %}
+
+{% macro formTime(name, label) %}
+  {{ formText(name, label) }}
+{% endmacro %}
+
 {% macro formTextarea(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ label | e }}</label>
