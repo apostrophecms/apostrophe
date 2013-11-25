@@ -39,8 +39,11 @@ apos.enablePlayers = function(sel) {
     }
 
     var type = $el.attr('data-type');
-    if (apos.widgetPlayers[type]) {
-      apos.widgetPlayers[type]($el);
+    if (!$el.data('aposPlayerEnabled')) {
+      if (apos.widgetPlayers[type]) {
+        apos.widgetPlayers[type]($el);
+        $el.data('aposPlayerEnabled', 1);
+      }
     }
   });
 };

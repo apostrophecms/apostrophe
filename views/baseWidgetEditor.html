@@ -9,16 +9,20 @@
   </h3>
 
   <form>
-    <div class="apos-modal-body apos-ui">    
+    <div class="apos-modal-body apos-ui">
       <label class='apos-instructions'>
         {% block instructions %}
           Paste a widget link.
         {% endblock %}
       </label>
       {% block formAll %}
+        {# Please do not remove these override blocks #}
+        {% block formBegin %}{% endblock %}
         {% block formBody %}
           <input class="apos-embed"/>
         {% endblock %}
+        {# Please do not remove these override blocks #}
+        {% block formEnd %}{% endblock %}
       {% endblock %}
     </div>
   </form>
