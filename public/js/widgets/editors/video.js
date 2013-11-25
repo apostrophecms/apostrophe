@@ -165,6 +165,9 @@ function AposVideoWidgetEditor(options)
 
   function getVideoInfo(callback) {
     var url = self.$embed.val();
+    if (!url) {
+      return callback('empty');
+    }
     // Lazy URLs
     if (!url.match(/^http/))
     {

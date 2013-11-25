@@ -42,7 +42,7 @@ apos.enablePlayers = function(sel) {
     if (!$el.data('aposPlayerEnabled')) {
       if (apos.widgetPlayers[type]) {
         apos.widgetPlayers[type]($el);
-        $el.data('aposPlayerEnabled', 1);
+        $el.data('aposPlayerEnabled', true);
       }
     }
   });
