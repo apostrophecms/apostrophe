@@ -19,6 +19,7 @@
 * [Minifying CSS and JS in Production](#minifying-css-and-js-in-production)
 * [Passing Data and Calling Functions in the Browser from Server-Side Code](#passing-data-and-calling-functions-in-the-browser-from-server-side-code)
   * [What About Data?](#what-about-data)
+* [Cross-Module Includes in Nunjucks](#cross-module-includes-in-nunjucks)
 * [Apostrophe Command-Line Tasks](#apostrophe-command-line-tasks)
   * [Registering Your Own Tasks](#registering-your-own-tasks)
   * [What if an error happens?](#what-if-an-error-happens)
@@ -270,6 +271,30 @@ If you are not using the `apostrophe-pages` module to render the results, you'll
 `req.pushData` and `req.pushGlobalData` are not as flexible as `req.pushCall` and `req.pushGlobalCall`. In many cases you'll want to use the latter.
 
 Keep in mind that all data passed via any of these mechanisms must be JSON-friendly. You cannot pass server-side function objects to browser-side code. That's just life in JavaScriptLand.
+
+## Cross-Module Includes in Nunjucks
+
+It is possible to include Nunjucks macros and template files from one module in a template that resides in another, or in a project-level page template, layout template, etc.
+
+Each module registers itself for this purpose. By convention, the name of a module for this purpose is the same as the name of the module, minus the "apostrophe-" prefix if any. The name is always-hyphenated, neverCamelCased.
+
+The syntax is:
+
+{% include "modulename:file.html" %}
+
+For example, the `apostrophe-schemas` module relies on this feature to allow you to include its macros for use in other modules:
+
+{% include "schemas:schemaMacros.html" %}
+
+If you are using `apostrophe-site` to structure a project (and you should be), project-level overrides of an Apostrophe module like this:
+
+lib/modules/apostrophe-blog/views/blogMacros.html
+
+Are automatically respected when you write:
+
+{% include "blog:blogMacros.html" %}
+
+In most cases you will not need the cross-module includes feature, but if you are creating a module that delivers a "mixin" intended to augment other modules without the need for subclassing its usefulness will immediately become clear.
 
 ## Apostrophe Command-Line Tasks
 
