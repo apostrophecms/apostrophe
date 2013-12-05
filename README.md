@@ -20,6 +20,7 @@
 * [Passing Data and Calling Functions in the Browser from Server-Side Code](#passing-data-and-calling-functions-in-the-browser-from-server-side-code)
   * [What About Data?](#what-about-data)
 * [Cross-Module Includes in Nunjucks](#cross-module-includes-in-nunjucks)
+* [Loading "logged-in" JavaScript and CSS Assets for Logged-Out Users](#loading-logged-in-javascript-and-css-assets-for-logged-out-users)
 * [Apostrophe Command-Line Tasks](#apostrophe-command-line-tasks)
   * [Registering Your Own Tasks](#registering-your-own-tasks)
   * [What if an error happens?](#what-if-an-error-happens)
@@ -295,6 +296,22 @@ Are automatically respected when you write:
 {% include "blog:blogMacros.html" %}
 
 In most cases you will not need the cross-module includes feature, but if you are creating a module that delivers a "mixin" intended to augment other modules without the need for subclassing its usefulness will immediately become clear.
+
+## Loading "logged-in" JavaScript and CSS Assets for Logged-Out Users
+
+Apostrophe refrains from loading most of its JavaScript and CSS for logged-out users. This is a good thing because it renders pages faster.
+
+However sometimes those features are really useful for anonymous users. For instance, our `apostrophe-moderator` module lets the public submit new events, articles and so forth. That depends on the ability to present forms and edit content the same way a logged-in user would.
+
+To do that, just use the `apos.requireScene` method in your browser-side JavaScript code. The code in your callback is guaranteed to have access to all the JavaScript, CSS and DOM template assets that logged-in users see:
+
+```javascript
+apos.requireScene(function() {
+  // Do great stuff like using `apostrophe-schemas` to process forms
+});
+```
+
+Since scene upgrades are calcualted during Apostrophe's minification process when the server starts up, it won't take long to load the assets and start running your callback. Do make sure you have set `minify: true` in `data/local.js` on your production server.
 
 ## Apostrophe Command-Line Tasks
 
