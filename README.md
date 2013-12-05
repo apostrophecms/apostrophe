@@ -306,7 +306,7 @@ However sometimes those features are really useful for anonymous users. For inst
 To do that, just use the `apos.requireScene` method in your browser-side JavaScript code. The code in your callback is guaranteed to have access to all the JavaScript, CSS and DOM template assets that logged-in users see:
 
 ```javascript
-apos.requireScene(function() {
+apos.requireScene('user', function() {
   // Do great stuff like using `apostrophe-schemas` to process forms
 });
 ```
