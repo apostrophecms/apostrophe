@@ -8,6 +8,16 @@ if (!window.apos) {
 
 var apos = window.apos;
 
+(function() {
+  /* jshint devel: true */
+  apos.log = function(msg) {
+    if (console && apos.log) {
+      console.log(msg);
+    }
+  };
+})();
+
+
 // Correct way to get data associated with a widget in the DOM
 apos.getWidgetData = function($widget) {
   var data = $widget.attr('data');
@@ -806,6 +816,60 @@ apos.capitalizeFirst = function(s) {
   return s.charAt(0).toUpperCase() + s.substr(1);
 };
 
+// Upgrade our CSS, JS and DOM templates to meet the requirements of another
+// "scene" without refreshing the page, then run a callback. For instance:
+//
+// apos.requireScene('user', function() {
+//   // Code inside here can assume all the good stuff is available
+// });
+//
+// This method is smart enough not to do any expensive work if the user
+// is already logged in or has already upgraded in the lifetime of this page.
+
+apos.requireScene = function(scene, callback) {
+  // Synchronously loading JS and CSS and HTML is hard! Apostrophe mostly
+  // avoids it, because the big kids are still fighting about requirejs
+  // versus browserify, but when we upgrade the scene to let an anon user
+  // play with schema-driven forms, we need to load a bunch of JS and CSS
+  // and HTML in the right order! What will we do?
+  //
+  // We'll let the server send us a brick of CSS, a brick of JS, and a
+  // brick of HTML, and we'll smack the CSS and HTML into the DOM,
+  // wait for DOMready, and run the JS with eval.
+  //
+  // This way the server does most of the work, calculating which CSS, JS
+  // and HTML template files aren't yet in browserland, and the order of
+  // loading within JS-land is reallllly clear.
+
+  if (apos.scene === scene) {
+    return callback(null);
+  }
+  $.jsonCall('/apos/upgrade-scene',
+    {
+      from: apos.scene,
+      to: scene
+    },
+    function(result) {
+      if ((!result) || (result.status !== 'ok')) {
+        return callback('error');
+      }
+      if (result.css.length) {
+        $("<style>" + result.css + "</style>").appendTo('head');
+      }
+      if (result.html.length) {
+        $('body').append(result.html);
+      }
+      $('body').one('aposSceneChange', function(e, scene) {
+        return callback(null);
+      });
+      $(function() {
+        // Run it in the window context so it can see apos, etc.
+        $.globalEval(result.js);
+      });
+    }
+  );
+};
+
 // Everything in this DOMready block must be an event handler
 // on 'body', optionally filtered to apply to specific elements,
 // so that it can work on elements that don't exist yet.
@@ -828,7 +892,7 @@ $(function() {
     $(this).closest('.apos-admin-bar-item').removeClass('open');
   });
 
-  //sets up listeners for tabbed modalS
+  //sets up listeners for tabbed modals
   $('body').on('click', '.apos-modal-tab-title', function(){
     $(this).closest('.apos-modal-tabs').find('.apos-active').removeClass('apos-active');
     $(this).closest('.apos-modal-tabs').find('[data-tab-id="'+$(this).attr('data-tab')+'"]').addClass('apos-active');
