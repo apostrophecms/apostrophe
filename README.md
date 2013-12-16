@@ -85,7 +85,7 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 ### Configuring Apostrophe
 
-Use the [http://github.com/punkave/apostrophe-site](apostrophe-site) module to configure your project. It is possible to configure a site without it; if you
+Use the [apostrophe-site](http://github.com/punkave/apostrophe-site) module to configure your project. It is possible to configure a site without it; if you
 really want to, check out the source of the apostrophe-site module. But you really don't want to.
 
 ### Adding Editable Areas To Your Templates
