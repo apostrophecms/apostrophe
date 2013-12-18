@@ -870,6 +870,37 @@ apos.requireScene = function(scene, callback) {
   );
 };
 
+// If the aposAfterLogin cookie is set and we are logged in,
+// clear the cookie and redirect as appropriate. Called on DOMready,
+// and also on the fly after anything that implicitly logs the user in.
+
+apos.afterLogin = function() {
+  var afterLogin = $.cookie('aposAfterLogin');
+  apos.log('afterLogin: ' + afterLogin);
+  if (afterLogin && apos.data.user) {
+    $.removeCookie('aposAfterLogin', { path: '/' });
+
+    // We can't just stuff afterLogin in window.location.href because
+    // the browser won't refresh the page if it happens to be the current page,
+    // and what we really want is all the changes in the outerLayout that
+    // occur when logged in. So stuff a cache buster into the URL
+
+    var offset = afterLogin.indexOf('#');
+    if (offset === -1) {
+      offset = afterLogin.length;
+    }
+    var insert = 'apcb=' + apos.generateId();
+    if (afterLogin.match(/\?/)) {
+      insert = '&' + insert;
+    } else {
+      insert = '?' + insert;
+    }
+    afterLogin = afterLogin.substr(0, offset) + insert + afterLogin.substr(offset);
+    apos.log(afterLogin);
+    window.location.href = afterLogin;
+  }
+};
+
 // Everything in this DOMready block must be an event handler
 // on 'body', optionally filtered to apply to specific elements,
 // so that it can work on elements that don't exist yet.
@@ -899,4 +930,37 @@ $(function() {
     $(this).addClass('apos-active');
   });
 
+  // If the aposAfterLogin cookie is set and we are logged in,
+  // clear the cookie and redirect as appropriate.
+
+  apos.afterLogin();
+
+  // If the URL ends in: #click-whatever
+  //
+  // ... Then we locate an element with the attribute data-whatever,
+  // and trigger a click event on it.
+  //
+  // This is useful for resuming an activity after requiring the user to log in.
+  //
+  // Waiting long enough for both the click and the autoscroll to work is
+  // tricky. We need to yield beyond DOMready so that other code installing click
+  // handlers on DOMready has had time to do so. And we need to yield a little
+  // extra time or the browser will crush our efforts to set scrollTop based on
+  // its own idea of where we are on the page (at least in Chrome). ):
+
+  setTimeout(function() {
+    var hash = window.location.hash;
+    var matches = hash.match(/^\#click\-(.*)$/);
+    if (matches) {
+      var $element = $('[data-' + matches[1] + ']');
+      if ($element.length) {
+        // Scroll back to the right neighborhood
+        var offset = $element.offset();
+        var scrollTop = offset.top - 100;
+        $('html, body').scrollTop(scrollTop);
+        // Now carry out the action
+        $('[data-' + matches[1] + ']').trigger('click');
+      }
+    }
+  }, 200);
 });
