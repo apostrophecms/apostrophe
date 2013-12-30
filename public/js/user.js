@@ -388,7 +388,6 @@ apos.enableTags = function($el, tags) {
 
 apos.enableMediaLibrary = function() {
   $('body').on('click', '.apos-media-library-button', function() {
-    apos.log(apos.data.mediaLibrary);
     if (!apos.data.mediaLibrary) {
       apos.data.mediaLibrary = {};
     }

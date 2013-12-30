@@ -876,7 +876,6 @@ apos.requireScene = function(scene, callback) {
 
 apos.afterLogin = function() {
   var afterLogin = $.cookie('aposAfterLogin');
-  apos.log('afterLogin: ' + afterLogin);
   if (afterLogin && apos.data.user) {
     $.removeCookie('aposAfterLogin', { path: '/' });
 
@@ -896,7 +895,6 @@ apos.afterLogin = function() {
       insert = '?' + insert;
     }
     afterLogin = afterLogin.substr(0, offset) + insert + afterLogin.substr(offset);
-    apos.log(afterLogin);
     window.location.href = afterLogin;
   }
 };
