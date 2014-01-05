@@ -27,7 +27,7 @@
     "joinr": "~0.1.0",
     "async": "~0.2.9",
     "underscore": "1.5.1",
-    "sanitize-html": "~0.1.2",
+    "sanitize-html": "~1.0.0",
     "clone": "~0.1.11",
     "nunjucks": "~1.0.0"
   },
