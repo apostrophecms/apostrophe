@@ -9,17 +9,17 @@
     {% set orientation = item.orientation %}
   {% endif %}
 
-  <div class="apos-item apos-widget apos-{{ itemType.css }} apos-{{ item.size }} apos-{{ item.position }}{%if widgetClass%} apos-{{widgetClass}}{%endif%}{%if orientation %} apos-{{orientation}}{%endif%}"
+  <div class="apos-item apos-widget apos-{{ itemType.css }} {% if item.size %}apos-{{ item.size }}{% endif %} {% if item.position %}apos-{{ item.position }}{% endif %} {% if empty %}apos-empty{% endif %} {% if widgetClass%} apos-{{widgetClass}}{% endif %} {% if orientation %} apos-{{orientation}} {% endif %}"
     data="{{ aposMerge(jsonOptions, attributes) | jsonAttribute }}"
     data-id="{{ item.id }}"
     data-type="{{ item.type }}"
-    data-position="{{ item.position }}"
-    data-size="{{ item.size }}"
+    {% if item.position %}data-position="{{ item.position }}"{% endif %}
+    {% if item.size %}data-size="{{ item.size }}"{% endif %}
   >
 {%- elif alwaysEditing and item.type == 'richText'  -%}
   {# This outer wrapper must exist for rich text too, to contain buttons #}
   {# Keep in sync with richText.html #}
-  <div data-type="richText" class="apos-rich-text-item apos-item">
+  <div data-type="richText" class="apos-rich-text-item apos-item {% if empty %}apos-empty{% endif %}">
 {%- endif -%}
 
 {# If this item type has a wrapper element output that element, with an optional #}
