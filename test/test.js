@@ -1,6 +1,6 @@
 var assert = require('assert');
 var mongo = require('mongodb');
-var apos = require('../apostrophe.js')();
+var apos = require('../lib/apostrophe.js')();
 
 var db;
 
@@ -103,6 +103,27 @@ describe('apostrophe', function() {
         {});
       assert(result === '/events/2013/05?tag=dance');
       return done();
+    });
+  });
+  describe('test escapeHtml', function() {
+    it('is defined', function() {
+      assert(apos.escapeHtml);
+    });
+    it('does not alter a string requiring no escaping', function() {
+      assert(apos.escapeHtml('this is fun') === 'this is fun');
+    });
+    it('escapes a string requiring escaping', function() {
+      assert(apos.escapeHtml('<p>hmm</p>', '&lt;p&gt;hmm&lt;/p&gt;'));
+    });
+    it('escapes & properly too', function() {
+      assert(apos.escapeHtml('&', '&amp;'));
+    });
+    var pretty = 'This is fun.\nhttp://google.com/\nHow about now?';
+    it('leaves newlines and URLs alone when pretty is off', function() {
+      assert(apos.escapeHtml(pretty) === pretty);
+    });
+    it('turns newlines into br and URLs into links when pretty is on', function() {
+      assert(apos.escapeHtml(pretty, true) === 'This is fun.<br /><a href="http://google.com/">http://google.com/</a><br />How about now?');
     });
   });
 });
