@@ -349,30 +349,25 @@ appy.listen();
 
 All you have to do is extend this by passing an object to `apos.startTask`. Each property of that object is a "task group" with one or more tasks. Each "task group" is an object with one or more task functions. Task functions receive three arguments: the `apos` object, an `argv` object with any command line options, and a callback to be invoked when the task is done.
 
-Confused? Here's how to implement a single task called `project:init`:
+Confused? Here's how to implement a single task called `project:init`. Here I assume you are using the `apostrophe-site` module to make your life easier:
 
 ```javascript
-// Earlier in app.js
-
-var myTasks = {
+tasks: {
   project: {
-    init: function(apos, argv, callback) {
+    init: function(site, apos, argv, callback) {
       // Do time consuming, asynchronous things!
       // When we're finished:
       return callback(null);
     }
   }
-};
-
-// In the listen function at the end of app.js
-
-if (apos.startTask(myTasks)) {
-  return;
 }
-appy.listen();
 ```
 
 This structure allows for projects with many tasks.
+
+You could call `apos.startTask(myTasks)` yourself if you enjoy suffering and don't want to use `apostrophe-site`. But I wouldn't.
+
+If you are not using `apostrophe-site`, then write your tasks to take only three arguments. (They may take four, but the first will be undefined, so you won't have access to `site.pages`, `site.apos`, etc.)
 
 ### "What if an error happens?"
 
