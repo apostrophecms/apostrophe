@@ -14,6 +14,7 @@
   * [Adding Editable Areas to your Templates](#adding-editable-areas-to-your-templates)
 * [Displaying Single Widgets ("Singletons")](#displaying-single-widgets-singletons)
 * [Detecting Empty Areas and Singletons](#detecting-empty-areas-and-singletons)
+* [Accessing Images and Files Directly](#accessing-images-and-files-directly)
 * [More About Grouping Areas into Pages](#more-about-grouping-areas-into-pages)
 * [Enforcing Permissions](#enforcing-permissions)
 * [Minifying CSS and JS in Production](#minifying-css-and-js-in-production)
@@ -150,6 +151,55 @@ It's common to want to do something special if an area or singleton is empty, es
 ```
 
 `aposAreaIsEmpty` is also available. (Singletons are stored as areas but aposSingletonIsEmpty is correctly written to detect whether a widget of the proper type is present.)
+
+## Accessing Images and Files Directly
+
+Sometimes you might want to display a thumbnail image directly with your own markup, bypassing the normal markup for the slideshow widget. Probably you don't even care if the image is in the first slideshow widget in the area, or somewhere further down in the area. There is a safe and simple way to do this. Let's say we want the first image in the body area, if any:
+
+```twig
+{% if aposAreaImage(page, 'body') %}
+  <img src="{{ aposFilePath(aposAreaImage(page, 'body'), { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+You can also fetch all the images:
+
+```twig
+{% for image in aposAreaImages(page, 'body') %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+You can use the `limit` option to specify just two images at most:
+
+```twig
+{% for image in aposAreaImages(page, 'body', { limit: 2 }) %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+Or use the `extension` option to specify we only care about JPEGs:
+
+```twig
+{% if aposAreaImage(page, 'body') %}
+  <img src="{{ aposFilePath(aposAreaImage(page, 'body', { extension: 'jpg' }), { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+If you're interested in PDFs and other non-image files, as might be found in the files widget, call `aposAreaFile` and `aposAreaFiles` instead. You might want to use the `group` option to restrict the results to office documents, like csv, docx and pdf files:
+
+```twig
+{% set file = aposAreaFile(page, 'body', group: 'office') %}
+{% if file %}
+  <a href="{{ aposFilePath(file) }}">{{ file.name | e }}</a>
+{% endif %}
+```
+
+You can also use `group: "images"`, but in that case it is usually more convenient to call `aposAreaImage` or `aposAreaImages`.
+
+### Alternate Syntax
+
+You may also pass a single object to any of these functions, with an `area` object as one of its properties. Also, `aposAreaFindFile` is supported for backwards compatibility. It just calls `aposAreaFile`.
 
 ## More About Grouping Areas Into "Pages"
 
