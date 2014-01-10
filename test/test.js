@@ -126,5 +126,37 @@ describe('apostrophe', function() {
       assert(apos.escapeHtml(pretty, true) === 'This is fun.<br /><a href="http://google.com/">http://google.com/</a><br />How about now?');
     });
   });
+  describe('test pruneTemporaryProperties', function() {
+    it('is defined', function() {
+      assert(apos.pruneTemporaryProperties);
+    });
+    it('prunes correctly', function() {
+      var o = {
+        a: 1,
+        b: 1,
+        c: {
+          d: 1,
+          e: 2,
+          f: 3
+        },
+        d: [
+          {
+            a: 5,
+            b: 7,
+            c: 'whee',
+            d: {
+              a: 'boo'
+            }
+          },
+          57
+        ]
+      };
+      var correct = JSON.stringify(o);
+      o._e = 'should get pruned';
+      o.d[0].d._f = 'should get pruned too';
+      apos.pruneTemporaryProperties(o);
+      assert(JSON.stringify(o) === correct);
+    });
+  });
 });
 
