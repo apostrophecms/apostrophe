@@ -186,6 +186,16 @@ Or use the `extension` option to specify we only care about JPEGs:
 {% endif %}
 ```
 
+Or `extensions` to allow JPEG and PNG but not GIF:
+
+```twig
+{% if aposAreaImage(page, 'body') %}
+  <img src="{{ aposFilePath(aposAreaImage(page, 'body', { extensions: [ 'jpg', 'png' }), { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+*Apostrophe always uses three-letter lowercase extensions.*
+
 If you're interested in PDFs and other non-image files, as might be found in the files widget, call `aposAreaFile` and `aposAreaFiles` instead. You might want to use the `group` option to restrict the results to office documents, like csv, docx and pdf files:
 
 ```twig
