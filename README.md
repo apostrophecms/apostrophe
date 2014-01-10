@@ -181,16 +181,18 @@ You can use the `limit` option to specify just two images at most:
 Or use the `extension` option to specify we only care about JPEGs:
 
 ```twig
-{% if aposAreaImage(page, 'body') %}
-  <img src="{{ aposFilePath(aposAreaImage(page, 'body', { extension: 'jpg' }), { size: 'one-sixth' }) }}" />
+{% set image = aposAreaImage(page, 'body', { extension: 'jpg' }) %}
+{% if image %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
 {% endif %}
 ```
 
 Or `extensions` to allow JPEG and PNG but not GIF:
 
 ```twig
-{% if aposAreaImage(page, 'body') %}
-  <img src="{{ aposFilePath(aposAreaImage(page, 'body', { extensions: [ 'jpg', 'png' }), { size: 'one-sixth' }) }}" />
+{% set image = aposAreaImage(page, 'body', { extensions: [ 'jpg', 'png' ] }) %}
+{% if image %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
 {% endif %}
 ```
 
