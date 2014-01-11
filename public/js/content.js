@@ -8,6 +8,16 @@ if (!window.apos) {
 
 var apos = window.apos;
 
+(function() {
+  /* jshint devel: true */
+  apos.log = function(msg) {
+    if (console && apos.log) {
+      console.log(msg);
+    }
+  };
+})();
+
+
 // Correct way to get data associated with a widget in the DOM
 apos.getWidgetData = function($widget) {
   var data = $widget.attr('data');
@@ -39,8 +49,11 @@ apos.enablePlayers = function(sel) {
     }
 
     var type = $el.attr('data-type');
-    if (apos.widgetPlayers[type]) {
-      apos.widgetPlayers[type]($el);
+    if (!$el.data('aposPlayerEnabled')) {
+      if (apos.widgetPlayers[type]) {
+        apos.widgetPlayers[type]($el);
+        $el.data('aposPlayerEnabled', true);
+      }
     }
   });
 };
@@ -199,7 +212,7 @@ apos.getTopModalOrBody = function() {
 // Be sure to read about apos.modalFromTemplate too, as that is usually
 // the easiest way to present a modal.
 
-// apos.modal displays the element specified by sel as a modal dialog. Goes 
+// apos.modal displays the element specified by sel as a modal dialog. Goes
 // away when the user clicks .apos-save or .apos-cancel, or submits the form
 // element in the modal (implicitly saving), or presses escape.
 //
@@ -210,14 +223,14 @@ apos.getTopModalOrBody = function() {
 // modal with content (usually used with apos.modalFromTemplate, below).
 // If you pass an error as the first argument to the callback the
 // modal will not appear and options.afterHide will be triggered immediately.
-// Don't forget to call the callback. 
+// Don't forget to call the callback.
 //
-// Note that apos.modal is guaranteed to return *before* options.init is called, 
+// Note that apos.modal is guaranteed to return *before* options.init is called,
 // so you can refer to $el in a closure. This is useful if you are using
 // apos.modalFromTemplate to create $el.
 
 // options.afterHide can be an asynchronous function to do something
-// after the modal is dismissed (for any reason, whether saved or cancelled), 
+// after the modal is dismissed (for any reason, whether saved or cancelled),
 // like removing it from the DOM if that is appropriate.
 // Don't forget to call the callback. Currently passing an error
 // to the afterHide callback has no effect.
@@ -262,7 +275,7 @@ apos.modal = function(sel, options) {
         return true;
       }
     }
-    
+
     $( document ).on({
       'keyup.aposModal': function(e) {
         if (e.keyCode === 27) {
@@ -353,6 +366,11 @@ apos.modal = function(sel, options) {
         hideModal();
         return;
       }
+
+      // This is where we're calling lister.
+      var $selects = $el.find('[data-lister]');
+      $selects.lister();
+
       apos.pushSelection();
 
       // Black out the document or the top modal if there already is one.
@@ -803,6 +821,89 @@ apos.capitalizeFirst = function(s) {
   return s.charAt(0).toUpperCase() + s.substr(1);
 };
 
+// Upgrade our CSS, JS and DOM templates to meet the requirements of another
+// "scene" without refreshing the page, then run a callback. For instance:
+//
+// apos.requireScene('user', function() {
+//   // Code inside here can assume all the good stuff is available
+// });
+//
+// This method is smart enough not to do any expensive work if the user
+// is already logged in or has already upgraded in the lifetime of this page.
+
+apos.requireScene = function(scene, callback) {
+  // Synchronously loading JS and CSS and HTML is hard! Apostrophe mostly
+  // avoids it, because the big kids are still fighting about requirejs
+  // versus browserify, but when we upgrade the scene to let an anon user
+  // play with schema-driven forms, we need to load a bunch of JS and CSS
+  // and HTML in the right order! What will we do?
+  //
+  // We'll let the server send us a brick of CSS, a brick of JS, and a
+  // brick of HTML, and we'll smack the CSS and HTML into the DOM,
+  // wait for DOMready, and run the JS with eval.
+  //
+  // This way the server does most of the work, calculating which CSS, JS
+  // and HTML template files aren't yet in browserland, and the order of
+  // loading within JS-land is reallllly clear.
+
+  if (apos.scene === scene) {
+    return callback(null);
+  }
+  $.jsonCall('/apos/upgrade-scene',
+    {
+      from: apos.scene,
+      to: scene
+    },
+    function(result) {
+      if ((!result) || (result.status !== 'ok')) {
+        return callback('error');
+      }
+      if (result.css.length) {
+        $("<style>" + result.css + "</style>").appendTo('head');
+      }
+      if (result.html.length) {
+        $('body').append(result.html);
+      }
+      $('body').one('aposSceneChange', function(e, scene) {
+        return callback(null);
+      });
+      $(function() {
+        // Run it in the window context so it can see apos, etc.
+        $.globalEval(result.js);
+      });
+    }
+  );
+};
+
+// If the aposAfterLogin cookie is set and we are logged in,
+// clear the cookie and redirect as appropriate. Called on DOMready,
+// and also on the fly after anything that implicitly logs the user in.
+
+apos.afterLogin = function() {
+  var afterLogin = $.cookie('aposAfterLogin');
+  if (afterLogin && apos.data.user) {
+    $.removeCookie('aposAfterLogin', { path: '/' });
+
+    // We can't just stuff afterLogin in window.location.href because
+    // the browser won't refresh the page if it happens to be the current page,
+    // and what we really want is all the changes in the outerLayout that
+    // occur when logged in. So stuff a cache buster into the URL
+
+    var offset = afterLogin.indexOf('#');
+    if (offset === -1) {
+      offset = afterLogin.length;
+    }
+    var insert = 'apcb=' + apos.generateId();
+    if (afterLogin.match(/\?/)) {
+      insert = '&' + insert;
+    } else {
+      insert = '?' + insert;
+    }
+    afterLogin = afterLogin.substr(0, offset) + insert + afterLogin.substr(offset);
+    window.location.href = afterLogin;
+  }
+};
+
 // Everything in this DOMready block must be an event handler
 // on 'body', optionally filtered to apply to specific elements,
 // so that it can work on elements that don't exist yet.
@@ -825,11 +926,44 @@ $(function() {
     $(this).closest('.apos-admin-bar-item').removeClass('open');
   });
 
-  //sets up listeners for tabbed modalS
+  //sets up listeners for tabbed modals
   $('body').on('click', '.apos-modal-tab-title', function(){
     $(this).closest('.apos-modal-tabs').find('.apos-active').removeClass('apos-active');
     $(this).closest('.apos-modal-tabs').find('[data-tab-id="'+$(this).attr('data-tab')+'"]').addClass('apos-active');
     $(this).addClass('apos-active');
   });
 
+  // If the aposAfterLogin cookie is set and we are logged in,
+  // clear the cookie and redirect as appropriate.
+
+  apos.afterLogin();
+
+  // If the URL ends in: #click-whatever
+  //
+  // ... Then we locate an element with the attribute data-whatever,
+  // and trigger a click event on it.
+  //
+  // This is useful for resuming an activity after requiring the user to log in.
+  //
+  // Waiting long enough for both the click and the autoscroll to work is
+  // tricky. We need to yield beyond DOMready so that other code installing click
+  // handlers on DOMready has had time to do so. And we need to yield a little
+  // extra time or the browser will crush our efforts to set scrollTop based on
+  // its own idea of where we are on the page (at least in Chrome). ):
+
+  setTimeout(function() {
+    var hash = window.location.hash;
+    var matches = hash.match(/^\#click\-(.*)$/);
+    if (matches) {
+      var $element = $('[data-' + matches[1] + ']');
+      if ($element.length) {
+        // Scroll back to the right neighborhood
+        var offset = $element.offset();
+        var scrollTop = offset.top - 100;
+        $('html, body').scrollTop(scrollTop);
+        // Now carry out the action
+        $('[data-' + matches[1] + ']').trigger('click');
+      }
+    }
+  }, 200);
 });
