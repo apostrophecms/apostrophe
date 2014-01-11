@@ -14,11 +14,14 @@
   * [Adding Editable Areas to your Templates](#adding-editable-areas-to-your-templates)
 * [Displaying Single Widgets ("Singletons")](#displaying-single-widgets-singletons)
 * [Detecting Empty Areas and Singletons](#detecting-empty-areas-and-singletons)
+* [Accessing Images and Files Directly](#accessing-images-and-files-directly)
 * [More About Grouping Areas into Pages](#more-about-grouping-areas-into-pages)
 * [Enforcing Permissions](#enforcing-permissions)
 * [Minifying CSS and JS in Production](#minifying-css-and-js-in-production)
 * [Passing Data and Calling Functions in the Browser from Server-Side Code](#passing-data-and-calling-functions-in-the-browser-from-server-side-code)
   * [What About Data?](#what-about-data)
+* [Cross-Module Includes in Nunjucks](#cross-module-includes-in-nunjucks)
+* [Loading "logged-in" JavaScript and CSS Assets for Logged-Out Users](#loading-logged-in-javascript-and-css-assets-for-logged-out-users)
 * [Apostrophe Command-Line Tasks](#apostrophe-command-line-tasks)
   * [Registering Your Own Tasks](#registering-your-own-tasks)
   * [What if an error happens?](#what-if-an-error-happens)
@@ -83,82 +86,8 @@ Mac developers can install imagemagick via MacPorts. Your production server will
 
 ### Configuring Apostrophe
 
-You'll need to `npm install` the `apostrophe` npm package in your project, as well as `uploadfs`, `mongodb` and `express`. You might consider using [http://github.com/punkave/appy](appy), which eases the burden of setting up a typical Express app that supports all the usual stuff. But it's not a requirement.
-
-Here's the `initApos` function of the sample application [http://github.com/punkave/apostrophe-sandbox](apostrophe-sandbox). Notice this function invokes a callback when it's done. `app.js` makes good use of the `async` module to carry out its initialization tasks elegantly. Here we also initialize other modules that snap into Apostrophe:
-
-```javascript
-function initApos(callback) {
-  require('apostrophe-twitter')({ apos: apos, app: app });
-  require('apostrophe-rss')({ apos: apos, app: app });
-
-  async.series([initAposMain, initAposPages], callback);
-
-  function initAposMain(callback) {
-    console.log('initAposMain');
-    return apos.init({
-      db: db,
-      app: app,
-      uploadfs: uploadfs,
-      permissions: aposPermissions,
-      // Allows us to extend shared layouts
-      partialPaths: [ __dirname + '/views/global' ]
-    }, callback);
-  }
-
-  function initAposPages(callback) {
-    console.log('initAposPages');
-    pages = require('apostrophe-pages')({ apos: apos, app: app }, callback);
-  }
-}
-```
-
-"Where does db come from?" It's a MongoDB native database connection. (Hint: convenient to set up with Appy, or just use mongodb-native yourself.) Apostrophe's `getArea`, `putArea`, `getPage`, `putPage` and `get` methods utilize these.
-
-"What is `app`?" `app` is your Express 3.0 app object. See the Express documentation for how to create an application. Again, Appy helps here.
-
-"What is `uploadfs`?" [http://github.com/punkave/uploadfs](uploadfs) is a module that conveniently stores uploaded files in either the local filesystem or S3, whichever you like. See `app.js` in the `apostrophe-sandbox` project for an example of configuration. You'll create an `uploadfs` instance, initialize it and then pass it in here.
-
-"What is `aposPermissions`?" A function you define to decide who is allowed to edit content. If you skip this parameter, Apostrophe allows everyone to edit everything - not safe in production of course, but convenient in the early development stages.
-
-To understand configuration in detail, you should really check out `app.js`. Please don't suffer without reading that simple and well-commented example.
-
-### Making Sure Apostrophe Is In The Browser
-
-Before we can add rich content areas to a webpage with Apostrophe, we need to make sure Apostrophe's CSS, JavaScript and widget editor templates are present in the page. Apostrophe adds convenience functions to your template language to accomplish that without a fuss.
-
-You will also need to make appropriate browser-side JavaScript calls to enable the "edit" buttons of areas and to enable video players in Apostrophe content.
-
-Here's a simple `layout.html` Nunjucks template that includes everything Apostrophe needs:
-
-```twig
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    {{ aposStylesheets() }}
-    <link href="/css/my.css" rel="stylesheet" />
-    {{ aposScripts() }}
-  </head>
-  <body>
-    {% block body %}
-    {% endblock %}
-    {{ aposTemplates() }}
-  </body>
-  <script type="text/javascript">
-    // Wait for domready!
-    $(function() {
-      apos.enableAreas();
-      apos.enablePlayers();
-    });
-  </script>
-</html>
-```
-
-Note the `body` block, which can be overridden in any template that `extend`s this template. Jade has an identical feature.
-
-"What if I hate the way you're loading CSS and JavaScript? What if I hate the version of jQuery you're loading?" Don't use the convenience functions. Instead examine Apostrophe's `scripts.html` and `stylesheets.html` templates and make sure you are loading the same functionality.
-
-"Do I have to load all this stuff if I am certain the user has no editing privileges?" No. To make your pages lighter, if you know the user won't be editing, you can get by with just `content.css`, jQuery and `content.js`. We haven't spent much time testing this scenario yet. Pull requests to make it more convenient are welcome.
+Use the [apostrophe-site](http://github.com/punkave/apostrophe-site) module to configure your project. It is possible to configure a site without it; if you
+really want to, check out the source of the apostrophe-site module. But you really don't want to.
 
 ### Adding Editable Areas To Your Templates
 
@@ -222,6 +151,67 @@ It's common to want to do something special if an area or singleton is empty, es
 ```
 
 `aposAreaIsEmpty` is also available. (Singletons are stored as areas but aposSingletonIsEmpty is correctly written to detect whether a widget of the proper type is present.)
+
+## Accessing Images and Files Directly
+
+Sometimes you might want to display a thumbnail image directly with your own markup, bypassing the normal markup for the slideshow widget. Probably you don't even care if the image is in the first slideshow widget in the area, or somewhere further down in the area. There is a safe and simple way to do this. Let's say we want the first image in the body area, if any:
+
+```twig
+{% if aposAreaImage(page, 'body') %}
+  <img src="{{ aposFilePath(aposAreaImage(page, 'body'), { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+You can also fetch all the images:
+
+```twig
+{% for image in aposAreaImages(page, 'body') %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+You can use the `limit` option to specify just two images at most:
+
+```twig
+{% for image in aposAreaImages(page, 'body', { limit: 2 }) %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+Or use the `extension` option to specify we only care about JPEGs:
+
+```twig
+{% set image = aposAreaImage(page, 'body', { extension: 'jpg' }) %}
+{% if image %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+Or `extensions` to allow JPEG and PNG but not GIF:
+
+```twig
+{% set image = aposAreaImage(page, 'body', { extensions: [ 'jpg', 'png' ] }) %}
+{% if image %}
+  <img src="{{ aposFilePath(image, { size: 'one-sixth' }) }}" />
+{% endif %}
+```
+
+*Apostrophe always uses three-letter lowercase extensions.*
+
+If you're interested in PDFs and other non-image files, as might be found in the files widget, call `aposAreaFile` and `aposAreaFiles` instead. You might want to use the `group` option to restrict the results to office documents, like csv, docx and pdf files:
+
+```twig
+{% set file = aposAreaFile(page, 'body', group: 'office') %}
+{% if file %}
+  <a href="{{ aposFilePath(file) }}">{{ file.name | e }}</a>
+{% endif %}
+```
+
+You can also use `group: "images"`, but in that case it is usually more convenient to call `aposAreaImage` or `aposAreaImages`.
+
+### Alternate Syntax
+
+You may also pass a single object to any of these functions, with an `area` object as one of its properties. Also, `aposAreaFindFile` is supported for backwards compatibility. It just calls `aposAreaFile`.
 
 ## More About Grouping Areas Into "Pages"
 
@@ -345,6 +335,46 @@ If you are not using the `apostrophe-pages` module to render the results, you'll
 
 Keep in mind that all data passed via any of these mechanisms must be JSON-friendly. You cannot pass server-side function objects to browser-side code. That's just life in JavaScriptLand.
 
+## Cross-Module Includes in Nunjucks
+
+It is possible to include Nunjucks macros and template files from one module in a template that resides in another, or in a project-level page template, layout template, etc.
+
+Each module registers itself for this purpose. By convention, the name of a module for this purpose is the same as the name of the module, minus the "apostrophe-" prefix if any. The name is always-hyphenated, neverCamelCased.
+
+The syntax is:
+
+{% include "modulename:file.html" %}
+
+For example, the `apostrophe-schemas` module relies on this feature to allow you to include its macros for use in other modules:
+
+{% include "schemas:schemaMacros.html" %}
+
+If you are using `apostrophe-site` to structure a project (and you should be), project-level overrides of an Apostrophe module like this:
+
+lib/modules/apostrophe-blog/views/blogMacros.html
+
+Are automatically respected when you write:
+
+{% include "blog:blogMacros.html" %}
+
+In most cases you will not need the cross-module includes feature, but if you are creating a module that delivers a "mixin" intended to augment other modules without the need for subclassing its usefulness will immediately become clear.
+
+## Loading "logged-in" JavaScript and CSS Assets for Logged-Out Users
+
+Apostrophe refrains from loading most of its JavaScript and CSS for logged-out users. This is a good thing because it renders pages faster.
+
+However sometimes those features are really useful for anonymous users. For instance, our `apostrophe-moderator` module lets the public submit new events, articles and so forth. That depends on the ability to present forms and edit content the same way a logged-in user would.
+
+To do that, just use the `apos.requireScene` method in your browser-side JavaScript code. The code in your callback is guaranteed to have access to all the JavaScript, CSS and DOM template assets that logged-in users see:
+
+```javascript
+apos.requireScene('user', function() {
+  // Do great stuff like using `apostrophe-schemas` to process forms
+});
+```
+
+Since scene upgrades are calcualted during Apostrophe's minification process when the server starts up, it won't take long to load the assets and start running your callback. Do make sure you have set `minify: true` in `data/local.js` on your production server.
+
 ## Apostrophe Command-Line Tasks
 
 We often need to carry out command line tasks, such as database migrations, with access to the same database and capabilities that regular Apostrophe code has access to. Apostrophe makes it really easy to register command line tasks as part of your application.
@@ -381,30 +411,25 @@ appy.listen();
 
 All you have to do is extend this by passing an object to `apos.startTask`. Each property of that object is a "task group" with one or more tasks. Each "task group" is an object with one or more task functions. Task functions receive three arguments: the `apos` object, an `argv` object with any command line options, and a callback to be invoked when the task is done.
 
-Confused? Here's how to implement a single task called `project:init`:
+Confused? Here's how to implement a single task called `project:init`. Here I assume you are using the `apostrophe-site` module to make your life easier:
 
 ```javascript
-// Earlier in app.js
-
-var myTasks = {
+tasks: {
   project: {
-    init: function(apos, argv, callback) {
+    init: function(site, apos, argv, callback) {
       // Do time consuming, asynchronous things!
       // When we're finished:
       return callback(null);
     }
   }
-};
-
-// In the listen function at the end of app.js
-
-if (apos.startTask(myTasks)) {
-  return;
 }
-appy.listen();
 ```
 
 This structure allows for projects with many tasks.
+
+You could call `apos.startTask(myTasks)` yourself if you enjoy suffering and don't want to use `apostrophe-site`. But I wouldn't.
+
+If you are not using `apostrophe-site`, then write your tasks to take only three arguments. (They may take four, but the first will be undefined, so you won't have access to `site.pages`, `site.apos`, etc.)
 
 ### "What if an error happens?"
 

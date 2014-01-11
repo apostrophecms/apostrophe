@@ -211,15 +211,6 @@ apos.enableAreas = function() {
   });
 };
 
-(function() {
-  /* jshint devel: true */
-  apos.log = function(msg) {
-    if (console && apos.log) {
-      console.log(msg);
-    }
-  };
-})();
-
 // Note: you'll need to use xregexp instead if you need non-Latin character
 // support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
 apos.slugify = function(s, options) {
@@ -397,7 +388,6 @@ apos.enableTags = function($el, tags) {
 
 apos.enableMediaLibrary = function() {
   $('body').on('click', '.apos-media-library-button', function() {
-    apos.log(apos.data.mediaLibrary);
     if (!apos.data.mediaLibrary) {
       apos.data.mediaLibrary = {};
     }

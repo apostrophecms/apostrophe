@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{{ siteTitle }}: {% block subTitle %}Login{% endblock %}
+{% endblock %}
+
+{% block bodyClass %}login-page{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block main %}
+
+<div class="apos-login-container">
+
+  <div class="login-logo-container">
+    <a href="/"><div class="login-logo"></div></a>
+  </div>
+
+  <div class="apos-login">
+    <h4>{% block subHeading %}LOGIN{% endblock %}</h4>
+    {% block form %}
+      <form action="{% block action %}/login{% endblock %}" method="post">
+        <div class="login-inputs">
+          {% if message %}<div class="warning">{{ message }}</div>{% endif %}
+          {% block fields %}
+            <div class="login-username">
+              <label>Username or Email {% block usernameHint %}{% endblock %}</label>
+              <input type="text" name="username" />
+            </div>
+            <div class="login-password">
+              <label>Password {% block passwordHint %}{% endblock %}</label>
+              <input type="password" name="password" />
+            </div>
+          {% endblock %}
+          <div class="login-submit clearfix">
+            <input type="submit" class="apos-button" value="{% block buttonLabel %}Log In{% endblock %}" />
+          </div>
+          {% block forgot %}
+            {% if resetAvailable %}
+            <br />
+              <a class="login-reset" href="/apos-people/reset-request">Reset My Password</a>
+            {% endif %}
+          {% endblock %}
+        </div>
+      </form>
+    {% endblock %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block footerBody %}
+{% endblock %}

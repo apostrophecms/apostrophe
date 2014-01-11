@@ -12,7 +12,16 @@
   Paste a video link.
 {% endblock %}
 
-{% block formAfterPreview %}
+{% block formEnd %}
+  {% block previewButton %}
+    <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/>
+    {% include "progress.html" %}
+  {% endblock %}
+  <div class="apos-widget-preview-container apos-requires-preview">
+    {# We decided to move float preview into the main area editor so #}
+    {# this preview is just for things whose appearance is not obvious #}
+    {# or which require custom settings be tweaked (example: RSS feed) #}
+  </div>
   {# Video chooser #}
 
   <div class="apos-media-chooser apos-chooser-drag-peer" data-chooser>

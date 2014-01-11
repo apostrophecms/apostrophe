@@ -19,7 +19,6 @@ function AposSlideshowWidgetEditor(options)
   var extraFields = templateOptions.extraFields;
   var liveItem = '[data-item]:not(.apos-template)';
   var userOptions = templateOptions.userOptions || {};
-
   if (userOptions) {
     var orientation = userOptions.orientation || false;
   }
@@ -82,6 +81,16 @@ function AposSlideshowWidgetEditor(options)
     self.$showTitles.val(self.data.showTitles ? '1' : '0');
     self.$showDescriptions.val(self.data.showDescriptions ? '1' : '0');
     self.$showCredits.val(self.data.showCredits ? '1' : '0');
+
+    if (userOptions.disableTitles) {
+      self.$el.find('[data-name="showTitles"]').hide();
+    }
+    if (userOptions.disableDescriptions) {
+      self.$el.find('[data-name="showDescriptions"]').hide();
+    }
+    if (userOptions.disableCredits) {
+      self.$el.find('[data-name="showCredits"]').hide();
+    }
 
     var $uploader = self.$el.find('[data-uploader]');
     $uploader.fileupload({
@@ -631,9 +640,9 @@ function AposSlideshowWidgetEditor(options)
     if (self.data.orientation) {
       self.data.orientation = self.$el.find('[data-orientation-active]').attr('data-orientation-active');
     }
-    self.data.showTitles = (self.$showTitles.val() === '1');
-    self.data.showDescriptions = (self.$showDescriptions.val() === '1');
-    self.data.showCredits = (self.$showCredits.val() === '1');
+    self.data.showTitles = (userOptions.disableTitles) ? false : (self.$showTitles.val() === '1');
+    self.data.showDescriptions = (userOptions.disableDescriptions) ? false : (self.$showDescriptions.val() === '1');
+    self.data.showCredits = (userOptions.disableCredits) ? false : (self.$showCredits.val() === '1');
 
     return callback(null);
   };
