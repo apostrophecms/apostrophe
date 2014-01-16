@@ -253,6 +253,25 @@ apos.getTopModalOrBody = function() {
 
 apos.modal = function(sel, options) {
 
+  function closeModal() {
+    var topModal = apos.getTopModalOrBody();
+    if (topModal.filter('.apos-modal')) {
+      topModal.trigger('aposModalHide');
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  function cancelModal() {
+    return options.beforeCancel(function(err) {
+      if (err) {
+        return;
+      }
+      return closeModal();
+    });
+  }
+
   if (!apos._modalInitialized) {
     apos._modalInitialized = true;
     // Just ONE event handler for the escape key so we don't have
@@ -266,25 +285,15 @@ apos.modal = function(sel, options) {
 
     // });
 
-    function closeModal() {
-      var topModal = apos.getTopModalOrBody();
-      if (topModal.filter('.apos-modal')) {
-        topModal.trigger('aposModalHide');
-        return false;
-      } else {
-        return true;
-      }
-    }
-    
     $( document ).on({
       'keyup.aposModal': function(e) {
         if (e.keyCode === 27) {
-          closeModal();
+          cancelModal();
         }
       },
-      click: function(e) {
+      'click.aposModal': function(e) {
         if (e.target.className === 'apos-modal-blackout'){
-          closeModal();
+          cancelModal();
         }
       }
     });
@@ -299,7 +308,8 @@ apos.modal = function(sel, options) {
   _.defaults(options, {
     init: function(callback) {callback(null);},
     save: function(callback) {callback(null);},
-    afterHide: function(callback) {callback(null);}
+    afterHide: function(callback) {callback(null);},
+    beforeCancel: function(callback) {callback(null);}
   });
 
   $el.on('aposModalHide', function() {
@@ -327,6 +337,14 @@ apos.modal = function(sel, options) {
     options.afterHide(function(err) {
       return;
     });
+    if (!apos._modalStack.length) {
+      // Leggo of the keyboard when there are no modals!
+      // We can reinstall the handler when it's relevant.
+      // Fewer event handlers all the time = better performance
+      apos._modalInitialized = false;
+      $(document).off('keyup.aposModal');
+      $(document).off('click.aposModal');
+    }
   });
 
   function hideModal() {
@@ -352,7 +370,7 @@ apos.modal = function(sel, options) {
     return false;
   });
 
-  $el.on('click', '.apos-cancel,[data-cancel]', hideModal);
+  $el.on('click', '.apos-cancel,[data-cancel]', cancelModal);
 
   $el.on('click', '.apos-save,[data-save]', function() {
     var $button = $(this);
