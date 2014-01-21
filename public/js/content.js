@@ -927,6 +927,7 @@ $(function() {
   $('body').on('click', '.apos-accordion-title', function(event){
     // $(this).parent().find('.apos-accordion-items').toggleClass('open');
     $(this).parent().toggleClass('open');
+    $(this).parent().siblings().removeClass('open');
   });
 
   $('body').on('click', '.apos-preview-toggle', function(event){
