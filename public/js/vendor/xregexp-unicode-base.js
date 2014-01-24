@@ -148,9 +148,4 @@
         {scope: "all"}
     );
 
-<<<<<<< HEAD
 }(XRegExp));
-=======
-}(XRegExp));
-
->>>>>>> upstream/master
