@@ -1262,3 +1262,4 @@ XRegExp = XRegExp || (function (undef) {
     return self;
 
 }());
+
