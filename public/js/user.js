@@ -211,24 +211,24 @@ apos.enableAreas = function() {
   });
 };
 
-// Note: you'll need to use xregexp instead if you need non-Latin character
-// support in slugs. KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in apostrophe.js
+// KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in search.js
 apos.slugify = function(s, options) {
 
-  // By default everything not a letter or number becomes a dash.
-  // You can add additional allowed characters via options.allow
+  // By default everything that matches the XRegExp groups
+  // "Punctuation", "Separator", "Other" and "Symbol" becomes a dash.
+  // You can change the separator with options.separator
 
   if (!options) {
     options = {};
   }
 
-  if (!options.allow) {
-    options.allow = '';
+  if (!options.separator) {
+    options.separator = '-';
   }
 
-  var r = "[^A-Za-z0-9" + apos.regExpQuote(options.allow) + "]";
-  var regex = new RegExp(r, 'g');
-  s = s.replace(regex, '-');
+  var r = '[\\p{Punctuation}\\p{Separator}\\p{Other}\\p{Symbol}]';
+  var regex = new XRegExp(r, 'g');
+  s = XRegExp.replace(s, regex, options.separator);
   // Consecutive dashes become one dash
   s = s.replace(/\-+/g, '-');
   // Leading dashes go away
