@@ -7,6 +7,10 @@ if (!window.apos) {
 }
 
 var apos = window.apos;
+var polyglot = new Polyglot();
+// the function below is just an alias, to make things look more consistent
+// between the server and the client side i18n
+var __ = function(key,options){ return polyglot.t(key, options); };
 
 (function() {
   /* jshint devel: true */
@@ -212,7 +216,7 @@ apos.getTopModalOrBody = function() {
 // Be sure to read about apos.modalFromTemplate too, as that is usually
 // the easiest way to present a modal.
 
-// apos.modal displays the element specified by sel as a modal dialog. Goes 
+// apos.modal displays the element specified by sel as a modal dialog. Goes
 // away when the user clicks .apos-save or .apos-cancel, or submits the form
 // element in the modal (implicitly saving), or presses escape.
 //
@@ -223,14 +227,14 @@ apos.getTopModalOrBody = function() {
 // modal with content (usually used with apos.modalFromTemplate, below).
 // If you pass an error as the first argument to the callback the
 // modal will not appear and options.afterHide will be triggered immediately.
-// Don't forget to call the callback. 
+// Don't forget to call the callback.
 //
-// Note that apos.modal is guaranteed to return *before* options.init is called, 
+// Note that apos.modal is guaranteed to return *before* options.init is called,
 // so you can refer to $el in a closure. This is useful if you are using
 // apos.modalFromTemplate to create $el.
 
 // options.afterHide can be an asynchronous function to do something
-// after the modal is dismissed (for any reason, whether saved or cancelled), 
+// after the modal is dismissed (for any reason, whether saved or cancelled),
 // like removing it from the DOM if that is appropriate.
 // Don't forget to call the callback. Currently passing an error
 // to the afterHide callback has no effect.
