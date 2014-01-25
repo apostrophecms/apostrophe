@@ -15,9 +15,9 @@
     <div class="apos-select-wrapper">
       {{ __('Browse') }}: {{ formSelectStandalone('group',
         [
-          { label: __('All Media Types'), value: '' },
-          { label: __('Images'), value: 'images' },
-          { label: __('Office'), value: 'office' }
+          { label: 'All Media Types', value: '' },
+          { label: 'Images', value: 'images' },
+          { label: 'Office', value: 'office' }
         ]
       ) }}
       <div class="apos-select-arrow"></div>
@@ -25,8 +25,8 @@
     <div class="apos-select-wrapper">
       {{ __('Uploaded By') }}: {{ formSelectStandalone('owner',
         [
-          { label: __('Everyone'), value: 'all' },
-          { label: __('Me'), value: 'user' }
+          { label: 'Everyone', value: 'all' },
+          { label: 'Me', value: 'user' }
         ]
       ) }}
       <div class="apos-select-arrow"></div>
@@ -34,8 +34,8 @@
     <div class="apos-select-wrapper">
       {{ __('Status') }}: {{ formSelectStandalone('trash',
         [
-          { label: __('Live'), value: '0' },
-          { label: __('Trash'), value: '1' }
+          { label: 'Live', value: '0' },
+          { label: 'Trash', value: '1' }
         ]
       ) }}
       <div class="apos-select-arrow"></div>
@@ -44,8 +44,8 @@
     MAYBE LATER
     Sort By: {{ formSelectStandalone('sort',
       [
-        { label: __('Most Recent'), value: 'createdAt' },
-        { label: __('Title'), value: 'title' }
+        { label: 'Most Recent', value: 'createdAt' },
+        { label: 'Title', value: 'title' }
       ]
     ) }}
     #}
@@ -121,10 +121,10 @@
           <span data-progress style="display: none">{{ __('Uploading...') }}</span>
         </div>
         <form>
-          {{ formText('title', __('Title')) }}
-          {{ formTags('tags', __('Tags')) }}
-          {{ formText('credit', __('Credit')) }}
-          {{ formTextarea('description', __('Description')) }}
+          {{ formText('title', 'Title') }}
+          {{ formTags('tags', 'Tags') }}
+          {{ formText('credit', 'Credit') }}
+          {{ formTextarea('description', 'Description') }}
           <a href="#" data-cancel-item class="apos-control apos-button apos-cancel-item">{{ __('Cancel') }}</a>
           <a href="#" data-save-item class="apos-control apos-button apos-save-changes">{{ __('Save Changes') }}</a>
           <a href="#" data-delete-item class="apos-control apos-button apos-delete">{{ __('Move to Trash') }}</a>

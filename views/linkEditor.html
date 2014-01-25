@@ -10,11 +10,11 @@
     <form>
       {% block formBody %}
         <p>{{ __('Enter a URL. To create an email link, enter: <code>mailto:me@example.com</code>') }}</p>
-        {{ formText('href', __('Link To')) }}
+        {{ formText('href', 'Link To') }}
         <p>{{ __('You can also name this point in the text as a target for <em>other</em> links ending in <code>#name</code>.') }}</p>
-        {{ formText('name', __('Named Anchor')) }}
+        {{ formText('name', 'Named Anchor') }}
         <p>{{ __('Enter an optional tab name to open the link in a new tab. Usually you will leave this blank. Use <code>_blank</code> to guarantee a new tab each time.') }}</p>
-        {{ formText('target', __('Target')) }}
+        {{ formText('target', 'Target') }}
       {% endblock %}
     </form>
   </div>

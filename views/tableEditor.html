@@ -16,8 +16,8 @@
       {# Certain widgets, like the slideshow, are best off overriding all of this at one go #}
       {% block formAll %}
         {% block formBody %}
-          {{ formText('rows', __('Rows')) }}
-          {{ formText('columns', __('Columns')) }}
+          {{ formText('rows', 'Rows') }}
+          {{ formText('columns', 'Columns') }}
         {% endblock %}
       {% endblock %}
     </form>
