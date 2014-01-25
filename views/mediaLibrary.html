@@ -2,7 +2,7 @@
 
 {% macro showField(name, label) %}
   <div class="apos-show-pane-field">
-    <div class="apos-label">{{ label | e }}</div>
+    <div class="apos-label">{{ __(label) | e }}</div>
     <div class="apos-value" data-name="{{ name | e }}">&mdash;</div>
   </div>
 {% endmacro %}
@@ -91,14 +91,14 @@
           <div class="apos-preview-inner" >
             <div class="apos-preview-image" data-preview></div>
             <div class="apos-preview-info">
-              {{ showField('title', __('Title')) }}
-              {{ showField('name', __('Filename')) }}
-              {{ showField('tags', __('Tags')) }}
-              {{ showField('credit', __('Credit')) }}
-              {{ showField('description', __('Description')) }}
-              {{ showField('group', __('Media Type')) }}
-              {{ showField('extension', __('Media Format')) }}
-              {{ showField('createdAt', __('Date Added')) }}
+              {{ showField('title', 'Title') }}
+              {{ showField('name', 'Filename') }}
+              {{ showField('tags', 'Tags') }}
+              {{ showField('credit', 'Credit') }}
+              {{ showField('description', 'Description') }}
+              {{ showField('group', 'Media Type') }}
+              {{ showField('extension', 'Media Format') }}
+              {{ showField('createdAt', 'Date Added') }}
               <div class="apos-show-pane-field apos-download-original">
                 <div class="apos-label">{{ __('Download Original') }}</div>
                 <div class="apos-value" data-name="downloadOriginal">&mdash;</div>
