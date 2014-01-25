@@ -21,18 +21,18 @@
   </div>
 
   <div class="apos-login">
-    <h4>{% block subHeading %}LOGIN{% endblock %}</h4>
+    <h4>{% block subHeading %}{{ __('LOGIN') }}{% endblock %}</h4>
     {% block form %}
       <form action="{% block action %}/login{% endblock %}" method="post">
         <div class="login-inputs">
           {% if message %}<div class="warning">{{ message }}</div>{% endif %}
           {% block fields %}
             <div class="login-username">
-              <label>Username or Email {% block usernameHint %}{% endblock %}</label>
+              <label>{{ __('Username or Email') }} {% block usernameHint %}{% endblock %}</label>
               <input type="text" name="username" />
             </div>
             <div class="login-password">
-              <label>Password {% block passwordHint %}{% endblock %}</label>
+              <label>{{ __('Password') }} {% block passwordHint %}{% endblock %}</label>
               <input type="password" name="password" />
             </div>
           {% endblock %}
@@ -42,7 +42,7 @@
           {% block forgot %}
             {% if resetAvailable %}
             <br />
-              <a class="login-reset" href="/apos-people/reset-request">Reset My Password</a>
+              <a class="login-reset" href="/apos-people/reset-request">{{ __('Reset My Password') }}</a>
             {% endif %}
           {% endblock %}
         </div>

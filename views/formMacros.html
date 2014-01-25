@@ -18,12 +18,12 @@
   <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
     <label>{{ label | e }}</label>
     <!-- Text entry for autocompleting the next item -->
-    <input name="{{ name | e }}" data-autocomplete placeholder="Type Here" class="autocomplete" />
+    <input name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
     <ul data-list class="apos-tag-list">
       <li data-item>
         <span class="label-and-remove">
           <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
-          <span data-label>Example label</span>
+          <span data-label>{{ __('Example label') }}</span>
           <!-- Link to remove this choice -->
         </span>
       </li>
@@ -109,7 +109,7 @@
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
     <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ options.placeholder | e }}"{%endif %}/>
-    <span class="apos-limit-indicator" data-limit-indicator>Limit Reached!</span>
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list>
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
@@ -136,7 +136,7 @@
           </span>
         {% endif %}
         {% if options.propagate %}
-          <span class="apos-propagate"><input type="checkbox" data-propagate /> Apply to Subpages</span>
+          <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
         {% endif %}
       </li>
     </ul>

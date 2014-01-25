@@ -3,18 +3,18 @@
 <div class="apos-link-editor apos-modal apos-template">
   <h3>
     {% block title %}
-      Edit Link
+      {{ __('Edit Link') }}
     {% endblock %}
   </h3>
   <div class="apos-modal-body">
     <form>
       {% block formBody %}
-        <p>Enter a URL. To create an email link, enter: <code>mailto:me@example.com</code></p>
-        {{ formText('href', 'Link To') }}
-        <p>You can also name this point in the text as a target for <em>other</em> links ending in <code>#name</code>.</p>
-        {{ formText('name', 'Named Anchor') }}
-        <p>Enter an optional tab name to open the link in a new tab. Usually you will leave this blank. Use <code>_blank</code> to guarantee a new tab each time.</p>
-        {{ formText('target', 'Target') }}
+        <p>{{ __('Enter a URL. To create an email link, enter: <code>mailto:me@example.com</code>') }}</p>
+        {{ formText('href', __('Link To')) }}
+        <p>{{ __('You can also name this point in the text as a target for <em>other</em> links ending in <code>#name</code>.') }}</p>
+        {{ formText('name', __('Named Anchor')) }}
+        <p>{{ __('Enter an optional tab name to open the link in a new tab. Usually you will leave this blank. Use <code>_blank</code> to guarantee a new tab each time.') }}</p>
+        {{ formText('target', __('Target')) }}
       {% endblock %}
     </form>
   </div>
@@ -22,8 +22,8 @@
     {% block additionalFooterItems %}
     {% endblock %}
     <div class="apos-modal-footer-buttons">
-      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
-      <a href="#" class="apos-control apos-button apos-save">Save Link</a>
+      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Cancel') }}</a>
+      <a href="#" class="apos-control apos-button apos-save">{{ __('Save Link') }}</a>
     </div>
   </div>
 </div>

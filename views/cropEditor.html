@@ -2,15 +2,15 @@
 <div class="apos-slideshow-crop apos-modal apos-template">
   <h3>
     {% block title %}
-      Crop Image
+      {{ __('Crop Image') }}
     {% endblock %}
   </h3>
   <div class="apos-modal-body">
     <img class="apos-crop-image" data-crop-image />
   </div>
   <div class="apos-modal-footer">
-    <a href="#" class="apos-control apos-button apos-save">Crop</a>
-    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
+    <a href="#" class="apos-control apos-button apos-save">{{ __('Crop') }}</a>
+    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Cancel') }}</a>
     <div class="apos-progress-container">
       {% include "progress.html" %}
     </div>
