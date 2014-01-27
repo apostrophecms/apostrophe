@@ -22,11 +22,14 @@
       addKeyCodes = [ addKeyCodes ];
     }
 
+    var _new = false;
+
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
     // with selective yet
     if (!$el.data('aposSelective')) {
       $el.data('aposSelective', {});
+      _new = true;
     }
     var self = $el.data('aposSelective');
     if (!self) {
@@ -54,14 +57,27 @@
         return self.clear();
       }
     } else {
+      if (!_new) {
+        // Re-configuring a previously configured element.
+        // Mop up our previous event handlers so we can set up again
+
+        self.$autocomplete.autocomplete('destroy');
+        self.$autocomplete.off('keydown.selective');
+        self.$list.off('click.selective');
+      }
+
       self.$list = $el.find('[data-list]');
       self.$autocomplete = $el.find('[data-autocomplete]');
-      self.$itemTemplate = $el.find('[data-item]');
+      // Careful, when reconfiguring an existing element this won't be
+      // available in the DOM anymore but we already have it
+      if (!self.$itemTemplate) {
+        self.$itemTemplate = $el.find('[data-item]');
+      }
       self.$limitIndicator = $el.find('[data-limit-indicator]');
 
       self.$itemTemplate.remove();
       if (options.add) {
-        self.$autocomplete.on('keydown', function(e) {
+        self.$autocomplete.on('keydown.selective', function(e) {
           if ($.inArray(e.which, addKeyCodes) !== -1)
           {
             var val = self.$autocomplete.val();
@@ -115,7 +131,7 @@
       if (options.sortable) {
         self.$list.sortable((typeof(options.sortable) === 'object') ? options.sortable : undefined);
       }
-      self.$list.on('click', '[data-remove]', function() {
+      self.$list.on('click.selective', '[data-remove]', function() {
         var $item = $(this).closest('[data-item]');
         if (strikethrough) {
           var $label = $item.find('[data-label]');
