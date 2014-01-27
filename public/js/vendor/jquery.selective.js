@@ -69,6 +69,7 @@
             self.$autocomplete.val('');
             self.$autocomplete.autocomplete('close');
             self.checkLimit();
+            $el.trigger('change');
             return false;
           }
           return true;
@@ -107,6 +108,7 @@
           self.$autocomplete.val('');
           self.add(ui.item);
           self.checkLimit();
+          $el.trigger('change');
           return false;
         }
       });
@@ -130,6 +132,7 @@
         } else {
           $item.remove();
         }
+        $el.trigger('change');
         self.checkLimit();
         return false;
       });
