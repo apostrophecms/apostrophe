@@ -45,6 +45,9 @@ apos.addWidgetType = function(typeName, defaultConstructorName) {
         label: Constructor.label,
         editor: Constructor
       };
+      // Allows properties known about the widget on the server side to be
+      // seen on the browser side
+      $.extend(true, apos.widgetTypes[typeName], (apos.data.widgetOptions && apos.data.widgetOptions[typeName]) || {});
     } catch (e) {
       apos.log('Error constructing widget ' + typeName + ', expected constructor function named ' + constructorName + ', error was:');
       throw e;
