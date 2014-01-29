@@ -22,11 +22,14 @@
       addKeyCodes = [ addKeyCodes ];
     }
 
+    var _new = false;
+
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
     // with selective yet
     if (!$el.data('aposSelective')) {
       $el.data('aposSelective', {});
+      _new = true;
     }
     var self = $el.data('aposSelective');
     if (!self) {
@@ -47,21 +50,34 @@
     // such as 'get', otherwise set up a new instance
     if (typeof(options) === 'string') {
       if (options === 'get') {
-        return self.get();
+        return self.get(arguments[1]);
       } else if (options === 'set') {
         return self.set(arguments[1]);
       } else if (options === 'clear') {
         return self.clear();
       }
     } else {
+      if (!_new) {
+        // Re-configuring a previously configured element.
+        // Mop up our previous event handlers so we can set up again
+
+        self.$autocomplete.autocomplete('destroy');
+        self.$autocomplete.off('keydown.selective');
+        self.$list.off('click.selective');
+      }
+
       self.$list = $el.find('[data-list]');
       self.$autocomplete = $el.find('[data-autocomplete]');
-      self.$itemTemplate = $el.find('[data-item]');
+      // Careful, when reconfiguring an existing element this won't be
+      // available in the DOM anymore but we already have it
+      if (!self.$itemTemplate) {
+        self.$itemTemplate = $el.find('[data-item]');
+      }
       self.$limitIndicator = $el.find('[data-limit-indicator]');
 
       self.$itemTemplate.remove();
       if (options.add) {
-        self.$autocomplete.on('keydown', function(e) {
+        self.$autocomplete.on('keydown.selective', function(e) {
           if ($.inArray(e.which, addKeyCodes) !== -1)
           {
             var val = self.$autocomplete.val();
@@ -69,6 +85,7 @@
             self.$autocomplete.val('');
             self.$autocomplete.autocomplete('close');
             self.checkLimit();
+            $el.trigger('change');
             return false;
           }
           return true;
@@ -107,13 +124,14 @@
           self.$autocomplete.val('');
           self.add(ui.item);
           self.checkLimit();
+          $el.trigger('change');
           return false;
         }
       });
       if (options.sortable) {
         self.$list.sortable((typeof(options.sortable) === 'object') ? options.sortable : undefined);
       }
-      self.$list.on('click', '[data-remove]', function() {
+      self.$list.on('click.selective', '[data-remove]', function() {
         var $item = $(this).closest('[data-item]');
         if (strikethrough) {
           var $label = $item.find('[data-label]');
@@ -130,6 +148,7 @@
         } else {
           $item.remove();
         }
+        $el.trigger('change');
         self.checkLimit();
         return false;
       });
@@ -158,6 +177,8 @@
         }
         var $item = self.$itemTemplate.clone();
         $item.attr('data-value', item.value);
+        // So that the label can be made available to the `get` method easily
+        $item.attr('data-label', item.label);
         $item.find('[data-label]').text(item.label);
         // Also repopulate "extras" if the data is provided
         $.each(item, function(property, value) {
@@ -211,6 +232,9 @@
 
       self.get = function(options) {
         var valuesOnly = (options && options.valuesOnly) || ((!removed) && (!extras));
+        if (options && options.withLabels) {
+          valuesOnly = false;
+        }
         var result = [];
         $.each(self.$list.find('[data-item]'), function(i, item) {
           var $item = $(item);
@@ -219,6 +243,9 @@
           } else {
             var datum = {};
             datum.value = $item.attr('data-value');
+            if (options && options.withLabels) {
+              datum.label = $item.attr('data-label');
+            }
             if (removed) {
               datum.removed = $item.data('removed') ? 1 : 0;
             }

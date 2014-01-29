@@ -1,5 +1,5 @@
 /* global rangy, $, _ */
-/* global alert, prompt, AposWidgetEditor, apos */
+/* global alert, confirm, prompt, AposWidgetEditor, apos */
 
 function AposSlideshowWidgetEditor(options)
 {
@@ -53,6 +53,18 @@ function AposSlideshowWidgetEditor(options)
   // Override methods for this subclass
   self.busy = function(state) {
     apos.busy(self.$el, state);
+  };
+
+  // Confirm before cancelling the slideshow widget as it can contain
+  // large amounts of new work that are lost forever. TODO: stop using
+  // "confirm" once we have a nicer confirmation modal in A2. Find a
+  // good way to avoid being a nag if no work has really been done yet.
+  self.beforeCancel = function(callback) {
+    if (confirm('Are you sure you want to cancel your edits to this slideshow?')) {
+      return callback(null);
+    } else {
+      return callback('canceled');
+    }
   };
 
   // Our current thinking is that preview is redundant for slideshows.

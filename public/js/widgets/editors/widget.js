@@ -52,8 +52,14 @@ function AposWidgetEditor(options) {
   }
 
   // Invoked after the widget is dismissed. By default this method cleans up interval timers.
-  self.afterHide = function() {
+  self.afterHide = function(callback) {
     _.map(self.timers, function(timer) { clearInterval(timer); });
+    return callback(null);
+  };
+
+  // Invoked before the widget is dismissed. Can be overridden to force the user to confirm.
+  self.beforeCancel = function(callback) {
+    return callback();
   };
 
   // Create a new widget for insertion into the main content editor.
@@ -274,8 +280,17 @@ function AposWidgetEditor(options) {
       },
 
       afterHide: function(callback) {
-        self.afterHide();
-        return callback(null);
+        // Support legacy afterHide methods with no callback
+        if (!self.afterHide.length) {
+          self.afterHide();
+          return callback(null);
+        } else {
+          return self.afterHide(callback);
+        }
+      },
+
+      beforeCancel: function(callback) {
+        return self.beforeCancel(callback);
       }
     });
   };

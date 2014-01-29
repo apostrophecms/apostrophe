@@ -209,7 +209,7 @@ function AposMediaLibrary(options) {
   self.populateItem = function($item, item) {
     $item.data('item', item);
     if (item.group === 'images') {
-      var $img = $('<div class="apos-preview-image" style="background-image:url('+apos.filePath(item, { size: 'one-third' })+');" ></div>');
+      var $img = $('<div class="apos-preview-image" style="background-image:url('+self.getImagePath(item, 'one-third')+');" ></div>');
       // $img.attr('src', apos.filePath(item, { size: 'one-third' }));
       $item.find('[data-preview]').html($img);
     } else {
@@ -238,7 +238,7 @@ function AposMediaLibrary(options) {
 
     if (item.group === 'images') {
       var $img = $('<img class="apos-preview-image" />');
-      $img.attr('src', apos.filePath(item, { size: 'one-half' }));
+      $img.attr('src', self.getImagePath(item, 'one-half'));
       self.$normal.find('[data-preview]').html($img);
     } else {
       self.$normal.find('[data-preview]').html('');
@@ -257,7 +257,10 @@ function AposMediaLibrary(options) {
     $link.text(apos.filePath(item));
     var $downloadOriginal = self.$normal.find('[data-name="downloadOriginal"]');
     $downloadOriginal.html('');
-    $downloadOriginal.append($link);
+    // Downloads won't work while an item is in the trash. -Tom
+    if (!item.trash) {
+      $downloadOriginal.append($link);
+    }
 
     // Show the edit button or the rescue button, but only if we can edit
     if (item._edit) {
@@ -281,7 +284,7 @@ function AposMediaLibrary(options) {
 
     if (item.group === 'images') {
       var $img = $('<img class="apos-preview-image" />');
-      $img.attr('src', apos.filePath(item, { size: 'one-sixth' }));
+      $img.attr('src', self.getImagePath(item, 'one-sixth'));
       self.$edit.find('[data-preview]').html($img);
     } else {
       self.$edit.find('[data-preview]').html('');
@@ -368,12 +371,16 @@ function AposMediaLibrary(options) {
     $.jsonCall(options.deleteFileUrl || '/apos/delete-file', {
       _id: item._id
     }, function(result) {
-      // Deletion causes issues with pagination, even with
-      // infinite scroll - is this page empty now? Simplest to reload.
-      // Later we might finesse this more
-      self.resetIndex();
-      apos.change('media');
-      return callback();
+      if (result.status === 'ok') {
+        // Deletion causes issues with pagination, even with
+        // infinite scroll - is this page empty now? Simplest to reload.
+        // Later we might finesse this more
+        self.resetIndex();
+        apos.change('media');
+        return callback();
+      } else {
+        alert('Error (already deleted?)');
+      }
     });
   };
 
@@ -382,10 +389,14 @@ function AposMediaLibrary(options) {
     $.jsonCall(options.rescueFileUrl || '/apos/rescue-file', {
       _id: item._id
     }, function(result) {
-      // Undeletion causes issues with pagination, even with
-      // infinite scroll - is this page empty now? Simplest to reload.
-      // Later we might finesse this more
-      self.resetIndex();
+      if (result.status === 'ok') {
+        // Undeletion causes issues with pagination, even with
+        // infinite scroll - is this page empty now? Simplest to reload.
+        // Later we might finesse this more
+        self.resetIndex();
+      } else {
+        alert('Error (already rescued?)');
+      }
     });
   };
 
@@ -448,6 +459,14 @@ function AposMediaLibrary(options) {
       offset.top = showTop;
     }
     $el.offset(offset);
+  };
+
+  self.getImagePath = function(image, size) {
+    if (image.trash) {
+      // Only size available while in trash
+      size = 'one-sixth';
+    }
+    return apos.filePath(image, { size: size });
   };
 
   self.fixedHeader = function() {

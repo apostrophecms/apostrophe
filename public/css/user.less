@@ -144,6 +144,10 @@
 {
   margin: 0 10px;
   float: left;
+  -moz-appearance: none;
+   appearance: none;
+   text-indent: 0.01px;
+   text-overflow: '';
 }
 
 .apos-toolbar .apos-bold-button
@@ -1636,16 +1640,36 @@ body .ui-tooltip
      letter-spacing: 1px;
      text-transform: uppercase;
      font-weight: bold;
-     border: 0;
-     border-radius: 0;
+     border: 0px solid transparent;
+     border-radius: 0px;
      -webkit-appearance: none;
-     padding: 0 40px 0 10px;
+     -moz-appearance: none;
+     appearance: none;
+     text-indent: 0.01px;
+     text-overflow: '';
+     padding: 10px 40px 10px 10px;
      height: 30px;
+     vertical-align: middle;
      &:hover{cursor: pointer;}
      &:focus
      {
-       outline:none;
+      -moz-outline: none;
+      outline:none;
      }
+  }
+  form
+  {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  option
+  {
+    margin: 10px 0px 0px 10px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 0px solid transparent;
   }
   .apos-select-arrow
   {
@@ -1655,7 +1679,7 @@ body .ui-tooltip
     top: 0px;
     padding: 15px;
     pointer-events: none;
-    margin-top: -3px;
+    margin-top: -2px;
 
     &:before
     {
