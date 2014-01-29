@@ -50,7 +50,7 @@
     // such as 'get', otherwise set up a new instance
     if (typeof(options) === 'string') {
       if (options === 'get') {
-        return self.get();
+        return self.get(arguments[1]);
       } else if (options === 'set') {
         return self.set(arguments[1]);
       } else if (options === 'clear') {
@@ -177,6 +177,8 @@
         }
         var $item = self.$itemTemplate.clone();
         $item.attr('data-value', item.value);
+        // So that the label can be made available to the `get` method easily
+        $item.attr('data-label', item.label);
         $item.find('[data-label]').text(item.label);
         // Also repopulate "extras" if the data is provided
         $.each(item, function(property, value) {
@@ -230,6 +232,9 @@
 
       self.get = function(options) {
         var valuesOnly = (options && options.valuesOnly) || ((!removed) && (!extras));
+        if (options && options.withLabels) {
+          valuesOnly = false;
+        }
         var result = [];
         $.each(self.$list.find('[data-item]'), function(i, item) {
           var $item = $(item);
@@ -238,6 +243,9 @@
           } else {
             var datum = {};
             datum.value = $item.attr('data-value');
+            if (options && options.withLabels) {
+              datum.label = $item.attr('data-label');
+            }
             if (removed) {
               datum.removed = $item.data('removed') ? 1 : 0;
             }
