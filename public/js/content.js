@@ -385,10 +385,6 @@ apos.modal = function(sel, options) {
         return;
       }
 
-      // This is where we're calling lister.
-      var $selects = $el.find('[data-lister]');
-      $selects.lister();
-
       apos.pushSelection();
 
       // Black out the document or the top modal if there already is one.
