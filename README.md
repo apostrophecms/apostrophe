@@ -64,6 +64,8 @@ Apostrophe wouldn't be nearly so awesome without [nunjucks](http://nunjucks.jlon
 
 Apostrophe 2 is in production on some client sites. Overall code stability is beta at this point.
 
+0.4.x releases receive bug fixes only. For active development, follow 0.5.x releases and/or the master branch in github.
+
 ## Requirements
 
 Apostrophe is intended to work in all major browsers from IE7 up, with best results in modern browsers such as recent versions of Firefox and Chrome. Of course the content you create with Apostrophe could work with any browser.
