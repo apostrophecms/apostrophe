@@ -388,6 +388,7 @@ apos.modal = function(sel, options) {
         hideModal();
         return;
       }
+
       apos.pushSelection();
 
       // Black out the document or the top modal if there already is one.

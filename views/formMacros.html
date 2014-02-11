@@ -68,6 +68,7 @@
     {% for key, val in _attrs %}
       {{ key }}="{{ val | e }}"
     {% endfor %}
+    data-lister
   >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}">{{ __(choice.label) | e }}</option>

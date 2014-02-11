@@ -39,6 +39,7 @@ describe('apostrophe', function() {
     });
   });
   describe('test apos.build', function() {
+    var start = (new Date()).getTime();
     it('returns a URL unmodified', function(done) {
       assert(apos.build('/events') === '/events');
       return done();
@@ -104,6 +105,12 @@ describe('apostrophe', function() {
       assert(result === '/events/2013/05?tag=dance');
       return done();
     });
+    it('Takes less than 250 msec to run these tests', function(done) {
+      var end = (new Date()).getTime();
+      // console.log(end - start);
+      assert((end - start) < 250);
+      return done();
+    });
   });
   describe('test escapeHtml', function() {
     it('is defined', function() {
@@ -156,6 +163,17 @@ describe('apostrophe', function() {
       o.d[0].d._f = 'should get pruned too';
       apos.pruneTemporaryProperties(o);
       assert(JSON.stringify(o) === correct);
+    });
+  });
+  describe('test slugify', function() {
+    it('is defined', function() {
+      assert(apos.slugify);
+    });
+    it('behaves reasonably for ascii', function() {
+      assert(apos.slugify('I love manicotti, cheese!!! and sushi ') === 'i-love-manicotti-cheese-and-sushi');
+    });
+    it('behaves reasonably for non-ascii', function() {
+      assert(apos.slugify('I love manicottiณณณ, cheese!!! and sushi ') === 'i-love-manicottiณณณ-cheese-and-sushi');
     });
   });
 });
