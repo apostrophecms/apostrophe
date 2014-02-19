@@ -78,7 +78,10 @@
       self.$itemTemplate.remove();
       if (options.add) {
         self.$autocomplete.on('keydown.selective', function(e) {
-          if ($.inArray(e.which, addKeyCodes) !== -1)
+          if (
+            $.inArray(e.which, addKeyCodes) !== -1 || // for key code
+            $.inArray(e.originalEvent.keyIdentifier, addKeyCodes) !== -1 // for a key identifier
+          )
           {
             var val = self.$autocomplete.val();
             self.add({ label: val, value: val });
