@@ -407,7 +407,7 @@ apos.moveYoungerSiblings = function(node, target) {
 // assigned to this item.
 apos.enableTags = function($el, tags) {
   tags = tags || [];
-  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 188] });
+  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
 };
 
 // Set things up to instantiate the media library when the button is clicked. This is set up
