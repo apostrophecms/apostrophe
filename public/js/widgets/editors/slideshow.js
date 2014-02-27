@@ -202,6 +202,12 @@ function AposSlideshowWidgetEditor(options)
       });
     }
 
+    // in the event of unstyleable input (firefox), pass clicks from the placeholder to the input
+    self.$el.find('[data-file-uploader-status]').on('click', function(){
+     self.$el.find('[data-uploader]').trigger('click');
+     return false;
+    });
+
     self.$el.find('[data-enable-extra-fields]').on('click', function(){
      self.$el.find('[data-items]').toggleClass('apos-extra-fields-enabled');
      reflect();
