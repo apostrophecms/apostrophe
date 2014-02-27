@@ -203,8 +203,15 @@
             var $nextList = $nextSelect.next("ul");
 
             if (self.settings.populateSelectedTop) {
-                var $firstOption = $nextSelect.children("option").first();
-                $selectedTop.text($firstOption.text());
+
+                var selectVal = self.$element.val();
+                var $selectedOption = self.$element.find('option[value="'+selectVal+'"]');
+
+                if (selectVal === undefined) {
+                   $selectedOption = self.$element.children("option").first();
+                }
+                $selectedTop.text($selectedOption.text());
+
             }
         },
 
