@@ -760,16 +760,16 @@
       left: 0;
     }
   }
-  &.apos-upload-disabled 
+  &.apos-upload-disabled
   {
     // background-color: fade(red, 20%);
     .apos-slideshow-file-in-message
-    { 
-      // background-color: red; 
+    {
+      // background-color: red;
       &:hover{cursor: wait; }
     }
   }
-  
+
 }
 
 
@@ -1632,6 +1632,10 @@ body .ui-tooltip
   margin-right: 20px;
   select
   {
+    //With Lister, we don't need to show the selects.
+    visibility: hidden;
+    position: absolute !important;
+
      background: #fff;
      margin: 0 0 0 10px;
      font-family: Helvetica, sans-serif;
@@ -1671,6 +1675,58 @@ body .ui-tooltip
     appearance: none;
     border: 0px solid transparent;
   }
+
+  // The lister "selected" option
+  .lister-selected-top
+  {
+    display: inline-block;
+    background: #fff;
+    margin: 0 0 0 10px;
+    font-family: Helvetica, sans-serif;
+    font-size: 10px;
+    color: @apos-grey10;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+    padding: 3px 80px 3px 20px ;
+  }
+  // The lister options
+  .apos-lister
+  {
+    position:absolute;
+    display: none;
+    background: white;
+    margin-left: 10px;
+    margin-top: -7px;
+    background: white;
+    padding: 0;
+    width: 90%;
+    box-shadow: 2px 2px 10px #eee;
+
+    li
+    {
+      display: block;
+      font-family: Helvetica, sans-serif;
+      font-size: 10px;
+      color: @apos-grey10;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: bold;
+      padding: 5px 10px;
+      cursor: default;
+      &:hover
+      {
+        background: #eee;
+      }
+
+    }
+
+    &.lister-open
+    {
+      display: block;
+    }
+  }
+
   .apos-select-arrow
   {
     position: absolute;
@@ -1679,7 +1735,7 @@ body .ui-tooltip
     top: 0px;
     padding: 15px;
     pointer-events: none;
-    margin-top: -2px;
+    margin-top: -3px;
 
     &:before
     {

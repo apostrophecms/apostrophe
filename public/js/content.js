@@ -385,7 +385,22 @@ apos.modal = function(sel, options) {
         return;
       }
 
+      // This is the right place for it, but I can't get the events
+      // to fire correctly.
+      $el.find('select[data-lister]').lister({
+        listClass: "apos-lister"
+      });
+
+
+      // // Make lister work!
+      // $(function() {
+      //   $("select[data-lister").lister();
+      // });
+
+
       apos.pushSelection();
+
+
 
       // Black out the document or the top modal if there already is one.
       // If we are blacking out the body height: 100% won't cover the entire document,
@@ -420,6 +435,8 @@ apos.modal = function(sel, options) {
       $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
     });
   });
+
+
 
   return $el;
 };
