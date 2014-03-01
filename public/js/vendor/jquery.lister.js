@@ -133,6 +133,9 @@
                 // For each click event, set the equivalent <option> to selected.
                 $thisItemEquivalent.prop("selected", true);
 
+                // Trigger a change event on the equivalent <select> element
+                self.$element.trigger('change');
+
                 // If we've passed in the option for the selected top section,
                 // let's bind the appropriate clicks to it.
                 if (self.settings.selectedTop) {
@@ -170,7 +173,6 @@
 
             self.$element.on("change", function(event){
                 var $select = $(this);
-                console.log($select);
                 var selectValue = $select.val();
                 var $selectOptions = $select.find("option");
                 var $thisList = $select.next("ul."+self.settings.listClass);
