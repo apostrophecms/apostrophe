@@ -6,23 +6,23 @@
 {% endblock %}
 
 {% block title %}
-  Edit Slideshow
+  {{ __('Edit Slideshow') }}
 {% endblock %}
 
 {% block instructions %}
-Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
-You can also drag images from your computer into the dashed area below. <br /> 
-Or, drag the existing images shown beneath the dashed area. <br />
-<span data-size-warning style="display: none">Images must be at least 400x300 pixels.</span>
+{{ __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
+You can also drag images from your computer into the dashed area below. <br />
+Or, drag the existing images shown beneath the dashed area. <br />') }}
+<span data-size-warning style="display: none">{{ __('Images must be at least 400x300 pixels.') }}</span>
 {% endblock %}
 
 {% block formAll %}
   {# Powered by the blueimp file uploader #}
 
   <div class="apos-slideshow-drag-container" data-drag-container>
-    <div class="apos-slideshow-file-in-message" data-drag-droparea><span data-drag-message>Drop Files Here</span></div>
+    <div class="apos-slideshow-file-in-message" data-drag-droparea><span data-drag-message>{{ __('Drop Files Here') }}</span></div>
     <div class="apos-progress-container">
-      <div data-autocropping class="apos-autocropping">Autocropping...</div>
+      <div data-autocropping class="apos-autocropping">{{ __('Autocropping...') }}</div>
       {% include "progress.html" %}
     </div>
 
@@ -49,17 +49,17 @@ Or, drag the existing images shown beneath the dashed area. <br />
         <div class="apos-slideshow-extra-fields" data-extra-fields>
           {% block hyperlink %}
             <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-link>
-              <label>Link</label>
+              <label>{{ __('Link') }}</label>
               <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
             </fieldset>
             <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-linkTitle>
-              <label>Link Title</label>
+              <label>{{ __('Link Title') }}</label>
               <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
             </fieldset>
           {% endblock %}
           {% block otherExtraFields %}
           {% endblock %}
-          <a href="#" data-extra-fields-save class="apos-control apos-button">Save Changes</a>
+          <a href="#" data-extra-fields-save class="apos-control apos-button">{{ __('Save Changes') }}</a>
         </div>
       </li>
     </ul>
@@ -82,7 +82,7 @@ Or, drag the existing images shown beneath the dashed area. <br />
 
 
   <div class="apos-orientation-select-container">
-    <label class='apos-instructions'>Select Orientation</label>
+    <label class='apos-instructions'>{{ __('Select Orientation') }}</label>
     <a class="apos-button apos-landscape" title="Landscape" data-orientation-button="landscape" href="#"></a>
     <a class="apos-button apos-portrait" title="Portrait" data-orientation-button="portrait" href="#"></a>
     <a class="apos-button apos-square" title="Square" data-orientation-button="square" href="#"></a>
@@ -96,12 +96,12 @@ Or, drag the existing images shown beneath the dashed area. <br />
     {# I float left #}
     <a href="#" data-previous class="apos-previous apos-chooser-pager"></a>
     {# I sting like a bee #}
-    <h5 class="apos-media-chooser-title">Recently Added In Media Chooser:</h5>
+    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Media Chooser') }}:</h5>
 
     {# UX note: you can pretty up the search submit button but please don't remove it #}
     {# entirely as some users will not press enter. -Tom #}
     <div class="apos-media-chooser-search">
-      <label class="apos-chooser-search-label">Search</label>
+      <label class="apos-chooser-search-label">{{ __('Search') }}</label>
       <input type="text" name="search" class="apos-chooser-search" />
       <input type="submit" class="apos-search-submit" value="Go" name="search-submit" />
       <a href="#" class="apos-remove-search apos-control apos-button" data-remove-search>x</a>
@@ -125,6 +125,6 @@ Or, drag the existing images shown beneath the dashed area. <br />
 {% endblock %}
 
 {% block additionalFooterItems %}
-<div class="apos-limit-reached" data-limit-reached style="display: none">You have reached the limit of <span data-limit>5</span> file(s) in this location.</div>
+<div class="apos-limit-reached" data-limit-reached style="display: none">{{ __('You have reached the limit of %s file(s) in this location.', '<span data-limit>5</span>') }}</div>
 {% endblock %}
 

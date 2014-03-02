@@ -19,7 +19,7 @@
         {% endif %}
         <i class='icon-docs'></i>
         <span class="apos-files-extension">{{ file.extension |e }}</span>
-        <a href="{{ aposFilePath(file) }}" class="apos-button apos-files-name">Download {% if file.title %}{{ file.title | e }}{% else %}{{ file.name | e }}{% endif %}</a>
+        <a href="{{ aposFilePath(file) }}" class="apos-button apos-files-name">{{ __('Download') }} {% if file.title %}{{ file.title | e }}{% else %}{{ file.name | e }}{% endif %}</a>
       </li>
     {% endif %}
   {% endfor %}

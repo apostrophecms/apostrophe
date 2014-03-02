@@ -3,14 +3,14 @@
 <div class="apos-table-editor apos-modal apos-template">
   <h3>
     {% block title %}
-      Insert Table
+      {{ __('Insert Table') }}
     {% endblock %}
   </h3>
   <div class="apos-modal-body">
     <form>
       <label class="apos-instructions">
         {% block instructions %}
-          Pick a table size.
+          {{ __('Pick a table size.') }}
         {% endblock %}
       </label>
       {# Certain widgets, like the slideshow, are best off overriding all of this at one go #}
@@ -26,8 +26,8 @@
     {% block additionalFooterItems %}
     {% endblock %}
     <div class="apos-modal-footer-buttons">
-      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
-      <a href="#" class="apos-control apos-button apos-save">Insert Table</a>
+      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Cancel') }}</a>
+      <a href="#" class="apos-control apos-button apos-save">{{ __('Insert Table') }}</a>
     </div>
   </div>
 </div>

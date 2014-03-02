@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Apostrophe</title>
+    <title>{{ __('Apostrophe') }}</title>
     <link href="/apos/css/editor.css" rel="stylesheet" />
     <script src="/apos/js/jquery-1.8.1.min.js"></script>
     <script src="/apos/js/fileIframe.js"></script>
@@ -12,7 +12,7 @@
     {% endif %}
 
     {% if uploaded %}
-      <p class="apos-success">Uploaded.</p>
+      <p class="apos-success">{{ __('Uploaded.') }}</p>
     {% endif %}
 
     <form class="form-file" method="POST" enctype="multipart/form-data" action="/apos/file-iframe/{{ id }}">
