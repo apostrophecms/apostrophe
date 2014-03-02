@@ -389,7 +389,14 @@ apos.modal = function(sel, options) {
         return;
       }
 
+      // Anytime we load new markup for a modal, it's appropriate to
+      // offer an opportunity for progressive enhancement of controls,
+      // for instance via lister
+      apos.emit('enhance', $el);
+
       apos.pushSelection();
+
+
 
       // Black out the document or the top modal if there already is one.
       // If we are blacking out the body height: 100% won't cover the entire document,
@@ -424,6 +431,8 @@ apos.modal = function(sel, options) {
       $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
     });
   });
+
+
 
   return $el;
 };
@@ -922,6 +931,59 @@ apos.afterLogin = function() {
   }
 };
 
+apos.handlers = {};
+
+// Emit an Apostrophe event. All handlers that have been set
+// with apos.on for the same eventName will be invoked. Any additional
+// arguments are received by the handler functions as arguments.
+// Currently the 'enhance' event is used to do progressive enhancement
+// of material newly loaded into the DOM. TODO: merge this with
+// the 'aposReady' jquery DOM event which is currently triggered on
+// 'body'. We should think of all of it as progressive enhancement.
+// To get that right we'll have to make lister play nice with elements
+// that have already been enhanced once.
+
+apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
+  var handlers = apos.handlers[eventName];
+  if (!handlers) {
+    return;
+  }
+  var args = Array.prototype.slice.call(arguments, 1);
+  var i;
+  for (i = 0; (i < handlers.length); i++) {
+    handlers[i].apply(window, args);
+  }
+};
+
+// Install an Apostrophe event handler. The handler will be called
+// when apos.emit is invoked with the same eventName. The handler
+// will receive any additional arguments passed to apos.emit.
+
+apos.on = function(eventName, fn) {
+  apos.handlers[eventName] = (apos.handlers[eventName] || []).concat([ fn ]);
+};
+
+// Remove an Apostrophe event handler. If fn is not supplied, all
+// handlers for the given eventName are removed.
+apos.off = function(eventName, fn) {
+  if (!fn) {
+    delete apos.handlers[eventName];
+    return;
+  }
+  apos.handlers[eventName] = _.filter(apos.handlers[eventName], function(_fn) {
+    return fn !== _fn;
+  });
+};
+
+
+// Progressive enhancement of select elements
+
+apos.on('enhance', function($el) {
+  $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
+    listClass: "apos-lister"
+  });
+});
+
 // Everything in this DOMready block must be an event handler
 // on 'body', optionally filtered to apply to specific elements,
 // so that it can work on elements that don't exist yet.
@@ -951,6 +1013,9 @@ $(function() {
     $(this).closest('.apos-modal-tabs').find('[data-tab-id="'+$(this).attr('data-tab')+'"]').addClass('apos-active');
     $(this).addClass('apos-active');
   });
+
+  // Progressively enhance all elements present on the page at DOMready
+  apos.emit('enhance', $('body'));
 
   // If the aposAfterLogin cookie is set and we are logged in,
   // clear the cookie and redirect as appropriate.
