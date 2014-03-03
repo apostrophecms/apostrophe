@@ -145,7 +145,7 @@ Only widgets (images, videos and the like) may be specified as types for singlet
 It's common to want to do something special if an area or singleton is empty, especially if the user does not have editing privileges. You can detect that:
 
 ```twig
-{% if (not edit) and aposSingletonIsEmpty({ area: page.areas.sidebarVideo, type: 'video' }) %}
+{% if (not edit) and aposSingletonIsEmpty({ area: page.sidebarVideo, type: 'video' }) %}
   <p>Default placeholder video might go here</p>
 {% endif %}
 ```
