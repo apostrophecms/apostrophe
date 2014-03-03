@@ -31,7 +31,8 @@
     "clone": "~0.1.11",
     "nunjucks": "~1.0.0",
     "xregexp": "2.0.0",
-    "nodemailer": "~0.6.0"
+    "nodemailer": "~0.6.0",
+    "i18n": "0.4.1"
   },
   "devDependencies": {},
   "scripts": {
