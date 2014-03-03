@@ -37,7 +37,7 @@
             </div>
           {% endblock %}
           <div class="login-submit clearfix">
-            <input type="submit" class="apos-button" value="{% block buttonLabel %}Log In{% endblock %}" />
+            <input type="submit" class="apos-button" value="{% block buttonLabel %}{{ __('Log In') }}{% endblock %}" />
           </div>
           {% block forgot %}
             {% if resetAvailable %}
