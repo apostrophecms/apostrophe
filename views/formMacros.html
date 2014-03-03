@@ -109,7 +109,7 @@
 {% macro formSelective(name, label, options = {}) %}
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ options.placeholder | e }}"{%endif %}/>
+    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ __( options.placeholder ) | e }}"{%endif %}/>
     <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list>
       {# This is a template for creating the real items, #}
