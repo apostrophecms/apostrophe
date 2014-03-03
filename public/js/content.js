@@ -107,12 +107,25 @@ apos.change = function(what) {
 // This method is for situations where you want to show an image dynamically on the
 // browser side. More typically we render views on the server side, but there are
 // times when this is convenient.
+//
+// TWO SYNTAX OPTIONS:
+//
+// apos.getFirstImage(page, 'body')
+// apos.getFirstImage(page.body)
+//
+// The latter is best if you are dealing with an image nested in an
+// array property etc.
 
-apos.getFirstImage = function(page, areaName) {
-  if (!page.areas[areaName]) {
-    return undefined;
+apos.getFirstImage = function(/* area object, or: page, areaName */) {
+  var area;
+  if (arguments.length === 1) {
+    area = arguments[0];
+  } else {
+    area = arguments[0][arguments[1]];
+    if (!area) {
+      return undefined;
+    }
   }
-  var area = page.areas[areaName];
   var item = _.find(area.items, function(item) {
     return item.type === 'slideshow';
   });
