@@ -105,6 +105,14 @@ describe('apostrophe', function() {
       assert(result === '/events/2013/05?tag=dance');
       return done();
     });
+    it('IH use case #1: later objects can prevent path properties from being added', function(done) {
+      var result = apos.build('/calendar',
+        [ 'year', 'month' ],
+        { year: '2014', month: '01', tag: undefined },
+        { year: null, month: null });
+      assert(result === '/calendar');
+      return done();
+    });
     it('Takes less than 250 msec to run these tests', function(done) {
       var end = (new Date()).getTime();
       // console.log(end - start);
