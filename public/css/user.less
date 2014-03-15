@@ -1703,6 +1703,17 @@ body .ui-tooltip
 /* Selective Styles */
 .apos-fieldset-selective
 {
+
+  // Without this clear there are very weird bugs with sortable: true.
+  // If you change this, please test thoroughly with sortable, making sure
+  // the cursor, the item, and the drop position for the item stay lined up when
+  // the list has at least eight items. You'll need to use a project that has
+  // an array join in it to get a good test case with sortable. -Tom
+  .apos-fieldset-selective-item
+  {
+    clear: left;
+  }
+
   .apos-selective-label
   {
     display: inline-block;
