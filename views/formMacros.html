@@ -2,28 +2,28 @@
 
 {% macro formText(name, label, options = {}) %}
   <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     <input name="{{ name | e }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
   </fieldset>
 {% endmacro %}
 
 {% macro formPassword(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-password apos-fieldset-{{ name | css }}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     <input name="{{ name | e }}" type="password">
   </fieldset>
 {% endmacro %}
 
 {% macro formTags(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     <!-- Text entry for autocompleting the next item -->
-    <input name="{{ name | e }}" data-autocomplete placeholder="Type Here" class="autocomplete" />
+    <input name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
     <ul data-list class="apos-tag-list">
       <li data-item>
         <span class="label-and-remove">
           <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
-          <span data-label>Example label</span>
+          <span data-label>{{ __('Example label') }}</span>
           <!-- Link to remove this choice -->
         </span>
       </li>
@@ -47,14 +47,14 @@
 
 {% macro formTextarea(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     <textarea name="{{ name | e }}" rows="4"></textarea>
   </fieldset>
 {% endmacro %}
 
 {% macro formSelect(name, label, choices) %}
   <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper">
       {{ formSelectStandalone(name, choices) }}
       <div class="apos-select-arrow"></div>
@@ -71,7 +71,7 @@
     data-lister
   >
     {% for choice in choices %}
-      <option value="{{ choice.value | e }}">{{ choice.label | e }}</option>
+      <option value="{{ choice.value | e }}">{{ __(choice.label) | e }}</option>
     {% endfor %}
   </select>
 {% endmacro %}
@@ -89,7 +89,7 @@
 {# specifying the type we want for the singleton #}
 {% macro formSingleton(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ name | css }}" data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     {# js adds this singleton to the dialog #}
     <div data-{{ name }}-edit-view></div>
   </fieldset>
@@ -99,7 +99,7 @@
 {# (TODO: factor that out to content.js or editor.js) #}
 {% macro formArea(name, label) %}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-editable data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     {# js adds this area to the dialog #}
     <div data-{{ name }}-edit-view></div>
   </fieldset>
@@ -109,20 +109,20 @@
 {% macro formSelective(name, label, options = {}) %}
   <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
-    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ options.placeholder | e }}"{%endif %}/>
-    <span class="apos-limit-indicator" data-limit-indicator>Limit Reached!</span>
+    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ __( options.placeholder ) | e }}"{%endif %}/>
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list>
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
       <li data-item>
-        <span class="apos-selective-label" data-label>Title</span>
+        <span class="apos-selective-label" data-label>{{ __(Title) }}</span>
         <a class="apos-remove" data-remove>x</a>
         {% if options.extras %}
           <span class="apos-selective-extras">
             {# TODO: extend our support for different types of extra fields, #}
             {# style them meaningfully. Usually on same row with item #}
             {% for extra in (options.extras or options.relationship) %}
-              <label>{{ extra.label | e }}</label>
+              <label>{{ __(extra.label) | e }}</label>
               {% if (extra.type == 'string') or (extra.type == 'text') %}
                 <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
               {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
@@ -137,7 +137,7 @@
           </span>
         {% endif %}
         {% if options.propagate %}
-          <span class="apos-propagate"><input type="checkbox" data-propagate /> Apply to Subpages</span>
+          <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
         {% endif %}
       </li>
     </ul>
@@ -151,7 +151,7 @@
 {% macro formPillStandalone(name, options) %}
   <span class="apos-pill" data-pill data-name="{{ name }}">
     {%- for pill in options -%}
-      <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ pill.label }}</a>
+      <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ __(pill.label) }}</a>
     {%- endfor -%}
   </span>
 {% endmacro %}
@@ -159,7 +159,7 @@
 {# Pill button group wrapped in a fieldset like the rest #}
 {% macro formPill(name, label, options) %}
   <fieldset class="apos-fieldset apos-fieldset-pill apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+    <label>{{ __(label) | e }}</label>
     {{ formPillStandalone(name, options) }}
   </fieldset>
 {% endmacro %}

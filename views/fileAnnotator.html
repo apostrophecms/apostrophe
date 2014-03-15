@@ -3,8 +3,8 @@
 <div class="apos-file-annotator apos-modal apos-template">
   <h3>
     {% block title %}
-    <a class="apos-button-back icon-left-open apos-button" href="#">Back</a>
-    Edit Image Details
+    <a class="apos-button-back icon-left-open apos-button" href="#">{{ __('Back') }}</a>
+    {{ __('Edit Image Details') }}
     <a class="apos-close-modal icon-cancel apos-button"></a>
     {% endblock %}
   </h3>
@@ -12,7 +12,7 @@
     <form>
       <label class="apos-instructions">
         {% block instructions %}
-          You have uploaded these files. Please take the time to title and tag them so that you can search for them at a later date.
+          {{ __('You have uploaded these files. Please take the time to title and tag them so that you can search for them at a later date.') }}
         {% endblock %}
       </label>
       <div class="apos-modal-inner">
@@ -20,7 +20,7 @@
           {% block formBody %}
             <div data-items>
               <div data-item class="apos-annotate-file apos-template">
-                <div class="apos-annotator-preview" data-preview>Filename or image</div>
+                <div class="apos-annotator-preview" data-preview>{{ __('Filename or image') }}</div>
                 <div class="apos-annotator-column">
                   {{ formText('title', 'Title') }}
                   {{ formTextarea('description', 'Description') }}
@@ -40,8 +40,8 @@
     {% block additionalFooterItems %}
     {% endblock %}
     <div class="apos-modal-footer-buttons">
-      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">Cancel</a>
-      <a href="#" class="apos-control apos-button apos-save">Save Changes</a>
+      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Cancel') }}</a>
+      <a href="#" class="apos-control apos-button apos-save">{{ __('Save Changes') }}</a>
     </div>
   </div>
 </div>

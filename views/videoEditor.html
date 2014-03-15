@@ -5,11 +5,11 @@
 {% endblock %}
 
 {% block title %}
-  Edit Video
+  {{ __('Edit Video') }}
 {% endblock %}
 
 {% block instructions %}
-  Paste a video link.
+  {{ __('Paste a video link.') }}
 {% endblock %}
 
 {% block formEnd %}
@@ -30,12 +30,12 @@
     {# I float left #}
     <a href="#" data-previous class="apos-previous apos-chooser-pager"></a>
     {# I sting like a bee #}
-    <h5 class="apos-media-chooser-title">Recently Added In Video Library:</h5>
+    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Video Library') }}:</h5>
 
     {# UX note: you can pretty up the search submit button but please don't remove it #}
     {# entirely as some users will not press enter. -Tom #}
     <div class="apos-media-chooser-search">
-      <label class="apos-chooser-search-label">Search</label>
+      <label class="apos-chooser-search-label">{{ __('Search') }}</label>
       <input type="text" name="search" class="apos-chooser-search" />
       <input type="submit" class="apos-search-submit" value="Go" name="search-submit" />
       <a href="#" class="apos-remove-search apos-control apos-button" data-remove-search>x</a>

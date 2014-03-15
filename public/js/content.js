@@ -7,6 +7,10 @@ if (!window.apos) {
 }
 
 var apos = window.apos;
+var polyglot = new Polyglot();
+// the function below is just an alias, to make things look more consistent
+// between the server and the client side i18n
+var __ = function(key,options){ return polyglot.t(key, options); };
 
 (function() {
   /* jshint devel: true */
