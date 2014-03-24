@@ -141,10 +141,8 @@ function AposWidgetEditor(options) {
       dataType: 'html',
       success: function(html) {
         self.$widget.append(html);
-        if (apos.data.alwaysEditing) {
-          if (apos.widgetPlayers[self.type]) {
-            apos.widgetPlayers[self.type](self.$widget);
-          }
+        if (apos.widgetPlayers[self.type]) {
+          apos.widgetPlayers[self.type](self.$widget);
         }
         return callback(null);
       }

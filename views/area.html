@@ -1,11 +1,5 @@
 <div {% if options.edit %}data-editable {% if not options.virtual %}data-save{% endif %}{% endif %} class="apos-area" {% if not options.virtual %}data-slug="{{ options.slug }}"{% endif %} data-options="{{ options | jsonAttribute }}" id="{{ id }}">
   <div class="apos-normal-view">
-    {% if (not alwaysEditing) and (not options.virtual) and options.edit %}
-      <div class="apos-area-controls">
-        <a class="apos-control apos-button apos-edit-area" href="#"><i class="icon-pencil"></i></a>
-      </div>
-      <div class="apos-clear"></div>
-    {%- endif -%}
     <div class="apos-content">{{ aposAreaContent(area.items, options) }}</div>
   </div>
 </div>
