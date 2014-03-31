@@ -26,7 +26,7 @@
     "password-hash": "~1.2.1",
     "joinr": "~0.1.0",
     "async": "~0.2.9",
-    "underscore": "1.5.1",
+    "lodash": "2.4.x",
     "sanitize-html": "~1.0.0",
     "clone": "~0.1.11",
     "nunjucks": "~1.0.0",
