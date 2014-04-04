@@ -2,11 +2,15 @@
 {% endblock %}
 
 <div class="{{ widgetClass }} apos-widget-editor apos-modal apos-template">
-  <h3>
+  <h3 class="apos-modal-title">
     {% block title %}
       {{ __('Edit Widget') }}
     {% endblock %}
   </h3>
+  <div class="apos-modal-controls">
+      <a href="#" data-cancel class="apos-button apos-edit-modal apos-button-white apos-button-arrow-left">{{ __('Cancel') }}</a>
+      <a href="#" data-save class="apos-button apos-edit-modal apos-button-red">{{ __('Save Changes') }}</a>
+  </div>
 
   <form>
     <div class="apos-modal-body apos-ui">
@@ -30,9 +34,5 @@
   <div class="apos-modal-footer">
     {% block additionalFooterItems %}
     {% endblock %}
-    <div class="apos-modal-footer-buttons">
-      <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Cancel') }}</a>
-      <a href="#" class="apos-control apos-button apos-save">{{ __('Save Changes') }}</a>
-    </div>
   </div>
 </div>
