@@ -54,22 +54,21 @@ Apostrophe also provides server-side node.js code providing a back end for all o
 
 ## Who are we?
 
-Apostrophe is led by the team at [P'unk Avenue](http://punkave.com). Previously we created Apostrophe 1.5, a well-regarded content management system based on the Symfony framework for PHP. This Node-based version of Apostrophe is a complete rewrite, benefitting on everything we've learned since.
+Apostrophe is led by the team at [P'unk Avenue](http://punkave.com). Previously we created Apostrophe 1.5, a well-regarded content management system based on the Symfony framework for PHP. This Node-based version of Apostrophe is a complete rewrite, building on new and old ideas.
 
 ## Acknowledgements
 
-Apostrophe wouldn't be nearly so awesome without [nunjucks](http://nunjucks.jlongster.com/), [Express](http://expressjs.com/) and [Rangy](http://code.google.com/p/rangy/). Please don't go anywhere near HTML's `contentEditable` attribute without Rangy. And a hip flask.
+Apostrophe wouldn't be nearly so awesome without [nunjucks](http://nunjucks.jlongster.com/) and [Express](http://expressjs.com/).
 
 ## Stability
 
-Apostrophe 2 is in production on some client sites. Overall code stability is beta at this point.
+Apostrophe 2 is in production on over a dozen P'unk Avenue client sites. Overall code stability is beta at this point.
 
 ## Requirements
 
-Apostrophe is intended to work in all major browsers from IE7 up, with best results in modern browsers such as recent versions of Firefox and Chrome. Of course the content you create with Apostrophe could work with any browser.
+Apostrophe's editing functionality is intended to work in all modern web browsers, including IE9 and up as well as current releases of Chrome, Firefox and Safari. Of course the content you create with Apostrophe could work with any browser.
 
-Apostrophe's server-side components are built in Node and require Express 3.0. Although in principle browser-side components of Apostrophe could talk to other languages, right now a close partnership with Node code on the server is driving the flow of development.
-
+Apostrophe's server-side components are built in Node and require Express 3.0.
 Apostrophe's server-side code uses uploadfs to store media files. uploadfs allows you to decide whether to keep them in a local filesystem, Amazon S3 or a custom backend.
 
 Apostrophe does not require any external CSS framework. Apostrophe's internal templates are processed with Nunjucks, which is awesome, but your Node application does not have to use Nunjucks.
