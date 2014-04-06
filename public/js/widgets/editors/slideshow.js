@@ -305,6 +305,7 @@ function AposSlideshowWidgetEditor(options)
             }
             $item.attr('title', file.name + '.' + file.extension);
             if ((self.fileGroup === 'images') && showImages) {
+              
               $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
             } else {
               // Display everything like a plain filename, after all we're offering
@@ -534,6 +535,7 @@ function AposSlideshowWidgetEditor(options)
       },
 
       save: function(callback) {
+
         var c = $item.data('jcrop').tellSelect();
         // If no crop is possible there may
         // be NaN present. Just cancel with no crop performed
@@ -547,6 +549,8 @@ function AposSlideshowWidgetEditor(options)
           reflect();
           $item.removeClass('apos-slideshow-reveal-crop');
           busy(false);
+          // update the modal after crop rendered
+          $item.find('[data-image-background]').css('background-image', 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.crop.left + '.' + item.crop.top + '.'+ item.crop.width + '.'+ item.crop.height + '.full.' + item.extension + ')');
           return callback(null);
         }).error(function() {
           busy(false);
@@ -713,12 +717,18 @@ function AposSlideshowWidgetEditor(options)
     var $item = apos.fromTemplate($items.find('[data-item]'));
 
     if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
-      $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
+
+      if (item.crop) {
+        var url = 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.crop.left + '.' + item.crop.top + '.'+ item.crop.width + '.'+ item.crop.height + '.full.' + item.extension + ')';
+        $item.find('[data-image-background]').css('background-image', url);
+      } else {
+        $item.find('[data-image-background]').css('background-image', 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension + ')');
+      }
+      
     } else {
       $item.find('[data-image]').parent().addClass('apos-not-image');
       $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
     }
-    // $item.find('[data-image]').attr('src', apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension);
 
     // Some derivatives of slideshows use these, some don't. These are
     // not editable fields, they are immutable facts about the file

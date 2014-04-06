@@ -812,6 +812,10 @@
     overflow: hidden;
     width: 170px;
     height: 170px;
+    background-size: contain;
+    background-position: center;
+    background-color: @apos-grey40;;
+    background-repeat: no-repeat;
 
     &.apos-not-image:before
     {
@@ -849,7 +853,7 @@
     }
 
   }
-  .apos-slideshow-editor-image { height: 120%; }
+  .apos-slideshow-editor-image { opacity: 0; }
 
   .apos-slideshow-control
   {
@@ -1688,7 +1692,8 @@ body .ui-tooltip
     letter-spacing: 1px;
     text-transform: uppercase;
     font-weight: bold;
-    padding: 3px 80px 3px 20px ;
+    padding: 8px 80px 10px 20px;
+    border: 1px solid @apos-grey70
   }
   // The lister options
   .apos-lister
