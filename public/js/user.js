@@ -307,6 +307,28 @@ apos.enableTags = function($el, tags) {
   $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
 };
 
+// Initialize a yes/no select element. If value is undefined (not just false),
+// def is used.
+apos.enableBoolean = function($el, value, def) {
+  if (value === undefined) {
+    value = def;
+  }
+  value = value ? '1' : '0';
+  $el.val(value);
+};
+
+// Return the value of a yes/no select element as a proper
+// boolean (true or false).
+
+apos.getBoolean = function($el) {
+  var val = $el.val();
+  // Quoted string '0' is considered truthy, fix that
+  if (val === '0') {
+    return false;
+  }
+  return !!val;
+};
+
 // Set things up to instantiate the media library when the button is clicked. This is set up
 // to allow subclassing with an alternate constructor function
 
