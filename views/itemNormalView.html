@@ -46,8 +46,8 @@
 {# If this content type has a custom renderer, invoke that #}
 {# Note that you can use the various simple wrapper options above too, or #}
 {# just have a renderer that does its own wrapping #}
-{%- if itemType.render -%}
-  {{ itemType.render({ item: item, options: options }) }}
+{%- if itemType.renderWidget -%}
+  {{ itemType.renderWidget({ item: item, options: options }) }}
 {%- endif -%}
 
 {% if item.type == 'richText'  %}
