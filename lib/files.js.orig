@@ -1,5 +1,5 @@
 var hash_file = require('hash_file');
-var _ = require('lodash');
+var _ = require('underscore');
 var fs = require('fs');
 var async = require('async');
 var path = require('path');
@@ -98,7 +98,7 @@ module.exports = {
     //
     // CLASSIC SYNTAX (this is the hard way):
     //
-    // apos.areaImage({ area: page.body })
+    // apos.areaImage({ area: page.areas.body })
     //
     // OPTIONS:
     //
@@ -108,7 +108,7 @@ module.exports = {
     self.areaImage = function(_options /* or page, name, options */) {
       var options = {};
       if (arguments.length > 1) {
-        options.area = arguments[0] && arguments[0][arguments[1]];
+        options.area = arguments[0] && arguments[0].areas && arguments[0].areas[arguments[1]];
         extend(true, options, arguments[2]);
       } else {
         extend(true, options, _options);
@@ -134,7 +134,7 @@ module.exports = {
     //
     // CLASSIC SYNTAX:
     //
-    // apos.areaImage({ area: page.body })
+    // apos.areaImage({ area: page.areas.body })
     //
     // OPTIONS:
     //
@@ -149,7 +149,7 @@ module.exports = {
       var options = {};
       if (arguments.length > 1) {
 
-        options.area = arguments[0] && arguments[0][arguments[1]];
+        options.area = arguments[0] && arguments[0].areas && arguments[0].areas[arguments[1]];
         extend(true, options, arguments[2]);
       } else {
         extend(true, options, _options);
@@ -173,7 +173,7 @@ module.exports = {
     //
     // CLASSIC SYNTAX:
     //
-    // apos.areaFile({ area: page.body })
+    // apos.areaFile({ area: page.areas.body })
     //
     // OPTIONS:
     //
@@ -188,7 +188,7 @@ module.exports = {
       var options = {};
       if (arguments.length > 1) {
 
-        options.area = arguments[0] && arguments[0][arguments[1]];
+        options.area = arguments[0] && arguments[0].areas && arguments[0].areas[arguments[1]];
         extend(true, options, arguments[2]);
       } else {
         extend(true, options, _options);
@@ -211,7 +211,7 @@ module.exports = {
     //
     // CLASSIC SYNTAX:
     //
-    // apos.areaFile({ area: page.body })
+    // apos.areaFile({ area: page.areas.body })
     //
     // OPTIONS:
     //
@@ -226,7 +226,7 @@ module.exports = {
       var options = {};
       if (arguments.length > 1) {
 
-        options.area = arguments[0] && arguments[0][arguments[1]];
+        options.area = arguments[0] && arguments[0].areas && arguments[0].areas[arguments[1]];
         extend(true, options, arguments[2]);
       } else {
         extend(true, options, _options);
@@ -321,9 +321,6 @@ module.exports = {
     // the server will respond with text/html instead.
 
     self.app.post('/apos/upload-files', function(req, res) {
-      // Must use text/plain for file upload responses in IE <= 9,
-      // doesn't hurt in other browsers. -Tom
-      res.header("Content-Type", "text/plain");
       return self.acceptFiles(req, req.files.files, function(err, files) {
         if (err) {
           console.error(err);
@@ -471,9 +468,6 @@ module.exports = {
     // existing file object must be in the `id` query parameter.
 
     self.app.post('/apos/replace-file', function(req, res) {
-      // Must use text/plain for file upload responses in IE <= 9,
-      // doesn't hurt in other browsers. -Tom
-      res.header("Content-Type", "text/plain");
       // TODO: reduce redundancy with /apos/upload-files
       var id = req.query.id;
       return self.files.findOne({ _id: id }, function(err, file) {
@@ -896,7 +890,6 @@ module.exports = {
 
     self.app.post('/apos/delete-file', function(req, res) {
       return self.updateTrash(req, req.body && req.body._id, true, function(err) {
-        console.log(err);
         return res.send({ 'status': err ? 'notfound' : 'ok' });
       });
     });

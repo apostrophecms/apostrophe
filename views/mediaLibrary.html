@@ -61,8 +61,19 @@
         <div class="apos-add-files apos-file-container">
           <!-- <h4 class="apos-add-files-title">Add Files</h4> -->
           <div class="apos-file-styled-container" data-uploader-container>
-            <div class="apos-file-styled icon-plus">{{ __('Upload Media') }}</div>
-            <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+            {# ACHTUNG: IN IE9 AND BELOW, we leave the browse button the heck #}
+            {# alone and don't try to style it. Otherwise #}
+            {# it does not work. The class was removed deliberately so the #}
+            {# button would be visible. Yes it's an ugly button. That's life. #}
+            {# -Tom and Joel #}
+
+            <!--[if lte IE 9]>
+              <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
+            <![endif]-->
+            <!--[if !IE]> -->
+              <div class="apos-file-styled icon-plus">{{ __('Upload Media') }} </div>
+              <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+            <!-- <![endif]-->
           </div>
           <div class="apos-media-file-in-message" data-drag-droparea><span data-drag-message>{{ __('Drop Files Here') }}</span></div>
           {# I want to use progress.html here, but its styles are complex and don't seem #}
@@ -114,7 +125,20 @@
         <div class="apos-replace-file apos-file-container">
           <h4>{{ __('Replace File') }}</h4>
           <div class="apos-file-styled">{{ __('Upload Media') }}</div>
-          <input data-upload type="file" name="files[]" class="apos-file-input"  multiple />
+
+          {# ACHTUNG: IN IE9 AND BELOW, we leave the browse button the heck #}
+          {# alone and don't try to style it. Otherwise #}
+          {# it does not work. The class was removed deliberately so the #}
+          {# button would be visible. Yes it's an ugly button. That's life. #}
+          {# -Tom and Joel #}
+
+          <!--[if lte IE 9]>
+            <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
+          <![endif]-->
+          <!--[if !IE]> -->
+            <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+          <!-- <![endif]-->
+
           <div class="apos-media-file-in-message" data-drag-droparea><span data-drag-message>{{ __('Drop Files Here') }}</span></div>
           {# I want to use progress.html here, but its styles are complex and don't seem #}
           {# to work in this context #}
