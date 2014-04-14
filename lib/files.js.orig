@@ -321,9 +321,6 @@ module.exports = {
     // the server will respond with text/html instead.
 
     self.app.post('/apos/upload-files', function(req, res) {
-      // Must use text/plain for file upload responses in IE <= 9,
-      // doesn't hurt in other browsers. -Tom
-      res.header("Content-Type", "text/plain");
       return self.acceptFiles(req, req.files.files, function(err, files) {
         if (err) {
           console.error(err);
@@ -471,9 +468,6 @@ module.exports = {
     // existing file object must be in the `id` query parameter.
 
     self.app.post('/apos/replace-file', function(req, res) {
-      // Must use text/plain for file upload responses in IE <= 9,
-      // doesn't hurt in other browsers. -Tom
-      res.header("Content-Type", "text/plain");
       // TODO: reduce redundancy with /apos/upload-files
       var id = req.query.id;
       return self.files.findOne({ _id: id }, function(err, file) {
@@ -896,7 +890,6 @@ module.exports = {
 
     self.app.post('/apos/delete-file', function(req, res) {
       return self.updateTrash(req, req.body && req.body._id, true, function(err) {
-        console.log(err);
         return res.send({ 'status': err ? 'notfound' : 'ok' });
       });
     });

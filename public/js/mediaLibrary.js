@@ -295,7 +295,7 @@ function AposMediaLibrary(options) {
 
     var url = options.replaceFileUrl || '/apos/replace-file';
     url += '?id=' + item._id;
-    var $upload = self.$edit.find('[data-upload]');
+    var $upload = self.$edit.find('[data-uploader]');
     $upload.attr('data-url', url);
     $upload.fileupload({
       dataType: 'json',
