@@ -51,7 +51,7 @@
       var maxHeightToWidth = 0 ;
       var maxHeight = 0;
 
-      _.each(tmps, function(tmp) {
+      $.each(tmps, function(i, tmp) {
         var width = tmp.width;
         var height = tmp.height;
         if (width > maxWidth) {

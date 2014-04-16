@@ -14,21 +14,29 @@
   </fieldset>
 {% endmacro %}
 
-{% macro formTags(name, label) %}
-  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
-    <label>{{ __(label) | e }}</label>
-    <!-- Text entry for autocompleting the next item -->
-    <input name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
+{% macro formTags(name, label, options) %}
+  {% if options.inline %}
+    <div class="apos-inline-tags" data-name="{{ name }}">
+  {% else %}
+    <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
+      <label>{{ __(label) | e }}</label>
+  {% endif %}
+    {# Text entry for autocompleting the next item #}
+    <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
     <ul data-list class="apos-tag-list">
       <li data-item>
         <span class="label-and-remove">
           <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
           <span data-label>{{ __('Example label') }}</span>
-          <!-- Link to remove this choice -->
+          {# Link to remove this choice #}
         </span>
       </li>
     </ul>
-  </fieldset>
+  {% if options.inline %}
+    </div>
+  {% else %}
+    </fieldset>
+  {% endif %}
 {% endmacro %}
 
 {# Maybe fancier later #}
@@ -107,8 +115,12 @@
 
 {# See $.selective in content.js for the necessary plumbing #}
 {% macro formSelective(name, label, options = {}) %}
-  <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+  {% if options.inline %}
+    <div class="apos-inline-selective" data-name="{{ name }}">
+  {% else %}
+    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
+  {% endif %}
     <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ __( options.placeholder ) | e }}"{%endif %}/>
     <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list>
@@ -141,7 +153,11 @@
         {% endif %}
       </li>
     </ul>
-  </fieldset>
+  {% if options.inline %}
+    </div>
+  {% else %}
+    </fieldset>
+  {% endif %}
 {% endmacro %}
 
 {# A pill button with several mutually exclusive choices (a nicer radio button basically). This is not a complete fieldset, see formPill. Often used to build filters, several on a line #}

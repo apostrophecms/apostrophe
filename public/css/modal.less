@@ -44,10 +44,18 @@
 
 .apos-fieldset-radio
 {
+  // Inactive until .apos-active is added to it. -Tom
+  background-color: @apos-grey70;
+  margin: 10px;
   input
   {
     margin-left: 10px;
   }
+}
+
+.apos-fieldset-radio.apos-active
+{
+  background-color: @apos-grey50;
 }
 
 .apos-fieldset-select

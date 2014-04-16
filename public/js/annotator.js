@@ -64,7 +64,7 @@ function AposAnnotator(options) {
       _id: $item.data('id'),
       title: $item.findByName('title').val(),
       description: $item.findByName('description').val(),
-      tags: $item.find('[data-name="tags"]').selective('get'),
+      tags: $item.find('[data-name="tags"]').selective('get', { incomplete: true }),
       credit: $item.findByName('credit').val()
     };
   };

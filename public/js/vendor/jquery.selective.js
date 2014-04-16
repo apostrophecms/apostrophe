@@ -18,6 +18,7 @@
     var propagate = options.propagate;
     var extras = options.extras;
     var addKeyCodes = options.addKeyCodes || 13;
+    var preventDuplicates = options.preventDuplicates;
     if (!$.isArray(addKeyCodes)) {
       addKeyCodes = [ addKeyCodes ];
     }
@@ -99,7 +100,7 @@
         source: options.source,
         // Stomp out suggestions of choices already made
         response: function(event, ui) {
-          if (options.preventDuplicates) {
+          if (preventDuplicates) {
             var content = ui.content;
             var filtered = [];
             // Compatible with `removed` and `propagate`
@@ -165,7 +166,7 @@
       self.add = function(item) {
         var i;
         var duplicate = false;
-        if (options.preventDuplicates) {
+        if (preventDuplicates) {
           // Use find and each to avoid problems with values that
           // contain quotes
           self.$list.find('[data-item]').each(function() {
@@ -264,6 +265,14 @@
             result.push(datum);
           }
         });
+        if (valuesOnly && options && options.incomplete) {
+          var val = $.trim(self.$autocomplete.val());
+          if (val.length) {
+            if ((!preventDuplicates) || ($.inArray(val, result) === -1)) {
+              result.push(val);
+            }
+          }
+        }
         return result;
       };
 

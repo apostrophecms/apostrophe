@@ -355,7 +355,7 @@ function AposMediaLibrary(options) {
       title: self.$edit.findByName('title').val(),
       credit: self.$edit.findByName('credit').val(),
       description: self.$edit.findByName('description').val(),
-      tags: self.$edit.find('[data-name="tags"]').selective('get')
+      tags: self.$edit.find('[data-name="tags"]').selective('get', { incomplete: true })
     } ], function(items) {
       _.each(items, function(item) {
         self.updateItem(item);
