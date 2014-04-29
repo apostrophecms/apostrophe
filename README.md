@@ -1,6 +1,10 @@
 # Apostrophe
 
-### [See apostrophe-sandbox for a quick start guide and a ready-to-use starter project.](http://github.com/punkave/apostrophe-sandbox)
+## Go read the documentation, it's awesome!
+
+Please see the [Apostrophe documentation](http://apostrophenow.org) for a tutorial that begins with setting up the sandbox project and covers what you really want to know!
+
+The rest of this README will be going away as soon as we've finished mining the rest of it for the documentation site.
 
 **Table of Contents**
 * [About Apostrophe](#about-apostrophe)
