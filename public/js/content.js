@@ -1006,8 +1006,16 @@ $(function() {
   // to avoid problems with elements added later
   $('body').on('click', '.apos-accordion-title', function(event){
     // $(this).parent().find('.apos-accordion-items').toggleClass('open');
-    $(this).parent().toggleClass('open');
-    $(this).parent().siblings().removeClass('open');
+    var opened;
+    if($(this).parent().hasClass('open')){
+      opened = true;
+    }
+    $('body').trigger('aposCloseMenus');
+    if (!opened){
+      $(this).parent().toggleClass('open');
+    }
+
+    //$(this).parent().siblings().removeClass('open');
   });
 
   $('body').on('click', '.apos-preview-toggle', function(event){
@@ -1017,7 +1025,16 @@ $(function() {
 
   // Close menus when an item is picked please!
   $('body').on('click', '.apos-accordion-items .apos-control', function() {
-    $(this).closest('.apos-admin-bar-item').removeClass('open');
+    $('body').trigger('aposCloseMenus');
+  });
+
+  //Call for when media or tag editor is opened
+  $('body').on('click', '.apos-admin-bar-item > .apos-button', function(){
+    $('body').trigger('aposCloseMenus');
+  });
+
+  $('body').on('aposCloseMenus', function(){
+    $('.apos-admin-bar-item').removeClass('open');
   });
 
   //sets up listeners for tabbed modals
