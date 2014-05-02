@@ -222,7 +222,7 @@ function AposMediaLibrary(options) {
     $item.find('[data-list-details]').append('<span>Tags: ' + (item.tags || []).join(', ') + '</span>');
   };
 
-  self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'credit', 'extension', 'downloadOriginal' ];
+  self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'createdAt', 'credit', 'extension', 'downloadOriginal', 'owner' ];
   self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'credit', 'extension' ];
   // self.listShow = [ 'title', 'name', 'group', 'type'];
 
@@ -250,6 +250,8 @@ function AposMediaLibrary(options) {
         self.$normal.find('[data-name="' + field + '"]').html("&mdash;");
       }
     });
+    self.$normal.find('[data-name="createdAt"]').text(moment(item.createdAt).format('YYYY-MM-DD'));
+    self.$normal.find('[data-name="owner"]').text(item._owner ? item._owner.title : 'admin');
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
 
     var $link = $('<a></a>');
