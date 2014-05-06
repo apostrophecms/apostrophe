@@ -294,28 +294,36 @@ They will need to live somewhere else eventually
 .apos-pill
 {
   margin-right: 20px;
+  display: inline-block;
+  padding: 3px 3px;
+  border: 1px solid darken(@apos-grey70, 5%);
+  .apos-bg-gradient(@apos-grey70, transparent);
+  border-radius: 4px;
 }
 
 .apos-pill-choice
 {
-  padding: 6px;
-  background-color: #fed;
-  border: 1px solid #edc;
-  border-right: none;
+  padding: 10px 14px;
+  display: inline-block;
+  float: left;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  margin: 0px;
   &.apos-first
   {
-    border-top-left-radius: 6px;
-    border-bottom-left-radius: 6px;
   }
   &.apos-last
   {
-    border-right: 1px solid #edc;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
+  }
+  &:hover
+  {
+    background-color: white;
   }
   &.apos-active
   {
-    background-color: white;
+    //.apos-bg-gradient(@apos-base, darken(@apos-base, 20%));
+    .apos-bg-gradient(@apos-steel, @apos-grey50);
+    color: white;
   }
 }
 
