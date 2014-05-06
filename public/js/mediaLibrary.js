@@ -250,7 +250,9 @@ function AposMediaLibrary(options) {
         self.$normal.find('[data-name="' + field + '"]').html("&mdash;");
       }
     });
-    self.$normal.find('[data-name="createdAt"]').text(moment(item.createdAt).format('YYYY-MM-DD'));
+    // This isn't worth introducing a dependency on momentjs
+    var date = item.createdAt.replace(/T.*$/, '');
+    self.$normal.find('[data-name="createdAt"]').text(date);
     self.$normal.find('[data-name="owner"]').text(item._owner ? item._owner.title : 'admin');
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
 
