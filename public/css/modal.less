@@ -75,56 +75,39 @@
 
 .apos-fieldset-selective
 {
-  input
+  .ui-autocomplete-input
   {
-    // margin-top: 10px;
-    display: block;
-    width: 30%;
-    // height: 2em;
-    padding: 10px;
+    display: inline-block;
   }
-  ul
-  {
-    list-style: none;
-  }
-  li
-  {
-    margin-top: 10px;
-  }
-  .apos-selective-extras
-  {
-    // Allow for the x buttons, they are pretty tall guys
-    padding-top: 10px;
-    // Extra fields shouldn't be so big or pushy
-    input
-    {
-      display: inline-block;
-      width: 20%;
-      margin-left: 5px;
-    }
-    label
-    {
-      display: inline-block;
-      margin-left: 20px;
-    }
-  }
-
   .ui-sortable
   {
+    margin-top: 20px;
     li
     {
       background-color: lighten(@apos-base, 30%);
-      padding: 10px 0;
+      padding: 10px;
       border-bottom: 1px solid lighten(@apos-base, 35%);
       text-transform: uppercase;
+      margin-bottom: 10px;
       color: @apos-grey20;
       letter-spacing: 1px;
       font-size: 11px;
 
       &:hover{ cursor: move}
       &:focus, &:active{ background-color: lighten(@apos-base, 10%);}
+      .apos-selective-extras
+      {
+        label,
+        input
+        {
+          display: inline-block !important;
+          width: auto !important;
+        }
+      }
     }
   }
+
+  
 
   .apos-remove
   {
