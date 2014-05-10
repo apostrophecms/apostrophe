@@ -225,16 +225,33 @@ function AposWidgetEditor(options) {
     self.$el = apos.modalFromTemplate(options.template, {
       init: function(callback) {
         self.$previewContainer = self.$el.find('.apos-widget-preview-container');
-        if (self.afterCreatingEl) {
-          self.afterCreatingEl();
-        }
-        self.$el.find('[data-preview]').click(function() {
-          self.preview();
-          return false;
-        });
 
-        self.preview();
-        return callback(null);
+        // Allow afterCreatingEl to optionally take a callback
+        var after;
+        if (self.afterCreatingEl) {
+          if (self.afterCreatingEl.length === 1) {
+            after = self.afterCreatingEl;
+          } else {
+            after = function(callback) {
+              self.afterCreatingEl();
+              return apos.afterYield(callback);
+            };
+          }
+        } else {
+          after = function(callback) {
+            return apos.afterYield(callback);
+          };
+        }
+
+        return after(function() {
+          self.$el.find('[data-preview]').click(function() {
+            self.preview();
+            return false;
+          });
+
+          self.preview();
+          return callback(null);
+        });
       },
 
       save: function(callback) {

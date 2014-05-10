@@ -129,7 +129,7 @@
       <li class="apos-fieldset-selective-item" data-item>
         <span class="apos-selective-label" data-label>{{ __(Title) }}</span>
         <a class="apos-remove" data-remove>x</a>
-        {% if options.extras %}
+        {% if options.extras or options.relationship %}
           <span class="apos-selective-extras">
             {# TODO: extend our support for different types of extra fields, #}
             {# style them meaningfully. Usually on same row with item #}
