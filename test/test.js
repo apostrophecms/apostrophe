@@ -241,7 +241,7 @@ describe('apostrophe', function() {
     it('permits edit-page for individual with group id for managing', function() {
       assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
     });
-    it('forbids edit-page for random person', function() {
+    it('forbids edit-page for other person', function() {
       assert(!apos.permissions.can({ user: { _id: 7 } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
     });
   });
@@ -287,6 +287,11 @@ describe('apostrophe', function() {
           _id: 'page-7',
           slug: 'page-7',
           permissions: [ 'edit-1002' ]
+        },
+        {
+          _id: 'page-8',
+          slug: 'page-8',
+          permissions: [ 'manage-1002' ]
         }
       ], function(err, count) {
         console.log(err);
@@ -360,27 +365,101 @@ describe('apostrophe', function() {
       }));
     });
 
-    // it('forbids view-page for individual with wrong id', function() {
-    //   assert(!apos.permissions.can({ user: { _id: 2 } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1' ] }));
-    // });
-    // it('permits view-page for individual with group id', function() {
-    //   assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1002' ] }));
-    // });
-    // it('forbids view-page for individual with wrong group id', function() {
-    //   assert(!apos.permissions.can({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1003' ] }));
-    // });
-    // it('permits view-page for unpublished page for individual with group id for editing', function() {
-    //   assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { permissions: [ 'edit-1002' ] }));
-    // });
-    // it('permits edit-page for individual with group id for editing', function() {
-    //   assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { permissions: [ 'edit-1002' ] }));
-    // });
-    // it('permits edit-page for individual with group id for managing', function() {
-    //   assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
-    // });
-    // it('forbids edit-page for random person', function() {
-    //   assert(!apos.permissions.can({ user: { _id: 7 } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
-    // });
+    it('id 2 user queries without error', function(done) {
+      return apos.pages.find(apos.permissions.criteria({ user: { _id: 2 } }, 'view-page')).toArray(function(_err, _results) {
+        err = _err;
+        assert(!err);
+        results = _results;
+        assert(Array.isArray(results));
+        done();
+      });
+    });
+
+    it('forbids view-page for individual with wrong id', function() {
+      assert(!find(results, function(result) {
+        return (result.loginRequired === 'certainPeople') && result.permissions && (result.permissions.length === 1) && (result.permissions[0] === 'view-1');
+      }));
+    });
+
+    it('group 1002 user queries without error', function(done) {
+      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1002 ] } }, 'view-page')).toArray(function(_err, _results) {
+        err = _err;
+        assert(!err);
+        results = _results;
+        assert(Array.isArray(results));
+        done();
+      });
+    });
+
+    it('permits view-page for individual with proper group id', function() {
+      assert(find(results, function(result) {
+        return (result.loginRequired === 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'view-1002'; }));
+      }));
+    });
+
+    it('permits view-page for unpublished page for individual with group id for editing', function() {
+      assert(find(results, function(result) {
+        return (result.loginRequired !== 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'edit-1002'; }));
+      }));
+    });
+
+    it('group 1003 user queries without error', function(done) {
+      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1003 ] } }, 'view-page')).toArray(function(_err, _results) {
+        err = _err;
+        assert(!err);
+        results = _results;
+        assert(Array.isArray(results));
+        done();
+      });
+    });
+
+    it('forbids view-page for individual with wrong group id', function() {
+      assert(!find(results, function(result) {
+        return (result.loginRequired === 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'view-1002'; }));
+      }));
+    });
+
+    it('group 1002 user queries for editing without error', function(done) {
+      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1002 ] } }, 'edit-page')).toArray(function(_err, _results) {
+        err = _err;
+        assert(!err);
+        results = _results;
+        assert(Array.isArray(results));
+        done();
+      });
+    });
+
+    it('permits edit-page for individual with group id for editing', function() {
+      assert(find(results, function(result) {
+        return (result.permissions && find(result.permissions, function(p) { return p === 'edit-1002'; }));
+      }));
+    });
+
+    it('permits edit-page for individual with group id for editing', function() {
+      assert(find(results, function(result) {
+        return (result.permissions && find(result.permissions, function(p) { return p === 'edit-1002'; }));
+      }));
+    });
+
+    it('permits edit-page for individual with group id for managing', function() {
+      assert(find(results, function(result) {
+        return (result.permissions && find(result.permissions, function(p) { return p === 'manage-1002'; }));
+      }));
+    });
+
+    it('other user queries for editing without error', function(done) {
+      return apos.pages.find(apos.permissions.criteria({ user: { _id: 7 } }, 'edit-page')).toArray(function(_err, _results) {
+        err = _err;
+        assert(!err);
+        results = _results;
+        assert(Array.isArray(results));
+        done();
+      });
+    });
+
+    it('forbids edit-page for other person', function() {
+      assert(!results.length);
+    });
   });
 });
 
