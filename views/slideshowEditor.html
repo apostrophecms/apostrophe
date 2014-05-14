@@ -86,11 +86,13 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
 
   {# TODO: you can make these snazzier, but remember the JS expects to #}
   {# set a val() of '0' or '1' on a select element #}
-  <div class="apos-slideshow-user-options">
-    {{ formBoolean('showTitles', 'Show Titles') }}
-    {{ formBoolean('showDescriptions', 'Show Descriptions') }}
-    {{ formBoolean('showCredits', 'Show Credits') }}
-  </div>
+  {% block formUserOptions %}
+    <div class="apos-slideshow-user-options">
+      {{ formBoolean('showTitles', 'Show Titles') }}
+      {{ formBoolean('showDescriptions', 'Show Descriptions') }}
+      {{ formBoolean('showCredits', 'Show Credits') }}
+    </div>
+  {% endblock %}
 
 
   <div class="apos-orientation-select-container">
