@@ -350,7 +350,6 @@ apos.modal = function(sel, options) {
     }
     blackout.remove();
     $el.hide();
-    apos.popSelection();
     options.afterHide(function(err) {
       return;
     });
@@ -406,10 +405,6 @@ apos.modal = function(sel, options) {
       // offer an opportunity for progressive enhancement of controls,
       // for instance via lister
       apos.emit('enhance', $el);
-
-      apos.pushSelection();
-
-
 
       // Black out the document or the top modal if there already is one.
       // If we are blacking out the body height: 100% won't cover the entire document,
@@ -482,34 +477,6 @@ apos.modalFromTemplate = function(sel, options) {
   };
 
   return apos.modal($el, options);
-};
-
-// SELECTIONS
-
-// We use this to save the selection before starting
-// a modal and later restore it
-
-apos.selections = [];
-
-apos.pushSelection = function() {
-  var sel = rangy.getSelection();
-  if (sel && sel.getRangeAt && sel.rangeCount) {
-    var range = rangy.getSelection().getRangeAt(0);
-    apos.selections.push(range);
-  }
-  else
-  {
-    apos.selections.push(null);
-  }
-};
-
-apos.popSelection = function() {
-  var range = apos.selections.pop();
-  if (range) {
-    var sel = rangy.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
 };
 
 // DOM TEMPLATES

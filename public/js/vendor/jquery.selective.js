@@ -24,6 +24,7 @@
     }
 
     var _new = false;
+    var nextItemId = 1;
 
     // Our properties reside in 'self'. Fetch the old 'self' or
     // set up a new one if this element hasn't been configured
@@ -67,6 +68,8 @@
         self.$list.off('click.selective');
       }
 
+      self.$el = $el;
+      self.baseName = $el.attr('name') || 'jquerySelective';
       self.$list = $el.find('[data-list]');
       self.$autocomplete = $el.find('[data-autocomplete]');
       // Careful, when reconfiguring an existing element this won't be
@@ -180,13 +183,54 @@
           return;
         }
         var $item = self.$itemTemplate.clone();
+        var itemId = nextItemId++;
+        $item.attr('data-id', itemId);
         $item.attr('data-value', item.value);
         // So that the label can be made available to the `get` method easily
         $item.attr('data-label', item.label);
         $item.find('[data-label]').text(item.label);
+        // If extras are present, fix name attributes so radio
+        // button groups on separate rows don't conflict. Stash the
+        // original name in data-name so we can still find things that way
+        $item.find('[data-extras]').each(function() {
+          var $this = $(this);
+          var originalName = $this.attr('name');
+          var name = uniqueName(itemId, originalName);
+          $this.attr('name', name);
+          $this.attr('data-name', originalName);
+        });
         // Also repopulate "extras" if the data is provided
         $.each(item, function(property, value) {
-          $item.find('[data-extras][name="' + property + '"]').val(value);
+          var $elements = $item.find('[data-extras][data-name="' + property + '"]');
+          // More than one with the same name = radio buttons.
+          // If the jquery-radio plugin is available, use it to
+          // correctly select the right radio button
+          if ($.fn.radio && ($elements.length > 1)) {
+            $elements.radio(value);
+            return;
+          }
+          // Cope with checkboxes
+          if ($elements.is('input[type="checkbox"]')) {
+            $elements.prop('checked', !!value);
+            return;
+          }
+          // Everything else
+          $elements.val(value);
+        });
+
+        // Select the first radio button in a group if none is chosen
+        var radioSeen = {};
+        $item.find('input[type="radio"]').each(function() {
+          var $this = $(this);
+          var name = $this.attr('data-name');
+          if (radioSeen[name]) {
+            return;
+          }
+          radioSeen[name] = true;
+          var $group = $item.find('[data-name="' + name + '"]');
+          if ($group.radio() === undefined) {
+            $group.radio($group.eq(0).attr('value'));
+          }
         });
         self.$list.append($item);
       };
@@ -214,18 +258,59 @@
       self.set = function(data) {
         self.clear();
 
-        if (data && data[0] && (typeof(data[0]) !== 'object')) {
-          if (typeof(options.source) === 'function') {
-            return options.source({ values: data }, appendValues);
-          } else if (typeof(options.source) === 'string') {
-            return $.getJSON(options.source, { values: data }, appendValues);
+        if (data && data[0]) {
+          if (typeof(data[0]) !== 'object') {
+            // A simple array of values, let the source provide labels
+            return invokeSourceThen(data, appendValues);
+          } else if (data[0].label) {
+            // An array of objects that already have labels, we're done
+            return appendValues(data);
           } else {
-            throw "data is not an array of objects, and source is not a URL or a function. Not sure what to do.";
+            // An array of objects that do not already have labels,
+            // ask the source for label/value objects and then merge
+            // those with our data
+            return invokeSourceThen($.map(data, function(datum) { return datum.value; }), function(sourceData) {
+              return appendValues(mergeData(sourceData));
+            });
           }
-        } else {
-          // The simple case: the data is ready to use
-          return appendValues(data);
         }
+
+        function invokeSourceThen(values, callback) {
+          if (typeof(options.source) === 'function') {
+            return options.source({ values: values }, callback);
+          } else if (typeof(options.source) === 'string') {
+            // Do what our documentation says, make a POST request
+            return $.ajax(
+              {
+                url: options.source,
+                type: options.valuesMethod || 'POST',
+                data: {
+                  values: values
+                },
+                dataType: 'json',
+                success: callback
+              }
+            );
+          } else {
+            throw "source must be a url or a function.";
+          }
+        }
+
+        // The source gave us objects with labels and values. Now merge
+        // that with the array of objects passed as "data." If no
+        // label/value object was returned by the source for a
+        // particular value, then we drop that object
+        function mergeData(sourceData) {
+          var map = {};
+          $.each(data, function(i, datum) {
+            map[datum.value] = datum;
+          });
+          $.each(sourceData, function(i, sourceDatum) {
+            $.extend(sourceDatum, map[sourceDatum.value]);
+          });
+          return sourceData;
+        }
+
         function appendValues(data) {
           $.each(data, function(i, datum) {
             self.add(datum);
@@ -259,7 +344,21 @@
             if (extras) {
               $item.find('[data-extras]').each(function() {
                 var $this = $(this);
-                datum[$this.attr('name')] = $this.val();
+                var result;
+                var seenRadio = {};
+                var name = $this.attr('data-name');
+                if ($this.is('input[type="radio"]') && $.fn.radio) {
+                  if (!seenRadio[name]) {
+                    var $radioButtons = $item.find('[data-name="' + name + '"]');
+                    result = $radioButtons.radio();
+                    seenRadio[name] = true;
+                  }
+                } else if ($this.is('input[type="checkbox"]')) {
+                  result = $this.prop('checked') ? 1 : 0;
+                } else {
+                  result = $this.val();
+                }
+                datum[name] = result;
               });
             }
             result.push(datum);
@@ -298,6 +397,10 @@
       };
 
       self.populate();
+    }
+
+    function uniqueName(itemId, name) {
+      return self.baseName + '[' + itemId + '][' + name + ']';
     }
   };
 })( jQuery );

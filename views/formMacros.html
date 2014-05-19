@@ -114,14 +114,19 @@
 {% endmacro %}
 
 {# See $.selective in content.js for the necessary plumbing #}
-{% macro formSelective(name, label, options = {}) %}
-  {% if options.inline %}
+
+{# moreOptions is merged with options. This makes it easier to #}
+{# pass some default options and then customize a few #}
+
+{% macro formSelective(name, label, options = {}, moreOptions = {}) %}
+  {% set _options = aposMerge(options, moreOptions) %}
+  {% if _options.inline %}
     <div class="apos-inline-selective" data-name="{{ name }}">
   {% else %}
     <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ label | e }}</label>
   {% endif %}
-    <input type="text" data-autocomplete {% if options.placeholder %}placeholder="{{ __( options.placeholder ) | e }}"{%endif %}/>
+    <input type="text" data-autocomplete {% if _options.placeholder %}placeholder="{{ __( _options.placeholder ) | e }}"{%endif %}/>
     <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list>
       {# This is a template for creating the real items, #}
@@ -129,16 +134,21 @@
       <li class="apos-fieldset-selective-item" data-item>
         <span class="apos-selective-label" data-label>{{ __(Title) }}</span>
         <a class="apos-remove" data-remove>x</a>
-        {% if options.extras or options.relationship %}
+        {% if _options.extras or _options.relationship %}
           <span class="apos-selective-extras">
             {# TODO: extend our support for different types of extra fields, #}
             {# style them meaningfully. Usually on same row with item #}
-            {% for extra in (options.extras or options.relationship) %}
+            {% for extra in (_options.extras or _options.relationship) %}
               <label>{{ __(extra.label) | e }}</label>
               {% if (extra.type == 'string') or (extra.type == 'text') %}
                 <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
               {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
-                {{ formBooleanStandalone(extra.name, { 'data-extras': '' }) }}
+                <input type="checkbox" name="{{ extra.name }}" data-extras />
+              {% elif (extra.type == 'radio') %}
+                {% for choice in extra.choices %}
+                  <input type="radio" name="{{ choice.value }}" data-extras />
+                  {{ choice.label | e }}
+                {% endfor %}
               {% elif (extra.type == 'select') %}
                 {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
               {% else %}
@@ -148,12 +158,12 @@
             {% endfor %}
           </span>
         {% endif %}
-        {% if options.propagate %}
+        {% if _options.propagate %}
           <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
         {% endif %}
       </li>
     </ul>
-  {% if options.inline %}
+  {% if _options.inline %}
     </div>
   {% else %}
     </fieldset>

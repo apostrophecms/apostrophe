@@ -218,31 +218,31 @@ describe('apostrophe', function() {
       assert(apos.permissions.can({ user: { permissions: { guest: 1 } } }, 'view-page', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-page for individual with proper id', function() {
-      assert(apos.permissions.can({ user: { _id: 1 } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1' ] }));
+      assert(apos.permissions.can({ user: { _id: 1 } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('forbids view-page for individual with wrong id', function() {
-      assert(!apos.permissions.can({ user: { _id: 2 } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can({ user: { _id: 2 } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('permits view-page for individual with group id', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1002' ] }));
+      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1002' ] }));
     });
     it('forbids view-page for individual with wrong group id', function() {
-      assert(!apos.permissions.can({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', permissions: [ 'view-1003' ] }));
+      assert(!apos.permissions.can({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1003' ] }));
     });
     it('certainPeople will not let you slide past to an unpublished page', function() {
-      assert(!apos.permissions.can({ user: { _id: 1 } }, 'view-page', {  loginRequired: 'certainPeople', permissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can({ user: { _id: 1 } }, 'view-page', {  loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('permits view-page for unpublished page for individual with group id for editing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { permissions: [ 'edit-1002' ] }));
+      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { pagePermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-page for individual with group id for editing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { permissions: [ 'edit-1002' ] }));
+      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { pagePermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-page for individual with group id for managing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
+      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
     });
     it('forbids edit-page for other person', function() {
-      assert(!apos.permissions.can({ user: { _id: 7 } }, 'edit-page', { permissions: [ 'manage-1002' ] }));
+      assert(!apos.permissions.can({ user: { _id: 7 } }, 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
     });
   });
   describe('test permissions.criteria', function() {
@@ -268,30 +268,30 @@ describe('apostrophe', function() {
           slug: 'page-4',
           published: true,
           loginRequired: 'certainPeople',
-          permissions: [ 'view-1' ]
+          pagePermissions: [ 'view-1' ]
         },
         {
           _id: 'page-5',
           slug: 'page-5',
           loginRequired: 'certainPeople',
-          permissions: [ 'view-1' ]
+          pagePermissions: [ 'view-1' ]
         },
         {
           _id: 'page-6',
           slug: 'page-6',
           published: true,
           loginRequired: 'certainPeople',
-          permissions: [ 'view-1002' ]
+          pagePermissions: [ 'view-1002' ]
         },
         {
           _id: 'page-7',
           slug: 'page-7',
-          permissions: [ 'edit-1002' ]
+          pagePermissions: [ 'edit-1002' ]
         },
         {
           _id: 'page-8',
           slug: 'page-8',
-          permissions: [ 'manage-1002' ]
+          pagePermissions: [ 'publish-1002' ]
         }
       ], function(err, count) {
         console.log(err);
@@ -356,12 +356,12 @@ describe('apostrophe', function() {
 
     it('permits view-page for individual with proper id', function() {
       assert(find(results, function(result) {
-        return (result.loginRequired === 'certainPeople') && result.permissions && (result.permissions.length === 1) && (result.permissions[0] === 'view-1');
+        return (result.loginRequired === 'certainPeople') && result.pagePermissions && (result.pagePermissions.length === 1) && (result.pagePermissions[0] === 'view-1');
       }));
     });
     it('certainPeople will not let you slide past to an unpublished page', function() {
       assert(!find(results, function(result) {
-        return result.certainPeople && (result.permissions.length === 1) && (result.permissions[0] === 'view-1') && (!result.published);
+        return (result.loginRequired === 'certainPeople') && (result.pagePermissions.length === 1) && (result.pagePermissions[0] === 'view-1') && (!result.published);
       }));
     });
 
@@ -377,7 +377,7 @@ describe('apostrophe', function() {
 
     it('forbids view-page for individual with wrong id', function() {
       assert(!find(results, function(result) {
-        return (result.loginRequired === 'certainPeople') && result.permissions && (result.permissions.length === 1) && (result.permissions[0] === 'view-1');
+        return (result.loginRequired === 'certainPeople') && result.pagePermissions && (result.pagePermissions.length === 1) && (result.pagePermissions[0] === 'view-1');
       }));
     });
 
@@ -393,13 +393,13 @@ describe('apostrophe', function() {
 
     it('permits view-page for individual with proper group id', function() {
       assert(find(results, function(result) {
-        return (result.loginRequired === 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'view-1002'; }));
+        return (result.loginRequired === 'certainPeople') && result.pagePermissions && (find(result.pagePermissions, function(p) { return p === 'view-1002'; }));
       }));
     });
 
     it('permits view-page for unpublished page for individual with group id for editing', function() {
       assert(find(results, function(result) {
-        return (result.loginRequired !== 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'edit-1002'; }));
+        return (result.loginRequired !== 'certainPeople') && result.pagePermissions && (find(result.pagePermissions, function(p) { return p === 'edit-1002'; }));
       }));
     });
 
@@ -415,7 +415,7 @@ describe('apostrophe', function() {
 
     it('forbids view-page for individual with wrong group id', function() {
       assert(!find(results, function(result) {
-        return (result.loginRequired === 'certainPeople') && result.permissions && (find(result.permissions, function(p) { return p === 'view-1002'; }));
+        return (result.loginRequired === 'certainPeople') && result.pagePermissions && (find(result.pagePermissions, function(p) { return p === 'view-1002'; }));
       }));
     });
 
@@ -431,19 +431,19 @@ describe('apostrophe', function() {
 
     it('permits edit-page for individual with group id for editing', function() {
       assert(find(results, function(result) {
-        return (result.permissions && find(result.permissions, function(p) { return p === 'edit-1002'; }));
+        return (result.pagePermissions && find(result.pagePermissions, function(p) { return p === 'edit-1002'; }));
       }));
     });
 
     it('permits edit-page for individual with group id for editing', function() {
       assert(find(results, function(result) {
-        return (result.permissions && find(result.permissions, function(p) { return p === 'edit-1002'; }));
+        return (result.pagePermissions && find(result.pagePermissions, function(p) { return p === 'edit-1002'; }));
       }));
     });
 
     it('permits edit-page for individual with group id for managing', function() {
       assert(find(results, function(result) {
-        return (result.permissions && find(result.permissions, function(p) { return p === 'manage-1002'; }));
+        return (result.pagePermissions && find(result.pagePermissions, function(p) { return p === 'publish-1002'; }));
       }));
     });
 
