@@ -1019,6 +1019,24 @@ $(function() {
 
   apos.afterLogin();
 
+  // If the URL ends in #skipdown, locate the element with the
+  // attribute data-skip-down-to and scroll to it, then remove
+  // #skipdown from the URL. Useful for "poor man's AJAX" situations
+  // where a page refresh is needed but you don't want the user to
+  // be forced to scroll past the logo, etc. again.
+
+  if (document.location.hash === '#skipdown') {
+    document.location.hash = '';
+    // slice off the remaining '#' in modern browsers
+    if (window.history && (typeof window.history.replaceState === 'function')) {
+      history.replaceState({}, '', window.location.href.slice(0, -1));
+    }
+    // Must yield first or this has no effect in Chrome.
+    apos.afterYield(function() {
+      $('html, body').scrollTop($('[data-skip-down-to]').offset().top - 50);
+    });
+  }
+
   // If the URL ends in: #click-whatever
   //
   // ... Then we locate an element with the attribute data-whatever,
