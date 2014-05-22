@@ -37,7 +37,8 @@ describe('apostrophe', function() {
           request: {},
           locals: {},
           get: function() {},
-          post: function() {}
+          post: function() {},
+          all: function() {}
         }
       }, function(err) {
         assert(!err);
@@ -119,6 +120,14 @@ describe('apostrophe', function() {
         { year: '2014', month: '01', tag: undefined },
         { year: null, month: null });
       assert(result === '/calendar');
+      return done();
+    });
+    it('Preserves hashes', function(done) {
+      var result = apos.build('/calendar#skipdown',
+        [ 'year', 'month' ],
+        { year: '2014', month: '01', tag: 'blue' }
+      );
+      assert(result === '/calendar/2014/01?tag=blue#skipdown');
       return done();
     });
     it('Takes less than 250 msec to run these tests', function(done) {
@@ -294,7 +303,6 @@ describe('apostrophe', function() {
           pagePermissions: [ 'publish-1002' ]
         }
       ], function(err, count) {
-        console.log(err);
         assert(!err);
         done();
       });
