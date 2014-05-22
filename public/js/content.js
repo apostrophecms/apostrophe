@@ -303,7 +303,7 @@ apos.modal = function(sel, options) {
     // });
 
     $( document ).on({
-      'keyup.aposModal': function(e) {
+      'keydown.aposModal': function(e) {
         if (e.keyCode === 27) {
           cancelModal();
         }
@@ -382,6 +382,10 @@ apos.modal = function(sel, options) {
   // Enter key driven submits of the form should act like a click on the save button,
   // do not try to submit the form old-school
   $el.on('submit', 'form', function() {
+    // For this form we want a normal form submission and a new page to load.
+    if (options.naturalSubmit) {
+      return true;
+    }
     saveModal();
     return false;
   });
@@ -935,6 +939,8 @@ apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
   }
 };
 
+apos.shiftActive = false;
+
 // Install an Apostrophe event handler. The handler will be called
 // when apos.emit is invoked with the same eventName. The handler
 // will receive any additional arguments passed to apos.emit.
@@ -984,6 +990,35 @@ $(function() {
 
     //$(this).parent().siblings().removeClass('open');
   });
+
+  // listen for shift keydown
+  // this sets up power-user features
+  // var aposShiftActive = false;
+  $(window).keydown(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = true;
+    }
+  });
+
+  $(window).keyup(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = false;
+    }
+  });
+
+
+  // power-user modal login
+  $(window).keydown(function(e) {
+    if (apos.shiftActive === true && e.keyCode === 27) {
+      if (apos.data.user) {
+        apos.modalFromTemplate($('.apos-modal-logout'), { naturalSubmit: true });
+      } else {
+        apos.modalFromTemplate($('.apos-modal-login'), { naturalSubmit: true });
+      }
+    }
+  });
+
+
 
   $('body').on('click', '.apos-preview-toggle', function(event){
     $('.apos-preview-toggle').toggleClass('previewing');

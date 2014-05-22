@@ -1772,33 +1772,31 @@ body .ui-tooltip
   // an array join in it to get a good test case with sortable. -Tom
   .apos-fieldset-selective-item
   {
-    clear: left;
-  }
 
-  .apos-selective-label
-  {
-    display: inline-block;
-    background: #cdcdcd;
-    padding: 7px;
-    margin-bottom: 5px;
-    // margin-right: -4px;
-    float: left;
-    clear: left;
-    font-family: "Lucida Grande";
-    // text-transform: uppercase;
-    + .apos-remove
+    &.ui-sortable-placeholder
     {
-      margin-top: 0px;
-      display: inline-block;
-      float: left;
-      padding: 7px;
-      &:hover
-      {
-        // This might be project-specific, but I was getting green here.
-        color: white;
-      }
+      visibility: visible !important;
+      opacity: 0.2;
+      // background: green !important;
     }
   }
+  
+  .apos-selective-label
+  {
+    text-align: left !important;
+    padding-left: 30px !important;
+  }
+  .apos-remove
+  {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    margin-top: -6px;
+    color: white;
+    z-index: 1;
+    font-size: 12px;
+  }
+
 }
 
 

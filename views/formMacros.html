@@ -132,36 +132,41 @@
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
       <li class="apos-fieldset-selective-item" data-item>
-        <span class="apos-selective-label" data-label>{{ __(Title) }}</span>
-        <a class="apos-remove" data-remove>x</a>
-        {% if _options.extras or _options.relationship %}
-          <span class="apos-selective-extras">
-            {# TODO: extend our support for different types of extra fields, #}
-            {# style them meaningfully. Usually on same row with item #}
-            {% for extra in (_options.extras or _options.relationship) %}
-              <label>{{ __(extra.label) | e }}</label>
-              {% if (extra.type == 'string') or (extra.type == 'text') %}
-                <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
-              {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
-                <input type="checkbox" name="{{ extra.name }}" data-extras />
-              {% elif (extra.type == 'radio') %}
-                {% for choice in extra.choices %}
-                  <input type="radio" name="{{ choice.value }}" data-extras />
-                  {{ choice.label | e }}
-                {% endfor %}
-              {% elif (extra.type == 'select') %}
-                {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
-              {% else %}
-                {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
-                {{ aposLog(extra) }}
-              {% endif %}
-            {% endfor %}
+        <div class="apos-ui-container apos-fieldset-selective-item-inner">
+          <span class="apos-remove" data-remove><i class="icon icon-remove"></i></span>
+          <span class="apos-selective-label apos-button" data-label>{{ __(Title) }}
           </span>
-        {% endif %}
-        {% if _options.propagate %}
-          <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
-        {% endif %}
+          
+          {% if _options.extras or _options.relationship %}
+            <span class="apos-selective-extras">
+              {# TODO: extend our support for different types of extra fields, #}
+              {# style them meaningfully. Usually on same row with item #}
+              {% for extra in (_options.extras or _options.relationship) %}
+                <label>{{ __(extra.label) | e }}</label>
+                {% if (extra.type == 'string') or (extra.type == 'text') %}
+                  <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
+                {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
+                  <input type="checkbox" name="{{ extra.name }}" data-extras />
+                {% elif (extra.type == 'radio') %}
+                  {% for choice in extra.choices %}
+                    <input type="radio" name="{{ choice.value }}" data-extras />
+                    {{ choice.label | e }}
+                  {% endfor %}
+                {% elif (extra.type == 'select') %}
+                  {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+                {% else %}
+                  {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
+                  {{ aposLog(extra) }}
+                {% endif %}
+              {% endfor %}
+            </span>
+          {% endif %}
+          {% if _options.propagate %}
+            <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
+          {% endif %}
+        </div>
       </li>
+
     </ul>
   {% if _options.inline %}
     </div>

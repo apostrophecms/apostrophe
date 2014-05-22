@@ -1,0 +1,38 @@
+ <div class="apos-modal-login apos-modal apos-template">
+  <div class="apos-login-container">
+
+  <div class="apos-login">
+    <h4>{% block subHeading %}LOGIN{% endblock %}</h4>
+    {% block form %}
+      {% if user %}
+        logout bro
+      {% else %}
+        <form action="/login" method="post">
+          <div class="login-inputs">
+            {% if message %}<div class="warning">{{ message }}</div>{% endif %}
+            {% block fields %}
+              <div class="login-username">
+                <label>Username or Email {% block usernameHint %}{% endblock %}</label>
+                <input type="text" name="username" />
+              </div>
+              <div class="login-password">
+                <label>Password {% block passwordHint %}{% endblock %}</label>
+                <input type="password" name="password" />
+              </div>
+            {% endblock %}
+            <div class="login-submit clearfix">
+              <input type="submit" class="apos-button" value="Log In" />
+            </div>
+            {% block forgot %}
+              {% if resetAvailable %}
+              <br />
+                <a class="login-reset" href="/apos-people/reset-request">Reset My Password</a>
+              {% endif %}
+            {% endblock %}
+          </div>
+        </form>
+      {% endif %}
+    {% endblock %}
+  </div>
+</div>
+</div>
