@@ -60,6 +60,20 @@
   </fieldset>
 {% endmacro %}
 
+{% macro formCheckboxes(name, label, choices) %}
+  <fieldset class="apos-fieldset apos-fieldset-checkboxes apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    <ul class="apos-checkbox-choices">
+      {% for choice in choices %}
+        <li class="apos-checkbox-choice">
+          <label>{{ choice.label }}</label>
+          <input type="checkbox" name="{{ name }}" value="{{ choice.value }}">
+        </li>
+      {% endfor %}
+    </ul>
+  </fieldset>
+{% endmacro %}
+
 {% macro formSelect(name, label, choices) %}
   <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
@@ -136,7 +150,7 @@
           <span class="apos-remove" data-remove><i class="icon icon-remove"></i></span>
           <span class="apos-selective-label apos-button" data-label>{{ __(Title) }}
           </span>
-          
+
           {% if _options.extras or _options.relationship %}
             <span class="apos-selective-extras">
               {# TODO: extend our support for different types of extra fields, #}
@@ -194,4 +208,3 @@
     {{ formPillStandalone(name, options) }}
   </fieldset>
 {% endmacro %}
-
