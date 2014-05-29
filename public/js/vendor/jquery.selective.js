@@ -66,6 +66,8 @@
         self.$autocomplete.autocomplete('destroy');
         self.$autocomplete.off('keydown.selective');
         self.$list.off('click.selective');
+        self.$list.off('click.selective');
+        self.$el.off('add');
       }
 
       self.$el = $el;
@@ -87,17 +89,31 @@
             $.inArray(e.originalEvent.keyIdentifier, addKeyCodes) !== -1 // for a key identifier
           )
           {
-            var val = self.$autocomplete.val();
-            self.add({ label: val, value: val });
-            self.$autocomplete.val('');
-            self.$autocomplete.autocomplete('close');
-            self.checkLimit();
-            $el.trigger('change');
+            self.$el.trigger('add');
             return false;
           }
           return true;
         });
+        self.$el.find('[data-add]').click(function() {
+          self.$el.trigger('add');
+          return false;
+        });
       }
+
+      self.$el.on('add', function() {
+        var val = self.$autocomplete.val();
+        if ((!val.length) && (!options.empty)) {
+          // Do not add empty items unless explicitly welcome
+          return;
+        }
+        self.add({ label: val, value: val });
+        self.$autocomplete.val('');
+        self.$autocomplete.autocomplete('close');
+        self.checkLimit();
+        $el.trigger('change');
+        self.$autocomplete.focus();
+      });
+
       self.$autocomplete.autocomplete({
         minLength: options.minLength || 1,
         source: options.source,
