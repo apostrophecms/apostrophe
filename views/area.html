@@ -1,4 +1,4 @@
-<div {% if options.edit %}data-editable {% if not options.virtual %}data-save{% endif %}{% endif %} class="apos-area" {% if not options.virtual %}data-slug="{{ options.slug }}"{% endif %} data-options="{{ options | jsonAttribute }}" id="{{ id }}">
+<div {% if options.edit %}data-editable {% if not options.virtual %}data-save{% endif %}{% endif %} class="{% if options.edit %}apos-area-editable{% endif %} apos-area" {% if not options.virtual %}data-slug="{{ options.slug }}"{% endif %} data-options="{{ options | jsonAttribute }}" id="{{ id }}">
   <div class="apos-normal-view">
     <div class="apos-content">{{ aposAreaContent(area.items, options) }}</div>
   </div>
