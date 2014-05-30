@@ -206,6 +206,23 @@ apos.widgetPlayers.video = function($el)
         // No, so we have to hope the thumbnail dimensions are a good bet
         e.height($thumbnail.height());
       }
+
+      // Hack: if our site is secure, fetch the embedded
+      // item securely. This might not work for some providers,
+      // but which do you want, a broken video or a scary
+      // security warning?
+      //
+      // This hack won't work for everything but it's correct
+      // for a typical iframe embed.
+
+      var ssl = ('https:' === document.location.protocol);
+      if (ssl) {
+        var src = e.attr('src');
+        if (src.match(/^http:/)) {
+          e.attr('src', src.replace(/^http:/, 'https:'));
+        }
+      }
+
       $el.find('.apos-video-thumbnail').replaceWith(e);
       // Hoist out of the link that launched us
       var $kids = $el.find('[data-apos-play] *').detach();
