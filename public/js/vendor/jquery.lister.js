@@ -225,6 +225,8 @@
             $selectedTop.click(function(event){
                 // Stop this click event from bubbling up the DOM
                 event.stopPropagation();
+                // TO-DO: Figure out why this works.
+                event.preventDefault();
                 // TO-DO: add callbacks on this click event.
                 if ($nextList.hasClass(self.settings.openListClass)){
                     $nextList.removeClass(self.settings.openListClass);
