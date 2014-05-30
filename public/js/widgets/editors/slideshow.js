@@ -243,28 +243,31 @@ function AposSlideshowWidgetEditor(options)
       return false;
     });
 
-    self.enableChooser = function() {
+    self.enableChooser = function($chooser) {
       // This is what we drag to. Easier than dragging to a ul that doesn't
       // know the height of its li's
       var $target = self.$el.find('[data-drag-container]');
-      var $chooser = self.$el.find('[data-chooser]');
       var $items = $chooser.find('[data-chooser-items]');
       var $search = $chooser.find('[name="search"]');
       var $previous = $chooser.find('[data-previous]');
       var $next = $chooser.find('[data-next]');
       var $removeSearch = $chooser.find('[data-remove-search]');
-
-
+      var tags = $chooser.find('[data-tags]').data('tags') || '';
+      var tagsArray = tags ? tags.split(',') : [];
+      var notTags = $chooser.find('[data-not-tags]').data('not-tags') || '';
+      var notTagsArray = notTags ? notTags.split(',') : [];
       var perPage = 21;
       var page = 0;
       var pages = 0;
 
-      self.refreshChooser = function() {
+      function refreshChooser() {
         self.busy(true);
         $.get('/apos/browse-files', {
           skip: page * perPage,
           limit: perPage,
           group: self.fileGroup,
+          tags: tagsArray,
+          notTags: notTagsArray,
           minSize: minSize,
           q: $search.val()
         }, function(results) {
@@ -305,7 +308,7 @@ function AposSlideshowWidgetEditor(options)
             }
             $item.attr('title', file.name + '.' + file.extension);
             if ((self.fileGroup === 'images') && showImages) {
-              
+
               $item.find('[data-image]').attr('src', apos.filePath(file, { size: 'one-sixth' }));
             } else {
               // Display everything like a plain filename, after all we're offering
@@ -409,14 +412,14 @@ function AposSlideshowWidgetEditor(options)
       $previous.on('click', function() {
         if (page > 0) {
           page--;
-          self.refreshChooser();
+          refreshChooser();
         }
         return false;
       });
       $next.on('click', function() {
         if ((page + 1) < pages) {
           page++;
-          self.refreshChooser();
+          refreshChooser();
         }
         return false;
       });
@@ -438,15 +441,19 @@ function AposSlideshowWidgetEditor(options)
       });
       function search() {
         page = 0;
-        self.refreshChooser();
+        refreshChooser();
       }
 
       // Initial load of chooser contents. Do this after yield so that
       // a subclass like the file widget has time to change self.fileGroup
-      apos.afterYield(function() { self.refreshChooser(); });
+      apos.afterYield(function() { refreshChooser(); });
     };
 
-    self.enableChooser();
+    $choosers = self.$el.find('[data-chooser]');
+    $choosers.each(function() {
+      self.enableChooser($(this));
+    });
+    //self.enableChooser();
   };
 
   function crop($item) {
@@ -724,7 +731,7 @@ function AposSlideshowWidgetEditor(options)
       } else {
         $item.find('[data-image-background]').css('background-image', 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension + ')');
       }
-      
+
     } else {
       $item.find('[data-image]').parent().addClass('apos-not-image');
       $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
@@ -837,4 +844,3 @@ function AposSlideshowWidgetEditor(options)
 }
 
 AposSlideshowWidgetEditor.label = 'Slideshow';
-
