@@ -147,14 +147,14 @@ apos.filePath = function(file, options) {
   if (!options) {
     options = {};
   }
-  if (options.size) {
-    path += '.' + options.size;
-  }
   // NOTE: the crop must actually exist already, you can't just invent them
   // browser-side without the crop API never having come into play
   if (file.crop) {
     var c = file.crop;
     path += '.' + c.left + '.' + c.top + '.' + c.width + '.' + c.height;
+  }
+  if (options.size) {
+    path += '.' + options.size;
   }
   return path + '.' + file.extension;
 };

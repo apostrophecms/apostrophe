@@ -62,57 +62,58 @@ function AposWidgetEditor(options) {
     return callback();
   };
 
-  // Create a new widget for insertion into the main content editor.
-  // See also the server-side itemNormalView.html template, which
-  // does the same thing
-  self.createWidget = function() {
-    if (!self.editor) {
-      return;
-    }
-    self.$widget = $('<div></div>');
-    // self.$widget.attr('unselectable', 'on');
-    self.$widget.addClass('apos-widget');
-    self.$widget.addClass('apos-' + self.type);
-    self.$widget.attr('data-type', self.type);
-  };
-
-  // Update the widget placeholder in the main content editor, then ask the server
-  // to render the widget placeholder. We *don't* call the widget player inside
-  // the main content editor because those are not restricted to content that
-  // behaves inside contentEditable.
+  // Replace the rendering of the widget in the area editor. If the
+  // widget is new self.editor.insertWidget is called, otherwise
+  // self.editor.replaceWidget is called.
 
   self.updateWidget = function(callback) {
     if (!self.editor) {
       return callback(null);
     }
-    // When we update the widget placeholder we also clear its
-    // markup and call populateWidget to insert the latest
-    self.$widget.html('');
-    self.editor.addButtonsToWidget(self.$widget);
-    self.updateWidgetData();
-    self.renderWidget(callback);
+    var $old = self.$widget;
+    return self.renderWidget(function(err) {
+      if (err) {
+        return;
+      }
+      if ($old) {
+        self.editor.replaceWidget($old, self.$widget);
+      } else {
+        self.editor.insertWidget(self.$widget);
+      }
+      return callback(err);
+    });
   };
 
-  // Update the widget's data attributes. The main `data` attribute receives a JSON representation
-  // of self.data. The id and the type are also available as `data-id` and `data-type`. Typically
-  // no need to override this.
-  self.updateWidgetData = function() {
-    if (!self.editor) {
-      return;
-    }
-    self.$widget.attr('data', apos.jsonAttribute(self.data));
-    // These need to be visible separately
-    self.$widget.attr('data-id', self.data.id);
-    self.$widget.attr('data-type', self.data.type);
-  };
+  // Update the widget's data attributes. The main `data` attribute receives
+  // a JSON representation of self.data. The id and the type are also
+  // available as `data-id` and `data-type`. Typically no need to
+  // override this.
 
-  // Ask the server to render the widget's contents and stuff them into `self.$widget`, which is
-  // the placeholder element in the main content editor for this widget.
+  // I think I don't need this anymore: since I'm giving the server all
+  // the data when I re-render and allowing it to recreate $widget entirely,
+  // it ought to be setting all of these attributes for me
+
+  // self.updateWidgetData = function() {
+  //   if (!self.editor) {
+  //     return;
+  //   }
+  //   self.$widget.attr('data', apos.jsonAttribute(self.data));
+  //   // These need to be visible separately
+  //   self.$widget.attr('data-id', self.data.id);
+  //   self.$widget.attr('data-type', self.data.type);
+  // };
+
+  // Ask the server to render the widget's contents and stuff them
+  // into a new `self.$widget` element, which is the placeholder element
+  // in the main content editor for this widget. it is up to the caller
+  // to invoke either self.editor.insertWidget or self.editor.replacEwidget
+  // after this method calls back
+
   self.renderWidget = function(callback) {
     if (!self.editor) {
       return callback(null);
     }
-    var info = apos.getWidgetData(self.$widget);
+    var info = self.data;
 
     // Some widgets have content - markup that goes inside the widget
     // that was actually written by the user and can't be generated
@@ -126,21 +127,23 @@ function AposWidgetEditor(options) {
     // Ask the server to generate a nice rendering of the widget's contents
     // for us, via its normal view renderer. This avoids code duplication
     // and an inevitable drift into different behavior between browser
-    // and server. At some point perhaps we'll run the same rendering code
-    // on both client and server
+    // and server
+
     info._options = options.options || {};
+
     // Transmit the data as JSON so objects with
     // property names that look like numbers don't get
     // converted into flat arrays
     return $.ajax({
       type: 'POST',
-      url: '/apos/render-widget?bodyOnly=1&editView=1',
+      url: '/apos/render-widget?editView=1',
       processData: false,
       contentType: 'application/json',
       data: JSON.stringify(info),
       dataType: 'html',
       success: function(html) {
-        self.$widget.append(html);
+        // Work around fussy jquery HTML parsing behavior a little
+        self.$widget = $($.parseHTML($.trim(html)));
         if (apos.widgetPlayers[self.type]) {
           apos.widgetPlayers[self.type](self.$widget);
         }
@@ -264,26 +267,13 @@ function AposWidgetEditor(options) {
             if (self.editor.undoPoint) {
               self.editor.undoPoint();
             }
-            var _new = false;
-            if (!self.$widget) {
-              self.createWidget();
-              _new = true;
-            }
           }
           self.updateWidget(function(err) {
-            if (_new) {
-              self.insertWidget();
-              // apos.hint('What are the arrows for?', "<p>They are there to show you where to add other content before and after your rich content.</p><p>Always type text before or after the arrows, never between them.</p><p>This is especially helpful when you are floating content next to text.</p><p>You can click your rich content to select it along with its arrows, then cut, copy or paste as usual.</p><p>Don\'t worry, the arrows automatically disappear when you save your work.</p>");
-            }
-            // Widget backups are probably a bad idea since they would defeat
-            // copy and paste between pages or at least sites
-            // self.editor.updateWidgetBackup(self.widgetId, self.$widget);
-
             if (options.save) {
-              // Used to implement save for singletons and non-rich-text-based areas.
-              // Note that in this case options.data was passed in by reference,
-              // so the end result can be read there. Pay attention to the callback so
-              // we can allow the user a second chance
+              // Used to implement save for singletons. Note that in this
+              // case options.data was passed in by reference, so
+              // the end result can be read there. Pay attention to
+              // the callback so we can allow the user a second chance
               options.save(function(err) {
                 return callback(err);
               });

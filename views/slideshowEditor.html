@@ -93,11 +93,16 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
   </div>
 
 
-  <div class="apos-orientation-select-container">
+  <div data-orientation-select class="apos-orientation-select-container">
     <label class='apos-instructions'>{{ __('Select Orientation') }}</label>
-    <a class="apos-button apos-landscape" title="Landscape" data-orientation-button="landscape" href="#"></a>
-    <a class="apos-button apos-portrait" title="Portrait" data-orientation-button="portrait" href="#"></a>
-    <a class="apos-button apos-square" title="Square" data-orientation-button="square" href="#"></a>
+    {# javascript clones this as needed based on orientation.choices #}
+    <a class="apos-button apos-template" title="Title" data-orientation-button="name" href="#"></a>
+    {# Examples of what this expands to: #}
+    {#
+      <a class="apos-button apos-landscape" title="Landscape" data-orientation-button="landscape" href="#"></a>
+      <a class="apos-button apos-portrait" title="Portrait" data-orientation-button="portrait" href="#"></a>
+      <a class="apos-button apos-square" title="Square" data-orientation-button="square" href="#"></a>
+    #}
   </div>
 
   {# Media chooser #}

@@ -172,25 +172,43 @@ function AposSlideshowWidgetEditor(options)
             dropZone.removeClass('apos-slideshow-file-in apos-slideshow-file-hover');
         }, 100);
     });
-    // if template wants a forced orientation on a slideshow
-    if (orientation.active){
+
+
+    // Implement the aspect ratio constraints of the currently
+    // selected orientation and make the appropriate orientation
+    // UI button appear active
+    self.reflectOrientation = function() {
+      self.$el.find('[data-orientation-button]').each(function(){
+        $(this).removeClass('active');
+      });
+      self.$el.find('[data-orientation-button="' + self.data.orientation + '"]').addClass('active');
+
+      var info = _.find(orientation.choices, function(choice) {
+        return choice.name === self.data.orientation;
+      });
+
+      if (info.aspectRatio) {
+        aspectRatio = info.aspectRatio;
+      }
+      self.autocropIfNeeded(function() {});
+    };
+
+    // Template offers several orientation/constraint choices
+    if (orientation && orientation.choices && orientation.choices.length) {
+      var $orientation = self.$el.find('[data-orientation-select]');
+      var $oTemplate = $orientation.find('[data-orientation-button].apos-template');
+      $oTemplate.remove();
+      _.each(orientation.choices, function(choice) {
+        var $choice = apos.fromTemplate($oTemplate);
+        $choice.attr('title', choice.label);
+        $choice.attr('data-orientation-button', choice.name);
+        $choice.addClass(choice.css);
+        $orientation.append($choice);
+      });
       self.$el.find('.apos-modal-body').addClass('apos-select-orientation');
 
-      // find out if it has a previously saved orientation, activate it
-      if (typeof(self.data.orientation) !== 'undefined' && self.data.orientation !== ''){
-        self.$el.find('[data-orientation-button="'+self.data.orientation+'"]').addClass('active').attr('data-orientation-active', '');
-      }
-      // find out if it has an explicit default set, activate it
-      else if (orientation.defaultOption){
-        self.$el.find('[data-orientation-button="'+orientation.defaultOption+'"]').addClass('active').attr('data-orientation-active', '');
-        self.data.orientation = orientation.defaultOption;
-      }
-      // else, set to portrait
-      else
-      {
-        self.$el.find('[data-orientation-button="portrait"]').addClass('active').attr('data-orientation-active', '');
-        self.data.orientation = 'portrait';
-      }
+      self.data.orientation = self.data.orientation || orientation.choices[0].name;
+      self.reflectOrientation();
     }
 
     // if template passed extraFields as an object, it is trying to disable certain fields
@@ -235,11 +253,9 @@ function AposSlideshowWidgetEditor(options)
     });
 
     // Select new orientation
-    self.$el.on('click', '[data-orientation-button]', function(){
-      self.$el.find('[data-orientation-button]').each(function(){
-        $(this).removeClass('active').removeAttr('data-orientation-active');
-      });
-      $(this).addClass('active').attr('data-orientation-active', $(this).attr('data-orientation-button'));
+    self.$el.on('click', '[data-orientation-button]', function() {
+      self.data.orientation = $(this).attr('data-orientation-button');
+      self.reflectOrientation();
       return false;
     });
 
@@ -557,7 +573,7 @@ function AposSlideshowWidgetEditor(options)
           $item.removeClass('apos-slideshow-reveal-crop');
           busy(false);
           // update the modal after crop rendered
-          $item.find('[data-image-background]').css('background-image', 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.crop.left + '.' + item.crop.top + '.'+ item.crop.width + '.'+ item.crop.height + '.full.' + item.extension + ')');
+          self.setItemThumbnail(item, $item);
           return callback(null);
         }).error(function() {
           busy(false);
@@ -604,76 +620,102 @@ function AposSlideshowWidgetEditor(options)
   // pause and do that and auto-retry this function.
   self.preSave = function (callback) {
     reflect();
+
+    self.autocropIfNeeded(function() {
+
+      self.data.showTitles = (userOptions.disableTitles) ? false : (self.$showTitles.val() === '1');
+      self.data.showDescriptions = (userOptions.disableDescriptions) ? false : (self.$showDescriptions.val() === '1');
+      self.data.showCredits = (userOptions.disableCredits) ? false : (self.$showCredits.val() === '1');
+
+      return callback(null);
+    });
+  };
+
+  // Given a file and its jquery element, this method will
+  // update the thumbnail to reflect that file's image or filename,
+  // as appropriate to the type
+
+  self.setItemThumbnail = function(item, $item)
+  {
+    if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
+      var url = 'url(' + apos.filePath(item, { size: 'full', crop: item.crop }) + ')';
+      $item.find('[data-image-background]').css('background-image', url);
+    } else {
+      $item.find('[data-image]').parent().addClass('apos-not-image');
+      $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
+    }
+  };
+
+  self.autocropIfNeeded = function(callback) {
     // Perform autocrops if needed
-    if (aspectRatio) {
-      var found = false;
-      $items.find(liveItem).each(function() {
-        if (found) {
-          return;
-        }
-        var $item = $(this);
-        var item = $item.data('item');
-        if (!item) {
-          return;
-        }
-        // Look for an aspect ratio match within 1%. Perfect match is unrealistic because
-        // we crop a scaled view and jcrop is only so precise
-        if (aspectRatio) {
-          if (!item.crop) {
-            if (!within(item.width / item.height, aspectRatio[0] / aspectRatio[1], 1.0)) {
-              var width, height;
-              width = item.width;
-              height = Math.round(item.width * aspectRatio[1] / aspectRatio[0]);
-              if (height > item.height) {
-                height = item.height;
-                width = Math.round(item.height * aspectRatio[0] / aspectRatio[1]);
-              }
-              if (width > item.width) {
-                width = item.width;
-              }
-              if (height > item.height) {
-                height = item.height;
-              }
-              item.crop = {
-                top: Math.floor((item.height - height) / 2),
-                left: Math.floor((item.width - width) / 2),
-                width: width,
-                height: height
-              };
-              self.busy(true);
-              var $autocropping = self.$el.find('.apos-autocropping');
-              $autocropping.show();
-              found = true;
-              return $.post('/apos/crop', { _id: item._id, crop: item.crop }, function(data) {
-                self.busy(false);
-                $autocropping.hide();
-                reflect();
-                return self.preSave(callback);
-              }).error(function() {
-                self.busy(false);
-                $autocropping.hide();
-                alert('Server error, please retry');
-                return callback('fail');
-              });
-            }
-          }
-        }
-      });
+    if (!aspectRatio) {
+      return callback();
+    }
+
+    // On this invocation we'll crop *one* item, then
+    // recursively invoke ourselves until there are no
+    // more items, then invoke the callback.
+    var found = false;
+    $items.find(liveItem).each(function() {
       if (found) {
-        // Done for now another invocation will occur after the autocrop
         return;
       }
+      var $item = $(this);
+      var item = $item.data('item');
+      if (!item) {
+        return;
+      }
+      // Look for an aspect ratio match within 1%. Perfect match is unrealistic because
+      // we crop a scaled view and jcrop is only so precise
+      // Look at the existing crop's aspect ratio, or the
+      // actual image's aspect ratio if there is no existing crop;
+      // compare to the current required aspect ratio to decide
+      // if we have work to do
+      var eWidth = item.crop ? item.crop.width : item.width;
+      var eHeight = item.crop ? item.crop.height : item.height;
+      if (!within(eWidth / eHeight, aspectRatio[0] / aspectRatio[1], 1.0)) {
+        var width, height;
+        width = item.width;
+        height = Math.round(item.width * aspectRatio[1] / aspectRatio[0]);
+        if (height > item.height) {
+          height = item.height;
+          width = Math.round(item.height * aspectRatio[0] / aspectRatio[1]);
+        }
+        if (width > item.width) {
+          width = item.width;
+        }
+        if (height > item.height) {
+          height = item.height;
+        }
+        item.crop = {
+          top: Math.floor((item.height - height) / 2),
+          left: Math.floor((item.width - width) / 2),
+          width: width,
+          height: height
+        };
+        self.busy(true);
+        var $autocropping = self.$el.find('.apos-autocropping');
+        $autocropping.show();
+        found = true;
+        return $.post('/apos/crop', { _id: item._id, crop: item.crop }, function(data) {
+          self.busy(false);
+          $autocropping.hide();
+          self.setItemThumbnail(item, $item);
+          reflect();
+          return self.autocropIfNeeded(callback);
+        }).error(function() {
+          // Update the modal after crop rendered
+          self.busy(false);
+          $autocropping.hide();
+          alert('Server error, please retry');
+          return callback('fail');
+        });
+      }
+    });
+    if (!found) {
+      // No more to autocrop
+      return callback();
     }
-
-    // Save the active orientation
-    if (self.data.orientation) {
-      self.data.orientation = self.$el.find('[data-orientation-active]').attr('data-orientation-active');
-    }
-    self.data.showTitles = (userOptions.disableTitles) ? false : (self.$showTitles.val() === '1');
-    self.data.showDescriptions = (userOptions.disableDescriptions) ? false : (self.$showDescriptions.val() === '1');
-    self.data.showCredits = (userOptions.disableCredits) ? false : (self.$showCredits.val() === '1');
-
-    return callback(null);
   };
 
   // Returns true if b is within 'percent' of a, as a percentage of a
@@ -723,19 +765,7 @@ function AposSlideshowWidgetEditor(options)
 
     var $item = apos.fromTemplate($items.find('[data-item]'));
 
-    if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
-
-      if (item.crop) {
-        var url = 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.' + item.crop.left + '.' + item.crop.top + '.'+ item.crop.width + '.'+ item.crop.height + '.full.' + item.extension + ')';
-        $item.find('[data-image-background]').css('background-image', url);
-      } else {
-        $item.find('[data-image-background]').css('background-image', 'url(' + apos.data.uploadsUrl + '/files/' + item._id + '-' + item.name + '.one-third.' + item.extension + ')');
-      }
-
-    } else {
-      $item.find('[data-image]').parent().addClass('apos-not-image');
-      $item.find('[data-image]').parent().append('<span class="apos-file-name">' + item.name + '.' + item.extension + '</span>');
-    }
+    self.setItemThumbnail(item, $item);
 
     // Some derivatives of slideshows use these, some don't. These are
     // not editable fields, they are immutable facts about the file
