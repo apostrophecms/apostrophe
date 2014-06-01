@@ -10,7 +10,7 @@
   {% endif %}
 
   <div class="apos-item apos-widget apos-{{ itemType.css }} {% if item.size %}apos-{{ item.size }}{% endif %} {% if item.position %}apos-{{ item.position }}{% endif %} {% if empty %}apos-empty{% endif %} {% if widgetClass%} apos-{{widgetClass}}{% endif %} {% if orientation %} {{ orientation }} {% endif %}"
-    data="{{ aposMerge(jsonOptions, attributes) | jsonAttribute }}"
+    data="{{ aposMerge(options, attributes) | jsonAttribute }}"
     data-id="{{ item.id }}"
     data-type="{{ item.type }}"
     {% if item.position %}data-position="{{ item.position }}"{% endif %}
