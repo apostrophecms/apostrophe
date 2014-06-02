@@ -135,6 +135,7 @@ function AposSlideshowWidgetEditor(options)
             addItem(file);
             annotateItem(file);
           });
+          apos.afterYield(self.autocropIfNeeded);
           reflect();
           self.preview();
         }
@@ -190,7 +191,7 @@ function AposSlideshowWidgetEditor(options)
       if (info.aspectRatio) {
         aspectRatio = info.aspectRatio;
       }
-      self.autocropIfNeeded(function() {});
+      self.autocropIfNeeded();
     };
 
     // Template offers several orientation/constraint choices
@@ -387,6 +388,7 @@ function AposSlideshowWidgetEditor(options)
                       (e.pageY <= iOffset.top + iHeight) &&
                       (e.pageY + height >= iOffset.top)) {
                       addItem(file);
+                      self.autocropIfNeeded();
                     }
                     // Snap back so we're available in the chooser again
                     $item.css('top', 'auto');
@@ -415,6 +417,7 @@ function AposSlideshowWidgetEditor(options)
                 else{
                   addItem(file);
                   event.stopPropagation();
+                  self.autocropIfNeeded();
                 }
               });
 
@@ -649,7 +652,7 @@ function AposSlideshowWidgetEditor(options)
   self.autocropIfNeeded = function(callback) {
     // Perform autocrops if needed
     if (!aspectRatio) {
-      return callback();
+      return callback && callback();
     }
 
     // On this invocation we'll crop *one* item, then
@@ -708,13 +711,13 @@ function AposSlideshowWidgetEditor(options)
           self.busy(false);
           $autocropping.hide();
           alert('Server error, please retry');
-          return callback('fail');
+          return callback && callback('fail');
         });
       }
     });
     if (!found) {
       // No more to autocrop
-      return callback();
+      return callback && callback();
     }
   };
 
