@@ -13,15 +13,24 @@
   // This is correct - we're adding a function called directly
   // like $.get or $.ajax, not a function that operates on
   // elements
-  $.jsonCall = function(url, data, success, failure) {
+  $.jsonCall = function(url, options, data, success, failure) {
+    if (typeof(data) === 'function') {
+      // No options argument passed, shift the others over
+      failure = success;
+      success = data;
+      data = options;
+      options = undefined;
+    }
+    options = options || {};
     var ajax = $.ajax({
       type: 'POST',
       url: url,
       processData: false,
       contentType: 'application/json',
       data: JSON.stringify(data),
-      dataType: 'json',
-      success: success
+      dataType: options.dataType || 'json',
+      success: success,
+      async: options.async
     });
     if (failure) {
       ajax.fail(failure);

@@ -78,20 +78,23 @@ apos.enableAreas = function() {
       save: function(callback) {
         if (slug) {
           // Has a slug, save it
-          $.post('/apos/edit-singleton',
+          $.jsonCall('/apos/edit-singleton',
+            {
+              dataType: 'html',
+            },
             {
               slug: slug,
               options: $singleton.attr('data-options'),
               // By now itemData has been updated (we passed it
               // into the widget and JavaScript passes objects by reference)
-              content: JSON.stringify(itemData)
+              content: itemData
             },
             function(markup) {
               $singleton.find('.apos-content').html(markup);
               apos.enablePlayers($singleton);
               callback(null);
-            }
-          ).fail(function() {
+            },
+            function() {
             alert('Server error, please try again.');
             callback('error');
           });
@@ -186,10 +189,27 @@ apos.jsonAttribute = function(value) {
   }
 };
 
-// We often submit the content of an area as part of a regular POST. This is
-// a good way to pack it up
-apos.stringifyArea = function($area) {
-  return JSON.stringify($area.data('editor').serialize());
+// Given an array of items for an area, return true if the area
+// is considered empty. TODO: this is a lousy hack right now,
+// we don't have the capabilities we do on the server side to
+// identify empty blog widgets, etc.
+
+apos.areaIsEmpty = function(area) {
+  return !_.find(area, function(item) {
+    if ((area.type === 'richText') && (!area.content)) {
+      return false;
+    }
+    return true;
+  });
+};
+
+// Given an array of items for a singleton, return true if the
+// singleton is considered empty. TODO: right now this just
+// calls apos.areaIsEmpty, it should take the type into
+// account.
+
+apos.singletonIsEmpty = function(area, type) {
+  return apos.areaIsEmpty(area);
 };
 
 // Reusable utility to watch one jquery element's value and use it to

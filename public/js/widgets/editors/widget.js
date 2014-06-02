@@ -134,14 +134,11 @@ function AposWidgetEditor(options) {
     // Transmit the data as JSON so objects with
     // property names that look like numbers don't get
     // converted into flat arrays
-    return $.ajax({
-      type: 'POST',
-      url: '/apos/render-widget?editView=1',
-      processData: false,
-      contentType: 'application/json',
-      data: JSON.stringify(info),
-      dataType: 'html',
-      success: function(html) {
+    return $.jsonCall(
+      '/apos/render-widget?editView=1',
+      { dataType: 'html' },
+      info,
+      function(html) {
         // Work around fussy jquery HTML parsing behavior a little
         self.$widget = $($.parseHTML($.trim(html)));
         if (apos.widgetPlayers[self.type]) {
@@ -149,7 +146,7 @@ function AposWidgetEditor(options) {
         }
         return callback(null);
       }
-    });
+    );
   };
 
   // Decorate self.$widget, the widget's element in the main content editor, with suitable attributes for a brand new widget.
@@ -185,18 +182,22 @@ function AposWidgetEditor(options) {
           info.content = undefined;
         }
         info._options = options.options || {};
-        $.post('/apos/render-widget', info, function(html) {
-          // jQuery 1.9+ is super fussy about constructing elements from html
-          // more explicitly. Trim the markup so we don't wind up with a
-          // text node instead of a widget due to whitespace, sigh
-          var previewWidget = $($.parseHTML($.trim(html)));
-          previewWidget.addClass('apos-widget-preview');
-          self.$previewContainer.prepend(previewWidget);
-          self.$el.find('.apos-requires-preview').show();
-          if (apos.widgetPlayers[self.type]) {
-            apos.widgetPlayers[self.type](previewWidget);
+        $.jsonCall('/apos/render-widget',
+          { dataType: 'html' },
+          info,
+          function(html) {
+            // jQuery 1.9+ is super fussy about constructing elements from html
+            // more explicitly. Trim the markup so we don't wind up with a
+            // text node instead of a widget due to whitespace, sigh
+            var previewWidget = $($.parseHTML($.trim(html)));
+            previewWidget.addClass('apos-widget-preview');
+            self.$previewContainer.prepend(previewWidget);
+            self.$el.find('.apos-requires-preview').show();
+            if (apos.widgetPlayers[self.type]) {
+              apos.widgetPlayers[self.type](previewWidget);
+            }
           }
-        });
+        );
       }
       else
       {

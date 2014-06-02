@@ -323,11 +323,13 @@ apos.modal = function(sel, options) {
       'keydown.aposModal': function(e) {
         if (e.keyCode === 27) {
           cancelModal();
+          return false;
         }
       },
       'click.aposModal': function(e) {
         if (e.target.className === 'apos-modal-blackout'){
           cancelModal();
+          return false;
         }
       }
     });
