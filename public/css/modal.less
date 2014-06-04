@@ -13,7 +13,17 @@
   margin-bottom: 20px;
   .clearfix;
 
-  label { display: inline-block; }
+  label { margin-bottom: 8px; }
+}
+
+.apos-fieldset-selective-item
+{
+  margin-bottom: 10px;
+}
+
+.apos-fieldset-selective ul
+{
+  // margin-top: 20px;
 }
 
 .apos-hr
@@ -41,7 +51,10 @@
   }
   textarea {height: 180px;}
 }
-
+.apos-fieldset
+{
+  label {display: block;}
+}
 .apos-fieldset-by
 {
   display: none;
@@ -64,6 +77,30 @@
     padding: 7px 28px 8px 11px;
     top: 1px;
     margin-left: -4px;
+  }
+}
+
+.apos-fieldset-lister
+{
+  .lister-selected-top:hover
+  {
+    cursor: pointer;
+  }
+  .apos-inline-input 
+  {
+    .apos-ui-inline-btn
+      {
+        top: 0;
+        right: 0;
+        padding: 8px 10px;
+        pointer-events: none;
+      }
+    label ~ .apos-ui-inline-btn,
+    label ~ .apos-select-wrapper .apos-ui-inline-btn
+      {
+        top: auto;
+        bottom: 0;
+      }
   }
 }
 
@@ -161,6 +198,12 @@
         -webkit-box-shadow: 0 0 0px 1000px white inset;
     }
 
+}
+
+.apos-fieldset-float
+{
+  float: left;
+  margin-right: 30px;
 }
 
 .apos-fieldset-editor

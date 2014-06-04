@@ -21,17 +21,24 @@
     <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
       <label>{{ __(label) | e }}</label>
   {% endif %}
-    {# Text entry for autocompleting the next item #}
-    <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" /> <a href="#" data-add>Add</a>
-    <ul data-list class="apos-tag-list">
-      <li data-item>
-        <span class="label-and-remove">
-          <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
-          <span data-label>{{ __('Example label') }}</span>
-          {# Link to remove this choice #}
-        </span>
-      </li>
-    </ul>
+    <div class="apos-inline-input">
+      {# Text entry for autocompleting the next item #}
+      <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
+      <span class="apos-ui-container apos-ui-inline-btn">
+        <a href="#" class="apos-ui-btn" data-add><i class="icon icon-plus"></i> Add</a>
+      </span>
+
+      <ul data-list class="apos-tag-list">
+        <li data-item class="apos-ui-container">
+          <span class="label-and-remove apos-ui-btn apos-ui--dark">
+            <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
+            <span data-label>{{ __('Example label') }}</span>
+            {# Link to remove this choice #}
+          </span>
+        </li>
+      </ul>   
+    </div>
+
   {% if options.inline %}
     </div>
   {% else %}
@@ -75,11 +82,16 @@
 {% endmacro %}
 
 {% macro formSelect(name, label, choices) %}
-  <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+  <fieldset class="apos-fieldset apos-fieldset-lister apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
-      <div class="apos-select-wrapper">
+      <div class="apos-select-wrapper apos-inline-input">
       {{ formSelectStandalone(name, choices) }}
-      <div class="apos-select-arrow"></div>
+      <!-- <div class="apos-select-arrow"></div> -->
+      <span class="apos-ui-container apos-ui-inline-btn">
+        <div class="apos-select-arrow apos-ui-btn">
+          <i class="icon icon-caret-down"></i>
+        </div>
+      </span>
     </div>
   </fieldset>
 {% endmacro %}
@@ -134,21 +146,45 @@
 
 {% macro formSelective(name, label, options = {}, moreOptions = {}) %}
   {% set _options = aposMerge(options, moreOptions) %}
+
   {% if _options.inline %}
     <div class="apos-inline-selective" data-name="{{ name }}">
   {% else %}
-    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
-    <label>{{ label | e }}</label>
+
+<!--         <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
+          <div class="apos-select-wrapper apos-inline-input">
+            <label>{{ __('Browse') }}:</label>
+            {{ formSelectStandalone('group',
+              [
+                { label: 'All Media Types', value: '' },
+                { label: 'Images', value: 'images' },
+                { label: 'Office', value: 'office' }
+              ]
+            ) }}
+            <span class="apos-ui-container apos-ui-inline-btn">
+              <div class="apos-select-arrow apos-ui-btn">
+                <i class="icon icon-caret-down"></i>
+              </div>
+            </span>
+          </div>
+        </fieldset> -->
+
+
+
+
+    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-lister apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+      <div class="apos-select-wrapper apos-inline-input">
+      <label>{{ label | e }}</label>
   {% endif %}
     <input type="text" data-autocomplete {% if _options.placeholder %}placeholder="{{ __( _options.placeholder ) | e }}"{%endif %}/>
     <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
-    <ul data-list>
+    <ul data-list class="apos-selective-list">
       {# This is a template for creating the real items, #}
       {# it will be cloned as needed #}
       <li class="apos-fieldset-selective-item" data-item>
         <div class="apos-ui-container apos-fieldset-selective-item-inner">
           <span class="apos-remove" data-remove><i class="icon icon-remove"></i></span>
-          <span class="apos-selective-label apos-button" data-label>{{ __(Title) }}
+          <span class="apos-selective-label apos-ui-btn apos-ui--dark" data-label>{{ __(Title) }}
           </span>
 
           {% if _options.extras or _options.relationship %}
@@ -185,6 +221,7 @@
   {% if _options.inline %}
     </div>
   {% else %}
+      </div>
     </fieldset>
   {% endif %}
 {% endmacro %}

@@ -31,3 +31,13 @@
 
 @apos-grey-blue: rgb(157, 179, 180);
 @apos-steel: #353B3B;
+
+
+// Gradients
+.apos-dark-grad(@from:@apos-steel, @to:@apos-grey50) {
+  .apos-bg-gradient(@from, @to);
+}
+
+.apos-base-grad {
+  .apos-bg-gradient(@apos-base, @apos-lighten-10);
+}
