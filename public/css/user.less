@@ -467,33 +467,23 @@
 
  li
  {
-  display: inline-block;
-  font-size: 10px;
-  color: #FFF;
-  background-color: @apos-grey10;
-  margin-right: 10px;
-  padding-right: 11px;
-  letter-spacing: 1px;
-  margin-bottom: 7px;
+  margin-right: 8px;
  }
  .apos-tag-remove
  {
-   color: #FFF;
-   font-weight: bold;
-
-   padding: 9px 4px;
-   display: inline-block;
-   font-size:10px;
-   &:hover
-   {
-     background-color: @apos-grey20;
-   }
+   color: white;
  }
 }
 .apos-modal .apos-slideshow-user-options
 {
   padding: 10px;
   background-color: #eee;
+  .apos-fieldset
+  {
+    float: left;
+    width: 30%;
+    margin-right: 2%;
+  }
 }
 .apos-modal .apos-orientation-select-container
 {
@@ -620,18 +610,20 @@
 .apos-slideshow-file-in-message
 {
   display:none;
+  opacity: 0.2;
   z-index: 20;
   color: #FFF;
   text-align: center;
   background-color: @apos-base;
-  opacity: 0.5;
+  .transition();
   height: 100%;
   width: 100%;
   top: 0;
   font-size: 2.5em;
   right: 0;
   position: absolute;
-  border: 7px dashed darken(@apos-base, 20%);
+
+  // border: 7px dashed darken(@apos-base, 20%);
   span
   {
     position: absolute;
@@ -705,7 +697,11 @@
   position: relative;
   .clearfix;
   // border: 2px dashed darken(@apos-base, 20%);
-  background-color: @apos-grey60;
+  // background-color: @apos-grey60;
+  background: lighten(@apos-grey60, 20%);
+  border-radius: 8px;
+  border: 3px dashed #F5D1CE;
+  margin-top: 20px;
 
   // &.apos-upload-disabled:hover {background-color: red;}
 
@@ -773,7 +769,15 @@
 }
 
 
-
+.apos-slideshow-editor
+{
+  max-width: 450px;
+  // padding: 15px;
+  .apos-modal-body
+  {
+    padding: 25px !important;
+  }
+}
 .apos-slideshow-editor .apos-slideshow-editor-item
 {
   list-style: none;
@@ -1586,14 +1590,14 @@ body .ui-tooltip
 
 /* End File Annotator */
 
-.apos-button-back
-{
-  padding: 15px;
-  background-color: darken(@apos-base,10%);
-  margin: 0 15px 0 -15px;
-  &:before{padding-right: 5px;}
-  &:hover{background-color: darken(@apos-base,20%);}
-}
+// .apos-button-back
+// {
+//   padding: 15px;
+//   background-color: darken(@apos-base,10%);
+//   margin: 0 15px 0 -15px;
+//   &:before{padding-right: 5px;}
+//   &:hover{background-color: darken(@apos-base,20%);}
+// }
 
 .apos-close-modal
 {
@@ -1631,7 +1635,9 @@ body .ui-tooltip
 //* clean select styles */
 .apos-select-wrapper
 {
-  display: inline;
+  display: inline-block;
+  max-width: 385px;
+  width: 100%;
   position: relative;
   margin-right: 20px;
   select
@@ -1655,7 +1661,7 @@ body .ui-tooltip
      appearance: none;
      text-indent: 0.01px;
      text-overflow: '';
-     padding: 10px 40px 10px 10px;
+     padding: 14px 40px 16px 10px;
      height: 30px;
      vertical-align: middle;
      &:hover{cursor: pointer;}
@@ -1683,47 +1689,57 @@ body .ui-tooltip
   // The lister "selected" option
   .lister-selected-top
   {
+    font-family: 'cabin';
     display: inline-block;
     background: #fff;
-    margin: 0 0 0 10px;
-    font-family: Helvetica, sans-serif;
-    font-size: 10px;
-    line-height: 10px;
+    line-height: 14px;
     color: @apos-grey10;
     letter-spacing: 1px;
-    text-transform: uppercase;
     font-weight: bold;
-    padding: 8px 80px 10px 20px;
-    border: 1px solid @apos-grey60
+    padding: 8px 80px 10px 11px;
+    border: 1px solid @apos-grey60;
+    text-transform: none;
+    letter-spacing: 1px;
+    color: #333;
+    padding-left: 11px;
+    display: inline-block;
+    width: 100%;
+    max-width: 385px;
+    padding: 14px 8px 16px 14px;
+    border: none;
+    border: 1px solid #ddd;
+    font-size: 14px;
   }
   // The lister options
   .apos-lister
   {
+    font-family: 'cabin';
     position:absolute;
     display: none;
     z-index: 1;
-    background: white;
-    margin-left: 10px;
-    margin-top: -7px;
-    background: white;
-    padding: 0;
-    width: 90%;
-    box-shadow: 2px 2px 10px #eee;
+    background-color: rgb(255, 255, 255);
+    -webkit-border-radius: 2px;
+            border-radius: 2px;
+    -webkit-box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+    border: 1px solid @apos-grey50;
+    width: 100%;
 
     li
     {
       display: block;
-      font-family: Helvetica, sans-serif;
-      font-size: 10px;
+      text-transform: none;
       color: @apos-grey10;
       letter-spacing: 1px;
       text-transform: uppercase;
-      font-weight: bold;
-      padding: 5px 10px;
+      font-family: 'cabin';
+      font-size: 12px;
+      padding: 12px 10px;
       cursor: default;
       &:hover
       {
-        background: #eee;
+        background: @apos-base;
+        color: white;
       }
 
     }
@@ -1736,30 +1752,40 @@ body .ui-tooltip
 
   .apos-select-arrow
   {
-    position: relative;
-    display: inline-block;
-    background-color: @apos-grey50;
-    right: 30px;
-    top: 12px;
-    padding: 15px;
-    pointer-events: none;
-    margin-top: -3px;
+    // display: inline-block;
+    // cursor: pointer;
+    // background-color: rgba(255,255,255,0.25);
+    // border-radius: 2px;
+    // -webkit-border-radius: 2px;
+    // border: 1px solid #e4e4e4;
+    // // -webkit-box-shadow: 1px 1px 5px rgba(0,0,0,0.15);
+    // box-shadow: 1px 1px 5px rgba(0,0,0,0.15);
+    // z-index: 2;
+    // padding: 8px;
+    // // border-left: 1px solid yellow;
+    // border: 0 1px 0 0 yellow, 5px solid blue;
+    // position: absolute;
+    // right: 0;
+    // top: 0;
+    // margin: 0;
+    // padding: 13px;
 
-    &:before
-    {
-      width: 0px;
-      z-index: 1;
-      pointer-events: none;
-      position: absolute;
-      text-align: center;
-      margin-left: -3px;
-      margin-top: -2px;
-      content: "";
-      height: 0px;
-      border-style: solid;
-      border-width: 4px 3px 0 3px;
-      border-color: #ffffff transparent transparent transparent;
-    }
+    // &:before
+    // {
+    //   width: 0px;
+    //   z-index: 3;
+    //   pointer-events: none;
+    //   position: absolute;
+    //   text-align: center;
+    //   margin-left: -3px;
+    //   margin-top: -2px;
+    //   content: "";
+    //   height: 0px;
+    //   border-style: solid;
+    //   border-width: 4px 3px 0 3px;
+    //   border-color: #ffffff transparent transparent transparent;
+    // }
+
   }
 }
 /* Selective Styles */
@@ -1805,29 +1831,21 @@ body .ui-tooltip
 /* Search Input */
 .apos-search-field
 {
-  display: inline;
-  &:before
+  input 
   {
-    position: absolute;
-    color: black;
-    font-size: 12px;
-    margin-top: 9px;
-    margin-left: 10px;
+    font-family: 'cabin';
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin: 0;
+    padding: 14px 8px 11px 14px;
   }
-  input
-  {
-    .apos-montserrat-bold;
-     font-size: 10px;
-     // color: @apos-grey10;
-     letter-spacing: 1px;
-     text-transform: uppercase;
-     font-weight: bold;
-     border: 0;
-     border-radius: 0;
-     padding: 11px 10px 10px 25px;
-     -webkit-appearance: none;
-     &:focus{outline: none;}
-  }
+}
+.apos-search-field:before
+{
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  margin-top: 1px;
 }
 /* End Search Input */
 
@@ -1837,7 +1855,7 @@ body .ui-tooltip
   color: @apos-grey10;
   .apos-montserrat;
   text-transform: uppercase;
-  font-size:0.65em;
+  // font-size:0.65em;
   letter-spacing: 1px;
   padding: 10px 0 20px 0;
   a
@@ -1876,17 +1894,6 @@ body .ui-tooltip
 /* Media Library */
 .apos-media-library.apos-modal
 {
-  .apos-select-arrow{margin-top: -11px;}
-  .apos-button-back
-  {
-    background-color: @apos-base;
-    padding: 36px 20px;
-    &:hover
-    {
-      background-color: darken(@apos-base, 10%);
-    }
-  }
-
   background-color: darken(@apos-grey70,6%);
   .apos-item-list-details{display: none;}
   .apos-fieldset-editor{padding: 0; textarea{padding: 10px;}}
@@ -1905,7 +1912,7 @@ body .ui-tooltip
       // clear: left;
       text-align: right;
       vertical-align: bottom;
-      padding: 70px 15px 20px 10px;
+      padding: 188px 15px 20px 10px;
       // border-bottom: 1px solid @apos-grey60;
     }
     .apos-add-files,
@@ -1914,10 +1921,18 @@ body .ui-tooltip
       position:relative;
       display: block;
       width: 60%;
-      padding: 20px;
-      margin: 20px 0 20px 20px;
-      background: @apos-grey60;
+      padding: 60px;
+      text-align: center;
+      margin: 30px 0 30px 30px;
+      background: lighten(@apos-grey60, 20%);
+      border-radius: 8px;
+      border: 3px dashed #F5D1CE;
       float: left;
+
+      .apos-file-styled-container
+      {
+        width: 220px;
+      }
       .apos-file-input
       {
         position: absolute;
@@ -1939,21 +1954,24 @@ body .ui-tooltip
       }
       .apos-file-styled
       {
-        color: white;
-        padding: 15px;
-        background-color: @apos-base;
-        opacity: 0.8;
-        height: 50px;
-        width: 150px;
+        // color: white;
+        // padding: 15px;
+        // background-color: @apos-base;
+        // opacity: 0.8;
+        // height: 50px;
+        // width: 150px;
         text-align:center;
         position: relative;
         display: inline-block;
-        font-family: montserrat;
-        text-transform: uppercase;
-        font-size: 11px;
+        font-family: 'cabin';
+        text-transform: none;
+        font-size: 17px;
+        line-height: 23px;
+        span{color: @apos-base;}
         &:hover
         {
-          background-color: darken(@apos-base, 10%);
+          // background-color: darken(@apos-base, 10%);
+          color: @apos-base;
           cursor: pointer;
           opacity: 1;
         }
@@ -2156,7 +2174,7 @@ body .ui-tooltip
 
       .apos-preview
       {
-        border: 10px solid @apos-base;
+        // border: 10px solid @apos-base;
         -moz-box-sizing: content-box;
         -webkit-box-sizing: content-box;
         box-sizing: content-box;
@@ -2231,6 +2249,7 @@ body .ui-tooltip
       font-family: montserrat;
       text-transform: uppercase;
       font-size: 11px;
+
       &:hover
       {
         background-color: darken(@apos-base, 10%);
@@ -2351,7 +2370,7 @@ body .ui-tooltip
     {
       // width: 100%;
       max-width: 385px;
-      padding: 8px 8px 10px 8px;
+      padding: 14px 8px 16px 8px;
       border: none;
     }
   }
@@ -2359,30 +2378,58 @@ body .ui-tooltip
 
 /* End Tag Editor */
 
+.apos-button-back
+{
+  padding: 28px 22px;
+  float: left;
+  margin-right: 20px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+  .apos-montserrat-bold;
+  background-color: @apos-base;
+  color: white;
+  display: inline-block;
+  // background-color: darken(@apos-grey70,10%);
+  // margin: 0 15px 0 -25px;
+  &:before{padding-right: 5px;}
+  &:hover{background-color: darken(@apos-grey70,20%);}
+}
 
+.apos-modal-bar-filters
+{
+  padding: 30px 0;
+  label
+  {
+    padding-left: 0 !important;
+  }
+  .apos-fieldset.apos-fieldset-inset
+  {
+    background-color: transparent;
+  }
+}
 /* Full Page Modals */
-.apos-modal-full-page
+.apos-modal-full-page.apos-modal
 {
   width: 100%;
-
+  max-width: none !important;
+  .apos-progress-btn
+  {
+    margin: 50px 20px 0 30px;
+  }
   .apos-modal-bar
   {
-    background-color: lighten(@apos-grey70, 5%);
-    padding: 25px;
-    .apos-montserrat-bold;
-    text-transform: uppercase;
-    font-size:10px;
-    letter-spacing: 1px;
+    background-color: white;
+
+    .apos-fieldset
+    {
+      min-width: 200px;
+      margin-bottom: 0;
+      // margin-top: 10px;
+    }
   }
 
-  .apos-button-back
-  {
-    padding: 25px;
-    background-color: darken(@apos-grey70,10%);
-    margin: 0 15px 0 -25px;
-    &:before{padding-right: 5px;}
-    &:hover{background-color: darken(@apos-grey70,20%);}
-  }
+
 
   .apos-index-pane
   {

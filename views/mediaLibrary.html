@@ -8,50 +8,81 @@
 {% endmacro %}
 
 
-<div class="apos-media-library apos-modal apos-modal-full-page apos-template">
+<div class="apos-media-library apos-modal apos-ui apos-modal-full-page apos-template">
 <!-- <div class="apos-media-library apos-modal apos-template"> -->
   <div class="apos-modal-bar" data-bar>
-    <a class="apos-button-back icon-left-open apos-button" data-cancel href="#">{{ __('Back') }}</a>
-    <div class="apos-select-wrapper">
-      {{ __('Browse') }}: {{ formSelectStandalone('group',
-        [
-          { label: 'All Media Types', value: '' },
-          { label: 'Images', value: 'images' },
-          { label: 'Office', value: 'office' }
-        ]
-      ) }}
-      <div class="apos-select-arrow"></div>
-    </div>
-    <div class="apos-select-wrapper">
-      {{ __('Uploaded By') }}: {{ formSelectStandalone('owner',
-        [
-          { label: 'Everyone', value: 'all' },
-          { label: 'Me', value: 'user' }
-        ]
-      ) }}
-      <div class="apos-select-arrow"></div>
-    </div>
-    <div class="apos-select-wrapper">
-      {{ __('Status') }}: {{ formSelectStandalone('trash',
-        [
-          { label: 'Live', value: '0' },
-          { label: 'Trash', value: '1' }
-        ]
-      ) }}
-      <div class="apos-select-arrow"></div>
-    </div>
-    {#
-    MAYBE LATER
-    Sort By: {{ formSelectStandalone('sort',
-      [
-        { label: 'Most Recent', value: 'createdAt' },
-        { label: 'Title', value: 'title' }
-      ]
-    ) }}
-    #}
-    <div class="apos-search-field icon-search">
-      <input type="search" placeholder="{{ __('Search') }}" name="search" />
-    </div>
+    <!-- <a class="apos-button-back icon-left-open apos-button" data-cancel href="#">{{ __('Back') }}</a> -->
+    <a href="#" class="apos-progress-btn apos-progress-btn--dark apos-progress-btn--float-left apos-progress-btn--arrow-left" data-cancel>
+      {{ __('Back') }}
+    </a>
+      <div class="apos-modal-bar-filters clearfix">
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
+          <div class="apos-select-wrapper apos-inline-input">
+            <label>{{ __('Browse') }}:</label>
+            {{ formSelectStandalone('group',
+              [
+                { label: 'All Media Types', value: '' },
+                { label: 'Images', value: 'images' },
+                { label: 'Office', value: 'office' }
+              ]
+            ) }}
+            <span class="apos-ui-container apos-ui-inline-btn">
+              <div class="apos-select-arrow apos-ui-btn">
+                <i class="icon icon-caret-down"></i>
+              </div>
+            </span>
+          </div>
+        </fieldset>
+
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
+          <div class="apos-select-wrapper apos-inline-input">
+            <label>{{ __('Uploaded By') }}:</label>
+            {{ formSelectStandalone('owner',
+              [
+                { label: 'Everyone', value: 'all' },
+                { label: 'Me', value: 'user' }
+              ]
+            ) }}
+            <span class="apos-ui-container apos-ui-inline-btn">
+              <div class="apos-select-arrow apos-ui-btn">
+                <i class="icon icon-caret-down"></i>
+              </div>
+            </span>
+          </div>
+        </fieldset>
+
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
+          <div class="apos-select-wrapper apos-inline-input">
+            <label>{{ __('Status') }}:</label>
+            {{ formSelectStandalone('trash',
+              [
+                { label: 'Live', value: '0' },
+                { label: 'Trash', value: '1' }
+              ]
+            ) }}
+            <span class="apos-ui-container apos-ui-inline-btn">
+              <div class="apos-select-arrow apos-ui-btn">
+                <i class="icon icon-caret-down"></i>
+              </div>
+            </span>
+          </div>
+        </fieldset>
+
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
+          <div class="apos-select-wrapper apos-inline-input">
+            <label>{{ __('Search') }}:</label>
+            <div class="apos-search-field icon-search">
+              <input type="search" placeholder="{{ __('Search') }}" name="search" />
+            </div>
+<!--             <span class="apos-ui-container apos-ui-inline-btn">
+              <div class="apos-select-arrow apos-ui-btn">
+                <i class="icon icon-caret-down"></i>
+              </div>
+            </span> -->
+          </div>
+        </fieldset>
+
+      </div>
 
   </div>
   <div class="apos-modal-body">
@@ -71,11 +102,13 @@
               <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
             <![endif]-->
             <!--[if !IE]> -->
-              <div class="apos-file-styled icon-plus">{{ __('Upload Media') }} </div>
+              <div class="apos-file-styled icon-plus">
+                {{ __('Drag Media Here or <span>Click Here</span> to Select Files') }}
+              </div>
               <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
             <!-- <![endif]-->
           </div>
-          <div class="apos-media-file-in-message" data-drag-droparea><span data-drag-message>{{ __('Drop Files Here') }}</span></div>
+          <div class="apos-media-file-in-message" data-drag-droparea><!-- <span data-drag-message>{{ __('Drop Files Here') }}</span> --></div>
           {# I want to use progress.html here, but its styles are complex and don't seem #}
           {# to work in this context #}
           <!-- <span data-progress style="display: none">Uploading...</span> -->
