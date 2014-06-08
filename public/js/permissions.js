@@ -155,7 +155,8 @@ apos.permissions = {};
     }
 
     function viewFilter(result) {
-      var name = 'view-' + result.value;
+      // when propagation is not an option result *is* the id
+      var name = 'view-' + (result.value || result);
       if (!options.propagate) {
         return [ name ];
       }
@@ -164,8 +165,8 @@ apos.permissions = {};
     }
 
     function editPublishFilter(result) {
-
-      var value = result.value;
+      // when propagation is not an option result *is* the id
+      var value = result.value || result;
       if (!options.propagate) {
         // We don't have to send propagation rules so it's
         // easy, just return the appropriate permission name
