@@ -715,7 +715,7 @@ input.apos-control
   {
     overflow: hidden;
     width: 100%;
-    
+
     .apos-marquee-item,
     .apos-slideshow-item
     {
@@ -729,43 +729,27 @@ input.apos-control
   }
 }
 
-.apos-landscape
-{
-  .apos-slideshow-items,
-  .apos-marquee-items
-  {
-    max-height: 300px;
-  }
-}
-.apos-portrait
-{
-  .apos-slideshow-items,
-  .apos-marquee-items
-  {
-    height: 600px;
-  }
-}
-
-.apos-square
-{
-  .apos-slideshow-items,
-  .apos-marquee-items
-  {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%;
-    float: left;
-    height: 0;
-    .apos-marquee-item,
-    .apos-slideshow-item
-    {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    }
-  }
-}
+// Not sure if this is necessary. Commenting out for now. --Joel
+// .apos-square
+// {
+//   .apos-slideshow-items,
+//   .apos-marquee-items
+//   {
+//     position: relative;
+//     width: 100%;
+//     padding-bottom: 100%;
+//     float: left;
+//     height: 0;
+//     .apos-marquee-item,
+//     .apos-slideshow-item
+//     {
+//     width: 100%;
+//     height: 100%;
+//     position: absolute;
+//     left: 0;
+//     }
+//   }
+// }
 
 // A lockup of a widget and a rich text item. Must contain its floats.
 // Whether it actually does any floating is a per-site decision but an iron
