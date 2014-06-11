@@ -1,20 +1,20 @@
 {% include "formMacros.html" %}
 
-<div class="apos-file-annotator apos-modal apos-template">
+<div class="apos-file-annotator apos-modal apos-ui apos-template">
   <h3>
     {% block title %}
-    <a class="apos-button-back icon-left-open apos-button" href="#">{{ __('Back') }}</a>
+    <!-- <a class="apos-button-back icon-left-open apos-button" href="#">{{ __('Back') }}</a> -->
     {{ __('Edit Image Details') }}
-    <a class="apos-close-modal icon-cancel apos-button"></a>
+    <!-- <a class="apos-close-modal icon-cancel apos-button"></a> -->
     {% endblock %}
   </h3>
+  <label class="apos-instructions">
+    {% block instructions %}
+      {{ __('You have uploaded these files. Please take the time to title and tag them so that you can search for them at a later date.') }}
+    {% endblock %}
+  </label>
   <div class="apos-modal-body">
     <form>
-      <label class="apos-instructions">
-        {% block instructions %}
-          {{ __('You have uploaded these files. Please take the time to title and tag them so that you can search for them at a later date.') }}
-        {% endblock %}
-      </label>
       <div class="apos-modal-inner">
         {% block formAll %}
           {% block formBody %}
