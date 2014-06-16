@@ -445,6 +445,7 @@ function AposMediaLibrary(options) {
 
   self.getCriteria = function() {
     return {
+      owners: true,
       owner: self.$owner.val(),
       sort: self.$el.findByName('sort').val(),
       trash: self.$el.findByName('trash').val(),
