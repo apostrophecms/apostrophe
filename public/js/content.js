@@ -1005,6 +1005,7 @@ $(function() {
     $('body').trigger('aposCloseMenus');
     if (!opened){
       $(this).parent().toggleClass('open');
+      $('.apos-admin-bar').addClass('item-open');
     }
 
     //$(this).parent().siblings().removeClass('open');
@@ -1051,11 +1052,13 @@ $(function() {
 
   //Call for when media or tag editor is opened
   $('body').on('click', '.apos-admin-bar-item > .apos-button', function(){
+    $('.apos-admin-bar').addClass('item-open');
     $('body').trigger('aposCloseMenus');
   });
 
   $('body').on('aposCloseMenus', function(){
     $('.apos-admin-bar-item').removeClass('open');
+    $('.apos-admin-bar').removeClass('item-open');
   });
 
   //sets up listeners for tabbed modals
