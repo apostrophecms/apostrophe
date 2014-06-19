@@ -106,7 +106,7 @@ function AposWidgetEditor(options) {
   // Ask the server to render the widget's contents and stuff them
   // into a new `self.$widget` element, which is the placeholder element
   // in the main content editor for this widget. it is up to the caller
-  // to invoke either self.editor.insertWidget or self.editor.replacEwidget
+  // to invoke either self.editor.insertWidget or self.editor.replaceWidget
   // after this method calls back
 
   self.renderWidget = function(callback) {
