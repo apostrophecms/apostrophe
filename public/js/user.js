@@ -403,8 +403,8 @@ apos.busy = function($el, state) {
   }
 };
 
-// Do this late so that other code has a chance to override
 $(function() {
+  // Do these late so that other code has a chance to override
   apos.afterYield(function() {
     apos.enableMediaLibrary();
     apos.enableTagEditor();

@@ -53,6 +53,14 @@ describe('apostrophe', function() {
       assert(apos.build('/events') === '/events');
       return done();
     });
+    it('returns the URL "#" unmodified', function(done) {
+      try {
+        assert(apos.build('#') === '#');
+      } catch (e) {
+        console.error(e.stack);
+      }
+      return done();
+    });
     it('adds a single parameter to a queryless URL', function(done) {
       assert(apos.build('/events', { tag: 'blue' }) === '/events?tag=blue');
       return done();
@@ -467,6 +475,67 @@ describe('apostrophe', function() {
 
     it('forbids edit-page for other person', function() {
       assert(!results.length);
+    });
+
+    it('appropriate user can add area to page-1 with putArea without error', function(done) {
+      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+        assert(!err);
+        done();
+      });
+    });
+    it('the area actually gets there', function(done) {
+      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'page-1', function(err, page) {
+        assert(!err);
+        assert(page);
+        assert(page.test);
+        assert(page.test.items[0]);
+        assert(page.test.items[0].content === '<h4>Whee</h4>');
+        done();
+      });
+    });
+    it('inappropriate user cannot add area to page-1 with putArea', function(done) {
+      return apos.putArea({ user: { permissions: { guest: 1 } } }, 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+        assert(err);
+        done();
+      });
+    });
+    it('appropriate user can make new page with putArea without error', function(done) {
+      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'global:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+        assert(!err);
+        done();
+      });
+    });
+    it('an area on a new page actually gets there', function(done) {
+      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'global', function(err, page) {
+        assert(!err);
+        assert(page);
+        assert(page.test);
+        assert(page.test.items[0]);
+        assert(page.test.items[0].content === '<h4>Whee</h4>');
+        done();
+      });
+    });
+    it('can add a second area to that new page', function(done) {
+      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'global:test2', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+        assert(!err);
+        done();
+      });
+    });
+    it('second area does not blow out the first', function(done) {
+      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'global', function(err, page) {
+        assert(!err);
+        assert(page);
+        assert(page.test);
+        assert(page.test.items[0]);
+        assert(page.test.items[0].content === '<h4>Whee</h4>');
+        done();
+      });
+    });
+    it('even an admin cannot make a new page with putArea if the slug starts with /', function(done) {
+      return apos.putArea({ user: { permissions: { admin: 1 } } }, '/:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+        assert(err);
+        done();
+      });
     });
   });
 });
