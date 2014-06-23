@@ -1,0 +1,19 @@
+{# the base from which all modals are birthed #}
+
+<div class="apos-ui-modal apos-template {% block modalClass %}{% endblock %}">
+  <div class="apos-ui-modal-header">
+    <span class="apos-ui-modal-title">
+      {% block modalLabel %}Give Me a Label!{% endblock %}
+    </span>
+    {% block modalControls %}{% endblock %}
+  </div>
+  <div class="apos-ui-modal-instructions">
+    {% block modalInstructions %}{% endblock %}
+  </div>
+  <div class="apos-ui-modal-filters">
+    {% block modalFilters %}{% endblock %}
+  </div>
+  <div class="apos-ui-modal-body">
+    {% block modalBody %} I am a Modal! {% endblock %}
+  </div>
+</div>

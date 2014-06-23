@@ -1,22 +1,33 @@
-<div class="apos-tag-editor apos-modal apos-ui apos-template">
-  <h3 class="apos-modal-title">{{ __('Edit Tags') }}</h3>
-  <div class="apos-modal-body">
-    <p>{{ __('You may rename or delete any tag. To combine two tags, just rename one to match the other.') }}</p>
-    <div class="apos-tags" data-tags>
-      <div class="apos-tag apos-clearfix apos-template" data-tag>
-        <span class="apos-tag-text" data-tag-text>{{ __('tag') }}</span>
-        <a href="#" class="apos-control apos-button apos-inline-block" data-rename-open>{{ __('Rename') }}</a>
-        <span style="display: none" class="apos-tag-rename-form" data-rename-form>
-          <input name="name" />
-          <a href="#" class="apos-control apos-button apos-inline-block" data-rename-go>{{ __('Rename') }}</a>
-          <a href="#" class="apos-control apos-button apos-inline-block" data-rename-cancel>{{ __('Cancel') }}</a>
-        </span>
-        <a href="#" class="apos-control apos-button apos-inline-block" data-delete>{{ __('Delete') }}</a></div>
-    </div>
-  </div>
+{% extends 'baseModal.html' %}
+{% include 'uiMacros.html' %}
 
-  <div class="apos-modal-footer">
-    <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel">{{ __('Done') }}</a>
-  </div>
-  <a href="#" data-action="dismiss" class="apos-control apos-button apos-cancel apos-corner-close">x</a>
-</div>
+{% block modalClass %}apos-tag-editor apos-ui-modal-no-sidebar{% endblock%}
+
+{% block modalLabel %}
+  {{ __('Edit Tags') }}
+{% endblock%}
+
+{% block modalBody %}
+  <table class="apos-tags apos-manage-table">
+    <tbody data-tags>
+      <tr>
+        <th>Tags</th>
+        <th style="width:60%;">Actions</th>
+      </tr>
+      <tr class="apos-tag apos-clearfix apos-template" data-tag>
+        <td>
+          <span class="apos-tag-text" data-tag-text>{{ __('tag') }}</span>
+        </td>
+        <td>
+          {{ renderProgressBtn({dataAttrs: 'data-rename-open', float: 'left', color: 'base', label: 'Rename'}) }}
+          <span style="display: none" class="apos-tag-rename-form" data-rename-form>
+            <input name="name" />
+            {{ renderProgressBtn({dataAttrs: 'data-rename-go', float: 'left', color: 'base', label: 'Rename'}) }}
+            {{ renderProgressBtn({dataAttrs: 'data-rename-cancel', float: 'left', color: 'base', label: 'Cancel'}) }}
+          </span>
+          {{ renderProgressBtn({dataAttrs: 'data-delete', float: 'left', color: 'base', label: 'Delete'}) }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+{% endblock %}

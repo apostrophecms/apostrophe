@@ -42,7 +42,8 @@
   border: 2px dotted #f88;
 }
 
-.apos-fieldset-text
+.apos-fieldset-text,
+.apos-fieldset-password
 {
   input, textarea
   {
@@ -280,100 +281,6 @@
     text-transform: uppercase;
   }
 
-  .apos-modal-body
-  {
-    padding: 15px;
-
-    .apos-instructions
-    {
-      display: block;
-      // margin-bottom: 20px;
-      line-height: 1.7em;
-      background-color: lighten(@apos-grey,90%);
-      font-family:'cabinmedium';
-      font-size: 12px;
-      text-transform: none;
-      padding: 11px 14px;
-    }
-
-    form
-    {
-      .apos-help
-      {
-        margin-top: -10px;
-        margin-bottom: 15px;
-      }
-
-      input
-      {
-        border: none;
-      }
-
-      label
-      {
-        font-size: 10px;
-        margin-bottom: 8px;
-        font-family: 'montserratregular';
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #353b3b;
-        &.short
-        {
-          display: inline-block;
-          .clearfix;
-        }
-      }
-
-
-      select
-      {
-        position: relative;
-        -webkit-appearance:none;
-           -moz-appearance:none;
-        border: none;
-        background: @apos-base;
-        border-radius: 0px;
-        color: #FFF;
-
-
-        option
-        {
-          &:hover
-          {
-            background: red;
-          }
-        }
-      }
-
-      input, select, option
-      {
-        &:focus
-        {
-          outline: none;
-        }
-      }
-      .apos-stacked-fieldset
-      {
-        background-color: transparent;
-        label
-        {
-          display: inline-block;
-        }
-        input, textarea
-        {
-          max-width: none;
-          width: 100%;
-          margin-left: 0;
-          outline:none;
-          border:none;
-        }
-        textarea
-        {
-          height: 180px;
-        }
-      }
-    }
-  }
 
   .apos-modal-footer
   {

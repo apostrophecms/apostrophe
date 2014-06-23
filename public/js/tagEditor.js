@@ -26,7 +26,7 @@ function AposTagEditor(options) {
       _.each(data.tags, function(tag) {
         var $tag = apos.fromTemplate(self.$tagTemplate);
         $tag.find('[data-tag-text]').text(tag);
-        self.$tags.append($tag);
+        self.$tags.find('tr:last').after($tag);
       });
     });
     self.$el.on('click', '[data-rename-open]', function() {
