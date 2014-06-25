@@ -1,15 +1,15 @@
 {% extends "baseWidgetEditor.html" %}
 
-{% block widgetVars %}
-  {% set widgetClass = 'apos-html-editor' %}
+{% block modalClass %}
+  {{super()}} apos-html-editor
 {% endblock %}
 
-{% block title %}
+{% block modalLabel %}
 {{ __('Edit Raw HTML') }}
 {% endblock %}
 
-{% block instructions %}
-{{ __('Paste in HTML source code (such as embed codes from Wufoo).') }}
+{% block modalInstructions %}
+<p>{{ __('Paste in HTML source code (such as embed codes from Wufoo).') }}</p>
 {% endblock %}
 
 {% block previewButton %}
@@ -18,5 +18,3 @@
 {% block formBody %}
   <textarea class="apos-code"></textarea>
 {% endblock %}
-
-

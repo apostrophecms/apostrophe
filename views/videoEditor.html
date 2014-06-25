@@ -1,15 +1,15 @@
 {% extends "baseWidgetEditor.html" %}
 
-{% block widgetVars %}
-  {% set widgetClass = 'apos-video-editor' %}
+{% block modalClass %}
+  {{super()}} apos-video-editor apos-ui-modal-no-sidebar
 {% endblock %}
 
-{% block title %}
+{% block modalLabel  %}
   {{ __('Edit Video') }}
 {% endblock %}
 
-{% block instructions %}
-  {{ __('Paste a video link.') }}
+{% block modalInstructions %}
+  <p>{{ __('Paste a video link.') }}</p>
 {% endblock %}
 
 {% block formEnd %}

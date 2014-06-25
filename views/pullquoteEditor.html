@@ -1,17 +1,16 @@
 {% extends "baseWidgetEditor.html" %}
 
-{% block widgetVars %}
-  {% set widgetClass = 'apos-pullquote-editor' %}
+{% block modalClass %}
+  {{super()}} apos-pullquote-editor
 {% endblock %}
 
-{% block title %}
+{% block modalLabel %}
   {{ __('Edit Pullquote') }}
 {% endblock %}
 
-{% block instructions %}
-  {{ __('Type a pullquote.') }}
+{% block modalInstructions %}
+  <p>{{ __('Type a pullquote.') }}</p>
 {% endblock %}
 
 {% block previewButton %}
 {% endblock %}
-

@@ -1,16 +1,16 @@
 {% extends "slideshowEditor.html" %}
 
-{% block widgetVars %}
-  {% set widgetClass = 'apos-files-editor apos-slideshow-editor' %}
+{% block modalClass %}
+  {{super()}} apos-files-editor apos-slideshow-editor apos-ui-modal-no-sidebar
 {% endblock %}
 
-{% block title %}
+{% block modalLabel %}
   {{ __('Edit File(s)') }}
 {% endblock %}
 
-{% block instructions %}
-{{ __('Choose PDF, Office, .txt or .rtf files. Drag them into the order you prefer. <br />
-You can also drag files from your computer into the dashed area below.') }}
+{% block modalInstructions %}
+<p>{{ __('Choose PDF, Office, .txt or .rtf files. Drag them into the order you prefer. <br />
+You can also drag files from your computer into the dashed area below.') }}</p>
 {% endblock %}
 
 {% block hyperlink %}{% endblock %}
