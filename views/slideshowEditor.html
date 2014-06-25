@@ -1,19 +1,19 @@
 {% extends "baseWidgetEditor.html" %}
 {% include "formMacros.html" %}
 
-{% block widgetVars %}
-  {% set widgetClass = 'apos-slideshow-editor' %}
-{% endblock %}
+{% block modalClass %}
+  {{ super() }} apos-slideshow-editor apos-ui-modal-no-sidebar
+{% endblock%}
 
-{% block title %}
+{% block modalLabel %}
   {{ __('Edit Slideshow') }}
 {% endblock %}
 
-{% block instructions %}
-{{ __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
+{% block modalInstructions %}
+<p>{{ __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
 You can also drag images from your computer into the dashed area below. <br />
 Or, drag the existing images shown beneath the dashed area. <br />') }}
-<span data-size-warning style="display: none">{{ __('Images must be at least 400x300 pixels.') }}</span>
+<span data-size-warning style="display: none">{{ __('Images must be at least 400x300 pixels.') }}</span></p>
 {% endblock %}
 
 {% block formAll %}
@@ -86,13 +86,6 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
 
   {# TODO: you can make these snazzier, but remember the JS expects to #}
   {# set a val() of '0' or '1' on a select element #}
-  <div class="apos-slideshow-user-options clearfix">
-    {{ formBoolean('showTitles', 'Show Titles') }}
-    {{ formBoolean('showDescriptions', 'Show Descriptions') }}
-    {{ formBoolean('showCredits', 'Show Credits') }}
-  </div>
-
-
   <div data-orientation-select class="apos-orientation-select-container">
     <label class='apos-instructions'>{{ __('Select Orientation') }}</label>
     {# javascript clones this as needed based on orientation.choices #}
@@ -104,6 +97,15 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
       <a class="apos-button apos-square" title="Square" data-orientation-button="square" href="#"></a>
     #}
   </div>
+
+  <div class="apos-slideshow-user-options clearfix">
+    {{ formBoolean('showTitles', 'Show Titles') }}
+    {{ formBoolean('showDescriptions', 'Show Descriptions') }}
+    {{ formBoolean('showCredits', 'Show Credits') }}
+  </div>
+
+
+
 
   {# Media chooser #}
 
@@ -138,10 +140,8 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
 
   </div>
 
-
 {% endblock %}
 
-{% block additionalFooterItems %}
-<div class="apos-limit-reached" data-limit-reached style="display: none">{{ __('You have reached the limit of %s file(s) in this location.', '<span data-limit>5</span>') }}</div>
+{% block modalFooter %}
+  <div class="apos-limit-reached" data-limit-reached style="display: none">{{ __('You have reached the limit of %s file(s) in this location.', '<span data-limit>5</span>') }}</div>
 {% endblock %}
-
