@@ -1,6 +1,6 @@
 {# the base from which all modals are birthed #}
 
-<div class="apos-ui-modal apos-template {% block modalClass %}{% endblock %}">
+<div class="apos-ui-modal apos-template {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
   <div class="apos-ui-modal-header">
     <span class="apos-ui-modal-title">
       {% block modalLabel %}Give Me a Label!{% endblock %}

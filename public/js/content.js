@@ -448,10 +448,13 @@ apos.modal = function(sel, options) {
       $el.data('aposSavedScrollTop', $(window).scrollTop());
       apos._modalStack.push($el);
       $('body').append($el);
+      var dataTopOffset = $el.attr("data-top-offset");
       var offset;
       if ($el.hasClass('apos-modal-full-page')) {
         offset = $('.apos-admin-bar').height();
-      } else {
+      } else if(dataTopOffset !== undefined ) {
+        offset = parseInt(dataTopOffset);
+      }else{
         offset = 100;
       }
       $el.offset({ top: $('body').scrollTop() + offset, left: ($(window).width() - $el.outerWidth()) / 2 });
