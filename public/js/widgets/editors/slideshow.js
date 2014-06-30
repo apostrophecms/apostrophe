@@ -107,7 +107,7 @@ function AposSlideshowWidgetEditor(options)
     var $uploader = self.$el.find('[data-uploader]');
     $uploader.fileupload({
       dataType: 'json',
-      dropZone: self.$el.find('.apos-modal-body'),
+      dropZone: self.$el.find('.apos-ui-modal-body'),
       // This is nice in a multiuser scenario, it prevents slamming,
       // but I need to figure out why it's necessary to avoid issues
       // with node-imagemagick
@@ -155,8 +155,8 @@ function AposSlideshowWidgetEditor(options)
     }
 
     // setup drag-over states
-    self.$el.find('.apos-modal-body').bind('dragover', function (e) {
-        var dropZone = self.$el.find('.apos-modal-body'),
+    self.$el.find('.apos-ui-modal-body').bind('dragover', function (e) {
+        var dropZone = self.$el.find('.apos-ui-modal-body'),
             timeout = window.dropZoneTimeout;
         if (!timeout) {
             dropZone.addClass('apos-slideshow-file-in');
@@ -206,7 +206,7 @@ function AposSlideshowWidgetEditor(options)
         $choice.addClass(choice.css);
         $orientation.append($choice);
       });
-      self.$el.find('.apos-modal-body').addClass('apos-select-orientation');
+      self.$el.find('.apos-ui-modal-body').addClass('apos-select-orientation');
 
       self.data.orientation = self.data.orientation || orientation.choices[0].name;
       self.reflectOrientation();
@@ -217,7 +217,7 @@ function AposSlideshowWidgetEditor(options)
 
     if (typeof(extraFields) === 'object'){
       $.each(extraFields, function(key, value) {
-        self.$el.find('.apos-modal-body [data-extra-fields-'+key+']').remove();
+        self.$el.find('.apos-ui-modal-body [data-extra-fields-'+key+']').remove();
       });
     }
 

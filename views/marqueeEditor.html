@@ -1,15 +1,15 @@
 {% extends "slideshowEditor.html" %}
 
-{% block widgetVars %}
+{% block modalClass %}
 {# lots of good stuff comes from apos-slideshow-editor class#}
-  {% set widgetClass = 'apos-buttons-editor apos-marquee-editor apos-slideshow-editor' %}
+  {{super()}} apos-marquee-editor apos-slideshow-editor apos-ui-modal-no-sidebar
 {% endblock %}
 
-{% block title %}
+{% block modalLabel %}
   {{ __('Edit Button(s)') }}
 {% endblock %}
 
-{% block instructions %}
-{{ __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
-You can also drag images from your computer into the dashed area below.') }}
+{% block modalInstructions %}
+<p> __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
+You can also drag images from your computer into the dashed area below.') }}</p>
 {% endblock %}

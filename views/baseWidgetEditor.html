@@ -1,24 +1,31 @@
+{% extends 'baseModal.html' %}
+{% include 'uiMacros.html' %}
+
 {% block widgetVars %}
 {% endblock %}
 
-<div class="{{ widgetClass }} apos-widget-editor apos-modal apos-ui apos-template">
-  <h3 class="apos-modal-title">
-    {% block title %}
-      {{ __('Edit Widget') }}
-    {% endblock %}
-  </h3>
-  <div class="apos-modal-controls">
-      <a href="#" data-cancel class="apos-button apos-edit-modal apos-button-white apos-button-arrow-left">{{ __('Cancel') }}</a>
-      <a href="#" data-save class="apos-button apos-edit-modal apos-button-red">{{ __('Save Changes') }}</a>
-  </div>
+{% block modalClass %}
+  apos-widget-editor
+{% endblock%}
 
+
+{% block modalLabel %}
+  {{ __('Edit Widget')}}
+{% endblock %}
+
+{% block modalControls %}
+  {{ renderProgressBtn({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save Changes'}) }}
+  {{ renderProgressBtn({dataAttrs: 'data-cancel', float: 'left', label: 'Cancel', arrow: 'left'}) }}
+{% endblock %}
+
+{% block modalInstructions %}
+  {{ __('Paste a widget link.') }}
+{% endblock %}
+
+{% block modalBody %}
   <form>
-    <div class="apos-modal-body apos-ui">
-      <label class='apos-instructions'>
-        {% block instructions %}
-          {{ __('Paste a widget link.') }}
-        {% endblock %}
-      </label>
+    {# <div class="apos-modal-body apos-ui"> #}
+
       {% block formAll %}
         {# Please do not remove these override blocks #}
         {% block formBegin %}{% endblock %}
@@ -28,11 +35,7 @@
         {# Please do not remove these override blocks #}
         {% block formEnd %}{% endblock %}
       {% endblock %}
-    </div>
+    {# </div> #}
   </form>
 
-  <div class="apos-modal-footer">
-    {% block additionalFooterItems %}
-    {% endblock %}
-  </div>
-</div>
+{% endblock %}
