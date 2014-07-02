@@ -451,7 +451,7 @@ apos.modal = function(sel, options) {
       var dataTopOffset = $el.attr("data-top-offset");
       var offset;
       if ($el.hasClass('apos-modal-full-page')) {
-        offset = $('.apos-admin-bar').height();
+        offset = Math.max($('.apos-admin-bar').height(),130);
       } else if(dataTopOffset !== undefined ) {
         offset = parseInt(dataTopOffset);
       }else{
