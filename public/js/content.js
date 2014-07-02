@@ -455,7 +455,7 @@ apos.modal = function(sel, options) {
       } else if(dataTopOffset !== undefined ) {
         offset = parseInt(dataTopOffset);
       }else{
-        offset = 100;
+        offset = 150;
       }
       $el.offset({ top: $('body').scrollTop() + offset, left: ($(window).width() - $el.outerWidth()) / 2 });
       $el.show();
