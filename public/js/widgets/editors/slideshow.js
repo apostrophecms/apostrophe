@@ -13,16 +13,15 @@ function AposSlideshowWidgetEditor(options)
   // Options passed from template or other context
   var templateOptions = options.options || {};
   var widgetClass = templateOptions.widgetClass;
-  var aspectRatio = templateOptions.aspectRatio;
+  var aspectRatio = templateOptions.aspectRatio || [1,1];
   var minSize = templateOptions.minSize;
   var limit = templateOptions.limit;
   var extraFields = templateOptions.extraFields;
   var liveItem = '[data-item]:not(.apos-template)';
   var userOptions = templateOptions.userOptions || {};
   if (userOptions) {
-    var orientation = userOptions.orientation || false;
+    var orientation = userOptions.orientation || templateOptions.orientation || false;
   }
-
   if (!options.messages) {
     options.messages = {};
   }
@@ -208,7 +207,7 @@ function AposSlideshowWidgetEditor(options)
       });
       self.$el.find('.apos-modal-body').addClass('apos-select-orientation');
 
-      self.data.orientation = self.data.orientation || orientation.choices[0].name;
+      self.data.orientation = orientation.choices[0].name || self.data.orientation;
       self.reflectOrientation();
     }
 
