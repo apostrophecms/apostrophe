@@ -985,7 +985,10 @@ apos.off = function(eventName, fn) {
 
 apos.on('enhance', function($el) {
   $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
-    listClass: "apos-lister"
+    listClass: "apos-lister",
+    listClickCallback: function($select, $option) {
+      apos.emit('modalSelectClick', $select, $option);
+    }
   });
 });
 
