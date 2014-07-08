@@ -36,7 +36,7 @@
             {# Link to remove this choice #}
           </span>
         </li>
-      </ul>   
+      </ul>
     </div>
 
   {% if options.inline %}
@@ -183,10 +183,12 @@
       {# it will be cloned as needed #}
       <li class="apos-fieldset-selective-item" data-item>
         <div class="apos-ui-container apos-fieldset-selective-item-inner">
-          <span class="apos-remove" data-remove><i class="icon icon-remove"></i></span>
-          <span class="apos-selective-label apos-ui-btn apos-ui--dark" data-label>{{ __(Title) }}
-          </span>
-
+          <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
+            <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
+            <span class="apos-selective-label" data-label>
+              {{ __(Title) }}
+            </span>
+          </div>
           {% if _options.extras or _options.relationship %}
             <span class="apos-selective-extras">
               {# TODO: extend our support for different types of extra fields, #}
