@@ -15,9 +15,18 @@
   {% endif %}
 
   {# Toggles open apos-view-permissions #}
-  <div class="apos-page-settings-toggle">
-    <a data-show-view-permissions href="#">{{ __('Who can see this?') }}</a>
+  <fieldset class="apos-fieldset  apos-fieldset-select">
+    {# I'm commenting this out for now, as it's a decent design pattern #}
+    {# <div  data-show-view-permissions class="apos-select-wrapper apos-inline-input apos-accordion-toggle">
+      <span class="apos-ui-container apos-ui-inline-btn apos-ui-inline-btn--left">
+        <div class="apos-ui-btn">
+          <i class="icon icon-plus"></i>
+        </div>
+      </span>
+      {{ __('Who can see this?') }}
+    </div> #}
     <div data-view-permissions class="apos-view-permissions apos-page-settings-toggle-content">
+      <label class="apos-modal-form-title">{{ __('Who can see this?') }}</label>
       <fieldset class="apos-fieldset apos-fieldset-select apos-fieldset-login-required" data-name="{{ loginRequired }}">
         {{ formSelect('loginRequired', 'Permitted',
             [
@@ -44,14 +53,22 @@
       </div>
       <p class="apos-view-permissions-hint">{{ __('Admins can always see everything.') }}</p>
     </div>
-  </div>
+  </fieldset>
 
   {# This outer div is for hiding the entirety of edit permissions via JS. -Tom #}
   <div data-edit-permissions-container>
     {# Toggles open data-edit-permissions #}
-    <div class="apos-page-settings-toggle">
-      <a data-show-edit-permissions href="#">{{ __('Who can edit this?') }}</a>
+    <fieldset class="apos-fieldset  apos-fieldset-select">
+      {# <div data-show-edit-permissions class="apos-select-wrapper apos-inline-input apos-accordion-toggle">
+        <span class="apos-ui-container apos-ui-inline-btn apos-ui-inline-btn--left">
+          <div class="apos-ui-btn">
+            <i class="icon icon-plus"></i>
+          </div>
+        </span>
+        {{ __('Who can edit this?') }}
+      </div> #}
       <div data-edit-permissions class="apos-edit-permissions apos-page-settings-toggle-content">
+        <label class="apos-modal-form-title">{{ __('Who can edit this?') }}</label>
         {{ formSelective('editGroupIds', 'Groups', selectiveOptions, { placeholder: "Type a group's name" }) }}
         {{ formSelective('editPersonIds', 'Individuals', selectiveOptions, { placeholder: "Type a person's name" }) }}
         {# This won't be true for some site somewhere, give it a class #}
