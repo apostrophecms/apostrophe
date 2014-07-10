@@ -22,8 +22,10 @@ apos.permissions = {};
       $el.find('[data-edit-permissions-container]').hide();
     }
 
+    // This is more or less deprecated with our new design.
+    // Leaving for now as a historical record.
     $el.find('[data-show-view-permissions]').click(function() {
-      $(this).closest('.apos-page-settings-toggle').toggleClass('apos-active');
+      $(this).toggleClass('apos-active');
       $el.find('[data-view-permissions]').toggle();
       return false;
     });
@@ -63,8 +65,11 @@ apos.permissions = {};
     var people;
     var groups;
 
+
+    // This is more or less deprecated with our new design.
+    // Leaving for now as a historical record.
     $el.find('[data-show-edit-permissions]').click(function() {
-      $(this).closest('.apos-page-settings-toggle').toggleClass('apos-active');
+      $(this).toggleClass('apos-active');
       $el.find('[data-edit-permissions]').toggle();
       return false;
     });
@@ -217,4 +222,3 @@ apos.permissions = {};
   };
 
 })();
-
