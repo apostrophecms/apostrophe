@@ -84,7 +84,7 @@ apos.enableAreas = function() {
             },
             {
               slug: slug,
-              options: $singleton.attr('data-options'),
+              options: JSON.parse($singleton.attr('data-options') || {}),
               // By now itemData has been updated (we passed it
               // into the widget and JavaScript passes objects by reference)
               content: itemData
