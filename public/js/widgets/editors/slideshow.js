@@ -13,7 +13,7 @@ function AposSlideshowWidgetEditor(options)
   // Options passed from template or other context
   var templateOptions = options.options || {};
   var widgetClass = templateOptions.widgetClass;
-  var aspectRatio = templateOptions.aspectRatio || [1,1];
+  var aspectRatio = templateOptions.aspectRatio;
   var minSize = templateOptions.minSize;
   var limit = templateOptions.limit;
   var extraFields = templateOptions.extraFields;
@@ -187,7 +187,7 @@ function AposSlideshowWidgetEditor(options)
         return choice.name === self.data.orientation;
       });
 
-      if (info.aspectRatio) {
+      if (info && info.aspectRatio) {
         aspectRatio = info.aspectRatio;
       }
       self.autocropIfNeeded();
@@ -207,7 +207,7 @@ function AposSlideshowWidgetEditor(options)
       });
       self.$el.find('.apos-modal-body').addClass('apos-select-orientation');
 
-      self.data.orientation = orientation.choices[0].name || self.data.orientation;
+      self.data.orientation = self.data.orientation || orientation.choices[0].name;
       self.reflectOrientation();
     }
 
