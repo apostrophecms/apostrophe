@@ -188,7 +188,7 @@ function AposSlideshowWidgetEditor(options)
         return choice.name === self.data.orientation;
       });
 
-      if (info.aspectRatio) {
+      if (info && info.aspectRatio) {
         aspectRatio = info.aspectRatio;
       }
       self.autocropIfNeeded();
