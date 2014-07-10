@@ -20,9 +20,8 @@ function AposSlideshowWidgetEditor(options)
   var liveItem = '[data-item]:not(.apos-template)';
   var userOptions = templateOptions.userOptions || {};
   if (userOptions) {
-    var orientation = userOptions.orientation || false;
+    var orientation = userOptions.orientation || templateOptions.orientation || false;
   }
-
   if (!options.messages) {
     options.messages = {};
   }
