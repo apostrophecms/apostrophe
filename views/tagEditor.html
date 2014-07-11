@@ -30,4 +30,9 @@
       </tr>
     </tbody>
   </table>
+  <div class="apos-add-tag" data-add-tag>
+    <input type="text" placeholder="New Tag" data-tag-text />
+    {{ renderProgressBtn({dataAttrs: 'data-add-go', color: 'base', label: 'Add'}) }}
+  </div>
+
 {% endblock %}

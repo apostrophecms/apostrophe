@@ -272,7 +272,10 @@ apos.moveYoungerSiblings = function(node, target) {
 // assigned to this item.
 apos.enableTags = function($el, tags) {
   tags = tags || [];
-  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
+  if (apos.data.lockTags) {
+    $el.find('[data-add]').remove();
+  }
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),
