@@ -17,18 +17,8 @@ function AposTagEditor(options) {
 
   self.init = function(callback) {
     self.$tags = self.$el.find('[data-tags]');
-    $.getJSON(options.browseUrl || '/apos/tags', function(data) {
-      if (!data.tags) {
-        alert('An error occurred.');
-        return callback('error');
-      }
-      self.$tagTemplate = self.$el.find('[data-tag]');
-      _.each(data.tags, function(tag) {
-        var $tag = apos.fromTemplate(self.$tagTemplate);
-        $tag.find('[data-tag-text]').text(tag);
-        self.$tags.find('tr:last').after($tag);
-      });
-    });
+    self.$tagTemplate = self.$el.find('[data-tag]');
+
     self.$el.on('click', '[data-rename-open]', function() {
       var $tag = $(this).closest('[data-tag]');
       $tag.find('[data-rename-open]').hide();
@@ -40,6 +30,7 @@ function AposTagEditor(options) {
       $renameForm.show();
       return false;
     });
+
     self.$el.on('click', '[data-rename-go]', function() {
       var $tag = $(this).closest('[data-tag]');
       var $text = $tag.find('[data-tag-text]');
@@ -76,6 +67,25 @@ function AposTagEditor(options) {
       return false;
     });
 
+    self.$el.on('click', '[data-add-go]', function() {
+      var $tag = $(this).closest('[data-add-tag]');
+      var $text = $tag.find('[data-tag-text]');
+      var text = $text.val();
+      $.jsonCall(options.renameUrl || '/apos/add-tag', {
+        tag: text
+      }, function(result) {
+        if (result.status === 'ok') {
+          $text.val('');
+          // TODO: would be faster to insert dynamically, we'd have
+          // to watch out for the sort order
+          self.refresh(function() {});
+        } else {
+          alert('An error occurred.');
+        }
+      });
+      return false;
+    });
+
     self.$el.on('click', '[data-rename-cancel]', function() {
       var $tag = $(this).closest('[data-tag]');
       $tag.find('[data-rename-form]').hide();
@@ -101,7 +111,23 @@ function AposTagEditor(options) {
       return false;
     });
 
-    return callback(null);
+    return self.refresh(callback);
+  };
+
+  self.refresh = function(callback) {
+    self.$tags.find('[data-tag]:not(.apos-template)').remove();
+    $.getJSON(options.browseUrl || '/apos/tags', function(data) {
+      if (!data.tags) {
+        alert('An error occurred.');
+        return callback('error');
+      }
+      _.each(data.tags, function(tag) {
+        var $tag = apos.fromTemplate(self.$tagTemplate);
+        $tag.find('[data-tag-text]').text(tag);
+        self.$tags.find('tr:last').after($tag);
+      });
+      return callback(null);
+    });
   };
 }
 
