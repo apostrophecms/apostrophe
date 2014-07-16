@@ -13,3 +13,5 @@ for plugin in "${plugins[@]}"
 do
   wget --no-check-certificate "https://raw.github.com/punkave/jquery-${plugin}/master/jquery.${plugin}.js" -O public/js/vendor/jquery.${plugin}.js
 done
+
+wget --no-check-certificate "https://raw.github.com/jsumnersmith/lister/master/src/jquery.lister.js" -O public/js/vendor/jquery.lister.js

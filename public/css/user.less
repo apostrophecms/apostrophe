@@ -1250,7 +1250,12 @@
     text-align: left;
     font-size:11px;
     letter-spacing: 1px;
-    &:last-child{border-right: none;}
+    vertical-align:middle;
+    &:last-child
+    {
+      border-right: none;
+      padding-left: 10px;
+    }
   }
   th
   {
@@ -1293,6 +1298,14 @@
   .apos-manage-events-title{width: 55%;}
   .apos-manage-events-author{width: 15%;}
   .apos-manage-events-status{width: 15%;}
+}
+
+.apos-tag-editor .apos-add-tag {
+  padding: 10px 0 10px 0;
+  input {
+    display: inline-block;
+    margin-right: 20px;
+  }
 }
 
 /* Fixup for jquery ui so it doesn't fall behind the modal */
@@ -1491,7 +1504,7 @@ ul.ui-autocomplete {
 .apos-view-permissions, .apos-edit-permissions
 {
   padding-left: 20px;
-  display: none;
+  //display: none;
 }
 
 body .ui-tooltip
@@ -1811,11 +1824,19 @@ body .ui-tooltip
       // background: green !important;
     }
   }
-
+  .apos-fieldset-selective-item-inner
+  {
+    padding: 20px;
+    width: 100%;
+  }
+  .apos-fieldset-selective-item-inner-bg
+  {
+    position:relative;
+  }
   .apos-selective-label
   {
     text-align: left !important;
-    padding-left: 30px !important;
+    padding-left: 20px !important;
   }
   .apos-remove
   {

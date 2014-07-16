@@ -203,10 +203,10 @@ describe('apostrophe', function() {
       assert(apos.slugify);
     });
     it('behaves reasonably for ascii', function() {
-      assert(apos.slugify('I love manicotti, cheese!!! and sushi ') === 'i-love-manicotti-cheese-and-sushi');
+      assert.equal(apos.slugify('I love manicotti, cheese!!! and sushi '), 'i-love-manicotti-cheese-and-sushi');
     });
     it('behaves reasonably for non-ascii', function() {
-      assert(apos.slugify('I love manicottiณณณ, cheese!!! and sushi ') === 'i-love-manicottiณณณ-cheese-and-sushi');
+      assert.equal(apos.slugify('I love manicottiณณณ, cheese!!! and sushi '), 'i-love-manicottiณณณ-cheese-and-sushi');
     });
   });
   describe('test permissions.can', function() {

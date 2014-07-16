@@ -84,7 +84,7 @@ apos.enableAreas = function() {
             },
             {
               slug: slug,
-              options: $singleton.attr('data-options'),
+              options: JSON.parse($singleton.attr('data-options') || {}),
               // By now itemData has been updated (we passed it
               // into the widget and JavaScript passes objects by reference)
               content: itemData
@@ -115,60 +115,8 @@ apos.enableAreas = function() {
 };
 
 // KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in search.js
-// ONE punctuation character normally forbidden in slugs may optionally
-// be permitted by specifying it via options.allow. For implementation
-// reasons, this character may not be ʍ (upside down lowercase w).
 
-apos.slugify = function(s, options) {
-
-  // By default everything that matches the XRegExp groups
-  // "Punctuation", "Separator", "Other" and "Symbol" becomes a dash.
-  // You can change the separator with options.separator
-
-  if (!options) {
-    options = {};
-  }
-
-  if (!options.separator) {
-    options.separator = '-';
-  }
-
-  if (options.allow) {
-    // Temporarily convert the allowed punctuation character to ʍ, which is
-    // not punctuation and thus won't be removed when we clean out punctuation.
-    // If JavaScript had character class subtraction this would not be needed
-
-    // First remove any actual instances of ʍ to avoid unexpected behavior
-    s = s.replace(new RegExp(apos.regExpQuote('ʍ'), 'g'), '');
-
-    // Now / (or whatever options.allow contains) becomes ʍ temporarily
-    s = s.replace(new RegExp(apos.regExpQuote(options.allow), 'g'), 'ʍ');
-  }
-
-  var r = '[\\p{Punctuation}\\p{Separator}\\p{Other}\\p{Symbol}]';
-  var regex = new XRegExp(r, 'g');
-  s = XRegExp.replace(s, regex, options.separator);
-  // Turn ʍ back into the allowed character
-  if (options.allow) {
-    s = s.replace(new RegExp(apos.regExpQuote('ʍ'), 'g'), options.allow);
-  }
-  // Consecutive dashes become one dash
-  var consecRegex = new RegExp(apos.regExpQuote(options.separator) + '+', 'g');
-  s = s.replace(consecRegex, options.separator);
-  // Leading dashes go away
-  var leadingRegex = new RegExp('^' + apos.regExpQuote(options.separator));
-  s = s.replace(leadingRegex, '');
-  // Trailing dashes go away
-  var trailingRegex = new RegExp(apos.regExpQuote(options.separator) + '$');
-  s = s.replace(trailingRegex, '');
-  // If the string is empty, supply something so that routes still match
-  if (!s.length)
-  {
-    s = 'none';
-  }
-  s = s.toLowerCase();
-  return s;
-};
+apos.slugify = window.sluggo;
 
 // Borrowed from the regexp-quote module for node
 apos.regExpQuote = function (string) {
@@ -324,7 +272,10 @@ apos.moveYoungerSiblings = function(node, target) {
 // assigned to this item.
 apos.enableTags = function($el, tags) {
   tags = tags || [];
-  $el.selective({ preventDuplicates: true, add: true, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
+  if (apos.data.lockTags) {
+    $el.find('[data-add]').remove();
+  }
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),

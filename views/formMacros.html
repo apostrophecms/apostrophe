@@ -24,8 +24,8 @@
     <div class="apos-inline-input">
       {# Text entry for autocompleting the next item #}
       <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
-      <span class="apos-ui-container apos-ui-inline-btn">
-        <a href="#" class="apos-ui-btn" data-add><i class="icon icon-plus"></i> Add</a>
+      <span class="apos-ui-container apos-ui-inline-btn" data-add>
+        <a href="#" class="apos-ui-btn"><i class="icon icon-plus"></i> Add</a>
       </span>
 
       <ul data-list class="apos-tag-list">
@@ -36,7 +36,7 @@
             {# Link to remove this choice #}
           </span>
         </li>
-      </ul>   
+      </ul>
     </div>
 
   {% if options.inline %}
@@ -183,20 +183,23 @@
       {# it will be cloned as needed #}
       <li class="apos-fieldset-selective-item" data-item>
         <div class="apos-ui-container apos-fieldset-selective-item-inner">
-          <span class="apos-remove" data-remove><i class="icon icon-remove"></i></span>
-          <span class="apos-selective-label apos-ui-btn apos-ui--dark" data-label>{{ __(Title) }}
-          </span>
-
+          <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
+            <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
+            <span class="apos-selective-label" data-label>
+              {{ __(Title) }}
+            </span>
+          </div>
           {% if _options.extras or _options.relationship %}
             <span class="apos-selective-extras">
               {# TODO: extend our support for different types of extra fields, #}
               {# style them meaningfully. Usually on same row with item #}
               {% for extra in (_options.extras or _options.relationship) %}
+                {% if (extra.type == 'checkbox') or (extra.type == 'boolean') %}
+                  <input type="checkbox" name="{{ extra.name }}" data-extras />
+                {% endif %}
                 <label>{{ __(extra.label) | e }}</label>
                 {% if (extra.type == 'string') or (extra.type == 'text') %}
                   <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
-                {% elif (extra.type == 'checkbox') or (extra.type == 'boolean') %}
-                  <input type="checkbox" name="{{ extra.name }}" data-extras />
                 {% elif (extra.type == 'radio') %}
                   {% for choice in extra.choices %}
                     <input type="radio" name="{{ choice.value }}" data-extras />
