@@ -22,7 +22,7 @@
                 </div>
               {% endif %}
               {% if file.hyperlink %}
-                <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru">
+                <a href="{{ file.hyperlink }}" class="apos-button apos-slideshow-clickthru" {% if file.hyperlinkTarget %}target="_blank"{% endif %}>
                   {% if file.hyperlinkTitle %}
                     {{ file.hyperlinkTitle | e }}
                   {% else %}
