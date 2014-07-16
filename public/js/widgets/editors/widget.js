@@ -140,7 +140,7 @@ function AposWidgetEditor(options) {
       info,
       function(html) {
         // Work around fussy jquery HTML parsing behavior a little
-        self.$widget = $($.parseHTML($.trim(html)));
+        self.$widget = $($.parseHTML($.trim(html), null, true));
         if (apos.widgetPlayers[self.type]) {
           apos.widgetPlayers[self.type](self.$widget);
         }
@@ -189,13 +189,13 @@ function AposWidgetEditor(options) {
             // jQuery 1.9+ is super fussy about constructing elements from html
             // more explicitly. Trim the markup so we don't wind up with a
             // text node instead of a widget due to whitespace, sigh
-            var previewWidget = $($.parseHTML($.trim(html)));
-            previewWidget.addClass('apos-widget-preview');
-            self.$previewContainer.prepend(previewWidget);
-            self.$el.find('.apos-requires-preview').show();
+            var $previewWidget = $($.parseHTML($.trim(html), null, true));
             if (apos.widgetPlayers[self.type]) {
-              apos.widgetPlayers[self.type](previewWidget);
+              apos.widgetPlayers[self.type]($previewWidget);
             }
+            $previewWidget.addClass('apos-widget-preview');
+            self.$previewContainer.prepend($previewWidget);
+            self.$el.find('.apos-requires-preview').show();
           }
         );
       }

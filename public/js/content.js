@@ -203,8 +203,9 @@ apos.widgetPlayers.video = function($el)
       if (data.width && data.height) {
         e.height((data.height / data.width) * $thumbnail.width());
       } else {
-        // No, so we have to hope the thumbnail dimensions are a good bet
-        e.height($thumbnail.height());
+        // No, so assume the oembed HTML code is responsive.
+        // Jamming the height to the thumbnail height is a mistake
+        // e.height($thumbnail.height());
       }
 
       // Hack: if our site is secure, fetch the embedded
