@@ -9,10 +9,15 @@
 
 {% block modalBody %}
   {# Keep this at top, it's a pain to scroll on a site with many tags. -Tom #}
-  <div class="apos-add-tag" data-add-tag>
+  <fieldset class="apos-add-tag apos-fieldset apos-fieldset-text apos-fieldset-tags" data-add-tag>
+  <div class="apos-inline-input">
     <input type="text" placeholder="New Tag" data-tag-text />
-    {{ renderProgressBtn({dataAttrs: 'data-add-go', color: 'base', label: 'Add'}) }}
-  </div>
+    <span class="apos-ui-container apos-ui-inline-btn" data-add>
+      <a href="#" class="apos-ui-btn" data-add-go><i class="icon icon-plus"></i> Add</a>
+    </span>
+    </div>
+  </fieldset>
+  <!-- {{ renderProgressBtn({dataAttrs: 'data-add-go', color: 'base', label: 'Add'}) }} -->
 
   <table class="apos-tags apos-manage-table">
     <tbody data-tags>

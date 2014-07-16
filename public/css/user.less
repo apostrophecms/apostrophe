@@ -1250,7 +1250,12 @@
     text-align: left;
     font-size:11px;
     letter-spacing: 1px;
-    &:last-child{border-right: none;}
+    vertical-align:middle;
+    &:last-child
+    {
+      border-right: none;
+      padding-left: 10px;
+    }
   }
   th
   {
@@ -1819,6 +1824,11 @@ body .ui-tooltip
       // background: green !important;
     }
   }
+  .apos-fieldset-selective-item-inner
+  {
+    padding: 20px;
+    width: 100%;
+  }
   .apos-fieldset-selective-item-inner-bg
   {
     position:relative;
@@ -1826,7 +1836,7 @@ body .ui-tooltip
   .apos-selective-label
   {
     text-align: left !important;
-    padding-left: 30px !important;
+    padding-left: 20px !important;
   }
   .apos-remove
   {
