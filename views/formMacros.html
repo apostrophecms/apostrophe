@@ -82,7 +82,9 @@
 {% endmacro %}
 
 {% macro formSelect(name, label, choices) %}
-  <fieldset class="apos-fieldset apos-fieldset-lister apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+  {# check for a fields property on any of the choices, and add class if one exists #}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  <fieldset class="apos-fieldset apos-fieldset-lister apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">
       {{ formSelectStandalone(name, choices) }}
@@ -105,7 +107,11 @@
     data-lister
   >
     {% for choice in choices %}
-      <option value="{{ choice.value | e }}">{{ __(choice.label) | e }}</option>
+      <option value="{{ choice.value | e }}"
+      {% if choice.showFields -%}
+       data-show-fields="{{ choice.showFields | join(',') }}"
+      {%- endif %}
+      >{{ __(choice.label) | e }}</option>
     {% endfor %}
   </select>
 {% endmacro %}
