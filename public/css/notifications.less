@@ -7,6 +7,7 @@
   // start off canvas
   left: -100%;
   top: 90px;
+  z-index: 999;
   br {display: none; }
 }
 
@@ -19,10 +20,6 @@
 {
   position: relative;
   .apos-dark-grad();
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 10px;
   -webkit-transition: margin-left 0.2s ease-in-out;
   display: block;
   clear: both;
@@ -30,9 +27,16 @@
   width: 210px;
   border-radius: 3px;
   border: 1px solid @apos-steel;
-  .apos-cabin-bold();
   margin-bottom: 10px;
   margin-left: 0;
+  p
+  {
+    .apos-cabin-bold();
+    font-size: 10px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
   &.apos-notification--fired
   {
     margin-left: 100%;
