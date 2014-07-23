@@ -464,10 +464,76 @@ apos.modal = function(sel, options) {
     });
   });
 
-
-
   return $el;
 };
+
+// This is the generic notification API
+apos.notification = function(content, options) {
+  var options = options || {};
+  if (options.dismiss == true) { options.dismiss = 10; }
+  var $notification = apos.fromTemplate($('[data-notification].apos-template'));
+  if (options.type) {
+    $notification.addClass('apos-notification--' + options.type);
+  }
+  if (options.dismiss) {
+   $notification.attr('data-notification-dismiss', options.dismiss); 
+  }
+  $notification.find('[data-notification-content]').text(content);
+
+  // send it over to manager
+  apos.notificationManager($notification);
+}
+
+apos.notificationManager = function($n) {
+  var self = this;
+  $notificationContainer = $('[data-notification-container]');
+  // we're getting here because we have at least one notification coming up.
+  // make sure DOM is ready for it
+
+  self.ready = function() {
+    $notificationContainer.addClass('apos-notification-container--ready');
+    $notificationContainer.on('transitionend', function(e) {
+      if (e.target.className == "apos-notification-container apos-notification-container--ready") {
+        $notificationContainer.append('<br/>');
+        self.addNotification($n);
+      }
+    });
+  }
+
+  self.removeNotification = function($n) {
+    $n.removeClass('apos-notification--fired');
+    $n.on('transitionend', function() {
+      $n.remove();
+    });
+  }
+
+  self.addNotification = function($n) {
+    $notificationContainer.append($n);
+    $n.fadeIn();
+    
+    setTimeout(function() {
+      $n.addClass('apos-notification--fired');
+      if ($n.attr('data-notification-dismiss')) {
+        setTimeout(function() {
+          self.removeNotification($n)
+        }, $n.attr('data-notification-dismiss') * 1000);
+      }
+    }, 100);
+
+    $n.on('click', '[data-notification-close]', function() {
+      self.removeNotification($n);
+    });
+  }
+
+
+
+  if ($notificationContainer.children().length === 0) {
+    self.ready();
+  } else {
+    self.addNotification($n);
+  }
+}
+
 
 // Clone the element matching the specified selector that
 // also has the apos-template class, remove the apos-template
@@ -478,7 +544,6 @@ apos.modal = function(sel, options) {
 // apos.modal, above. Returns a jquery object referring
 // to the modal dialog element. Note that this method always
 // returns *before* the init method is invoked.
-
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
