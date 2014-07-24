@@ -57,8 +57,24 @@
   }
 }
 
-.apos-notification--alert
+.apos-notification--error
 {
   .apos-base-grad();
   border: 1px solid @apos-base;
+}
+
+.apos-notification--warn
+{
+  .apos-bg-gradient(@apos-yellow, darken(@apos-yellow, 10%));
+  border: 1px solid @apos-yellow;
+  p
+  {
+    color: darken(@apos-grey20, 10%);
+  }
+}
+
+.apos-notification--success
+{
+  .apos-bg-gradient(@apos-green, darken(@apos-green, 10%));
+  border: 1px solid @apos-green;
 }
