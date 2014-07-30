@@ -170,6 +170,7 @@ apos.widgetPlayers.slideshow = function($el)
     delay: data.delay
   });
 };
+
 apos.widgetPlayers.marquee = function($el)
 {
   // Use our jQuery slideshow plugin
@@ -229,6 +230,22 @@ apos.widgetPlayers.video = function($el)
       var $kids = $el.find('[data-apos-play] *').detach();
       $el.find('[data-apos-play]').replaceWith($kids);
     });
+  });
+};
+
+// The embed player populates the widget with the
+// result of an oembed call, without attempting
+// to fuss with its width or wait for a play button
+// to be clicked as we do for video
+
+apos.widgetPlayers.embed = function($el)
+{
+  var data = apos.getWidgetData($el);
+  var videoUrl = data.video;
+  $.get('/apos/oembed', { url: videoUrl }, function(data) {
+    if (data.html) {
+      $el.append(data.html);
+    }
   });
 };
 

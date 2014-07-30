@@ -1,15 +1,15 @@
 {% extends "baseWidgetEditor.html" %}
 
 {% block modalClass %}
-  {{super()}} apos-video-editor apos-ui-modal-no-sidebar
+  {{super()}} apos-embed-editor apos-ui-modal-no-sidebar
 {% endblock %}
 
 {% block modalLabel  %}
-  {{ __('Edit Video') }}
+  {{ __('Edit Embedded Item') }}
 {% endblock %}
 
 {% block modalInstructions %}
-  <p>{{ __('Paste a video link.') }}</p>
+  <p>{{ __('Paste a link to the item you wish to embed. NOTE: some sites may not preview properly, or may require you to refresh the page after you save your work. You may not be able to preview something that is already on the current page. These are limitations of the services being embedded.') }}</p>
 {% endblock %}
 
 {% block formEnd %}
@@ -22,7 +22,7 @@
     {# this preview is just for things whose appearance is not obvious #}
     {# or which require custom settings be tweaked (example: RSS feed) #}
   </div>
-  {# Video chooser #}
+  {# Embed chooser #}
 
   <div class="apos-media-chooser apos-chooser-drag-peer" data-chooser>
     {# I float right #}
@@ -30,7 +30,7 @@
     {# I float left #}
     <a href="#" data-previous class="apos-previous apos-chooser-pager"></a>
     {# I sting like a bee #}
-    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Video Library') }}:</h5>
+    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Embed Library') }}:</h5>
 
     {# UX note: you can pretty up the search submit button but please don't remove it #}
     {# entirely as some users will not press enter. -Tom #}

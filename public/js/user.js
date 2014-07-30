@@ -15,7 +15,7 @@ var apos = window.apos;
 
 apos.widgetTypes = {};
 
-var defaultWidgetTypes = [ 'slideshow', 'buttons', 'marquee', 'files', 'video', 'pullquote', 'code', 'html' ];
+var defaultWidgetTypes = [ 'slideshow', 'buttons', 'marquee', 'files', 'video', 'embed', 'pullquote', 'code', 'html' ];
 
 // Add a widget type on the browser side. If typeName is `slideshow`, then Apostrophe invokes
 // the constructor function named `AposSlideshowWidgetEditor`, unless
