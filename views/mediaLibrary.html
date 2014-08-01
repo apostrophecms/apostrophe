@@ -22,6 +22,18 @@
       ) }}
       <div class="apos-select-arrow"></div>
     </div>
+
+    {% if browseByTag %}
+      <div class="apos-select-wrapper">
+        Tagged: {{ formSelectStandalone('tag',
+          [
+            { label: 'All Tags', value: '' }
+          ]
+        ) }}
+        <div class="apos-select-arrow"></div>
+      </div>
+    {% endif %}
+
     <div class="apos-select-wrapper">
       Uploaded By: {{ formSelectStandalone('owner',
         [
