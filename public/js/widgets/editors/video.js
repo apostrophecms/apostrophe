@@ -12,12 +12,13 @@ function AposVideoWidgetEditor(options)
     options.messages.missing = 'Paste a video link first.';
   }
 
-  self.type = 'video';
-  options.template = '.apos-video-editor';
+  self.type = options.type || 'video';
+
+  var oembedType = apos.data.widgetOptions[self.type].oembedType;
+  var oembedNotType = apos.data.widgetOptions[self.type].oembedNotType;
 
   // Parent class constructor shared by all widget editors
   AposWidgetEditor.call(self, options);
-
   // Displays a chooser for selecting existing videos.
   self.enableChooser = function() {
     // This is what we drag to. Easier than dragging to a ul that doesn't
@@ -37,7 +38,9 @@ function AposVideoWidgetEditor(options)
       $.get('/apos/browse-videos', {
         skip: page * perPage,
         limit: perPage,
-        q: $search.val()
+        q: $search.val(),
+        type: oembedType,
+        notType: oembedNotType
       }, function(results) {
 
         pages = Math.ceil(results.total / perPage);
@@ -70,10 +73,18 @@ function AposVideoWidgetEditor(options)
         _.each(results.videos, function(video) {
           var $item = apos.fromTemplate($items.find('[data-chooser-item]'));
           $item.data('video', video);
-          // TODO: look into a good routine for CSS URL escaping
-          $item.css('background-image', 'url(' + video.thumbnail + ')');
-          $item.find('[data-image]').attr('src', video.thumbnail);
-          $item.attr('title', video.title);
+
+          // True video: show thumbnail. Everything else: show
+          // the title of the embeddable item.
+          if (video.type === 'video') {
+            // TODO: look into a good routine for CSS URL escaping
+            $item.css('background-image', 'url(' + video.thumbnail + ')');
+            $item.find('[data-image]').attr('src', video.thumbnail);
+            $item.attr('title', video.title);
+          } else {
+            $item.addClass('apos-not-video');
+            $item.text(video.title);
+          }
           $items.append($item);
 
           $item.on('click', function(e) {
@@ -184,11 +195,21 @@ function AposVideoWidgetEditor(options)
         }
         return;
       }
+      if (data) {
+        if (oembedNotType && (data.type === oembedNotType)) {
+          alert('That content is not appropriate for this type of widget.');
+          return callback && callback(oembedNotType);
+        }
+        if (oembedType && (data.type !== oembedType)) {
+          alert('That content is not appropriate for this type of widget.');
+          return callback && callback('not ' + oembedType);
+        }
+      }
       self.exists = !!data;
       if (self.exists) {
         // Make sure the URL is part of the data we pass to our callback
         data.video = url;
-        // The widget gets stores just the properties we really need to render.
+        // The widget stores just the properties we really need to render.
         // The preSave callback will also stuff in the id of the video
         // chooser object created at that point
         self.data.video = url;
