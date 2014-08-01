@@ -42,6 +42,21 @@
         </div>
       </fieldset>
 
+    {% if browseByTag %}
+      <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select">
+        <div class="apos-select-wrapper apos-inline-input">
+          <label>{{ __('Tagged') }}:</label>
+          {{ formSelectStandalone('tag',
+            [
+              { label: 'All Tags', value: '' }
+            ],
+            {},
+            { plain: true }
+          ) }}
+        </div>
+      </fieldset>
+    {% endif %}
+
       <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
         <div class="apos-select-wrapper apos-inline-input">
           <label>{{ __('Uploaded By') }}:</label>
@@ -84,7 +99,6 @@
           </div>
         </div>
       </fieldset>
-
     </div>
 
   </div>
