@@ -491,7 +491,7 @@ apos.modal = function(sel, options) {
 // This is the generic notification API
 apos.notification = function(content, options) {
   var options = options || {};
-  if (options.dismiss == true) { options.dismiss = 10; }
+  if (options.dismiss === true) { options.dismiss = 10; }
   var $notification = apos.fromTemplate($('[data-notification].apos-template'));
   if (options.type) {
     $notification.addClass('apos-notification--' + options.type);

@@ -88,7 +88,7 @@ function AposMediaLibrary(options) {
     });
 
     // Filters
-    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"]', function() {
+    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"],[name="tag"]', function() {
       self.resetIndex();
       return false;
     });
@@ -195,6 +195,18 @@ function AposMediaLibrary(options) {
     _.each(results.files, function(item) {
       self.addIndexItem(item);
     });
+    var $tag = self.$el.findByName('tag');
+    var tag = $tag.val();
+    var $all = $tag.find('[value=""]');
+    $tag.html('');
+    $tag.append($all);
+    _.each(results.tags, function(tag) {
+      var $option = $('<option></option>');
+      $option.attr('value', tag);
+      $option.text(tag);
+      $tag.append($option);
+    });
+    $tag.val(tag);
     if (!results.length) {
       self.$el.trigger('aposScrollEnded');
     }
@@ -450,6 +462,7 @@ function AposMediaLibrary(options) {
       sort: self.$el.findByName('sort').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),
+      tag: self.$el.findByName('tag').val(),
       q: self.$el.findByName('search').val()
     };
   };
