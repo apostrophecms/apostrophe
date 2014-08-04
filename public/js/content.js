@@ -309,19 +309,14 @@ apos.modal = function(sel, options) {
     var topModal = apos.getTopModalOrBody();
     if (topModal.filter('.apos-modal')) {
       topModal.trigger('aposModalHide');
-      return false;
-    } else {
-      return true;
     }
   }
 
   function cancelModal() {
-    return options.beforeCancel(function(err) {
-      if (err) {
-        return;
-      }
-      return closeModal();
-    });
+    var topModal = apos.getTopModalOrBody();
+    if (topModal.filter('.apos-modal')) {
+      topModal.trigger('aposModalCancel');
+    }
   }
 
   if (!apos._modalInitialized) {
@@ -364,6 +359,15 @@ apos.modal = function(sel, options) {
     save: function(callback) {callback(null);},
     afterHide: function(callback) {callback(null);},
     beforeCancel: function(callback) {callback(null);}
+  });
+
+  $el.on('aposModalCancel', function() {
+    return options.beforeCancel(function(err) {
+      if (err) {
+        return;
+      }
+      return closeModal();
+    });
   });
 
   $el.on('aposModalHide', function() {
