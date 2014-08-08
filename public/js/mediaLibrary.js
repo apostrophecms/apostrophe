@@ -374,6 +374,10 @@ function AposMediaLibrary(options) {
       tags: self.$edit.find('[data-name="tags"]').selective('get', { incomplete: true })
     } ], function(items) {
       _.each(items, function(item) {
+        // We know we can edit this because we just did.
+        // Fixes a bug that hid the "Edit Details" button
+        // after a save
+        item._edit = true;
         self.updateItem(item);
         self.showItem(item);
       });
