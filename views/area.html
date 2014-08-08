@@ -6,6 +6,6 @@
 {% if options.virtual %}
   {# Provide a way for frontend code to know this virtual area is here #}
   <script type="text/javascript">
-    $('body').trigger('aposNewArea', {{ id | json }});
+    apos.emit('newArea', {{ id | json }});
   </script>
 {% endif %}
