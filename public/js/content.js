@@ -81,6 +81,7 @@ var __ = function(key,options){ return polyglot.t(key, options); };
       console.log(msg);
     }
   };
+
 })();
 
 
@@ -1126,24 +1127,8 @@ $(function() {
     //$(this).parent().siblings().removeClass('open');
   });
 
-  // listen for shift keydown
-  // this sets up power-user features
-  // var aposShiftActive = false;
-  $(window).keydown(function(e) {
-    if (e.keyCode === 16) {
-      apos.shiftActive = true;
-    }
-  });
-
-  $(window).keyup(function(e) {
-    if (e.keyCode === 16) {
-      apos.shiftActive = false;
-    }
-  });
-
-
   // power-user modal login
-  $(window).keydown(function(e) {
+  $('body').on('keydown', function(e) {
     if (apos.shiftActive === true && e.keyCode === 27) {
       if (apos.data.user) {
         apos.modalFromTemplate($('.apos-modal-logout'), { naturalSubmit: true });
@@ -1151,9 +1136,7 @@ $(function() {
         apos.modalFromTemplate($('.apos-modal-login'), { naturalSubmit: true });
       }
     }
-  });
-
-
+  })
 
   $('body').on('click', '.apos-preview-toggle', function(event){
     $('.apos-preview-toggle').toggleClass('previewing');
@@ -1237,4 +1220,28 @@ $(function() {
       }
     }
   }, 200);
+});
+
+apos.enableShift = function() {
+  $body = $('body');
+  $body.keydown(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = true;
+      apos.emit('shiftDown', e);
+    }
+  });
+
+  $body.keyup(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = false;
+      apos.emit('shiftUp', e);
+    }
+  });
+};
+
+$(function() {
+  // Do these late so that other code has a chance to override
+  apos.afterYield(function() {
+    apos.enableShift();
+  });
 });
