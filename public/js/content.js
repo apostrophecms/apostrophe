@@ -7,6 +7,68 @@ if (!window.apos) {
 }
 
 var apos = window.apos;
+
+apos.handlers = {};
+
+// EVENT HANDLING
+//
+// apos.emit(eventName, /* arg1, arg2, arg3... */)
+//
+// Emit an Apostrophe event. All handlers that have been set
+// with apos.on for the same eventName will be invoked. Any additional
+// arguments are received by the handler functions as arguments.
+//
+// For bc, Apostrophe events are also triggered on the
+// body element via jQuery. The event name "ready" becomes
+// "aposReady" in jQuery. This feature will be removed in 0.6.
+//
+// CURRENT EVENTS
+//
+// 'enhance' is triggered to request progressive enhancement
+// of form elements newly loaded into the DOM (jQuery lister).
+// It is typically used in admin modals.
+//
+// 'ready' is triggered when the main content area of the page
+// has been refreshed.
+
+apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
+  var handlers = apos.handlers[eventName];
+  if (!handlers) {
+    return;
+  }
+  var args = Array.prototype.slice.call(arguments, 1);
+  var i;
+  for (i = 0; (i < handlers.length); i++) {
+    handlers[i].apply(window, args);
+  }
+  // BC (to be removed in 0.6): also trigger the event
+  // on the body. The 'ready' event becomes 'aposReady' when
+  // triggered on the body.
+  //
+  // trigger takes multiple arguments as an array
+  $('body').trigger('apos' + apos.capitalizeFirst(eventName), args);
+};
+
+// Install an Apostrophe event handler. The handler will be called
+// when apos.emit is invoked with the same eventName. The handler
+// will receive any additional arguments passed to apos.emit.
+
+apos.on = function(eventName, fn) {
+  apos.handlers[eventName] = (apos.handlers[eventName] || []).concat([ fn ]);
+};
+
+// Remove an Apostrophe event handler. If fn is not supplied, all
+// handlers for the given eventName are removed.
+apos.off = function(eventName, fn) {
+  if (!fn) {
+    delete apos.handlers[eventName];
+    return;
+  }
+  apos.handlers[eventName] = _.filter(apos.handlers[eventName], function(_fn) {
+    return fn !== _fn;
+  });
+};
+
 var polyglot = new Polyglot();
 // the function below is just an alias, to make things look more consistent
 // between the server and the client side i18n
@@ -88,16 +150,19 @@ apos.change = function(what) {
   $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
     // Make sure we run scripts in the returned HTML
     $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
-    // Trigger the aposReady event so scripts can attach to the
+    // Trigger the 'ready' event so scripts can attach to the
     // elements just refreshed if needed. Also trigger apos.enablePlayers.
     // Note that calls pushed by pushGlobalCalls are NOT run on a refresh as
     // they generally have to do with one-time initialization of the page
     $(function() {
-      apos.enablePlayers();
-      $("body").trigger("aposReady");
+      apos.emit('ready');
     });
   });
 };
+
+apos.on('ready', function() {
+  apos.enablePlayers();
+});
 
 // Given a page object retrieved from the server (such as a blog post) and an
 // area name, return the first image object found in that area, or undefined
@@ -217,13 +282,7 @@ apos.widgetPlayers.video = function($el)
       // This hack won't work for everything but it's correct
       // for a typical iframe embed.
 
-      var ssl = ('https:' === document.location.protocol);
-      if (ssl) {
-        var src = e.attr('src');
-        if (src.match(/^http:/)) {
-          e.attr('src', src.replace(/^http:/, 'https:'));
-        }
-      }
+      e.attr('src', apos.sslIfNeeded(e.attr('src')));
 
       $el.find('.apos-video-thumbnail').replaceWith(e);
       // Hoist out of the link that launched us
@@ -231,6 +290,16 @@ apos.widgetPlayers.video = function($el)
       $el.find('[data-apos-play]').replaceWith($kids);
     });
   });
+};
+
+apos.sslIfNeeded = function(url) {
+  var ssl = ('https:' === document.location.protocol);
+  if (ssl) {
+    if (url.match(/^http:/)) {
+      url = url.replace(/^http:/, 'https:');
+    }
+  }
+  return url;
 };
 
 // The embed player populates the widget with the
@@ -1021,52 +1090,8 @@ apos.afterLogin = function() {
   }
 };
 
-apos.handlers = {};
-
-// Emit an Apostrophe event. All handlers that have been set
-// with apos.on for the same eventName will be invoked. Any additional
-// arguments are received by the handler functions as arguments.
-// Currently the 'enhance' event is used to do progressive enhancement
-// of material newly loaded into the DOM. TODO: merge this with
-// the 'aposReady' jquery DOM event which is currently triggered on
-// 'body'. We should think of all of it as progressive enhancement.
-// To get that right we'll have to make lister play nice with elements
-// that have already been enhanced once.
-
-apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
-  var handlers = apos.handlers[eventName];
-  if (!handlers) {
-    return;
-  }
-  var args = Array.prototype.slice.call(arguments, 1);
-  var i;
-  for (i = 0; (i < handlers.length); i++) {
-    handlers[i].apply(window, args);
-  }
-};
-
+// Status of the shift key. Automatically updated.
 apos.shiftActive = false;
-
-// Install an Apostrophe event handler. The handler will be called
-// when apos.emit is invoked with the same eventName. The handler
-// will receive any additional arguments passed to apos.emit.
-
-apos.on = function(eventName, fn) {
-  apos.handlers[eventName] = (apos.handlers[eventName] || []).concat([ fn ]);
-};
-
-// Remove an Apostrophe event handler. If fn is not supplied, all
-// handlers for the given eventName are removed.
-apos.off = function(eventName, fn) {
-  if (!fn) {
-    delete apos.handlers[eventName];
-    return;
-  }
-  apos.handlers[eventName] = _.filter(apos.handlers[eventName], function(_fn) {
-    return fn !== _fn;
-  });
-};
-
 
 // Progressive enhancement of select elements
 
