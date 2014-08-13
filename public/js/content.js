@@ -286,9 +286,6 @@ apos.widgetPlayers.video = function($el)
       e.attr('src', apos.sslIfNeeded(e.attr('src')));
 
       $el.find('.apos-video-thumbnail').replaceWith(e);
-      // Hoist out of the link that launched us
-      var $kids = $el.find('[data-apos-play] *').detach();
-      $el.find('[data-apos-play]').replaceWith($kids);
     });
   });
 };
