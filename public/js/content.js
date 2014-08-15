@@ -564,8 +564,7 @@ apos.notification = function(content, options) {
     $notification.addClass('apos-notification--' + options.type);
   }
   if (options.dismiss) {
-   $notification.attr('data-notification-dismiss', options.dismiss); 
-  }
+   $notification.attr('data-notification-dismiss', options.dismiss);  }
   $notification.find('[data-notification-content]').text(content);
 
   // send it over to manager
@@ -598,7 +597,7 @@ apos.notificationManager = function($n) {
   self.addNotification = function($n) {
     $notificationContainer.append($n);
     $n.fadeIn();
-    
+
     setTimeout(function() {
       $n.addClass('apos-notification--fired');
       if ($n.attr('data-notification-dismiss')) {
@@ -1094,11 +1093,19 @@ apos.shiftActive = false;
 // Progressive enhancement of select elements
 
 apos.on('enhance', function($el) {
-  $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
-    listClass: "apos-lister",
-    listClickCallback: function($select, $option) {
-      apos.emit('modalSelectClick', $select, $option);
-    }
+  // $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
+  //   listClass: "apos-lister",
+  //   listClickCallback: function($select, $option) {
+  //     apos.emit('modalSelectClick', $select, $option);
+  //   }
+  // });
+  $el.find('select[data-selectize]:not(.apos-template select[data-selectize])').selectize({
+    create: false,
+    sortField: 'text'
+    // listClass: "apos-lister",
+    // listClickCallback: function($select, $option) {
+    //   apos.emit('modalSelectClick', $select, $option);
+    // }
   });
 });
 

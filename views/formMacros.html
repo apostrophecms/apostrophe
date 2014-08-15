@@ -84,7 +84,7 @@
 {% macro formSelect(name, label, choices) %}
   {# check for a fields property on any of the choices, and add class if one exists #}
   {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
-  <fieldset class="apos-fieldset apos-fieldset-lister apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
+  <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">
       {{ formSelectStandalone(name, choices) }}
@@ -104,7 +104,7 @@
     {% for key, val in _attrs %}
       {{ key }}="{{ val | e }}"
     {% endfor %}
-    data-lister
+    data-selectize
   >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}"
