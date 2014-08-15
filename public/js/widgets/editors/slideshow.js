@@ -14,6 +14,7 @@ function AposSlideshowWidgetEditor(options)
   var templateOptions = options.options || {};
   var widgetClass = templateOptions.widgetClass;
   var aspectRatio = templateOptions.aspectRatio;
+  var setSelect = templateOptions.setSelect;
   var minSize = templateOptions.minSize;
   var limit = templateOptions.limit;
   var extraFields = templateOptions.extraFields;
@@ -541,6 +542,9 @@ function AposSlideshowWidgetEditor(options)
           $cropImage.css('height', viewHeight + 'px');
           $cropImage.css('visibility', 'visible');
           var jcropArgs = {};
+          if (setSelect) {
+            jcropArgs.setSelect = setSelect;
+          }
           if (item.crop) {
             jcropArgs.setSelect = cropToJcrop(item.crop);
           }
