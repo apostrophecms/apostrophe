@@ -1857,13 +1857,9 @@ body .ui-tooltip
 
 // Selectize Styles --------------------------------------------  //
 
-.apos-fieldset-selectize
+.apos-fieldset-selectize > .apos-select-wrapper
 {
-  .apos-select-wrapper
-  {
-    background: #fff;
-  }
-
+  background: #fff;
   .selectize-control
   {
     z-index: 1;
@@ -1881,11 +1877,13 @@ body .ui-tooltip
 
         height: 18px;
         top: 2px;
+        left: 0;
 
         vertical-align: bottom;
       }
       input[tabindex]
       {
+        display: inline-block;
         border: none;
         box-shadow: none;
 
