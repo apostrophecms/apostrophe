@@ -1870,30 +1870,30 @@ body .ui-tooltip
     .selectize-input
     {
       max-height: 50px;
-      padding: 14px 8px 16px 14px;
+      padding: 12px 8px 16px 12px;
 
       .item, input
       {
         position: relative;
         display: inline-block;
 
-        height: 18px;
+        height: 22px;
         top: 2px;
         left: 0;
 
-        vertical-align: top;
+        vertical-align: bottom;
       }
       .item 
       {
-        margin-right: 2px;
+        margin-right: 3px;
       }
-      .item:not(:first-of-type)
-      {
-        &:before 
-        {
-          content: ', '
-        }
-      }
+      // .item:not(:first-of-type)
+      // {
+      //   &:before 
+      //   {
+      //     content: ', '
+      //   }
+      // }
       input[tabindex]
       {
         display: inline-block;
@@ -1904,7 +1904,9 @@ body .ui-tooltip
         font-size: inherit;
         //height: 18px;
         padding: 0;
-        top: 0;
+        top: 2px;
+
+        line-height: 22px;
       }
 
       // Dropdown Button replacement
@@ -1968,12 +1970,15 @@ body .ui-tooltip
       }
     }
   }
-
-  // Dropdown button
-  // .apos-ui-container
-  // {
-  //   display: none; 
-  // }
+  
+  // Multiple Select Items
+  .selectize-control.multi > .selectize-input > .item 
+  {
+    padding: 4px 6px;
+    color: #fff;
+    background-color: @apos-base;
+    border-radius: 3px;
+  }
 }
 
 
