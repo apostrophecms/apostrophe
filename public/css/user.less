@@ -1865,10 +1865,12 @@ body .ui-tooltip
     z-index: 1;
 
     background: transparent;
+    padding: 0;
 
     .selectize-input
     {
-      height: 18px;
+      max-height: 50px;
+      padding: 14px 8px 16px 14px;
 
       .item, input
       {
@@ -1879,7 +1881,18 @@ body .ui-tooltip
         top: 2px;
         left: 0;
 
-        vertical-align: bottom;
+        vertical-align: top;
+      }
+      .item 
+      {
+        margin-right: 2px;
+      }
+      .item:not(:first-of-type)
+      {
+        &:before 
+        {
+          content: ', '
+        }
       }
       input[tabindex]
       {
@@ -1889,6 +1902,9 @@ body .ui-tooltip
 
         padding: inherit;
         font-size: inherit;
+        //height: 18px;
+        padding: 0;
+        top: 0;
       }
 
       // Dropdown Button replacement

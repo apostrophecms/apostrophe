@@ -1108,7 +1108,8 @@ apos.on('enhance', function($el) {
 
   // Selectize - Multi Select
   $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
-    maxItems: null
+    maxItems: null,
+    delimiter: ', '
   });
 
 });
