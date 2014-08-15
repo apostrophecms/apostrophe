@@ -88,12 +88,17 @@
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">
       {{ formSelectStandalone(name, choices) }}
-      <!-- <div class="apos-select-arrow"></div> -->
-      <!-- <span class="apos-ui-container apos-ui-inline-btn">
-        <div class="apos-select-arrow apos-ui-btn">
-          <i class="icon icon-caret-down"></i>
-        </div>
-      </span> -->
+    </div>
+  </fieldset>
+{% endmacro %}
+
+{% macro formMultiSelect(name, label, choices) %}
+  {# check for a fields property on any of the choices, and add class if one exists #}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  <fieldset class="apos-fieldset apos-fieldset-selectize select-multiple apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+      <div class="apos-select-wrapper apos-inline-input">
+      {{ formSelectStandalone(name, choices, {select: 'multiple'}) }}
     </div>
   </fieldset>
 {% endmacro %}
@@ -104,7 +109,7 @@
     {% for key, val in _attrs %}
       {{ key }}="{{ val | e }}"
     {% endfor %}
-    data-selectize
+    data-selectize 
   >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}"

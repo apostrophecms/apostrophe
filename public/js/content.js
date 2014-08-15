@@ -1099,14 +1099,18 @@ apos.on('enhance', function($el) {
   //     apos.emit('modalSelectClick', $select, $option);
   //   }
   // });
-  $el.find('select[data-selectize]:not(.apos-template select[data-selectize])').selectize({
+
+  // Selectize - Single Select
+  $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
     sortField: 'text'
-    // listClass: "apos-lister",
-    // listClickCallback: function($select, $option) {
-    //   apos.emit('modalSelectClick', $select, $option);
-    // }
   });
+
+  // Selectize - Multi Select
+  $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
+    maxItems: null
+  });
+
 });
 
 // Everything in this DOMready block must be an event handler
