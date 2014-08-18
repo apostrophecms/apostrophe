@@ -1236,6 +1236,37 @@ apos.enableShift = function() {
   });
 };
 
+apos.prefixAjax = function(prefix) {
+  // If Apostrophe has a global URL prefix, patch
+  // jQuery's AJAX capabilities to prepend that prefix
+  // to any non-absolute URL
+
+  if (prefix) {
+    $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+      if (options.url) {
+        if (!options.url.match(/^[a-zA-Z]+:/))
+        {
+          options.url = prefix + options.url;
+        }
+      }
+      return;
+    });
+  }
+};
+
+// Redirect correctly to the given location on the
+// Apostrophe site, even if the prefix option is in use
+// (you should provide a non-prefixed path)
+
+apos.redirect = function(slug) {
+  var href = apos.data.prefix + slug;
+  if (href === window.location.href) {
+    window.location.reload();
+  } else {
+    window.location.href = href;
+  }
+};
+
 $(function() {
   // Do these late so that other code has a chance to override
   apos.afterYield(function() {
