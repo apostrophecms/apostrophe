@@ -1103,13 +1103,15 @@ apos.on('enhance', function($el) {
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
-    sortField: 'text'
+    sortField: 'text',
+    openOnFocus: false
   });
 
   // Selectize - Multi Select
   $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
     maxItems: null,
-    delimiter: ', '
+    delimiter: ', ',
+    openOnFocus: false
   });
 
 });
