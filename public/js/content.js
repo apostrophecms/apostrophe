@@ -548,7 +548,11 @@ apos.modal = function(sel, options) {
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
-      $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+      
+      // If we don't have a select element first - focus the first input
+      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize").length === 0) {
+        $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+      }
     });
   });
 
@@ -1104,14 +1108,14 @@ apos.on('enhance', function($el) {
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
     sortField: 'text',
-    openOnFocus: false
+    // openOnFocus: false
   });
 
   // Selectize - Multi Select
   $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
     maxItems: null,
     delimiter: ', ',
-    openOnFocus: false
+    // openOnFocus: false
   });
 
 });
