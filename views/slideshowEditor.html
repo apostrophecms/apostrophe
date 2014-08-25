@@ -1,29 +1,29 @@
-{% extends "baseWidgetEditor.html" %}
-{% include "formMacros.html" %}
+{%- extends "baseWidgetEditor.html" -%}
+{%- include "formMacros.html" -%}
 
-{% block modalClass %}
+{%- block modalClass -%}
   {{ super() }} apos-slideshow-editor apos-ui-modal-no-sidebar
-{% endblock%}
+{%- endblock%}
 
-{% block modalLabel %}
+{%- block modalLabel -%}
   {{ __('Edit Slideshow') }}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalInstructions %}
+{%- block modalInstructions -%}
 <p>{{ __('Choose image files (GIF, JPEG or PNG). Drag them into the order you prefer. <br />
 You can also drag images from your computer into the dashed area below. <br />
 Or, drag the existing images shown beneath the dashed area. <br />') }}
 <span data-size-warning style="display: none">{{ __('Images must be at least 400x300 pixels.') }}</span></p>
-{% endblock %}
+{%- endblock -%}
 
-{% block formAll %}
+{%- block formAll -%}
   {# Powered by the blueimp file uploader #}
 
   <div class="apos-slideshow-drag-container" data-drag-container>
     <div class="apos-slideshow-file-in-message" data-drag-droparea><span data-drag-message>{{ __('Drop Files Here') }}</span></div>
     <div class="apos-progress-container">
       <div data-autocropping class="apos-autocropping">{{ __('Autocropping...') }}</div>
-      {% include "progress.html" %}
+      {%- include "progress.html" -%}
     </div>
 
     {# Main slideshow editor: reordering and removing of images, drop target #}
@@ -47,7 +47,7 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
         </div>
 
         <div class="apos-slideshow-extra-fields" data-extra-fields>
-          {% block hyperlink %}
+          {%- block hyperlink -%}
             <fieldset class="apos-fieldset apos-fieldset-text" data-extra-fields-link>
               <label>{{ __('Link') }}</label>
               <input data-hyperlink class="apos-slideshow-editor-link" type="text" />
@@ -56,9 +56,9 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
               <label>{{ __('Link Title') }}</label>
               <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
             </fieldset>
-          {% endblock %}
-          {% block otherExtraFields %}
-          {% endblock %}
+          {%- endblock -%}
+          {%- block otherExtraFields -%}
+          {%- endblock -%}
           <a href="#" data-extra-fields-save class="apos-control apos-button">{{ __('Save Changes') }}</a>
         </div>
       </li>
@@ -140,8 +140,8 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
 
   </div>
 
-{% endblock %}
+{%- endblock -%}
 
-{% block modalFooter %}
+{%- block modalFooter -%}
   <div class="apos-limit-reached" data-limit-reached style="display: none">{{ __('You have reached the limit of %s file(s) in this location.', '<span data-limit>5</span>') }}</div>
-{% endblock %}
+{%- endblock -%}

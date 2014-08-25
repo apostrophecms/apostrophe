@@ -1,20 +1,20 @@
-{% extends "baseWidgetEditor.html" %}
+{%- extends "baseWidgetEditor.html" -%}
 
-{% block modalClass %}
+{%- block modalClass -%}
   {{super()}} apos-html-editor
-{% endblock %}
+{%- endblock -%}
 
-{% block modalLabel %}
+{%- block modalLabel -%}
 {{ __('Edit Raw HTML') }}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalInstructions %}
+{%- block modalInstructions -%}
 <p>{{ __('Paste in HTML source code (such as embed codes from Wufoo).') }}</p>
-{% endblock %}
+{%- endblock -%}
 
-{% block previewButton %}
-{% endblock %}
+{%- block previewButton -%}
+{%- endblock -%}
 
-{% block formBody %}
+{%- block formBody -%}
   <textarea class="apos-code"></textarea>
-{% endblock %}
+{%- endblock -%}
