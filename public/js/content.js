@@ -416,6 +416,7 @@ apos.modal = function(sel, options) {
   }
 
   var $el = $(sel);
+  var saving = false;
 
   if (!options) {
     options = {};
@@ -477,14 +478,21 @@ apos.modal = function(sel, options) {
   }
 
   function saveModal(next) {
-    options.save(function(err) {
-      if(!err) {
-        hideModal();
-        if (next) {
-          options.next();
+    if (!saving) {
+      // Guard against double click
+      $el.find('.apos-save,[data-save]').addClass('.apos-busy');
+      saving = true;
+      options.save(function(err) {
+        saving = false;
+        $el.find('.apos-save,[data-save]').removeClass('.apos-busy');
+        if(!err) {
+          hideModal();
+          if (next) {
+            options.next();
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   // Enter key driven submits of the form should act like a click on the save button,
