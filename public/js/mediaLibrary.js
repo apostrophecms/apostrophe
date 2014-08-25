@@ -195,20 +195,37 @@ function AposMediaLibrary(options) {
     _.each(results.files, function(item) {
       self.addIndexItem(item);
     });
-    var $tag = self.$el.findByName('tag');
-    var tag = $tag.val();
-    var $all = $tag.find('[value=""]');
-    $tag.html('');
-    $tag.append($all);
-    _.each(results.tags, function(tag) {
-      var $option = $('<option></option>');
-      $option.attr('value', tag);
-      $option.text(tag);
-      $tag.append($option);
-    });
-    $tag.val(tag);
-    if (!results.length) {
-      self.$el.trigger('aposScrollEnded');
+
+    if (!self.haveTags) {
+
+      // get the element
+      var $tag = self.$el.findByName('tag')[0];
+      var tag = $tag.selectize.getValue();
+
+      // reset selectize
+      $tag.selectize.clear();
+      $tag.selectize.clearOptions();
+      // load all our tags
+      $tag.selectize.load(function(callback) {
+
+          var tags = [];
+
+          // all tags option
+          tags.push({ value: '', text: 'All Tags'})
+
+          _.each(results.tags, function(tag) {
+            tags.push({ value: tag, text: tag })
+          });
+
+          self.haveTags = true;
+          callback(tags);
+      });
+
+      $tag.selectize.setValue(tag);
+
+      if (!results.length) {
+        self.$el.trigger('aposScrollEnded');
+      }    
     }
   };
 
