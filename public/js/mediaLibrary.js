@@ -196,7 +196,7 @@ function AposMediaLibrary(options) {
       self.addIndexItem(item);
     });
 
-    if (!self.haveTags) {
+    if (options.browseByTag && (!self.haveTags)) {
 
       // get the element
       var $tag = self.$el.findByName('tag')[0];
@@ -211,10 +211,10 @@ function AposMediaLibrary(options) {
           var tags = [];
 
           // all tags option
-          tags.push({ value: '', text: 'All Tags'})
+          tags.push({ value: '', text: 'All Tags'});
 
           _.each(results.tags, function(tag) {
-            tags.push({ value: tag, text: tag })
+            tags.push({ value: tag, text: tag });
           });
 
           self.haveTags = true;
@@ -225,7 +225,7 @@ function AposMediaLibrary(options) {
 
       if (!results.length) {
         self.$el.trigger('aposScrollEnded');
-      }    
+      }
     }
   };
 
