@@ -24,19 +24,30 @@
 {% block modalFilters %}
   <div class="apos-modal-bar" data-bar>
     <div class="apos-modal-bar-filters clearfix">
-      <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
-        <label>{{ __('Browse') }}:</label>
-        <div class="apos-select-wrapper apos-inline-input">
-          {{ formSelectStandalone('group',
-            [
-              { label: 'All Media Types', value: '' },
-              { label: 'Images', value: 'images' },
-              { label: 'Office', value: 'office' }
-            ]
-          ) }}
+      {% if browseByType %}
+        {{aposLog(browseByType)}}
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
+          <label>{{ __('Browse') }}:</label>
+          <div class="apos-select-wrapper apos-inline-input">
+            {{ formSelectStandalone('extension', browseByType ) }}
+          </div>
+        </fieldset>
+      {% else %}
+        <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
+          <label>{{ __('Browse') }}:</label>
+          <div class="apos-select-wrapper apos-inline-input">
+            {{ formSelectStandalone('group',
+              [
+                { label: 'All Media Types', value: '' },
+                { label: 'Images', value: 'images' },
+                { label: 'Office', value: 'office' }
+              ]
+            ) }}
 
-        </div>
-      </fieldset>
+          </div>
+        </fieldset>
+      {% endif %}
+
 
     {% if browseByTag %}
       <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
