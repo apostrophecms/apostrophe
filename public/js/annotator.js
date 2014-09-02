@@ -65,6 +65,10 @@ function AposAnnotator(options) {
       data,
       function(results) {
         return options.receive(results, callback);
+      },
+      function() {
+        // must always invoke save callback
+        return callback(null);
       }
     );
   };
