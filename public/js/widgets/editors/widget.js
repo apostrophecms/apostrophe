@@ -261,7 +261,10 @@ function AposWidgetEditor(options) {
 
       save: function(callback) {
         self.preSave(function(err) {
-          if (err || (!self.exists)) {
+          if (err) {
+            return callback(err);
+          }
+          if (!self.exists) {
             alert(options.messages.missing);
             return callback('error');
           }
