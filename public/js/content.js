@@ -416,6 +416,7 @@ apos.modal = function(sel, options) {
   }
 
   var $el = $(sel);
+  var saving = false;
 
   if (!options) {
     options = {};
@@ -477,7 +478,15 @@ apos.modal = function(sel, options) {
   }
 
   function saveModal(next) {
+    if (saving) {
+      // Avoid race conditions
+      return;
+    }
+    saving = true;
+    $el.find('.apos-save,[data-save]').addClass('apos-busy');
     options.save(function(err) {
+      saving = false;
+      $el.find('.apos-save,[data-save]').removeClass('apos-busy');
       if(!err) {
         hideModal();
         if (next) {
