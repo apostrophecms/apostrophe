@@ -88,7 +88,7 @@ function AposMediaLibrary(options) {
     });
 
     // Filters
-    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"],[name="tag"]', function() {
+    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"],[name="tag"],[name="extension"]', function() {
       self.resetIndex();
       return false;
     });
@@ -467,7 +467,6 @@ function AposMediaLibrary(options) {
     self.$normal.find('[data-edit]').hide();
     self.$normal.find('[data-rescue]').hide();
     self.$normal.show();
-
     self.$index.trigger('aposScrollReset', self.getCriteria());
   };
 
@@ -481,6 +480,7 @@ function AposMediaLibrary(options) {
       owners: true,
       owner: self.$owner.val(),
       sort: self.$el.findByName('sort').val(),
+      extension: self.$el.findByName('extension').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),
       tag: self.$el.findByName('tag').val(),
