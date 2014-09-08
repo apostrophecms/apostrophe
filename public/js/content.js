@@ -25,7 +25,7 @@ apos.handlers = {};
 // CURRENT EVENTS
 //
 // 'enhance' is triggered to request progressive enhancement
-// of form elements newly loaded into the DOM (jQuery lister).
+// of form elements newly loaded into the DOM (jQuery selectize).
 // It is typically used in admin modals.
 //
 // 'ready' is triggered when the main content area of the page
@@ -524,7 +524,7 @@ apos.modal = function(sel, options) {
 
       // Anytime we load new markup for a modal, it's appropriate to
       // offer an opportunity for progressive enhancement of controls,
-      // for instance via lister
+      // for instance via selectize
       apos.emit('enhance', $el);
 
       // Black out the document or the top modal if there already is one.
