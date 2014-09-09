@@ -219,7 +219,7 @@ apos.moveYoungerSiblings = function(node, target) {
 // Options are passed in from addFields
 apos.enableTags = function($el, tags, field) {
   tags = tags || [];
-  field = field.options || { options: {} };
+  field = field || { options: {} };
   var options = field.options || {};
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
