@@ -271,9 +271,9 @@ apos.moveYoungerSiblings = function(node, target) {
 // (not the input element) and an array of existing tags already
 // assigned to this item.
 // Options are passed in from addFields
-apos.enableTags = function($el, tags, options) {
+apos.enableTags = function($el, tags, field) {
   tags = tags || [];
-  options = options || {};
+  var options = field.options || {};
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
   }
