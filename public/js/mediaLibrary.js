@@ -88,7 +88,7 @@ function AposMediaLibrary(options) {
     });
 
     // Filters
-    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"]', function() {
+    self.$el.on('change', '[name="owner"],[name="trash"],[name="sort"],[name="group"],[name="tag"],[name="extension"]', function() {
       self.resetIndex();
       return false;
     });
@@ -195,8 +195,37 @@ function AposMediaLibrary(options) {
     _.each(results.files, function(item) {
       self.addIndexItem(item);
     });
-    if (!results.length) {
-      self.$el.trigger('aposScrollEnded');
+
+    if (options.browseByTag && (!self.haveTags)) {
+
+      // get the element
+      var $tag = self.$el.findByName('tag')[0];
+      var tag = $tag.selectize.getValue();
+
+      // reset selectize
+      $tag.selectize.clear();
+      $tag.selectize.clearOptions();
+      // load all our tags
+      $tag.selectize.load(function(callback) {
+
+          var tags = [];
+
+          // all tags option
+          tags.push({ value: '', text: 'All Tags'});
+
+          _.each(results.tags, function(tag) {
+            tags.push({ value: tag, text: tag });
+          });
+
+          self.haveTags = true;
+          callback(tags);
+      });
+
+      $tag.selectize.setValue(tag);
+
+      if (!results.length) {
+        self.$el.trigger('aposScrollEnded');
+      }
     }
   };
 
@@ -362,6 +391,10 @@ function AposMediaLibrary(options) {
       tags: self.$edit.find('[data-name="tags"]').selective('get', { incomplete: true })
     } ], function(items) {
       _.each(items, function(item) {
+        // We know we can edit this because we just did.
+        // Fixes a bug that hid the "Edit Details" button
+        // after a save
+        item._edit = true;
         self.updateItem(item);
         self.showItem(item);
       });
@@ -434,7 +467,6 @@ function AposMediaLibrary(options) {
     self.$normal.find('[data-edit]').hide();
     self.$normal.find('[data-rescue]').hide();
     self.$normal.show();
-
     self.$index.trigger('aposScrollReset', self.getCriteria());
   };
 
@@ -448,8 +480,10 @@ function AposMediaLibrary(options) {
       owners: true,
       owner: self.$owner.val(),
       sort: self.$el.findByName('sort').val(),
+      extension: self.$el.findByName('extension').val(),
       trash: self.$el.findByName('trash').val(),
       group: self.$el.findByName('group').val(),
+      tag: self.$el.findByName('tag').val(),
       q: self.$el.findByName('search').val()
     };
   };

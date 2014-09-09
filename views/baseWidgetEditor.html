@@ -1,38 +1,38 @@
-{% extends 'baseModal.html' %}
-{% include 'uiMacros.html' %}
+{%- extends 'baseModal.html' -%}
+{%- include 'uiMacros.html' -%}
 
-{% block modalClass %}
+{%- block modalClass -%}
   apos-widget-editor
   {{ widgetClass }}
-{% endblock%}
+{%- endblock%}
 
-{% block modalLabel %}
+{%- block modalLabel -%}
   {{ __('Edit Widget')}}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalControls %}
+{%- block modalControls -%}
   {{ renderProgressBtn({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save Changes'}) }}
   {{ renderProgressBtn({dataAttrs: 'data-cancel', float: 'left', label: 'Cancel', arrow: 'left'}) }}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalInstructions %}
+{%- block modalInstructions -%}
   {{ __('Paste a widget link.') }}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalBody %}
+{%- block modalBody -%}
   <form>
     {# <div class="apos-modal-body apos-ui"> #}
 
-      {% block formAll %}
+      {%- block formAll -%}
         {# Please do not remove these override blocks #}
-        {% block formBegin %}{% endblock %}
-        {% block formBody %}
+        {%- block formBegin -%}{%- endblock -%}
+        {%- block formBody -%}
           <input class="apos-embed"/>
-        {% endblock %}
+        {%- endblock -%}
         {# Please do not remove these override blocks #}
-        {% block formEnd %}{% endblock %}
-      {% endblock %}
+        {%- block formEnd -%}{%- endblock -%}
+      {%- endblock -%}
     {# </div> #}
   </form>
 
-{% endblock %}
+{%- endblock -%}

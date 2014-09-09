@@ -1,26 +1,26 @@
 {# Standard form markup, for convenience and consistency #}
 
-{% macro formText(name, label, options = {}) %}
+{%- macro formText(name, label, options = {}) -%}
   <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     <input name="{{ name | e }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formPassword(name, label) %}
+{%- macro formPassword(name, label) -%}
   <fieldset class="apos-fieldset apos-fieldset-password apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     <input name="{{ name | e }}" type="password">
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formTags(name, label, options) %}
-  {% if options.inline %}
+{%- macro formTags(name, label, options) -%}
+  {%- if options.inline -%}
     <div class="apos-inline-tags" data-name="{{ name }}">
-  {% else %}
+  {%- else -%}
     <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
       <label>{{ __(label) | e }}</label>
-  {% endif %}
+  {%- endif -%}
     <div class="apos-inline-input">
       {# Text entry for autocompleting the next item #}
       <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
@@ -40,72 +40,77 @@
       </ul>
     </div>
 
-  {% if options.inline %}
+  {%- if options.inline -%}
     </div>
-  {% else %}
+  {%- else -%}
     </fieldset>
-  {% endif %}
-{% endmacro %}
+  {%- endif -%}
+{%- endmacro -%}
 
 {# Maybe fancier later #}
-{% macro formEmail(name, label) %}
+{%- macro formEmail(name, label) -%}
   {{ formText(name, label) }}
-{% endmacro %}
+{%- endmacro -%}
 
 {# Typically we enhance this with jquery ui datepicker later #}
-{% macro formDate(name, label) %}
+{%- macro formDate(name, label) -%}
   {{ formText(name, label) }}
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formTime(name, label) %}
+{%- macro formTime(name, label) -%}
   {{ formText(name, label) }}
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formTextarea(name, label) %}
+{%- macro formTextarea(name, label) -%}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     <textarea name="{{ name | e }}" rows="4"></textarea>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formCheckboxes(name, label, choices) %}
+{%- macro formCheckboxes(name, label, choices) -%}
   <fieldset class="apos-fieldset apos-fieldset-checkboxes apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     <ul class="apos-checkbox-choices">
-      {% for choice in choices %}
+      {%- for choice in choices -%}
         <li class="apos-checkbox-choice">
           <label>{{ choice.label }}</label>
           <input type="checkbox" name="{{ name }}" value="{{ choice.value }}">
         </li>
-      {% endfor %}
+      {%- endfor -%}
     </ul>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formSelect(name, label, choices) %}
+{%- macro formSelect(name, label, choices) -%}
   {# check for a fields property on any of the choices, and add class if one exists #}
   {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
-  <fieldset class="apos-fieldset apos-fieldset-lister apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
+  <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">
       {{ formSelectStandalone(name, choices) }}
-      <!-- <div class="apos-select-arrow"></div> -->
-      <span class="apos-ui-container apos-ui-inline-btn">
-        <div class="apos-select-arrow apos-ui-btn">
-          <i class="icon icon-caret-down"></i>
-        </div>
-      </span>
     </div>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
+
+{%- macro formMultiSelect(name, label, choices) -%}
+  {# check for a fields property on any of the choices, and add class if one exists #}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  <fieldset class="apos-fieldset apos-fieldset-selectize select-multiple apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+      <div class="apos-select-wrapper apos-inline-input">
+      {{ formSelectStandalone(name, choices, {select: 'multiple'}) }}
+    </div>
+  </fieldset>
+{%- endmacro -%}
 
 {# Often useful in a custom fieldset with other controls #}
-{% macro formSelectStandalone(name, choices, _attrs = {}) %}
+{%- macro formSelectStandalone(name, choices, _attrs = {}) -%}
   <select name="{{ name | e }}"
     {% for key, val in _attrs %}
       {{ key }}="{{ val | e }}"
     {% endfor %}
-    data-lister
+    data-selectize 
   >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}"
@@ -115,74 +120,52 @@
       >{{ __(choice.label) | e }}</option>
     {% endfor %}
   </select>
-{% endmacro %}
+{%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}
-{% macro formBoolean(name, label) %}
+{%- macro formBoolean(name, label) -%}
   {{ formSelect(name, label, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }]) }}
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro formBooleanStandalone(name, attrs) %}
+{%- macro formBooleanStandalone(name, attrs) -%}
   {{ formSelectStandalone(name, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }], attrs) }}
-{% endmacro %}
+{%- endmacro -%}
 
 {# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
 {# specifying the type we want for the singleton #}
-{% macro formSingleton(name, label) %}
+{%- macro formSingleton(name, label) -%}
   <fieldset class="apos-fieldset apos-fieldset-singleton apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     {# js adds this singleton to the dialog #}
     <div data-{{ name }}-edit-view></div>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
 {# See enableArea in snippets' main.js for the necessary plumbing #}
 {# (TODO: factor that out to content.js or editor.js) #}
-{% macro formArea(name, label) %}
+{%- macro formArea(name, label) -%}
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-editable data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     {# js adds this area to the dialog #}
     <div data-{{ name }}-edit-view></div>
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}
 
 {# See $.selective in content.js for the necessary plumbing #}
 
 {# moreOptions is merged with options. This makes it easier to #}
 {# pass some default options and then customize a few #}
 
-{% macro formSelective(name, label, options = {}, moreOptions = {}) %}
-  {% set _options = aposMerge(options, moreOptions) %}
+{%- macro formSelective(name, label, options = {}, moreOptions = {}) -%}
+  {%- set _options = aposMerge(options, moreOptions) -%}
 
-  {% if _options.inline %}
+  {%- if _options.inline -%}
     <div class="apos-inline-selective" data-name="{{ name }}">
-  {% else %}
-
-<!--         <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-lister">
-          <div class="apos-select-wrapper apos-inline-input">
-            <label>{{ __('Browse') }}:</label>
-            {{ formSelectStandalone('group',
-              [
-                { label: 'All Media Types', value: '' },
-                { label: 'Images', value: 'images' },
-                { label: 'Office', value: 'office' }
-              ]
-            ) }}
-            <span class="apos-ui-container apos-ui-inline-btn">
-              <div class="apos-select-arrow apos-ui-btn">
-                <i class="icon icon-caret-down"></i>
-              </div>
-            </span>
-          </div>
-        </fieldset> -->
-
-
-
-
+  {%- else -%}
     <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-lister apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
-      <div class="apos-select-wrapper apos-inline-input">
-      <label>{{ label | e }}</label>
-  {% endif %}
+    <div class="apos-select-wrapper apos-inline-input">
+    <label>{{ label | e }}</label>
+  {%- endif -%}
     <input type="text" data-autocomplete {% if _options.placeholder %}placeholder="{{ __( _options.placeholder ) | e }}"{%endif %}/>
     <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
     <ul data-list class="apos-selective-list">
@@ -196,29 +179,28 @@
               {{ __(Title) }}
             </span>
           </div>
-          {% if _options.extras or _options.relationship %}
+          {%- if _options.extras or _options.relationship -%}
             <span class="apos-selective-extras">
               {# TODO: extend our support for different types of extra fields, #}
               {# style them meaningfully. Usually on same row with item #}
-              {% for extra in (_options.extras or _options.relationship) %}
-                {% if (extra.type == 'checkbox') or (extra.type == 'boolean') %}
-                  <input type="checkbox" name="{{ extra.name }}" data-extras />
-                {% endif %}
+              {%- for extra in (_options.extras or _options.relationship) -%}
                 <label>{{ __(extra.label) | e }}</label>
-                {% if (extra.type == 'string') or (extra.type == 'text') %}
+                {%- if (extra.type == 'checkbox') or (extra.type == 'boolean') -%}
+                  <input type="checkbox" name="{{ extra.name }}" data-extras />
+                {%- elif (extra.type == 'string') or (extra.type == 'text') -%}
                   <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
-                {% elif (extra.type == 'radio') %}
-                  {% for choice in extra.choices %}
+                {%- elif (extra.type == 'radio') -%}
+                  {%- for choice in extra.choices -%}
                     <input type="radio" name="{{ choice.value }}" data-extras />
                     {{ choice.label | e }}
-                  {% endfor %}
-                {% elif (extra.type == 'select') %}
+                  {%- endfor -%}
+                {%- elif (extra.type == 'select') -%}
                   {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
-                {% else %}
+                {%- else -%}
                   {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
                   {{ aposLog(extra) }}
-                {% endif %}
-              {% endfor %}
+                {%- endif -%}
+              {%- endfor -%}
             </span>
           {% endif %}
           {% if _options.propagate %}
@@ -228,30 +210,30 @@
       </li>
 
     </ul>
-  {% if _options.inline %}
+  {%- if _options.inline -%}
     </div>
-  {% else %}
+  {%- else -%}
       </div>
     </fieldset>
-  {% endif %}
-{% endmacro %}
+  {%- endif -%}
+{%- endmacro -%}
 
 {# A pill button with several mutually exclusive choices (a nicer radio button basically). This is not a complete fieldset, see formPill. Often used to build filters, several on a line #}
 
 {# Sometimes a pill button group is useful without a fieldset #}
 {# Designed to be plumbed with javascript, note the data attributes #}
-{% macro formPillStandalone(name, options) %}
+{%- macro formPillStandalone(name, options) -%}
   <span class="apos-pill" data-pill data-name="{{ name }}">
     {%- for pill in options -%}
       <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ __(pill.label) }}</a>
     {%- endfor -%}
   </span>
-{% endmacro %}
+{%- endmacro -%}
 
 {# Pill button group wrapped in a fieldset like the rest #}
-{% macro formPill(name, label, options) %}
+{%- macro formPill(name, label, options) -%}
   <fieldset class="apos-fieldset apos-fieldset-pill apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     {{ formPillStandalone(name, options) }}
   </fieldset>
-{% endmacro %}
+{%- endmacro -%}

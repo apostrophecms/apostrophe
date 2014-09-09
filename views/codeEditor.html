@@ -1,20 +1,20 @@
-{% extends "baseWidgetEditor.html" %}
+{%- extends "baseWidgetEditor.html" -%}
 
-{% block modalClass %}
+{%- block modalClass -%}
   {{super()}} apos-code-editor
-{% endblock %}
+{%- endblock -%}
 
-{% block modalLabel %}
+{%- block modalLabel -%}
 {{ __('Edit Preformatted Text') }}
-{% endblock %}
+{%- endblock -%}
 
-{% block modalInstructions %}
+{%- block modalInstructions -%}
 <p>{{ __('Paste in preformatted text (such as source code).') }}</p>
-{% endblock %}
+{%- endblock -%}
 
-{% block previewButton %}
-{% endblock %}
+{%- block previewButton -%}
+{%- endblock -%}
 
-{% block formBody %}
+{%- block formBody -%}
   <textarea class="apos-code"></textarea>
-{% endblock %}
+{%- endblock -%}

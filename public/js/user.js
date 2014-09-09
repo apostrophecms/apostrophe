@@ -15,7 +15,7 @@ var apos = window.apos;
 
 apos.widgetTypes = {};
 
-var defaultWidgetTypes = [ 'slideshow', 'buttons', 'marquee', 'files', 'video', 'pullquote', 'code', 'html' ];
+var defaultWidgetTypes = [ 'slideshow', 'buttons', 'marquee', 'files', 'video', 'embed', 'pullquote', 'code', 'html' ];
 
 // Add a widget type on the browser side. If typeName is `slideshow`, then Apostrophe invokes
 // the constructor function named `AposSlideshowWidgetEditor`, unless
@@ -59,60 +59,6 @@ _.each(defaultWidgetTypes, function(type) {
   apos.addWidgetType(type);
 });
 
-apos.enableAreas = function() {
-
-  // Regular areas are self-enabling now, but singletons still have an edit button
-
-  $('body').on('click', '.apos-edit-singleton', function() {
-    var $singleton = $(this).closest('.apos-singleton');
-    var slug = $singleton.attr('data-slug');
-    var type = $singleton.attr('data-type');
-
-    var itemData = { position: 'middle', size: 'full' };
-    var $item = $singleton.find('.apos-content .apos-widget:first');
-    if ($item.length) {
-      itemData = apos.getWidgetData($item);
-    }
-    var editor = new apos.widgetTypes[type].editor({
-      data: itemData,
-      save: function(callback) {
-        if (slug) {
-          // Has a slug, save it
-          $.jsonCall('/apos/edit-singleton',
-            {
-              dataType: 'html',
-            },
-            {
-              slug: slug,
-              options: JSON.parse($singleton.attr('data-options') || {}),
-              // By now itemData has been updated (we passed it
-              // into the widget and JavaScript passes objects by reference)
-              content: itemData
-            },
-            function(markup) {
-              $singleton.find('.apos-content').html(markup);
-              apos.enablePlayers($singleton);
-              callback(null);
-            },
-            function() {
-            alert('Server error, please try again.');
-            callback('error');
-          });
-        } else {
-          // Virtual singletons must be saved in other ways. Add it as a
-          // data attribute of the singleton, and post an event
-          $singleton.attr('data-item', JSON.stringify(itemData));
-          $singleton.trigger('aposEdited', itemData);
-          return callback();
-        }
-      },
-      // Options passed from the template or other environment
-      options: $singleton.data('options')
-    });
-    editor.init();
-    return false;
-  });
-};
 
 // KEEP IN SYNC WITH SERVER SIDE IMPLEMENTATION in search.js
 
@@ -278,9 +224,9 @@ apos.enableTags = function($el, tags, field) {
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
   }
-  if(!options.limit) options.limit = undefined;
-  if(!options.sortable) options.sortable = undefined;
-  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: options.limit, sortable: options.sortable });
+  if(!field.limit) field.limit = undefined;
+  if(!field.sortable) field.sortable = undefined;
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: field.limit, sortable: field.sortable });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),
@@ -359,11 +305,72 @@ apos.busy = function($el, state) {
   }
 };
 
+// Area editing is in apostrophe-editor-2, but
+// singleton editing still lives in the core
+apos.enableSingletons = function() {
+  $('body').on('click', '.apos-edit-singleton', function() {
+    var $singleton = $(this).closest('.apos-singleton');
+    var slug = $singleton.attr('data-slug');
+    var type = $singleton.attr('data-type');
+
+    var itemData = { position: 'middle', size: 'full' };
+    var $item = $singleton.find('.apos-content .apos-widget:first');
+    if ($item.length) {
+      itemData = apos.getWidgetData($item);
+    }
+    var editor = new apos.widgetTypes[type].editor({
+      data: itemData,
+      save: function(callback) {
+        if (slug) {
+          // Has a slug, save it
+          $.jsonCall('/apos/edit-singleton',
+            {
+              dataType: 'html',
+            },
+            {
+              slug: slug,
+              options: JSON.parse($singleton.attr('data-options') || {}),
+              // By now itemData has been updated (we passed it
+              // into the widget and JavaScript passes objects by reference)
+              content: itemData
+            },
+            function(markup) {
+              $singleton.find('.apos-content').html(markup);
+              apos.enablePlayers($singleton);
+              callback(null);
+            },
+            function() {
+            alert('Server error, please try again.');
+            callback('error');
+          });
+        } else {
+          // Virtual singletons must be saved in other ways. Add it as a
+          // data attribute of the singleton, and post an event
+          $singleton.attr('data-item', JSON.stringify(itemData));
+          $singleton.trigger('aposEdited', itemData);
+          return callback();
+        }
+      },
+      // Options passed from the template or other environment
+      options: $singleton.data('options')
+    });
+    editor.init();
+    return false;
+  });
+};
+
+apos.enableAreas = function() {
+  apos.log('DEPRECATED: you do not have to call apos.enableAreas anymore. This stub is going away in 0.6.');
+};
+
 $(function() {
   // Do these late so that other code has a chance to override
+  // None of these need to happen again on 'ready' events, so
+  // just do them once
   apos.afterYield(function() {
     apos.enableMediaLibrary();
     apos.enableTagEditor();
+    apos.enableSingletons();
   });
 });
 

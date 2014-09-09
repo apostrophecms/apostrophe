@@ -973,7 +973,7 @@
   }
 }
 
-.apos-slideshow-editor .apos-media-chooser, .apos-video-editor .apos-media-chooser
+.apos-slideshow-editor .apos-media-chooser, .apos-video-editor .apos-media-chooser, .apos-embed-editor .apos-media-chooser
 {
   background-color: lighten(@apos-grey,90%);
   padding: 20px;
@@ -1663,7 +1663,7 @@ body .ui-tooltip
     visibility: hidden;
     position: absolute !important;
 
-     background: #fff;
+     //background: #fff;
      margin: 0 0 0 10px;
      font-family: Helvetica, sans-serif;
      font-size: 10px;
@@ -1704,7 +1704,7 @@ body .ui-tooltip
   }
 
   // The lister "selected" option
-  .lister-selected-top
+  .lister-selected-top, .selectize-control
   {
     font-family: 'cabin';
     display: inline-block;
@@ -1728,7 +1728,7 @@ body .ui-tooltip
     font-size: 14px;
   }
   // The lister options
-  .apos-lister
+  .apos-lister, .selectize-dropdown
   {
     font-family: 'cabin';
     position:absolute;
@@ -1744,7 +1744,7 @@ body .ui-tooltip
     max-height: 288px;
     overflow-y: scroll;
 
-    li
+    li, .selectize-dropdown-content > div
     {
       display: block;
       text-transform: none;
@@ -1851,6 +1851,132 @@ body .ui-tooltip
     font-size: 12px;
   }
 
+  
+
+}
+
+// Selectize Styles --------------------------------------------  //
+
+.apos-fieldset-selectize > .apos-select-wrapper
+{
+  background: #fff;
+  .selectize-control
+  {
+    z-index: 1;
+
+    background: transparent;
+    padding: 0;
+
+    .selectize-input
+    {
+      max-height: 50px;
+      padding: 12px 8px 16px 12px;
+
+      .item, input
+      {
+        position: relative;
+        display: inline-block;
+
+        height: 22px;
+        top: 2px;
+        left: 0;
+        line-height: 22px;
+
+        vertical-align: bottom;
+      }
+      .item 
+      {
+        margin-right: 3px;
+      }
+      input[tabindex]
+      {
+        display: inline-block;
+        border: none;
+        box-shadow: none;
+
+        padding: inherit;
+        font-size: inherit;
+        //height: 18px;
+        padding: 0;
+        top: 2px;
+      }
+
+      // Dropdown Button replacement
+      &:before
+      {
+        content: ' ';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: block;
+        width: 36px;
+        height: 31px;
+        background-color: @apos-base;
+        border-radius: 3px;
+      }
+      &:after 
+      {
+        content: ' ';
+        position: absolute;
+        top: 50%;
+        right: 23px;
+        display: block;
+        width: 0;
+        height: 0;
+        margin-top: -1px;
+        border-color: #fff transparent transparent transparent;
+        border-style: solid;
+        border-width: 5px 5px 0 5px;
+      }
+    }
+    &:after 
+    {
+      content: ' ';
+      position: absolute;
+      top: 0;
+      right: 57px;
+      height: 50px;
+      width: 1px;
+      background-color: @apos-grey60;
+    }
+    &:hover
+    {
+      cursor: pointer;
+      .selectize-input:before 
+      {
+        background-color: darken(@apos-base, 5%);
+      }
+    }
+    
+    .selectize-dropdown
+    {
+      left: 0 !important;
+      top: 50px !important;
+      width: 100% !important;
+
+      // active selected element for autocomplete + text search
+      .option.active 
+      {
+        color: white;
+        background-color: @apos-base;
+      }
+    }
+  }
+  
+  // Multiple Select Items
+  .selectize-control.multi > .selectize-input > .item 
+  {
+    padding: 4px 6px;
+    color: #fff;
+    border-radius: 3px;
+    line-height: inherit;
+
+    background-color: @apos-grey10;
+    background: -webkit-gradient(linear, 0 0, 0 100%, from(@apos-grey10), to(@apos-grey30));
+    background: -webkit-linear-gradient(top, @apos-grey10, @apos-grey30);
+    background: -moz-linear-gradient(top, @apos-grey10, @apos-grey30);
+    background: -ms-linear-gradient(top, @apos-grey10, @apos-grey30);
+  }
 }
 
 
@@ -1872,7 +1998,7 @@ body .ui-tooltip
   position: absolute;
   right: 13px;
   top: 50%;
-  margin-top: 1px;
+  margin-top: -8px;
 }
 /* End Search Input */
 
@@ -1994,3 +2120,4 @@ body .ui-tooltip
     background-color: transparent;
   }
 }
+

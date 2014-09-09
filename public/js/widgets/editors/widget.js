@@ -224,8 +224,9 @@ function AposWidgetEditor(options) {
   };
 
   self.init = function() {
+    options.css = options.css || apos.cssName(self.type);
+    options.template = options.template || '.apos-' + options.css + '-editor';
       // Use apos.modalFromTemplate to manage our lifecycle as a modal
-
     self.$el = apos.modalFromTemplate(options.template, {
       init: function(callback) {
         self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -259,7 +260,10 @@ function AposWidgetEditor(options) {
       },
 
       save: function(callback) {
-        self.preSave(function() {
+        self.preSave(function(err) {
+          if (err) {
+            return callback(err);
+          }
           if (!self.exists) {
             alert(options.messages.missing);
             return callback('error');
