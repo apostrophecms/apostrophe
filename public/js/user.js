@@ -216,12 +216,16 @@ apos.moveYoungerSiblings = function(node, target) {
 // Enable autocomplete of tags. Expects the fieldset element
 // (not the input element) and an array of existing tags already
 // assigned to this item.
-apos.enableTags = function($el, tags) {
+// Options are passed in from addFields
+apos.enableTags = function($el, tags, field) {
   tags = tags || [];
+  var options = field.options || {};
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
   }
-  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'] });
+  if(!options.limit) options.limit = undefined;
+  if(!options.sortable) options.sortable = undefined;
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: options.limit, sortable: options.sortable });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),
