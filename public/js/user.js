@@ -219,14 +219,14 @@ apos.moveYoungerSiblings = function(node, target) {
 // Options are passed in from addFields
 apos.enableTags = function($el, tags, field) {
   tags = tags || [];
-  field = field || { options: {} };
+  field = field.options || { options: {} };
   var options = field.options || {};
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
   }
-  if(!field.limit) field.limit = undefined;
-  if(!field.sortable) field.sortable = undefined;
-  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: field.limit, sortable: field.sortable });
+  if(!options.limit) options.limit = undefined;
+  if(!options.sortable) options.sortable = undefined;
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: options.limit, sortable: options.sortable });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),
