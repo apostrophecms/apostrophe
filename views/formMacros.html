@@ -24,6 +24,7 @@
     <div class="apos-inline-input">
       {# Text entry for autocompleting the next item #}
       <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
+      <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
       <span class="apos-ui-container apos-ui-inline-btn" data-add>
         <a href="#" class="apos-ui-btn"><i class="icon icon-plus"></i> Add</a>
       </span>
