@@ -1,0 +1,11 @@
+{# Embed a page based on its Open Graph tags (or the best #}
+{# fallbacks Apostrophe could find). Used when oembed is #}
+{# not available or not whitelisted. #}
+<div class="apos-og-embed">
+  <h3><a href="{{ url | e }}">{{ title | e }}</a></h3>
+  {% if image %}
+    <a href="{{ url | e }}"><img src="{{ image | e }}" /></a>
+  {% endif %}
+  <p>{{ description | e }}</p>
+  <div class="apos-clear"></div>
+</div>

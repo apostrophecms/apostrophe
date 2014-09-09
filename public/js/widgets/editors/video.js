@@ -140,15 +140,16 @@ function AposVideoWidgetEditor(options)
     self.$embed = self.$el.find('.apos-embed');
     self.$embed.val(self.data.video);
 
-    function interestingDifference(a, b) {
+    function interestingDifference(last, next) {
       var i;
-      if (Math.abs(a.length - b.length) > 10) {
+      // Only increased length is automatically interesting
+      if (next.length - last.length > 10) {
         return true;
       }
-      var min = Math.min(a.length, b.length);
+      var min = Math.min(last.length, next.length);
       var diff = 0;
       for (i = 0; (i < min); i++) {
-        if (a.charAt(i) !== b.charAt(i)) {
+        if (last.charAt(i) !== next.charAt(i)) {
           diff++;
           if (diff >= 5) {
             return true;
@@ -187,8 +188,6 @@ function AposVideoWidgetEditor(options)
     self.$el.find('[data-preview]').hide();
     self.$el.find('[data-spinner]').show();
     $.getJSON('/apos/oembed', { url: url }, function(data) {
-      self.$el.find('[data-spinner]').hide();
-      self.$el.find('[data-preview]').show();
       if (data.err) {
         if (callback) {
           return callback(data.err);
@@ -219,6 +218,12 @@ function AposVideoWidgetEditor(options)
       if (callback) {
         return callback(null, data);
       }
+    }).error(function() {
+      alert('That page does not exist, or you pasted HTML instead of a link, or the domain in question is not whitelisted as safe for inclusion on this site.');
+      return callback && callback(oembedNotType);
+    }).complete(function() {
+      self.$el.find('[data-spinner]').hide();
+      self.$el.find('[data-preview]').show();
     });
   }
 
