@@ -25,7 +25,7 @@
 {# If this item type has a wrapper element output that element, with an optional #}
 {# CSS class as well. Helps implement widgets like pullquote and code sample #}
 {%- if itemType.wrapper -%}
-  <{{ itemType.wrapper }}{%- if itemType.wrapperClass -%} class="{{ itemType.wrapperClass }}" {%- endif -%}>
+  <{{ itemType.wrapper }}{%- if itemType.wrapperClass %} class="{{ itemType.wrapperClass }}" {%- endif -%}>
 {%- endif -%}
 
 {%- if item.type == 'richText'  -%}
