@@ -110,7 +110,7 @@
     {% for key, val in _attrs %}
       {{ key }}="{{ val | e }}"
     {% endfor %}
-    data-selectize 
+    data-selectize
   >
     {% for choice in choices %}
       <option value="{{ choice.value | e }}"
@@ -184,10 +184,11 @@
               {# TODO: extend our support for different types of extra fields, #}
               {# style them meaningfully. Usually on same row with item #}
               {%- for extra in (_options.extras or _options.relationship) -%}
-                <label>{{ __(extra.label) | e }}</label>
                 {%- if (extra.type == 'checkbox') or (extra.type == 'boolean') -%}
                   <input type="checkbox" name="{{ extra.name }}" data-extras />
+                  <label>{{ __(extra.label) | e }}</label>
                 {%- elif (extra.type == 'string') or (extra.type == 'text') -%}
+                  <label>{{ __(extra.label) | e }}</label>
                   <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
                 {%- elif (extra.type == 'radio') -%}
                   {%- for choice in extra.choices -%}
@@ -195,6 +196,7 @@
                     {{ choice.label | e }}
                   {%- endfor -%}
                 {%- elif (extra.type == 'select') -%}
+                  <label>{{ __(extra.label) | e }}</label>
                   {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
                 {%- else -%}
                   {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
@@ -204,7 +206,7 @@
             </span>
           {% endif %}
           {% if _options.propagate %}
-            <span class="apos-propagate"><input type="checkbox" data-propagate /> {{ __('Apply to Subpages') }}</span>
+            <span class="apos-propagate"><input type="checkbox" data-propagate /><label>{{ __('Apply to Subpages') }}</label></span>
           {% endif %}
         </div>
       </li>
