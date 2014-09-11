@@ -14,8 +14,8 @@ function AposVideoWidgetEditor(options)
 
   self.type = options.type || 'video';
 
-  var oembedType = apos.data.widgetOptions[self.type].oembedType;
-  var oembedNotType = apos.data.widgetOptions[self.type].oembedNotType;
+  self.oembedType = apos.data.widgetOptions[self.type].oembedType;
+  self.oembedNotType = apos.data.widgetOptions[self.type].oembedNotType;
 
   // Parent class constructor shared by all widget editors
   AposWidgetEditor.call(self, options);
@@ -39,8 +39,8 @@ function AposVideoWidgetEditor(options)
         skip: page * perPage,
         limit: perPage,
         q: $search.val(),
-        type: oembedType,
-        notType: oembedNotType
+        type: self.oembedType,
+        notType: self.oembedNotType
       }, function(results) {
 
         pages = Math.ceil(results.total / perPage);
@@ -89,7 +89,8 @@ function AposVideoWidgetEditor(options)
 
           $item.on('click', function(e) {
             self.$embed.val(video.video);
-            return false;
+            self.$alwaysIframe.prop('checked', !!video.alwaysIframe);
+            return true;
           });
         });
       }).error(function() {
@@ -108,7 +109,7 @@ function AposVideoWidgetEditor(options)
         page++;
         self.refreshChooser();
       }
-      return false;
+      return false;a
     });
     $chooser.on('click', '[name="search-submit"]', function() {
       search();
@@ -139,6 +140,34 @@ function AposVideoWidgetEditor(options)
   self.afterCreatingEl = function() {
     self.$embed = self.$el.find('.apos-embed');
     self.$embed.val(self.data.video);
+
+    // Used by subclasses like embed, not present in the
+    // video widget, but harmless here
+    self.$alwaysIframe = self.$el.find('[data-always-iframe]');
+    self.$iframeOptions = self.$el.find('[data-iframe-options]');
+    self.$iframeHeight = self.$el.find('[data-iframe-height]');
+    if (self.data.alwaysIframe) {
+      self.$alwaysIframe.prop('checked', true);
+    }
+
+    self.$alwaysIframe.change(function() {
+      if (self.$alwaysIframe.prop('checked')) {
+        self.$iframeOptions.show();
+      } else {
+        self.$iframeOptions.hide();
+      }
+      self.preview();
+    });
+
+    self.$iframeHeight.change(function() {
+      self.preview();
+    });
+
+    if (self.data.iframeHeight) {
+      self.$iframeHeight.val(self.data.iframeHeight);
+    }
+
+    self.$alwaysIframe.trigger('change');
 
     function interestingDifference(last, next) {
       var i;
@@ -175,7 +204,7 @@ function AposVideoWidgetEditor(options)
     self.enableChooser();
   };
 
-  function getVideoInfo(callback) {
+  self.getVideoInfo = function(callback) {
     var url = self.$embed.val();
     if (!url) {
       return callback('empty');
@@ -185,9 +214,11 @@ function AposVideoWidgetEditor(options)
     {
       url = 'http://' + url;
     }
+    var alwaysIframe = self.$alwaysIframe.prop('checked');
+    var iframeHeight = self.$iframeHeight.val();
     self.$el.find('[data-preview]').hide();
     self.$el.find('[data-spinner]').show();
-    $.getJSON('/apos/oembed', { url: url }, function(data) {
+    $.getJSON('/apos/oembed', { url: url, alwaysIframe: alwaysIframe, iframeHeight: iframeHeight }, function(data) {
       if (data.err) {
         if (callback) {
           return callback(data.err);
@@ -195,49 +226,55 @@ function AposVideoWidgetEditor(options)
         return;
       }
       if (data) {
-        if (oembedNotType && (data.type === oembedNotType)) {
+        if (self.oembedNotType && (data.type === self.oembedNotType)) {
           alert('That content is not appropriate for this type of widget.');
-          return callback && callback(oembedNotType);
+          return callback && callback(self.oembedNotType);
         }
-        if (oembedType && (data.type !== oembedType)) {
+        if (self.oembedType && (data.type !== self.oembedType)) {
           alert('That content is not appropriate for this type of widget.');
-          return callback && callback('not ' + oembedType);
+          return callback && callback('not ' + self.oembedType);
         }
       }
       self.exists = !!data;
       if (self.exists) {
-        // Make sure the URL is part of the data we pass to our callback
+        // Make sure the URL and other editable fields are
+        // part of the data we pass to our callback
         data.video = url;
-        // The widget stores just the properties we really need to render.
-        // The preSave callback will also stuff in the id of the video
-        // chooser object created at that point
+        data.alwaysIframe = alwaysIframe;
+        data.iframeHeight = iframeHeight;
+        // The widget stores just the properties we really need
+        // to render
         self.data.video = url;
         self.data.thumbnail = data.thumbnail_url;
         self.data.title = data.title;
+        self.data.alwaysIframe = alwaysIframe;
+        self.data.iframeHeight = iframeHeight;
       }
       if (callback) {
         return callback(null, data);
       }
     }).error(function() {
       alert('That page does not exist, or you pasted HTML instead of a link, or the domain in question is not whitelisted as safe for inclusion on this site.');
-      return callback && callback(oembedNotType);
+      return callback && callback(self.oembedNotType);
     }).complete(function() {
       self.$el.find('[data-spinner]').hide();
       self.$el.find('[data-preview]').show();
     });
-  }
+  };
 
   self.preSave = function(callback) {
-    return getVideoInfo(function(err, data) {
+    return self.getVideoInfo(function(err, data) {
       if (err) {
         return callback(err);
       }
-      // Now that we know it's a keeper, ask the server to remember this
-      // video object for reuse (the implementation of which is forthcoming)
+      // Now that we know it's a keeper, ask the server to
+      // remember this video object for reuse
       var video = {};
       // Later there will likely be description and credit here
       video.title = data.title;
       video.video = data.video;
+      video.alwaysIframe = data.alwaysIframe;
+      video.iframeHeight = data.iframeHeight;
 
       $.post('/apos/remember-video', video, function(data) {
         self.data.videoId = data._id;
@@ -246,7 +283,7 @@ function AposVideoWidgetEditor(options)
     });
   };
 
-  self.prePreview = getVideoInfo;
+  self.prePreview = self.getVideoInfo;
 }
 
 AposVideoWidgetEditor.label = 'Video';

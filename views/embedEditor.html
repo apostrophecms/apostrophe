@@ -17,6 +17,14 @@
     <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/>
     {% include "progress.html" %}
   {% endblock %}
+    <div class="iframe">
+      <fieldset><label>Always Use Iframe</label><input data-always-iframe type="checkbox" /></fieldset>
+      {# This div is used to toggle visibility #}
+      <div data-iframe-options>
+        <fieldset><label>Iframe Height (Pixels)</label><input data-iframe-height type="text" /></fieldset>
+      </div>
+    </div>
+  </div>
   <div class="apos-widget-preview-container apos-requires-preview">
     {# We decided to move float preview into the main area editor so #}
     {# this preview is just for things whose appearance is not obvious #}

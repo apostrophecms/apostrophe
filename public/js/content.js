@@ -254,7 +254,7 @@ apos.widgetPlayers.video = function($el)
 {
   var data = apos.getWidgetData($el);
   var videoUrl = data.video;
-  $.get('/apos/oembed', { url: videoUrl }, function(data) {
+  $.jsonCall('/apos/oembed', { url: videoUrl }, function(data) {
     // Wait until the thumbnail image size is available otherwise we'll
     // get a tiny size for the widget
     $el.imagesReady(function() {
@@ -308,8 +308,12 @@ apos.sslIfNeeded = function(url) {
 apos.widgetPlayers.embed = function($el)
 {
   var data = apos.getWidgetData($el);
-  var videoUrl = data.video;
-  $.get('/apos/oembed', { url: videoUrl }, function(data) {
+  var query = {
+    url: data.video,
+    alwaysIframe: data.alwaysIframe,
+    iframeHeight: data.iframeHeight
+  };
+  $.jsonCall('/apos/oembed', query, function(data) {
     if (data.html) {
       $el.append(data.html);
     }
