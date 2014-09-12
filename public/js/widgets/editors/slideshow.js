@@ -803,6 +803,8 @@ function AposSlideshowWidgetEditor(options)
       self.$el.find('[data-drag-container]').off('drop');
       return false;
     });
+    // So selectize can work
+    apos.emit('enhance', $item);
 
     $items.append($item);
     count++;
