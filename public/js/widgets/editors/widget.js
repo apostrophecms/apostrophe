@@ -140,7 +140,7 @@ function AposWidgetEditor(options) {
       info,
       function(html) {
         // Work around fussy jquery HTML parsing behavior a little
-        self.$widget = $($.parseHTML($.trim(html)));
+        self.$widget = $($.parseHTML($.trim(html), null, true));
         if (apos.widgetPlayers[self.type]) {
           apos.widgetPlayers[self.type](self.$widget);
         }
@@ -189,13 +189,13 @@ function AposWidgetEditor(options) {
             // jQuery 1.9+ is super fussy about constructing elements from html
             // more explicitly. Trim the markup so we don't wind up with a
             // text node instead of a widget due to whitespace, sigh
-            var previewWidget = $($.parseHTML($.trim(html)));
-            previewWidget.addClass('apos-widget-preview');
-            self.$previewContainer.prepend(previewWidget);
-            self.$el.find('.apos-requires-preview').show();
+            var $previewWidget = $($.parseHTML($.trim(html), null, true));
             if (apos.widgetPlayers[self.type]) {
-              apos.widgetPlayers[self.type](previewWidget);
+              apos.widgetPlayers[self.type]($previewWidget);
             }
+            $previewWidget.addClass('apos-widget-preview');
+            self.$previewContainer.prepend($previewWidget);
+            self.$el.find('.apos-requires-preview').show();
           }
         );
       }
@@ -224,8 +224,9 @@ function AposWidgetEditor(options) {
   };
 
   self.init = function() {
+    options.css = options.css || apos.cssName(self.type);
+    options.template = options.template || '.apos-' + options.css + '-editor';
       // Use apos.modalFromTemplate to manage our lifecycle as a modal
-
     self.$el = apos.modalFromTemplate(options.template, {
       init: function(callback) {
         self.$previewContainer = self.$el.find('.apos-widget-preview-container');
@@ -259,7 +260,10 @@ function AposWidgetEditor(options) {
       },
 
       save: function(callback) {
-        self.preSave(function() {
+        self.preSave(function(err) {
+          if (err) {
+            return callback(err);
+          }
           if (!self.exists) {
             alert(options.messages.missing);
             return callback('error');

@@ -7,6 +7,68 @@ if (!window.apos) {
 }
 
 var apos = window.apos;
+
+apos.handlers = {};
+
+// EVENT HANDLING
+//
+// apos.emit(eventName, /* arg1, arg2, arg3... */)
+//
+// Emit an Apostrophe event. All handlers that have been set
+// with apos.on for the same eventName will be invoked. Any additional
+// arguments are received by the handler functions as arguments.
+//
+// For bc, Apostrophe events are also triggered on the
+// body element via jQuery. The event name "ready" becomes
+// "aposReady" in jQuery. This feature will be removed in 0.6.
+//
+// CURRENT EVENTS
+//
+// 'enhance' is triggered to request progressive enhancement
+// of form elements newly loaded into the DOM (jQuery selectize).
+// It is typically used in admin modals.
+//
+// 'ready' is triggered when the main content area of the page
+// has been refreshed.
+
+apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
+  var handlers = apos.handlers[eventName];
+  if (!handlers) {
+    return;
+  }
+  var args = Array.prototype.slice.call(arguments, 1);
+  var i;
+  for (i = 0; (i < handlers.length); i++) {
+    handlers[i].apply(window, args);
+  }
+  // BC (to be removed in 0.6): also trigger the event
+  // on the body. The 'ready' event becomes 'aposReady' when
+  // triggered on the body.
+  //
+  // trigger takes multiple arguments as an array
+  $('body').trigger('apos' + apos.capitalizeFirst(eventName), args);
+};
+
+// Install an Apostrophe event handler. The handler will be called
+// when apos.emit is invoked with the same eventName. The handler
+// will receive any additional arguments passed to apos.emit.
+
+apos.on = function(eventName, fn) {
+  apos.handlers[eventName] = (apos.handlers[eventName] || []).concat([ fn ]);
+};
+
+// Remove an Apostrophe event handler. If fn is not supplied, all
+// handlers for the given eventName are removed.
+apos.off = function(eventName, fn) {
+  if (!fn) {
+    delete apos.handlers[eventName];
+    return;
+  }
+  apos.handlers[eventName] = _.filter(apos.handlers[eventName], function(_fn) {
+    return fn !== _fn;
+  });
+};
+
 var polyglot = new Polyglot();
 // the function below is just an alias, to make things look more consistent
 // between the server and the client side i18n
@@ -19,6 +81,7 @@ var __ = function(key,options){ return polyglot.t(key, options); };
       console.log(msg);
     }
   };
+
 })();
 
 
@@ -88,16 +151,19 @@ apos.change = function(what) {
   $.get(window.location.href, { apos_refresh: apos.generateId() }, function(data) {
     // Make sure we run scripts in the returned HTML
     $('[data-apos-refreshable]').html($.parseHTML(data, document, true));
-    // Trigger the aposReady event so scripts can attach to the
+    // Trigger the 'ready' event so scripts can attach to the
     // elements just refreshed if needed. Also trigger apos.enablePlayers.
     // Note that calls pushed by pushGlobalCalls are NOT run on a refresh as
     // they generally have to do with one-time initialization of the page
     $(function() {
-      apos.enablePlayers();
-      $("body").trigger("aposReady");
+      apos.emit('ready');
     });
   });
 };
+
+apos.on('ready', function() {
+  apos.enablePlayers();
+});
 
 // Given a page object retrieved from the server (such as a blog post) and an
 // area name, return the first image object found in that area, or undefined
@@ -170,6 +236,7 @@ apos.widgetPlayers.slideshow = function($el)
     delay: data.delay
   });
 };
+
 apos.widgetPlayers.marquee = function($el)
 {
   // Use our jQuery slideshow plugin
@@ -187,7 +254,7 @@ apos.widgetPlayers.video = function($el)
 {
   var data = apos.getWidgetData($el);
   var videoUrl = data.video;
-  $.get('/apos/oembed', { url: videoUrl }, function(data) {
+  $.jsonCall('/apos/oembed', { url: videoUrl }, function(data) {
     // Wait until the thumbnail image size is available otherwise we'll
     // get a tiny size for the widget
     $el.imagesReady(function() {
@@ -203,8 +270,9 @@ apos.widgetPlayers.video = function($el)
       if (data.width && data.height) {
         e.height((data.height / data.width) * $thumbnail.width());
       } else {
-        // No, so we have to hope the thumbnail dimensions are a good bet
-        e.height($thumbnail.height());
+        // No, so assume the oembed HTML code is responsive.
+        // Jamming the height to the thumbnail height is a mistake
+        // e.height($thumbnail.height());
       }
 
       // Hack: if our site is secure, fetch the embedded
@@ -215,19 +283,40 @@ apos.widgetPlayers.video = function($el)
       // This hack won't work for everything but it's correct
       // for a typical iframe embed.
 
-      var ssl = ('https:' === document.location.protocol);
-      if (ssl) {
-        var src = e.attr('src');
-        if (src.match(/^http:/)) {
-          e.attr('src', src.replace(/^http:/, 'https:'));
-        }
-      }
+      e.attr('src', apos.sslIfNeeded(e.attr('src')));
 
       $el.find('.apos-video-thumbnail').replaceWith(e);
-      // Hoist out of the link that launched us
-      var $kids = $el.find('[data-apos-play] *').detach();
-      $el.find('[data-apos-play]').replaceWith($kids);
     });
+  });
+};
+
+apos.sslIfNeeded = function(url) {
+  var ssl = ('https:' === document.location.protocol);
+  if (ssl) {
+    if (url.match(/^http:/)) {
+      url = url.replace(/^http:/, 'https:');
+    }
+  }
+  return url;
+};
+
+// The embed player populates the widget with the
+// result of an oembed call, without attempting
+// to fuss with its width or wait for a play button
+// to be clicked as we do for video
+
+apos.widgetPlayers.embed = function($el)
+{
+  var data = apos.getWidgetData($el);
+  var query = {
+    url: data.video,
+    alwaysIframe: data.alwaysIframe,
+    iframeHeight: data.iframeHeight
+  };
+  $.jsonCall('/apos/oembed', query, function(data) {
+    if (data.html) {
+      $el.append(data.html);
+    }
   });
 };
 
@@ -291,19 +380,14 @@ apos.modal = function(sel, options) {
     var topModal = apos.getTopModalOrBody();
     if (topModal.filter('.apos-modal')) {
       topModal.trigger('aposModalHide');
-      return false;
-    } else {
-      return true;
     }
   }
 
   function cancelModal() {
-    return options.beforeCancel(function(err) {
-      if (err) {
-        return;
-      }
-      return closeModal();
-    });
+    var topModal = apos.getTopModalOrBody();
+    if (topModal.filter('.apos-modal')) {
+      topModal.trigger('aposModalCancel');
+    }
   }
 
   if (!apos._modalInitialized) {
@@ -336,6 +420,7 @@ apos.modal = function(sel, options) {
   }
 
   var $el = $(sel);
+  var saving = false;
 
   if (!options) {
     options = {};
@@ -346,6 +431,15 @@ apos.modal = function(sel, options) {
     save: function(callback) {callback(null);},
     afterHide: function(callback) {callback(null);},
     beforeCancel: function(callback) {callback(null);}
+  });
+
+  $el.on('aposModalCancel', function() {
+    return options.beforeCancel(function(err) {
+      if (err) {
+        return;
+      }
+      return closeModal();
+    });
   });
 
   $el.on('aposModalHide', function() {
@@ -388,7 +482,15 @@ apos.modal = function(sel, options) {
   }
 
   function saveModal(next) {
+    if (saving) {
+      // Avoid race conditions
+      return;
+    }
+    saving = true;
+    $el.find('.apos-save,[data-save]').addClass('apos-busy');
     options.save(function(err) {
+      saving = false;
+      $el.find('.apos-save,[data-save]').removeClass('apos-busy');
       if(!err) {
         hideModal();
         if (next) {
@@ -426,7 +528,7 @@ apos.modal = function(sel, options) {
 
       // Anytime we load new markup for a modal, it's appropriate to
       // offer an opportunity for progressive enhancement of controls,
-      // for instance via lister
+      // for instance via selectize
       apos.emit('enhance', $el);
 
       // Black out the document or the top modal if there already is one.
@@ -462,14 +564,83 @@ apos.modal = function(sel, options) {
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
-      $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+      
+      // If we don't have a select element first - focus the first input
+      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize").length === 0) {
+        $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+      }
     });
   });
 
-
-
   return $el;
 };
+
+// This is the generic notification API
+apos.notification = function(content, options) {
+  var options = options || {};
+  if (options.dismiss === true) { options.dismiss = 10; }
+  var $notification = apos.fromTemplate($('[data-notification].apos-template'));
+  if (options.type) {
+    $notification.addClass('apos-notification--' + options.type);
+  }
+  if (options.dismiss) {
+   $notification.attr('data-notification-dismiss', options.dismiss);  }
+  $notification.find('[data-notification-content]').text(content);
+
+  // send it over to manager
+  apos.notificationManager($notification);
+}
+
+apos.notificationManager = function($n) {
+  var self = this;
+  $notificationContainer = $('[data-notification-container]');
+  // we're getting here because we have at least one notification coming up.
+  // make sure DOM is ready for it
+
+  self.ready = function() {
+    $notificationContainer.addClass('apos-notification-container--ready');
+    $notificationContainer.on('transitionend', function(e) {
+      if (e.target.className == "apos-notification-container apos-notification-container--ready") {
+        $notificationContainer.append('<br/>');
+        self.addNotification($n);
+      }
+    });
+  }
+
+  self.removeNotification = function($n) {
+    $n.removeClass('apos-notification--fired');
+    $n.on('transitionend', function() {
+      $n.remove();
+    });
+  }
+
+  self.addNotification = function($n) {
+    $notificationContainer.append($n);
+    $n.fadeIn();
+
+    setTimeout(function() {
+      $n.addClass('apos-notification--fired');
+      if ($n.attr('data-notification-dismiss')) {
+        setTimeout(function() {
+          self.removeNotification($n)
+        }, $n.attr('data-notification-dismiss') * 1000);
+      }
+    }, 100);
+
+    $n.on('click', '[data-notification-close]', function() {
+      self.removeNotification($n);
+    });
+  }
+
+
+
+  if ($notificationContainer.children().length === 0) {
+    self.ready();
+  } else {
+    self.addNotification($n);
+  }
+}
+
 
 // Clone the element matching the specified selector that
 // also has the apos-template class, remove the apos-template
@@ -480,7 +651,6 @@ apos.modal = function(sel, options) {
 // apos.modal, above. Returns a jquery object referring
 // to the modal dialog element. Note that this method always
 // returns *before* the init method is invoked.
-
 apos.modalFromTemplate = function(sel, options) {
 
   var $el = apos.fromTemplate(sel);
@@ -937,62 +1107,33 @@ apos.afterLogin = function() {
   }
 };
 
-apos.handlers = {};
-
-// Emit an Apostrophe event. All handlers that have been set
-// with apos.on for the same eventName will be invoked. Any additional
-// arguments are received by the handler functions as arguments.
-// Currently the 'enhance' event is used to do progressive enhancement
-// of material newly loaded into the DOM. TODO: merge this with
-// the 'aposReady' jquery DOM event which is currently triggered on
-// 'body'. We should think of all of it as progressive enhancement.
-// To get that right we'll have to make lister play nice with elements
-// that have already been enhanced once.
-
-apos.emit = function(eventName /* ,arg1, arg2, arg3... */) {
-  var handlers = apos.handlers[eventName];
-  if (!handlers) {
-    return;
-  }
-  var args = Array.prototype.slice.call(arguments, 1);
-  var i;
-  for (i = 0; (i < handlers.length); i++) {
-    handlers[i].apply(window, args);
-  }
-};
-
+// Status of the shift key. Automatically updated.
 apos.shiftActive = false;
-
-// Install an Apostrophe event handler. The handler will be called
-// when apos.emit is invoked with the same eventName. The handler
-// will receive any additional arguments passed to apos.emit.
-
-apos.on = function(eventName, fn) {
-  apos.handlers[eventName] = (apos.handlers[eventName] || []).concat([ fn ]);
-};
-
-// Remove an Apostrophe event handler. If fn is not supplied, all
-// handlers for the given eventName are removed.
-apos.off = function(eventName, fn) {
-  if (!fn) {
-    delete apos.handlers[eventName];
-    return;
-  }
-  apos.handlers[eventName] = _.filter(apos.handlers[eventName], function(_fn) {
-    return fn !== _fn;
-  });
-};
-
 
 // Progressive enhancement of select elements
 
 apos.on('enhance', function($el) {
-  $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
-    listClass: "apos-lister",
-    listClickCallback: function($select, $option) {
-      apos.emit('modalSelectClick', $select, $option);
-    }
+  // $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
+  //   listClass: "apos-lister",
+  //   listClickCallback: function($select, $option) {
+  //     apos.emit('modalSelectClick', $select, $option);
+  //   }
+  // });
+
+  // Selectize - Single Select
+  $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
+    create: false,
+    sortField: 'text',
+    // openOnFocus: false
   });
+
+  // Selectize - Multi Select
+  $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
+    maxItems: null,
+    delimiter: ', ',
+    // openOnFocus: false
+  });
+
 });
 
 // Everything in this DOMready block must be an event handler
@@ -1017,24 +1158,8 @@ $(function() {
     //$(this).parent().siblings().removeClass('open');
   });
 
-  // listen for shift keydown
-  // this sets up power-user features
-  // var aposShiftActive = false;
-  $(window).keydown(function(e) {
-    if (e.keyCode === 16) {
-      apos.shiftActive = true;
-    }
-  });
-
-  $(window).keyup(function(e) {
-    if (e.keyCode === 16) {
-      apos.shiftActive = false;
-    }
-  });
-
-
   // power-user modal login
-  $(window).keydown(function(e) {
+  $('body').on('keydown', function(e) {
     if (apos.shiftActive === true && e.keyCode === 27) {
       if (apos.data.user) {
         apos.modalFromTemplate($('.apos-modal-logout'), { naturalSubmit: true });
@@ -1042,9 +1167,7 @@ $(function() {
         apos.modalFromTemplate($('.apos-modal-login'), { naturalSubmit: true });
       }
     }
-  });
-
-
+  })
 
   $('body').on('click', '.apos-preview-toggle', function(event){
     $('.apos-preview-toggle').toggleClass('previewing');
@@ -1128,4 +1251,59 @@ $(function() {
       }
     }
   }, 200);
+});
+
+apos.enableShift = function() {
+  $body = $('body');
+  $body.keydown(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = true;
+      apos.emit('shiftDown', e);
+    }
+  });
+
+  $body.keyup(function(e) {
+    if (e.keyCode === 16) {
+      apos.shiftActive = false;
+      apos.emit('shiftUp', e);
+    }
+  });
+};
+
+apos.prefixAjax = function(prefix) {
+  // If Apostrophe has a global URL prefix, patch
+  // jQuery's AJAX capabilities to prepend that prefix
+  // to any non-absolute URL
+
+  if (prefix) {
+    $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+      if (options.url) {
+        if (!options.url.match(/^[a-zA-Z]+:/))
+        {
+          options.url = prefix + options.url;
+        }
+      }
+      return;
+    });
+  }
+};
+
+// Redirect correctly to the given location on the
+// Apostrophe site, even if the prefix option is in use
+// (you should provide a non-prefixed path)
+
+apos.redirect = function(slug) {
+  var href = apos.data.prefix + slug;
+  if (href === window.location.href) {
+    window.location.reload();
+  } else {
+    window.location.href = href;
+  }
+};
+
+$(function() {
+  // Do these late so that other code has a chance to override
+  apos.afterYield(function() {
+    apos.enableShift();
+  });
 });

@@ -273,22 +273,43 @@
 
       self.set = function(data) {
         self.clear();
-
         if (data && data[0]) {
           if (typeof(data[0]) !== 'object') {
             // A simple array of values, let the source provide labels
-            return invokeSourceThen(data, appendValues);
+            return invokeSourceThen(data, function(sourceData) {
+              appendValues(sourceData);
+              afterSet();
+            });
           } else if (data[0].label) {
             // An array of objects that already have labels, we're done
-            return appendValues(data);
+            appendValues(data);
+            afterSet();
+            return;
           } else {
             // An array of objects that do not already have labels,
             // ask the source for label/value objects and then merge
             // those with our data
             return invokeSourceThen($.map(data, function(datum) { return datum.value; }), function(sourceData) {
-              return appendValues(mergeData(sourceData));
+              appendValues(mergeData(sourceData));
+              afterSet();
+              return;
             });
           }
+        } else {
+          afterSet();
+        }
+
+        function afterSet() {
+          // This is a cross-browser-safe way to make
+          // sure we never trigger the event before
+          // returning from the "set" command or the
+          // initialization of the control
+          setTimeout(function() {
+            if (options.afterSet) {
+              options.afterSet();
+            }
+            $el.trigger('afterSet');
+          }, 0);
         }
 
         function invokeSourceThen(values, callback) {

@@ -18,6 +18,7 @@
     var skipAndLimit = options.skipAndLimit;
     // Consulted only if skipAndLimit is true, otherwise we just send a page parameter
     var perPage = options.perPage || 20;
+    var resetTimeout = null;
     if (now) {
       if (options.page === undefined) {
         // loadPage will increment this and load page one immediately
@@ -51,10 +52,22 @@
     }, 100);
 
     $el.on('aposScrollReset', function(e, data) {
-      if (data) {
-        criteria = data;
+      function resetWhenAvailable() {
+        if (loading) {
+          if (resetTimeout) {
+            clearTimeout(resetTimeout);
+          }
+          resetTimeout = setTimeout(resetWhenAvailable, 500);
+          return;
+        }
+
+        resetTimeout = null;
+        if (data) {
+          criteria = data;
+        }
+        reset();
       }
-      reset();
+      resetWhenAvailable();
     });
 
     $el.on('aposScrollEnded', function(e) {
@@ -67,18 +80,24 @@
       clearInterval(interval);
     });
 
-    function reset() {
+    function afterPageOne() {
       if (!options.reset) {
         $el.html('');
       } else {
         options.reset();
       }
+    }
+
+    function reset() {
       page = 0;
       atEnd = false;
       loadPage();
     }
 
     function loadPage() {
+      if (loading) {
+        return setTimeout(loadPage,500);
+      }
       start();
       page++;
       // Copy the criteria and add the page
@@ -96,6 +115,9 @@
         data: query,
         dataType: options.dataType || 'html',
         success: function(data) {
+          if (page === 1) {
+            afterPageOne();
+          }
           (options.success || function(data) {
             var $items = $.parseHTML(data);
             $el.append($items);
@@ -105,6 +127,9 @@
           $el.trigger('aposScrollLoaded');
         },
         error: function() {
+          if (page === 1) {
+            afterPageOne();
+          }
           $el.data('loading', false);
           loading = false;
         },

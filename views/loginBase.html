@@ -23,7 +23,7 @@
   <div class="apos-login">
     <h4>{% block subHeading %}{{ __('LOGIN') }}{% endblock %}</h4>
     {% block form %}
-      <form action="{% block action %}/login{% endblock %}" method="post">
+      <form action="{% block action %}{{ aposPrefix }}/login{% endblock %}" method="post">
         <div class="login-inputs">
           {% if message %}<div class="warning">{{ message }}</div>{% endif %}
           {% block fields %}
@@ -42,7 +42,7 @@
           {% block forgot %}
             {% if resetAvailable %}
             <br />
-              <a class="login-reset" href="/apos-people/reset-request">{{ __('Reset My Password') }}</a>
+              <a class="login-reset" href="{{ aposPrefix }}/apos-people/reset-request">{{ __('Reset My Password') }}</a>
             {% endif %}
           {% endblock %}
         </div>

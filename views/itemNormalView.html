@@ -2,19 +2,19 @@
 
 {%- if options.widget -%}
 
-  {% if options.widgetClass %}
-    {% set widgetClass = options.widgetClass %}
-  {% endif %}
-  {% if item.orientation %}
-    {% set orientation = aposFind(options.userOptions.orientation.choices, 'name', item.orientation).css %}
-  {% endif %}
+  {%- if options.widgetClass -%}
+    {%- set widgetClass = options.widgetClass -%}
+  {%- endif -%}
+  {%- if item.orientation -%}
+    {%- set orientation = aposFind(options.userOptions.orientation.choices, 'name', item.orientation).css -%}
+  {%- endif -%}
 
-  <div class="apos-item apos-widget apos-{{ itemType.css }} {% if item.size %}apos-{{ item.size }}{% endif %} {% if item.position %}apos-{{ item.position }}{% endif %} {% if empty %}apos-empty{% endif %} {% if widgetClass%} apos-{{widgetClass}}{% endif %} {% if orientation %} {{ orientation }} {% endif %}"
-    data="{{ aposMerge(options, attributes) | jsonAttribute }}"
+  <div class="apos-item apos-widget apos-{{ itemType.css }} {% if item.size -%}apos-{{ item.size }}{%- endif %} {% if item.position %}apos-{{ item.position }}{%- endif %} {% if empty -%} apos-empty{%- endif %} {% if widgetClass -%} apos-{{widgetClass}}{%- endif %} {% if orientation -%} {{ orientation }} {%- endif -%}"
+    data='{{ aposMerge(options, attributes) | jsonAttribute({ single: true }) }}'
     data-id="{{ item.id }}"
     data-type="{{ item.type }}"
-    {% if item.position %}data-position="{{ item.position }}"{% endif %}
-    {% if item.size %}data-size="{{ item.size }}"{% endif %}
+    {% if item.position -%}data-position="{{ item.position }}"{%- endif %}
+    {% if item.size -%}data-size="{{ item.size }}"{%- endif -%}
   >
 {%- elif item.type == 'richText'  -%}
   {# This outer wrapper must exist for rich text too, to contain buttons #}
@@ -25,13 +25,13 @@
 {# If this item type has a wrapper element output that element, with an optional #}
 {# CSS class as well. Helps implement widgets like pullquote and code sample #}
 {%- if itemType.wrapper -%}
-  <{{ itemType.wrapper }}{%- if itemType.wrapperClass %} class="{{ itemType.wrapperClass }}" {% endif -%}>
+  <{{ itemType.wrapper }}{%- if itemType.wrapperClass %} class="{{ itemType.wrapperClass }}" {%- endif -%}>
 {%- endif -%}
 
-{% if item.type == 'richText'  %}
+{%- if item.type == 'richText' -%}
 {# This is the div that actually becomes contenteditable. Cannot contain anything but rich text #}
 <div class="apos-rich-text" data-rich-text>
-{% endif %}
+{%- endif -%}
 
 {# If this item type has plaintext content, output that content, escaped for HTML #}
 {%- if itemType.plaintext -%}
@@ -50,16 +50,16 @@
   {{ itemType.renderWidget({ item: item, options: options }) }}
 {%- endif -%}
 
-{% if item.type == 'richText'  %}
+{%- if item.type == 'richText'  -%}
 </div>
-{% endif %}
+{%- endif -%}
 
 {# If this item type has a wrapper close the wrapper #}
 {%- if itemType.wrapper -%}
   </{{itemType.wrapper }}>
 {%- endif -%}
 
-{% if options.widget or ( item.type == 'richText' ) %}
+{%- if options.widget or ( item.type == 'richText' ) -%}
   </div>
-{% endif %}
+{%- endif -%}
 {# Widgets and rich texts both are wrapped in divs #}

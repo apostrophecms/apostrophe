@@ -1,28 +1,36 @@
-{%- extends "baseWidgetEditor.html" -%}
+{% extends "baseWidgetEditor.html" %}
 
-{%- block modalClass -%}
-  {{super()}} apos-video-editor apos-ui-modal-no-sidebar
-{%- endblock -%}
+{% block modalClass %}
+  {{super()}} apos-embed-editor apos-ui-modal-no-sidebar
+{% endblock %}
 
-{%- block modalLabel  -%}
-  {{ __('Edit Video') }}
-{%- endblock -%}
+{% block modalLabel  %}
+  {{ __('Edit Embedded Item') }}
+{% endblock %}
 
-{%- block modalInstructions -%}
-  <p>{{ __('Paste a video link.') }}</p>
-{%- endblock -%}
+{% block modalInstructions %}
+  <p>{{ __('Paste a link to the item you wish to embed. NOTE: some sites may not preview properly, or may require you to refresh the page after you save your work. You may not be able to preview something that is already on the current page. These are limitations of the services being embedded.') }}</p>
+{% endblock %}
 
-{%- block formEnd -%}
-  {%- block previewButton -%}
+{% block formEnd %}
+  {% block previewButton %}
     <input data-preview="data-preview" type="submit" value="Preview" class="apos-preview-button"/>
-    {%- include "progress.html" -%}
-  {%- endblock -%}
+    {% include "progress.html" %}
+  {% endblock %}
+    <div class="iframe">
+      <fieldset><label>Always Use Iframe</label><input data-always-iframe type="checkbox" /></fieldset>
+      {# This div is used to toggle visibility #}
+      <div data-iframe-options>
+        <fieldset><label>Iframe Height (Pixels)</label><input data-iframe-height type="text" /></fieldset>
+      </div>
+    </div>
+  </div>
   <div class="apos-widget-preview-container apos-requires-preview">
     {# We decided to move float preview into the main area editor so #}
     {# this preview is just for things whose appearance is not obvious #}
     {# or which require custom settings be tweaked (example: RSS feed) #}
   </div>
-  {# Video chooser #}
+  {# Embed chooser #}
 
   <div class="apos-media-chooser apos-chooser-drag-peer" data-chooser>
     {# I float right #}
@@ -30,7 +38,7 @@
     {# I float left #}
     <a href="#" data-previous class="apos-previous apos-chooser-pager"></a>
     {# I sting like a bee #}
-    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Video Library') }}:</h5>
+    <h5 class="apos-media-chooser-title">{{ __('Recently Added In Embed Library') }}:</h5>
 
     {# UX note: you can pretty up the search submit button but please don't remove it #}
     {# entirely as some users will not press enter. -Tom #}
@@ -54,4 +62,4 @@
     </ul>
 
   </div>
-{%- endblock -%}
+{% endblock %}
