@@ -777,10 +777,17 @@ function AposSlideshowWidgetEditor(options)
     // Some derivatives of slideshows use these, some don't. These are
     // not editable fields, they are immutable facts about the file
     $item.find('[data-extension]').text(item.extension);
-    $item.find('[data-name]').text(item.name);
+
+    /**
+     * There is an assumption here that this form will never contain a formBoolean
+     *
+     */
+    $item.find('[data-name]:not(.apos-fieldset-select )').text(item.name);
 
     $item.find('[data-hyperlink]').val(item.hyperlink);
     $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
+    $item.findByName('newWindow').val(item.hyperlinkTarget ? '1' : '0' );
+
     if (extraFields || typeof(extraFields) === 'object') {
       $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit><i class="icon-cog"></i></a>');
     }
@@ -848,6 +855,7 @@ function AposSlideshowWidgetEditor(options)
       self.data.extras[info._id] = {
         hyperlink: $item.find('[data-hyperlink]').val(),
         hyperlinkTitle: $item.find('[data-hyperlink-title]').val(),
+        hyperlinkTarget: $item.findByName('newWindow').val() === '1',
         crop: info.crop
       };
       // Make sure it's all also visible in ._items
