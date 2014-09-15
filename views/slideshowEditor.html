@@ -57,9 +57,9 @@ Or, drag the existing images shown beneath the dashed area. <br />') }}
               <input data-hyperlink-title class="apos-slideshow-editor-link-title" type="text" />
             </fieldset>
             {{ formBoolean('newWindow','New Window') }}
-          {% endblock %}
-          {% block otherExtraFields %}
-          {% endblock %}
+          {%- endblock -%}
+          {%- block otherExtraFields -%}
+          {%- endblock -%}
           <a href="#" data-extra-fields-save class="apos-control apos-button">{{ __('Save Changes') }}</a>
         </div>
       </li>
