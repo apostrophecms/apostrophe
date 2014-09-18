@@ -948,12 +948,25 @@ apos.eventName = function() {
   return apos.camelName(args.join('-'));
 };
 
-// Do something after control returns to the browser (after you return from
-// whatever event handler you're in). In old browsers the setTimeout(fn, 0)
-// technique is used. In the latest browsers setImmediate is used, because
-// it's faster (although it has a confusing name)
+// Do something after control returns to the browser (after
+// you return from whatever event handler you're in). In old
+// browsers the setTimeout(fn, 0) technique is used. In the
+// latest browsers setImmediate is used, because it's
+// faster (although it has a confusing name).
+//
+// May also be called with two arguments, `after` and `fn`.
+// If `after` is false, fn is called immediately. Otherwise
+// fn is called later as described above.
 
 apos.afterYield = function(fn) {
+  var after = true;
+  if (arguments.length === 2) {
+    fn = arguments[1];
+    after = arguments[0];
+  }
+  if (!after) {
+    return fn();
+  }
   if (window.setImmediate) {
     return window.setImmediate(fn);
   } else {
