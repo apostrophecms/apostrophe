@@ -263,8 +263,6 @@
 			multipliers.push(fields[i].direction === 'desc' ? -1 : 1);
 		}
 
-		console.log("fields");
-		console.log(fields);
 		// build function
 		fields_count = fields.length;
 		if (!fields_count) {
@@ -356,9 +354,6 @@
 		search  = this.prepareSearch(query, options);
 		options = search.options;
 		query   = search.query;
-
-		console.log("self.items");
-		console.log(self.items);
 
 		// generate result scoring function
 		fn_score = options.score || self.getScoreFunction(search);
@@ -2012,7 +2007,6 @@
 					}
 				}
 			}
-			//console.log(result);
 	
 			return result;
 		},
