@@ -1107,28 +1107,57 @@ apos.afterLogin = function() {
 // Status of the shift key. Automatically updated.
 apos.shiftActive = false;
 
-// Progressive enhancement of select elements
+// Extend selectize to initiate select options on startup.
+// This will allow us to show fields from the default value
+$.extend(Selectize.prototype, {
+    superSetup: Selectize.prototype.setup,
+    setup: function() {
+        this.superSetup();
+        this.refreshOptions(false);
+    }
+});
 
 apos.on('enhance', function($el) {
-  // $el.find('select[data-lister]:not(.apos-template select[data-lister])').lister({
-  //   listClass: "apos-lister",
-  //   listClickCallback: function($select, $option) {
-  //     apos.emit('modalSelectClick', $select, $option);
-  //   }
-  // });
 
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
     sortField: 'text',
-    // openOnFocus: false
+    dataAttr: 'data-extra',
+    searchField: ['label', 'value'],
+    valueField: 'value',
+    labelField: 'label',
+
+    // We need to render custom templates to include our data-extra fields.
+    //
+    // If you need to include extra fields on a select option
+    // format a JSON string in 'data-extra' like this:
+    //
+    // <option data-extra='{ "myField": "thing" }' > Label </option>
+    //
+    // -matt
+    render: {
+      item: function(data) {
+        var attrs = ' data-value="'+data.value+'"';
+        for (key in _.omit(data, ['value', 'label', '$order'])) {
+          attrs = attrs + ' data-' + key + '="' + data[key] + '"';
+        }
+        return '<div data-selected ' + attrs + ' class="item">' + data.label + '</div>';
+      },
+      option: function(data) {
+        var attrs = 'data-value="'+data.value+'"';
+        for (key in _.omit(data, ['value', 'label', '$order'])) {
+          attrs = attrs + ' data-' + key + '="' + data[key] + '"';
+        }
+        return '<div data-selectable ' + attrs + ' class="option">' + data.label + '</div>';
+      }
+    }
   });
 
   // Selectize - Multi Select
   $el.find('select[data-selectize][select="multiple"]:not(.apos-template select[data-selectize])').selectize({
     maxItems: null,
     delimiter: ', ',
-    // openOnFocus: false
   });
 
 });
