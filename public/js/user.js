@@ -1,5 +1,5 @@
 /* global XRegExp, rangy, $, _ */
-/* global alert, prompt, AposMediaLibrary, AposTagEditor */
+/* global alert, prompt, AposMediaLibrary, AposTagEditor, aposPages */
 
 if (!window.apos) {
   window.apos = {};
@@ -356,6 +356,12 @@ apos.enableSingletons = function() {
     editor.init();
     return false;
   });
+  $('body').on('click', '[data-page-versions]', function() {
+    var slug = $(this).attr('data-page-versions');
+    aposPages.browseVersions({ slug: slug });
+    return false;
+  });
+
 };
 
 apos.enableAreas = function() {
