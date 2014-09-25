@@ -18,7 +18,7 @@ function find(a, b) {
 var req = {};
 var res = {};
 
-describe('apostrophe', function() {
+fescribe('apostrophe', function() {
   describe('initialize resources', function() {
     it('initialize mongodb', function(done) {
       mongo.connect('mongodb://127.0.0.1:27017/apostest', function(err, _db) {
@@ -539,61 +539,6 @@ describe('apostrophe', function() {
         done();
       });
     });
-    it('beat the daylights out of the parallelized forEachDocumentInCollection',
-      function(done) {
-        this.timeout(7000);
-        var data = [];
-        var seen = {};
-        var i;
-        var errors = 0;
-        var maxI = 0;
-        for (i = 0; (i < 1000); i++) {
-          data[i] = { _id: i };
-        }
-        function Cursor() {
-          var self = this;
-          self.i = 0;
-          self.nextObjectActive = false;
-          self.nextObject = function(callback) {
-            if (self.nextObjectActive) {
-              throw 'nextObject called concurrently!';
-            }
-            self.nextObjectActive = true;
-            if (self.i >= data.length) {
-              return setImmediate(function() {
-                self.nextObjectActive = false;
-                return callback(null);
-              });
-            }
-            var result = data[self.i++];
-            // var err;
-            // if ((i > (data.length / 2)) && (Math.random() < 0.01)) {
-            //   err = 'error';
-            //   errors++;
-            // }
-            return setTimeout(function() {
-              self.nextObjectActive = false;
-              return callback(err, result);
-            }, Math.random() * 5);
-          };
-        }
-        var collection = {
-          find: function(criteria, callback) {
-            return callback(null, new Cursor());
-          }
-        };
-        return apos.forEachDocumentInCollection(collection, {}, 16, function(page, callback) {
-          assert(page);
-          assert(!seen[page._id]);
-          seen[page._id] = true;
-          return callback(null);
-        }, function(err) {
-          assert(!err);
-          assert(_.keys(seen).length === data.length);
-          return done();
-        });
-      }
-    );
   });
 });
 

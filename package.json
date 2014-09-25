@@ -33,7 +33,8 @@
     "underscore.string": "~2.3.1",
     "validator": "~0.4.19",
     "wordwrap": "0.0.2",
-    "xregexp": "2.0.0"
+    "xregexp": "2.0.0",
+    "broadband": "0.1.0"
   },
   "devDependencies": {},
   "scripts": {
