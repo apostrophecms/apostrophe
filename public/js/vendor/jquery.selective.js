@@ -19,6 +19,9 @@
     var extras = options.extras;
     var addKeyCodes = options.addKeyCodes || 13;
     var preventDuplicates = options.preventDuplicates;
+
+    var incompleteValidation;
+
     if (!$.isArray(addKeyCodes)) {
       addKeyCodes = [ addKeyCodes ];
     }
@@ -130,6 +133,7 @@
               }
               filtered.push(datum);
             });
+
             // "Why don't you just assign to ui.content?" jquery.ui.autocomplete
             // is holding a reference to the original array. If I assign to ui.content
             // I'm not changing that original array and jquery.ui.autocomplete ignores me.
@@ -138,6 +142,14 @@
               content.push(datum);
             });
           }
+
+          // In case self.get is called with 'incomplete'
+          if (!options.add) {
+            incompleteValidation = $.map(ui.content, function(datum) {
+              return datum.value.toString();
+            });
+          }
+
         },
         focus: function(event, ui) {
           self.$autocomplete.val(ui.item.label);
@@ -404,8 +416,17 @@
         if (valuesOnly && options && options.incomplete) {
           var val = $.trim(self.$autocomplete.val());
           if (val.length) {
-            if ((!preventDuplicates) || ($.inArray(val, result) === -1)) {
-              result.push(val);
+            var testVal = val.toLowerCase();
+            var testResult = $.map(result, function(r) {
+              return r.toLowerCase();
+            });
+            var testIncompleteValidation = $.map(incompleteValidation || [], function(r) {
+              return r.toLowerCase();
+            });
+            if ((!preventDuplicates) || ($.inArray(testVal, testResult) === -1)) {
+              if (options.add || ($.inArray(testVal, testIncompleteValidation) !== -1)) {
+                result.push(val);
+              }
             }
           }
         }
