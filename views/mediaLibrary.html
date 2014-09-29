@@ -160,6 +160,7 @@
               {{ showField('credit', 'Credit') }}
               {{ showField('description', 'Description') }}
               {{ showField('owner', 'Uploaded By') }}
+              {{ showField('private', 'Private') }}
               {{ showField('group', 'Media Type') }}
               {{ showField('extension', 'Media Format') }}
               {{ showField('createdAt', 'Date Added') }}
@@ -201,6 +202,7 @@
           {{ formText('title', 'Title') }}
           {{ formTags('tags', 'Tags') }}
           {{ formText('credit', 'Credit') }}
+          {{ formBoolean('private', 'Private') }}
           {{ formTextarea('description', 'Description') }}
           <a href="#" data-cancel-item class="apos-control apos-button apos-cancel-item">{{ __('Cancel') }}</a>
           <a href="#" data-save-item class="apos-control apos-button apos-save-changes">{{ __('Save Changes') }}</a>
