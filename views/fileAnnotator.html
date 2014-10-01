@@ -32,6 +32,8 @@
         <div class="apos-annotator-column">
           {{ formText('credit', 'Credit') }}
           {{ formTags('tags', 'Tags') }}
+          {{ formBoolean('private', 'Private') }}
+          <p>{{ __('A "private" file can only be added to a page by you, or by an admin. This does <strong>not</strong> prevent the public from seeing the file once it is on a page.') }}</p>
         </div>
       </div>
     </div>
