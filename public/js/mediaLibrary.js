@@ -118,7 +118,10 @@ function AposMediaLibrary(options) {
   };
 
   self.enableUploads = function() {
-    var $uploader = self.$el.find('[data-uploader]');
+    // Must specifically find the upload button for the
+    // index pane, not the edit pane, or drag and drop fires
+    // twice. -Tom
+    var $uploader = self.$index.find('[data-uploader]');
     $uploader.fileupload({
       dataType: 'json',
       dropZone: self.$el.find('.apos-index-pane'),
