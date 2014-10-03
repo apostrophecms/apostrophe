@@ -118,7 +118,10 @@ function AposMediaLibrary(options) {
   };
 
   self.enableUploads = function() {
-    var $uploader = self.$el.find('[data-uploader]');
+    // Must specifically find the upload button for the
+    // index pane, not the edit pane, or drag and drop fires
+    // twice. -Tom
+    var $uploader = self.$index.find('[data-uploader]');
     $uploader.fileupload({
       dataType: 'json',
       dropZone: self.$el.find('.apos-index-pane'),
@@ -253,7 +256,7 @@ function AposMediaLibrary(options) {
   };
 
   self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'createdAt', 'credit', 'extension', 'downloadOriginal', 'owner' ];
-  self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'credit', 'extension' ];
+  self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'extension' ];
   // self.listShow = [ 'title', 'name', 'group', 'type'];
 
   self.simpleEditable = [ 'title', 'credit', 'description' ];
@@ -280,6 +283,7 @@ function AposMediaLibrary(options) {
         self.$normal.find('[data-name="' + field + '"]').html("&mdash;");
       }
     });
+    self.$normal.find('[data-name="private"]').html(item.private ? 'Yes' : 'No');
     // This isn't worth introducing a dependency on momentjs
     var date = item.createdAt.replace(/T.*$/, '');
     self.$normal.find('[data-name="createdAt"]').text(date);
@@ -326,6 +330,7 @@ function AposMediaLibrary(options) {
     _.each(self.simpleEditable, function(field) {
       self.$edit.findByName(field).val(item[field]);
     });
+    self.$edit.findByName('private').val(item.private ? '1' : '0');
 
     var url = options.replaceFileUrl || '/apos/replace-file';
     url += '?id=' + item._id;
@@ -380,6 +385,7 @@ function AposMediaLibrary(options) {
     self.$normal.hide();
     self.$show.append(self.$edit);
     self.moveToScrollTop(self.$edit);
+    apos.emit('enhance', self.$edit);
   };
 
   self.saveItem = function(callback) {
@@ -388,6 +394,7 @@ function AposMediaLibrary(options) {
       _id: item._id,
       title: self.$edit.findByName('title').val(),
       credit: self.$edit.findByName('credit').val(),
+      private: self.$edit.findByName('private').val(),
       description: self.$edit.findByName('description').val(),
       tags: self.$edit.find('[data-name="tags"]').selective('get', { incomplete: true })
     } ], function(items) {

@@ -34,6 +34,7 @@ function AposAnnotator(options) {
     $item.findByName('title').val(item.title || '');
     $item.findByName('description').val(item.description || '');
     $item.findByName('credit').val(item.credit || '');
+    $item.findByName('private').val(item.credit || '0');
     apos.enableTags($item.find('[data-name="tags"]'), item.tags || []);
     self.$el.find('[data-items]').append($item);
     try {
@@ -91,7 +92,8 @@ function AposAnnotator(options) {
       title: $item.findByName('title').val(),
       description: $item.findByName('description').val(),
       tags: $item.find('[data-name="tags"]').selective('get', { incomplete: true }),
-      credit: $item.findByName('credit').val()
+      credit: $item.findByName('credit').val(),
+      private: $item.findByName('private').val()
     };
 
     var required = apos.data.files.required || [];

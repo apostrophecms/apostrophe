@@ -2,6 +2,8 @@
 
 var assert = require('assert');
 var mongo = require('mongodb');
+var _ = require('lodash');
+var async = require('async');
 var apos = require('../lib/apostrophe.js')();
 var db;
 
@@ -16,7 +18,7 @@ function find(a, b) {
 var req = {};
 var res = {};
 
-describe('apostrophe', function() {
+fescribe('apostrophe', function() {
   describe('initialize resources', function() {
     it('initialize mongodb', function(done) {
       mongo.connect('mongodb://127.0.0.1:27017/apostest', function(err, _db) {
