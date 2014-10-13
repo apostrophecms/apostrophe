@@ -118,7 +118,10 @@ function AposMediaLibrary(options) {
   };
 
   self.enableUploads = function() {
-    var $uploader = self.$el.find('[data-uploader]');
+    // Must specifically find the upload button for the
+    // index pane, not the edit pane, or drag and drop fires
+    // twice. -Tom
+    var $uploader = self.$index.find('[data-uploader]');
     $uploader.fileupload({
       dataType: 'json',
       dropZone: self.$el.find('.apos-index-pane'),
@@ -201,6 +204,7 @@ function AposMediaLibrary(options) {
       // get the element
       var $tag = self.$el.findByName('tag')[0];
       var tag = $tag.selectize.getValue();
+      console.log($tag);
 
       // reset selectize
       $tag.selectize.clear();
@@ -211,10 +215,10 @@ function AposMediaLibrary(options) {
           var tags = [];
 
           // all tags option
-          tags.push({ value: '', text: 'All Tags'});
+          tags.push({ value: '', text: 'All Tags', label: 'All Tags'});
 
           _.each(results.tags, function(tag) {
-            tags.push({ value: tag, text: tag });
+            tags.push({ value: tag, text: tag, label:tag });
           });
 
           self.haveTags = true;
@@ -528,5 +532,3 @@ function AposMediaLibrary(options) {
     return callback(null);
   };
 }
-
-
