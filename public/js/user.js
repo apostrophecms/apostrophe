@@ -336,6 +336,7 @@ apos.enableSingletons = function() {
             function(markup) {
               $singleton.find('.apos-content').html(markup);
               apos.enablePlayers($singleton);
+              apos.emit('edited', $singleton);
               callback(null);
             },
             function() {
