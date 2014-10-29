@@ -16,9 +16,9 @@
 
 {%- macro formTags(name, label, options) -%}
   {%- if options.inline -%}
-    <div class="apos-inline-tags" data-name="{{ name }}">
+    <div class="apos-inline-tags" data-name="{{ name }}" data-selective>
   {%- else -%}
-    <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
+    <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}" data-selective>
       <label>{{ __(label) | e }}</label>
   {%- endif -%}
     <div class="apos-inline-input">
@@ -169,9 +169,9 @@
   {%- set _options = aposMerge(options, moreOptions) -%}
 
   {%- if _options.inline -%}
-    <div class="apos-inline-selective" data-name="{{ name }}">
+    <div class="apos-inline-selective" data-selective data-name="{{ name }}">
   {%- else -%}
-    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-lister apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-lister apos-fieldset-{{ name | css }}"  data-name="{{ name }}" data-selective>
     <div class="apos-select-wrapper apos-inline-input">
     <label>{{ label | e }}</label>
   {%- endif -%}
@@ -207,6 +207,9 @@
                 {%- elif (extra.type == 'select') -%}
                   <label>{{ __(extra.label) | e }}</label>
                   {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+                {%- elif (extra.type == 'tags') -%}
+                  <label>{{ __(extra.label) | e }}</label>
+                  {{ formTags(extra.name, label, { inline: true }) }}
                 {%- else -%}
                   {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
                   {{ aposLog(extra) }}

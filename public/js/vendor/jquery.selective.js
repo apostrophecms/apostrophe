@@ -1,8 +1,7 @@
-
 // selective: a jQuery plugin that makes it easy to set or get the
 // current value of a group of selective buttons.
 //
-// Copyright 2013 P'unk Avenue LLC
+// Copyright 2013, 2014 P'unk Avenue LLC
 //
 // Please see:
 //
@@ -10,7 +9,10 @@
 //
 // For complete documentation.
 
-(function( $ ){
+/* jshint browser:true */
+/* global jQuery */
+
+(function($) {
   $.fn.selective = function(options) {
     var $el = this;
     var strikethrough = options.strikethrough || options.propagate;
@@ -75,14 +77,14 @@
 
       self.$el = $el;
       self.baseName = $el.attr('name') || 'jquerySelective';
-      self.$list = $el.find('[data-list]');
-      self.$autocomplete = $el.find('[data-autocomplete]');
+      self.$list = findSafe('[data-list]');
+      self.$autocomplete = findSafe('[data-autocomplete]');
       // Careful, when reconfiguring an existing element this won't be
       // available in the DOM anymore but we already have it
       if (!self.$itemTemplate) {
-        self.$itemTemplate = $el.find('[data-item]');
+        self.$itemTemplate = findSafe('[data-item]');
       }
-      self.$limitIndicator = $el.find('[data-limit-indicator]');
+      self.$limitIndicator = findSafe('[data-limit-indicator]');
 
       self.$itemTemplate.remove();
       if (options.add) {
@@ -97,7 +99,7 @@
           }
           return true;
         });
-        self.$el.find('[data-add]').click(function() {
+        findSafe('[data-add]').click(function() {
           self.$el.trigger('add');
           return false;
         });
@@ -169,7 +171,7 @@
       self.$list.on('click.selective', '[data-remove]', function() {
         var $item = $(this).closest('[data-item]');
         if (strikethrough) {
-          var $label = $item.find('[data-label]');
+          var $label = findSafe($item, '[data-label]');
           if ($item.data('removed')) {
             // Un-remove it
             $label.css('textDecoration', 'none');
@@ -189,18 +191,17 @@
       });
 
       self.populate = function() {
-        self.$list.find('[data-item]').remove();
+        findSafe(self.$list, '[data-item]').remove();
 
         self.set(options.data);
       };
 
       self.add = function(item) {
-        var i;
         var duplicate = false;
         if (preventDuplicates) {
           // Use find and each to avoid problems with values that
           // contain quotes
-          self.$list.find('[data-item]').each(function() {
+          findSafe(self.$list, '[data-item]').each(function() {
             var $item = $(this);
             if ($item.attr('data-value') === item.value) {
               duplicate = true;
@@ -216,11 +217,11 @@
         $item.attr('data-value', item.value);
         // So that the label can be made available to the `get` method easily
         $item.attr('data-label', item.label);
-        $item.find('[data-label]').text(item.label);
+        findSafe($item, '[data-label]').text(item.label);
         // If extras are present, fix name attributes so radio
         // button groups on separate rows don't conflict. Stash the
         // original name in data-name so we can still find things that way
-        $item.find('[data-extras]').each(function() {
+        findSafe($item, '[data-extras]').each(function() {
           var $this = $(this);
           var originalName = $this.attr('name');
           var name = uniqueName(itemId, originalName);
@@ -229,7 +230,7 @@
         });
         // Also repopulate "extras" if the data is provided
         $.each(item, function(property, value) {
-          var $elements = $item.find('[data-extras][data-name="' + property + '"]');
+          var $elements = findSafe($item, '[data-extras][data-name="' + property + '"]');
           // More than one with the same name = radio buttons.
           // If the jquery-radio plugin is available, use it to
           // correctly select the right radio button
@@ -248,23 +249,26 @@
 
         // Select the first radio button in a group if none is chosen
         var radioSeen = {};
-        $item.find('input[type="radio"]').each(function() {
+        findSafe($item, 'input[type="radio"]').each(function() {
           var $this = $(this);
           var name = $this.attr('data-name');
           if (radioSeen[name]) {
             return;
           }
           radioSeen[name] = true;
-          var $group = $item.find('[data-name="' + name + '"]');
+          var $group = findSafe($item, '[data-name="' + name + '"]');
           if ($group.radio() === undefined) {
             $group.radio($group.eq(0).attr('value'));
           }
         });
+
+        // Allows custom relationship field types
+        self.$el.trigger('afterAddItem', [ item, $item ]);
         self.$list.append($item);
       };
 
       self.clear = function() {
-        self.$list.find('[data-item]').remove();
+        findSafe(self.$list, '[data-item]').remove();
         self.checkLimit();
       };
 
@@ -374,7 +378,7 @@
           valuesOnly = false;
         }
         var result = [];
-        $.each(self.$list.find('[data-item]'), function(i, item) {
+        $.each(findSafe(self.$list, '[data-item]'), function(i, item) {
           var $item = $(item);
           if (valuesOnly) {
             result.push($item.attr('data-value'));
@@ -388,17 +392,17 @@
               datum.removed = $item.data('removed') ? 1 : 0;
             }
             if (propagate) {
-              datum.propagate = $item.find('[data-propagate]:checked').length ? 1 : 0;
+              datum.propagate = findSafe($item, '[data-propagate]:checked').length ? 1 : 0;
             }
             if (extras) {
-              $item.find('[data-extras]').each(function() {
+              findSafe($item, '[data-extras]').each(function() {
                 var $this = $(this);
                 var result;
                 var seenRadio = {};
                 var name = $this.attr('data-name');
                 if ($this.is('input[type="radio"]') && $.fn.radio) {
                   if (!seenRadio[name]) {
-                    var $radioButtons = $item.find('[data-name="' + name + '"]');
+                    var $radioButtons = findSafe($item, '[data-name="' + name + '"]');
                     result = $radioButtons.radio();
                     seenRadio[name] = true;
                   }
@@ -410,6 +414,8 @@
                 datum[name] = result;
               });
             }
+            // Allows custom relationship field types
+            self.$el.trigger('afterGetItem', [ datum, $item ]);
             result.push(datum);
           }
         });
@@ -439,7 +445,7 @@
           return;
         }
         var count = 0;
-        self.$list.find('[data-item]').each(function() {
+        findSafe(self.$list, '[data-item]').each(function() {
           var $item = $(this);
           if (!$item.data('removed')) {
             count++;
@@ -460,5 +466,18 @@
     function uniqueName(itemId, name) {
       return self.baseName + '[' + itemId + '][' + name + ']';
     }
+
+    // Borrowed from our jquery.findSafe plugin
+    function findSafe($context, selector) {
+      if (arguments.length === 1) {
+        selector = arguments[0];
+        $context = self.$el;
+      }
+      if (!options.nestGuard) {
+        return $context.find(selector);
+      }
+      return $context.find(selector).not($context.find(options.nestGuard).find(selector));
+    }
   };
 })( jQuery );
+
