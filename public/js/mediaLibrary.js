@@ -204,7 +204,6 @@ function AposMediaLibrary(options) {
       // get the element
       var $tag = self.$el.findByName('tag')[0];
       var tag = $tag.selectize.getValue();
-      console.log($tag);
 
       // reset selectize
       $tag.selectize.clear();
@@ -285,7 +284,7 @@ function AposMediaLibrary(options) {
     });
     self.$normal.find('[data-name="private"]').html(item.private ? 'Yes' : 'No');
     // This isn't worth introducing a dependency on momentjs
-    var date = item.createdAt.replace(/T.*$/, '');
+    var date = item.createdAt ? item.createdAt.replace(/T.*$/, '') : '—';
     self.$normal.find('[data-name="createdAt"]').text(date);
     self.$normal.find('[data-name="owner"]').text(item._owner ? item._owner.title : 'admin');
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
