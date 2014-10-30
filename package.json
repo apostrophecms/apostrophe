@@ -5,7 +5,7 @@
   "main": "./lib/apostrophe.js",
   "dependencies": {
     "async": "0.8.x",
-    "broadband": "0.1.0",
+    "broadband": "^0.1.0",
     "cheerio": "^0.17.0",
     "clean-css": "~1.0.0",
     "clone": "~0.1.11",
