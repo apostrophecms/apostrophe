@@ -223,9 +223,13 @@ apos.enableTags = function($el, tags, field) {
   if (apos.data.lockTags) {
     $el.find('[data-add]').remove();
   }
-  if(!field.limit) field.limit = undefined;
-  if(!field.sortable) field.sortable = undefined;
-  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: field.limit, sortable: field.sortable });
+  if (!field.limit) {
+    field.limit = undefined;
+  }
+  if (!field.sortable) {
+    field.sortable = undefined;
+  }
+  $el.selective({ preventDuplicates: true, add: !apos.data.lockTags, data: tags, source: '/apos/autocomplete-tag', addKeyCodes: [ 13, 'U+002C'], limit: field.limit, sortable: field.sortable, nestGuard: '[data-selective]' });
 };
 
 // Initialize a yes/no select element. If value is undefined (not just false),
