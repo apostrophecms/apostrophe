@@ -21,7 +21,7 @@
     var extras = options.extras;
     var addKeyCodes = options.addKeyCodes || 13;
     var preventDuplicates = options.preventDuplicates;
-
+    var add = options.add;
     var incompleteValidation;
 
     if (!$.isArray(addKeyCodes)) {
@@ -87,7 +87,7 @@
       self.$limitIndicator = findSafe('[data-limit-indicator]');
 
       self.$itemTemplate.remove();
-      if (options.add) {
+      if (add) {
         self.$autocomplete.on('keydown.selective', function(e) {
           if (
             $.inArray(e.which, addKeyCodes) !== -1 || // for key code
@@ -146,7 +146,7 @@
           }
 
           // In case self.get is called with 'incomplete'
-          if (!options.add) {
+          if (!add) {
             incompleteValidation = $.map(ui.content, function(datum) {
               return datum.value.toString();
             });
@@ -430,7 +430,7 @@
               return r.toLowerCase();
             });
             if ((!preventDuplicates) || ($.inArray(testVal, testResult) === -1)) {
-              if (options.add || ($.inArray(testVal, testIncompleteValidation) !== -1)) {
+              if (add || ($.inArray(testVal, testIncompleteValidation) !== -1)) {
                 result.push(val);
               }
             }
