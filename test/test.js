@@ -18,7 +18,7 @@ function find(a, b) {
 var req = {};
 var res = {};
 
-fescribe('apostrophe', function() {
+describe('apostrophe', function() {
   describe('initialize resources', function() {
     it('initialize mongodb', function(done) {
       mongo.connect('mongodb://127.0.0.1:27017/apostest', function(err, _db) {
