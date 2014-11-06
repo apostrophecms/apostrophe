@@ -1897,7 +1897,6 @@
 		 * Restores input visibility.
 		 */
 		showInput: function() {
-			console.log(this);
 			if(this.rtl)
 				this.$control_input.css({opacity: 1, position: 'relative', right: 0});
 			else
