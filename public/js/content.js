@@ -562,8 +562,9 @@ apos.modal = function(sel, options) {
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
       
-      // If we don't have a select element first - focus the first input
-      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize").length === 0) {
+      // If we don't have a select element first - focus the first input.
+      // We also have to check for a select element within an array as the first field.
+      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize, form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-array .apos-fieldset:first.apos-fieldset-selectize").length === 0 ) {
         $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
       }
     });
