@@ -1,0 +1,117 @@
+.login-page
+{
+  min-height: 100%;
+  min-width: 100%;
+  background-image: url('/images/alps.jpg');
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+
+.apos-login-container
+{
+  width: 100%;
+
+  .login-logo-container
+  {
+    margin: 66px auto;
+    width: 100px;
+    width: 100px;
+
+    .login-logo
+    {
+      background-image: url('/images/logo-apos-login.png');
+      width: 100px;
+      height: 100px;
+      background-size: 100% 100%;
+      // margin: 33px auto;
+    }
+  }
+
+  .apos-login-description
+  {
+    p
+    {
+      max-width: 500px;
+      margin: 15px auto 33px auto;
+      text-align: center;
+      .Chivo-Italic;
+
+    }
+
+  }
+
+  .warning
+  {
+    color: #FF4043;
+    padding: 10px;
+    background-color: lighten(#FF4043, 30%);
+    margin-bottom: 6px;
+  }
+
+  .apos-login
+  {
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: 5px 5px 5px rgba(33, 33, 33, 0.25);
+
+    h4
+    {
+      text-transform: uppercase;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 0;
+      background: #212121;
+      padding: 15px;
+    }
+
+    .login-inputs
+    {
+      padding: 15px;
+      .Chivo-Italic;
+
+      input
+      {
+        padding: 6px;
+        width: 100%;
+        .Chivo-Italic(150%);
+        border: 2px solid white;
+        &:focus
+        {
+          outline: none;
+          border: 2px solid @dark;
+        }
+      }
+
+      .login-submit
+      {
+        margin-top: 15px;
+
+        input[type=submit]
+        {
+          border: none;
+          .Chivo-Italic;
+          color: #b2b2b2;
+          background: #4c4c4c;
+          width: 50%;
+          height: 40px;
+          float: right;
+
+          &:hover
+          {
+            background-color: darken(rgb(247,160,50), 10%);
+            color: @dark;
+          }
+        }
+      }
+    }
+
+    label
+    {
+      display: block;
+      margin-bottom: 3px;
+      margin-top: 10px;
+    }
+  }
+}
