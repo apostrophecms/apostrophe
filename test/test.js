@@ -15,10 +15,16 @@ function find(a, b) {
   }
 }
 
-var req = {};
-var res = {};
+function req(d) {
+  var o = {
+    traceIn: function() {},
+    traceOut: function() {}
+  };
+  _.extend(o, d);
+  return o;
+}
 
-fescribe('apostrophe', function() {
+describe('apostrophe', function() {
   describe('initialize resources', function() {
     it('initialize mongodb', function(done) {
       mongo.connect('mongodb://127.0.0.1:27017/apostest', function(err, _db) {
@@ -216,52 +222,55 @@ fescribe('apostrophe', function() {
       assert(apos.permissions);
     });
     it('allows view-page in the generic case', function() {
-      assert(apos.permissions.can(req, 'view-page'));
+      assert(apos.permissions.can(req(), 'view-page'));
     });
     it('rejects edit-page in the generic case', function() {
-      assert(!apos.permissions.can(req, 'edit-page'));
+      assert(!apos.permissions.can(req(), 'edit-page'));
     });
     it('forbids view-page for public with loginRequired', function() {
-      assert(!apos.permissions.can(req, 'view-page', { published: true, loginRequired: 'loginRequired' }));
+      assert(!apos.permissions.can(req(), 'view-page', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-page for public without loginRequired', function() {
-      assert(apos.permissions.can(req, 'view-page', { published: true }));
+      assert(apos.permissions.can(req(), 'view-page', { published: true }));
     });
     it('prohibits view-page for public without published', function() {
-      assert(!apos.permissions.can(req, 'view-page', {}));
+      assert(!apos.permissions.can(req(), 'view-page', {}));
     });
     it('prohibits view-page for public with loginRequired', function() {
-      assert(!apos.permissions.can(req, 'view-page', { published: true, loginRequired: 'loginRequired' }));
+      assert(!apos.permissions.can(req(), 'view-page', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-page for guest user with loginRequired', function() {
-      assert(apos.permissions.can({ user: { permissions: { guest: 1 } } }, 'view-page', { published: true, loginRequired: 'loginRequired' }));
+      assert(apos.permissions.can(req({ user: { permissions: { guest: 1 } } }), 'view-page', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-page for individual with proper id', function() {
-      assert(apos.permissions.can({ user: { _id: 1 } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1 } }), 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('forbids view-page for individual with wrong id', function() {
-      assert(!apos.permissions.can({ user: { _id: 2 } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 2 } }), 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('permits view-page for individual with group id', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1002' ] }));
     });
     it('forbids view-page for individual with wrong group id', function() {
-      assert(!apos.permissions.can({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }, 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1003' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }), 'view-page', { published: true, loginRequired: 'certainPeople', pagePermissions: [ 'view-1003' ] }));
     });
     it('certainPeople will not let you slide past to an unpublished page', function() {
-      assert(!apos.permissions.can({ user: { _id: 1 } }, 'view-page', {  loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-page', {  loginRequired: 'certainPeople', pagePermissions: [ 'view-1' ] }));
     });
     it('permits view-page for unpublished page for individual with group id for editing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'view-page', { pagePermissions: [ 'edit-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-page', { pagePermissions: [ 'edit-1002' ] }));
     });
-    it('permits edit-page for individual with group id for editing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { pagePermissions: [ 'edit-1002' ] }));
+    it('permits edit-page for individual with group id for editing and the edit permission', function() {
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], permissions: { edit: true } } }), 'edit-page', { pagePermissions: [ 'edit-1002' ] }));
     });
-    it('permits edit-page for individual with group id for managing', function() {
-      assert(apos.permissions.can({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }, 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
+    it('forbids edit-page for individual with group id for editing but no edit permission', function() {
+      assert(!apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'edit-page', { pagePermissions: [ 'edit-1002' ] }));
+    });
+    it('permits edit-page for individual with group id for managing and edit permission', function() {
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], permissions: { edit: true } } }), 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
     });
     it('forbids edit-page for other person', function() {
-      assert(!apos.permissions.can({ user: { _id: 7 } }, 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-page', { pagePermissions: [ 'publish-1002' ] }));
     });
   });
   describe('test permissions.criteria', function() {
@@ -321,7 +330,7 @@ fescribe('apostrophe', function() {
     var err;
     var results;
     it('public user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({}, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({}), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -347,7 +356,7 @@ fescribe('apostrophe', function() {
     });
 
     it('guest user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { permissions: { guest: 1 } } }, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { permissions: { guest: 1 } } }), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -363,7 +372,7 @@ fescribe('apostrophe', function() {
     });
 
     it('id 1 user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 1 } }, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 1 } }), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -384,7 +393,7 @@ fescribe('apostrophe', function() {
     });
 
     it('id 2 user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 2 } }, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 2 } }), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -400,7 +409,7 @@ fescribe('apostrophe', function() {
     });
 
     it('group 1002 user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1002 ] } }, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 3, groupIds: [ 1002 ] } }), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -422,7 +431,7 @@ fescribe('apostrophe', function() {
     });
 
     it('group 1003 user queries without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1003 ] } }, 'view-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 3, groupIds: [ 1003 ] } }), 'view-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -438,7 +447,7 @@ fescribe('apostrophe', function() {
     });
 
     it('group 1002 user queries for editing without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 3, groupIds: [ 1002 ] } }, 'edit-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 3, groupIds: [ 1002 ], permissions: { edit: true } } }), 'edit-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -466,7 +475,7 @@ fescribe('apostrophe', function() {
     });
 
     it('other user queries for editing without error', function(done) {
-      return apos.pages.find(apos.permissions.criteria({ user: { _id: 7 } }, 'edit-page')).toArray(function(_err, _results) {
+      return apos.pages.find(apos.permissions.criteria(req({ user: { _id: 7 } }), 'edit-page')).toArray(function(_err, _results) {
         err = _err;
         assert(!err);
         results = _results;
@@ -480,13 +489,13 @@ fescribe('apostrophe', function() {
     });
 
     it('appropriate user can add area to page-1 with putArea without error', function(done) {
-      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+      return apos.putArea(req({ user: { permissions: { admin: 1 } } }), 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
         assert(!err);
         done();
       });
     });
     it('the area actually gets there', function(done) {
-      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'page-1', function(err, page) {
+      return apos.getPage(req({ user: { permissions: { admin: 1 } } }), 'page-1', function(err, page) {
         assert(!err);
         assert(page);
         assert(page.test);
@@ -496,19 +505,19 @@ fescribe('apostrophe', function() {
       });
     });
     it('inappropriate user cannot add area to page-1 with putArea', function(done) {
-      return apos.putArea({ user: { permissions: { guest: 1 } } }, 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+      return apos.putArea(req({ user: { permissions: { guest: 1 } } }), 'page-1:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
         assert(err);
         done();
       });
     });
     it('appropriate user can make new page with putArea without error', function(done) {
-      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'global:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+      return apos.putArea(req({ user: { permissions: { admin: 1 } } }), 'global:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
         assert(!err);
         done();
       });
     });
     it('an area on a new page actually gets there', function(done) {
-      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'global', function(err, page) {
+      return apos.getPage(req({ user: { permissions: { admin: 1 } } }), 'global', function(err, page) {
         assert(!err);
         assert(page);
         assert(page.test);
@@ -518,13 +527,13 @@ fescribe('apostrophe', function() {
       });
     });
     it('can add a second area to that new page', function(done) {
-      return apos.putArea({ user: { permissions: { admin: 1 } } }, 'global:test2', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+      return apos.putArea(req({ user: { permissions: { admin: 1 } } }), 'global:test2', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
         assert(!err);
         done();
       });
     });
     it('second area does not blow out the first', function(done) {
-      return apos.getPage({ user: { permissions: { admin: 1 } } }, 'global', function(err, page) {
+      return apos.getPage(req({ user: { permissions: { admin: 1 } } }), 'global', function(err, page) {
         assert(!err);
         assert(page);
         assert(page.test);
@@ -534,7 +543,7 @@ fescribe('apostrophe', function() {
       });
     });
     it('even an admin cannot make a new page with putArea if the slug starts with /', function(done) {
-      return apos.putArea({ user: { permissions: { admin: 1 } } }, '/:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
+      return apos.putArea(req({ user: { permissions: { admin: 1 } } }), '/:test', { type: 'area', items: [ { type: 'richText', content: '<h4>Whee</h4>' } ] }, function(err) {
         assert(err);
         done();
       });

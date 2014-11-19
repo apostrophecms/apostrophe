@@ -520,7 +520,9 @@ apos.modal = function(sel, options) {
   });
 
   apos.afterYield(function() {
+    apos.globalBusy(true);
     options.init(function(err) {
+      apos.globalBusy(false);
       if (err) {
         hideModal();
         return;
@@ -562,8 +564,9 @@ apos.modal = function(sel, options) {
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
       
-      // If we don't have a select element first - focus the first input
-      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize").length === 0) {
+      // If we don't have a select element first - focus the first input.
+      // We also have to check for a select element within an array as the first field.
+      if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize, form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-array .apos-fieldset:first.apos-fieldset-selectize").length === 0 ) {
         $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
       }
     });
@@ -1337,6 +1340,43 @@ apos.redirect = function(slug) {
     window.location.reload();
   } else {
     window.location.href = href;
+  }
+};
+
+apos._globalBusyCounter = 0;
+
+// If state is true, the interface changes to
+// indicate Apostrophe is busy loading a modal
+// dialog or other experience that preempts other
+// activities. If state is false, the interface
+// is unlocked. Calls may be nested and the
+// interface will not unlock until all
+// locks are released.
+//
+// See also apos.busy for interactions that
+// only need to indicate that one particular
+// element is busy.
+
+apos.globalBusy = function(state) {
+  if (state) {
+    apos._globalBusyCounter++;
+    if (apos._globalBusyCounter === 1) {
+      // Newly busy
+      lock();
+    }
+  } else {
+    apos._globalBusyCounter--;
+    if (!apos._globalBusyCounter) {
+      // newly free
+      unlock();
+    }
+  }
+  function lock() {
+    var $freezer = $('<div class="apos-global-busy"></div>');
+    $('body').append($freezer);
+  }
+  function unlock() {
+    $('.apos-global-busy').remove();
   }
 };
 

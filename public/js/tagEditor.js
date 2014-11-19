@@ -37,33 +37,29 @@ function AposTagEditor(options) {
       var text = $text.text();
       var $renameForm = $tag.find('[data-rename-form]');
       var newTag = $renameForm.find('[name="name"]').val();
-      if (newTag === text) {
-        // No change
-        $renameForm.hide();
-        $tag.find('[data-rename-open]').show();
-      } else {
-        $.jsonCall(options.renameUrl || '/apos/rename-tag', {
-          tag: text,
-          newTag: newTag
-        }, function(result) {
-          if (result.status === 'ok') {
-            // Mop up on merge - remove any duplicate
-            self.$el.find('[data-tag]').each(function() {
-              var $tag = $(this);
-              var $text = $tag.find('[data-tag-text]');
-              var text = $text.text();
-              if (text === newTag) {
-                $tag.remove();
-              }
-            });
-            $text.text(newTag);
-            $renameForm.hide();
-            $tag.find('[data-rename-open]').show();
-          } else {
-            alert('An error occurred.');
-          }
-        });
-      }
+      $.jsonCall(options.renameUrl || '/apos/rename-tag', {
+        tag: text,
+        newTag: newTag
+      }, function(result) {
+        if (result.status === 'ok') {
+          var oldTag = result.oldTag;
+          newTag = result.newTag;
+          // Mop up on merge - remove any duplicate
+          self.$el.find('[data-tag]').each(function() {
+            var $tag = $(this);
+            var $text = $tag.find('[data-tag-text]');
+            var text = $text.text();
+            if ((text === newTag) && (text !== result.oldTag)) {
+              $tag.remove();
+            }
+          });
+          $text.text(newTag);
+          $renameForm.hide();
+          $tag.find('[data-rename-open]').show();
+        } else {
+          alert('An error occurred.');
+        }
+      });
       return false;
     });
 
