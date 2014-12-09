@@ -1095,11 +1095,14 @@ apos.requireScene = function(scene, callback) {
 // clear the cookie and redirect as appropriate. Called on DOMready,
 // and also on the fly after anything that implicitly logs the user in.
 
+// This is now mainly relevant for the "apply" feature and other situations
+// where login does not involve a hard page refresh. For bc reasons we
+// should not remove it in any case in the 0.5.x series. -Tom
+
 apos.afterLogin = function() {
   var afterLogin = $.cookie('aposAfterLogin');
   if (afterLogin && apos.data.user) {
     $.removeCookie('aposAfterLogin', { path: '/' });
-
     // We can't just stuff afterLogin in window.location.href because
     // the browser won't refresh the page if it happens to be the current page,
     // and what we really want is all the changes in the outerLayout that

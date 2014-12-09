@@ -12,6 +12,9 @@ function AposSlideshowWidgetEditor(options)
   var showImages = (options.showImages === undefined) ? true : options.showImages;
   // Options passed from template or other context
   var templateOptions = options.options || {};
+  if (templateOptions.group) {
+    self.fileGroup = templateOptions.group;
+  }
   var widgetClass = templateOptions.widgetClass;
   var aspectRatio = templateOptions.aspectRatio;
   var setSelect = templateOptions.setSelect;
