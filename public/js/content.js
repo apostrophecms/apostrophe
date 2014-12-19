@@ -8,6 +8,9 @@ if (!window.apos) {
 
 var apos = window.apos;
 
+// A prepublish script updates this
+apos.version = "0.5.260";
+
 apos.handlers = {};
 
 // EVENT HANDLING
