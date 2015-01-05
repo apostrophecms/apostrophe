@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "0.5.254",
+  "version": "0.5.261",
   "description": "Apostrophe is a user-friendly content management system. This core module of Apostrophe provides rich content editing and essential facilities to integrate Apostrophe into your Express project. Apostrophe also includes simple facilities for storing your rich content areas in MongoDB and fetching them back again. Additional functionality is available in modules like apostrophe-pages, apostrophe-snippets, apostrophe-blog, apostrophe-events, apostrophe-twitter and apostrophe-rss.",
   "main": "./lib/apostrophe.js",
   "dependencies": {
@@ -40,7 +40,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "sh scripts/prepublish.sh"
   },
   "repository": {
     "type": "git",
