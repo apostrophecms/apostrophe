@@ -289,6 +289,9 @@ function AposMediaLibrary(options) {
     self.$normal.find('[data-name="owner"]').text(item._owner ? item._owner.title : 'admin');
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
 
+    var size = item.width && item.height ? item.width + " x " + item.height : '—';
+    self.$normal.find('[data-name="size"]').text(size);
+
     var $link = $('<a></a>');
     $link.attr('href', apos.filePath(item));
     $link.text(apos.filePath(item));
