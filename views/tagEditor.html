@@ -7,6 +7,10 @@
   {{ __('Edit Tags') }}
 {% endblock%}
 
+{% block modalControls %}
+{{ renderProgressBtn({dataAttrs: 'data-cancel', float: 'left', label: 'Close', arrow: 'left'}) }}
+{% endblock %}
+
 {% block modalBody %}
   {# Keep this at top, it's a pain to scroll on a site with many tags. -Tom #}
   <fieldset class="apos-add-tag apos-fieldset apos-fieldset-text apos-fieldset-tags" data-add-tag>
