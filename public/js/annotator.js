@@ -20,8 +20,10 @@ function AposAnnotator(options) {
   // Call this method after constructing the object
   self.modal = function() {
     self.$el = apos.modalFromTemplate(options.template || '.apos-file-annotator', self);
+    // Adding a delete key and writing a custom event for it.
+    self.$el.on('click', '[data-delete-item]', self.deleteItem);
   };
-  
+
 
   self.addItem = function(item) {
     var $item = apos.fromTemplate(self.$el.find('[data-item].apos-template'));
@@ -73,6 +75,22 @@ function AposAnnotator(options) {
       }
     );
   };
+
+  self.deleteItem = function(item) {
+    console.log("I am deleteing.");
+    return $.ajax({
+      url: '/apos/delete-file',
+      data: { _id: item._id, trash: 1 },
+      type: 'POST',
+      success: function() {
+        //apos.emit('refresh');
+        self.$el.trigger('aposModalHide');
+      },
+      error: function() {
+        alert('You do not have access or the item has been deleted.');
+      }
+    });
+  }
 
   self.debrief = function() {
     var data = [];
@@ -141,4 +159,3 @@ function AposAnnotator(options) {
     return callback(null);
   };
 }
-
