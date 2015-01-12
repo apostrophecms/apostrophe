@@ -16,6 +16,7 @@
 
 {% block modalControls %}
   {{ renderProgressBtn({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save Changes'}) }}
+  {{ renderProgressBtn({dataAttrs: 'data-delete-item  data-action="delete-item"', float: 'right', color: 'base', label: 'Delete'}) }}
   {{ renderProgressBtn({dataAttrs: 'data-cancel', float: 'left', label: 'Cancel', arrow: 'left'}) }}
 {% endblock %}
 

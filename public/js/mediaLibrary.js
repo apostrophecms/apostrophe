@@ -48,13 +48,13 @@ function AposMediaLibrary(options) {
 
     self.$el.on('click', '[data-grid]', function() {
       self.$el.find('[data-index]').removeClass('apos-list-view').addClass('apos-grid-view');
-      self.$el.find('.apos-generic-button').removeClass('active');
+      self.$el.find('.apos-progress-btn').removeClass('active');
       $(this).addClass('active');
       return false;
     });
     self.$el.on('click', '[data-list]', function() {
       self.$el.find('[data-index]').removeClass('apos-grid-view').addClass('apos-list-view');
-      self.$el.find('.apos-generic-button').removeClass('active');
+      self.$el.find('.apos-progress-btn').removeClass('active');
       $(this).addClass('active');
       return false;
     });
