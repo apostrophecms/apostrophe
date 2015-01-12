@@ -65,6 +65,7 @@ function AposSlideshowWidgetEditor(options)
   // good way to avoid being a nag if no work has really been done yet.
   self.beforeCancel = function(callback) {
     if (confirm('Are you sure you want to cancel your edits to this slideshow?')) {
+      $('.apos-slideshow-editor-item--info').css('display', 'none');
       return callback(null);
     } else {
       return callback('canceled');
@@ -255,6 +256,43 @@ function AposSlideshowWidgetEditor(options)
     // on Crop button click, configure and reveal cropping modal
     self.$el.on('click', '[data-crop]', function() {
       crop($(this).closest('[data-item]'));
+    });
+
+    // on Info button click, configure and reveal image information modal
+    self.$el.on('click', '[data-info]', function() {
+      var info = $(this).closest('[data-item]').data('item');
+
+      var item = $('.apos-slideshow-editor-item--info');
+      $(item).css('display', 'block');
+
+      var title = $(item).find('.apos-value[data-name="title"]');
+      $(title).text(info.title);
+      
+      var date = $(item).find('.apos-value[data-name="date"]');
+      $(date).text(info.createdAt );
+
+      var tags = $(item).find('.apos-value[data-name="tags"]');
+      var allTags = info.tags;
+      var tagString = "";
+      for(var i = 0; i < allTags.length; i++)
+      {
+        if(i == 0)
+          tagString += allTags[i];
+        else
+          tagString += ", " + allTags[i];
+      }
+      $(tags).text(tagString);
+
+      //change background of image to match info box
+      $('.apos-slideshow-editor-item-box').css('background-color', '#989898');
+      var background = $(this).closest('.apos-slideshow-editor-item-box')[0];
+      $(background).css('background-color', '#e6e6e6');
+
+    });
+    self.$el.on('click', '.apos-slideshow-editor-item--info div[info-exit]', function() {
+      $('.apos-slideshow-editor-item-box').css('background-color', '#989898');
+      var item = $('.apos-slideshow-editor-item--info');
+      $(item).css('display', 'none');
     });
 
     // Select new orientation
