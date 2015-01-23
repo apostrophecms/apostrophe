@@ -255,12 +255,13 @@ function AposMediaLibrary(options) {
   };
 
   self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'createdAt', 'credit', 'extension', 'downloadOriginal', 'owner' ];
-  self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'extension' ];
+  self.simpleShow = [ 'title', 'owner', 'name', 'tags', 'credit', 'description', 'group', 'type', 'extension' ];
   // self.listShow = [ 'title', 'name', 'group', 'type'];
 
   self.simpleEditable = [ 'title', 'credit', 'description' ];
 
   self.showItem = function(item) {
+    console.log(item);
     self.$show.data('item', item);
     if (self.$edit) {
       self.$edit.remove();
