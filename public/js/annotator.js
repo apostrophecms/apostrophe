@@ -22,6 +22,8 @@ function AposAnnotator(options) {
     self.$el = apos.modalFromTemplate(options.template || '.apos-file-annotator', self);
     // Adding a delete key and writing a custom event for it.
     self.$el.on('click', '[data-delete-item]', self.deleteItem);
+
+
   };
 
 
@@ -32,6 +34,15 @@ function AposAnnotator(options) {
       $img.attr('src', apos.filePath(item, { size: 'one-third' }));
       $item.find('[data-preview]').html($img);
     }
+
+    var required = apos.data.files.required || [];
+    _.each(required, function(field) {
+      var $field = $item.findByName(field);
+      console.log($field);
+      $field.addClass('apos-error');
+      $field.closest('.apos-fieldset').find('label').append('<span class="apos-error-message"> * required</span>');
+    });
+
     $item.data('id', item._id);
     $item.findByName('title').val(item.title || '');
     $item.findByName('description').val(item.description || '');
