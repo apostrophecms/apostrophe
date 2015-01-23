@@ -178,10 +178,17 @@ function AposMediaLibrary(options) {
       var Annotator = options.Annotator || window.AposAnnotator;
       self.annotator = new Annotator({
         receive: function(aItems, callback) {
-          // Modified the files, so reset the list view
+          // Modified the files, so reset the list view and
+          // refresh the content area
           self.resetIndex();
           apos.change('media');
           return callback(null);
+        },
+        remove: function(aItem) {
+          // They removed one of the items during annotation.
+          // Reset the list view and refresh the content area
+          self.resetIndex();
+          apos.change('media');
         },
         destroyed: function() {
           // End of life cycle for previous annotator, note that so
@@ -261,7 +268,6 @@ function AposMediaLibrary(options) {
   self.simpleEditable = [ 'title', 'credit', 'description' ];
 
   self.showItem = function(item) {
-    console.log(item);
     self.$show.data('item', item);
     if (self.$edit) {
       self.$edit.remove();

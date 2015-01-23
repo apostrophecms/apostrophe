@@ -3,6 +3,9 @@
 /* options.receive must be a function that accepts an array of
   the annotated file objects. Use the _id property to identify them.
 
+  options.remove may optionally be a function that accepts a file
+  object that has just been deleted by the user during annotation.
+
   options.destroyed should be a function to be called when the annotator
   destroys itself on close. This is a useful way to know it's necessary to open
   a new annotator for the next file. */
@@ -15,17 +18,18 @@ function AposAnnotator(options) {
 
   self.cancellable = true;
 
+  // Direct children so we don't hoover up jquery selective's items too.
+  // TODO: think about using a more obscure data attribute in jquery
+  // selective so this is not a problem
+  self.liveItem = '[data-items] > [data-item]:not(.apos-template)';
+
   // PUBLIC API
 
   // Call this method after constructing the object
+
   self.modal = function() {
     self.$el = apos.modalFromTemplate(options.template || '.apos-file-annotator', self);
-    // Adding a delete key and writing a custom event for it.
-    self.$el.on('click', '[data-delete-item]', self.deleteItem);
-
-
   };
-
 
   self.addItem = function(item) {
     var $item = apos.fromTemplate(self.$el.find('[data-item].apos-template'));
@@ -38,7 +42,6 @@ function AposAnnotator(options) {
     var required = apos.data.files.required || [];
     _.each(required, function(field) {
       var $field = $item.findByName(field);
-      console.log($field);
       $field.addClass('apos-error');
       $field.closest('.apos-fieldset').find('label').append('<span class="apos-error-message"> * required</span>');
     });
@@ -49,6 +52,14 @@ function AposAnnotator(options) {
     $item.findByName('credit').val(item.credit || '');
     $item.findByName('private').val(item.credit || '0');
     apos.enableTags($item.find('[data-name="tags"]'), item.tags || []);
+
+    $item.on('click', '[data-delete-item]', function() {
+      if (confirm('Are you sure you want to delete this file?')) {
+        self.deleteItem(item, $item);
+      }
+      return false;
+    });
+
     self.$el.find('[data-items]').append($item);
     try {
       self.debriefItem($item);
@@ -87,15 +98,20 @@ function AposAnnotator(options) {
     );
   };
 
-  self.deleteItem = function(item) {
-    console.log("I am deleteing.");
+  self.deleteItem = function(item, $item) {
+    $item.remove();
     return $.ajax({
       url: '/apos/delete-file',
       data: { _id: item._id, trash: 1 },
       type: 'POST',
       success: function() {
-        //apos.emit('refresh');
-        self.$el.trigger('aposModalHide');
+        if (options.remove) {
+          options.remove(item);
+        }
+        if (!self.$el.find(self.liveItem).length) {
+          // None left
+          self.$el.trigger('aposModalHide');
+        }
       },
       error: function() {
         alert('You do not have access or the item has been deleted.');
@@ -105,10 +121,7 @@ function AposAnnotator(options) {
 
   self.debrief = function() {
     var data = [];
-    // Direct children so we don't hoover up jquery selective's items too.
-    // TODO: think about using a more obscure data attribute in jquery
-    // selective so this is not a problem
-    self.$el.find('[data-items] > [data-item]:not(.apos-template)').each(function() {
+    self.$el.find(self.liveItem).each(function() {
       var $item = $(this);
       data.push(self.debriefItem($item));
     });

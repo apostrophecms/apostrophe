@@ -919,6 +919,18 @@ function AposSlideshowWidgetEditor(options)
           // credit somewhere in our preview and editing interface
           return callback(null);
         },
+        remove: function(aItem) {
+          // They removed (deleted) one of the items during annotation.
+          // Trigger the button to remove it from the slideshow too
+          var $itemElements = $items.find(liveItem);
+          var el = _.find($itemElements, function(el) {
+            var $el = $(el);
+            return ($el.data('item') === aItem);
+          });
+          if (el) {
+            $(el).find('[data-remove]').click();
+          }
+        },
         destroyed: function() {
           // End of life cycle for previous annotator, note that so
           // we can open another one
