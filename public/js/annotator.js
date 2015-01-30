@@ -54,7 +54,7 @@ function AposAnnotator(options) {
     apos.enableTags($item.find('[data-name="tags"]'), item.tags || []);
 
     $item.on('click', '[data-delete-item]', function() {
-      if (confirm('Are you sure you want to delete this file?')) {
+      if (confirm('Are you sure you want to cancel uploading this file?')) {
         self.deleteItem(item, $item);
       }
       return false;
@@ -166,7 +166,7 @@ function AposAnnotator(options) {
     if (self.cancellable) {
       return callback();
     }
-    alert('Please complete all required fields and click Save Changes.');
+    alert('Please complete all required fields and click Save Changes. If you want to cancel the upload of one of your files, click "Cancel Upload" for that file.');
     // If any required fields are currently missing scroll to them
     try {
       self.debrief();
