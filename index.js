@@ -45,10 +45,13 @@ module.exports = function(options) {
 
     if (fs.existsSync(self.rootDir + localPath)) {
       local = require(self.rootDir + localPath);
-    }
+    }    
 
     var config = options.__testDefaults || defaults;
     var coreModules = _.cloneDeep(config.modules);
+
+    _.merge(config, options);
+
     if (typeof(local) === 'function') {
       if (local.length === 1) {
         _.merge(config, local(self));
@@ -57,9 +60,10 @@ module.exports = function(options) {
       } else {
         throw 'data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config';
       }
+    } else {
+       _.merge(config, local || {});
     }
-    _.merge(config, options);
-    _.merge(config, local || {});
+  
     return config;
   }
 
