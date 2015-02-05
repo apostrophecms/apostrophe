@@ -1,6 +1,6 @@
 module.exports = {
   modules: {
-    // 'apostrophe-util': {},
+    'apostrophe-utils': {},
     // 'apostrophe-i18n-init': {},
     'apostrophe-db-init': {},
     // 'apostrophe-express-init': {},
