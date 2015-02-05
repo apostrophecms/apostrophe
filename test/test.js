@@ -84,7 +84,7 @@ describe('Apostrophe', function() {
 			  }
 		},
 		afterInit: function(callback) {
-			assert(apos.modules['apostrophe-test-module'].color === 'red');
+			assert(apos.test && apos.test.color === 'red');
 			return done();
 		}
 	});
