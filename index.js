@@ -145,7 +145,11 @@ module.exports = function(options) {
         self.modules[item] = obj;
         return callback(null);
       });
-    }, callback);
+    }, function(err){
+      return setImmediate( function(err) {
+        return callback(err);
+      });
+    });
   }
 
   function afterInit(callback) {

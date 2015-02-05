@@ -15,9 +15,7 @@ describe('Apostrophe', function() {
 	  	shortName: 'test',  // overriden by data/local.js
 	  	hostName: 'test.com',
 		__testDefaults: {
-			modules: {
-			    'apostrophe-test-module': {},
-		    }
+			modules: {}
 		},
 		afterInit: function(callback) {
 			assert(apos.options.shortName === 'foo');
@@ -33,9 +31,7 @@ describe('Apostrophe', function() {
 	  	hostName: 'test.com',
 	  	__localPath: '/data/local_fn.js',  
 		__testDefaults: {
-			modules: {
-			    'apostrophe-test-module': {},
-		    }
+			modules: {}
 		},
 		afterInit: function(callback) {
 			assert(apos.options.shortName === 'foo');
@@ -51,9 +47,7 @@ describe('Apostrophe', function() {
 	  	hostName: 'test.com',
 	  	__localPath: '/data/local_fn_b.js',  
 		__testDefaults: {
-			modules: {
-			    'apostrophe-test-module': {},
-		    }
+			modules: {}
 		},
 		afterInit: function(callback) {
 			assert(apos.options.shortName === 'test-foo');
