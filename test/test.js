@@ -13,6 +13,7 @@ describe('Apostrophe', function() {
   	var apos = require('../index.js')({
 		rootDir: __dirname,
 	  	shortName: 'test',  // overriden by data/local.js
+	  	hostName: 'test.com',
 		__testDefaults: {
 			modules: {
 			    'apostrophe-test-module': {},
@@ -32,6 +33,8 @@ describe('Apostrophe', function() {
   it('should accept a `__testDeafults` option and load the test modules correctly', function(done){
 	var apos = require('../index.js')({
 		rootDir: __dirname,
+		shortName: 'test',
+		hostName: 'test.com',
 		__testDefaults: {
 			modules: {
 			    'apostrophe-test-module': {},
@@ -48,6 +51,8 @@ describe('Apostrophe', function() {
 	var apos = require('../index.js')({
 
 		rootDir: __dirname,
+		shortName: 'test',
+		hostName: 'test.com',
 		__testDefaults: {
 			modules: {
 			    'apostrophe-test-module': {},
@@ -66,6 +71,8 @@ describe('Apostrophe', function() {
 	var apos = require('../index.js')({ 
 
 		rootDir: '../',  // set for the normal lib/modules folder
+		shortName: 'test',
+		hostName: 'test.com',
 
 		afterInit: function(callback) {
 
