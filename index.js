@@ -41,9 +41,10 @@ module.exports = function(options) {
   function mergeConfiguration(options, defaults) {
     var config = {};
     var local = {};
+    var localPath = options.__localPath || '/data/local.js';
 
-    if (fs.existsSync(self.rootDir + '/data/local.js')) {
-      local = require(self.rootDir + '/data/local.js');
+    if (fs.existsSync(self.rootDir + localPath)) {
+      local = require(self.rootDir + localPath);
     }
 
     var config = options.__testDefaults || defaults;
