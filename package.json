@@ -4,7 +4,7 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/test.js"
   },
   "repository": {
     "type": "git",
@@ -25,5 +25,8 @@
     "mongodb": "^1.4.30",
     "moog-require": "0.0.3",
     "yargs": "^1.3.3"
+  },
+  "devDependencies": {
+    "mocha": "0.3.x"
   }
 }
