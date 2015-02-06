@@ -3,7 +3,7 @@ module.exports = {
     'apostrophe-utils': {},
     'apostrophe-i18n-init': {},
     'apostrophe-db-init': {},
-    'apostrophe-cache': {},
+    'apostrophe-caches': {},
     'apostrophe-express-init': {},
     'apostrophe-assets': {},
     'apostrophe-pages': {},
