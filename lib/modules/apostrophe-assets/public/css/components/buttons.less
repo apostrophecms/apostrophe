@@ -1,0 +1,126 @@
+// apos-progress-btn's are to indicate forward/backward progress in forms and other UI
+// their first use is in canceling or saving/moving forward in modal windows
+.apos-progress-btn
+{
+  position: relative;
+  border-radius: 3px;
+  padding: 11px 10px;
+  font-size: 11px;
+  font-family: 'cabin', Helvetica,sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1em;
+  text-decoration: none;
+  background-color: white;
+  color: @apos-grey-green;
+  z-index: 1;
+
+  -webkit-transition: all .2s ease;
+  -moz-transition: all .2s ease;
+  -webkit-backface-visibility: hidden;
+  opacity: 1;
+
+  &.apos-progress-btn--float-left
+  {
+    float: left;
+  }
+  &.apos-progress-btn--float-right
+  {
+    float: right;
+  }
+  &.apos-progress-btn--arrow-left
+  {
+    padding-left: 13px;
+    &:before
+    {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      top: 5px;
+      left: -13px;
+      width: 27px; 
+      height: 27px; 
+      background-color: white;
+      -webkit-transform: rotate(45deg);
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+
+    &.apos-progress-btn--base:before
+    {
+      .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+    }
+    &.apos-progress-btn--dark:before
+    {
+      background-color: @apos-steel;
+    }
+  }
+  &.apos-progress-btn--arrow-right
+  {
+    // &:before
+    // {
+    //   position: absolute;
+    //   z-index: -1;
+    //   display: block;
+    //   top: -6%;
+    //   left: -4%;
+
+    //   width: 107%;
+    //   height: 112%;
+
+    //   border-radius: 3px;
+    //   .apos-horizontal-gradient(@apos-orange-tint, @apos-orange-light);
+    //   content: '';
+    // }
+    &.apos-progress-btn--base:before
+    {
+      .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+    }
+  }
+  &.apos-progress-btn--base
+  {
+    .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+    color: white;
+  }
+  &.apos-progress-btn--dark
+  {
+    background-color: @apos-steel;
+    color: white;
+  }
+  
+
+}
+
+// .apos-edit-modal
+// {
+
+  
+
+  
+  
+//   &.apos-button-red
+//   {
+//     float: right;
+//     margin-left: 15px;
+    
+
+//     &:before
+//     {
+
+//     }
+//   }
+//   &.apos-button-white
+//   {
+//     // float: left;
+//     // top: -2px;
+//     // margin-left: 15px;
+
+//     // border: 2px white solid;
+//   }
+//   &.apos-button-arrow-left:before 
+//   {
+    
+//   }
+
+
+// }

@@ -1,0 +1,143 @@
+.apos-modal-tabs
+  {
+    .clearfix;
+    clear: both;
+    background: #fff;
+    border-top: 1px solid #ddd;
+
+
+    .apos-modal-tab-control
+    {
+      float: left;
+      width: 17%;
+      min-height: 480px;
+      background: #eee;
+
+      .apos-modal-tab-title
+      {
+        display: block;
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        padding: 20px 10px 20px 15px;
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+        cursor: pointer;
+        .apos-montserrat;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #6d6e70;
+        // background: #eee;
+
+        &.apos-active
+        {
+          padding-left: 20px;
+          border-left: 5px solid @apos-base;
+          background: #fff;
+          border-right: 1px solid transparent;
+          -webkit-box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+                  box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+
+
+          &:hover
+          {
+            color: @apos-base;
+
+          }
+        }
+
+        &:hover
+        {
+          color: @apos-base;
+        }
+      }
+    }
+
+    .apos-modal-tab
+    {
+      float: left;
+      position: relative;
+      z-index: 5;
+      width: 83%;
+      background: #FFF;
+      display: none;
+      max-height: 480px;
+      overflow-y: scroll;
+
+      &::-webkit-scrollbar {
+          width: 10px;
+      }
+
+      &::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: @apos-base;
+          -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+      }
+
+
+      &.apos-active
+      {
+        display: block;
+        height: 480px;
+      }
+
+      .apos-modal-tab-content
+      {
+        padding: 25px 40px;
+      }
+
+
+      /// FORM STYLES WITHIN TABS //
+      .apos-fieldset,
+      .apos-fieldset-text
+      {
+        margin-bottom: 35px;
+
+        input[type='text'],
+        input.tags,
+        textarea
+        {
+          padding-left: 11px;
+          display: block;
+        }
+
+
+        label
+        {
+          margin-bottom: 8px;
+          display: block;
+          width: 100%;
+          padding-left: 0px;
+        }
+
+        .apos-area,
+        textarea
+        {
+          .apos-ui-dropdown
+          {
+            position: relative;
+            z-index: 950;
+          }
+        }
+
+        .apos-area
+        {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .apos-ui-modal-body
+  {
+    .apos-modal-tabs,
+    .apos-manage-table
+    {
+      margin-left: -15px;
+      width: ~"calc(100% + 30px)";
+    }
+  }

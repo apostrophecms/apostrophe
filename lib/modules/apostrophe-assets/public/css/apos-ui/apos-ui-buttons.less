@@ -1,0 +1,246 @@
+// apos-progress-btn's are to indicate forward/backward progress in forms and other UI
+// their first use is in canceling or saving/moving forward in modal windows
+.apos-progress-btn
+{
+  position: relative;
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-family: 'cabin', Helvetica,sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1em;
+  text-decoration: none;
+  background-color: white;
+  color: @apos-grey-green;
+  z-index: 1;
+  .transition();
+
+  -webkit-transition: all .2s ease;
+  -moz-transition: all .2s ease;
+  -webkit-backface-visibility: hidden;
+  opacity: 1;
+
+  &.apos-progress-btn--float-left
+  {
+    float: left;
+    margin-right: 10px;
+  }
+  &.apos-progress-btn--float-right
+  {
+    float: right;
+    margin-left: 10px;
+    .transition();
+    -webkit-transition: all .4s ease;
+    -moz-transition: all .4s ease;
+    &.apos-busy
+    {
+      padding-left: 30px;
+      .apos-progress-btn-spinner
+      {
+        opacity: 1;
+        img
+        {
+          left: 3px;
+        }
+      }
+    }
+  }
+  &.apos-progress-btn--base
+  {
+    .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+    color: white;
+    border: 1px solid @apos-base;
+  }
+  &.apos-progress-btn--dark
+  {
+    background-color: @apos-steel;
+    border: 1px solid @apos-steel;
+    color: white;
+  }
+  &.apos-progress-btn--arrow-left
+  {
+    padding-left: 13px;
+    margin-left: 11px;
+    border-left: 0px;
+    &:before
+    {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      top: 3px;
+      left: -8px;
+      width: 20px;
+      height: 20px;
+      background-color: white;
+      -webkit-transform: rotate(45deg);
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+
+    &.apos-progress-btn--base:before
+    {
+      .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+    }
+    &.apos-progress-btn--dark:before
+    {
+      background-color: @apos-steel;
+      border: 1px solid @apos-steel;
+    }
+  }
+  &.apos-progress-btn--arrow-right
+  {
+    padding-right: 9px;
+    margin-right: 11px;
+    border-right: 0px;
+    &:before
+    {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      top: 3px;
+      right: -9px;
+      width: 22px;
+      height: 21px;
+      background-color: white;
+      -webkit-transform: rotate(45deg);
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+    &.apos-progress-btn--base:before
+    {
+      .apos-bg-gradient(@apos-orange-dark, @apos-orange-light);
+      // border: 1px solid @apos-base;
+    }
+  }
+
+  .apos-progress-btn-spinner
+  {
+    display: inline-block;
+    opacity: 0;
+    .transition();
+    -webkit-transition: opacity .2s ease;
+    -moz-transition: opacity .2s ease;
+    img
+    {
+      height: 17px;
+      position: absolute;
+      left: 6px;
+      top: 5px;
+    }
+  }
+}
+
+
+////////////////////////////////////
+// Pill Buttons ////////////////////
+////////////////////////////////////
+
+// Originally from snippet filters but now available in the form macros
+
+.apos-pill
+{
+  margin-right: 20px;
+  display: inline-block;
+  padding: 3px 3px;
+  border: 1px solid darken(@apos-grey70, 5%);
+  .apos-bg-gradient(@apos-grey70, transparent);
+  border-radius: 4px;
+  .apos-montserrat;
+}
+
+.apos-pill-choice
+{
+  padding: 14px 16px;
+  display: inline-block;
+  float: left;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  margin: 0px;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: @apos-grey30;
+  line-height: 0;
+  margin-left: 5px;
+  .transition();
+  &.apos-first
+  {
+    margin-left: 0;
+  }
+  &.apos-last
+  {
+  }
+  &:hover
+  {
+    background-color: white;
+    color: @apos-base;
+  }
+  &.apos-active
+  {
+    .apos-bg-gradient(@apos-steel, @apos-grey50);
+    color: white;
+  }
+}
+
+.apos-pill--yellow
+{
+  .apos-pill-choice
+  {
+    &:hover
+    {
+      color: @apos-grey20;
+    }
+    &.apos-active
+    {
+      .apos-bg-gradient(@apos-yellow, darken(@apos-yellow, 20%));
+      color: @apos-grey10;
+    }
+  }
+}
+
+
+/// Pager
+// we need to scope the pager styles to the modal
+// so they do not bleed into project-level styles
+.apos-ui-modal-body
+{
+  .apos-pager
+  {
+    text-align: center;
+    font-family: 'cabin', Helvetica,sans-serif;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 1.4em 0;
+    a
+    {
+      color: @apos-grey30;
+      padding: 5px 8px;
+      border-radius: 3px;
+      &:hover
+      {
+        .apos-bg-gradient(@apos-steel, @apos-grey50);
+        color: white;
+      }
+    }
+    .apos-pager-number
+    {
+      margin-left: 0.3em;
+      &.apos-active
+      {
+        .apos-bg-gradient(@apos-steel, @apos-grey50);
+        color: white;
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 3px;
+      }
+    }
+    .apos-pager-gap
+    {
+      margin-left: 1em;
+    }
+    .apos-pager-number.apos-first
+    {
+      margin-left: 0;
+    }
+  }
+}

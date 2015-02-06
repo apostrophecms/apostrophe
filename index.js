@@ -104,7 +104,7 @@ module.exports = function(options) {
     var synth = require('moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ],
-      localModules: self.rootDir + '/lib/modules',
+      localModules: self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
       defaultBaseClass: 'apostrophe-module'
     });
 
@@ -125,7 +125,7 @@ module.exports = function(options) {
         self.modules[item] = obj;
         return callback(null);
       });
-    }, function(err){
+    }, function(err) {
       return setImmediate( function(err) {
         return callback(err);
       });

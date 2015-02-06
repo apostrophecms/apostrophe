@@ -1,0 +1,384 @@
+//////////////////////////////////////////////////////////////////////////
+// BASE FORM STYLES //////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+.apos-ui-modal,
+.apos-modal.apos-ui // backwards compat
+{
+  .lister-selected-top { margin-left: 0px; }
+  .apos-fieldset,
+  .apos-fieldset-text
+  {
+    margin-bottom: 35px;
+
+    input[type='text'],
+    input[name='tags'],
+    input.tags,
+    textarea
+    {
+      font-family: 'cabin' !important;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #333;
+      padding-left: 11px;
+      display: inline-block;
+      //Stealing this guy from content.less in the apostrophe module.
+      .apos-input();
+      border: 1px solid #ddd;
+      &.apos-input-narrow
+      {
+        max-width: 50px;
+      }
+    }
+
+    textarea{outline: 1;}
+
+    .apos-area,
+    textarea
+    {
+      padding: 14px;
+      //font-family: 'cabin' !important;
+      text-transform: none;
+      font-size: 14px;
+      letter-spacing: 0px;
+      .apos-ui-dropdown
+      {
+        position: relative;
+        z-index: 950;
+      }
+    }
+    input,
+    textarea,
+    .apos-area
+    {
+      border: 1px solid #ddd;
+      -webkit-transition: border 0.2s ease;
+      -webkit-box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+              box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+
+      &:focus
+      {
+        outline: none;
+        border: 1px solid @apos-base;
+      }
+    }
+
+    .apos-area
+    {
+      background: white;
+      min-height: 150px;
+    }
+
+    .apos-select-wrapper
+    {
+      select { border: 1px solid @apos-base; }
+
+
+      .apos-select-arrow
+      {
+        background-color:@apos-base;
+        .icon
+        {
+          font-size: 14px;
+        }
+      }
+    }
+    &:last-child,
+    &.apos-fieldset-no-margin
+    {
+      margin-bottom: 0;
+      padding-bottom: 35px;
+    }
+  }
+    .apos-fieldset label,
+    .apos-help
+    {
+      .apos-montserrat;
+      color: @apos-grey-green;
+      background-color: transparent;
+      line-height: 16px;
+      font-size: 12px;
+      &.apos-wide-label
+      {
+        width: 250px;
+      }
+    }
+
+    .apos-fieldset-singleton
+    {
+      label {float: none;}
+    }
+    .apos-fieldset-file
+    {
+      input { padding: 1em; }
+    }
+    .apos-form-inline-instructions
+    {
+      margin: 0 0 15px;
+      padding: 0;
+    }
+
+    // MODAL INSET FIELDSETS ///////////////////
+    // For use with widgets that have dynamically switched form content (see blog2). --Joel
+    .apos-fieldset.apos-fieldset-inset
+    {
+      background: #fff;
+      padding-top: 30px;
+      padding-bottom: 30px;
+      padding-left: 30px;
+      padding-right: 30px;
+      margin-left: 15px;
+      margin-right: 15px;
+      label
+      {
+        padding-left: 0;
+      }
+    }
+    .apos-fieldset.apos-fieldset-inset-controller
+    {
+      background: @apos-grey10;
+      padding-top: 15px;
+      padding-bottom: 15px;
+      padding-left: 30px;
+      padding-right: 30px;
+      margin-left: 15px;
+      margin-right: 15px;
+      margin-bottom: 0;
+      label
+      {
+        color: white;
+        padding-left: 0;
+      }
+    }
+    //For any inner-elements that just need some spacing
+    .apos-fieldset-inset-inner
+    {
+      margin-bottom: 35px;
+    }
+  // }
+
+  //Adding special rule for schema widgets, which don't have tabs so needs some paddin'
+  &.apos-schema-widget .apos-fieldset
+  {
+    padding: 20px;
+  }
+}
+
+.apos-inline-input
+{
+  max-width: 385px;
+  position: relative;
+  .apos-ui-inline-btn
+  {
+    padding: 10px;
+    position: absolute;
+    right: 1px;
+    top: 0px;
+    border-left: 1px solid #ddd;
+    -webkit-box-shadow: 1px 1px 5px rgba(0,0,0,0);
+    box-shadow: 1px 1px 5px rgba(0,0,0,0);
+  }
+}
+
+.apos-ui-modal-body,
+.apos-modal-body
+{
+  form
+  {
+    .apos-help
+    {
+      color: #969696;
+      margin-top: -30px;
+      margin-bottom: 30px;
+    }
+
+    .apos-inline-selective + .apos-help
+    {
+      margin-top: -10px;
+    }
+
+    //Rules about selectives
+    .apos-selective-extras,
+    .apos-propagate,
+    .apos-view-permissions-hint,
+    .apos-edit-permissions-hint
+    {
+      display:block;
+      padding: 5px 5px 0;
+      clear: both;
+
+      input
+      {
+        margin-left: 0;
+        // We want the checkbox on the left here,
+        // but in other uses, the input should be on the right.
+        display: inline-block;
+        margin-right: 6px;
+
+      }
+      label
+      {
+        font-size: 11px;
+        display: inline-block !important;
+        width: auto !important;
+        margin-bottom: 0 !important;
+      }
+    }
+
+    .apos-propagate,
+    .apos-view-permissions-hint,
+    .apos-edit-permissions-hint
+    {
+      font-size: 11px;
+      font-family: 'montserratregular';
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    input
+    {
+      border: none;
+    }
+
+    label
+    {
+      font-size: 10px;
+      margin-bottom: 8px;
+      font-family: 'montserratregular';
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #353b3b;
+      &.short
+      {
+        display: inline-block;
+        .clearfix;
+      }
+    }
+
+    label.apos-modal-form-title
+    {
+      // font-size: 14px;
+      margin-bottom: 30px !important;
+      padding-bottom: 8px;
+      border-bottom: 1px solid @apos-grey60;
+    }
+    span.apos-error-message
+    {
+      color: @apos-base;
+    }
+
+    select
+    {
+      position: relative;
+      -webkit-appearance:none;
+         -moz-appearance:none;
+      border: none;
+      background: @apos-base;
+      border-radius: 0px;
+      color: #FFF;
+
+
+      option
+      {
+        &:hover
+        {
+          background: red;
+        }
+      }
+    }
+
+    input, select, option
+    {
+      &:focus
+      {
+        outline: none;
+      }
+    }
+
+    //Some specific styles to deal with page permissions
+    .apos-accordion-toggle
+    {
+      font-family: 'cabin';
+      display: inline-block;
+      background: #fff;
+      line-height: 14px;
+      color: @apos-grey10;
+      letter-spacing: 1px;
+      font-weight: bold;
+      border: 1px solid @apos-grey60;
+      text-transform: none;
+      letter-spacing: 1px;
+      color: #333;
+      padding-left: 11px;
+      display: inline-block;
+      width: 100%;
+      max-width: 385px;
+      padding: 17px 8px 18px 70px;
+      border: none;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      cursor: pointer;
+
+      .apos-ui-inline-btn
+      {
+        left: 0;
+        top: 0;
+        border-left: none;
+        border-right: 1px solid #ddd;
+        right: initial
+      }
+
+      &.apos-active
+      {
+        .icon:before
+        {
+          transform: rotate(45deg);
+          -webkit-transform: rotate(45deg);
+          -moz-transform: rotate(45deg);
+
+        }
+      }
+      .icon:before
+      {
+        transition: transform .3s;
+        -webkit-transition: -webkit-transform .3s;
+        -moz-transition: -moz-transform .3s;
+      }
+    }
+    .apos-page-settings-toggle-content
+    {
+      padding: 20px;
+      background-color: lighten(@apos-grey70, 5%);
+    }
+
+    .apos-stacked-fieldset
+    {
+      background-color: transparent;
+      label
+      {
+        display: inline-block;
+      }
+      input, textarea
+      {
+        max-width: none;
+        width: 100%;
+        margin-left: 0;
+        outline:none;
+        border:none;
+      }
+      textarea
+      {
+        height: 180px;
+      }
+    }
+  }
+}
+
+.apos-ui-modal-has-tabs .apos-ui-modal-body
+{
+  form > .apos-fieldset
+  {
+    margin-left: ~"calc(17% + 30px)";
+    padding-top: 30px;
+  }
+}

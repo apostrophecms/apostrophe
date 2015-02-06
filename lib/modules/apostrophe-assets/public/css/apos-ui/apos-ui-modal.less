@@ -1,0 +1,120 @@
+.apos-ui-modal,
+.apos-modal.apos-ui // backwards compat
+{
+  border: 4px solid rgba(0,0,0,0.7);
+  width: 80%;
+  max-width: 960px;
+  background-color: white;
+  z-index: 900;
+  position: absolute;
+}
+.apos-ui-modal
+{
+  .apos-modal-controls
+  {
+    height: auto;
+    padding: 0;
+    top: 7px;
+    left: 12px;
+    width: ~"calc(100% - 24px)";
+  }
+}
+
+.apos-ui-modal-header
+{
+  position: relative;
+  background-color: @apos-steel;
+  color: white;
+  text-align: center;
+  line-height: 0;
+  padding: 8px 12px;
+  height: 42px;
+}
+
+.apos-ui-modal-title
+{
+  color: white;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  .apos-cabin();
+  display: inline-block;
+  margin-top: 12px;
+}
+
+.apos-ui-modal-instructions
+{
+  font-weight: normal;
+  letter-spacing: 0;
+  .apos-montserrat;
+  display: block;
+  line-height: 1.6em;
+  font-size: 12px;
+  text-transform: none;
+  color: @apos-grey;
+
+  p
+  {
+    padding: 20px 21px;
+  }
+}
+
+.apos-ui-modal-body
+{
+  padding: 0 15px;
+  background: white;
+  border-left: 200px solid #eee;
+  position: relative;
+}
+.apos-ui-modal-instructions
+{
+  border-left: 200px solid #eee;
+  position: relative;
+}
+
+.apos-ui-modal-instructions,
+.apos-ui-modal-body
+{
+  &:before
+  {
+    content: " ";
+    position: absolute;
+    height: 100%;
+    left: 0;
+    width: 1px;
+    background-color: #ddd;
+    z-index: 1;
+  }
+}
+
+.apos-ui-modal-no-sidebar
+{
+  .apos-ui-modal-body
+  {
+    background: #eee;
+  }
+  .apos-ui-modal-instructions,
+  .apos-ui-modal-body
+  {
+    border-left: 0;
+    &:before{ content: ""; }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Full Page Modals */
+.apos-ui-modal-full-page.apos-ui-modal
+{
+  width: 100%;
+  max-width: none !important;
+}

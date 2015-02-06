@@ -1,0 +1,58 @@
+.apos-ui-modal-filters-inner
+{
+  padding: 15px 20px;
+  background-color: #eee;
+  .clearfix;
+}
+
+.apos-filter-search
+{
+  margin-top: 5px;
+  position: relative;
+
+  .apos-search-input
+  {
+    position: relative;
+    border: 1px solid darken(@apos-grey70, 5%);
+    width: 170px;
+    padding: 7px 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'cabin', Helvetica,sans-serif;
+
+  }
+  .apos-search-submit-button
+  {
+    position: absolute;
+    right: 10px;
+    top: 1px;
+    &:hover
+    {
+      cursor: pointer;
+    }
+    .icon
+    {
+      color: @apos-grey50;
+      &:before{font-size:13px;}
+    }
+  }
+
+  .apos-search-submit
+  {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: red;
+    z-index: 2;
+    opacity: 0;
+
+  }
+}
+
+
+
+.apos-filter-search--float-right
+{
+  float: right;
+}

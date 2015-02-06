@@ -1,0 +1,131 @@
+.ui-datepicker
+{
+	background: rgba(255,255,255,0.75);
+  padding: 4px;
+  border: 0px solid transparent;
+  -webkit-border-radius: 2px;
+          border-radius: 2px;
+  -webkit-box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+          box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+
+  text-transform: uppercase;
+  font-family: 'Cabin';
+  letter-spacing: 0.25em;
+  font-size: 11px;
+  font-weight: bold;
+  width: auto;
+  z-index: 992 !important; //This needs to peek out a little farther. Set just in front of modal.
+
+  .ui-datepicker-header
+	{
+		.apos-bg-gradient(@apos-base, @apos-lighten-10);
+		text-shadow: 0.2em 0.1em rgba(0,0,0,0.2);
+		padding: 0;
+		border: 1px solid @apos-shade-5;
+	  border-radius: 3px;
+	  -webkit-border-radius: 3px;
+	  .ui-datepicker-title
+	  {
+	  	padding: 0.65em 1em;
+	  }
+	}
+
+	.ui-state-default
+	{
+		background-color: @apos-grey50;
+		border: 1px solid @apos-grey50;
+	}
+	.ui-state-hover
+	{
+		background: @apos-base;
+		border: 1px solid @apos-base;
+		color: rgb(255, 255, 255);
+	}
+	.ui-state-highlight
+	{
+		color: @apos-base;
+		background-color: rgb(255, 255, 255);
+		border: 1px solid @apos-base;
+	}
+	.ui-state-active
+	{
+		background-color: @apos-base;
+		color: rgb(255, 255, 255);
+		border: 1px solid @apos-base;
+	}
+}
+
+
+
+table.ui-datepicker-calendar
+{
+	background-color: rgb(255, 255, 255);
+	-webkit-border-radius: 2px;
+          border-radius: 2px;
+  padding: 4px;
+  margin: 4px 0 0 0;
+
+	thead { color: @apos-base; }
+	td { padding: 2px; }
+	a .ui-state-default { background-color: @apos-grey10; border: 1px solid @apos-grey10; }
+}
+
+.ui-datepicker-next,
+.ui-datepicker-prev
+{
+	position: relative;
+	border-radius: 0;
+	height: 20px;
+	width: 20px;
+	&:after
+  {
+    top: 10px;
+    border-top: 2px solid rgb(255, 255, 255);
+    border-left: 2px solid rgb(255, 255, 255);
+    content: " ";
+    position: absolute;
+    width: 5px;
+    height: 5px;
+  }
+  &:hover
+  {
+  	background-color: transparent;
+  	border: 0px solid transparent;
+  	cursor: pointer;
+  }
+}
+.ui-datepicker-prev
+{
+	&:after
+	{
+		-webkit-transform: rotate(-45deg);
+		   -moz-transform: rotate(-45deg);
+		    -ms-transform: rotate(-45deg);
+		     -o-transform: rotate(-45deg);
+		        transform: rotate(-45deg);
+		left: 10px;
+	}
+}
+
+.ui-datepicker-next
+{
+	&:after
+	{
+		-webkit-transform: rotate(135deg);
+		   -moz-transform: rotate(135deg);
+		    -ms-transform: rotate(135deg);
+		     -o-transform: rotate(135deg);
+		        transform: rotate(135deg);
+		right: 10px;
+	}
+}
+
+// This rule kills all tooltips across the entire interface.
+// It's a small inconvenience here in the date-picker UI but it's
+// a necessary thing in the slideshow editor and elsewhere.
+
+// .ui-tooltip
+// {
+// 	display: none !important;
+//
+//}

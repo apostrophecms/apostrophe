@@ -1,0 +1,188 @@
+//////////////////////////////////////////////////////////////////////////
+// MODAL CONTAINERS //////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+.apos-modal-container
+{
+  position: fixed;
+  min-width: 90%;
+  max-width: 90%;
+  min-height: 705px;
+  top: 0;
+  overflow: hidden;
+  z-index: 9999;
+
+  .apos-modal
+  {
+    min-height: 705px;
+    h3
+    {
+      text-align: center;
+    }
+
+    transition: left 0.5s ease;
+    left: 799px;
+    top: 0px;
+
+    &.apos-base-modal,
+    &.apos-open
+    {
+      left: 0px;
+    }
+  }
+}
+
+.apos-modal
+{
+  background-color: @apos-grey-light;
+  .apos-modal-title
+  {
+    font-family: 'Cabin';
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 15px;
+    background-color: @apos-grey-green;
+  }
+
+    .apos-instructions
+    {
+      display: block;
+      line-height: 1.7em;
+      font-size: 13px;
+      text-transform: none;
+      padding: 11px 14px;
+      color: @apos-grey;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// NEW MODAL STYLES /////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+.apos-modal.apos-ui
+{
+  .clearfix;
+  color: #6d6e70;
+  min-width: 80%;
+  max-width: 80%;
+
+  & > form
+  {
+    background-color: @apos-grey-light;
+
+
+  }
+
+
+
+
+
+  .apos-modal-body {
+    padding: 30px 0 0;
+    .clearfix;
+    form > .apos-fieldset
+    {
+      margin: 15px 30px;
+    }
+  }
+
+  .apos-modal-header
+  {
+    .clearfix;
+    padding: 25px 0;
+    background: @apos-grey-light;
+    float: right;
+    width: 83%;
+
+    .apos-fieldset {margin-bottom: 0;}
+
+    .apos-modal-header-label
+    {
+      // width: 13%;
+      padding-right: 15px;
+      padding-top: 12px;
+      padding-left: 40px;
+      float: left;
+      // text-align: right;
+      font-size: 16px;
+    }
+    .apos-title-and-slug
+    {
+      float: left;
+      width: 60%;
+    }
+
+    .apos-slug-label
+    {
+      display: inline-block;
+      text-transform: none;
+      width: 58%;
+    }
+
+    .apos-fieldset
+    {
+      input { display: inline-block; }
+      label { display: none; }
+      input[type="text"]{
+        width: 30%;
+        display: inline-block;
+        max-width: none;
+      }
+
+      &.apos-fieldset-slug
+      {
+        display: inline-block;
+        margin-top: 5px;
+        width: 40%;
+        input { padding: 4px; width: 100%; }
+      }
+    }
+  }
+
+
+  // MODAL TAB COMPONENT ///////////////////////////////////////////////////
+
+  
+
+
+
+  //// SPECIFIC FORM STYLES OUTSIDE OF TABS /////
+
+  // thumbnail div
+  .apos-fieldset-thumbnail div[data-thumbnail-edit-view]
+  {
+    display: inline-block;
+    vertical-align: top;
+    min-width: 200px;
+  }
+
+  // MODAL NON-TAB CASE ///////////////////
+  &.apos-no-tabs
+  {
+    .apos-fieldset
+    {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+
+
+}
+
+
+
+
+////////////
+// Manage Modals
+////////////
+
+.apos-modal-filters
+{
+  padding: 20px;
+}
+
+.apos-modal-manage
+{
+
+}
