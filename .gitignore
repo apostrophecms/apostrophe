@@ -1,3 +1,5 @@
+test/public/modules
+test/public/css/master-*
 npm-debug.log
 *.DS_Store
 node_modules
