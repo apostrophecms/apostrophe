@@ -1,0 +1,56 @@
+.box-shadow(@style, @c) when (iscolor(@c))
+{
+  box-shadow:         @style @c;
+  -webkit-box-shadow: @style @c;
+  -moz-box-shadow:    @style @c;
+}
+
+.box-shadow(@style:0px 2px 4px, @alpha: 20%) when (isnumber(@alpha))
+{
+  .box-shadow(@style, rgba(0, 0, 0, @alpha));
+}
+
+.transition(@property: all, @time: 0.2s, @ease:ease) {
+  -webkit-transition: @property @time @ease;
+     -moz-transition: @property @time @ease;
+      -webkit-backface-visibility: hidden;
+}
+
+.apos-bg-gradient {
+  /* fallback */
+  background-color: @apos-base;
+  /* Safari 4-5, Chrome 1-9 */
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(@apos-base), to(@apos-lighten-10));
+  /* Safari 5.1, Chrome 10+ */
+  background: -webkit-linear-gradient(top, @apos-base, @apos-lighten-10);
+  /* Firefox 3.6+ */
+  background: -moz-linear-gradient(top, @apos-base, @apos-lighten-10);
+  /* IE 10 */
+  background: -ms-linear-gradient(top, @apos-base, @apos-lighten-10);
+}
+
+.apos-border-clip
+{
+  -moz-background-clip: padding;     /* Firefox 3.6 */
+  -webkit-background-clip: padding;  /* Safari 4? Chrome 6? */
+  background-clip: padding-box;      /* Firefox 4, Safari 5, Opera 10, IE 9 */
+}
+
+
+
+.clearfix
+{
+  zoom: 1;
+  &:after,
+  &:before
+  {
+    content: "\0020";
+    display: block;
+    height: 0;
+    visibility: hidden;
+  }
+  &:after
+  {
+    clear: both;
+  }
+}

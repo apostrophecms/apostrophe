@@ -1,0 +1,310 @@
+// MODALS AND DIALOGS
+//
+// These are not restricted to logged-in users, they do get used in
+// other situations
+
+.apos-modal .apos-modal-body
+{
+  // max-height: 450px;
+}
+
+.apos-modal-body .apos-fieldset
+{
+  margin-bottom: 20px;
+  .clearfix;
+
+  label { margin-bottom: 8px; }
+}
+
+.apos-fieldset-selective-item
+{
+  margin-bottom: 10px;
+}
+
+.apos-fieldset-selective ul
+{
+  // margin-top: 20px;
+}
+
+.apos-hr
+{
+  margin: 10px 0;
+  border-top: 1px solid @apos-grey60;
+}
+
+.apos-modal-body .apos-hr
+{
+  margin: 15px 0px 20px;
+}
+
+.apos-fieldset.apos-error
+{
+  border: 2px dotted #f88;
+}
+
+.apos-fieldset-text,
+.apos-fieldset-password
+{
+  input, textarea
+  {
+    display: block;
+    .apos-input();
+  }
+  textarea {height: 180px;}
+}
+.apos-fieldset-choice { display: none; }
+.apos-fieldset-choice--show { display: block; }
+
+.apos-fieldset
+{
+  label {display: block;}
+}
+.apos-fieldset-by
+{
+  display: none;
+}
+
+.apos-fieldset-by.apos-active
+{
+  display: block;
+}
+
+.apos-fieldset-select
+{
+  .apos-menu-style
+  {
+    float:none;
+    padding: 0px 20px 0 0;
+    display: inline-block;
+  }
+  select {
+    padding: 7px 28px 8px 11px;
+    top: 1px;
+    margin-left: -4px;
+  }
+}
+
+.apos-fieldset-lister
+{
+  .lister-selected-top:hover
+  {
+    cursor: pointer;
+  }
+  .apos-inline-input
+  {
+    .apos-ui-inline-btn
+      {
+        top: 0;
+        right: 0;
+        padding: 8px 10px;
+        pointer-events: none;
+      }
+    label ~ .apos-ui-inline-btn,
+    label ~ .apos-select-wrapper .apos-ui-inline-btn
+      {
+        top: auto;
+        bottom: 0;
+      }
+  }
+}
+
+.apos-fieldset-selective
+{
+  .ui-autocomplete-input
+  {
+    display: inline-block;
+  }
+  .ui-sortable
+  {
+    margin-top: 20px;
+    li
+    {
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      color: @apos-grey20;
+      font-size: 10px;
+
+      &:hover{ cursor: move}
+      &:focus, &:active{ border: 1px dashed lighten(@apos-base, 10%); opacity: 0.5;}
+      .apos-selective-extras
+      {
+        label,
+        input
+        {
+          display: inline-block !important;
+          width: auto !important;
+        }
+      }
+    }
+  }
+}
+
+.apos-propagate input
+{
+  display: inline-block;
+  width: auto;
+  margin: none;
+  margin-left: 20px;
+}
+
+.apos-fieldset-singleton
+{
+  label
+  {
+    float: left;
+  }
+  .apos-area-controls
+  {
+    position: relative;
+    top: inherit;
+    left: inherit;
+  }
+  .apos-slideshow
+  {
+    max-width: 300px;
+    margin: inherit;
+  }
+}
+
+.apos-fieldset-icon
+{
+  height: 50px;
+  label
+  {
+    visibility: hidden;
+    width: 0px;
+    &:before
+    {
+      visibility: visible;
+      color: lighten(@apos-grey, 15%);
+      width: auto;
+      padding: 12px 14px;
+      background: lighten(@apos-grey, 75%);
+      font-size: 1.2em;
+      width: 14px
+    }
+  }
+  input
+  {
+    display: inline;
+    width: inherit;
+    -webkit-appearance: none;
+    border: 0;
+    background-color: #FFF !important;
+    height: 39px;
+    position: relative;
+    top: -3px;
+    left: -10px;
+    width: 266px;
+    &:focus{border:none; outline: none; background-color: #FFF;}
+  }
+  input:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px white inset;
+    }
+
+}
+
+.apos-fieldset-float
+{
+  float: left;
+  margin-right: 30px;
+}
+
+.apos-fieldset-editor
+{
+  background-color: inherit;
+  // label
+  // {
+  //   float:left;
+  //   display: inline-block;
+  // }
+  > div
+  {
+    float: left;
+    width: 100%;
+  }
+  textarea
+  {
+    width: 80%;
+    border: 0;
+    min-height: 180px;
+  }
+  textarea{display: block; clear: both;}
+}
+
+.apos-modal .apos-modal-body .apos-position input,
+.apos-modal .apos-modal-body .apos-size input
+{
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.apos-modal .apos-modal-footer
+{
+  margin-top: 10px;
+}
+
+
+.apos-modal-blackout
+{
+  background-color: black;
+  opacity: 0.6;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  // Just below first modal, do not use >= 899 for other things please
+  z-index: 899;
+}
+
+.apos-modal
+{
+  top: 100px;
+  position: absolute;
+  width: 800px;
+  background-color: #ddd;
+  opacity: 1.0;
+  // Do not use >= 899 for other things please
+  z-index: 900;
+  // padding: 10px;
+  // * {.apos-montserrat; color: @apos-grey;}
+  strong {.apos-montserrat-bold;}
+  .apos-button{color: #FFF;}
+  & > h3
+  {
+    background: @apos-base;
+    color: #fff;
+    padding: 15px;
+    margin-bottom: 0px;
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+
+  .apos-modal-footer
+  {
+    padding: 15px;
+    .clearfix;
+
+    .apos-modal-footer-buttons
+    {
+      float: right;
+    }
+
+    .apos-button
+    {
+      font-family: 'cabin';
+      font-size:10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 25px;
+    }
+  }
+  // padding: 10px;
+  // border: 3px solid #ccc;
+  // color: black;
+}

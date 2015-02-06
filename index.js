@@ -1,3 +1,5 @@
+// console.log = console.trace;
+
 var path = require('path');
 var _ = require('lodash');
 var argv = require('yargs').argv;
@@ -12,6 +14,7 @@ module.exports = function(options) {
 
   self.options = mergeConfiguration(options, defaults);
   acceptGlobalOptions();
+
   self.synth = defineModules();
 
   // No return statement here because we need to
@@ -19,6 +22,8 @@ module.exports = function(options) {
 
   async.series([
     instantiateModules,
+    modulesReady,
+    modulesAfterInit,
     afterInit
   ], function(err) {
     if (err) {
@@ -86,31 +91,6 @@ module.exports = function(options) {
     }
     self.title = self.options.title;
     self.prefix = self.options.prefix || '';
-
-    // // An id for this particular process that should be unique
-    // // even in a multiple server environment
-    // self.pid = self.utils.generateId();
-
-    // self.generating = (argv._[0] === 'apostrophe:generation');
-
-    // if (self.generating) {
-    //   // Create a new generation identifier. The assets module
-    //   // will use this to create asset files that are distinctly
-    //   // named on a new deployment.
-    //   generation = self.apos.generateId();
-    //   fs.writeFileSync(self.rootDir + '/data/generation', generation);
-    // }
-
-    // if (fs.existsSync(self.rootDir + '/data/generation')) {
-    //   generation = fs.readFileSync(self.rootDir + '/data/generation', 'utf8');
-    //   generation = generation.replace(/[^\d]/g, '');
-    // }
-
-    // if (!generation) {
-    //   // In a dev environment, we can just use the pid
-    //   generation = self.pid;
-    // }
-    // self.generation = generation;
   }
 
   function defineModules() {
@@ -143,6 +123,14 @@ module.exports = function(options) {
     }, callback);
   }
 
+  function modulesReady(callback) {
+    return callForAll('modulesReady', callback);
+  }
+
+  function modulesAfterInit(callback) {
+    return callForAll('afterInit', callback);
+  }
+
   function afterInit(callback) {
     // Give project-level code a chance to run before we
     // listen or run a task
@@ -150,6 +138,34 @@ module.exports = function(options) {
       return setImmediate(callback);
     }
     return self.options.afterInit(callback);
+  }
+
+  function callForAll(method, callback) {
+    return async.eachSeries(_.keys(self.modules), function(name, callback) {
+      var module = self.modules[name];
+      var invoke = module[method];
+      if (invoke) {
+        if (invoke.length === 1) {
+          return invoke(callback);
+        } else if (invoke.length === 0) {
+          return setImmediate(function() {
+            try {
+              invoke();
+            } catch (e) {
+              return callback(e);
+            }
+            return callback(null);
+          });
+        }
+      } else {
+        return setImmediate(callback);
+      }
+    }, function(err) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(null);
+    });
   }
 
 };

@@ -1,0 +1,49 @@
+@apos-base: rgb(247,160,50);
+
+@apos-lighten-10: lighten(@apos-base, 8%);
+@apos-disabled: fade(@apos-base, 50%);
+@apos-shade-5: darken(@apos-base, 3%);
+@apos-shade-10: darken(@apos-base, 10%);
+@apos-shade-20: darken(@apos-base, 20%);
+@apos-shade-30: darken(@apos-base, 30%);
+
+
+/* GREYS */
+
+
+@apos-grey70: lighten(@apos-grey,70%);
+@apos-grey60: lighten(@apos-grey,60%);
+@apos-grey50: lighten(@apos-grey,50%);
+@apos-grey55: lighten(@apos-grey,55%);
+@apos-grey40: lighten(@apos-grey,40%);
+@apos-grey30: lighten(@apos-grey,30%);
+@apos-grey20: lighten(@apos-grey,20%);
+@apos-grey10: lighten(@apos-grey,10%);
+@apos-grey5: lighten(@apos-grey,5%);
+
+
+
+@apos-grey: rgb(50,50,50);
+@apos-grey-light: rgb(238, 238, 238);
+
+@apos-grey-10: darken(@apos-grey,10%);
+@apos-grey-20: darken(@apos-grey,20%);
+
+@apos-grey-blue: rgb(157, 179, 180);
+@apos-steel: #353B3B;
+
+// Warn Yellow
+@apos-yellow: #FEE000;
+
+// Success Green
+@apos-green: #39B54A;
+
+
+// Gradients
+.apos-dark-grad(@from:@apos-steel, @to:@apos-grey50) {
+  .apos-bg-gradient(@from, @to);
+}
+
+.apos-base-grad {
+  .apos-bg-gradient(@apos-base, @apos-lighten-10);
+}

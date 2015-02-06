@@ -1,0 +1,745 @@
+/* Everything must have a apos- prefix */
+
+
+// body {background: red;}
+.apos-input()
+{
+  width: 100%;
+  max-width: 385px;
+  padding: 14px 8px 16px 12px;
+  border: none;
+}
+.apos-one-third
+{
+  width: 33.33333%;
+}
+
+.apos-one-half
+{
+  width: 50%;
+}
+
+.apos-two-thirds
+{
+  width: 66.66667%;
+}
+
+.apos-full
+{
+  width: 100%;
+}
+
+.apos-left
+{
+  float: left;
+  clear: both;
+  margin-right: 10px;
+}
+
+.apos-middle
+{
+  margin: auto;
+  text-align: center;
+}
+
+.apos-widget.apos-code .apos-raw-html-source
+{
+  display: none;
+}
+
+.apos-widget.apos-code
+{
+  text-align: left;
+  font-family: Fixed, monospace;
+}
+
+.apos-widget.apos-html
+{
+  text-align: left;
+  pre {
+    font-family: Fixed, monospace;
+  }
+  /* Please do not aggressively style anything but pre here. -Tom */
+}
+
+.apos-right
+{
+  float: right;
+  clear: both;
+  margin-left: 10px;
+}
+
+.apos-pullquote
+{
+  font-size: 135%;
+  color: #488;
+  line-height: 1.5;
+  padding-bottom: 5px;
+}
+
+.apos-image img, .apos-video img
+{
+  width: 100%;
+}
+
+.apos-video-thumbnail-wrapper
+{
+  display: block;
+  background: url('../images/play.png') center center no-repeat;
+}
+
+.apos-video-thumbnail
+{
+  opacity: .5;
+  filter: alpha(opacity=70);
+}
+.apos-slideshow, .apos-marquee
+{
+  position: relative;
+  overflow: hidden;
+}
+.apos-slideshow .apos-slideshow-items
+{
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
+.apos-marquee .apos-marquee-items
+{
+  // here
+}
+
+.apos-slideshow .apos-slideshow-item,
+.apos-marquee .apos-marquee-item
+{
+  list-style: none;
+  display: none;
+  width: 100%;
+  // height: 100%;
+  -webkit-background-size: contain;
+       -o-background-size: contain;
+          background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.apos-marquee .apos-marquee-item
+{
+  -webkit-background-size: cover;
+     -o-background-size: cover;
+        background-size: cover;
+}
+
+.apos-slideshow .apos-slideshow-image,
+.apos-marquee .apos-marquee-image
+{
+  width: 100%;
+}
+
+.apos-slideshow .apos-slideshow-item.apos-current,
+.apos-marquee .apos-marquee-item.apos-current
+{
+  display: block;
+}
+
+.apos-slideshow-next,
+.apos-slideshow-prev
+{
+  position: absolute;
+  top: 50%;
+  // background: red;
+  height: 50px;
+  width: 50px;
+  text-indent: -9999px;
+  &:after
+  {
+    top:14px;
+    left:0;
+    border-top: 3px solid black;
+    border-left: 3px solid black;
+    content: " ";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+  }
+  &:before
+  {
+    border: 3px solid black;
+    -webkit-border-radius: 30px;
+            border-radius: 30px;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    content: " ";
+    display: block;
+  }
+
+  &:hover:before
+  {
+    background-color: RGBA(255,255,255,0.3);
+  }
+}
+
+.apos-slideshow-next
+{
+   right: 10px;
+  &:after
+  {
+    left: 9px;
+    -webkit-transform: rotate(135deg);
+       -moz-transform: rotate(135deg);
+        -ms-transform: rotate(135deg);
+         -o-transform: rotate(135deg);
+            transform: rotate(135deg);
+  }
+}
+
+.apos-slideshow-prev
+{
+
+  left: 10px;
+  &:after
+  {
+    left: 17px;
+    -webkit-transform: rotate(-45deg);
+       -moz-transform: rotate(-45deg);
+        -ms-transform: rotate(-45deg);
+         -o-transform: rotate(-45deg);
+            transform: rotate(-45deg);
+  }
+}
+
+/* Areas and singletons are always tall enough to contain their controls */
+.apos-area, .apos-singleton
+{
+  min-height: 50px;
+}
+
+
+.apos-buttons
+{
+  .apos-buttons-item
+  {
+    float: left;
+    width: auto;
+
+    .apos-button-link
+    {
+     &:hover
+     {
+      .apos-button-image
+      {
+        opacity: 0.6;
+      }
+     }
+    }
+
+    .apos-button-image
+    {
+      width: 100%;
+      min-height: 0px;
+      // height: 75px;
+
+      background-size: auto 100%;
+      background-position: 0px 50%;
+      background-repeat: no-repeat;
+
+      img
+      {
+        opacity: 0;
+        background:white;
+        width: auto;
+        height: 100%;
+      }
+    }
+  }
+}
+
+
+/*
+Below are some basic styles for the map module so it doesn't look totally broken.
+They will need to live somewhere else eventually
+*/
+#map-canvas
+{
+  // width: 600px;
+  // height: 350px;
+}
+
+// .map-marker
+// {
+//   position: absolute;
+
+//   &.general
+//   { /*  This is general icon points as seen on homepage */
+//     height: 20px;
+//     width: 20px;
+//     background-color: red;
+//     border: 5px solid #fff;
+//     -webkit-border-radius: 10px;
+//             border-radius: 10px;
+
+//     box-shadow: 0px 0px 11px #888;
+//   }
+// }
+
+
+// Login screen
+// Should probably have some sort of internal admin view stylesheet
+
+.apos-login
+{
+  background-color: @apos-grey-light;
+  .content .main
+  {
+    max-width: 100%;
+    text-align: center;
+    min-height: 0px;
+  }
+  .apos-login-inner
+  {
+    padding: 15px;
+  }
+  .appy-login
+  {
+    .apos-modal;
+    position: relative;
+    text-align: left;
+    width: 350px;
+    margin: 0 auto;
+    height: 210px;
+
+    .apos-control
+    {
+      float: right;
+      margin-right: 12px;
+    }
+  }
+}
+
+/**
+ * To prevent conflicts EVERY class should start with apos-
+ */
+
+.apos-widget
+{
+  display: block;
+}
+
+
+.apos-center
+{
+  text-align: center;
+}
+
+
+.apos-clear
+{
+  clear: both;
+}
+
+.apos-template
+{
+  display: none;
+}
+
+.apos-hidden
+{
+  display: none;
+}
+
+.apos-pull-quote
+{
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.apos-widget.apos-full
+{
+  .apos-float-widget-left, .apos-float-widget-right {
+    display: none;
+  }
+}
+
+.apos-widget.apos-left .apos-float-widget-left
+{
+  display: none;
+}
+
+.apos-widget.apos-right .apos-float-widget-right
+{
+  display: none;
+}
+
+textarea.apos-code {
+  width: 97%;
+}
+
+.apos-button
+{
+  // .box-shadow(1px 1px 5px, 20%);
+
+  cursor: pointer;
+  .transition;
+
+  &:hover
+  {
+    background-color: @apos-shade-10;
+    text-decoration: none;
+  }
+}
+
+.apos-button:not(.apos-accordion-item, .apos-logout)
+{
+  line-height: 1em !important;
+}
+
+/* Admin bar is needed for demo at least */
+
+/* Admin bar base styles */
+.apos-admin-bar
+{
+  // position: fixed;
+  // position: absolute;
+  // top: 0;
+  // left: 0;
+  width: 100%;
+  background-color: @apos-grey;
+  height: 40px;
+  .box-shadow;
+  &.item-open{ overflow: visible !important; }
+
+
+  .apos-logo-tiny
+  {
+    float: left;
+    width: 40px;
+    height: 40px;
+    background-color: @apos-base;
+    background-image: url('/modules/apos/images/apos-logo-tiny.png');
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    text-indent: -9999px;
+  }
+
+  .apos-admin-bar-item
+  {
+    float: left;
+    height: 40px;
+    line-height: 40px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-right: 1px dotted @apos-grey50;
+    cursor: pointer;
+    a {color: #fff !important;}
+
+    &:last-child
+    {
+      border-right: none;
+    }
+
+    &.apos-preview-toggle
+    {
+      padding: 0 10px;
+      .icon-eye {display: block;}
+      .icon-wrench {display: none;}
+      i
+      {
+        color: #fff;
+        &:before
+        {
+          font-size:15px;
+          padding-top: 13px;
+        }
+      }
+      &.previewing
+      {
+        .icon-eye {display: none;}
+        .icon-wrench {display: block;}
+      }
+
+      &:hover
+      {
+        i:before {color: #ccc;}
+      }
+    }
+
+    &.login-status
+    {
+      float: right;
+      background: @apos-grey10;
+    }
+
+    // New dropdown menu with profile and logout options
+    &.apos-my-account
+    {
+      float: right;
+    }
+
+    &.apos-accordion-menu
+    {
+      margin: 0;
+      max-width: 120px;
+      cursor: pointer;
+      overflow: hidden;
+
+      .apos-accordion-title
+      {
+        color: #eee;
+      }
+
+      &.open
+      {
+        overflow: visible;
+        .apos-accordion-items
+        {
+          max-height: 600px;
+        }
+      }
+
+      .apos-accordion-items
+      {
+        position: relative;
+        z-index: 9999;
+        padding: 0;
+        height: auto;
+        max-height: 0px;
+        overflow: hidden;
+
+
+        .transition;
+
+        ul
+        {
+          margin: 0;
+          .apos-accordion-item
+          {
+            background-color: rgba(50,50,50,0.8);
+
+            &:hover
+            {
+              background: @apos-grey20;
+            }
+          }
+        }
+      }
+    }
+
+    a, li
+    {
+      padding: 10px 15px;
+      font-size: 10px;
+      display: inline-block;
+      color: @apos-grey50;
+      width: 100%;
+      box-sizing: border-box;
+      line-height: 1.7em;
+      font-family: 'cabin';
+      text-decoration: none;
+    }
+  }/* apos bar items */
+} /* admin bar */
+
+.do-not-edit
+{
+  background-color: red;
+  width: 100%;
+  position: relative;
+  text-align: center;
+  color: #FFF;
+  z-index: 10;
+  font-size:17px;
+  padding: 15px;
+}
+
+// BUTTONS AND CONTROLS: used in both logged in and logged out contexts (DR)
+
+/**
+* Buttons and menus both have this class
+*/
+input.apos-control
+{
+ border: none;
+}
+
+.apos-control
+{
+  float: left;
+  padding: 10px;
+  background-color: @apos-base;
+  color: #fff !important;
+  margin-right: 10px;
+  text-decoration: none;
+  font-size: 16px;
+  margin-right: 5px;
+  text-transform: uppercase;
+  font-family: Helvetica, sans-serif;
+  .transition;
+  opacity: 1;
+  font-size: 11px;
+  font-family: 'cabin';
+  letter-spacing: 1px;
+  line-height: 1em;
+  &.apos-menu-style
+  {
+    background-color: darken(@apos-base, 10%);
+    &:hover
+    {
+      background-color: darken(@apos-base, 15%);
+    }
+    width: 50%;
+    max-width: 170px;
+    select {width: 95%;}
+  }
+  &:hover{text-decoration:none !important;}
+
+  &.apos-menu
+  {
+    position: relative;
+    &:hover {background-color: darken(@apos-base, 10%);}
+    &:after
+    {
+      position: absolute;
+      width: 0px;
+      height: 0px;
+      border-style: solid;
+      border-width: 6px 4px 0 4px;
+      border-color: #ffffff transparent transparent transparent;
+      content: "";
+      right: 9px;
+      top: 40%;
+      z-index: 0;
+
+    }
+    .apos-menu-select
+    {
+      background-color: transparent;
+      outline-style: none;
+      border:none;
+      -webkit-appearance: none;
+      color: #FFF;
+      z-index: 1;
+      position: relative;
+      font-family: Helvetica, sans-serif;
+      &:hover{cursor: pointer;}
+      &:active option,
+      &:focus option
+      {
+        color: #000 !important;
+      }
+    }
+  }
+  &.apos-corner-close
+  {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 0;
+    padding: 14px 13px 12px 13px;
+    background-color: lighten(@apos-base, 8%);
+    font-size: 1.1em;
+
+  }
+  &.apos-inline-block
+  {
+    float: none;
+    display: inline-block;
+  }
+}
+
+.apos-landscape,
+.apos-portrait,
+.apos-square
+{
+  img {opacity: 0;}
+  .apos-slideshow-items,
+  .apos-marquee-items
+  {
+    overflow: hidden;
+    width: 100%;
+
+    .apos-marquee-item,
+    .apos-slideshow-item
+    {
+      -webkit-background-size: contain;
+           -o-background-size: contain;
+              background-size: contain;
+      background-position: center;
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+// Not sure if this is necessary. Commenting out for now. --Joel
+// .apos-square
+// {
+//   .apos-slideshow-items,
+//   .apos-marquee-items
+//   {
+//     position: relative;
+//     width: 100%;
+//     padding-bottom: 100%;
+//     float: left;
+//     height: 0;
+//     .apos-marquee-item,
+//     .apos-slideshow-item
+//     {
+//     width: 100%;
+//     height: 100%;
+//     position: absolute;
+//     left: 0;
+//     }
+//   }
+// }
+
+// A lockup of a widget and a rich text item. Must contain its floats.
+// Whether it actually does any floating is a per-site decision but an iron
+// law of lockupdom is that they shalt not interfere with the items that
+// are outside the lockup, so clearfix always makes sense. -Tom
+.apos-lockup
+{
+  .clearfix;
+}
+
+
+
+.apos-modal-login
+{
+  background-color: transparent !important;
+  .apos-login-container
+  {
+    margin-top: 30%;
+  }
+}
+
+.apos-modal-logout
+{
+  background-color: transparent !important;
+  .apos-logout-container
+  {
+    margin-top: 30%;
+    text-align: center;
+  }
+  .apos-logout-modal
+  {
+    padding: 30px 100px !important;
+  }
+
+
+}
+
+.apos-global-busy {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background-image: url('/modules/apos/images/apos-modal-loader.gif');
+  background-color: #000;
+  opacity: 0.6;
+  background-repeat: no-repeat;
+  background-position: center;
+}
