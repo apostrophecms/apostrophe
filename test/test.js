@@ -3,9 +3,7 @@ var assert = require('assert'),
     fs = require('fs');
 
 if (!fs.existsSync(__dirname +'/node_modules')) {	
-
 	fs.mkdirSync(__dirname + '/node_modules');
-
 	fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
 }
 
@@ -75,7 +73,7 @@ describe('Apostrophe', function() {
         __testDefaults: {
             modules: {
                 'apostrophe-test-module': {},
-              }
+            }
         },
         afterInit: function(callback) {
             assert(apos.modules['apostrophe-test-module']);
@@ -92,25 +90,28 @@ describe('Apostrophe', function() {
         __testDefaults: {
             modules: {
                 'apostrophe-test-module': {},
-              }
+            }
         },
         afterInit: function(callback) {
+
             assert(apos.test && apos.test.color === 'red');
             return done();
         }
     });
   });
 
-  it('should load the default modules correctly', function(done){
+  it('should load the default modules and implicitly subclass the base module correctly', function(done){
     var defaultModules = require('../defaults.js').modules;
 
     var apos = require('../index.js')({ 
 
-        root: module,  // set for the normal lib/modules folder
+        root: module,
         shortName: 'test',
         hostName: 'test.com',
         afterInit: function(callback) {
-        	assert(apos.assets.color === 'blue');
+        	// color = blue is inherited from our implicit subclass of the base module
+        	assert(apos.assets && apos.assets.color === 'blue');
+        	// make sure that our modules match what is specifed in deafults.js
             assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);            
             return done();
         }
@@ -127,37 +128,37 @@ describe('Modules', function(){
     //    BASE MODULE    //
     //                   //
 
-    // describe('Base Module', function(){
-    //     var apos;
+    describe('Base Module', function(){
+        var apos;
 
-    //     it('should be subclassable', function(done){
-    //         apos = require('../index.js')({ 
-    //             root: module,
-    //             shortName: 'test',
-    //             hostName: 'test.com',
-    //             __testDefaults: {
-    //                 modules: { 
-    //                     'apostrophe-test-module': {}
-    //                 }
-    //             },
-    //             afterInit: function(callback) {
+        it('should be subclassable', function(done){
+            apos = require('../index.js')({ 
+                root: module,
+                shortName: 'test',
+                hostName: 'test.com',
+                modules: {
+                	// will push an asset for us to look for later
+                	'apostrophe-test-module-push': {}
+                },
+                afterInit: function(callback) {
+                    assert(apos.test && apos.test.color === 'red');
+                    return done();
+                }
+            });
+        });
 
-    //                 assert(apos.test && apos.test.color === 'red');
-    //                 return done();
-    //             }
-    //         });
-    //     });
-
-    //     it('should have methods: pushAsset, render, renderString, renderer, rendererString, and renderPage', function(done){
-    //         assert(typeof(apos.test.pushAsset) === 'function');
-    //         assert(typeof(apos.test.render) === 'function');
-    //         assert(typeof(apos.test.renderString) === 'function');
-    //         assert(typeof(apos.test.renderer) === 'function');
-    //         assert(typeof(apos.test.rendererString) === 'function');
-    //         assert(typeof(apos.test.renderPage) === 'function');
-    //         return done();
-    //     });
-    // });
+        it('should provide apos.assets with the right context for pushing assets', function(done){
+        	var found = false;
+        	for (var i = apos.assets.pushed.stylesheets.length - 1; i >= 0; i--) {
+        		if (apos.assets.pushed.stylesheets[i].file == '/Users/matthew/src/apostrophe/test/lib/modules/apostrophe-test-module-push/public/css/test.css') {
+        			found = true;
+        			break;
+        		}
+        	};
+        	assert(found);
+            return done();
+        });
+    });
 
     //            //
     //    UTIL    //
