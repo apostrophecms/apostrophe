@@ -1,6 +1,13 @@
 var assert = require('assert'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    fs = require('fs');
 
+if (!fs.existsSync(__dirname +'/node_modules')) {	
+
+	fs.mkdirSync(__dirname + '/node_modules');
+
+	fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
+}
 
 
 describe('Apostrophe', function() {
@@ -14,7 +21,7 @@ describe('Apostrophe', function() {
 
   it('should merge the options and local.js correctly', function(done){
     var apos = require('../index.js')({
-        rootDir: __dirname,
+        root: module,
         shortName: 'test',  // overriden by data/local.js
         hostName: 'test.com',
         __testDefaults: {
@@ -29,7 +36,7 @@ describe('Apostrophe', function() {
 
   it('should accept a `__localPath` option and invoke local.js as a function if it is provided as one', function(done){
     var apos = require('../index.js')({
-        rootDir: __dirname,
+        root: module,
         shortName: 'test',  // overriden by data/local_fn.js
         hostName: 'test.com',
         __localPath: '/data/local_fn.js',  
@@ -45,7 +52,7 @@ describe('Apostrophe', function() {
 
   it('should invoke local.js as a function with the apos and config object', function(done){
     var apos = require('../index.js')({
-        rootDir: __dirname,
+        root: module,
         shortName: 'test',   // concated in local_fn_b.js
         hostName: 'test.com',
         __localPath: '/data/local_fn_b.js',  
@@ -61,7 +68,8 @@ describe('Apostrophe', function() {
 
   it('should accept a `__testDeafults` option and load the test modules correctly', function(done){
     var apos = require('../index.js')({
-        rootDir: __dirname,
+
+        root: module,
         shortName: 'test',
         hostName: 'test.com',
         __testDefaults: {
@@ -78,7 +86,7 @@ describe('Apostrophe', function() {
 
   it('should create the modules and invoke the construct function correctly', function(done){
     var apos = require('../index.js')({
-        rootDir: __dirname,
+        root: module,
         shortName: 'test',
         hostName: 'test.com',
         __testDefaults: {
@@ -95,13 +103,14 @@ describe('Apostrophe', function() {
 
   it('should load the default modules correctly', function(done){
     var defaultModules = require('../defaults.js').modules;
+
     var apos = require('../index.js')({ 
 
-        rootDir: '../',  // set for the normal lib/modules folder
+        root: module,  // set for the normal lib/modules folder
         shortName: 'test',
         hostName: 'test.com',
         afterInit: function(callback) {
-
+        	assert(apos.assets.color === 'blue');
             assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);            
             return done();
         }
@@ -114,6 +123,42 @@ describe('Apostrophe', function() {
 
 describe('Modules', function(){
 
+    //                   //
+    //    BASE MODULE    //
+    //                   //
+
+    // describe('Base Module', function(){
+    //     var apos;
+
+    //     it('should be subclassable', function(done){
+    //         apos = require('../index.js')({ 
+    //             root: module,
+    //             shortName: 'test',
+    //             hostName: 'test.com',
+    //             __testDefaults: {
+    //                 modules: { 
+    //                     'apostrophe-test-module': {}
+    //                 }
+    //             },
+    //             afterInit: function(callback) {
+
+    //                 assert(apos.test && apos.test.color === 'red');
+    //                 return done();
+    //             }
+    //         });
+    //     });
+
+    //     it('should have methods: pushAsset, render, renderString, renderer, rendererString, and renderPage', function(done){
+    //         assert(typeof(apos.test.pushAsset) === 'function');
+    //         assert(typeof(apos.test.render) === 'function');
+    //         assert(typeof(apos.test.renderString) === 'function');
+    //         assert(typeof(apos.test.renderer) === 'function');
+    //         assert(typeof(apos.test.rendererString) === 'function');
+    //         assert(typeof(apos.test.renderPage) === 'function');
+    //         return done();
+    //     });
+    // });
+
     //            //
     //    UTIL    //
     //            //
@@ -123,7 +168,7 @@ describe('Modules', function(){
 
         it('should exist on the apos object', function(done){
             apos = require('../index.js')({ 
-                rootDir: '../',
+                root: module,
                 shortName: 'test',
                 hostName: 'test.com',
                 afterInit: function(callback) {
@@ -142,7 +187,7 @@ describe('Modules', function(){
 
                 assert(typeof(id) === 'string');
                 assert(typeof(parseInt(id)) === 'number');
-                done();
+                return done();
             });
             
             it('globalReplace: should replace multiple instances of a string', function(done){
@@ -150,35 +195,35 @@ describe('Modules', function(){
 
                 assert(s.indexOf('apostrophe') < 0);
                 assert(s.split('comma').length == 3);
-                done();
+                return done();
             });
             
             it('truncatePlaintext: should tuncate a message without cutting off a word', function(done){
                 var s = apos.utils.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
 
                 assert(s.indexOf('here') > 0);
-                done();
+                return done();
             });
 
             it('escapeHtml: should replace html tags with html string entites', function(done){
                 var s = apos.utils.escapeHtml('<div>hello</div>');
                 
                 assert(s.indexOf('<') < 0 && s.indexOf('&lt;') >= 0);
-                done();
+                return done();
             });
 
             it('htmlToPlaintext: should strip all html notation', function(done){
                 var s = apos.utils.htmlToPlaintext('<div>hello</div>');
 
                 assert(s.indexOf('<') < 0 && s.indexOf('hello') >= 0);
-                done();
+                return done();
             });
 
             it('capitalizeFirst: should capitalize the first letter', function(done){
                 var s = apos.utils.capitalizeFirst('hello');
                 
                 assert(s.indexOf('hello') < 0 && s.indexOf('H' == 0));
-                done();
+                return done();
             });
 
             it('cssName: should covert camelCase or underscore name formats to hyphenated css-style', function(done){
@@ -186,21 +231,21 @@ describe('Modules', function(){
 
                 assert(s.indexOf('C') < 0 && s.indexOf('_') < 0);
                 assert(s.indexOf('camel-case') >= 0);
-                done();
+                return done();
             });
 
             it('camelName: should convert non digits or ASII characters to a capitalized version of the next character', function(done){
                 var s = apos.utils.camelName('hello apostrophe');
 
                 assert(s.indexOf(' ') < 0 && s.indexOf('A') == 5);
-                done();
+                return done();
             });
 
             it('addSlashIfNeeded: should add a slash "/" to the end of a path if necessary', function(done){
                 var s = apos.utils.addSlashIfNeeded('/my/path');
                 
                 assert(s === '/my/path/');
-                done();
+                return done();
             }); 
         });
     });
@@ -212,7 +257,7 @@ describe('Modules', function(){
     describe('Db', function(){
         it('should exist on the apos object with a connection at port 27017', function(done){
             var apos = require('../index.js')({ 
-                rootDir: '../',
+                root: module,
                 shortName: 'test',
                 hostName: 'test.com',
                 afterInit: function(callback) {

@@ -14,7 +14,7 @@ module.exports = function(options) {
 
   // Determine root module and root directory
   self.root = options.root || getRoot();
-  self.rootDir = options.rootDir || path.dirname(root.filename);
+  self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
   self.options = mergeConfiguration(options, defaults);
   acceptGlobalOptions();
@@ -47,9 +47,10 @@ module.exports = function(options) {
     var config = {};
     var local = {};
     var localPath = options.__localPath || '/data/local.js';
+    var reallyLocalPath = self.rootDir + localPath; 
 
-    if (fs.existsSync(self.rootDir + localPath)) {
-      local = require(self.rootDir + localPath);
+    if (fs.existsSync(reallyLocalPath)) {
+      local = require(reallyLocalPath);
     }    
 
     var config = options.__testDefaults || defaults;
