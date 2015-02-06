@@ -1,5 +1,6 @@
 npm-debug.log
 *.DS_Store
 node_modules
+test/node_modules
 # We do not commit CSS, only LESS
 */public/css/*.css
