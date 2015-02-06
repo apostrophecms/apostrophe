@@ -12,6 +12,10 @@ var defaults = require('./defaults.js');
 module.exports = function(options) {
   var self = {};
 
+  // Determine root module and root directory
+  self.root = options.root || getRoot();
+  self.rootDir = options.rootDir || path.dirname(root.filename);
+
   self.options = mergeConfiguration(options, defaults);
   acceptGlobalOptions();
 
@@ -42,13 +46,17 @@ module.exports = function(options) {
   function mergeConfiguration(options, defaults) {
     var config = {};
     var local = {};
+    var localPath = options.__localPath || '/data/local.js';
 
-    if (fs.existsSync(self.rootDir + '/data/local.js')) {
-      local = require(self.rootDir + '/data/local.js');
-    }
+    if (fs.existsSync(self.rootDir + localPath)) {
+      local = require(self.rootDir + localPath);
+    }    
 
-    var config = defaults;
+    var config = options.__testDefaults || defaults;
     var coreModules = _.cloneDeep(config.modules);
+
+    _.merge(config, options);
+
     if (typeof(local) === 'function') {
       if (local.length === 1) {
         _.merge(config, local(self));
@@ -57,9 +65,10 @@ module.exports = function(options) {
       } else {
         throw 'data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config';
       }
+    } else {
+       _.merge(config, local || {});
     }
-    _.merge(config, local || {});
-    _.merge(config, options);
+  
     return config;
   }
 
@@ -74,10 +83,6 @@ module.exports = function(options) {
 
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
-
-    // Determine root module and root directory
-    self.root = self.options.root || getRoot();
-    self.rootDir = self.options.rootDir || path.dirname(root.filename);
 
     self.argv = argv;
 
@@ -120,7 +125,11 @@ module.exports = function(options) {
         self.modules[item] = obj;
         return callback(null);
       });
-    }, callback);
+    }, function(err){
+      return setImmediate( function(err) {
+        return callback(err);
+      });
+    });
   }
 
   function modulesReady(callback) {
