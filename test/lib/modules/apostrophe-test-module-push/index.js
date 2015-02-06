@@ -3,6 +3,9 @@ module.exports = {
       	// Set property
         self.color = 'red';
 
+        // Push an asset
+        self.pushAsset('stylesheet', 'test', { when: 'always' });
+        
         // Attach to apos
       	self.apos.test = self;
     }

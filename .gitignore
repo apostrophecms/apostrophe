@@ -6,3 +6,7 @@ node_modules
 test/node_modules
 # We do not commit CSS, only LESS
 */public/css/*.css
+
+# Dont commit test generated css
+test/public/css/*.css
+test/public/css/master-*.less
