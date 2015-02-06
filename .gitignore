@@ -1,4 +1,4 @@
-test/public/modules
+test/public/modules/*
 test/public/css/master-*
 npm-debug.log
 *.DS_Store
