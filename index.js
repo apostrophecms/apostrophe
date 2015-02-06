@@ -47,11 +47,11 @@ module.exports = function(options) {
     var config = {};
     var local = {};
     var localPath = options.__localPath || '/data/local.js';
-    var reallyLocalPath = self.rootDir + localPath; 
+    var reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
       local = require(reallyLocalPath);
-    }    
+    }
 
     var config = options.__testDefaults || defaults;
     var coreModules = _.cloneDeep(config.modules);
@@ -127,7 +127,7 @@ module.exports = function(options) {
         return callback(null);
       });
     }, function(err) {
-      return setImmediate( function(err) {
+      return setImmediate(function() {
         return callback(err);
       });
     });
