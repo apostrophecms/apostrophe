@@ -1144,7 +1144,7 @@ apos.on('enhance', function($el) {
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
-    sortField: 'text',
+    // sortField: 'text',
     dataAttr: 'data-extra',
     searchField: ['label', 'value'],
     valueField: 'value',
