@@ -1,23 +1,72 @@
-{% if versions.length %}
-  {% for version in versions %}
-    <li class="apos-version" data-version-id="{{ version._id }}">
-      <ul class="apos-changes" data-changes>
-        {% for change in version.diff %}
-          <li class="apos-change">
-            {% if change.removed %}
-              <strike>
-            {% endif %}
-            {{ change.value | e | nlbr }}
-            {% if change.removed %}
-              </strike>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-      <div class="apos-author">{{ version.author | e }}</div>
-      <div class="apos-created-at">{{ version.createdAt | date('LLL') }}</div>
-    </li>
-  {% endfor %}
-{% else %}
-  <p>{{ __('No versions available.') }}</p>
-{% endif %}
+{# First, create a macro to render each version. #}
+{% macro renderVersion(version)%}
+<li class="apos-version">
+  <div class="apos-author" style="text-align:center;">
+    <div src="" class="apos-author-avatar-image" style="width: 50px; height: 50px; border-radius: 100px; margin-left: auto; margin-right: auto; background: #ddd"></div>
+  </div>
+  <div class="apos-changes" data-changes>
+    <span class="apos-version-emphasize">{{ version.author | e }}</span> made <span class="apos-version-emphasize">{{version.diff.length}} change{% if version.diff.length != 1%}s{% endif %}</span> on {{ version.createdAt | date('MM/DD/YY') }} at {{ version.createdAt | date('h:mm') }}.
+    {% if version.diff.length %}<div class="apos-ui-link apos-ui-link--toggle" data-review-changes>{{ __('See Changes') }}</div>{% endif %}
+    {% for change in version.diff %}
+      <div class="apos-change">
+        {# <span class="apos-version-emphasize">{% if change.removed %}Removed{% else %}Added{%endif%}</span>: #}
+        <span class="{% if change.removed %}apos-change-removed{% else %}apos-change-added{% endif %}">
+          {{ change.value | e }}
+        <span>
+      </div>
+    {% endfor %}
+  </div>
+  {# <div class="apos-author">{{ version.author | e }}</div> #}
+  <div class="apos-revert">
+    <a href="#" class="apos-progress-btn apos-progress-btn--float-right apos-progress-btn--base" data-version-id="{{ version._id }}">{{ __('Revert') }}</a>
+  </div>
+</li>
+{% endmacro %}
+
+<div class="apos-modal-tabs">
+  <div class="apos-modal-tab-control">
+    <div class="apos-modal-tab-title apos-active" data-tab="weeklyVersions">
+      This Week
+    </div>
+    <div class="apos-modal-tab-title" data-tab="monthlyVersions">
+      This Month
+    </div>
+    <div class="apos-modal-tab-title" data-tab="allVersions">
+      All
+    </div>
+  </div>
+
+  {% set weeklyVersions = aposVersionsDateRange(versions, 'week')%}
+  {% set monthlyVersions = aposVersionsDateRange(versions, 'month')%}
+
+  <div class="apos-modal-tab apos-active" data-tab-id="weeklyVersions">
+    {# Let's make a week view #}
+    {% if weeklyVersions.length %}
+      {% for version in weeklyVersions %}
+        {{ renderVersion(version) }}
+      {% endfor %}
+    {% else %}
+      <p>{{ __('No changes were made this past week.') }}</p>
+    {% endif %}
+  </div>
+  <div class="apos-modal-tab" data-tab-id="monthlyVersions">
+    {# Let's make a month view #}
+    {% if monthlyVersions.length %}
+      {% for version in monthlyVersions %}
+        {{ renderVersion(version) }}
+      {% endfor %}
+    {% else %}
+      <p>{{ __('No changes were made this past week.') }}</p>
+    {% endif %}
+  </div>
+  <div class="apos-modal-tab" data-tab-id="allVersions">
+    {# Let's display them all#}
+    {% if versions.length %}
+      {% for version in versions %}
+        {{ renderVersion(version) }}
+      {% endfor %}
+    {% else %}
+      <p>{{ __('No versions available.') }}</p>
+    {% endif %}
+  </div>
+</div>
