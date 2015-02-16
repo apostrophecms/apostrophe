@@ -8,7 +8,7 @@
   </div>
   <div class="apos-changes" data-changes>
     <span class="apos-version-emphasize">{{ version.author | e }}</span> made <span class="apos-version-emphasize">{{version.diff.length}} change{% if version.diff.length != 1%}s{% endif %}</span> on {{ version.createdAt | date('MM/DD/YY') }} at {{ version.createdAt | date('h:mm') }}.
-    {% if version.diff.length %}<div class="apos-ui-link apos-ui-link--toggle" data-review-changes>{{ __('See Changes') }}</div>{% endif %}
+    {% if version.diff.length %}<div class="apos-ui-link apos-ui-link--toggle" data-review-changes>See Changes</div>{% endif %}
     {% for change in version.diff %}
       <div class="apos-change">
         {# <span class="apos-version-emphasize">{% if change.removed %}Removed{% else %}Added{%endif%}</span>: #}
