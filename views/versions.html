@@ -1,8 +1,10 @@
 {# First, create a macro to render each version. #}
 {% macro renderVersion(version)%}
 <li class="apos-version">
-  <div class="apos-author" style="text-align:center;">
-    <div src="" class="apos-author-avatar-image" style="width: 50px; height: 50px; border-radius: 100px; margin-left: auto; margin-right: auto; background: #ddd"></div>
+  <div class="apos-author">
+    <div class="apos-avatar-wrapper">
+      <img src="" data-avatar-username="{{version.author|e}}" class="apos-author-avatar-image">
+    </div>
   </div>
   <div class="apos-changes" data-changes>
     <span class="apos-version-emphasize">{{ version.author | e }}</span> made <span class="apos-version-emphasize">{{version.diff.length}} change{% if version.diff.length != 1%}s{% endif %}</span> on {{ version.createdAt | date('MM/DD/YY') }} at {{ version.createdAt | date('h:mm') }}.
