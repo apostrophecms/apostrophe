@@ -147,13 +147,13 @@ describe('Modules', function(){
     it('should provide apos.assets with the right context for pushing assets', function(done){
       var found = false;
       for (var i = apos.assets.pushed.stylesheets.length - 1; i >= 0; i--) {
-        if (apos.assets.pushed.stylesheets[i].file == '/Users/matthew/src/apostrophe/test/lib/modules/apostrophe-test-module-push/public/css/test.css') {
+        if (apos.assets.pushed.stylesheets[i].file == __dirname + '/lib/modules/apostrophe-test-module-push/public/css/test.css') {
           found = true;
           break;
         }
       };
       assert(found);
-        return done();
+      return done();
     });
   });
 
@@ -320,6 +320,68 @@ describe('Modules', function(){
         assert(!err);
         assert(!monkey);
         return done();
+      });
+    });
+  });
+
+  //               //
+  //    EXPRESS    //
+  //               //
+
+  describe('Express', function(){
+    var apos;
+
+    it('express should exist on the apos object', function(done){
+      apos = require('../index.js')({
+        root: module,
+        shortName: 'test',
+        hostName: 'test.com',
+        modules: {
+          'apostrophe-express': {
+            port: 7934
+          },
+          'express-test': {}
+        },
+        afterInit: function(callback) {
+          assert(apos.express);
+          // In tests this will be the name of the test file,
+          // so override that in order to get apostrophe to
+          // listen normally and not try to run a task. -Tom
+          apos.argv._ = [];
+          return callback(null);
+        },
+        afterListen: function(err) {
+          assert(!err);
+          done();
+        }
+      });
+    });
+
+    it('app should exist on the apos object', function() {
+      assert(apos.app);
+    });
+
+    it('baseApp should exist on the apos object', function() {
+      assert(apos.baseApp);
+    });
+
+    it('app and baseApp should be the same in the absence of a prefix', function() {
+      assert(apos.baseApp === apos.app);
+    });
+
+    it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
+      var request = require('request');
+      request({
+        method: 'POST',
+        url: 'http://localhost:7934/tests/body',
+        json: {
+          person: {
+            age: '30'
+          }
+        }
+      }, function(err, response, body) {
+        assert(body.toString() === '30');
+        done();
       });
     });
   });

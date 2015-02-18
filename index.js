@@ -33,7 +33,14 @@ module.exports = function(options) {
     if (err) {
       throw err;
     }
-    console.log('task or listen');
+    if (self.argv._.length) {
+      console.log('run a task (unimplemented)');
+      process.exit(1);
+      // Run a task
+    } else {
+      // The apostrophe-express-init module adds this method
+      self.listen();
+    }
   });
 
   // Return self so that app.js can refer to apos
@@ -148,6 +155,15 @@ module.exports = function(options) {
       return setImmediate(callback);
     }
     return self.options.afterInit(callback);
+  }
+
+  function afterListen(callback) {
+    // Give project-level code a chance to run after we
+    // start listening. Not called at all for tasks
+    if (!self.options.afterListen) {
+      return setImmediate(callback);
+    }
+    return self.options.afterListen(callback);
   }
 
   function callForAll(method, callback) {

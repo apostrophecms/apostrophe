@@ -1,9 +1,9 @@
 module.exports = {
-    construct: function(self, options) {
-      	// Set property
-        self.color = 'red';
+  construct: function(self, options) {
+  	// Set property
+    self.color = 'red';
 
-        // Attach to apos
-      	self.apos.test = self;
-    }
+    // Attach to apos
+  	self.apos.test = self;
+  }
 };
