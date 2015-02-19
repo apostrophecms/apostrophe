@@ -328,8 +328,9 @@ describe('Modules', function(){
   //    EXPRESS    //
   //               //
 
+  var apos;
+
   describe('Express', function(){
-    var apos;
 
     it('express should exist on the apos object', function(done){
       apos = require('../index.js')({
@@ -340,7 +341,9 @@ describe('Modules', function(){
           'apostrophe-express': {
             port: 7934
           },
-          'express-test': {}
+          'express-test': {},
+          'templates-test': {},
+          'templates-subclass-test': {}
         },
         afterInit: function(callback) {
           assert(apos.express);
@@ -384,5 +387,79 @@ describe('Modules', function(){
         done();
       });
     });
+    it('should be able to implement a route with apostrophe-module.route', function(done) {
+      var request = require('request');
+      request({
+        method: 'POST',
+        url: 'http://localhost:7934/modules/express-test/test2',
+        json: {
+          person: {
+            age: '30'
+          }
+        }
+      }, function(err, response, body) {
+        assert(body.toString() === '30');
+        done();
+      });
+    });
+  });
+
+  //             //
+  //             //
+  //  TEMPLATES  //
+  //             //
+  //             //
+
+  describe('Templates', function(){
+
+    it('should have a templates property', function() {
+      assert(apos.templates);
+    });
+
+    // mock up a request
+    function newReq() {
+      return {
+        res: {
+          __: function(x) { return x; }
+        },
+        pushCall: apos.app.request.pushCall,
+        getCalls: apos.app.request.getCalls,
+        pushData: apos.app.request.pushData,
+        getData: apos.app.request.getData,
+        query: {}
+      };
+    }
+
+    it('should be able to render a template relative to a module', function() {
+      var req = newReq();
+      var result = apos.modules['templates-test'].render(req, 'test', { age: 50 });
+      assert(result === '<h1>50</h1>\n');
+    });
+
+    it('should respect templateData at module level', function() {
+      var req = newReq();
+      var result = apos.modules['templates-test'].render(req, 'test');
+      assert(result === '<h1>30</h1>\n');
+    });
+
+    it('should respect template overrides', function() {
+      var req = newReq();
+      var result = apos.modules['templates-subclass-test'].render(req, 'override-test');
+      assert(result === '<h1>I am overridden</h1>\n');
+    });
+
+    it('should inherit in the absence of overrides', function() {
+      var req = newReq();
+      var result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
+      assert(result === '<h1>I am inherited</h1>\n');
+    });
+
+    it('should render pages successfully with outerLayout', function() {
+      var req = newReq();
+      var result = apos.modules['templates-test'].renderPage(req, 'page');
+      assert(result.indexOf('<title>I am the title</title>') !== -1);
+      assert(result.indexOf('<h1>I am the title</h1>') !== -1);
+      assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
+    })
   });
 });
