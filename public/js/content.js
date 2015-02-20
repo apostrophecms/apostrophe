@@ -8,6 +8,9 @@ if (!window.apos) {
 
 var apos = window.apos;
 
+// A prepublish script updates this
+apos.version = "0.5.280";
+
 apos.handlers = {};
 
 // EVENT HANDLING
@@ -567,7 +570,7 @@ apos.modal = function(sel, options) {
       // If we don't have a select element first - focus the first input.
       // We also have to check for a select element within an array as the first field.
       if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize, form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-array .apos-fieldset:first.apos-fieldset-selectize").length === 0 ) {
-        $el.find("form:not(.apos-filter) :input:visible:enabled:first").focus();
+        $el.find("form:not(.apos-filter) .apos-fieldset:not([data-extra-fields-link]):first :input:visible:enabled:first").focus();
       }
     });
   });
@@ -1095,11 +1098,14 @@ apos.requireScene = function(scene, callback) {
 // clear the cookie and redirect as appropriate. Called on DOMready,
 // and also on the fly after anything that implicitly logs the user in.
 
+// This is now mainly relevant for the "apply" feature and other situations
+// where login does not involve a hard page refresh. For bc reasons we
+// should not remove it in any case in the 0.5.x series. -Tom
+
 apos.afterLogin = function() {
   var afterLogin = $.cookie('aposAfterLogin');
   if (afterLogin && apos.data.user) {
     $.removeCookie('aposAfterLogin', { path: '/' });
-
     // We can't just stuff afterLogin in window.location.href because
     // the browser won't refresh the page if it happens to be the current page,
     // and what we really want is all the changes in the outerLayout that
@@ -1138,7 +1144,7 @@ apos.on('enhance', function($el) {
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
-    sortField: 'text',
+    // sortField: 'text',
     dataAttr: 'data-extra',
     searchField: ['label', 'value'],
     valueField: 'value',

@@ -48,13 +48,13 @@ function AposMediaLibrary(options) {
 
     self.$el.on('click', '[data-grid]', function() {
       self.$el.find('[data-index]').removeClass('apos-list-view').addClass('apos-grid-view');
-      self.$el.find('.apos-generic-button').removeClass('active');
+      self.$el.find('.apos-progress-btn').removeClass('active');
       $(this).addClass('active');
       return false;
     });
     self.$el.on('click', '[data-list]', function() {
       self.$el.find('[data-index]').removeClass('apos-grid-view').addClass('apos-list-view');
-      self.$el.find('.apos-generic-button').removeClass('active');
+      self.$el.find('.apos-progress-btn').removeClass('active');
       $(this).addClass('active');
       return false;
     });
@@ -178,10 +178,17 @@ function AposMediaLibrary(options) {
       var Annotator = options.Annotator || window.AposAnnotator;
       self.annotator = new Annotator({
         receive: function(aItems, callback) {
-          // Modified the files, so reset the list view
+          // Modified the files, so reset the list view and
+          // refresh the content area
           self.resetIndex();
           apos.change('media');
           return callback(null);
+        },
+        remove: function(aItem) {
+          // They removed one of the items during annotation.
+          // Reset the list view and refresh the content area
+          self.resetIndex();
+          apos.change('media');
         },
         destroyed: function() {
           // End of life cycle for previous annotator, note that so
@@ -255,7 +262,7 @@ function AposMediaLibrary(options) {
   };
 
   self.allShow = [ 'title', 'name', 'tags', 'credit', 'description', 'group', 'type', 'createdAt', 'credit', 'extension', 'downloadOriginal', 'owner' ];
-  self.simpleShow = [ 'title', 'name', 'description', 'group', 'type', 'extension' ];
+  self.simpleShow = [ 'title', 'owner', 'name', 'tags', 'credit', 'description', 'group', 'type', 'extension' ];
   // self.listShow = [ 'title', 'name', 'group', 'type'];
 
   self.simpleEditable = [ 'title', 'credit', 'description' ];
@@ -288,6 +295,9 @@ function AposMediaLibrary(options) {
     self.$normal.find('[data-name="createdAt"]').text(date);
     self.$normal.find('[data-name="owner"]').text(item._owner ? item._owner.title : 'admin');
     self.$normal.find('[data-name="tags"]').text((item.tags || []).join(', '));
+
+    var size = item.width && item.height ? item.width + " x " + item.height : '—';
+    self.$normal.find('[data-name="size"]').text(size);
 
     var $link = $('<a></a>');
     $link.attr('href', apos.filePath(item));
