@@ -21,6 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "^0.9.0",
+    "bless": "^3.0.3",
     "body-parser": "^1.12.0",
     "clean-css": "^3.0.9",
     "connect-flash": "^0.1.1",
@@ -39,6 +40,7 @@
     "mongodb": "^1.4.30",
     "moog-require": "^0.1.0",
     "nunjucks": "^1.2.0",
+    "request": "^2.53.0",
     "uglify-js": "^2.4.16",
     "underscore.string": "^3.0.2",
     "xregexp": "^2.0.0",
