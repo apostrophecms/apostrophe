@@ -90,5 +90,55 @@ describe('Express', function(){
     });
   });
 
+  // PREFIX STUFF
+
+ 	it('should set prefix on the apos object if passed in', function(done){
+ 		apos = require('../index.js')({
+      root: module,
+      shortName: 'test',
+      hostName: 'test.com',
+      prefix: '/prefix',
+      modules: {
+        'apostrophe-express': {
+          port: 7937
+        },
+        'express-test': {},
+        'templates-test': {},
+        'templates-subclass-test': {}
+      },
+      afterInit: function(callback) {
+        assert(apos.prefix);
+        assert(apos.prefix === '/prefix');
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        done();
+      }
+    });
+ 	});
+
+ 	it('should have different baseApp and app properties with a prefix', function(){
+ 		assert(apos.app !== apos.baseApp);
+ 	});
+
+ 	it('should take same requests at the prefix', function(done){
+    request({
+  		method: 'POST',
+  		url: 'http://localhost:7937/prefix/tests/body',
+  		form: {
+  			person: {
+  				age: '30'
+  			}
+  		}
+  	}, function(err, response, body) {
+  		assert(body.toString() === '30');
+  		done();
+  	});
+  });
 
 });
