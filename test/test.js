@@ -460,6 +460,16 @@ describe('Modules', function(){
       assert(result.indexOf('<title>I am the title</title>') !== -1);
       assert(result.indexOf('<h1>I am the title</h1>') !== -1);
       assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
-    })
+    });
+
+    it('cross-module-included files should be able to include/extend other files relative to their own module', function() {
+      var req = newReq();
+      var result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
+      assert(result.indexOf('<title>I am the title</title>') !== -1);
+      assert(result.indexOf('<h1>I am the title</h1>') !== -1);
+      assert(result.indexOf('<h2>I am the inner content</h2>') !== -1);
+      assert(result.indexOf('<h3>I am in the layout</h3>') !== -1);
+      assert(result.indexOf('<p>I am included</p>') !== -1);
+    });
   });
 });
