@@ -4,7 +4,7 @@ describe('Launder', function(){
   var apos;
 
   it('should exist on the apos object', function(done){
-    apos = require('../index.js')({ 
+    apos = require('../index.js')({
       root: module,
       shortName: 'test',
       hostName: 'test.com',
