@@ -59,5 +59,11 @@ describe('Modules', function(){
 
   require('./launder.js');
 
+  //             //
+  //    FILES    //
+  //             //
+
+  require('./files.js');
+
   
 });
