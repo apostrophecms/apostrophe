@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <title>{% block title %}{% endblock %}</title>
+    {{ apos.log(apos) }}
+    {{ apos.assets.stylesheets(data.when) }}
+    {{ apos.assets.scripts(data.when) }}
+    <script type="text/javascript">
+      {{ data.js.globalCalls }}
+      {{ data.js.reqCalls }}
+    </script>
+  </head>
+  <body>
+    {# Output admin bar here #}
+    {% block main %}{% endblock %}
+    {{ apos.assets.templates(data.when) }}
+  </body>
+</html>

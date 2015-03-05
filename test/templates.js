@@ -38,10 +38,8 @@ describe('Templates', function(){
       res: {
         __: function(x) { return x; }
       },
-      pushCall: apos.app.request.pushCall,
-      getCalls: apos.app.request.getCalls,
-      pushData: apos.app.request.pushData,
-      getData: apos.app.request.getData,
+      browserCall: apos.app.request.browserCall,
+      getBrowserCalls: apos.app.request.getBrowserCalls,
       query: {}
     };
   }
