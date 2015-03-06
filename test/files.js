@@ -8,7 +8,30 @@ describe('Files', function() {
   var uploadSource = __dirname + "/data/upload_tests/";
   var uploadTarget = __dirname + "/public/uploads/files/";
 
-  it('should have a files property', function(done) {
+  function wipeIt() {
+    apos.db.collection('aposFiles').drop();
+    deleteFolderRecursive(__dirname + '/public/uploads');
+
+    function deleteFolderRecursive (path) {
+      var files = [];
+      if( fs.existsSync(path) ) {
+        files = fs.readdirSync(path);
+        files.forEach(function(file,index){
+          var curPath = path + "/" + file;
+          if(fs.lstatSync(curPath).isDirectory()) { // recurse
+            deleteFolderRecursive(curPath);
+          } else { // delete file
+            fs.unlinkSync(curPath);
+          }
+        });
+        fs.rmdirSync(path);
+      }
+    }
+  }
+
+  after(wipeIt);
+
+  it('should be a property of the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
@@ -58,49 +81,175 @@ describe('Files', function() {
     });
   }
 
-  it('should upload a text file using the apos api when user', function(done) {
-    var filename = 'upload_apos_api.txt';
+  describe('accept', function() {
+    before(function() {
+      wipeIt();
+    });
 
-    console.log(userReq());
+    it('should upload a text file using the apos api when user', function(done) {
+      var filename = 'upload_apos_api.txt';
 
-    apos.files.accept(userReq(), {
-      name: 'upload.txt', 
-      path: uploadSource + filename
-    }, function(err, info) {
-      var t = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
+      apos.files.accept(userReq(), {
+        name: filename, 
+        path: uploadSource + filename
+      }, function(err, info) {
+        var t = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
+        uploadId = info[0]._id;
+        assert(err == null);
+        assert(fs.existsSync(t));
 
-      assert(err == null);
-      assert(fs.existsSync(t));
+        done();
+      });
+    });
 
-      done();
+    it('should not upload a text file using the apos api when anon', function(done) {
+      var filename = 'upload_apos_api.txt';
+
+      apos.files.accept(anonReq(), {
+        name: filename, 
+        path: uploadSource + filename
+      }, function(err, info) {
+        assert(!info);
+        assert(err === "forbidden");
+
+        done();
+      });
     });
   });
 
-  it('should not upload a text file using the apos api when anon', function(done) {
-    var filename = 'upload_apos_api.txt';
+  describe('browse', function() {
+    var fakeFiles;
 
-    apos.files.accept(anonReq(), {
-      name: 'upload.txt', 
-      path: uploadSource + filename
-    }, function(err, info) {
-      assert(!info);
-      assert(err === "forbidden");
+    before(function(done) {
+      wipeIt();
 
-      done();
+      fakeFiles = [
+      {
+        length: null,
+        group: 'office',
+        name: 'test-upload-1',
+        title: 'test upload 1',
+        extension: 'txt',
+        md5: '',
+        ownerId: 'anon-undefined',
+        _edit: true,
+        _id: apos.utils.generateId()
+      },
+      {
+        length: null,
+        group: 'office',
+        name: 'test-upload-2',
+        title: 'test upload 2',
+        extension: 'pdf',
+        md5: '',
+        ownerId: 'anon-undefined',
+        _edit: true,
+        _id: apos.utils.generateId()
+      },
+      {
+        length: null,
+        group: 'image',
+        name: 'test-upload-3',
+        title: 'test upload 3',
+        extension: 'png',
+        md5: '',
+        ownerId: 'anon-undefined',
+        _edit: true,
+        _id: apos.utils.generateId()
+      },
+      {
+        length: null,
+        group: 'image',
+        name: 'test-upload-4',
+        title: 'test upload 4',
+        extension: 'jpg',
+        md5: '',
+        ownerId: 'anon-undefined',
+        _edit: true,
+        _id: apos.utils.generateId()
+      }
+    ];
+      // Prep some fake data in mongo
+      apos.db.collection('aposFiles').insert(
+        fakeFiles, 
+        function(err, results) {
+          done();
+        }
+      );
+
+    });
+  
+    it('with no options should return a full list of files', function(done) {
+      apos.files.browse(userReq(), {}, function(err, result) {
+        assert(!err);
+        assert(result.total === fakeFiles.length);
+
+        done();
+      });
+    });
+
+    it('should be able to filter files by ids', function(done) {
+      var fakeFilesIndex = 3;
+      apos.files.browse(userReq(), {
+        ids: [fakeFiles[fakeFilesIndex]._id]
+      }, function(err, result) {
+        assert(!err);
+        assert(result.total === 1);
+        assert(result.files.length === 1);
+        assert(result.files[0]._id = fakeFiles[fakeFilesIndex]._id);
+        assert(result.files[0].name = fakeFiles[fakeFilesIndex].name);
+
+        done();
+      });
+    });
+
+    it('should be able to limit and skip file results', function(done) {
+      var fakeFilesIndex = 1;
+      apos.files.browse(userReq(), {
+        limit: 2,
+        skip: fakeFilesIndex
+      }, function(err, result) {
+        assert(!err);
+        assert(result.total === 4); // This is just a mechanism for paging, shouldn't effect total
+        assert(result.files.length === 2);
+        assert(result.files[0]._id = fakeFiles[fakeFilesIndex]._id);
+        assert(result.files[1]._id = fakeFiles[fakeFilesIndex + 1]._id);
+
+        done();
+      });
+    });
+
+    it('should be able to filter files by extension', function(done) {
+      var fakeFilesIndex = 1;
+      apos.files.browse(userReq(), {
+        extension: ['pdf']
+      }, function(err, result) {
+        assert(!err);
+        assert(result.total === 1);
+        assert(result.files[0].name = fakeFiles[fakeFilesIndex].name);
+
+        done();
+      });
     });
   });
+
 
   // it('should upload a text file using the express api', function(done) {
   //   var filename = 'upload_express_api.txt';
-  //   fs.createReadStream(uploadSource + filename)
-  //     .pipe(
-  //       request({
-  //         method: 'POST',
-  //         url: 'http://localhost:7938/modules/apostrophe-files/upload'
-  //       }, function(err, response, body) {
-  //         done();
-  //       })
-  //     );
+
+  //   var req = request({
+  //     method: 'POST',
+  //     url: 'http://localhost:7938/modules/apostrophe-files/upload',
+  //     formData: {
+  //       files: {
+  //         value: fs.createReadStream(uploadSource + filename)
+  //       }
+  //     }
+  //   }, function(err, response, body) {
+  //     console.log(err);
+  //     console.log(response.statusCode);
+  //     done();
+  //   });
   // });
 
 });
