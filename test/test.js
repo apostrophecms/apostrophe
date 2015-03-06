@@ -80,6 +80,13 @@ describe('Modules', function(){
 
   require('./launder.js');
 
+
+  //             //
+  // PERMISSIONS //
+  //             //
+
+  require('./permissions.js');
+
   //             //
   //    FILES    //
   //             //
