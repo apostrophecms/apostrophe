@@ -19,6 +19,61 @@ module.exports = function(options) {
   self.options = mergeConfiguration(options, defaults);
   acceptGlobalOptions();
 
+  self.handlers = {};
+
+  // EVENT HANDLING
+  //
+  // apos.emit(eventName, /* arg1, arg2, arg3... */)
+  //
+  // Emit an Apostrophe event. All handlers that have been set
+  // with apos.on for the same eventName will be invoked. Any additional
+  // arguments are received by the handler functions as arguments.
+  //
+  // For bc, Apostrophe events are also triggered on the
+  // body element via jQuery. The event name "ready" becomes
+  // "aposReady" in jQuery. This feature will be removed in 0.6.
+  //
+  // CURRENT EVENTS
+  //
+  // 'enhance' is triggered to request progressive enhancement
+  // of form elements newly loaded into the DOM (jQuery selectize).
+  // It is typically used in admin modals.
+  //
+  // 'ready' is triggered when the main content area of the page
+  // has been refreshed.
+
+  self.emit = function(eventName /* ,arg1, arg2, arg3... */) {
+    var handlers = self.handlers[eventName];
+    if (!handlers) {
+      return;
+    }
+    var args = Array.prototype.slice.call(arguments, 1);
+    var i;
+    for (i = 0; (i < handlers.length); i++) {
+      handlers[i].apply(window, args);
+    }
+  };
+
+  // Install an Apostrophe event handler. The handler will be called
+  // when apos.emit is invoked with the same eventName. The handler
+  // will receive any additional arguments passed to apos.emit.
+
+  self.on = function(eventName, fn) {
+    self.handlers[eventName] = (self.handlers[eventName] || []).concat([ fn ]);
+  };
+
+  // Remove an Apostrophe event handler. If fn is not supplied, all
+  // handlers for the given eventName are removed.
+  self.off = function(eventName, fn) {
+    if (!fn) {
+      delete self.handlers[eventName];
+      return;
+    }
+    self.handlers[eventName] = _.filter(self.handlers[eventName], function(_fn) {
+      return fn !== _fn;
+    });
+  };
+
   self.synth = defineModules();
 
   // No return statement here because we need to
