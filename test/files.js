@@ -1,4 +1,5 @@
 var assert = require('assert');
+var _ = require('lodash');
 
 var apos;
 
@@ -36,7 +37,7 @@ describe('Files', function() {
   var fs = require('fs');
 
   // mock up a request
-  function newReq() {
+  function anonReq() {
     return {
       res: {
         __: function(x) { return x; }
@@ -47,10 +48,22 @@ describe('Files', function() {
     };
   }
 
-  it('should upload a text file using the apos api', function(done) {
+  function userReq() {
+    return _.merge(anonReq(), { 
+      user: {
+        permissions: {
+          admin: true
+        }
+      }
+    });
+  }
+
+  it('should upload a text file using the apos api when user', function(done) {
     var filename = 'upload_apos_api.txt';
 
-    apos.files.accept(newReq, {
+    console.log(userReq());
+
+    apos.files.accept(userReq(), {
       name: 'upload.txt', 
       path: uploadSource + filename
     }, function(err, info) {
@@ -58,6 +71,20 @@ describe('Files', function() {
 
       assert(err == null);
       assert(fs.existsSync(t));
+
+      done();
+    });
+  });
+
+  it('should not upload a text file using the apos api when anon', function(done) {
+    var filename = 'upload_apos_api.txt';
+
+    apos.files.accept(anonReq(), {
+      name: 'upload.txt', 
+      path: uploadSource + filename
+    }, function(err, info) {
+      assert(!info);
+      assert(err === "forbidden");
 
       done();
     });

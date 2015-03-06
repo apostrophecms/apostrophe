@@ -13,13 +13,14 @@ describe('Apostrophe', function() {
   it('should merge the options and local.js correctly', function(done){
     var apos = require('../index.js')({
       root: module,
-      shortName: 'test',  // overriden by data/local.js
+      shortName: 'test',
+      overrideTest: 'test', // overriden by data/local.js
       hostName: 'test.com',
       __testDefaults: {
           modules: {}
       },
       afterInit: function(callback) {
-        assert(apos.options.shortName === 'foo');
+        assert(apos.options.overrideTest === 'foo');
         return done();
       }
     });
@@ -28,14 +29,15 @@ describe('Apostrophe', function() {
   it('should accept a `__localPath` option and invoke local.js as a function if it is provided as one', function(done){
     var apos = require('../index.js')({
       root: module,
-      shortName: 'test',  // overriden by data/local_fn.js
+      shortName: 'test',
+      overrideTest: 'test', // overriden by data/local_fn.js
       hostName: 'test.com',
       __localPath: '/data/local_fn.js',  
       __testDefaults: {
           modules: {}
       },
       afterInit: function(callback) {
-        assert(apos.options.shortName === 'foo');
+        assert(apos.options.overrideTest === 'foo');
         return done();
       }
     });
@@ -44,14 +46,15 @@ describe('Apostrophe', function() {
   it('should invoke local.js as a function with the apos and config object', function(done){
     var apos = require('../index.js')({
       root: module,
-      shortName: 'test',   // concated in local_fn_b.js
+      shortName: 'test',
+      overrideTest: 'test',   // concated in local_fn_b.js
       hostName: 'test.com',
       __localPath: '/data/local_fn_b.js',  
       __testDefaults: {
           modules: {}
       },
       afterInit: function(callback) {
-        assert(apos.options.shortName === 'test-foo');
+        assert(apos.options.overrideTest === 'test-foo');
         return done();
       }
     });

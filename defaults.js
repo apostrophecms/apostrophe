@@ -9,6 +9,7 @@ module.exports = {
     'apostrophe-push': {},
     'apostrophe-urls': {},
     'apostrophe-templates': {},
+    'apostrophe-permissions': {},
     'apostrophe-assets': {},
     'apostrophe-files': {},
     'apostrophe-pages': {},
