@@ -10,3 +10,6 @@ test/node_modules
 # Dont commit test generated css
 test/public/css/*.css
 test/public/css/master-*.less
+
+# Dont commit test uploads
+test/public/uploads
