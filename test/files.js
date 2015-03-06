@@ -7,9 +7,10 @@ describe('Files', function() {
 
   var uploadSource = __dirname + "/data/upload_tests/";
   var uploadTarget = __dirname + "/public/uploads/files/";
+  var mongoCol = 'aposFiles';
 
   function wipeIt() {
-    apos.db.collection('aposFiles').drop();
+    apos.db.collection(mongoCol).drop();
     deleteFolderRecursive(__dirname + '/public/uploads');
 
     function deleteFolderRecursive (path) {
@@ -95,9 +96,18 @@ describe('Files', function() {
       }, function(err, info) {
         var t = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
         assert(!err);
+        // file should be uploaded
         assert(fs.existsSync(t));
 
-        done();
+        // make sure it exists in mongo
+        apos.db.collection(mongoCol).findOne({
+          _id: info[0]._id
+        }, function(err, result) {
+          assert(!err);
+          assert(result);
+
+          done();
+        });
       });
     });
 
@@ -169,7 +179,7 @@ describe('Files', function() {
       }
     ];
       // Prep some fake data in mongo
-      apos.db.collection('aposFiles').insert(
+      apos.db.collection(mongoCol).insert(
         fakeFiles, 
         function(err, results) {
           assert(!err);
@@ -264,15 +274,29 @@ describe('Files', function() {
       });
     });
 
-    // it('should trash a file in mongo and make it inaccessible in the file system', function(done) {
-    //   apos.files.updateTrash(userReq(), uploadId, true, function(err, result) {
-    //     assert(!err);
+    it('should trash a file in mongo and make it inaccessible in the file system', function(done) {
+      apos.files.updateTrash(userReq(), uploadId, true, function(err, result) {
+        assert(!err);
 
-    //     console.log(fs.statSync(uploadPath));
+        // file should still exist
+        assert(fs.existsSync(uploadPath));
+        // but not be readable
+        assert.throws(function() {
+          fs.openSync(uploadPath, 'r')
+        }, Error);
 
-    //     done();
-    //   });
-    // });
+        // make sure it exists and trash is true in mongo
+        apos.db.collection(mongoCol).findOne({
+          _id: uploadId
+        }, function(err, result) {
+          assert(!err);
+          assert(result);
+          assert(result.trash);
+          
+          done();
+        });
+      });
+    });
 
 
   });
