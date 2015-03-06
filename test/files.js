@@ -172,6 +172,8 @@ describe('Files', function() {
       apos.db.collection('aposFiles').insert(
         fakeFiles, 
         function(err, results) {
+          assert(!err);
+
           done();
         }
       );
