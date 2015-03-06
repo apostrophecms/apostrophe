@@ -10,6 +10,7 @@ module.exports = {
     'apostrophe-urls': {},
     'apostrophe-templates': {},
     'apostrophe-assets': {},
+    'apostrophe-files': {},
     'apostrophe-pages': {},
     'apostrophe-service-bridge': {}
   }
