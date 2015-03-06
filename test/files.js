@@ -94,8 +94,7 @@ describe('Files', function() {
         path: uploadSource + filename
       }, function(err, info) {
         var t = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
-        uploadId = info[0]._id;
-        assert(err == null);
+        assert(!err);
         assert(fs.existsSync(t));
 
         done();
@@ -233,7 +232,51 @@ describe('Files', function() {
     });
   });
 
+  describe("updateTrash", function() {
+    var uploadId;
+    var uploadPath;
+    before(function(done){
+      wipeIt();
 
+      var filename = "updateTrash_apos_api.txt"
+
+      // Upload a file using accept for testing updateTrash
+      apos.files.accept(userReq(), {
+        name: filename, 
+        path: uploadSource + filename
+      }, function(err, info) {
+        uploadPath = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
+        uploadId = info[0]._id;
+        assert(!err);
+        assert(fs.existsSync(uploadPath));
+
+        done();
+      });
+    });
+
+    it('should not run for anon user', function(done) {
+      apos.files.updateTrash(anonReq(), uploadId, true, function(err, result) {
+        assert(err === "forbidden");
+
+        done();
+      });
+    });
+
+    // it('should trash a file in mongo and make it inaccessible in the file system', function(done) {
+    //   apos.files.updateTrash(userReq(), uploadId, true, function(err, result) {
+    //     assert(!err);
+
+    //     console.log(fs.statSync(uploadPath));
+
+    //     done();
+    //   });
+    // });
+
+
+  });
+
+
+  // TODO add tests to express routes that call apos api
   // it('should upload a text file using the express api', function(done) {
   //   var filename = 'upload_express_api.txt';
 
