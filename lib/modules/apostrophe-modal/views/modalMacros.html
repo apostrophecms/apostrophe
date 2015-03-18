@@ -1,4 +1,4 @@
-{%- macro modalProgressButton(options) -%}
+{%- macro modalButton(options) -%}
   <a href="{% if options.url %}{{options.url | e }}{% else %}#{% endif %}" {% if options.dataAttrs %}{{ options.dataAttrs }} {% endif %}{#
     #}class="apos-progress-btn{#
     #}{% if options.float %} apos-progress-btn--float-{{options.float}}{% endif %}{#

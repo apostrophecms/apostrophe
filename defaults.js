@@ -11,6 +11,8 @@ module.exports = {
     'apostrophe-templates': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
+    'apostrophe-ui': {},
+    'apostrophe-modal': {},
     'apostrophe-files': {},
     'apostrophe-pages': {},
     'apostrophe-service-bridge': {}
