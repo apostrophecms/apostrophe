@@ -93,7 +93,7 @@
 #}
 {%- macro formSelect(name, label, choices) -%}
   {# check for a fields property on any of the choices, and add class if one exists #}
-  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if apos.utils.containsProperty(choices, 'showFields') else '' %}
   <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">
@@ -104,7 +104,7 @@
   
 {%- macro formMultiSelect(name, label, choices) -%}
   {# check for a fields property on any of the choices, and add class if one exists #}
-  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if apos.utils.containsProperty(choices, 'showFields') else '' %}
   <fieldset class="apos-fieldset apos-fieldset-selectize select-multiple apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
       <div class="apos-select-wrapper apos-inline-input">

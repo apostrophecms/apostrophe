@@ -1,22 +1,23 @@
 {% include "apostrophe-ui:uiMacros.html" %}
+{% include "apostrophe-modal:macros.html" %}
 
 {# One file among many in the index view of the media library #}
 
 {% macro indexItem(file) %}
-  <div class="apos-index-item apos-template {% if item.group != "images" %}apos-file{% endif %}" data-item="{{ file._id }}">
+  <div class="apos-index-item {% if item.group != "images" %}apos-file{% endif %}" data-item="{{ file._id }}">
     <div data-preview class="apos-preview">
-      {% if file.group === 'images' %}
+      {% if file.group == 'images' %}
         <div class="apos-preview-image" style="background-image:url({{ apos.files.url(file, 'one-third') }});"></div>
       {% else %}
         <span class="apos-file-format apos-{{ file.extension }}"></span>
       {% endif %}
     </div>
 
-    <h4>{{ (file.title || __('Title')) | e }}</h4>
+    <h4>{{ (file.title or __('Title')) | e }}</h4>
     <div class="apos-item-list-details" data-list-details>
       <span>Group: {{ file.group | e }}</span>
       <span>Extension: {{ file.extension | e }}</span>
-      <span>Tags: {{ (file.tags || []) | join(', ')</span>
+      <span>Tags: {{ (file.tags or []) | join(', ') }}</span>
     </div>
   </div>
 {% endmacro %}
@@ -39,7 +40,7 @@
         <div class="apos-preview-info">
 
           {{ showField('title', 'Title', file.title) }}
-          {{ showField('name', 'Filename', file.filename) }}
+          {{ showField('name', 'Filename', file.name + '.' + file.extension) }}
           {{ showField('tags', 'Tags', file.tags) }}
           {{ showField('credit', 'Credit', file.credit) }}
           {{ showField('description', 'Description', file.description) }}
@@ -48,7 +49,12 @@
           {{ showField('group', 'Media Type', file.group) }}
           {{ showField('extension', 'Media Format', file.extension) }}
           {{ showField('createdAt', 'Date Added', file.createdAt) }}
-          {{ showField('size', 'Size', (file.width && file.height) ? file.width + " x " + file.height : '—') }}
+
+          {% if file.width and file.height %}
+            {{ showField('size', 'Size', file.width + " x " + file.height) }}
+          {% else %}
+            {{ showField('size', 'Size', '-') }}
+          {% endif %}
 
           <div class="apos-show-pane-field apos-download-original">
             <div class="apos-label">{{ __('Download Original') }}</div>
@@ -78,8 +84,11 @@
 {% endmacro %}
 
 {# The editing view when you click Edit Details #}
-{% macro showEditView(file) %}
-  <div data-edit-view class="apos-edit-view" data-item="{{ file._id }}">
+{# This is not populated with data because we use #}
+{# apostrophe-schemas to do that #}
+
+{% macro showEditView() %}
+  <div data-edit-view class="apos-template apos-edit-view" data-item="{{ file._id }}">
     <div class="apos-preview" data-preview></div>
       <div class="apos-replace-file apos-file-container">
         <h4>{{ __('Replace File') }}</h4>

@@ -5,7 +5,9 @@
   </head>
   <body>
     {# Output admin bar here #}
-    {% block main %}{% endblock %}
+    <div class="apos-refreshable" data-apos-refreshable>
+      {% block main %}{% endblock %}
+    </div>
     {{ apos.assets.templates(data.when) }}
     {{ apos.assets.scripts(data.when) }}
     <script type="text/javascript">

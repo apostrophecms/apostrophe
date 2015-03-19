@@ -38,6 +38,7 @@
     "less": "^2.0.0",
     "less-middleware": "^1.0.4",
     "lodash": "^3.1.0",
+    "mkdirp": "^0.5.0",
     "moment": "^2.9.0",
     "mongodb": "^1.4.30",
     "moog-require": "^0.1.0",

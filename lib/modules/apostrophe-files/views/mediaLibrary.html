@@ -1,22 +1,22 @@
-{% extends "apostrophe-ui:baseModal.html" %}
+{% extends "apostrophe-modal:baseModal.html" %}
 {% include "macros.html" %}
 
 {% block modalClass %}
   apos-media-library apos-ui-modal-full-page apos-ui-modal-no-sidebar
 {% endblock%}
 
-{% block modalLabel %}
+{% block label %}
   {{ __('Media Library')}}
 {% endblock %}
 
-{% block modalControls %}
-  {{ modalProgressButton({dataAttrs: 'data-cancel', float: 'left', label: 'Back', arrow: 'left'}) }}
+{% block controls %}
+  {{ modalButton({dataAttrs: 'data-cancel', float: 'left', label: 'Back', arrow: 'left'}) }}
 {% endblock %}
 
-{% block modalFilters %}
+{% block filters %}
   <div class="apos-modal-bar" data-bar>
     <div class="apos-modal-bar-filters clearfix">
-      {% if browseByType %}
+      {% if data.browseByType %}
         <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
           <label>{{ __('Browse') }}:</label>
           <div class="apos-select-wrapper apos-inline-input">
@@ -32,7 +32,7 @@
         </fieldset>
       {% endif %}
 
-      {% if browseByTag %}
+      {% if data.browseByTag %}
         <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
           <label>{{ __('Tagged') }}:</label>
           <div class="apos-select-wrapper apos-inline-input">
@@ -85,7 +85,7 @@
 {% endblock %}
 
 
-{% block modalBody %}
+{% block body %}
 
     <div class="apos-index-pane apos-grid-view" data-index>
       <div class="apos-index-header">
@@ -100,13 +100,13 @@
             {# -Tom and Joel #}
 
             <!--[if lte IE 9]>
-              <input data-uploader type="file" name="files[]" data-url="/apos/upload-files" multiple />
+              <input data-uploader type="file" name="files[]" data-url="{{ data.action }}/upload" multiple />
             <![endif]-->
             <!--[if !IE]> -->
               <div class="apos-file-styled icon-plus">
                 {{ __('Drag Media Here or <span>Click Here</span> to Select Files') }}
               </div>
-              <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="/apos/upload-files" multiple />
+              <input data-uploader type="file" name="files[]" class="apos-file-input" data-url="{{ data.action }}/upload" multiple />
             <!-- <![endif]-->
           </div>
           <div class="apos-media-file-in-message" data-drag-droparea><!-- <span data-drag-message>{{ __('Drop Files Here') }}</span> --></div>
@@ -128,5 +128,6 @@
     <div class="apos-show-pane" data-show>
       {# AJAX updates this pane, replacing this default #}
       {{ showNormalView({}) }}
+      {{ showEditView() }}
     </div>
 {% endblock %}
