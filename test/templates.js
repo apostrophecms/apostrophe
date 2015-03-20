@@ -11,6 +11,7 @@ describe('Templates', function(){
       hostName: 'test.com',
       modules: {
         'apostrophe-express': {
+          secret: 'xxx',
           port: 7934
         },
         'express-test': {},

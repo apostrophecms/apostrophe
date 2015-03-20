@@ -72,5 +72,9 @@ describe('Modules', function(){
 
   require('./files.js');
 
-  
+  //             //
+  //    DOCS     //
+  //             //
+
+  require('./docs.js');  
 });

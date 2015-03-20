@@ -11,6 +11,7 @@ describe('Express', function(){
       hostName: 'test.com',
       modules: {
         'apostrophe-express': {
+          secret: 'xxx',
           port: 7936
         },
         'express-test': {},
