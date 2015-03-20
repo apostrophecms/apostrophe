@@ -60,16 +60,27 @@ snippets.beforeDocsHydrate = function(req, cursor) {
   }
 }
 
+events.find = function(req, criteria, projection) {
+  var cursor = self.apos.docs.find(req, criteria, projection);
+  cursor.set('forEvents', true);
+  cursor.upcoming = function(flag) {
+    cursor.set('upcoming', flag);
+  };
+  return cursor;
+};
+
 // Do things when a cursor is about to be used for
 // a mongo query
 
 apos.on('finalizeCursor', function(cursor) {
-  var upcoming = cursor.get('upcoming');
-  cursor.and(
-    {
-      startDate: { $gte: new Date() }
-    }
-  );
+  if (cursor.get('forEvents')) {
+    var upcoming = cursor.get('upcoming');
+    cursor.and(
+      {
+        startDate: { $gte: new Date() }
+      }
+    );
+  }
 });
 
 // Do async things when a cursor is about to be used for
@@ -101,6 +112,20 @@ apos.on('loadDocs', function(cursor, docs, callbacks) {
     self.joinAllTheThings(cursor.get('req'), docs, callback);
   });
 });
+
+self.hydrateDocs
+
+events.get = function(req, criteria, projection) {
+  var cursor = self.apos.docs.get(req, criteria, projection);
+  cursor.addFilter('upcoming', function(cursor) {
+    // finalizer
+  });
+  cursor.addHydrator(
+
+  });
+};
+
+
 
 // OR PERHAPS WE SHOULD JUST ENABLE THIS:
 
