@@ -252,7 +252,7 @@ describe('Docs', function() {
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'larry');
       done();
-    });    
+    });
   });
 
   it('should be able to sort by multiple keys', function(done) {
