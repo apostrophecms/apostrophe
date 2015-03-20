@@ -153,6 +153,7 @@ describe('Docs', function() {
 
   it('should be able to find all test documents', function(done){
     var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }).toArray(function(err, docs){
+      console.error(err);
       assert(!err);
 
       console.log(docs);
