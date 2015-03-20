@@ -93,13 +93,16 @@ apos.on('finalizeCursor', function(cursor, callbacks) {
   });
 });
 
-// Do things when documents have jsut been loaded
+// Do things when documents have just been loaded.
+// Widget loaders have already been called at this point
 
 apos.on('loadDocs', function(cursor, docs, callbacks) {
   callbacks.push(function(callback) {
-    
+    self.joinAllTheThings(cursor.get('req'), docs, callback);
   });
 });
+
+// OR PERHAPS WE SHOULD JUST ENABLE THIS:
 
 snippets.afterGetDocs = function(req, cursor, docs, callback) {
   if (!cursor._noJoins) {
