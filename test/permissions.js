@@ -44,7 +44,6 @@ describe('Permissions', function() {
     return o;
   }
 
-
   describe('test permissions.can', function() {
     it('allows view-doc in the generic case', function() {
       assert(apos.permissions.can(req(), 'view-doc'));

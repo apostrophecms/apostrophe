@@ -60,7 +60,46 @@ snippets.beforeDocsHydrate = function(req, cursor) {
   }
 }
 
-// Do async things after a call to apos.docs.get
+// Do things when a cursor is about to be used for
+// a mongo query
+
+apos.on('finalizeCursor', function(cursor) {
+  var upcoming = cursor.get('upcoming');
+  cursor.and(
+    {
+      startDate: { $gte: new Date() }
+    }
+  );
+});
+
+// Do async things when a cursor is about to be used for
+// a mongo query
+
+apos.on('finalizeCursor', function(cursor, callbacks) {
+  callbacks.push(function(callback) {
+    // An API knows which things are blue. Find that
+    // out and adjust our criteria
+    return request('some-cool-api?color=' + cursor.get('color'), function(err, blueIds) {
+      if (err) {
+        return callback(err);
+      }
+      cursor.and(
+        {
+          apiId: { $in: blueIds }
+        }
+      );
+      return callback(null);
+    });
+  });
+});
+
+// Do things when documents have jsut been loaded
+
+apos.on('loadDocs', function(cursor, docs, callbacks) {
+  callbacks.push(function(callback) {
+    
+  });
+});
 
 snippets.afterGetDocs = function(req, cursor, docs, callback) {
   if (!cursor._noJoins) {
