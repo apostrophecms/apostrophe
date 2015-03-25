@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.286";
+apos.version = "0.5.287";
 
 apos.handlers = {};
 
@@ -840,10 +840,16 @@ apos.formatTime = function(time, options) {
       return time;
     } else {
       matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
+      if (!matches) {
+        return '';
+      }
       return matches[1] + ':' + matches[2];
     }
   } else {
     matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
+    if (!matches) {
+      return '';
+    }
     hours = parseInt(matches[1], 10);
     minutes = matches[2];
     seconds = matches[3];
