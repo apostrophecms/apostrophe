@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.287";
+apos.version = "0.5.288";
 
 apos.handlers = {};
 
@@ -587,7 +587,8 @@ apos.notification = function(content, options) {
     $notification.addClass('apos-notification--' + options.type);
   }
   if (options.dismiss) {
-   $notification.attr('data-notification-dismiss', options.dismiss);  }
+   $notification.attr('data-notification-dismiss', options.dismiss);
+  }
   $notification.find('[data-notification-content]').text(content);
 
   // send it over to manager
