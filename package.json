@@ -36,6 +36,7 @@
     "underscore.string": "~2.3.1",
     "validator": "~0.4.19",
     "wordwrap": "0.0.2",
+    "wrench": "^1.5.8",
     "xregexp": "2.0.0"
   },
   "devDependencies": {},
