@@ -74,7 +74,7 @@ module.exports = function(options) {
     });
   };
 
-  self.synth = defineModules();
+  defineModules();
 
   // No return statement here because we need to
   // return "self" after kicking this process off
@@ -170,6 +170,14 @@ module.exports = function(options) {
       localModules: self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
       defaultBaseClass: 'apostrophe-module'
     });
+
+    self.synth = synth;
+
+    // Just like on the browser side, we can
+    // call apos.define rather than apos.synth.define
+    self.define = self.synth.define;
+    self.redefine = self.synth.redefine;
+    self.create = self.synth.create;
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
