@@ -366,14 +366,14 @@ describe('Docs', function() {
   //////
 
   it('should have a "trash" method on docs', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err){
+    apos.docs.trash(adminReq(), { slug: 'carl' }, function(err) {
       assert(!err);
       done();
     });
   });
 
   it('should not be able to find the trashed object', function(done){
-    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).toObject(function(err,doc){
+    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).toObject(function(err,doc){
       assert(!err);
       // we should not have a document
       assert(!doc);
@@ -383,7 +383,7 @@ describe('Docs', function() {
 
 
   it('should be able to find the trashed object when using the "trash" method on find()', function(done){
-    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toObject(function(err,doc) {
+    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err,doc){
       assert(!err);
       // we should have a document
       assert(doc);
@@ -396,7 +396,7 @@ describe('Docs', function() {
   //////
 
   it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
-    apos.docs.rescue(adminReq(), { slug: 'peter' }, function(err, object) {
+    apos.docs.rescue(adminReq(), { slug: 'carl' }, function(err, object) {
       assert(!err);
       assert(object);
       // the object should no longer have a trash property
@@ -410,7 +410,7 @@ describe('Docs', function() {
   //////
 
   it('should have an "emptyTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err){
+    apos.docs.trash(adminReq(), { slug: 'carl' }, function(err){
       assert(!err);
     });
 
@@ -418,7 +418,7 @@ describe('Docs', function() {
       assert(!err);
     });
 
-    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toObject(function(err, doc) {
+    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
       assert(!err);
       // we should not have a document
       assert(!doc);
