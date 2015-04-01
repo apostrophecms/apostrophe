@@ -403,7 +403,7 @@ describe('Docs', function() {
     });
   });
 
-  it('should be able to find the trashed object', function(done){
+  it('should be able to find the trashed object', function(done) {
     var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toArray(function(err,docs){
       assert(!err);
       // we should have a document
