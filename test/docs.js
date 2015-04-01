@@ -87,12 +87,7 @@ describe('Docs', function() {
     // Attempt to remove all the test people we know about
     apos.docs.db.remove({
       $or: [
-        { slug: 'larry' },
-        { slug: 'lori' },
-        { slug: 'carl' },
-        { slug: 'peter' },
-        { slug: 'one'},
-        { slug: /^one\d+$/}
+        { type: 'testPerson' }
       ]
     }, function(err){
       assert(!err);
@@ -281,7 +276,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    apos.docs.insert(adminReq(), object, function(err, object){
+    apos.docs.insert(adminReq(), object, function(err, object) {
       assert(!err);
       assert(object);
       assert(object._id);
@@ -334,12 +329,10 @@ describe('Docs', function() {
 
       // grab the object
       var object = docs[0];
-      // we want to use the _id property to update this docuemtn
-      var updateId = object._id;
       // we want update the alive property
       object.alive = false
 
-      apos.docs.update(adminReq(), updateId, object, function(err, object) {
+      apos.docs.update(adminReq(), object, function(err, object) {
         assert(!err);
         assert(object);
         // has the property been updated?
@@ -349,43 +342,22 @@ describe('Docs', function() {
     });
   });
 
-  it('should have an "update" method on docs that updates an existing object based on a property that is not the "_id"', function(done) {
-    var object = {
-      slug: 'one',
-      published: true,
-      type: 'testPerson',
-      firstName: 'Gary',
-      lastName: 'Ferber',
-      age: 15,
-      alive: true
-    };
-
-    apos.docs.update(adminReq(), { slug: 'one' }, object, function(err, object) {
-      assert(!err);
-      assert(object);
-      // has the property been updated?
-      assert(object.alive === true);
-      done();
-    });
-  });
-
   it('should append an updated slug with a numeral if the updated slug already exists', function(done){
-    var object = {
-      slug: 'peter',
-      published: true,
-      type: 'testPerson',
-      firstName: 'Gary',
-      lastName: 'Ferber',
-      age: 15,
-      alive: true
-    };
 
-    apos.docs.update(adminReq(), { slug: 'one' }, object, function(err, object) {
+    var cursor = apos.docs.find(adminReq(), { type: 'testPerson', slug: 'one' });
+    cursor.toObject(function(err, doc) {
       assert(!err);
-      assert(object);
-      // has the updated slug been appended?
-      assert(object.slug.match(/^peter\d+$/));
-      done();
+      assert(doc);
+
+      doc.slug = 'peter';
+
+      apos.docs.update(adminReq(), doc, function(err, doc) {
+        assert(!err);
+        assert(doc);
+        // has the updated slug been appended?
+        assert(doc.slug.match(/^peter\d+$/));
+        done();
+      });
     });
   });
 
