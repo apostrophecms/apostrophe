@@ -393,23 +393,28 @@ describe('Docs', function() {
   // TRASH
   //////
 
-  it('should have a "trash" method on docs that gives the object a "trash" property', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err, object){
+  it('should have a "trash" method on docs', function(done) {
+    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err){
       assert(!err);
-      assert(object);
-      // has the object been given a trash property?
-      assert(object.trash);
       done();
     });
   });
 
-  it('should be able to find the trashed object', function(done){
-    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toArray(function(err,docs){
+  it('should not be able to find the trashed object', function(done){
+    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).toObject(function(err,doc){
+      assert(!err);
+      // we should not have a document
+      assert(!doc);
+      done();
+    });
+  });
+
+
+  it('should be able to find the trashed object when using the "trash" method on find()', function(done){
+    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toObject(function(err,doc){
       assert(!err);
       // we should have a document
-      assert(docs);
-      // there should be only one document in our results
-      assert(docs.length === 1);
+      assert(doc);
       done();
     });
   });
@@ -433,14 +438,11 @@ describe('Docs', function() {
   //////
 
   it('should have an "emptyTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err, object){
+    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err){
       assert(!err);
-      assert(object);
-      // we have trashed the object
-      assert(object.trash);
     });
 
-    apos.docs.emptyTrash(adminReq(), {}, function(err, null) {
+    apos.docs.emptyTrash(adminReq(), {}, function(err) {
       assert(!err);
     });
 
