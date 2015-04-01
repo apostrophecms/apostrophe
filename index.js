@@ -103,18 +103,18 @@ module.exports = function(options) {
    */
   self.callMethodOfAllModules = function(method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
-    var extraArgs = args.slice(1, args.length - 2);
+    var extraArgs = args.slice(1, args.length - 1);
     callback = args[args.length - 1];
     return async.eachSeries(_.keys(self.modules), function(name, callback) {
       var module = self.modules[name];
       var invoke = module[method];
       if (invoke) {
         if (invoke.length === (1 + extraArgs.length)) {
-          return invoke(callback);
+          return invoke.apply(module, extraArgs.concat([callback]));
         } else if (invoke.length === extraArgs.length) {
           return setImmediate(function() {
             try {
-              invoke();
+              invoke.apply(module, extraArgs);
             } catch (e) {
               return callback(e);
             }
