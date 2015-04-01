@@ -177,9 +177,8 @@ describe('Docs', function() {
     var cursor = apos.docs.find(anonReq(), { type: 'testPerson' });
 
     cursor.toArray(function(err, docs){
-      console.error(err);
       assert(!err);
-      // There should be only 4 results.
+      // There should be only 3 results.
       assert(docs.length === 3);
       // They should all have a type of testPerson
       assert(docs[0].type === 'testPerson');

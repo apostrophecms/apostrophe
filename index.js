@@ -94,6 +94,46 @@ module.exports = function(options) {
     });
   };
 
+  /**
+   * For every module, if the method `method` exists,
+   * invoke it. The method may optionally take a callback.
+   * The method must take exactly as many additional
+   * arguments as are passed here between `method`
+   * and the final `callback`.
+   */
+  self.callMethodOfAllModules = function(method, /* argument, ... */ callback) {
+    var args = Array.prototype.slice.call(arguments);
+    var extraArgs = args.slice(1, args.length - 2);
+    callback = args[args.length - 1];
+    return async.eachSeries(_.keys(self.modules), function(name, callback) {
+      var module = self.modules[name];
+      var invoke = module[method];
+      if (invoke) {
+        if (invoke.length === (1 + extraArgs.length)) {
+          return invoke(callback);
+        } else if (invoke.length === extraArgs.length) {
+          return setImmediate(function() {
+            try {
+              invoke();
+            } catch (e) {
+              return callback(e);
+            }
+            return callback(null);
+          });
+        } else {
+          return callback(name + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
+        }
+      } else {
+        return setImmediate(callback);
+      }
+    }, function(err) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(null);
+    });
+  }
+
   defineModules();
 
   // No return statement here because we need to
@@ -224,11 +264,11 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
-    return callForAll('modulesReady', callback);
+    return self.callMethodOfAllModules('modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
-    return callForAll('afterInit', callback);
+    return self.callMethodOfAllModules('afterInit', callback);
   }
 
   function afterInit(callback) {
@@ -248,35 +288,6 @@ module.exports = function(options) {
     }
     return self.options.afterListen(callback);
   }
-
-  function callForAll(method, callback) {
-    return async.eachSeries(_.keys(self.modules), function(name, callback) {
-      var module = self.modules[name];
-      var invoke = module[method];
-      if (invoke) {
-        if (invoke.length === 1) {
-          return invoke(callback);
-        } else if (invoke.length === 0) {
-          return setImmediate(function() {
-            try {
-              invoke();
-            } catch (e) {
-              return callback(e);
-            }
-            return callback(null);
-          });
-        }
-      } else {
-        return setImmediate(callback);
-      }
-    }, function(err) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(null);
-    });
-  }
-
 };
 
 module.exports.moogBundle = {
