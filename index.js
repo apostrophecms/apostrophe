@@ -101,7 +101,7 @@ module.exports = function(options) {
    * arguments as are passed here between `method`
    * and the final `callback`.
    */
-  self.callMethodOfAllModules = function(method, /* argument, ... */ callback) {
+  self.callAll = function(method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
     var extraArgs = args.slice(1, args.length - 1);
     callback = args[args.length - 1];
@@ -264,11 +264,11 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
-    return self.callMethodOfAllModules('modulesReady', callback);
+    return self.callAll('modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
-    return self.callMethodOfAllModules('afterInit', callback);
+    return self.callAll('afterInit', callback);
   }
 
   function afterInit(callback) {
