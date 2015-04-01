@@ -15,7 +15,7 @@ function anonReq() {
 }
 
 function adminReq() {
-  return _.merge(anonReq(), { 
+  return _.merge(anonReq(), {
     user: {
       permissions: {
         admin: true
@@ -85,12 +85,14 @@ describe('Docs', function() {
 
   it('should make sure there is no test data hanging around from last time', function(done){
     // Attempt to remove all the test people we know about
-    apos.docs.db.remove({ 
+    apos.docs.db.remove({
       $or: [
-        { slug: 'larry' }, 
-        { slug: 'lori' }, 
+        { slug: 'larry' },
+        { slug: 'lori' },
         { slug: 'carl' },
-        { slug: 'peter' }
+        { slug: 'peter' },
+        { slug: 'one'},
+        { slug: /^one\d+$/}
       ]
     }, function(err){
       assert(!err);
@@ -112,7 +114,7 @@ describe('Docs', function() {
         lastName: 'Pizzaroni',
         age: 32,
         alive: true
-      },      
+      },
       {
         slug: 'larry',
         published: true,
@@ -194,10 +196,10 @@ describe('Docs', function() {
   it('should be able to specify which fields to get by passing a projection object', function(done){
     var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }, { age: 1 });
     cursor.toArray(function(err, docs){
-      // There SHOULD be an age 
+      // There SHOULD be an age
       assert(docs[0].age);
 
-      // There SHOULD NOT be a firstName 
+      // There SHOULD NOT be a firstName
       assert(!docs[0].firstName);
       done();
     });
@@ -211,7 +213,7 @@ describe('Docs', function() {
     var cursor = apos.docs.find(anonReq(), { type: 'testPerson' });
     cursor.toArray(function(err, docs){
       _.each(docs, function(doc){
-        // There SHOULD NOT be a firstName 
+        // There SHOULD NOT be a firstName
         assert(doc.published);
       });
 
@@ -261,7 +263,124 @@ describe('Docs', function() {
       assert(docs[0].slug == 'carl');
       assert(docs[1].slug == 'larry');
       done();
-    });    
+    });
   });
+
+  //////
+  // INSTERTING
+  //////
+
+  it('should have an insert method on docs that returns the new database object', function(done) {
+    var object = {
+      slug: 'one',
+      published: true,
+      type: 'testPerson',
+      firstName: 'Gary',
+      lastName: 'Ferber',
+      age: 15,
+      alive: true
+    };
+
+    apos.docs.insert(adminReq(), object, function(err, object){
+      assert(!err);
+      assert(object);
+      assert(object._id);
+      done();
+    });
+  });
+
+
+  it ('should have inserted a new object into the docs collection in the database', function(done){
+    var cursor = apos.docs.find(adminReq(), { type: 'testPerson', slug: 'one' });
+    cursor.toArray(function(err, docs) {
+      assert(docs[0].slug == 'one');
+      done();
+    });
+  });
+
+
+
+  it('should insert a new doc and alter the slug since that slug already exists', function(done) {
+    var object = {
+      slug: 'one',
+      published: true,
+      type: 'testPerson',
+      firstName: 'Harry',
+      lastName: 'Gerber',
+      age: 29,
+      alive: true
+    };
+
+    apos.docs.insert(adminReq(), object, function(err, object){
+      assert(!err);
+      assert(object);
+      assert(object.slug.match(/^one\d+$/));
+      done();
+    });
+  });
+
+  //////
+  // UPDATING
+  //////
+
+  it('should have an update method on docs that updates an existing database object based on the _id property', function(done) {
+    var cursor = apos.docs.find(adminReq(), { slug: 'one' }).toArray(function(err,docs){
+      assert(!err);
+      // we should have a document
+      assert(docs);
+      // there should be only one document in our results
+      assert(docs.length === 1);
+
+      // grab the object
+      var object = docs[0];
+      // we want to use the _id property to update this docuemtn
+      var updateId = object._id;
+      // we want update the alive property
+      object.alive = false
+
+      apos.docs.update(adminReq(), updateId, object, function(err, object) {
+        assert(!err);
+        assert(object);
+        // has the property been updated?
+        assert(object.alive === false);
+        done();
+      });
+    });
+  });
+
+  it('should have an update method on docs that updates an existing database object based on a property that is not the _id', function(done) {
+    var object = {
+      slug: 'one',
+      published: true,
+      type: 'testPerson',
+      firstName: 'Gary',
+      lastName: 'Ferber',
+      age: 15,
+      alive: true
+    };
+
+    apos.docs.update(adminReq(), { slug: 'one' }, object, function(err, object) {
+      assert(!err);
+      assert(object);
+      // has the property been updated?
+      assert(object.alive === true);
+      done();
+    });
+  });
+
+  it('should have an update method on docs that updates a specific property of an existing database object', function(done) {
+
+    apos.docs.update(adminReq(), { slug: 'one' }, { $set: { alive: false } }, function(err, object) {
+      assert(!err);
+      assert(object);
+      // has the property been updated?
+      assert(object.alive === false);
+      done();
+    });
+  });
+
+  //////
+  // TRASH
+  //////
 
 });
