@@ -270,7 +270,7 @@ describe('Docs', function() {
   // INSTERTING
   //////
 
-  it('should have an insert method on docs that returns the new database object', function(done) {
+  it('should have an "insert" method on docs that returns the new database object', function(done) {
     var object = {
       slug: 'one',
       published: true,
@@ -300,7 +300,7 @@ describe('Docs', function() {
 
 
 
-  it('should insert a new doc and alter the slug since that slug already exists', function(done) {
+  it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', function(done) {
     var object = {
       slug: 'one',
       published: true,
@@ -323,7 +323,7 @@ describe('Docs', function() {
   // UPDATING
   //////
 
-  it('should have an update method on docs that updates an existing database object based on the _id property', function(done) {
+  it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', function(done) {
     var cursor = apos.docs.find(adminReq(), { slug: 'one' }).toArray(function(err,docs){
       assert(!err);
       // we should have a document
@@ -348,7 +348,7 @@ describe('Docs', function() {
     });
   });
 
-  it('should have an update method on docs that updates an existing database object based on a property that is not the _id', function(done) {
+  it('should have an "update" method on docs that updates an existing object based on a property that is not the "_id"', function(done) {
     var object = {
       slug: 'one',
       published: true,
@@ -368,13 +368,22 @@ describe('Docs', function() {
     });
   });
 
-  it('should have an update method on docs that updates a specific property of an existing database object', function(done) {
+  it('should append an updated slug with a numeral if the updated slug already exists', function(done){
+    var object = {
+      slug: 'peter',
+      published: true,
+      type: 'testPerson',
+      firstName: 'Gary',
+      lastName: 'Ferber',
+      age: 15,
+      alive: true
+    };
 
-    apos.docs.update(adminReq(), { slug: 'one' }, { $set: { alive: false } }, function(err, object) {
+    apos.docs.update(adminReq(), { slug: 'one' }, object, function(err, object) {
       assert(!err);
       assert(object);
-      // has the property been updated?
-      assert(object.alive === false);
+      // has the updated slug been appended?
+      assert(object.slug.match(/^peter\d+$//));
       done();
     });
   });
@@ -382,5 +391,64 @@ describe('Docs', function() {
   //////
   // TRASH
   //////
+
+  it('should have a "trash" method on docs that gives the object a "trash" property', function(done) {
+    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err, object){
+      assert(!err);
+      assert(object);
+      // has the object been given a trash property?
+      assert(object.trash);
+      done();
+    });
+  });
+
+  it('should be able to find the trashed object', function(done){
+    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toArray(function(err,docs){
+      assert(!err);
+      // we should have a document
+      assert(docs);
+      // there should be only one document in our results
+      assert(docs.length === 1);
+      done();
+    });
+  });
+
+  //////
+  // RESCUE
+  //////
+
+  it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
+    apos.docs.rescue(adminReq(), { slug: 'peter' }, function(err, object) {
+      assert(!err);
+      assert(object);
+      // the object should no longer have a trash property
+      assert(!object.trash);
+      done();
+    });
+  });
+
+  //////
+  // EMPTY TRASH
+  //////
+
+  it('should have an "emptyTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
+    apos.docs.trash(adminReq(), { slug: 'peter' }, function(err, object){
+      assert(!err);
+      assert(object);
+      // we have trashed the object
+      assert(object.trash);
+    });
+
+    apos.docs.emptyTrash(adminReq(), {}, function(err, null) {
+      assert(!err);
+    });
+
+    var cursor = apos.docs.find(adminReq(), { slug: 'peter' }).trash(true).toObject(function(err, doc) {
+      assert(!err);
+      // we should not have a document
+      assert(!doc);
+      done();
+    });
+  });
 
 });
