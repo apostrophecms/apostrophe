@@ -309,7 +309,6 @@ describe('Docs', function() {
     apos.docs.insert(adminReq(), object, function(err, object){
       assert(!err);
       assert(object);
-      console.log(object);
       assert(object.slug.match(/^one\d+$/));
       done();
     });
