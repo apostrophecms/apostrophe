@@ -383,7 +383,7 @@ describe('Docs', function() {
       assert(!err);
       assert(object);
       // has the updated slug been appended?
-      assert(object.slug.match(/^peter\d+$//));
+      assert(object.slug.match(/^peter\d+$/));
       done();
     });
   });
