@@ -320,7 +320,7 @@ describe('Docs', function() {
       published: false,
       type: 'testPerson',
       firstName: 'Darry',
-      lastName: 'Derrber'
+      lastName: 'Derrber',
       age: 5,
       alive: true
     };
@@ -444,6 +444,13 @@ describe('Docs', function() {
         assert(doc);
         done();
       });
+    });
+  });
+
+  it('should not allow you to call the rescue method if you are not an admin', function(done) {
+    apos.docs.rescue(anonReq(), { slug: 'carl' }, function(err) {
+      assert(err);
+      done();
     });
   });
 
