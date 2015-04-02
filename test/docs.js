@@ -395,12 +395,14 @@ describe('Docs', function() {
   //////
 
   it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
-    apos.docs.rescue(adminReq(), { slug: 'carl' }, function(err, object) {
+    apos.docs.rescue(adminReq(), { slug: 'carl' }, function(err) {
       assert(!err);
-      assert(object);
-      // the object should no longer have a trash property
-      assert(!object.trash);
-      done();
+      var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).toObject(function(err, doc){
+        assert(!err);
+        // we should have a document
+        assert(doc);
+        done();
+      });
     });
   });
 
