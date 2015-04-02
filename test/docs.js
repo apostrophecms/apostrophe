@@ -1,5 +1,6 @@
 var assert = require('assert');
 var _ = require('lodash');
+var async = require('async');
 
 var apos;
 
@@ -460,23 +461,33 @@ describe('Docs', function() {
   //////
 
   it('should have an "emptyTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'carl' }, function(err){
-      assert(!err);
-    });
 
-    apos.docs.emptyTrash(adminReq(), {}, function(err) {
-      assert(!err);
-    });
-
-    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
-      assert(!err);
-      // we should not have a document
-      assert(!doc);
-      done();
-    });
+    return async.series({
+      trashCarl: function(callback) {
+        return apos.docs.trash(adminReq(), { slug: 'carl' }, function(err){
+          assert(!err);
+          return callback(null);
+        });
+      },
+      emptyTrash: function(callback) {
+        return apos.docs.emptyTrash(adminReq(), {}, function(err) {
+          assert(!err);
+          return callback(null);
+        });
+      },
+      find: function(callback) {
+        return apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
+          assert(!err);
+          // we should not have a document
+          assert(!doc);
+          return callback(null);
+        });
+      }
+    }, done);
   });
 
   it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
+
     apos.docs.trash(adminReq(), { slug: 'larry' }, function(err){
       assert(!err);
     });
