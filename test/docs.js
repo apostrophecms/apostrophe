@@ -265,7 +265,7 @@ describe('Docs', function() {
   // INSTERTING
   //////
 
-  it('should have an "insert" method on docs that returns the new database object', function(done) {
+  it('should have an "insert" method that returns a new database object', function(done) {
     var object = {
       slug: 'one',
       published: true,
@@ -285,7 +285,7 @@ describe('Docs', function() {
   });
 
 
-  it ('should have inserted a new object into the docs collection in the database', function(done){
+  it ('should be able to insert a new object into the docs collection in the database', function(done){
     var cursor = apos.docs.find(adminReq(), { type: 'testPerson', slug: 'one' });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'one');
@@ -310,6 +310,24 @@ describe('Docs', function() {
       assert(!err);
       assert(object);
       assert(object.slug.match(/^one\d+$/));
+      done();
+    });
+  });
+
+  it('should not allow you to call the insert method if you are not an admin', function(done){
+    var object = {
+      slug: 'not-for-you',
+      published: false,
+      type: 'testPerson',
+      firstName: 'Darry',
+      lastName: 'Derrber'
+      age: 5,
+      alive: true
+    };
+
+    apos.docs.instert(anonReq(), object, function(err, object){
+      // did it return an error?
+      assert(err);
       done();
     });
   });
@@ -360,6 +378,22 @@ describe('Docs', function() {
     });
   });
 
+  it('should not allow you to call the update method if you are not an admin', function(done){
+    var cursor = apos.docs.find(anonReq(), { type: 'testPerson', slug: 'lori' });
+    cursor.toObject(function(err, doc) {
+      assert(!err);
+      assert(doc);
+
+      doc.slug = 'laurie';
+
+      apos.docs.update(anonReq(), doc, function(err, doc) {
+        // did it return an error?
+        assert(err);
+        done();
+      });
+    });
+  });
+
   //////
   // TRASH
   //////
@@ -376,6 +410,13 @@ describe('Docs', function() {
       assert(!err);
       // we should not have a document
       assert(!doc);
+      done();
+    });
+  });
+
+  it('should not allow you to call the trash method if you are not an admin', function(done){
+    apos.docs.trash(anonReq(), { slug: 'lori' }, function(err) {
+      assert(err);
       done();
     });
   });
