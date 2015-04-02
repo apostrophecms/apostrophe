@@ -262,7 +262,7 @@ describe('Docs', function() {
   });
 
   //////
-  // INSTERTING
+  // INSERTING
   //////
 
   it('should have an "insert" method that returns a new database object', function(done) {
@@ -325,7 +325,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    apos.docs.instert(anonReq(), object, function(err, object){
+    apos.docs.insert(anonReq(), object, function(err, object){
       // did it return an error?
       assert(err);
       done();
