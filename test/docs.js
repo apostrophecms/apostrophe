@@ -309,7 +309,6 @@ describe('Docs', function() {
     apos.docs.insert(adminReq(), object, function(err, object){
       assert(!err);
       assert(object);
-      console.log(object);
       assert(object.slug.match(/^one\d+$/));
       done();
     });
@@ -397,7 +396,6 @@ describe('Docs', function() {
 
   it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
     apos.docs.rescue(adminReq(), { slug: 'carl' }, function(err, object) {
-      console.error(err);
       assert(!err);
       assert(object);
       // the object should no longer have a trash property
