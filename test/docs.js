@@ -449,6 +449,7 @@ describe('Docs', function() {
 
   it('should not allow you to call the rescue method if you are not an admin', function(done) {
     apos.docs.rescue(anonReq(), { slug: 'carl' }, function(err) {
+      // was there an error?
       assert(err);
       done();
     });
@@ -471,6 +472,14 @@ describe('Docs', function() {
       assert(!err);
       // we should not have a document
       assert(!doc);
+      done();
+    });
+  });
+
+  it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
+    apos.docs.emptyTrash(anonReq(), {}, function(err){
+      // was there an error?
+      assert(err);
       done();
     });
   });
