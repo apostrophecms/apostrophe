@@ -477,9 +477,18 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
-    apos.docs.emptyTrash(anonReq(), {}, function(err){
-      // was there an error?
-      assert(err);
+    apos.docs.trash(adminReq(), { slug: 'larry' }, function(err){
+      assert(!err);
+    });
+
+    apos.docs.emptyTrash(anonReq(), {}, function(err) {
+      assert(!err);
+    });
+
+    var cursor = apos.docs.find(adminReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
+      assert(!err);
+      // we should have a document
+      assert(doc);
       done();
     });
   });
