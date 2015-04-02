@@ -487,21 +487,28 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
-
-    apos.docs.trash(adminReq(), { slug: 'larry' }, function(err){
-      assert(!err);
-    });
-
-    apos.docs.emptyTrash(anonReq(), {}, function(err) {
-      assert(!err);
-    });
-
-    var cursor = apos.docs.find(adminReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
-      assert(!err);
-      // we should have a document
-      assert(doc);
-      done();
-    });
+    return async.series({
+      trashLarry: function(callback){
+        return apos.docs.trash(adminReq(), { slug: 'larry' }, function(err){
+          assert(!err);
+          return callback(null);
+        });
+      },
+      emptyTrash: function(callback){
+        apos.docs.emptyTrash(anonReq(), {}, function(err) {
+          assert(!err);
+          return callback(null);
+        });
+      },
+      find: function(callback){
+        return apos.docs.find(adminReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
+          assert(!err);
+          // we should have a document
+          assert(doc);
+          callback(null);
+        });
+      }
+    }, done);
   });
 
 });
