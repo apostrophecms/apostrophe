@@ -191,7 +191,6 @@ module.exports = function(options) {
     } else {
        _.merge(config, local || {});
     }
-  
     return config;
   }
 
@@ -291,7 +290,7 @@ module.exports = function(options) {
 };
 
 module.exports.moogBundle = {
-  modules: [ 'apostrophe-module' ].concat(_.keys(defaults.modules)),
+  modules: [ 'apostrophe-module', 'apostrophe-widget-definition' ].concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
 

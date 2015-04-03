@@ -1,0 +1,17 @@
+<div class="apos-singleton" data-singleton data-options='{{ data.options | jsonAttribute({ single: true }) }}' {%- if data.area._edit -%}data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{%- endif -%}>
+  {% if data.options.area._edit %}
+    <div class="apos-ui-container">
+      <a data-edit-singleton class="apos-control apos-button" href="#"><i class="icon-pencil"></i> Edit Singleton</a>
+      {# crashing: <a class="apos-control apos-button" href="#"><i class="icon-pencil"></i> {{ __((data.options.verb or data.definition.verb or 'Edit') + ' %s', __(data.options.label or data.definition.label)) }}</a> #}
+    </div>
+  {% endif %}
+  {% if data.options.area._edit %}
+    <div data-widget-wrapper>
+  {% endif %}
+  {% if data.widget %}
+    {{ apos.widget(data.widget, data.options) }}
+  {% endif %}
+  {% if data.options.area._edit %}
+    </div>
+  {% endif %}
+</div>
