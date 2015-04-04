@@ -19,7 +19,7 @@ module.exports = {
     'apostrophe-files': {},
     'apostrophe-pages': {},
     'apostrophe-areas': {},
-    'apostrophe-rich-text-widget-definition': {},
+    'apostrophe-rich-text-widgets': {},
     'apostrophe-service-bridge': {}
   }
 };

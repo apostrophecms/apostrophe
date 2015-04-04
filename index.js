@@ -290,7 +290,7 @@ module.exports = function(options) {
 };
 
 module.exports.moogBundle = {
-  modules: [ 'apostrophe-module', 'apostrophe-widget-definition' ].concat(_.keys(defaults.modules)),
+  modules: [ 'apostrophe-module', 'apostrophe-widgets' ].concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
 
