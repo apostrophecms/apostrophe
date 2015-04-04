@@ -34,7 +34,7 @@
 {# Any field types not known to this macro are skipped, without error. #}
 
 {%- macro schemaFields(fields, options = { from: false, to: false, except: [], only: false }) -%}
-  {%- set groups = aposFilter(fields, 'type', 'group') -%}
+  {%- set groups = apos.utils.filter(fields, 'type', 'group') -%}
   {%- set firstGroupReached = false -%}
   {%- set fromFound = false -%}
   {%- set toFound = false -%}
@@ -46,8 +46,8 @@
       {%- set toFound = true -%}
     {%- endif -%}
     {%- set found = fromFound and (not toFound) -%}
-    {%- set notExcepted = (not aposContains(options.except, field.name)) -%}
-    {%- set allowed = (not options.only) or aposContains(options.only, field.name) -%}
+    {%- set notExcepted = (not apos.utils.contains(options.except, field.name)) -%}
+    {%- set allowed = (not options.only) or apos.utils.contains(options.only, field.name) -%}
     {%- set notContextual = (not field.contextual) -%}
 
     {%- if (found and notExcepted and allowed and notContextual) -%}
@@ -71,7 +71,7 @@
       {# Invokes standard templates for each type in
         apostrophe-schemas/templates/views, or custom renderers
         if supplied for the field's type or that individual field #}
-      {{ aposSchemaField(field) }}
+      {{ apos.schemas.field(field) }}
       {%- if field.help -%}
         <p class="apos-help">{{ field.help | e }}</p>
       {%- endif -%}
@@ -85,7 +85,7 @@
   {%- endfor -%}
   {# Nunjucks won't let us just test lastGroup from here due to #}
   {# scoping issues https://github.com/mozilla/nunjucks/issues/166 #}
-  {%- if aposFilterNonempty(fields, 'group').length -%}
+  {%- if apos.utils.filterNonempty(fields, 'group').length -%}
     {{ schemaCloseGroup() }}
     </div>
   {%- endif -%}
