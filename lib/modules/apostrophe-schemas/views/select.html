@@ -1,0 +1,7 @@
+{%- include "macros.html" -%}
+
+{%- if options.selectMultiple -%}
+	{{ formMultiSelect(name, label, choices) }}
+{%- else -%}
+	{{ formSelect(name, label, choices) }}
+{%- endif -%}
