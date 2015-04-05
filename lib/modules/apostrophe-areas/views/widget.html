@@ -1,4 +1,3 @@
-{{ apos.log(data) }}
 <div data-widget="{{ data.widget.type }}" data='{{ data.widget | pruneTemporaryProperties | jsonAttribute({ single: true }) }}'>
   {{ data.output() }}
 </div>
