@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.285";
+apos.version = "0.5.290";
 
 apos.handlers = {};
 
@@ -587,7 +587,8 @@ apos.notification = function(content, options) {
     $notification.addClass('apos-notification--' + options.type);
   }
   if (options.dismiss) {
-   $notification.attr('data-notification-dismiss', options.dismiss);  }
+   $notification.attr('data-notification-dismiss', options.dismiss);
+  }
   $notification.find('[data-notification-content]').text(content);
 
   // send it over to manager
@@ -840,10 +841,16 @@ apos.formatTime = function(time, options) {
       return time;
     } else {
       matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
+      if (!matches) {
+        return '';
+      }
       return matches[1] + ':' + matches[2];
     }
   } else {
     matches = time.match(/^(\d+):(\d+)(:(\d+))?$/);
+    if (!matches) {
+      return '';
+    }
     hours = parseInt(matches[1], 10);
     minutes = matches[2];
     seconds = matches[3];
