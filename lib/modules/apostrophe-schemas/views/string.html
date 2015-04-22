@@ -1,6 +1,6 @@
 {%- include "macros.html" -%}
 {%- if textarea -%}
-  {{ formTextarea(name, label) }}
+  {{ formTextarea(data.name, data.label) }}
 {%- else -%}
-  {{ formText(name, label) }}
+  {{ formText(data.name, data.label) }}
 {%- endif -%}
