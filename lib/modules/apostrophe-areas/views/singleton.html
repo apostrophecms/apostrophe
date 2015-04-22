@@ -1,4 +1,7 @@
-<div class="apos-singleton" data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' {%- if data.options.area._edit -%}data-doc-id="{{ data.options.area._docId }}" data-dot-path="{{ data.options.area._dotPath }}"{%- endif -%}>
+{# singleton needs its own copy of the widget options as #}
+{# JSON, in case the widget doesn't exist yet or goes away #}
+
+<div class="apos-singleton" {%- if data.options.area._edit %}data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.options.area._docId }}" data-dot-path="{{ data.options.area._dotPath }}"{%- endif -%}>
   {%- if data.options.area._edit -%}
     <div class="apos-ui-container">
       <a data-edit-singleton class="apos-control apos-button" href="#"><i class="icon-pencil"></i> Edit Singleton</a>
