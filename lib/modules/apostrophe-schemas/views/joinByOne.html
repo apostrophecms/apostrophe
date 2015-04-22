@@ -1,6 +1,6 @@
 {%- include "macros.html" -%}
-{{ formSelective(name, label, {
-  relationship: relationship,
-  placeholder: placeholder,
-  limitText: limitText
+{{ formSelective(data.name, data.label, {
+  relationship: data.relationship,
+  placeholder: data.placeholder,
+  limitText: data.limitText
 }) }}

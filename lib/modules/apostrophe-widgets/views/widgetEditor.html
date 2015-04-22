@@ -16,8 +16,5 @@
 {% endblock %}
 
 {% block body %}
-  {{ formText('url', 'URL') }}
-  {{ formText('label', 'Label') }}
-
-  {# {{ schemaFields(schema) }} #}
+  {{ schemaFields(data.schema) }}
 {% endblock %}
