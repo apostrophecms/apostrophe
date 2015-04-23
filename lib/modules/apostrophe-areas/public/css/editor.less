@@ -1,0 +1,192 @@
+@apos-base: rgb(247,160,50);
+@apos-base: #dd3226;
+
+// .apos-editor2-item-buttons,
+.apos-editor2-lockup-buttons
+// .apos-editor2-lockup-widget-buttons
+{
+  width: 100%;
+  position: absolute;
+  z-index: 1;
+}
+
+.apos-editor2-lockup-buttons
+{
+  .apos-ui-container
+  {
+    position: absolute;
+    top: -50px;
+    right: 0px;
+  }
+}
+
+.apos-editor2-item-separator
+{
+  border: 1px dashed @apos-base;
+  height: 20px;
+}
+
+.apos-rich-text:focus
+{
+  outline: 1px dashed rgba(0,0,0,0.3);
+
+  // For now, I have set outline for none. Can't decide if it is better this way.
+  // - kerry
+  outline: none;
+}
+
+.apos-editor2-hover
+{
+  background-color: fadeout(@apos-base, 40%);
+}
+
+// THIS MUST DIE! Tom's temporary hack for buttons that
+// play nice with floated widgets. Please do better, without
+// breaking lockups that involve floating.
+.apos-editor2-temp-button
+{
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  padding: 2px;
+  background-color: #def;
+  color: black;
+  border: 1px solid #abc;
+  text-align: left;
+}
+
+.apos-editor2-content-menu-options
+{
+  display: none;
+}
+
+.apos-open
+{
+  .apos-editor2-content-menu-options
+  {
+    display: block;
+  }
+}
+
+.apos-editor2-content-menu
+{
+  display: inline-block;
+  z-index: 801;
+  .apos-editor2-temp-button;
+}
+
+.apos-ui-btn.apos-template
+{
+  display: none;
+}
+
+.apos-editor2-locked-item-buttons,
+.apos-editor2-lockup-widget-buttons,
+{
+  .apos-ui-container { z-index: 899; }
+}
+.apos-editor2-locked-item-buttons .apos-ui-dropdown
+{
+  .apos-ui-menu
+  {
+    right: 0;
+    &:before
+    {
+      left: auto;
+      right: 12px;
+    }
+  }
+  .apos-ui-menu-item
+  {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-family: Cabin;
+
+    i {font-size:11px; margin-right: 5px;}
+  }
+}
+.apos-ui-menu
+{
+  &.apos-active
+  {
+    display: block;
+  }
+}
+.apos-lockup > .apos-widget
+{
+  position: relative;
+  z-index: 10;
+}
+.apos-lockup:hover
+{
+  outline: 1px dashed @apos-base;
+}
+
+.apos-area .apos-content-menu-toggle.apos-disabled
+{
+  background: @apos-disabled !important;
+}
+
+// rich text content
+.apos-rich-text
+{
+  strong { font-weight: bold; }
+  em { font-style: italic; }
+}
+
+.ui-tooltip.ui-widget-content
+{
+  //hiding the default ckeditor tooltips
+  // display: none !important;
+}
+
+.logged-in .apos-empty.apos-rich-text-item
+{
+  .apos-rich-text
+  {
+    min-height: 2em;
+  }
+}
+
+// .apos-area:not([data-text-only=true]) .apos-empty.apos-rich-text-item
+// {
+//   .apos-rich-text
+//   {
+//     &:before
+//     {
+//       left: 50px;
+//     }
+//   }
+// }
+
+// .apos-content.apos-empty
+// {
+//   &:before
+//   {
+//     display: inline-block;
+//     padding: 10px;
+//     color: rgba(0,0,0,0.4);
+//     font-style: italic;
+//     content: "This is an empty area. Use the Add Content button to get started."
+//   }
+// }
+/////////////////////////////
+/////// CKEditor
+/////////////////////////////
+
+.cke_inner
+{
+  background-color: @apos-base;
+}
+
+// In the editor we must always at least be able to see the controls
+// even if a widget is empty. -Tom and Joel
+.apos-area-editable .apos-widget
+{
+  min-height: 40px;
+}

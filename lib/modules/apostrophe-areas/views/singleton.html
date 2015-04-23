@@ -1,20 +1,20 @@
 {# singleton needs its own copy of the widget options as #}
 {# JSON, in case the widget doesn't exist yet or goes away #}
 
-<div class="apos-singleton" {%- if data.options.area._edit %}data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.options.area._docId }}" data-dot-path="{{ data.options.area._dotPath }}"{%- endif -%}>
-  {%- if data.options.area._edit -%}
+<div class="apos-singleton" {%- if data.area._edit %}data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{%- endif -%}>
+  {%- if data.area._edit -%}
     <div class="apos-ui-container">
       <a data-edit-singleton class="apos-control apos-button apos-edit-singleton" href="#"><i class="icon-pencil"></i> Edit Singleton</a>
-      {# crashing: <a class="apos-control apos-button" href="#"><i class="icon-pencil"></i> {{ __((data.options.verb or data.definition.verb or 'Edit') + ' %s', __(data.options.label or data.definition.label)) }}</a> #}
+      {# crashing: <a class="apos-control apos-button" href="#"><i class="icon-pencil"></i> {{ __((data.options.verb or data.manager.verb or 'Edit') + ' %s', __(data.options.label or data.manager.label)) }}</a> #}
     </div>
   {%- endif -%}
-  {%- if data.options.area._edit -%}
+  {%- if data.area._edit -%}
     <div data-widget-wrapper>
   {%- endif -%}
   {%- if data.widget -%}
     {{ apos.widget(data.widget, data.options) }}
   {%- endif -%}
-  {%- if data.options.area._edit -%}
+  {%- if data.area._edit -%}
     </div>
   {%- endif -%}
 </div>
