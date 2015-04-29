@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.290";
+apos.version = "0.5.291";
 
 apos.handlers = {};
 
@@ -1147,7 +1147,6 @@ $.extend(Selectize.prototype, {
 });
 
 apos.on('enhance', function($el) {
-
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,

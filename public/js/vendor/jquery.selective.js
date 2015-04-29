@@ -217,7 +217,40 @@
         $item.attr('data-value', item.value);
         // So that the label can be made available to the `get` method easily
         $item.attr('data-label', item.label);
+
+        // remember the item itself for access to
+        // custom attributes, for instance in a
+        // custom "append" function
+        $item.data('item', item);
+
         findSafe($item, '[data-label]').text(item.label);
+
+        self.populateExtras(itemId, item, $item);
+
+        // Allows custom relationship field types
+        self.$el.trigger('afterAddItem', [ item, $item ]);
+
+        var items = [];
+        self.$list.find('[data-item]').each(function() {
+          items.push($(this).data('item'));
+        });
+
+        var event = $.Event('insertItemAt');
+        self.$el.trigger(event, [ items, item ]);
+        var insertAt = event.result;
+        if (insertAt === undefined) {
+          insertAt = items.length;
+        }
+
+        if (insertAt >= items.length) {
+          self.$list.append($item);
+        } else {
+          var $before = self.$list.find('[data-item]').eq(insertAt);
+          $before.before($item);
+        }
+      };
+
+      self.populateExtras = function(itemId, item, $item) {
         // If extras are present, fix name attributes so radio
         // button groups on separate rows don't conflict. Stash the
         // original name in data-name so we can still find things that way
@@ -261,10 +294,6 @@
             $group.radio($group.eq(0).attr('value'));
           }
         });
-
-        // Allows custom relationship field types
-        self.$el.trigger('afterAddItem', [ item, $item ]);
-        self.$list.append($item);
       };
 
       self.clear = function() {
@@ -459,8 +488,13 @@
           self.$limitIndicator.hide();
         }
       };
-
-      self.populate();
+      // Always wait for next tick before
+      // populating the list with existing data,
+      // if any. This provides consistency between
+      // local and remote sources and ensures you can
+      // safely add an event handler after
+      // calling selective
+      setTimeout(self.populate, 0);
     }
 
     function uniqueName(itemId, name) {
