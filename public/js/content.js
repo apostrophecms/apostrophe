@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.292";
+apos.version = "0.5.293";
 
 apos.handlers = {};
 
@@ -1075,6 +1075,9 @@ apos.requireScene = function(scene, callback) {
   if (apos.scene === scene) {
     return callback(null);
   }
+
+  apos.globalBusy(true);
+
   $.jsonCall('/apos/upgrade-scene',
     {
       from: apos.scene,
@@ -1082,6 +1085,7 @@ apos.requireScene = function(scene, callback) {
     },
     function(result) {
       if ((!result) || (result.status !== 'ok')) {
+        apos.globalBusy(false);
         return callback('error');
       }
       if (result.css.length) {
@@ -1091,6 +1095,7 @@ apos.requireScene = function(scene, callback) {
         $('body').append(result.html);
       }
       $('body').one('aposSceneChange', function(e, scene) {
+        apos.globalBusy(false);
         return callback(null);
       });
       $(function() {
