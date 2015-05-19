@@ -98,41 +98,59 @@ describe('Pages', function() {
 
   it('should be able to use db to insert documents', function(done){
     var testItems = [
-      {
+      { _id: '1234',
         type: 'testPage',
         slug: 'parent',
         published: true,
-        path: '/root/parent'
+        path: '/root/parent',
+        level: 1,
+        rank: 0
       },
       {
+        _id: '2341',
         type: 'testPage',
         slug: 'child',
         published: true,
-        path: '/root/parent/child'
+        path: '/root/parent/child',
+        level: 2,
+        rank: 0
       },
       {
+        _id: '3412',
         type: 'testPage',
         slug: 'root',
         published: true,
-        path: '/root'
+        path: '/root',
+        level: 0,
+        rank: 0
       },
       {
+        _id: '4123',
         type: 'testPage',
         slug: 'grandchild',
         published: true,
-        path: '/root/parent/child/grandchild'
+        path: '/root/parent/child/grandchild',
+        level: 3,
+        rank: 0
       },
       {
+        _id: '4321',
         type: 'testPage',
         slug: 'sibling',
         published: true,
-        path: '/root/parent/sibling'
+        path: '/root/parent/sibling',
+        level: 2,
+        rank: 1
+
       },
       {
+        _id: '4312',
         type: 'testPage',
         slug: 'cousin',
         published: true,
-        path: '/root/parent/sibling/cousin'
+        path: '/root/parent/sibling/cousin',
+        level: 3,
+        rank: 0
       }
     ];
 
@@ -205,8 +223,113 @@ describe('Pages', function() {
 
 
   //////
-  // INSERTING
+  // MOVING
   //////
+
+  // it('is able to move root/parent/sibling/cousin after root/parent', function(done) {
+  //   // 'Cousin' _id === 4312
+  //   // 'Parent' _id === 1234
+  //   apos.pages.move(req, '4312', '1234', 'after', function(err) {
+  //     if (err) {
+  //       console.log(err);
+  //     }
+  //     assert(!err);
+  //     return done();
+  //   });
+  // });
+
+
+  //   it('home has 4 descendants', function(done) {
+  //     pages.getDescendants(req, home, { depth: 1 }, function(err, childrenArg) {
+  //       children = childrenArg;
+  //       assert(children.length === 4);
+  //       done();
+  //     });
+  //   });
+  //   it('people is now the final child of home', function(done) {
+  //     assert(children[3]._id === 'people');
+  //     return done();
+  //   });
+  //   it('slug of people is now /people', function(done) {
+  //     assert(children[3].slug === '/people');
+  //     return done();
+  //   });
+  // });
+  //
+  // describe('move home/people back under home/about as first child', function() {
+  //   var people;
+  //   it('people exists', function(done) {
+  //     people = children[3];
+  //     assert(people._id === 'people');
+  //     done();
+  //   });
+  //   it('moved without error', function(done) {
+  //     pages.move(req, people, '/about', 'inside', function(err) {
+  //       if (err) {
+  //         console.log(err);
+  //       }
+  //       assert(!err);
+  //       return done();
+  //    });
+  //   });
+  //   it('home/about has 3 descendants', function(done) {
+  //     pages.getDescendants(req, about, { depth: 1 }, function(err, childrenArg) {
+  //       children = childrenArg;
+  //       assert(children.length === 3);
+  //       done();
+  //     });
+  //   });
+  //   it('first child of home/about is now people', function(done) {
+  //     assert(children[0]._id === 'people');
+  //     return done();
+  //   });
+  //   it('people is at /about/people', function(done) {
+  //     assert(children[0].slug === '/about/people');
+  //     return done();
+  //   });
+  // });
+  //
+  // describe('move home/about under home/contact, by slug', function() {
+  //   var location;
+  //   it('moved without error', function(done) {
+  //     pages.move(req, '/about', '/contact', 'inside', function(err) {
+  //       if (err) {
+  //         console.log(err);
+  //       }
+  //       assert(!err);
+  //       return done();
+  //    });
+  //   });
+  //   it('got contact', function(done) {
+  //     apos.pages.findOne({ slug: '/contact' }, function(err, page) {
+  //       contact = page;
+  //       assert(page);
+  //       return done();
+  //     });
+  //   });
+  //   it('home/contact has 1 child', function(done) {
+  //     pages.getDescendants(req, contact, { depth: 2 }, function(err, childrenArg) {
+  //       children = childrenArg;
+  //       assert(children.length === 1);
+  //       done();
+  //     });
+  //   });
+  //   it('home/contact/about/location exists at the right path', function(done) {
+  //     apos.pages.findOne({ _id: 'location', path: 'home/contact/about/location' }, function(err, page) {
+  //       location = page;
+  //       assert(location);
+  //       return done();
+  //     });
+  //   });
+  //   it('home/contact/about/location has level 3', function(done) {
+  //     assert(location.level === 3);
+  //     return done();
+  //   });
+  //   it('home/contact/about/location has slug /contact/about/location', function(done) {
+  //     assert(location.slug === '/contact/about/location');
+  //     return done();
+  //   });
+
 
   // it('should have an "insert" method that creates a new page in the database', function(done) {
   //   var object = {
