@@ -102,37 +102,50 @@ describe('Pages', function() {
         type: 'testPage',
         slug: 'parent',
         published: true,
-        path: '/root/parent'
+        path: '/root/parent',
+        level: 1,
+        rank: 0
       },
       {
         type: 'testPage',
         slug: 'child',
         published: true,
-        path: '/root/parent/child'
+        path: '/root/parent/child',
+        level: 2,
+        rank: 0
       },
       {
         type: 'testPage',
         slug: 'root',
         published: true,
-        path: '/root'
+        path: '/root',
+        level: 0,
+        rank: 0
       },
       {
         type: 'testPage',
         slug: 'grandchild',
         published: true,
-        path: '/root/parent/child/grandchild'
+        path: '/root/parent/child/grandchild',
+        level: 3,
+        rank: 0
       },
       {
         type: 'testPage',
         slug: 'sibling',
         published: true,
-        path: '/root/parent/sibling'
+        path: '/root/parent/sibling',
+        level: 2,
+        rank: 1
+
       },
       {
         type: 'testPage',
         slug: 'cousin',
         published: true,
-        path: '/root/parent/sibling/cousin'
+        path: '/root/parent/sibling/cousin',
+        level: 3,
+        rank: 0
       }
     ];
 
