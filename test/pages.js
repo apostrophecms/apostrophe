@@ -188,6 +188,8 @@ describe('Pages', function() {
     var cursor = apos.pages.find(anonReq(), { slug: 'child' });
 
     cursor.ancestors({children: 1}).toObject(function(err, page){
+      console.error(err);
+      process.exit(1);
       assert(!err);
       // There should be only 1 result.
       assert(page);
