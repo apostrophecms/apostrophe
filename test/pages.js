@@ -88,7 +88,7 @@ describe('Pages', function() {
     }, function(err){
       assert(!err);
       // Now look for one of them and make sure they don't exist anymore
-      apos.pages.find({ slug: 'child' }).toArray(function(err, docs){
+      apos.pages.find(adminReq(), { slug: 'child' }).toArray(function(err, docs){
         assert(!err);
         assert(docs.length === 0);
         done();
@@ -190,9 +190,9 @@ describe('Pages', function() {
       // There should be 2 ancestors.
       assert(page._ancestors.length === 2);
       // The first ancestor should be 'root'
-      assert.equals(page._ancestors[0].path, '/root');
+      assert.equal(page._ancestors[0].path, '/root');
       // The second ancestor should be 'parent'
-      assert.equals(page._ancestors[1].path, '/root/parent');
+      assert.equal(page._ancestors[1].path, '/root/parent');
       done();
     });
   });
@@ -209,7 +209,7 @@ describe('Pages', function() {
       // The second ancestor should have children
       assert(page._ancestors[1]._children);
       // The first ancestor's child should have a path '/root/parent/sibling'
-      assert.equals(page._ancestors[1]._children[0].path, '/root/parent/sibling');
+      assert.equal(page._ancestors[1]._children[0].path, '/root/parent/sibling');
       done();
     });
   });
