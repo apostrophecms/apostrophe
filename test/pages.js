@@ -134,7 +134,7 @@ describe('Pages', function() {
         published: true,
         path: '/root/parent/sibling/cousin'
       }
-    ]
+    ];
 
     apos.docs.db.insert(testItems, function(err){
       assert(!err);
