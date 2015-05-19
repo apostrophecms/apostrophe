@@ -83,12 +83,12 @@ describe('Pages', function() {
     // Attempt to remove all the test people we know about
     apos.docs.db.remove({
       $or: [
-        { type: 'testPerson' }
+        { type: 'testPage' }
       ]
     }, function(err){
       assert(!err);
       // Now look for one of them and make sure they don't exist anymore
-      apos.docs.db.find({ slug: 'larry' }).toArray(function(err, docs){
+      apos.pages.find({ slug: 'child' }).toArray(function(err, docs){
         assert(docs.length === 0);
         done();
       });
@@ -98,31 +98,37 @@ describe('Pages', function() {
   it('should be able to use db to insert documents', function(done){
     var testItems = [
       {
+        type: 'testPage',
         slug: 'parent',
         published: true,
         path: '/root/parent'
       },
       {
+        type: 'testPage',
         slug: 'child',
         published: true,
         path: '/root/parent/child'
       },
       {
+        type: 'testPage',
         slug: 'root',
         published: true,
         path: '/root'
       },
       {
+        type: 'testPage',
         slug: 'grandchild',
         published: true,
         path: '/root/parent/child/grandchild'
       },
       {
+        type: 'testPage',
         slug: 'sibling',
         published: true,
         path: '/root/parent/sibling'
       },
       {
+        type: 'testPage',
         slug: 'cousin',
         published: true,
         path: '/root/parent/sibling/cousin'
