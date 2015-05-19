@@ -213,8 +213,10 @@ describe('Pages', function() {
       assert(page._ancestors.length === 2);
       // The second ancestor should have children
       assert(page._ancestors[1]._children);
-      // The first ancestor's child should have a path '/root/parent/sibling'
-      assert.equal(page._ancestors[1]._children[0].path, '/root/parent/sibling');
+      // The first ancestor's child should have a path '/root/parent/child'
+      assert.equal(page._ancestors[1]._children[0].path, '/root/parent/child');
+      // The second ancestor's child should have a path '/root/parent/sibling'
+      assert.equal(page._ancestors[1]._children[1].path, '/root/parent/sibling');
       done();
     });
   });
