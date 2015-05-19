@@ -13,10 +13,10 @@
       {% endif %}
     </div>
 
-    <h4>{{ (file.title or __('Title')) | e }}</h4>
+    <h4>{{ (file.title or __('Title')) }}</h4>
     <div class="apos-item-list-details" data-list-details>
-      <span>Group: {{ file.group | e }}</span>
-      <span>Extension: {{ file.extension | e }}</span>
+      <span>Group: {{ file.group }}</span>
+      <span>Extension: {{ file.extension }}</span>
       <span>Tags: {{ (file.tags or []) | join(', ') }}</span>
     </div>
   </div>
@@ -24,8 +24,8 @@
 
 {% macro showField(name, label, value) %}
   <div class="apos-show-pane-field">
-    <div class="apos-label">{{ __(label) | e }}</div>
-    <div class="apos-value" data-name="{{ name | e }}">{% if value %}{{ value | e }}{% else %}—{% endif %}</div>
+    <div class="apos-label">{{ __(label) }}</div>
+    <div class="apos-value" data-name="{{ name }}">{% if value %}{{ value }}{% else %}—{% endif %}</div>
   </div>
 {% endmacro %}
 
@@ -60,7 +60,7 @@
             <div class="apos-label">{{ __('Download Original') }}</div>
             <div class="apos-value" data-name="downloadOriginal">
               {%- if not item.trash -%}
-                <a href="{{ apos.files.url(file) }}">{{ apos.files.url(file) | e }}</a>
+                <a href="{{ apos.files.url(file) }}">{{ apos.files.url(file) }}</a>
               {%- else -%}
                 &mdash;
               {%- endif -%}

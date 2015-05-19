@@ -73,7 +73,7 @@
         if supplied for the field's type or that individual field #}
       {{ aposSchemaField(field) }}
       {%- if field.help -%}
-        <p class="apos-help">{{ field.help | e }}</p>
+        <p class="apos-help">{{ field.help }}</p>
       {%- endif -%}
     {%- endif -%}
     {%- if (field.name == options.to) -%}
@@ -94,12 +94,12 @@
 {%- macro schemaArray(name, label, schema) -%}
   <fieldset class="apos-fieldset apos-fieldset-array apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <div class="apos-fieldset-row">
-      {#- <label>{{ __(label) | e }}</label> -#}
+      {#- <label>{{ __(label) }}</label> -#}
       {#- Cannot be inside the sortable div -#}
       <span class="apos-ui-container">
         <a href="#" class="apos-control apos-button" data-add>
           <i class="icon-plus"></i>
-          Add {{ __(label) | e }}
+          Add {{ __(label) }}
         </a>
       </span>
     </div>

@@ -4,6 +4,6 @@
 {# whitelisting them for the inline JSON attributes) #}
 
 <div data-widget="{{ data.widget.type }}" data='{{ data.widget | pruneTemporaryProperties | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}'>
-  {{ data.output() }}
+  {{ data.output() | safe }}
 </div>
 
