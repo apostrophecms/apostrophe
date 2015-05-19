@@ -2,12 +2,12 @@ var assert = require('assert'),
     _ = require('lodash'),
     fs = require('fs');
 
-if (!fs.existsSync(__dirname +'/node_modules')) { 
+if (!fs.existsSync(__dirname +'/node_modules')) {
   fs.mkdirSync(__dirname + '/node_modules');
   fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
 }
 
-require('./bootstraping.js');
+require('./bootstrapping.js');
 
 // ------------------------------------------------------------------- //
 // MODULES  ---------------------------------------------------------- //
@@ -75,5 +75,11 @@ describe('Modules', function(){
   //    DOCS     //
   //             //
 
-  require('./docs.js');  
+  require('./docs.js');
+
+  //             //
+  //    PAGES     //
+  //             //
+
+  require('./pages.js');  
 });

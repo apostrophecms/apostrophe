@@ -94,10 +94,10 @@ describe('Apostrophe', function() {
     });
   });
 
-  it('should load the default modules and implicitly subclass the base module correctly', function(done){
+  it('should load the default modules and implicitly subclass the base module correctly', function(done) {
     var defaultModules = require('../defaults.js').modules;
 
-    var apos = require('../index.js')({ 
+    var apos = require('../index.js')({
       root: module,
       shortName: 'test',
       hostName: 'test.com',
@@ -105,7 +105,7 @@ describe('Apostrophe', function() {
         // color = blue is inherited from our implicit subclass of the base module
         assert(apos.assets && apos.assets.color === 'blue');
         // make sure that our modules match what is specifed in deafults.js
-        assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);            
+        assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);
         return done();
       }
     });
