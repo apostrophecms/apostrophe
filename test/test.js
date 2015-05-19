@@ -7,7 +7,7 @@ if (!fs.existsSync(__dirname +'/node_modules')) {
   fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
 }
 
-require('./bootstraping.js');
+require('./bootstrapping.js');
 
 // ------------------------------------------------------------------- //
 // MODULES  ---------------------------------------------------------- //
