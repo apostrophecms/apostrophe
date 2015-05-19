@@ -89,6 +89,7 @@ describe('Pages', function() {
       assert(!err);
       // Now look for one of them and make sure they don't exist anymore
       apos.pages.find({ slug: 'child' }).toArray(function(err, docs){
+        assert(!err);
         assert(docs.length === 0);
         done();
       });
@@ -133,7 +134,6 @@ describe('Pages', function() {
         published: true,
         path: '/root/parent/sibling/cousin'
       }
-
     ]
 
     apos.docs.db.insert(testItems, function(err){
