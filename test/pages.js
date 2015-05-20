@@ -223,6 +223,36 @@ describe('Pages', function() {
 
 
   //////
+  // INSERTING
+  //////
+  it('is able to insert a new page', function(done) {
+    var parentId = 1234;
+
+    var newPage = {
+      slug: 'new-page',
+      published: true,
+      type: 'testPage',
+      title: 'New Page'
+    };
+    apos.pages.insert(adminReq(), parentId, newPage, function(err, page){
+        // did it return an error?
+        assert(err);
+        //Is the path generally correct?
+        assert.equal(page.path, '/root/parent/new-page');
+        done();
+      });
+    });
+  });
+
+  it('is able to insert a new page in the correct order', function(done) {
+    var cursor = apos.pages.find(anonReq(), { slug: 'new-page' });
+
+    cursor.toObject(function(err, page){
+      asssert.equal(page.rank, 2);
+    })
+  });
+
+  //////
   // MOVING
   //////
 
