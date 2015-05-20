@@ -292,7 +292,7 @@ describe('Pages', function() {
       //Is the new path correct?
       assert.equal(page.path, '/root/cousin');
       //Is the rank correct?
-      assert.equal(page.rank, 1);
+      assert.equal(Math.floor(page.rank), 1);
       return done();
     });
 
@@ -318,7 +318,7 @@ describe('Pages', function() {
       //Is the new path correct?
       assert.equal(page.path, '/root/parent/cousin');
       //Is the rank correct?
-      assert.equal(page.rank, 0);
+      assert.equal(Math.floor(page.rank), 0);
       return done();
     });
   });
@@ -343,7 +343,7 @@ describe('Pages', function() {
       //Is the new path correct?
       assert.equal(page.path, '/root/parent/sibling/cousin');
       //Is the rank correct?
-      assert.equal(page.rank, 0);
+      assert.equal(Math.floor(page.rank), 0);
       return done();
     });
   });
