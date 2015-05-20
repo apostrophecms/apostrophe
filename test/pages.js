@@ -262,8 +262,11 @@ describe('Pages', function() {
     var cursor = apos.pages.find(anonReq(), { slug: 'new-page' });
 
     cursor.toObject(function(err, page){
-      assert.equal(page.rank, 2);
-    })
+      // There is a random component used to address
+      // race conditions deterministically
+      assert.equal(Math.floor(page.rank), 2);
+      done();
+    });
   });
 
   //////
