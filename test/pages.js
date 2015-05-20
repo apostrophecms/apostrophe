@@ -206,7 +206,7 @@ describe('Pages', function() {
   it('should be able to include just one ancestor of a page, i.e. the parent', function(done){
     var cursor = apos.pages.find(anonReq(), { slug: 'child' });
 
-    cursor.ancestors({depth: 1}).toObject(function(err, page){
+    cursor.ancestors({ depth: 1 }).toObject(function(err, page){
       assert(!err);
       // There should be only 1 result.
       assert(page);
@@ -263,9 +263,7 @@ describe('Pages', function() {
     var cursor = apos.pages.find(anonReq(), { slug: 'new-page' });
 
     cursor.toObject(function(err, page){
-      // There is a random component used to address
-      // race conditions deterministically
-      assert.equal(Math.floor(page.rank), 2);
+      assert.equal(page.rank, 2);
       done();
     });
   });
@@ -277,50 +275,47 @@ describe('Pages', function() {
   it('is able to move root/parent/sibling/cousin after root/parent', function(done) {
     // 'Cousin' _id === 4312
     // 'Parent' _id === 1234
-    apos.pages.move(adminReq, '4312', '1234', 'after', function(err) {
+    apos.pages.move(adminReq(), '4312', '1234', 'after', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
+      var cursor = apos.pages.find(anonReq(), {_id: '4312'});
+      cursor.toObject(function(err, page){
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        //Is the new path correct?
+        assert.equal(page.path, '/root/cousin');
+        //Is the rank correct?
+        assert.equal(page.rank, 1);
+        return done();
+      });
     });
-
-    var cursor = apos.pages.find(anonReq, {_id: '4312'});
-    cursor.toObject(function(err, page){
-      if (err) {
-        console.log(err);
-      }
-      assert(!err);
-      //Is the new path correct?
-      assert.equal(page.path, '/root/cousin');
-      //Is the rank correct?
-      assert.equal(Math.floor(page.rank), 1);
-      return done();
-    });
-
 
   });
 
   it('is able to move root/cousin before root/parent/child', function(done) {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    apos.pages.move(adminReq, '4312', '2341', 'before', function(err) {
+    apos.pages.move(adminReq(), '4312', '2341', 'before', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
-    });
-
-    var cursor = apos.pages.find(anonReq, {_id: '4312'});
-    cursor.toObject(function(err, page){
-      if (err) {
-        console.log(err);
-      }
-      assert(!err);
-      //Is the new path correct?
-      assert.equal(page.path, '/root/parent/cousin');
-      //Is the rank correct?
-      assert.equal(Math.floor(page.rank), 0);
-      return done();
+      var cursor = apos.pages.find(anonReq(), {_id: '4312'});
+      cursor.toObject(function(err, page){
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        //Is the new path correct?
+        assert.equal(page.path, '/root/parent/cousin');
+        //Is the rank correct?
+        assert.equal(page.rank, 0);
+        return done();
+      });
     });
   });
 
@@ -328,25 +323,25 @@ describe('Pages', function() {
   it('is able to move root/parent/cousin inside root/parent/sibling', function(done) {
     // 'Cousin' _id === 4312
     // 'Sibling' _id === 4321
-    apos.pages.move(adminReq, '4312', '4321', 'inside', function(err) {
+    apos.pages.move(adminReq(), '4312', '4321', 'inside', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
+      var cursor = apos.pages.find(anonReq(), {_id: '4312'});
+      cursor.toObject(function(err, page){
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        //Is the new path correct?
+        assert.equal(page.path, '/root/parent/sibling/cousin');
+        //Is the rank correct?
+        assert.equal(page.rank, 0);
+        return done();
+      });
     });
 
-    var cursor = apos.pages.find(anonReq, {_id: '4312'});
-    cursor.toObject(function(err, page){
-      if (err) {
-        console.log(err);
-      }
-      assert(!err);
-      //Is the new path correct?
-      assert.equal(page.path, '/root/parent/sibling/cousin');
-      //Is the rank correct?
-      assert.equal(Math.floor(page.rank), 0);
-      return done();
-    });
   });
   it('should be able to serve a page', function(done){
     return request('http://localhost:7940/child', function(err, response, body){
