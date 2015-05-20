@@ -1,6 +1,7 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var request = require('request');
 
 var apos;
 
@@ -347,5 +348,19 @@ describe('Pages', function() {
       return done();
     });
   });
+  it('should be able to serve a page', function(done){
+    return request('http://localhost:7940/child', function(err, response, body){
+      assert(!err)
+      //Is our status code good?
+      assert.equal(response.statusCode, 200)
+      //Did we get our page back?
+      assert(function(body){
+        var match = body.match(/Sing to me, Oh Muse./);
+        return match.length;
+      });
+      //console.log(body);
+      return done();
+    })
+  })
 
 });
