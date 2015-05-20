@@ -226,7 +226,7 @@ describe('Pages', function() {
   // INSERTING
   //////
   it('is able to insert a new page', function(done) {
-    var parentId = 1234;
+    var parentId = '1234';
 
     var newPage = {
       slug: 'new-page',
@@ -234,13 +234,14 @@ describe('Pages', function() {
       type: 'testPage',
       title: 'New Page'
     };
-    apos.pages.insert(adminReq(), parentId, newPage, function(err, page){
-        // did it return an error?
-        assert(err);
-        //Is the path generally correct?
-        assert.equal(page.path, '/root/parent/new-page');
-        done();
-      });
+    apos.pages.insert(adminReq(), parentId, newPage, function(err, page) {
+      // did it return an error?
+      console.error(err);
+      assert(!err);
+      assert(page);
+      //Is the path generally correct?
+      assert.equal(page.path, '/root/parent/new-page');
+      done();
     });
   });
 
@@ -248,8 +249,11 @@ describe('Pages', function() {
     var cursor = apos.pages.find(anonReq(), { slug: 'new-page' });
 
     cursor.toObject(function(err, page){
-      asssert.equal(page.rank, 2);
-    })
+      // There is a random component used to address
+      // race conditions deterministically
+      assert.equal(Math.floor(page.rank), 2);
+      done();
+    });
   });
 
   //////
