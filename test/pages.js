@@ -101,7 +101,7 @@ describe('Pages', function() {
     var testItems = [
       { _id: '1234',
         type: 'testPage',
-        slug: 'parent',
+        slug: '/parent',
         published: true,
         path: '/root/parent',
         level: 1,
@@ -110,7 +110,7 @@ describe('Pages', function() {
       {
         _id: '2341',
         type: 'testPage',
-        slug: 'child',
+        slug: '/child',
         published: true,
         path: '/root/parent/child',
         level: 2,
@@ -119,7 +119,7 @@ describe('Pages', function() {
       {
         _id: '3412',
         type: 'testPage',
-        slug: 'root',
+        slug: '/root',
         published: true,
         path: '/root',
         level: 0,
@@ -128,7 +128,7 @@ describe('Pages', function() {
       {
         _id: '4123',
         type: 'testPage',
-        slug: 'grandchild',
+        slug: '/grandchild',
         published: true,
         path: '/root/parent/child/grandchild',
         level: 3,
@@ -137,7 +137,7 @@ describe('Pages', function() {
       {
         _id: '4321',
         type: 'testPage',
-        slug: 'sibling',
+        slug: '/sibling',
         published: true,
         path: '/root/parent/sibling',
         level: 2,
@@ -147,7 +147,7 @@ describe('Pages', function() {
       {
         _id: '4312',
         type: 'testPage',
-        slug: 'cousin',
+        slug: '/cousin',
         published: true,
         path: '/root/parent/sibling/cousin',
         level: 3,
@@ -174,7 +174,7 @@ describe('Pages', function() {
 
 
   it('should be able to find just a single page', function(done){
-    var cursor = apos.pages.find(anonReq(), { slug: 'child' });
+    var cursor = apos.pages.find(anonReq(), { slug: '/child' });
 
     cursor.toObject(function(err, page){
       assert(!err);
@@ -187,7 +187,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the ancestors of a page', function(done){
-    var cursor = apos.pages.find(anonReq(), { slug: 'child' });
+    var cursor = apos.pages.find(anonReq(), { slug: '/child' });
 
     cursor.ancestors(true).toObject(function(err, page){
       assert(!err);
@@ -204,7 +204,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include just one ancestor of a page, i.e. the parent', function(done){
-    var cursor = apos.pages.find(anonReq(), { slug: 'child' });
+    var cursor = apos.pages.find(anonReq(), { slug: '/child' });
 
     cursor.ancestors({ depth: 1 }).toObject(function(err, page){
       assert(!err);
@@ -219,7 +219,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the children of the ancestors of a page', function(done){
-    var cursor = apos.pages.find(anonReq(), { slug: 'child' });
+    var cursor = apos.pages.find(anonReq(), { slug: '/child' });
 
     cursor.ancestors({children: 1}).toObject(function(err, page){
       assert(!err);
@@ -345,14 +345,20 @@ describe('Pages', function() {
   });
   it('should be able to serve a page', function(done){
     return request('http://localhost:7940/child', function(err, response, body){
-      assert(!err)
+      assert(!err);
       //Is our status code good?
-      assert.equal(response.statusCode, 200)
+      assert.equal(response.statusCode, 200);
       //Did we get our page back?
-      assert(function(body){
-        var match = body.match(/Sing to me, Oh Muse./);
-        return match.length;
-      });
+      assert(body.match(/Sing to me, Oh Muse./));
+      //console.log(body);
+      return done();
+    })
+  });
+  it('should not be able to serve a nonexistent page', function(done){
+    return request('http://localhost:7940/nobodyschild', function(err, response, body){
+      assert(!err);
+      //Is our status code good?
+      assert.equal(response.statusCode, 404);
       //console.log(body);
       return done();
     })
