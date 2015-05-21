@@ -18,6 +18,7 @@ module.exports = {
     'apostrophe-modal': {},
     'apostrophe-files': {},
     'apostrophe-pages': {},
+    'apostrophe-global': {},
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
     'apostrophe-service-bridge': {}

@@ -175,7 +175,11 @@ module.exports = function(options) {
       local = require(reallyLocalPath);
     }
 
-    var config = options.__testDefaults || defaults;
+    // Otherwise making a second apos instance
+    // uses the same modified defaults object
+
+    var config = _.cloneDeep(options.__testDefaults || defaults);
+
     var coreModules = _.cloneDeep(config.modules);
 
     _.merge(config, options);
@@ -191,6 +195,7 @@ module.exports = function(options) {
     } else {
        _.merge(config, local || {});
     }
+
     return config;
   }
 
