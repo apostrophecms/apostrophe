@@ -1,0 +1,11 @@
+<ul class="apos-admin-bar-item apos-accordion-menu apos-pages-menu">
+  <li class="apos-accordion-title"><i class="icon-doc"></i></li>
+  <li class="apos-accordion-items">
+    <ul class="apos-page-bar">
+      <li href="#" class="apos-control apos-accordion-item apos-button apos-{{ item.name }}" data-new-page>Sample</li>
+      {% for item in args.contextMenu %}
+        <li href="#" class="apos-control apos-accordion-item apos-button apos-{{ item.name }}" data-{{ item.name }}>{{ __(item.label) }}</li>
+      {% endfor %}
+    </ul>
+  </li>
+</ul>
