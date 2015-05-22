@@ -166,7 +166,7 @@
 {# pass some default options and then customize a few #}
 
 {%- macro formSelective(name, label, options = {}, moreOptions = {}) -%}
-  {%- set _options = aposMerge(options, moreOptions) -%}
+  {%- set _options = apos.utils.merge(options, moreOptions) -%}
 
   {%- if _options.inline -%}
     <div class="apos-inline-selective" data-selective data-name="{{ name }}">
@@ -185,7 +185,7 @@
           <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
             <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
             <span class="apos-selective-label" data-label>
-              {{ __(Title) }}
+              {#{ __(Title) }#}{{ title }}
             </span>
           </div>
           {%- if _options.extras or _options.relationship -%}
