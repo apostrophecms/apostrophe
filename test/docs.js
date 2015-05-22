@@ -103,6 +103,7 @@ describe('Docs', function() {
   it('should be able to use db to insert documents', function(done){
     var testItems = [
       {
+        _id: 'lori',
         slug: 'lori',
         published: true,
         type: 'testPerson',
@@ -112,6 +113,7 @@ describe('Docs', function() {
         alive: true
       },
       {
+        _id: 'larry',
         slug: 'larry',
         published: true,
         type: 'testPerson',
@@ -121,18 +123,55 @@ describe('Docs', function() {
         alive: true
       },
       {
+        _id: 'carl',
         slug: 'carl',
         published: true,
         type: 'testPerson',
         firstName: 'Carl',
         lastName: 'Sagan',
         age: 62,
-        alive: false
+        alive: false,
+        friendId: 'larry'
       }
     ]
 
     apos.docs.db.insert(testItems, function(err){
       assert(!err);
+      done();
+    });
+  });
+
+  it('should be able to carry out schema joins', function(done) {
+
+    apos.docs.setManager('testPerson', {
+      schema: [
+        {
+          name: '_friend',
+          type: 'joinByOne',
+          withType: 'testPerson',
+          idField: 'friendId',
+          label: 'Friend'
+        }
+      ],
+      find: function(req, criteria, projection) {
+        return apos.docs.find(req, criteria, projection).type('testPerson');
+      }
+    });
+
+    var manager = apos.docs.getManager('testPerson');
+
+    assert(manager);
+    assert(manager.find);
+    assert(manager.schema);
+
+    var cursor = manager.find(anonReq(), { slug: 'carl' });
+    assert(cursor);
+    cursor.toObject(function(err, person) {
+      assert(!err);
+      assert(person);
+      assert(person.slug === 'carl');
+      assert(person._friend);
+      assert(person._friend.slug === 'larry');
       done();
     });
   });
