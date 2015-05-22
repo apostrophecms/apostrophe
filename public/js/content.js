@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.293";
+apos.version = "0.5.294";
 
 apos.handlers = {};
 
@@ -401,11 +401,6 @@ apos.modal = function(sel, options) {
 
     // Escape key should dismiss the top modal, if any
 
-    // $(document).on('keyup.aposModal', function(e) {
-    //   // console.log(e);
-
-    // });
-
     $( document ).on({
       'keydown.aposModal': function(e) {
         if (e.keyCode === 27) {
@@ -474,7 +469,7 @@ apos.modal = function(sel, options) {
       // We can reinstall the handler when it's relevant.
       // Fewer event handlers all the time = better performance
       apos._modalInitialized = false;
-      $(document).off('keyup.aposModal');
+      $(document).off('keydown.aposModal');
       $(document).off('click.aposModal');
     }
   });
