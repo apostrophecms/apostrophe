@@ -1,6 +1,7 @@
 module.exports = {
   modules: {
     'apostrophe-utils': {},
+    'apostrophe-tasks': {},
     'apostrophe-launder': {},
     'apostrophe-i18n': {},
     'apostrophe-db': {},
@@ -21,6 +22,6 @@ module.exports = {
     'apostrophe-global': {},
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
-    'apostrophe-service-bridge': {}
+    'apostrophe-service-bridge': {},
   }
 };

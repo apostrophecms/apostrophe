@@ -70,7 +70,7 @@ module.exports = function(options) {
     var args = Array.prototype.slice.call(arguments, 1);
     var i;
     for (i = 0; (i < handlers.length); i++) {
-      handlers[i].apply(window, args);
+      handlers[i].apply(self, args);
     }
   };
 
@@ -149,9 +149,7 @@ module.exports = function(options) {
       throw err;
     }
     if (self.argv._.length) {
-      console.log('run a task (unimplemented)');
-      process.exit(1);
-      // Run a task
+      self.emit('runTask');
     } else {
       // The apostrophe-express-init module adds this method
       self.listen();
