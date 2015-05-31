@@ -84,15 +84,11 @@ describe('Docs', function() {
     });
   });
 
-  it('should make sure there is no test data hanging around from last time', function(done){
-    // Attempt to remove all the test people we know about
-    apos.docs.db.remove({
-      $or: [
-        { type: 'testPerson' }
-      ]
-    }, function(err){
+  it('should make sure there is no test data hanging around from last time', function(done) {
+    // Attempt to purge the entire aposDocs collection
+    apos.docs.db.remove({}, function(err) {
       assert(!err);
-      // Now look for one of them and make sure they don't exist anymore
+      // Make sure it went away
       apos.docs.db.find({ slug: 'larry' }).toArray(function(err, docs){
         assert(docs.length === 0);
         done();

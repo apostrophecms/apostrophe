@@ -40,6 +40,9 @@ describe('Pages', function() {
         'apostrophe-express': {
           secret: 'xxx',
           port: 7940
+        },
+        'apostrophe-pages': {
+          park: []
         }
       },
       afterInit: function(callback) {
@@ -79,21 +82,39 @@ describe('Pages', function() {
     });
   });
 
-  //TODO: come back and add the paths to clean up.
-  it('should make sure there is no test data hanging around from last time', function(done){
-    // Attempt to remove all the test people we know about
-    apos.docs.db.remove({
-      $or: [
-        { type: 'testPage' }
-      ]
-    }, function(err){
+  it('parked homepage exists', function(done) {
+    return apos.pages.find(anonReq(), { slug: '/' }).toObject(function(err, home) {
       assert(!err);
-      // Now look for one of them and make sure they don't exist anymore
-      apos.pages.find(adminReq(), { slug: 'child' }).toArray(function(err, docs){
-        assert(!err);
-        assert(docs.length === 0);
-        done();
-      });
+      assert(home);
+      assert(home._id === 'home');
+      assert(home.slug === '/');
+      assert(home.path === '/');
+      assert(home.type === 'home');
+      assert(home.parked);
+      assert(home.published);
+      // Verify that clonePermanent did its
+      // job and removed properties not meant
+      // to be stored in mongodb
+      assert(!home._children);
+      done();
+    });
+  });
+
+  it('parked trash can exists', function(done) {
+    return apos.pages.find(adminReq(), { slug: '/trash' }).published(null).trash(null).toObject(function(err, trash) {
+      assert(!err);
+      assert(trash);
+      assert(trash._id === 'trash');
+      assert(trash.slug === '/trash');
+      assert(trash.path === '/trash');
+      assert(trash.type === 'trash');
+      assert(trash.parked);
+      assert(!trash.published);
+      // Verify that clonePermanent did its
+      // job and removed properties not meant
+      // to be stored in mongodb
+      assert(!trash._children);
+      done();
     });
   });
 
@@ -103,7 +124,7 @@ describe('Pages', function() {
         type: 'testPage',
         slug: '/parent',
         published: true,
-        path: '/root/parent',
+        path: '/parent',
         level: 1,
         rank: 0
       },
@@ -112,17 +133,8 @@ describe('Pages', function() {
         type: 'testPage',
         slug: '/child',
         published: true,
-        path: '/root/parent/child',
+        path: '/parent/child',
         level: 2,
-        rank: 0
-      },
-      {
-        _id: '3412',
-        type: 'testPage',
-        slug: '/root',
-        published: true,
-        path: '/root',
-        level: 0,
         rank: 0
       },
       {
@@ -130,7 +142,7 @@ describe('Pages', function() {
         type: 'testPage',
         slug: '/grandchild',
         published: true,
-        path: '/root/parent/child/grandchild',
+        path: '/parent/child/grandchild',
         level: 3,
         rank: 0
       },
@@ -139,7 +151,7 @@ describe('Pages', function() {
         type: 'testPage',
         slug: '/sibling',
         published: true,
-        path: '/root/parent/sibling',
+        path: '/parent/sibling',
         level: 2,
         rank: 1
 
@@ -149,7 +161,7 @@ describe('Pages', function() {
         type: 'testPage',
         slug: '/cousin',
         published: true,
-        path: '/root/parent/sibling/cousin',
+        path: '/parent/sibling/cousin',
         level: 3,
         rank: 0
       }
@@ -172,6 +184,20 @@ describe('Pages', function() {
     assert(cursor);
   });
 
+  it('should be able to find the parked homepage', function(done){
+    var cursor = apos.pages.find(anonReq(), { slug: '/' });
+
+    cursor.toObject(function(err, page){
+      assert(!err);
+      // There should be only 1 result.
+      assert(page);
+      // It should have a path of /
+      assert(page.path === '/');
+      assert(page.rank === 0);
+      done();
+    });
+  });
+
 
   it('should be able to find just a single page', function(done){
     var cursor = apos.pages.find(anonReq(), { slug: '/child' });
@@ -180,8 +206,8 @@ describe('Pages', function() {
       assert(!err);
       // There should be only 1 result.
       assert(page);
-      // It should have a path of /root/parent/child
-      assert(page.path === '/root/parent/child');
+      // It should have a path of /parent/child
+      assert(page.path === '/parent/child');
       done();
     });
   });
@@ -195,25 +221,25 @@ describe('Pages', function() {
       assert(page);
       // There should be 2 ancestors.
       assert(page._ancestors.length === 2);
-      // The first ancestor should be 'root'
-      assert.equal(page._ancestors[0].path, '/root');
+      // The first ancestor should be the homepage
+      assert.equal(page._ancestors[0].path, '/');
       // The second ancestor should be 'parent'
-      assert.equal(page._ancestors[1].path, '/root/parent');
+      assert.equal(page._ancestors[1].path, '/parent');
       done();
     });
   });
 
-  it('should be able to include just one ancestor of a page, i.e. the parent', function(done){
+  it('should be able to include just one ancestor of a page, i.e. the parent', function(done) {
     var cursor = apos.pages.find(anonReq(), { slug: '/child' });
 
     cursor.ancestors({ depth: 1 }).toObject(function(err, page){
       assert(!err);
       // There should be only 1 result.
       assert(page);
-      // There should be 1 ancestor.
+      // There should be 1 ancestor returned.
       assert(page._ancestors.length === 1);
-      // The first ancestor should be 'root'
-      assert.equal(page._ancestors[0].path, '/root/parent');
+      // The first ancestor returned should be 'parent'
+      assert.equal(page._ancestors[0].path, '/parent');
       done();
     });
   });
@@ -229,10 +255,10 @@ describe('Pages', function() {
       assert(page._ancestors.length === 2);
       // The second ancestor should have children
       assert(page._ancestors[1]._children);
-      // The first ancestor's child should have a path '/root/parent/child'
-      assert.equal(page._ancestors[1]._children[0].path, '/root/parent/child');
-      // The second ancestor's child should have a path '/root/parent/sibling'
-      assert.equal(page._ancestors[1]._children[1].path, '/root/parent/sibling');
+      // The first ancestor's child should have a path '/parent/child'
+      assert.equal(page._ancestors[1]._children[0].path, '/parent/child');
+      // The second ancestor's child should have a path '/parent/sibling'
+      assert.equal(page._ancestors[1]._children[1].path, '/parent/sibling');
       done();
     });
   });
@@ -254,7 +280,7 @@ describe('Pages', function() {
       // did it return an error?
       assert(!err);
       //Is the path generally correct?
-      assert.equal(page.path, '/root/parent/new-page');
+      assert.equal(page.path, '/parent/new-page');
       done();
     });
   });
@@ -287,7 +313,7 @@ describe('Pages', function() {
         }
         assert(!err);
         //Is the new path correct?
-        assert.equal(page.path, '/root/cousin');
+        assert.equal(page.path, '/cousin');
         //Is the rank correct?
         assert.equal(page.rank, 1);
         return done();
@@ -311,7 +337,7 @@ describe('Pages', function() {
         }
         assert(!err);
         //Is the new path correct?
-        assert.equal(page.path, '/root/parent/cousin');
+        assert.equal(page.path, '/parent/cousin');
         //Is the rank correct?
         assert.equal(page.rank, 0);
         return done();
@@ -335,7 +361,7 @@ describe('Pages', function() {
         }
         assert(!err);
         //Is the new path correct?
-        assert.equal(page.path, '/root/parent/sibling/cousin');
+        assert.equal(page.path, '/parent/sibling/cousin');
         //Is the rank correct?
         assert.equal(page.rank, 0);
         return done();
@@ -362,6 +388,6 @@ describe('Pages', function() {
       //console.log(body);
       return done();
     })
-  })
+  });
 
 });
