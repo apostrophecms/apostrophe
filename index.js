@@ -292,7 +292,7 @@ module.exports = function(options) {
   }
 };
 
-var baseClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-jawns' ];
+var baseClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-pieces' ];
 
 module.exports.moogBundle = {
   modules: baseClasses.concat(_.keys(defaults.modules)),

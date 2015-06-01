@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('Jawns', function() {
+describe('pieces', function() {
   //////
   // EXISTENCE
   //////
@@ -43,7 +43,7 @@ describe('Jawns', function() {
         },
         // normally not used directly, but it's handy
         // for testing. Normally you'd extend it
-        'apostrophe-jawns': {
+        'apostrophe-pieces': {
           indexType: 'index'
         }
       },
@@ -54,11 +54,11 @@ describe('Jawns', function() {
   });
 
   it('should fire a dispatch route for its homepage', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
-    jawns.dispatch('/', function(req, callback) {
+    var pieces = apos.modules['apostrophe-pieces'];
+    pieces.dispatch('/', function(req, callback) {
       req.handlerInvoked = true;
       req.template = function(req, args) {
-        return 'jawns-index';
+        return 'pieces-index';
       }
       return setImmediate(callback);
     });
@@ -73,7 +73,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(req.handlerInvoked);
       done();
@@ -81,8 +81,8 @@ describe('Jawns', function() {
   });
 
   it('should fire a dispatch route matching a second, longer URL', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
-    jawns.dispatch('/foo', function(req, callback) {
+    var pieces = apos.modules['apostrophe-pieces'];
+    pieces.dispatch('/foo', function(req, callback) {
       req.fooInvoked = true;
       return setImmediate(callback);
     });
@@ -97,7 +97,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(req.fooInvoked);
       done();
@@ -105,8 +105,8 @@ describe('Jawns', function() {
   });
 
   it('should fire a dispatch route with parameters', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
-    jawns.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
+    var pieces = apos.modules['apostrophe-pieces'];
+    pieces.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
       req.barInvoked = true;
       return setImmediate(callback);
     });
@@ -121,7 +121,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(req.barInvoked);
       assert(req.params.bizzle === 'wacky');
@@ -132,11 +132,11 @@ describe('Jawns', function() {
   });
 
   it('should allow a later call to dispatch to override an earlier dispatch route', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
-    jawns.dispatch('/foo', function(req, callback) {
+    var pieces = apos.modules['apostrophe-pieces'];
+    pieces.dispatch('/foo', function(req, callback) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
-        return 'jawns-foo';
+        return 'pieces-foo';
       }
       return setImmediate(callback);
     });
@@ -151,7 +151,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(req.foo2Invoked);
       assert(!req.fooInvoked);
@@ -160,7 +160,7 @@ describe('Jawns', function() {
   });
 
   it('should not match when page type is wrong', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
+    var pieces = apos.modules['apostrophe-pieces'];
     // Simulate a page request for the wrong page type
     var req = {
       data: {
@@ -172,7 +172,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(!req.foo2Invoked);
       done();
@@ -180,7 +180,7 @@ describe('Jawns', function() {
   });
 
   it('should not match when there is no bestPage', function(done) {
-    var jawns = apos.modules['apostrophe-jawns'];
+    var pieces = apos.modules['apostrophe-pieces'];
     // Simulate a page request for the wrong page type
     var req = {
       data: {
@@ -190,7 +190,7 @@ describe('Jawns', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    jawns.pageServe(req, function(err) {
+    pieces.pageServe(req, function(err) {
       assert(!err);
       assert(!req.foo2Invoked);
       done();
@@ -199,11 +199,11 @@ describe('Jawns', function() {
 
   it('should be able to insert a test page manually into the db', function(done) {
     var testItem =
-      { _id: 'jawns1',
+      { _id: 'pieces1',
         type: 'index',
-        slug: '/jawns',
+        slug: '/pieces',
         published: true,
-        path: '/jawns',
+        path: '/pieces',
         level: 1,
         rank: 5
       };
@@ -211,29 +211,29 @@ describe('Jawns', function() {
   });
 
   it('should match a dispatch route on a real live page request', function(done) {
-    return request('http://localhost:7941/jawns', function(err, response, body){
+    return request('http://localhost:7941/pieces', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/jawns\-index/));
+      assert(body.match(/pieces\-index/));
       return done();
     });
   });
 
   it('runs foo route with /foo remainder', function(done) {
-    return request('http://localhost:7941/jawns/foo', function(err, response, body){
+    return request('http://localhost:7941/pieces/foo', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/jawns\-foo/));
+      assert(body.match(/pieces\-foo/));
       return done();
     });
   });
 
   it('yields 404 with bad remainder (not matching any dispatch routes)', function(done) {
-    return request('http://localhost:7941/jawns/tututu', function(err, response, body){
+    return request('http://localhost:7941/pieces/tututu', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);

@@ -87,6 +87,6 @@ describe('Modules', function(){
   //    JAWNS     //
   //              //
 
-  require('./jawns.js');  
+  require('./pieces.js');  
 
 });
