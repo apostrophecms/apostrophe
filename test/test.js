@@ -82,4 +82,11 @@ describe('Modules', function(){
   //             //
 
   require('./pages.js');  
+
+  //              //
+  //    JAWNS     //
+  //              //
+
+  require('./jawns.js');  
+
 });

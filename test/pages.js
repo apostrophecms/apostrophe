@@ -86,7 +86,6 @@ describe('Pages', function() {
     return apos.pages.find(anonReq(), { slug: '/' }).toObject(function(err, home) {
       assert(!err);
       assert(home);
-      assert(home._id === 'home');
       assert(home.slug === '/');
       assert(home.path === '/');
       assert(home.type === 'home');
@@ -104,7 +103,6 @@ describe('Pages', function() {
     return apos.pages.find(adminReq(), { slug: '/trash' }).published(null).trash(null).toObject(function(err, trash) {
       assert(!err);
       assert(trash);
-      assert(trash._id === 'trash');
       assert(trash.slug === '/trash');
       assert(trash.path === '/trash');
       assert(trash.type === 'trash');
