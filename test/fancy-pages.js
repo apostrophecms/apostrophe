@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('pieces', function() {
+describe('fancy-pages', function() {
   //////
   // EXISTENCE
   //////
@@ -41,10 +41,8 @@ describe('pieces', function() {
           secret: 'xxx',
           port: 7941
         },
-        // normally not used directly, but it's handy
-        // for testing. Normally you'd extend it
-        'apostrophe-pieces': {
-          indexType: 'index'
+        'nifty-pages': {
+          extend: 'apostrophe-fancy-pages'
         }
       },
       afterListen: function(err) {
@@ -54,11 +52,11 @@ describe('pieces', function() {
   });
 
   it('should fire a dispatch route for its homepage', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
-    pieces.dispatch('/', function(req, callback) {
+    var niftyPages = apos.modules['nifty-pages'];
+    niftyPages.dispatch('/', function(req, callback) {
       req.handlerInvoked = true;
       req.template = function(req, args) {
-        return 'pieces-index';
+        return 'niftyPages-index';
       }
       return setImmediate(callback);
     });
@@ -66,14 +64,14 @@ describe('pieces', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'index'
+          type: 'nifty'
         }
       },
       remainder: '/'
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(req.handlerInvoked);
       done();
@@ -81,8 +79,8 @@ describe('pieces', function() {
   });
 
   it('should fire a dispatch route matching a second, longer URL', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
-    pieces.dispatch('/foo', function(req, callback) {
+    var niftyPages = apos.modules['nifty-pages'];
+    niftyPages.dispatch('/foo', function(req, callback) {
       req.fooInvoked = true;
       return setImmediate(callback);
     });
@@ -90,14 +88,14 @@ describe('pieces', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'index'
+          type: 'nifty'
         }
       },
       remainder: '/foo'
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(req.fooInvoked);
       done();
@@ -105,8 +103,8 @@ describe('pieces', function() {
   });
 
   it('should fire a dispatch route with parameters', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
-    pieces.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
+    var niftyPages = apos.modules['nifty-pages'];
+    niftyPages.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
       req.barInvoked = true;
       return setImmediate(callback);
     });
@@ -114,14 +112,14 @@ describe('pieces', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'index'
+          type: 'nifty'
         }
       },
       remainder: '/bar/wacky/wonky/wibble/skip'
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(req.barInvoked);
       assert(req.params.bizzle === 'wacky');
@@ -132,11 +130,11 @@ describe('pieces', function() {
   });
 
   it('should allow a later call to dispatch to override an earlier dispatch route', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
-    pieces.dispatch('/foo', function(req, callback) {
+    var niftyPages = apos.modules['nifty-pages'];
+    niftyPages.dispatch('/foo', function(req, callback) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
-        return 'pieces-foo';
+        return 'niftyPages-foo';
       }
       return setImmediate(callback);
     });
@@ -144,14 +142,14 @@ describe('pieces', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'index'
+          type: 'nifty'
         }
       },
       remainder: '/foo'
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(req.foo2Invoked);
       assert(!req.fooInvoked);
@@ -160,7 +158,7 @@ describe('pieces', function() {
   });
 
   it('should not match when page type is wrong', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
+    var niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
     var req = {
       data: {
@@ -172,7 +170,7 @@ describe('pieces', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(!req.foo2Invoked);
       done();
@@ -180,7 +178,7 @@ describe('pieces', function() {
   });
 
   it('should not match when there is no bestPage', function(done) {
-    var pieces = apos.modules['apostrophe-pieces'];
+    var niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
     var req = {
       data: {
@@ -190,7 +188,7 @@ describe('pieces', function() {
     };
     // pageServe method normally invoked via callAll in
     // the pages module
-    pieces.pageServe(req, function(err) {
+    niftyPages.pageServe(req, function(err) {
       assert(!err);
       assert(!req.foo2Invoked);
       done();
@@ -199,11 +197,11 @@ describe('pieces', function() {
 
   it('should be able to insert a test page manually into the db', function(done) {
     var testItem =
-      { _id: 'pieces1',
-        type: 'index',
-        slug: '/pieces',
+      { _id: 'niftyPages1',
+        type: 'nifty',
+        slug: '/niftyPages',
         published: true,
-        path: '/pieces',
+        path: '/niftyPages',
         level: 1,
         rank: 5
       };
@@ -211,29 +209,29 @@ describe('pieces', function() {
   });
 
   it('should match a dispatch route on a real live page request', function(done) {
-    return request('http://localhost:7941/pieces', function(err, response, body){
+    return request('http://localhost:7941/niftyPages', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/pieces\-index/));
+      assert(body.match(/niftyPages\-index/));
       return done();
     });
   });
 
   it('runs foo route with /foo remainder', function(done) {
-    return request('http://localhost:7941/pieces/foo', function(err, response, body){
+    return request('http://localhost:7941/niftyPages/foo', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/pieces\-foo/));
+      assert(body.match(/niftyPages\-foo/));
       return done();
     });
   });
 
   it('yields 404 with bad remainder (not matching any dispatch routes)', function(done) {
-    return request('http://localhost:7941/pieces/tututu', function(err, response, body){
+    return request('http://localhost:7941/niftyPages/tututu', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);

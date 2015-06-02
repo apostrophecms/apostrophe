@@ -83,10 +83,10 @@ describe('Modules', function(){
 
   require('./pages.js');  
 
-  //              //
-  //    JAWNS     //
-  //              //
+  //                    //
+  //    FANCY PAGES     //
+  //                    //
 
-  require('./pieces.js');  
+  require('./fancy-pages.js');  
 
 });
