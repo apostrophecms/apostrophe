@@ -292,10 +292,10 @@ module.exports = function(options) {
   }
 };
 
-var baseClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-fancy-pages', 'apostrophe-pieces' ];
+var abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-fancy-pages', 'apostrophe-pieces', 'apostrophe-pieces-with-views' ];
 
 module.exports.moogBundle = {
-  modules: baseClasses.concat(_.keys(defaults.modules)),
+  modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
 
