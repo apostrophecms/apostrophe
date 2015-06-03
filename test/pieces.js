@@ -1,6 +1,7 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var request = require('request');
 
 var apos;
 
@@ -272,5 +273,40 @@ describe('Pieces', function() {
 
     apos.modules['things'].apiResponse(res, null, { foo: 'bar' });
   });
+
+  // done with api.js tests, now let's test routes
+  var routeTestThing = {
+    title: 'purple',
+    foo: 'bar'
+  };
+
+  // POST insert
+  it('should insert an item in the database', function(done) {
+    return request
+      .post('http://localhost:7942/modules/things/insert')
+      .form(routeTestThing)
+      .on('response', function(response) {
+        // console.log(response);
+        done();
+      });
+  });
+
+  // POST retrieve
+  it('should get an item from the database by id', function(done) {
+
+  });
+
+  // POST list
+  it('should get a list of all the items', function(done) {
+
+  });
+
+  // POST update
+  it('should update an item in the database', function(done) {
+
+  });
+
+  // POST trash
+  // TODO implement
 
 });
