@@ -72,6 +72,21 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  var additionalThings = [
+    {
+      _id: 'thing1',
+      title: 'Red'
+    },
+    {
+      _id: 'thing2',
+      title: 'Blue'
+    },
+    {
+      _id: 'thing3',
+      title: 'Green'
+    }
+  ];
+
   // Wipe the database so we can run this test suite independent of bootstrap
   it('should make sure there is no test data hanging around from last time', function(done) {
     // Attempt to purge the entire aposDocs collection
@@ -138,10 +153,82 @@ describe('Pieces', function() {
   });
 
   // Test pieces.addListFilters()
+  it('should only execute filters that are safe and have a launder method', function() {
+    assert(apos.modules['things'].addListFilters);
+    var publicTest = false;
+    var manageTest = false;
+    // addListFilters should execute launder and filters for filter
+    // definitions that are safe for 'public' or 'manage' contexts
+    var mockCursor = {
+      filters: {
+        publicTest: {
+          launder: function(s) {
+            return 'laundered';
+          },
+          safeFor: 'public'
+        },
+        manageTest: {
+          launder: function(s) {
+            return 'laundered';
+          },
+          safeFor: 'manage'
+        },
+        unsafeTest: {}
+      },
+      publicTest: function(value) {
+        assert(value === 'laundered');
+        publicTest = true;
+      },
+      manageTest: function(value) {
+        assert(value === 'laundered');
+        manageTest = true;
+      },
+      unsafeTest: function(value) {
+        assert.fail('unsafe filter ran');
+      }
+    };
 
+    var filters = {
+      publicTest: 'foo',
+      manageTest: 'bar',
+      unsafeTest: 'nope',
+      fakeTest: 'notEvenReal'
+    }
+
+    apos.modules['things'].addListFilters(adminReq(), filters, mockCursor);
+    assert(publicTest === true);
+    assert(manageTest === true);
+  });
 
   // Test pieces.list()
+  it('should add some more things for testing', function(done) {
+    assert(apos.modules['things'].insert);
+    async.each(additionalThings, function(thing, callback) {
+      apos.modules['things'].insert(adminReq(), thing, function(err) {
+        callback(err);
+      });
+    }, function(err) {
+      assert(!err);
+      done();
+    })
+  });
 
+  it('should list all the pieces if skip and limit are set to large enough values', function(done) {
+    assert(apos.modules['things'].list);
+    var req = adminReq();
+    req.body = {
+      limit: 10,
+      skip: 0
+    };
+    apos.modules['things'].list(req, function(err, results) {
+      assert(!err);
+      assert(results.total == 4);
+      assert(results.limit == 10);
+      assert(results.skip == 0);
+      assert(results.pieces.length == 4);
+      done();
+    });
+  });
 
   // Test pieces.apiResponse()
   it('should pass through an error message if the error is passed as a string', function(done) {
