@@ -1,0 +1,7 @@
+{% for piece in data.results.pieces %}
+  <tr data-piece>
+    <td>
+      <span><a href="#" data-manage-{{ data.options.name | css }}="{{ piece.id }}">{{ piece.title }}</a></span>
+    </td>
+  </tr>
+{% endfor %}
