@@ -62,21 +62,21 @@ describe('Pieces', function() {
   });
 
   var testThing = {
+    title: 'hello',
     foo: 'bar'
   };
 
   it('should create a new piece', function(done) {
-    assert(apos.modules['things'].create);
-    var thing = apos.modules['things'].create();
+    assert(apos.modules['things'].newInstance);
+    var thing = apos.modules['things'].newInstance();
     assert(thing);
     done();
   });
 
   it('should insert a piece into the database', function(done) {
     assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(adminReq, testThing, function(err) {
+    apos.modules['things'].insert(adminReq(), testThing, function(err) {
       assert(!err);
-      assert(testThing._id);
       done();
     });
   });
@@ -84,9 +84,8 @@ describe('Pieces', function() {
   it('should update a piece in the database', function(done) {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(adminReq, testThing, function(err) {
+    apos.modules['things'].update(adminReq(), testThing, function(err) {
       assert(!err);
-      assert(testThing.foo === 'moo');
       done();
     });
   });

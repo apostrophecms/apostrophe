@@ -89,4 +89,10 @@ describe('Modules', function(){
 
   require('./fancy-pages.js');  
 
+  //                    //
+  //       PIECES       //
+  //                    //
+
+  require('./pieces.js');  
+
 });
