@@ -102,25 +102,38 @@ describe('Pieces', function() {
     });
   });
 
+  // Test pieces.requirePiece()
+  it('should be able to retrieve a piece by id from the database', function(done) {
+    assert(apos.modules['things'].requirePiece);
+    var req = adminReq();
+    req.body = {};
+    req.body._id = "testThing";
+    apos.modules['things'].requirePiece(req, req.res, function() {
+      assert(req.piece);
+      assert(req.piece._id === 'testThing');
+      assert(req.piece.title === 'hello');
+      assert(req.piece.foo === 'bar');
+      done();
+    });
+  });
+
   // Test pieces.update()
   it('should be able to update a piece in the database', function(done) {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
     apos.modules['things'].update(adminReq(), testThing, function(err) {
       assert(!err);
-      done();
-    });
-  });
 
-  // Test pieces.requirePiece()
-  it('should be able to retrieve a piece by id from the database', function(done) {
-    assert(apos.modules['things'].requirePiece);
-    var requireReq = adminReq();
-    requireReq.body = {};
-    requireReq.body._id = "testThing";
-    apos.modules['things'].requirePiece(requireReq, requireReq.res, function() {
-      console.log(req.piece);
-      done();
+      // Now let's get the piece and check if it was updated
+      var req = adminReq();
+      req.body = {};
+      req.body._id = "testThing";
+      apos.modules['things'].requirePiece(req, req.res, function() {
+        assert(req.piece);
+        assert(req.piece._id === 'testThing');
+        assert(req.piece.foo === 'moo');
+        done();
+      });
     });
   });
 
