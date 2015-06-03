@@ -1,0 +1,37 @@
+{% extends "apostrophe-modal:base.html" %}
+{% include "apostrophe-modal:macros.html" %}
+{% include "piece-macros.html" %}
+
+{% block modalClass %}
+  {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar
+{% endblock%}
+
+{% block modalControls %}
+  {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
+  {{ modalButton({dataAttrs: data-create-{{ data.options.name | css }}, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.instanceLabel) | e )}) }}
+{% endblock%}
+
+{% block modalFilters %}
+  <div class="apos-ui-modal-filters-inner">
+{#    {{ snippetFilters() }}  #}
+  </div>
+{% endblock %}
+
+{% block modalLabel %}
+  {{ __('Manage %s', __(data.pluralLabel) | e ) }}
+{% endblock %}
+
+{% block modalBody %}
+  <table data-items class="apos-manage-table">
+    <thead>
+      <tr>
+        <th class="apos-manage-title">{{ __('Title') }}</th>
+      </tr>
+    </thead>
+    <tbody data-list>
+      {# ajax populates me #}
+    </tbody>
+  </table>
+  {# ajax populates me #}
+  <div data-pager></div>
+{% endblock %}
