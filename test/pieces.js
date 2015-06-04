@@ -280,31 +280,57 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  // HOW DO I PRETEND THAT I AM AN ADMIN WITH A REQUEST
   // POST insert
   it('should insert an item in the database', function(done) {
-    return request
-      .post('http://localhost:7942/modules/things/insert')
-      .form(routeTestThing)
-      .on('response', function(response) {
-        // console.log(response);
-        done();
-      });
+    return request({
+      method: 'POST',
+      url: 'http://localhost:7942/modules/things/insert',
+      json: {
+        piece: routeTestThing
+      }
+    }, function(err, response, body) {
+      //assert(body.toString() === '30');
+      console.log(body);
+      done();
+    });
   });
 
   // POST retrieve
-  it('should get an item from the database by id', function(done) {
+  // it('should get an item from the database by id', function(done) {
+  //   return request({
+  //     method: 'POST',
+  //     uri: 'http://localhost:7942/modules/things/retrieve',
+  //     json: routeTestThing
+  //   }).on('response', function(response) {
+  //     // console.log(response);
+  //     done();
+  //   });
+  // });
 
-  });
+  // // POST list
+  // it('should get a list of all the items', function(done) {
+  //   return request({
+  //     method: 'POST',
+  //     uri: 'http://localhost:7942/modules/things/list',
+  //     json: routeTestThing
+  //   }).on('response', function(response) {
+  //     // console.log(response);
+  //     done();
+  //   });
+  // });
 
-  // POST list
-  it('should get a list of all the items', function(done) {
-
-  });
-
-  // POST update
-  it('should update an item in the database', function(done) {
-
-  });
+  // // POST update
+  // it('should update an item in the database', function(done) {
+  //   return request({
+  //     method: 'POST',
+  //     uri: 'http://localhost:7942/modules/things/update',
+  //     json: routeTestThing
+  //   }).on('response', function(response) {
+  //     // console.log(response);
+  //     done();
+  //   });
+  // });
 
   // POST trash
   // TODO implement
