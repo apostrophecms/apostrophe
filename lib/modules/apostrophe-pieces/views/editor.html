@@ -1,0 +1,21 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- include 'pieceMacros.html' -%}
+{%- include "apostrophe-schemas:macros.html" -%}
+
+{%- block modalClass -%}
+  apos-pieces-editor {{ data.options.name | css }}-editor apos-ui-modal-no-sidebar apos-ui-modal-has-tabs
+{%- endblock -%}
+
+{%- block controls -%}
+  {{ pieceEditControls() }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Edit %s', data.options.label) }}
+{%- endblock -%}
+
+{%- block body -%}
+  <form data-form>
+    {{ schemaFields(data.schema) }}
+  </form>
+{%- endblock -%}

@@ -1,26 +1,26 @@
-{% extends "apostrophe-modal:base.html" %}
-{% include "apostrophe-modal:macros.html" %}
+{%- extends "apostrophe-modal:base.html" -%}
+{%- include "apostrophe-modal:macros.html" -%}
 
-{% block modalClass %}
+{%- block modalClass -%}
   {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar
-{% endblock%}
+{%- endblock -%}
 
-{% block controls %}
+{%- block controls -%}
   {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
   {{ modalButton({dataAttrs: ('data-create-' + data.options.name) | css, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.options.label) )}) }}
-{% endblock%}
+{%- endblock -%}
 
-{% block filters %}
+{%- block filters -%}
   <div class="apos-ui-modal-filters-inner">
 {#    {{ snippetFilters() }}  #}
   </div>
-{% endblock %}
+{%- endblock -%}
 
-{% block label %}
+{%- block label -%}
   {{ __('Manage %s', __(data.options.pluralLabel) | e ) }}
-{% endblock %}
+{%- endblock -%}
 
-{% block body %}
+{%- block body -%}
   <table data-items class="apos-manage-table">
     <thead>
       <tr>
@@ -33,4 +33,4 @@
   </table>
   {# ajax populates me #}
   <div data-pager></div>
-{% endblock %}
+{%- endblock -%}

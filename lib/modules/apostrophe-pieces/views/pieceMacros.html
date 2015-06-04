@@ -1,0 +1,12 @@
+{%- include "apostrophe-modal:macros.html" -%}
+
+{%- macro pieceEditControls() -%}
+  <div class="apos-modal-controls">
+    {{ modalButton({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save'}) }}
+    {{ modalButton({dataAttrs: 'data-save data-next', float: 'right', color: 'base', label: __('Add Next')}) }}
+    {{ modalButton({dataAttrs: 'data-copy data-action="copy"', float: 'right', color: 'base', label: 'Copy'}) }}
+    {{ modalButton({dataAttrs: 'data-versions data-action="versions"', float: 'right', color: 'base', label: 'Versions'}) }}
+    {{ modalButton({dataAttrs: 'data-trash data-action="trash"', float: 'right', color: 'base', label: 'Trash'}) }}
+    {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: 'Cancel'}) }}
+  </div>
+{%- endmacro -%}
