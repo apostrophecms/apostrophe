@@ -17,6 +17,7 @@ module.exports = {
     'apostrophe-docs': {},
     'apostrophe-schemas': {},
     'apostrophe-modal': {},
+    'apostrophe-pager': {},
     'apostrophe-files': {},
     'apostrophe-pages': {},
     'apostrophe-global': {},
