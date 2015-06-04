@@ -1,37 +1,6 @@
-<html>
-  <head>
-    <title>{% block title %}{% endblock %}</title>
-    {{ apos.assets.stylesheets(data.when) }}
-  </head>
-  <body>
-    {# Output admin bar here #}
-    {# <div class="apos-admin-bar">
-      <div class="apos-admin-bar-inner">
-        <div class="apos-logo-tiny">
-          A
-        </div>
-        <ul class="apos-admin-bar-item apos-accordion-menu apos-my-account">
-          <li class="apos-accordion-title">Test</li>
-          <li class="apos-accordion-items">
-            <ul class="apos-page-bar">
-              <li href="#" class="apos-control apos-accordion-item apos-button">Inner Test</li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-    </div> #}
+{% extends "outerLayoutBase.html" %}
 
-    {{ apos.pieces.menu() }}
-    {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+{% block apostropheMenuBody %}
+core version
+{% endblock %}
 
-    <div class="apos-refreshable" data-apos-refreshable>
-      {% block main %}{% endblock %}
-    </div>
-    {{ apos.assets.templates(data.when) }}
-    {{ apos.assets.scripts(data.when) }}
-    <script type="text/javascript">
-      {{ data.js.globalCalls }}
-      {{ data.js.reqCalls }}
-    </script>
-  </body>
-</html>

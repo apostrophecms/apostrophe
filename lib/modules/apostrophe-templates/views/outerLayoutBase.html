@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <title>{% block title %}{% endblock %}</title>
+    {{ apos.assets.stylesheets(data.when) }}
+  </head>
+  <body>
+    <div class="apos-admin-bar">
+      <div class="apos-admin-bar-inner">
+        <div class="apos-logo-tiny">
+          A
+        </div>
+        {% block apostropheMenuBody %}
+        {% endblock %}
+      </div>
+    </div>
+
+
+    {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+    <div class="apos-refreshable" data-apos-refreshable>
+      {% block main %}{% endblock %}
+    </div>
+    {{ apos.assets.templates(data.when) }}
+    {{ apos.assets.scripts(data.when) }}
+    <script type="text/javascript">
+      {{ data.js.globalCalls }}
+      {{ data.js.reqCalls }}
+    </script>
+  </body>
+</html>
