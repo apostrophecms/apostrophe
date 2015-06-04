@@ -1,5 +1,2 @@
-{#
-{% include 'pagerMacros.html' %}
-{{ renderPager({ page: page, total: total }, '#') }}
-#}
-Pager AJAXed Here
+{% include 'apostrophe-pager:macros.html' %}
+{{ renderPager({ page: data.page, total: data.totalPages }, '#') }}
