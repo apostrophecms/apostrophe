@@ -13,7 +13,7 @@
         <span class="apos-pager-gap">&hellip;</span>
       {% endif %}
 
-      {% for page in apos.utils.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
+      {% for page in apos.pager.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
         {{ pagerPageInner(page, options, url) }}
       {% endfor %}
 
