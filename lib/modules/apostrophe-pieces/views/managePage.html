@@ -1,7 +1,7 @@
 {% for piece in data.pieces %}
   <tr data-piece>
     <td>
-      <span><a href="#" data-edit-{{ data.options.name | css }}="{{ piece.id }}">{{ piece.title }}</a></span>
+      <span><a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{{ piece.title }}</a></span>
     </td>
   </tr>
 {% endfor %}
