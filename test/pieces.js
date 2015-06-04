@@ -1,6 +1,7 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var request = require('request');
 
 var apos;
 
@@ -216,11 +217,11 @@ describe('Pieces', function() {
   it('should list all the pieces if skip and limit are set to large enough values', function(done) {
     assert(apos.modules['things'].list);
     var req = adminReq();
-    req.body = {
+    var filters = {
       limit: 10,
       skip: 0
     };
-    apos.modules['things'].list(req, function(err, results) {
+    apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
       assert(results.total == 4);
       assert(results.limit == 10);
@@ -272,5 +273,97 @@ describe('Pieces', function() {
 
     apos.modules['things'].apiResponse(res, null, { foo: 'bar' });
   });
+
+  // done with api.js tests, now let's test routes
+  var routeThing = {
+    title: 'purple',
+    foo: 'bar'
+  };
+
+  var insertedRouteThing;
+
+  // routes.insert
+  it('should insert an item from the routes.insert method', function(done) {
+    assert(apos.modules['things'].routes.insert);
+
+    var req = adminReq();
+    req.body = routeThing;
+    var res = req.res;
+    res.send = function(result) {
+      assert(result);
+      assert(result.status === 'ok');
+      assert(result.data);
+      assert(result.data._id);
+      insertedRouteThing = result.data;
+      done();
+    }
+
+    return apos.modules['things'].routes.insert(req, res) 
+  });
+
+  // routes.retrieve
+  it('should get an item from the routes.retrieve method', function(done) {
+    assert(apos.modules['things'].routes.retrieve);
+
+    var req = adminReq();
+    // note we set the req.piece here, because the middleware would do the query nd supply the piece
+    req.piece = insertedRouteThing;
+    var res = req.res;
+    res.send = function(result) {
+      assert(result);
+      assert(result.status === 'ok');
+      assert(result.data.title === 'purple');
+      done();
+    }
+
+    return apos.modules['things'].routes.retrieve(req, res);
+  });
+
+  // routes.list
+  it('should get a list of all the items from routes.list', function(done) {
+    assert(apos.modules['things'].routes.list);
+
+    var req = adminReq();
+    // note we set the req.piece here, because the middleware would do the query nd supply the piece
+    req.body = { limit: 10, skip: 0 };
+    var res = req.res;
+    res.send = function(result) {
+      assert(result);
+      assert(result.status === 'ok');
+      assert(result.data.total == 5);
+      assert(result.data.skip == 0);
+      assert(result.data.limit == 10);
+      assert(result.data.pieces.length == 5);
+      done();
+    }
+
+    return apos.modules['things'].routes.list(req, res);
+  });
+
+  // POST update
+  it('should update an item in the database from route.update', function(done) {
+    assert(apos.modules['things'].routes.update);
+
+    // simulate that middleware first
+    assert(apos.modules['things'].requirePiece);
+    var req = adminReq();
+    req.body = insertedRouteThing;
+    // make a change to the thing we are inserting
+    req.body.title = "blue";
+    var res = req.res;
+    res.send = function(result) {
+      assert(result);
+      assert(result.status === 'ok');
+      assert(result.data.title === 'blue');
+      done();
+    }
+    apos.modules['things'].requirePiece(req, res, function() {
+      return apos.modules['things'].routes.update(req, res);
+    });
+    
+  });
+
+  // POST trash
+  // TODO implement
 
 });
