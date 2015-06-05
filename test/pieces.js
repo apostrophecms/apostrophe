@@ -231,7 +231,50 @@ describe('Pieces', function() {
     });
   });
 
-  // Test pieces.apiResponse()
+  // pieces.trash()
+  it('should be able to trash a piece', function(done) {
+    assert(apos.modules['things'].trash);
+    assert(apos.modules['things'].requirePiece);
+    var req = adminReq();
+    var id = 'testThing';
+    req.body = {_id: id};
+    // let's make sure the piece is not trashed to start
+    apos.modules['things'].requirePiece(req, req.res, function() {
+      assert(!req.piece.trash);
+      apos.modules['things'].trash(req, id, function(err) {
+        assert(!err);
+        // let's get the piece to make sure it is trashed
+        apos.modules['things'].requirePiece(req, req.res, function() {
+          assert(req.piece);
+          assert(req.piece.trash === true);
+          done();
+        });
+      });
+    });
+  });
+
+  // pieces.rescue()
+  it('should be able to rescue a trashed piece', function(done) {
+    assert(apos.modules['things'].rescue);
+    var req = adminReq();
+    var id = 'testThing';
+    req.body = {_id: id};
+    // let's make sure the piece is trashed to start
+    apos.modules['things'].requirePiece(req, req.res, function() {
+      assert(req.piece.trash === true)
+      apos.modules['things'].rescue(req, id, function(err) {
+        assert(!err);
+        // let's get the piece to make sure it is rescued
+        apos.modules['things'].requirePiece(req, req.res, function() {
+          assert(req.piece);
+          assert(!req.piece.trash);
+          done();
+        });
+      });
+    });
+  });
+
+  // pieces.apiResponse()
   it('should pass through an error message if the error is passed as a string', function(done) {
     assert(apos.modules['things'].apiResponse);
     var res = anonReq().res;
@@ -340,7 +383,7 @@ describe('Pieces', function() {
     return apos.modules['things'].routes.list(req, res);
   });
 
-  // POST update
+  // routes.update
   it('should update an item in the database from route.update', function(done) {
     assert(apos.modules['things'].routes.update);
 
@@ -360,10 +403,55 @@ describe('Pieces', function() {
     apos.modules['things'].requirePiece(req, res, function() {
       return apos.modules['things'].routes.update(req, res);
     });
-    
   });
 
-  // POST trash
-  // TODO implement
+  // routes.trash
+  it('should trash an item in the database from route.trash', function(done) {
+    assert(apos.modules['things'].routes.trash);
+    assert(apos.modules['things'].requirePiece);
 
+    var req = adminReq();
+    req.body = {_id: insertedRouteThing._id};
+    var res = req.res;
+    res.send = function(response) {
+      assert(response.status === 'ok');
+      // let's get the piece to make sure it is trashed
+      apos.modules['things'].requirePiece(req, res, function() {
+        assert(req.piece);
+        assert(req.piece.trash === true);
+        done();
+      });
+    };
+    // let's make sure the piece is not trashed to start
+    apos.modules['things'].requirePiece(req, res, function() {
+      assert(!req.piece.trash);
+      apos.modules['things'].routes.trash(req, res);
+    });
+
+  });
+
+  // routes.rescue
+  it('should rescue an item in the database from route.rescue', function(done) {
+    assert(apos.modules['things'].routes.rescue);
+    assert(apos.modules['things'].requirePiece);
+
+    var req = adminReq();
+    req.body = {_id: insertedRouteThing._id};
+    var res = req.res;
+    res.send = function(response) {
+      assert(response.status === 'ok');
+      // let's get the piece to make sure it no longer trashed
+      apos.modules['things'].requirePiece(req, res, function() {
+        assert(req.piece);
+        assert(!req.piece.trash);
+        done();
+      });
+    };
+    // let's make sure the piece trashed to start
+    apos.modules['things'].requirePiece(req, res, function() {
+      assert(req.piece.trash === true);
+      apos.modules['things'].routes.rescue(req, res);
+    });
+
+  });
 });
