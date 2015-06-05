@@ -48,6 +48,7 @@
     "qs": "^3.1.0",
     "regexp-quote": "0.0.0",
     "request": "^2.53.0",
+    "sanitize-html": "^1.7.0",
     "sluggo": "^0.2.0",
     "uglify-js": "^2.4.16",
     "underscore.string": "^3.0.2",
