@@ -67,6 +67,24 @@ describe('Pieces', function() {
     });
   });
 
+  // little test-helper function to get piece by id regardless of trash status
+  function findPiece(req, id, callback) {
+    return apos.modules['things'].find(req, { _id: id })
+      .permission('edit')
+      .published(null)
+      .trash(null)
+      .toObject(function(err, piece) {
+        if (err) {
+          return callback(err)
+        }
+        if (!piece) {
+          return callback('notfound');
+        }
+        return callback(err, piece);
+      }
+    );
+  };
+
   var testThing = {
     _id: 'testThing',
     title: 'hello',
@@ -239,14 +257,16 @@ describe('Pieces', function() {
     var id = 'testThing';
     req.body = {_id: id};
     // let's make sure the piece is not trashed to start
-    apos.modules['things'].requirePiece(req, req.res, function() {
-      assert(!req.piece.trash);
+    findPiece(req, id, function(err, piece) {
+      assert(!err);
+      assert(!piece.trash);
       apos.modules['things'].trash(req, id, function(err) {
         assert(!err);
         // let's get the piece to make sure it is trashed
-        apos.modules['things'].requirePiece(req, req.res, function() {
-          assert(req.piece);
-          assert(req.piece.trash === true);
+        findPiece(req, id, function(err, piece) {
+          assert(!err);
+          assert(piece);
+          assert(piece.trash === true);
           done();
         });
       });
@@ -260,14 +280,16 @@ describe('Pieces', function() {
     var id = 'testThing';
     req.body = {_id: id};
     // let's make sure the piece is trashed to start
-    apos.modules['things'].requirePiece(req, req.res, function() {
-      assert(req.piece.trash === true)
+    findPiece(req, id, function(err, piece) {
+      assert(!err);
+      assert(piece.trash === true)
       apos.modules['things'].rescue(req, id, function(err) {
         assert(!err);
         // let's get the piece to make sure it is rescued
-        apos.modules['things'].requirePiece(req, req.res, function() {
-          assert(req.piece);
-          assert(!req.piece.trash);
+        findPiece(req, id, function(err, piece) {
+          assert(!err);
+          assert(piece);
+          assert(!piece.trash);
           done();
         });
       });
@@ -411,20 +433,23 @@ describe('Pieces', function() {
     assert(apos.modules['things'].requirePiece);
 
     var req = adminReq();
-    req.body = {_id: insertedRouteThing._id};
+    var id = insertedRouteThing._id;
+    req.body = {_id: id};
     var res = req.res;
     res.send = function(response) {
       assert(response.status === 'ok');
       // let's get the piece to make sure it is trashed
-      apos.modules['things'].requirePiece(req, res, function() {
-        assert(req.piece);
-        assert(req.piece.trash === true);
+      findPiece(req, id, function(err, piece) {
+        assert(!err)
+        assert(piece);
+        assert(piece.trash === true);
         done();
       });
     };
     // let's make sure the piece is not trashed to start
-    apos.modules['things'].requirePiece(req, res, function() {
-      assert(!req.piece.trash);
+    findPiece(req, id, function(err, piece) {
+      assert(!err);
+      assert(!piece.trash);
       apos.modules['things'].routes.trash(req, res);
     });
 
@@ -436,20 +461,23 @@ describe('Pieces', function() {
     assert(apos.modules['things'].requirePiece);
 
     var req = adminReq();
-    req.body = {_id: insertedRouteThing._id};
+    var id = insertedRouteThing._id;
+    req.body = {_id: id};
     var res = req.res;
     res.send = function(response) {
       assert(response.status === 'ok');
       // let's get the piece to make sure it no longer trashed
-      apos.modules['things'].requirePiece(req, res, function() {
-        assert(req.piece);
-        assert(!req.piece.trash);
+      findPiece(req, id, function(err, piece) {
+        assert(!err);
+        assert(piece);
+        assert(!piece.trash);
         done();
       });
     };
     // let's make sure the piece trashed to start
-    apos.modules['things'].requirePiece(req, res, function() {
-      assert(req.piece.trash === true);
+    findPiece(req, id, function(err, piece) {
+      assert(!err);
+      assert(piece.trash === true);
       apos.modules['things'].routes.rescue(req, res);
     });
 
