@@ -1,5 +1,6 @@
 {%- extends "apostrophe-modal:base.html" -%}
 {%- include "apostrophe-modal:macros.html" -%}
+{%- include "pieceMacros.html" -%}
 
 {%- block modalClass -%}
   {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar
@@ -12,7 +13,7 @@
 
 {%- block filters -%}
   <div class="apos-ui-modal-filters-inner">
-{#    {{ snippetFilters() }}  #}
+    {{ pieceFilters() }}
   </div>
 {%- endblock -%}
 
