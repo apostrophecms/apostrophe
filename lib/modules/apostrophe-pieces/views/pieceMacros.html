@@ -40,7 +40,24 @@
   }}
 {%- endmacro -%}
 
+{%- macro pieceTrashFilter() -%}
+  {{ piecePill('trash',
+      [
+        {
+          value: '0',
+          label: __('Live')
+        },
+        {
+          value: '1',
+          label: __('Trash')
+        }
+      ]
+    )
+  }}
+{%- endmacro -%}
+
 {%- macro pieceFilters() -%}
   {{ piecePublishedFilter() }}
+  {{ pieceTrashFilter() }}
 {%- endmacro -%}
 
