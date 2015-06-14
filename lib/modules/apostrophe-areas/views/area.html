@@ -2,14 +2,12 @@
 {# JSON, for adding new widgets #}
 
 <div class="apos-area" {%- if data.area._edit %}data-area{% if not data.options.virtual %} data-autosave{% endif %} data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{%- endif -%}>
-  {{ apos.utils.log(data.options) }}
-  {{ apos.utils.log(data.area) }}
   {%- if data.area._edit -%}
     {% include "areaControls.html" %}
     <div data-widgets>
   {%- endif -%}
   {% for widget in data.area.items %}
-    {{ apos.widget(widget, data.options.widgets[widget.type]) }}
+    {{ apos.areas.widget(widget, data.options.widgets[widget.type]) }}
   {%- endfor -%}
   {%- if data.area._edit -%}
     </div>

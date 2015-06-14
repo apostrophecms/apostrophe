@@ -16,7 +16,8 @@ describe('Templates', function(){
         },
         'express-test': {},
         'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-subclass-test': {},
+        'templates-options-test': {}
       },
       afterInit: function(callback) {
         assert(apos.templates);
@@ -67,6 +68,18 @@ describe('Templates', function(){
     var req = newReq();
     var result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
     assert(result === '<h1>I am inherited</h1>\n');
+  });
+
+  it('should be able to see the options of the module via module.options', function() {
+    var req = newReq();
+    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+    assert(result.match(/nifty/));
+  });
+
+  it('should be able to call helpers on the modules object', function() {
+    var req = newReq();
+    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+    assert(result.match(/4/));
   });
 
   it('should render pages successfully with outerLayout', function() {

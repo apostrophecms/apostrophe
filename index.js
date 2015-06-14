@@ -255,7 +255,6 @@ module.exports = function(options) {
         if (err) {
           return callback(err);
         }
-        self.modules[item] = obj;
         return callback(null);
       });
     }, function(err) {
