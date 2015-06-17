@@ -103,6 +103,16 @@ describe('pieces-pages', function() {
     });
   });
 
+  it('should populate the ._url property of pieces in any docs query', function(done) {
+    return apos.docs.find(anonReq(), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
+      assert(!err);
+      assert(piece);
+      assert(piece._url);
+      assert(piece._url === '/events/event-001');
+      done();
+    });
+  });
+
   it('should be able to access index page with first event on it, but not eleventh event', function(done) {
 
     return request('http://localhost:7943/events', function(err, response, body) {
