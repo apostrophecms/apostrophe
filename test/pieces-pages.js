@@ -90,72 +90,40 @@ describe('pieces-pages', function() {
   });
 
   it('should be able to access index page with first event on it, but not eleventh event', function(done) {
-    var eventsPages = apos.eventsPages;
-    // Simulate a page request
-    var req = {
-      data: {
-        bestPage: {
-          type: 'events'
-        }
-      },
-      remainder: '/'
-    };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    eventsPages.pageServe(req, function(err) {
-      var output = req.template(req, {});
-      // Look for the slug at the end of a link, using the
-      // trailing quote to avoid false positives
-      assert(output.match(/event-1"/));
-      assert(!output.match(/event-11"/));
-      done();
+
+    return request('http://localhost:7942/events', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Only page one events should show up
+      assert(body.match(/event-1"/));
+      assert(!body.match(/event-11"/));
+      return done();
     });
   });
 
-  it('should be able to access page two with eleventh event on it, but not first event', function(done) {
-    var eventsPages = apos.eventsPages;
-    // Simulate a page request
-    var req = {
-      data: {
-        bestPage: {
-          type: 'events'
-        }
-      },
-      query: {
-        page: 2
-      },
-      remainder: '/'
-    };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    eventsPages.pageServe(req, function(err) {
-      var output = req.template(req, {});
-      // Look for the slug at the end of a link, using the
-      // trailing quote to avoid false positives
-      assert(output.match(/event-11"/));
-      assert(!output.match(/event-1"/));
-      done();
+  it('should be able to access index page with first event on it, but not eleventh event', function(done) {
+
+    return request('http://localhost:7942/events?page=2', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Only page two events should show up
+      assert(body.match(/event-11"/));
+      assert(!body.match(/event-1"/));
+      return done();
     });
   });
 
   it('should be able to access "show" page for first event, should not also contain second event', function(done) {
-    var eventsPages = apos.eventsPages;
-    // Simulate a page request
-    var req = {
-      data: {
-        bestPage: {
-          type: 'events'
-        }
-      },
-      remainder: '/event-1'
-    };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    eventsPages.pageServe(req, function(err) {
-      var output = req.template(req, {});
-      assert(output.match(/Event 1/));
-      assert(!output.match(/Event 2/));
-      done();
+    return request('http://localhost:7942/events/event-1', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Only event 1's title should show up
+      assert(body.match(/Event 1/));
+      assert(!body.match(/Event 2/));
+      return done();
     });
   });
 
