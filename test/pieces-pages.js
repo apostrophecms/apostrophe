@@ -76,12 +76,15 @@ describe('pieces-pages', function() {
     var testItems = [];
     var total = 100;
     for (var i = 1; (i <= total); i++) {
+      var paddedInt = apos.launder.padInteger(i, 3);
+
       testItems.push({
-        _id: 'event' + i,
-        slug: 'event-' + i,
+        _id: 'event' + paddedInt,
+        slug: 'event-' + paddedInt,
         published: true,
         type: 'event',
-        title: 'Event ' + i,
+        title: 'Event ' + paddedInt,
+        sortTitle: 'event ' + paddedInt,
         body: {
           type: 'area',
           items: [
@@ -107,8 +110,8 @@ describe('pieces-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Only page one events should show up
-      assert(body.match(/event-1"/));
-      assert(!body.match(/event-11"/));
+      assert(body.match(/event-001"/));
+      assert(!body.match(/event-011"/));
       return done();
     });
   });
@@ -120,20 +123,20 @@ describe('pieces-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Only page two events should show up
-      assert(body.match(/event-11"/));
-      assert(!body.match(/event-1"/));
+      assert(body.match(/event-011"/));
+      assert(!body.match(/event-001"/));
       return done();
     });
   });
 
   it('should be able to access "show" page for first event, should not also contain second event', function(done) {
-    return request('http://localhost:7943/events/event-1', function(err, response, body) {
+    return request('http://localhost:7943/events/event-001', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Only event 1's title should show up
-      assert(body.match(/Event 1/));
-      assert(!body.match(/Event 2/));
+      assert(body.match(/Event 001/));
+      assert(!body.match(/Event 002/));
       return done();
     });
   });
