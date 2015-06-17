@@ -173,12 +173,12 @@ describe('Pieces', function() {
 
   // Test pieces.addListFilters()
   it('should only execute filters that are safe and have a launder method', function() {
-    assert(apos.modules['things'].addListFilters);
     var publicTest = false;
     var manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    var mockCursor = {
+    var mockCursor = apos.docs.find();
+    _.merge(mockCursor, {
       filters: {
         publicTest: {
           launder: function(s) {
@@ -205,7 +205,7 @@ describe('Pieces', function() {
       unsafeTest: function(value) {
         assert.fail('unsafe filter ran');
       }
-    };
+    });
 
     var filters = {
       publicTest: 'foo',
@@ -214,7 +214,7 @@ describe('Pieces', function() {
       fakeTest: 'notEvenReal'
     }
 
-    apos.modules['things'].addListFilters(adminReq(), filters, mockCursor);
+    mockCursor.queryToFilters(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });

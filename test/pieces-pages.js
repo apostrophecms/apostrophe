@@ -39,7 +39,7 @@ describe('pieces-pages', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7942
+          port: 7943
         },
         'events': {
           extend: 'apostrophe-pieces',
@@ -66,6 +66,7 @@ describe('pieces-pages', function() {
         }
       },
       afterListen: function(err) {
+        assert(apos.modules['events-pages']);
         done();
       }
     });
@@ -101,7 +102,7 @@ describe('pieces-pages', function() {
 
   it('should be able to access index page with first event on it, but not eleventh event', function(done) {
 
-    return request('http://localhost:7942/events', function(err, response, body) {
+    return request('http://localhost:7943/events', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -112,9 +113,9 @@ describe('pieces-pages', function() {
     });
   });
 
-  it('should be able to access index page with first event on it, but not eleventh event', function(done) {
+  it('should be able to access second page', function(done) {
 
-    return request('http://localhost:7942/events?page=2', function(err, response, body) {
+    return request('http://localhost:7943/events?page=2', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -126,7 +127,7 @@ describe('pieces-pages', function() {
   });
 
   it('should be able to access "show" page for first event, should not also contain second event', function(done) {
-    return request('http://localhost:7942/events/event-1', function(err, response, body) {
+    return request('http://localhost:7943/events/event-1', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
