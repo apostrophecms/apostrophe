@@ -227,6 +227,8 @@ describe('Docs', function() {
   it('should be able to specify which fields to get by passing a projection object', function(done){
     var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }, { age: 1 });
     cursor.toArray(function(err, docs){
+
+      assert(!err);
       // There SHOULD be an age
       assert(docs[0].age);
 
