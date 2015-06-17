@@ -53,6 +53,16 @@ describe('pieces-pages', function() {
           label: 'Events',
           alias: 'eventsPages',
           perPage: 10
+        },
+        'apostrophe-pages': {
+          park: [
+            {
+              title: 'Events',
+              type: 'events',
+              slug: '/events',
+              published: true
+            }
+          ]
         }
       },
       afterListen: function(err) {
