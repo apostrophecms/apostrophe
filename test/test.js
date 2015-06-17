@@ -95,4 +95,10 @@ describe('Modules', function(){
 
   require('./pieces.js');  
 
+  //                    //
+  //       PIECES-PAGES //
+  //                    //
+
+  require('./pieces-pages.js');  
+
 });
