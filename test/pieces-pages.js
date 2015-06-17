@@ -103,7 +103,7 @@ describe('pieces-pages', function() {
     // pageServe method normally invoked via callAll in
     // the pages module
     eventsPages.pageServe(req, function(err) {
-      var output = req.template({});
+      var output = req.template(req, {});
       // Look for the slug at the end of a link, using the
       // trailing quote to avoid false positives
       assert(output.match(/event-1"/));
@@ -129,7 +129,7 @@ describe('pieces-pages', function() {
     // pageServe method normally invoked via callAll in
     // the pages module
     eventsPages.pageServe(req, function(err) {
-      var output = req.template({});
+      var output = req.template(req, {});
       // Look for the slug at the end of a link, using the
       // trailing quote to avoid false positives
       assert(output.match(/event-11"/));
@@ -152,7 +152,7 @@ describe('pieces-pages', function() {
     // pageServe method normally invoked via callAll in
     // the pages module
     eventsPages.pageServe(req, function(err) {
-      var output = req.template({});
+      var output = req.template(req, {});
       assert(output.match(/Event 1/));
       assert(!output.match(/Event 2/));
       done();
