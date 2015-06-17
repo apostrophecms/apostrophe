@@ -1,5 +1,5 @@
 {%- include "macros.html" -%}
-{%- if textarea -%}
+{%- if data.textarea -%}
   {{ formTextarea(data.name, data.label) }}
 {%- else -%}
   {{ formText(data.name, data.label) }}
