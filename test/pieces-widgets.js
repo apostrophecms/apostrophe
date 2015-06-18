@@ -91,7 +91,6 @@ describe('pieces-pages', function() {
   it('should be able to use db to insert test pieces', function(done){
     var testItems = [];
     var total = 100;
-    console.error('TODO: remove fake highSearchText and highSearchWords when search module is ready to provide them');
     for (var i = 1; (i <= total); i++) {
       var paddedInt = apos.launder.padInteger(i, 3);
       var tags;
@@ -108,10 +107,6 @@ describe('pieces-pages', function() {
         type: 'event',
         title: title,
         tags: tags,
-        // fake highSearchText and highSearchWords until the
-        // search module is finished
-        highSearchText: apos.utils.sortify(title),
-        highSearchWords: apos.utils.sortify(title).split(/ /),
         body: {
           type: 'area',
           items: [
@@ -195,7 +190,7 @@ describe('pieces-pages', function() {
     });
   });
 
-  it('should be able to autocomplete events', function(done) {
+  it('should be able to autocomplete docs', function(done) {
     return request('http://localhost:7944/modules/apostrophe-docs/autocomplete?term=wig', function(err, response, body) {
       assert(!err);
       // Is our status code good?
