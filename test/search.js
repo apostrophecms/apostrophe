@@ -42,7 +42,6 @@ describe('Search', function() {
         }
       },
       afterInit: function(callback) {
-        console.log('HELLO! SEARCH!')
         assert(apos.search);
         apos.argv._ = [];
         return callback(null);
@@ -50,6 +49,29 @@ describe('Search', function() {
       afterListen: function(err) {
         done();
       }
+    });
+  });
+
+  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done){
+    var req = adminReq();
+    apos.docs.insert(req, {
+      title: 'Testing Search Event',
+      type: 'event',
+      tags: ['search', 'test', 'pizza'],
+      slug: 'search-test-event',
+      published: true
+    }, function(err){
+      assert(!err);
+
+      apos.docs.find(req, { slug: 'search-test-event' }).toObject(function(err, doc){
+        assert(doc.highSearchText);
+        assert(doc.highSearchWords);
+        assert(doc.lowSearchWords);
+        assert(doc.searchSummary !== undefined);
+        done();
+      });
+
+      
     });
   });
 
