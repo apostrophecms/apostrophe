@@ -91,6 +91,7 @@ describe('pieces-pages', function() {
   it('should be able to use db to insert test pieces', function(done){
     var testItems = [];
     var total = 100;
+    console.error('TODO: remove fake highSearchText and highSearchWords when search module is ready to provide them');
     for (var i = 1; (i <= total); i++) {
       var paddedInt = apos.launder.padInteger(i, 3);
       var tags;
@@ -99,14 +100,18 @@ describe('pieces-pages', function() {
       } else {
         tags = [ 'tag1' ];
       }
+      var title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
         published: true,
         type: 'event',
-        title: 'Event ' + paddedInt,
-        sortTitle: 'event ' + paddedInt,
+        title: title,
         tags: tags,
+        // fake highSearchText and highSearchWords until the
+        // search module is finished
+        highSearchText: apos.utils.sortify(title),
+        highSearchWords: apos.utils.sortify(title).split(/ /),
         body: {
           type: 'area',
           items: [
@@ -119,7 +124,37 @@ describe('pieces-pages', function() {
       });
     }
 
-    apos.docs.db.insert(testItems, function(err){
+    // We need an event that can be distinguished by
+    // something other than a number in order to test
+    // our autocomplete, which feeds through mongo's text
+    // indexes, which don't support numbers
+    paddedInt = 'wiggly';
+    title = 'Event Wiggly';
+    testItems.push({
+      _id: 'weventwiggly' + paddedInt,
+      slug: 'wevent-wiggl' + paddedInt,
+      published: true,
+      type: 'event',
+      title: title,
+      tags: tags,
+      // fake highSearchText and highSearchWords until the
+      // search module is finished
+      highSearchText: apos.utils.sortify(title),
+      highSearchWords: apos.utils.sortify(title).split(/ /),
+      body: {
+        type: 'area',
+        items: [
+          {
+            type: 'apostrophe-rich-text',
+            content: '<p>This is some content.</p>'
+          }
+        ]
+      }
+    });
+    var req = adminReq();
+    return async.eachSeries(testItems, function(item, callback) {
+      return apos.docs.insert(req, item, callback);
+    }, function(err) {
       assert(!err);
       done();
     });
@@ -160,4 +195,18 @@ describe('pieces-pages', function() {
     });
   });
 
+  it('should be able to autocomplete events', function(done) {
+    return request('http://localhost:7944/modules/apostrophe-docs/autocomplete?term=wig', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Is it JSON?
+      var events = JSON.parse(body);
+      assert(events);
+      assert(Array.isArray(events));
+      assert(events[0].label === 'Event Wiggly');
+      assert(events.length === 1);
+      done();
+    });
+  });
 });
