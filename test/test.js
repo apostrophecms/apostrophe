@@ -101,4 +101,10 @@ describe('Modules', function(){
 
   require('./pieces-pages.js');  
 
+  //                    //
+  //       PIECES-WIDGETS //
+  //                    //
+
+  require('./pieces-widgets.js');  
+
 });

@@ -1,0 +1,12 @@
+<h4>Default Page Template</h4>
+{# events widget is needed for pieces-widgets test #}
+{{
+  apos.area(data.page, 'body', {
+    widgets: {
+      'events': {},
+      'apostrophe-rich-text': {
+        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+      }
+    }
+  })
+}}
