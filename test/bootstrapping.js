@@ -32,7 +32,7 @@ describe('Apostrophe', function() {
       shortName: 'test',
       overrideTest: 'test', // overriden by data/local_fn.js
       hostName: 'test.com',
-      __localPath: '/data/local_fn.js',  
+      __localPath: '/data/local_fn.js',
       __testDefaults: {
           modules: {}
       },
