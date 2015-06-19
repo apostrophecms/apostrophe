@@ -45,4 +45,6 @@ describe('Modules', function(){
   require('./pieces-widgets.js');  
 
   require('./search.js');
+
+  require('./tags.js');
 });

@@ -66,12 +66,15 @@ describe('Search', function() {
       apos.docs.find(req, { slug: 'search-test-event' }).toObject(function(err, doc){
         assert(doc.highSearchText);
         assert(doc.highSearchWords);
-        assert(doc.lowSearchWords);
+        assert(doc.lowSearchText);
         assert(doc.searchSummary !== undefined);
+        
+        assert(doc.lowSearchText.match(/pizza/));
+        assert(doc.highSearchText.match(/testing/));
+        assert(_.contains(doc.highSearchWords, 'test', 'pizza', 'testing'));
         done();
       });
 
-      
     });
   });
 
