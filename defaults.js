@@ -16,6 +16,7 @@ module.exports = {
     'apostrophe-ui': {},
     'apostrophe-docs': {},
     'apostrophe-search': {},
+    'apostrophe-tags': {},
     'apostrophe-schemas': {},
     'apostrophe-modal': {},
     'apostrophe-pager': {},
