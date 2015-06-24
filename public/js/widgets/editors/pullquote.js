@@ -5,7 +5,7 @@ function AposPullquoteWidgetEditor(options)
 {
   var self = this;
 
-  self.pullquote = '“”';
+  self.pullquote = '';
 
   if (!options.messages) {
     options.messages = {};
@@ -28,7 +28,6 @@ function AposPullquoteWidgetEditor(options)
     self.$pullquote.val(self.pullquote);
     setTimeout(function() {
       self.$pullquote.focus();
-      self.$pullquote.setSelection(1, 1);
     }, 500);
 
     // Automatically preview if we detect something that looks like a

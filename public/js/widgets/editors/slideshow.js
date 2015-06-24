@@ -193,7 +193,7 @@ function AposSlideshowWidgetEditor(options)
         return choice.name === self.data.orientation;
       });
 
-      if (info && info.aspectRatio) {
+      if (info && info.hasOwnProperty('aspectRatio')) {
         aspectRatio = info.aspectRatio;
       }
       self.autocropIfNeeded();
