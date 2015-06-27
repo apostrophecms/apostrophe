@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('pieces-pages', function() {
+describe('pieces-widgets', function() {
   //////
   // EXISTENCE
   //////
