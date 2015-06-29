@@ -36,7 +36,7 @@ describe('Modules', function(){
 
   require('./pages.js');  
 
-  require('./fancy-pages.js');  
+  require('./custom-pages.js');  
 
   require('./pieces.js');  
 

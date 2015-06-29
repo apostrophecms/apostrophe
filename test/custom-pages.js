@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('fancy-pages', function() {
+describe('custom-pages', function() {
   //////
   // EXISTENCE
   //////
@@ -42,7 +42,7 @@ describe('fancy-pages', function() {
           port: 7941
         },
         'nifty-pages': {
-          extend: 'apostrophe-fancy-pages'
+          extend: 'apostrophe-custom-pages'
         }
       },
       afterListen: function(err) {
