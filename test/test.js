@@ -34,17 +34,19 @@ describe('Modules', function(){
 
   require('./docs.js');
 
-  require('./pages.js');  
+  require('./pages.js');
 
-  require('./custom-pages.js');  
+  require('./custom-pages.js');
 
-  require('./pieces.js');  
+  require('./pieces.js');
 
-  require('./pieces-pages.js');  
+  require('./pieces-pages.js');
 
-  require('./pieces-widgets.js');  
+  require('./pieces-widgets.js');
 
   require('./search.js');
 
   require('./tags.js');
+
+  require('./users.js');
 });
