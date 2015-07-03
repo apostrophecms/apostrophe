@@ -297,4 +297,3 @@ module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
-

@@ -25,6 +25,9 @@ module.exports = {
     'apostrophe-global': {},
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
-    'apostrophe-service-bridge': {},
+    'apostrophe-groups': {},
+    'apostrophe-users': {},
+    'apostrophe-login': {},
+    'apostrophe-service-bridge': {}
   }
 };
