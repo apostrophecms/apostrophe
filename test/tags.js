@@ -19,7 +19,7 @@ function anonReq() {
 function adminReq() {
   return _.merge(anonReq(), {
     user: {
-      permissions: {
+      _permissions: {
         admin: true
       }
     }
@@ -69,7 +69,7 @@ describe('Tags', function() {
         slug: 'tag-test-doc-event',
         published: true,
         tags: ['featured event']
-      },      
+      },
     ]
 
     return async.eachSeries(testDocs, function(doc, callback) {

@@ -18,7 +18,7 @@ function anonReq() {
 function adminReq() {
   return _.merge(anonReq(), {
     user: {
-      permissions: {
+      _permissions: {
         admin: true
       }
     }

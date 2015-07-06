@@ -18,7 +18,7 @@ function anonReq() {
 function adminReq() {
   return _.merge(anonReq(), {
     user: {
-      permissions: {
+      _permissions: {
         admin: true
       }
     }
@@ -68,7 +68,7 @@ describe('Search', function() {
         assert(doc.highSearchWords);
         assert(doc.lowSearchText);
         assert(doc.searchSummary !== undefined);
-        
+
         assert(doc.lowSearchText.match(/pizza/));
         assert(doc.highSearchText.match(/testing/));
         assert(_.contains(doc.highSearchWords, 'test', 'pizza', 'testing'));

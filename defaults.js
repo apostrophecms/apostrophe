@@ -12,6 +12,7 @@ module.exports = {
     'apostrophe-templates': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
+    'apostrophe-login': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
     'apostrophe-docs': {},
@@ -27,7 +28,6 @@ module.exports = {
     'apostrophe-rich-text-widgets': {},
     'apostrophe-groups': {},
     'apostrophe-users': {},
-    'apostrophe-login': {},
     'apostrophe-service-bridge': {}
   }
 };

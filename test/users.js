@@ -19,7 +19,7 @@ function anonReq() {
 function adminReq() {
   return _.merge(anonReq(), {
     user: {
-      permissions: {
+      _permissions: {
         admin: true
       }
     }
@@ -106,7 +106,7 @@ describe('Users', function() {
         assert(user);
         assert(user.username == 'JaneD');
 
-        apos.users.verifyPassword(user._id, '123password', function(err){
+        apos.users.verifyPassword(user, '123password', function(err){
           assert(!err);
           done();
         });
@@ -120,7 +120,7 @@ describe('Users', function() {
         assert(user);
         assert(user.username == 'JaneD');
 
-        apos.users.verifyPassword(user._id, '321password', function(err){
+        apos.users.verifyPassword(user, '321password', function(err){
           assert(err);
           done();
         });
@@ -174,7 +174,7 @@ describe('Users', function() {
       assert(user);
       assert(user.username == 'JaneD');
 
-      apos.users.verifyPassword(user._id, '123password', function(err){
+      apos.users.verifyPassword(user, '123password', function(err){
         assert(!err);
         done();
       });
@@ -196,7 +196,7 @@ describe('Users', function() {
         .toObject(function(err, user){
           assert(!err);
           assert(user);
-          apos.users.verifyPassword(user._id, 'password123', function(err){
+          apos.users.verifyPassword(user, 'password123', function(err){
             assert(!err);
             done();
           });

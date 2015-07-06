@@ -64,7 +64,7 @@ describe('Permissions', function() {
       assert(!apos.permissions.can(req(), 'view-doc', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-doc for guest user with loginRequired', function() {
-      assert(apos.permissions.can(req({ user: { permissions: { guest: 1 } } }), 'view-doc', { published: true, loginRequired: 'loginRequired' }));
+      assert(apos.permissions.can(req({ user: { _permissions: { guest: 1 } } }), 'view-doc', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-doc for individual with proper id', function() {
       assert(apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', { published: true, loginRequired: 'certainPeople', docPermissions: [ 'view-1' ] }));
@@ -85,13 +85,13 @@ describe('Permissions', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-doc for individual with group id for editing and the edit permission', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('forbids edit-doc for individual with group id for editing but no edit permission', function() {
       assert(!apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-doc for individual with group id for managing and edit permission', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
     });
     it('forbids edit-doc for other person', function() {
       assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
@@ -100,7 +100,7 @@ describe('Permissions', function() {
 
   // TODO uncomment these tests once apostrophe-docs (or apostrophe-documents)
   // becomes real
-  
+
   // describe('test permissions.criteria', function() {
   //   it('successfully inserted test data', function(done) {
   //     return apos.docs.insert([

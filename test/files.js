@@ -73,9 +73,9 @@ describe('Files', function() {
   }
 
   function userReq() {
-    return _.merge(anonReq(), { 
+    return _.merge(anonReq(), {
       user: {
-        permissions: {
+        _permissions: {
           admin: true
         }
       }
@@ -91,7 +91,7 @@ describe('Files', function() {
       var filename = 'upload_apos_api.txt';
 
       apos.files.accept(userReq(), {
-        name: filename, 
+        name: filename,
         path: uploadSource + filename
       }, function(err, info) {
         var t = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
@@ -115,7 +115,7 @@ describe('Files', function() {
       var filename = 'upload_apos_api.txt';
 
       apos.files.accept(anonReq(), {
-        name: filename, 
+        name: filename,
         path: uploadSource + filename
       }, function(err, info) {
         assert(!info);
@@ -180,7 +180,7 @@ describe('Files', function() {
     ];
       // Prep some fake data in mongo
       apos.db.collection(mongoCol).insert(
-        fakeFiles, 
+        fakeFiles,
         function(err, results) {
           assert(!err);
 
@@ -189,7 +189,7 @@ describe('Files', function() {
       );
 
     });
-  
+
     it('with no options should return a full list of files', function(done) {
       apos.files.browse(userReq(), {}, function(err, result) {
         assert(!err);
@@ -254,7 +254,7 @@ describe('Files', function() {
 
       // Upload a file using accept for testing updateTrash
       apos.files.accept(userReq(), {
-        name: filename, 
+        name: filename,
         path: uploadSource + filename
       }, function(err, info) {
         uploadPath = uploadTarget + info[0]._id + '-' + info[0].name + '.' + info[0].extension;
@@ -292,7 +292,7 @@ describe('Files', function() {
           assert(!err);
           assert(result);
           assert(result.trash);
-          
+
           done();
         });
       });

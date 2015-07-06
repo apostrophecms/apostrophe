@@ -19,7 +19,7 @@ function anonReq() {
 function adminReq() {
   return _.merge(anonReq(), {
     user: {
-      permissions: {
+      _permissions: {
         admin: true
       }
     }
@@ -363,7 +363,7 @@ describe('Pieces', function() {
       done();
     }
 
-    return apos.modules['things'].routes.insert(req, res) 
+    return apos.modules['things'].routes.insert(req, res)
   });
 
   // routes.retrieve
