@@ -49,4 +49,6 @@ describe('Modules', function(){
   require('./tags.js');
 
   require('./users.js');
+
+  require('./login.js');
 });
