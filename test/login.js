@@ -51,6 +51,7 @@ describe('Login', function() {
         // return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       },
     });
@@ -76,16 +77,36 @@ describe('Login', function() {
     });
   });
 
-  it('should be able to login a user', function(done){
-    return request.post('http://localhost:7948/login', { form: { username: 'HarryPutter', password: 'crookshanks' }, followAllRedirects: true }, function(err, response, body){
+  it('should not see logout link yet', function(done){
+    // otherwise logins are not remembered in a session
+    var jar = request.jar();
+    return request('http://localhost:7948/', function(err, response, body) {
       assert(!err);
       //Is our status code good?
-      console.log(body);
+      assert.equal(response.statusCode, 200);
+      //Did we get our page back?
+      assert(body.match(/login/));
+      assert(!body.match(/logout/));
+      return done();
+    });
+
+  });
+
+  it('should be able to login a user', function(done){
+    // otherwise logins are not remembered in a session
+    var jar = request.jar();
+    return request.post('http://localhost:7948/login', {
+      form: { username: 'HarryPutter', password: 'crookshanks' },
+      followAllRedirects: true,
+      jar: jar
+    }, function(err, response, body){
+      assert(!err);
+      //Is our status code good?
       assert.equal(response.statusCode, 200);
       //Did we get our page back?
       assert(body.match(/logout/));
       return done();
-    })
+    });
 
   });
 
