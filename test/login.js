@@ -93,6 +93,7 @@ describe('Login', function() {
   });
 
   var loginLogoutJar = request.jar();
+  var loginEmailLogoutJar = request.jar();
 
   it('should be able to login a user', function(done){
     // otherwise logins are not remembered in a session
@@ -110,11 +111,42 @@ describe('Login', function() {
     });
   });
 
+  it('should be able to login a user with their email', function(done){
+    // otherwise logins are not remembered in a session
+    return request.post('http://localhost:7948/login', {
+      form: { username: 'hputter@aol.com', password: 'crookshanks' },
+      followAllRedirects: true,
+      jar: loginEmailLogoutJar
+    }, function(err, response, body){
+      assert(!err);
+      //Is our status code good?
+      assert.equal(response.statusCode, 200);
+      //Did we get our page back?
+      assert(body.match(/logout/));
+      return done();
+    });
+  });
+
   it('should be able to log out', function(done){
     // otherwise logins are not remembered in a session
     return request('http://localhost:7948/logout', {
       followAllRedirects: true,
       jar: loginLogoutJar
+    }, function(err, response, body){
+      assert(!err);
+      //Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // are we back to being able to log in?
+      assert(body.match(/login/));
+      return done();
+    });
+  });
+
+  it('should be able to log out after having logged in with email', function(done){
+    // otherwise logins are not remembered in a session
+    return request('http://localhost:7948/logout', {
+      followAllRedirects: true,
+      jar: loginEmailLogoutJar
     }, function(err, response, body){
       assert(!err);
       //Is our status code good?
