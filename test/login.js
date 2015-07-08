@@ -92,13 +92,14 @@ describe('Login', function() {
 
   });
 
+  var loginLogoutJar = request.jar();
+
   it('should be able to login a user', function(done){
     // otherwise logins are not remembered in a session
-    var jar = request.jar();
     return request.post('http://localhost:7948/login', {
       form: { username: 'HarryPutter', password: 'crookshanks' },
       followAllRedirects: true,
-      jar: jar
+      jar: loginLogoutJar
     }, function(err, response, body){
       assert(!err);
       //Is our status code good?
@@ -107,7 +108,21 @@ describe('Login', function() {
       assert(body.match(/logout/));
       return done();
     });
+  });
 
+  it('should be able to log out', function(done){
+    // otherwise logins are not remembered in a session
+    return request('http://localhost:7948/logout', {
+      followAllRedirects: true,
+      jar: loginLogoutJar
+    }, function(err, response, body){
+      assert(!err);
+      //Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // are we back to being able to log in?
+      assert(body.match(/login/));
+      return done();
+    });
   });
 
 
