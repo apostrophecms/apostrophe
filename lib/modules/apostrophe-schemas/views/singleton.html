@@ -1,2 +1,2 @@
-{%- include "macros.html" -%}
-{{ formSingleton(data.name, data.label) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.singleton(data) }}

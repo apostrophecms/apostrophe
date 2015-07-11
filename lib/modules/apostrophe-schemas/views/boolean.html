@@ -1,2 +1,2 @@
-{%- include "macros.html" -%}
-{{ formBoolean(data.name, data.label) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.boolean(data) }}

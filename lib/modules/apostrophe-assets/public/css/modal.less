@@ -37,9 +37,26 @@
   margin: 15px 0px 20px;
 }
 
+.apos-fieldset
+{
+  .apos-required-message, .apos-error-message {
+    display: none;
+    margin-left: 10px;
+  }
+}
+
+.apos-fieldset.apos-required {
+  .apos-required-message {
+    display: inline-block;
+  }
+}
+
 .apos-fieldset.apos-error
 {
   border: 2px dotted #f88;
+  .apos-error-message {
+    display: inline-block;
+  }
 }
 
 .apos-fieldset-text,

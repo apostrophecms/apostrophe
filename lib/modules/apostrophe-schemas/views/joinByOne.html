@@ -1,6 +1,2 @@
-{%- include "macros.html" -%}
-{{ formSelective(data.name, data.label, {
-  relationship: data.relationship,
-  placeholder: data.placeholder,
-  limitText: data.limitText
-}) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.joinByOne(data) }}

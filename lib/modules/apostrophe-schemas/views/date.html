@@ -1,2 +1,2 @@
-{%- include "macros.html" -%}
-{{ formText(data.name, data.label) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.date(data) }}

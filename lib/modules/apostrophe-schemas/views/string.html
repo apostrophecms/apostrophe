@@ -1,6 +1,2 @@
-{%- include "macros.html" -%}
-{%- if data.textarea -%}
-  {{ formTextarea(data.name, data.label) }}
-{%- else -%}
-  {{ formText(data.name, data.label) }}
-{%- endif -%}
+{%- import "macros.html" as schemas -%}
+{{ schemas.string(data) }}

@@ -1,13 +1,11 @@
-{%- include "apostrophe-ui:formMacros.html" -%}
-
-{# Called for you by schemaFields when a group is encountered. #}
-{%- macro schemaOpenGroup(fields, group, active) -%}
+{# Called for you by fields() when a group is encountered. #}
+{%- macro openGroup(fields, group, active) -%}
   <div class="apos-modal-tab {% if active %}apos-active{% endif %}" data-tab-id="{{ group }}">
     <div class="apos-modal-tab-content">
 {%- endmacro -%}
 
-{# Called for you by schemaFields when a group ends. #}
-{%- macro schemaCloseGroup() -%}
+{# Called for you by fields() when a group ends. #}
+{%- macro closeGroup() -%}
     </div>
   </div>
 {%- endmacro -%}
@@ -18,7 +16,7 @@
 {# in a schema with groups (aka tabs). If you are using tabs we #}
 {# suggest you specify a template name for any custom fields rather #}
 {# than attempting to template them inline with multiple calls to #}
-{# schemaFields. #}
+{# fields(). #}
 
 {# If "from" is set, start with that field. If "after" is set, start after it. #}
 {# If "to" is set, end with that field. If "before" is set, end just before it. #}
@@ -31,9 +29,7 @@
 
 {# Fields are always output in the order specified at configuration time. #}
 
-{# Any field types not known to this macro are skipped, without error. #}
-
-{%- macro schemaFields(fields, options = { from: false, to: false, except: [], only: false }) -%}
+{%- macro fields(fields, options = { from: false, to: false, except: [], only: false }) -%}
   {%- set groups = apos.utils.filter(fields, 'type', 'group') -%}
   {%- set firstGroupReached = false -%}
   {%- set fromFound = false -%}
@@ -91,7 +87,7 @@
   {%- endif -%}
 {%- endmacro -%}
 
-{%- macro schemaArray(name, label, schema) -%}
+{%- macro array(name, label, schema) -%}
   <fieldset class="apos-fieldset apos-fieldset-array apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
     <div class="apos-fieldset-row">
       {#- <label>{{ __(label) }}</label> -#}
@@ -114,9 +110,234 @@
             #}<a href="#" class="apos-ui apos-ui-btn apos-array-remove" data-remove><i class="icon-remove"></i></a>
           </span>
         </div>
-        {{ schemaFields(schema) }}
+        {{ fields(schema) }}
       </div>
     </div>
 
   </fieldset>
 {%- endmacro -%}
+
+{# Standard form markup, for convenience and consistency #}
+
+{# Output a fieldset for the given field, and call the given #}
+{# macro to populate it. Usually not called directly #}
+
+{%- macro fieldset(field, bodyMacro) %}
+  <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
+    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-error-message">Please correct errors</span></label>
+    {{ bodyMacro(field) }}
+  </fieldset>
+{%- endmacro -%}
+
+{# This is used directly to output a text field #}
+
+{%- macro string(field) -%}
+  {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{# Usually passed to fieldset() by text(), this can also be called #}
+{# directly if you don't want the fieldset #}
+
+{%- macro stringBody(field) -%}
+  {%- if field.textarea -%}
+    <textarea name="{{ field.name }}" rows="{{ field.rows or 4 }}"></textarea>
+  {%- else -%}
+    <input name="{{ field.name }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro slug(field) -%}
+  {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro password(field) -%}
+  {{ fieldset(field, passwordBody) }}
+{%- endmacro -%}
+
+{%- macro passwordBody(field) -%}
+  <input name="{{ field.name }}" type="password">
+{%- endmacro -%}
+
+{%- macro tags(field) -%}
+  {{ fieldset(field | merge({ attributes: 'data-selective' }), tagsBody) }}
+{%- endmacro -%}
+
+{%- macro tagsBody(field) -%}
+  {# Always using this wrapper div makes it easy to use this with #}
+  {# selective, and in both standalone and fieldset situations. -Tom #}
+  <div class="apos-tags" data-name="{{ field.name }}" data-selective>
+    {# Text entry for autocompleting the next item #}
+    <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+    <span class="apos-ui-container apos-ui-inline-btn" data-add>
+      <a href="#" class="apos-ui-btn"><i class="icon icon-plus"></i> Add</a>
+    </span>
+
+    <ul data-list class="apos-tag-list">
+      <li data-item class="apos-ui-container">
+        <span class="label-and-remove apos-ui-btn apos-ui--dark">
+          <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
+          <span data-label>{{ __('Example label') }}</span>
+          {# Link to remove this choice #}
+        </span>
+      </li>
+    </ul>
+  </div>
+{%- endmacro -%}
+
+{# Maybe fancier later #}
+{%- macro email(field) -%}
+  {{ string(field) }}
+{%- endmacro -%}
+
+{# Typically we enhance this with jquery ui datepicker later #}
+{%- macro date(field) -%}
+  {{ string(field) }}
+{%- endmacro -%}
+
+{%- macro time(field) -%}
+  {{ string(field) }}
+{%- endmacro -%}
+
+{%- macro checkboxes(field) -%}
+  {{ fieldset(field, checkboxesBody) }}
+{%- endmacro -%}
+
+{%- macro checkboxesBody(field) -%}
+  <ul class="apos-checkbox-choices">
+    {%- for choice in field.choices -%}
+      <li class="apos-checkbox-choice">
+        <label>{{ choice.label }}</label>
+        <input type="checkbox" name="{{ field.name }}" value="{{ choice.value }}">
+      </li>
+    {%- endfor -%}
+  </ul>
+{%- endmacro -%}
+
+{#
+  // If you need to include extra fields on a select option
+  // format a JSON string in 'data-extra' like this:
+  //
+  // <option data-extra='{ "myField": "thing" }' > Label </option>
+  //
+  // Also see the showFields case below in the formSelectStandalone macro.
+  // -matt
+#}
+{%- macro select(field) -%}
+  {%- set selectMultiple = ' apos-fieldset-selectize' if field.selectMultiple else '' -%}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if apos.utils.containsProperty(field.choices, 'showFields') else '' %}
+  {{ fieldset(field | merge({ classes: selectMultiple + selectFields }), selectBody) }}
+{%- endmacro -%}
+
+{# Often used directly in a custom fieldset with other controls #}
+{%- macro selectBody(field) -%}
+  <div class="apos-select-wrapper apos-inline-input">
+    <select name="{{ field.name }}"
+      {% for key, val in _attrs %}
+        {{ key }}="{{ val }}"
+      {% endfor %}
+      data-selectize
+    >
+      {% for choice in field.choices %}
+        <option value="{{ choice.value }}" label="{{ choice.label }}"
+        {% if choice.showFields -%}
+         data-extra='{ "showFields": "{{ choice.showFields | join(',') }}" }'
+        {%- endif %}
+        >{{ __(choice.label) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+{%- endmacro -%}
+
+{# Less ambiguous to work with than a checkbox #}
+{%- macro boolean(field) -%}
+  {{ fieldset(field, booleanBody) }}
+{%- endmacro -%}
+
+{% macro booleanBody(field) %}
+  {{ selectBody(field | merge({ choices: [ { value: '1', label: __('Yes') }, { value: '0', label: __('No') }] })) }}
+{%- endmacro -%}
+
+{%- macro singleton(field) -%}
+  {{ fieldset(field, singletonBody) }}
+{%- endmacro -%}
+
+{%- macro singletonBody(field) -%}
+  {# js adds this singleton to the dialog #}
+  <div data-{{ field.name }}-edit-view></div>
+{%- endmacro -%}
+
+{%- macro area(field) -%}
+  {{ fieldset(field | merge({ attributes: 'data-editable' }), singletonBody) }}
+{%- endmacro -%}
+
+{%- macro areaBody(field) -%}
+  {# js adds this area to the dialog #}
+  <div data-{{ field.name }}-edit-view></div>
+{%- endmacro -%}
+
+{# Currently the join editors can use the same markup, so we have one #}
+{# body macro. -Tom #}
+
+{%- macro joinByOne(field) -%}
+  {{ fieldset(field, joinBody) }}
+{%- endmacro -%}
+
+{%- macro joinByArray(field) -%}
+  {{ fieldset(field, joinBody) }}
+{%- endmacro -%}
+
+{%- macro joinBody(field) -%}
+  {# This inner div allows it to be used both inside and outside #}
+  {# of a fieldset. -Tom #}
+  <div data-selective data-name="{{ field.name }}">
+    <input type="text" data-autocomplete {% if field.placeholder %}placeholder="{{ __( field.placeholder ) }}"{%endif %}/>
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+    <ul data-list class="apos-selective-list">
+      {# This is a template for creating the real items, #}
+      {# it will be cloned as needed #}
+      <li class="apos-fieldset-selective-item" data-item>
+        <div class="apos-ui-container apos-fieldset-selective-item-inner">
+          <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
+            <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
+            <span class="apos-selective-label" data-label>
+              {#{ __(Title) }#}{{ title }}
+            </span>
+          </div>
+          {%- if field.extras or field.relationship -%}
+            <span class="apos-selective-extras">
+              {# TODO: extend our support for different types of extra fields, #}
+              {# style them meaningfully. Usually on same row with item #}
+              {%- for extra in (field.extras or field.relationship) -%}
+                {%- if (extra.type == 'checkbox') or (extra.type == 'boolean') -%}
+                  <input type="checkbox" name="{{ extra.name }}" data-extras />
+                  <label>{{ __(extra.label) }}</label>
+                {%- elif (extra.type == 'string') or (extra.type == 'text') -%}
+                  <label>{{ __(extra.label) }}</label>
+                  <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
+                {%- elif (extra.type == 'radio') -%}
+                  {%- for choice in extra.choices -%}
+                    <input type="radio" name="{{ choice.value }}" data-extras />
+                    {{ choice.label }}
+                  {%- endfor -%}
+                {%- elif (extra.type == 'select') -%}
+                  <label>{{ __(extra.label) }}</label>
+                  {{ selectBody(extra) }}
+                {%- elif (extra.type == 'tags') -%}
+                  {{ tagsBody(extra) }}
+                {%- else -%}
+                  {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
+                  {{ aposLog(extra) }}
+                {%- endif -%}
+              {%- endfor -%}
+            </span>
+          {% endif %}
+          {% if field.propagate %}
+            <span class="apos-propagate"><input type="checkbox" data-propagate /><label>{{ __('Apply to Subpages') }}</label></span>
+          {% endif %}
+        </div>
+      </li>
+    </ul>
+  </div>
+{%- endmacro -%}
+

@@ -1,7 +1,2 @@
-{%- include "macros.html" -%}
-
-{%- if options.selectMultiple -%}
-	{{ formMultiSelect(data.name, data.label, data.choices) }}
-{%- else -%}
-	{{ formSelect(data.name, data.label, data.choices) }}
-{%- endif -%}
+{%- import "macros.html" as schemas -%}
+{{ schemas.select(data) }}

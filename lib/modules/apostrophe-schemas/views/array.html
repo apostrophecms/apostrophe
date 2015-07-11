@@ -1,2 +1,2 @@
-{%- include "macros.html" -%}
-{{ schemaArray(data.name, data.label, data.schema) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.array(data) }}

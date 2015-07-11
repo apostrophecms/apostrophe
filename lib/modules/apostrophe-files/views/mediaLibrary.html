@@ -127,7 +127,7 @@
     </div>
     <div class="apos-show-pane" data-show>
       {# AJAX updates this pane, replacing this default #}
-      {{ showNormalView({}) }}
-      {{ showEditView() }}
+      {{ showNormalView({ schema: schema }) }}
+      {{ showEditView({ schema: schema }) }}
     </div>
 {% endblock %}

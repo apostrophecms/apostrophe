@@ -1,5 +1,5 @@
-{% include "apostrophe-ui:uiMacros.html" %}
 {% include "apostrophe-modal:macros.html" %}
+{% import "apostrophe-schemas:macros.html" as schemas %}
 
 {# One file among many in the index view of the media library #}
 
@@ -87,7 +87,7 @@
 {# This is not populated with data because we use #}
 {# apostrophe-schemas to do that #}
 
-{% macro showEditView() %}
+{% macro showEditView(schema) %}
   <div data-edit-view class="apos-template apos-edit-view" data-item="{{ file._id }}">
     <div class="apos-preview" data-preview></div>
       <div class="apos-replace-file apos-file-container">
@@ -113,11 +113,7 @@
         <span data-progress style="display: none">{{ __('Uploading...') }}</span>
       </div>
     <form>
-      {{ formText('title', 'Title') }}
-      {{ formTags('tags', 'Tags') }}
-      {{ formText('credit', 'Credit') }}
-      {{ formBoolean('private', 'Private') }}
-      {{ formTextarea('description', 'Description') }}
+      {{ schemas.fields(schema) }}
       <span data-cancel-item class="apos-ui-container">
         <a href="#" data-cancel-item class="apos-ui-btn apos-cancel-item">{{ __('Cancel') }}</a>
       </span>

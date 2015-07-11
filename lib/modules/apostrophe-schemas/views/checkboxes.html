@@ -1,2 +1,2 @@
-{%- include "macros.html" -%}
-{{ formCheckboxes(data.name, data.label, data.choices) }}
+{%- import "macros.html" as schemas -%}
+{{ schemas.checkboxes(data) }}
