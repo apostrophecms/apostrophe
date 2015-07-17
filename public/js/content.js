@@ -8,8 +8,7 @@ if (!window.apos) {
 
 var apos = window.apos;
 
-// A prepublish script updates this
-apos.version = "0.5.291";
+apos.version = "0.5.309";
 
 apos.handlers = {};
 
@@ -402,11 +401,6 @@ apos.modal = function(sel, options) {
 
     // Escape key should dismiss the top modal, if any
 
-    // $(document).on('keyup.aposModal', function(e) {
-    //   // console.log(e);
-
-    // });
-
     $( document ).on({
       'keydown.aposModal': function(e) {
         if (e.keyCode === 27) {
@@ -477,7 +471,7 @@ apos.modal = function(sel, options) {
       // We can reinstall the handler when it's relevant.
       // Fewer event handlers all the time = better performance
       apos._modalInitialized = false;
-      $(document).off('keyup.aposModal');
+      $(document).off('keydown.aposModal');
       $(document).off('click.aposModal');
     }
   });
@@ -1078,6 +1072,9 @@ apos.requireScene = function(scene, callback) {
   if (apos.scene === scene) {
     return callback(null);
   }
+
+  apos.globalBusy(true);
+
   $.jsonCall('/apos/upgrade-scene',
     {
       from: apos.scene,
@@ -1085,6 +1082,7 @@ apos.requireScene = function(scene, callback) {
     },
     function(result) {
       if ((!result) || (result.status !== 'ok')) {
+        apos.globalBusy(false);
         return callback('error');
       }
       if (result.css.length) {
@@ -1094,6 +1092,7 @@ apos.requireScene = function(scene, callback) {
         $('body').append(result.html);
       }
       $('body').one('aposSceneChange', function(e, scene) {
+        apos.globalBusy(false);
         return callback(null);
       });
       $(function() {
@@ -1150,7 +1149,6 @@ $.extend(Selectize.prototype, {
 });
 
 apos.on('enhance', function($el) {
-
   // Selectize - Single Select
   $el.find('select[data-selectize]:not(.apos-template select[data-selectize], [select="multiple"])').selectize({
     create: false,
