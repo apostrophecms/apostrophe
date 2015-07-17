@@ -9,7 +9,7 @@ if (!window.apos) {
 var apos = window.apos;
 
 // A prepublish script updates this
-apos.version = "0.5.308";
+apos.version = "0.5.309";
 
 apos.handlers = {};
 
