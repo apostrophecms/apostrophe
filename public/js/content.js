@@ -391,6 +391,9 @@ apos.modal = function(sel, options) {
     if (topModal.filter('.apos-modal')) {
       topModal.trigger('aposModalCancel');
     }
+    // Important if we're a jquery event handler,
+    // fixes jump scroll bug / addition of # to URL
+    return false;
   }
 
   if (!apos._modalInitialized) {
