@@ -178,7 +178,7 @@ describe('Pages', function() {
   //////
 
   it('should have a find method on pages that returns a cursor', function(){
-    var cursor = apos.pages.find();
+    var cursor = apos.pages.find(anonReq());
     assert(cursor);
   });
 
