@@ -51,4 +51,6 @@ describe('Modules', function(){
   require('./users.js');
 
   require('./login.js');
+
+  require('./versions.js');
 });
