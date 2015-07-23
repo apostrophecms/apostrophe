@@ -8,7 +8,7 @@ if (!window.apos) {
 
 var apos = window.apos;
 
-apos.version = "0.5.309";
+apos.version = "0.5.310";
 
 apos.handlers = {};
 
