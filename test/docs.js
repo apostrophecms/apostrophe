@@ -201,7 +201,7 @@ describe('Docs', function() {
   //////
 
   it('should have a find method on docs that returns a cursor', function(){
-    var cursor = apos.docs.find();
+    var cursor = apos.docs.find(anonReq());
     assert(cursor);
   });
 
@@ -546,6 +546,16 @@ describe('Docs', function() {
         });
       }
     }, done);
+  });
+
+  it('should throw an exception on find() if you fail to pass req as the first argument', function() {
+    var exception;
+    try {
+      apos.docs.find({ slug: 'larry' });
+    } catch (e) {
+      exception = e;
+    }
+    assert(exception);
   });
 
 });

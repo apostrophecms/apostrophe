@@ -177,7 +177,7 @@ describe('Pieces', function() {
     var manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    var mockCursor = apos.docs.find();
+    var mockCursor = apos.docs.find(anonReq());
     _.merge(mockCursor, {
       filters: {
         publicTest: {

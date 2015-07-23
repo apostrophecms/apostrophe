@@ -1,0 +1,24 @@
+{% extends "apostrophe-modal:base.html" %}
+{% include "apostrophe-modal:macros.html" %}
+
+{% block controls %}
+  <div class="apos-modal-controls">
+    {{ modalButton({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Finished')}) }}
+  </div>
+{% endblock %}
+
+{% block label %}
+{{ __('Reorganize Pages') }}
+{% endblock %}
+
+{% block instructions %}
+  <p>
+    {{ __('Drag and drop pages wherever they need to go.') }}
+  </p>
+{% endblock %}
+
+{% block body %}
+  {# This gets fired up by jstree #}
+  <div class="apos-reorganize-tree" data-tree>
+  </div>
+{% endblock %}
