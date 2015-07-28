@@ -8,8 +8,7 @@ if (!window.apos) {
 
 var apos = window.apos;
 
-// A prepublish script updates this
-apos.version = "0.5.300";
+apos.version = "0.5.313";
 
 apos.handlers = {};
 
@@ -381,6 +380,7 @@ apos.modal = function(sel, options) {
 
   function closeModal() {
     var topModal = apos.getTopModalOrBody();
+
     if (topModal.filter('.apos-modal')) {
       topModal.trigger('aposModalHide');
     }
@@ -391,6 +391,9 @@ apos.modal = function(sel, options) {
     if (topModal.filter('.apos-modal')) {
       topModal.trigger('aposModalCancel');
     }
+    // Important if we're a jquery event handler,
+    // fixes jump scroll bug / addition of # to URL
+    return false;
   }
 
   if (!apos._modalInitialized) {
@@ -448,10 +451,12 @@ apos.modal = function(sel, options) {
 
     // Reset scroll position to what it was before this modal opened.
     // Really awesome if you scrolled while using the modal
+    // TODO stop using the 'confirm' dialog box and implement an A2
+    // version so the page doesn't scrollTop(0) when you click 'cancel'
     var $current = apos.getTopModalOrBody();
-    if ($current.data('aposSavedScrollTop') !== undefined) {
-      $(window).scrollTop($current.data('aposSavedScrollTop'));
-    }
+
+    var here = $current.data('aposSavedScrollTop') !== undefined ? $current.data('aposSavedScrollTop') : 0;
+    $(window).scrollTop(here);
 
     apos._modalStack.pop();
     var blackoutContext = apos.getTopModalOrBody();
@@ -556,12 +561,12 @@ apos.modal = function(sel, options) {
       } else {
         offset = 100;
       }
-      $el.offset({ top: $('body').scrollTop() + offset, left: ($(window).width() - $el.outerWidth()) / 2 });
+      $el.offset({ top: $(window).scrollTop() + offset, left: ($(window).width() - $el.outerWidth()) / 2 });
       $el.show();
       // Give the focus to the first form element. (Would be nice to
       // respect tabindex if it's present, but it's rare that
       // anybody bothers)
-      
+
       // If we don't have a select element first - focus the first input.
       // We also have to check for a select element within an array as the first field.
       if ($el.find("form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-selectize, form:not(.apos-filter) .apos-fieldset:first.apos-fieldset-array .apos-fieldset:first.apos-fieldset-selectize").length === 0 ) {
