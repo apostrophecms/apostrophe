@@ -14,7 +14,7 @@
     "diff": "~1.0.4",
     "express": "~3.0.5",
     "extend": "~1.1.3",
-    "find-the-fat": "^0.1.1",
+    "find-big-objects": "^0.1.3",
     "glob": "^4.2.1",
     "hash_file": "0.0.8",
     "he": "~0.4.1",
