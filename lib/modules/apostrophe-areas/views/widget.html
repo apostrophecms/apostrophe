@@ -3,7 +3,7 @@
 {# get them if you need them (TODO: consider ways of #}
 {# whitelisting them for the inline JSON attributes) #}
 
-<div data-widget="{{ data.widget.type }}" data='{{ data.widgetForEditor | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}'>
+<div data-widget="{{ data.widget.type }}" data='{{ data.dataFiltered | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}'>
   {{ data.output() | safe }}
 </div>
 
