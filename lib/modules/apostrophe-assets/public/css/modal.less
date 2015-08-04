@@ -39,7 +39,7 @@
 
 .apos-fieldset
 {
-  .apos-required-message, .apos-error-message {
+  .apos-required-message, .apos-max-message, .apos-error-message {
     display: none;
     margin-left: 10px;
   }
@@ -47,6 +47,12 @@
 
 .apos-fieldset.apos-required {
   .apos-required-message {
+    display: inline-block;
+  }
+}
+
+.apos-fieldset.apos-error-max {
+  .apos-max-message {
     display: inline-block;
   }
 }
