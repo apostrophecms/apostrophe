@@ -141,7 +141,6 @@
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
     <textarea name="{{ field.name }}" rows="{{ field.rows or 4 }}"></textarea>
-    <div class="apos-error-max">{{ __('Too long.') }}</div>
   {%- else -%}
     <input name="{{ field.name }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
   {%- endif -%}
