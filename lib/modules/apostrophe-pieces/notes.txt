@@ -1,6 +1,0 @@
-implemented: dispatch
-
-crud
-filters?
-a way to find indexes
-a way to find pieces
