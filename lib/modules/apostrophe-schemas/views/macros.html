@@ -49,7 +49,7 @@
     {%- if (found and notExcepted and allowed and notContextual) -%}
       {%- if field.group and (field.group != lastGroup) -%}
         {%- if lastGroup -%}
-          {{ schemaCloseGroup() }}
+          {{ closeGroup() }}
           {%- set activeGroup = false -%}
         {%- else -%}
           {%- set activeGroup = true -%}
@@ -61,7 +61,7 @@
               {%- endfor -%}
             </div>
         {%- endif -%}
-        {{ schemaOpenGroup(fields, field.group, activeGroup) }}
+        {{ openGroup(fields, field.group, activeGroup) }}
         {%- set lastGroup = field.group -%}
       {%- endif -%}
       {# Invokes standard templates for each type in
@@ -82,7 +82,7 @@
   {# Nunjucks won't let us just test lastGroup from here due to #}
   {# scoping issues https://github.com/mozilla/nunjucks/issues/166 #}
   {%- if apos.utils.filterNonempty(fields, 'group').length -%}
-    {{ schemaCloseGroup() }}
+    {{ closeGroup() }}
     </div>
   {%- endif -%}
 {%- endmacro -%}
