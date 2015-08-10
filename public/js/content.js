@@ -8,7 +8,7 @@ if (!window.apos) {
 
 var apos = window.apos;
 
-apos.version = "0.5.314";
+apos.version = "0.5.316";
 
 apos.handlers = {};
 
@@ -1195,6 +1195,18 @@ apos.on('enhance', function($el) {
 
 });
 
+// Search for a tab and activate it, within the set of tabs
+// that encloses $el (which may be $el itself). A set of tabs
+// is currently identified by the apos-modal-tabs CSS class.
+// Tab buttons have a data-tab attribute, which matches
+// the data-tab-id attribute of a tab.
+
+apos.activateTab = function($el, tabId) {
+  $el.closest('.apos-modal-tabs').find('.apos-active').removeClass('apos-active');
+  $el.closest('.apos-modal-tabs').find('[data-tab-id="' + tabId + '"]').addClass('apos-active');
+  $el.closest('.apos-modal-tabs').find('[data-tab="' + tabId + '"]').addClass('apos-active');
+};
+
 // Everything in this DOMready block must be an event handler
 // on 'body', optionally filtered to apply to specific elements,
 // so that it can work on elements that don't exist yet.
@@ -1250,10 +1262,8 @@ $(function() {
   });
 
   //sets up listeners for tabbed modals
-  $('body').on('click', '.apos-modal-tab-title', function(){
-    $(this).closest('.apos-modal-tabs').find('.apos-active').removeClass('apos-active');
-    $(this).closest('.apos-modal-tabs').find('[data-tab-id="'+$(this).attr('data-tab')+'"]').addClass('apos-active');
-    $(this).addClass('apos-active');
+  $('body').on('click', '.apos-modal-tab-title', function() {
+    apos.activateTab($(this), $(this).attr('data-tab'));
   });
 
   // Progressively enhance all elements present on the page at DOMready
