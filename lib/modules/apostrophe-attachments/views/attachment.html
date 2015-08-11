@@ -1,0 +1,12 @@
+{%- import "apostrophe-schemas:macros.html" as schemas -%}
+
+{% macro attachment(field) %}
+  <div class="apos-attachment-existing" data-existing>
+    <div class="apos-attachment-preview" data-preview></div>
+    <span class="apos-attachment-name" data-name></span>
+    <a href="#" data-trash-attachment>x</a>
+  </div>
+  <input type="file" name="{{ field.name }}" data-uploader />
+{% endmacro %}
+
+{{ schemas.fieldset(data, attachment) }}
