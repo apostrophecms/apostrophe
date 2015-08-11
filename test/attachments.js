@@ -2,6 +2,8 @@
 var assert = require('assert');
 var _ = require('lodash');
 
+var apos;
+
 describe('Attachment', function() {
 
   var uploadSource = __dirname + "/data/upload_tests/";
