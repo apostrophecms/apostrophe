@@ -30,7 +30,7 @@ describe('Modules', function(){
 
   require('./permissions.js');
 
-  require('./files.js');
+  require('./attachments.js');
 
   require('./docs.js');
 
