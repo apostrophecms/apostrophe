@@ -21,6 +21,7 @@ module.exports = {
     'apostrophe-tags': {},
     'apostrophe-schemas': {},
     'apostrophe-modal': {},
+    'apostrophe-attachments': {},
     'apostrophe-pager': {},
     'apostrophe-files': {},
     'apostrophe-pages': {},
