@@ -31,7 +31,7 @@ describe('Attachment', function() {
     }
   }
 
-  after(wipeIt);
+  // after(wipeIt);
 
   it('should be a property of the apos object', function(done) {
     this.timeout(5000);
@@ -76,7 +76,7 @@ describe('Attachment', function() {
     };
   }
 
-  function userReq() {
+  function adminReq() {
     return _.merge(anonReq(), {
       user: {
         _id: 'testfileuser',
@@ -92,10 +92,8 @@ describe('Attachment', function() {
       wipeIt();
     });
 
-    it('should upload a text file using the apos api when user', function(done) {
-      var filename = 'upload_apos_api.txt';
-
-      apos.attachments.accept(userReq(), {
+    function accept(filename, callback) {
+      return apos.attachments.accept(adminReq(), {
         name: filename,
         path: uploadSource + filename
       }, function(err, info) {
@@ -111,11 +109,50 @@ describe('Attachment', function() {
           assert(!err);
           assert(result);
 
-          done();
+          return callback(result);
         });
+      });
+    }
+
+    it('should upload a text file using the attachments api when user', function(done) {
+      return accept('upload_apos_api.txt', function(result) {
+        done();
       });
     });
 
+    it('should upload an image file using the attachments api when user', function(done) {
+      return accept('upload_image.png', function(result) {
+          done();
+      });
+    });
+
+    it('should crop an image file when user', function(done) {
+      return accept('crop_image.png', function(result) {
+        var crop = { top: 10, left: 10, width: 80, height: 80 };
+
+        return apos.attachments.crop(
+          result._id,
+          crop,
+          function(err) {
+            assert(!err);
+
+            // make sure it exists in mongo
+            apos.db.collection(collectionName).findOne({
+              _id: result._id
+            }, function(err, result) {
+              assert(!err);
+              assert(result);
+              assert(result.crops.length);
+              var t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.' + result.extension;
+              assert(fs.existsSync(t));
+
+              done();
+
+            });
+          }
+        );
+      });
+    });
 
   });
 
