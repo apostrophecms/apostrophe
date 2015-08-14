@@ -122,7 +122,20 @@ describe('Attachment', function() {
 
     it('should upload an image file using the attachments api when user', function(done) {
       return accept('upload_image.png', function(result) {
-          done();
+        done();
+      });
+    });
+
+    it('should not upload an exe file', function(done) {
+      var filename = 'bad_file.exe';
+
+      return apos.attachments.accept(adminReq(), {
+        name: filename,
+        path: uploadSource + filename
+      }, function(err, info) {
+        assert(err);
+        assert(!info);
+        done();
       });
     });
 
