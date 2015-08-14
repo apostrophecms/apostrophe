@@ -8,10 +8,10 @@ describe('Attachment', function() {
 
   var uploadSource = __dirname + "/data/upload_tests/";
   var uploadTarget = __dirname + "/public/uploads/attachments/";
-  var cache = 'aposCache';
+  var collectionName = 'aposAttachments';
 
   function wipeIt() {
-    apos.db.collection(cache).drop();
+    apos.db.collection(collectionName).drop();
     deleteFolderRecursive(__dirname + '/public/uploads');
 
     function deleteFolderRecursive (path) {
@@ -100,13 +100,13 @@ describe('Attachment', function() {
         path: uploadSource + filename
       }, function(err, info) {
         assert(!err);
-        var t = uploadTarget + info.id + '-' + info.name + '.' + info.extension;
+        var t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
         // file should be uploaded
         assert(fs.existsSync(t));
 
         // make sure it exists in mongo
-        apos.db.collection(cache).findOne({
-          key: info.id
+        apos.db.collection(collectionName).findOne({
+          _id: info._id
         }, function(err, result) {
           assert(!err);
           assert(result);
