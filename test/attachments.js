@@ -144,6 +144,7 @@ describe('Attachment', function() {
         var crop = { top: 10, left: 10, width: 80, height: 80 };
 
         return apos.attachments.crop(
+          adminReq(),
           result._id,
           crop,
           function(err) {
@@ -164,6 +165,28 @@ describe('Attachment', function() {
             });
           }
         );
+      });
+    });
+
+    it('should clone an attachment', function(done) {
+      return accept('clone.txt', function(result) {
+
+        return apos.attachments.clone(adminReq(), result, function(err, targetInfo) {
+          assert(!err);
+          assert(targetInfo._id !== result._id);
+
+          // make sure it exists in mongo
+          apos.db.collection(collectionName).findOne({
+            _id: result._id
+          }, function(err, result) {
+            assert(!err);
+            assert(result);
+            var t = uploadTarget + result._id + '-' + result.name + '.' + result.extension;
+            assert(fs.existsSync(t));
+
+            done();
+          });
+        }); 
       });
     });
 
