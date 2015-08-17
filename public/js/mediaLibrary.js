@@ -506,10 +506,16 @@ function AposMediaLibrary(options) {
   };
 
   self.moveToScrollTop = function($el) {
+    var height = self.$el.height();
     var offset = $el.offset();
     var scrollTop = $(document).scrollTop();
     var showTop = self.$show.offset().top;
-    if (scrollTop > (showTop + 20)) {
+
+    if (scrollTop > (height - self.$show.height())){
+      self.$el.css('min-height', self.$show.height());
+      //This is a shim for items running over the bottom of the library.
+      offset.top = height;
+    } else if (scrollTop > (showTop + 20)) {
       offset.top = scrollTop + 20;
     } else {
       offset.top = showTop;
