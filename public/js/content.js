@@ -8,7 +8,7 @@ if (!window.apos) {
 
 var apos = window.apos;
 
-apos.version = "0.5.319";
+apos.version = "0.5.321";
 
 apos.handlers = {};
 
@@ -288,7 +288,7 @@ apos.widgetPlayers.video = function($el)
       e.attr('src', apos.sslIfNeeded(e.attr('src')));
 
       $el.find('.apos-video-thumbnail').replaceWith(e);
-      apos.emit('videoReady');
+      apos.emit('videoReady', $el);
     });
   });
 };
