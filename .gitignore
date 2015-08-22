@@ -2,6 +2,7 @@ test/public/modules/*
 test/public/css/master-*
 npm-debug.log
 *.DS_Store
+*.npmignore
 node_modules
 test/node_modules
 # We do not commit CSS, only LESS
