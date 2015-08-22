@@ -159,7 +159,7 @@
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
-  {{ fieldset(field | merge({ attributes: 'data-selective' }), tagsBody) }}
+  {{ fieldset(field, tagsBody) }}
 {%- endmacro -%}
 
 {%- macro tagsBody(field) -%}

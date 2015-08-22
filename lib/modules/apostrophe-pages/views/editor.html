@@ -14,5 +14,8 @@
 {% endblock %}
 
 {% block body %}
-  {{ schemas.fields(data.schema) }}
+  {# Needed so we can swap page types dynamically. -Tom #}
+  <div data-page-schema-fields>
+    {{ schemas.fields(data.schema) }}
+  </div>
 {% endblock %}
