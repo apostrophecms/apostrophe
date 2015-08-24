@@ -162,6 +162,15 @@ describe('Pages', function() {
         path: '/parent/sibling/cousin',
         level: 3,
         rank: 0
+      },
+      {
+        _id: '4333',
+        type: 'testPage',
+        slug: 'another-parent',
+        published: true,
+        path: '/another-parent',
+        level: 3,
+        rank: 0
       }
     ];
 
@@ -367,6 +376,28 @@ describe('Pages', function() {
     });
 
   });
+
+  it('moving /parent into /another-parent should also move /parent/sibling', function(done) {
+    apos.pages.move(adminReq(), '1234', '4333', 'inside', function(err) {
+      if (err) {
+        console.log(err);
+      }
+      assert(!err);
+      var cursor = apos.pages.find(anonReq(), {_id: '4321'});
+      cursor.toObject(function(err, page){
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        //Is the grandchild's path correct?
+        assert.equal(page.path, '/another-parent/parent/sibling');
+        return done();
+      });
+    });
+
+  });
+
+
   it('should be able to serve a page', function(done){
     return request('http://localhost:7940/child', function(err, response, body){
       assert(!err);
