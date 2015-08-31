@@ -31,6 +31,7 @@
     "credential": "^0.2.5",
     "cuid": "^1.2.5",
     "deep-get-set": "^0.1.1",
+    "diff": "^2.1.0",
     "express": "^4.11.2",
     "express-session": "^1.10.3",
     "glob": "^4.3.5",

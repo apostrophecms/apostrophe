@@ -1,0 +1,42 @@
+.apos-toggle-open
+{
+  display: none;
+}
+
+.apos-change
+{
+  display: block;
+  margin-right: 24px;
+  &.apos-change-action-add {
+    color: green;
+  }
+  &.apos-change-action-remove {
+    color: red;
+  }
+  &.apos-change-action-change {
+    color: darkblue;
+  }
+  &.apos-change-action-move-up::before {
+    content: "▲ ";
+  }
+  &.apos-change-action-move-down::before {
+    content: "▼ ";
+  }
+  h5 {
+    vertical-align: top;
+    display: inline-block;
+    margin: 0;
+    margin-bottom: 2px;
+  }
+  h6 {
+    vertical-align: top;
+    display: inline-block;
+  }
+}
+
+.apos-changes
+{
+  vertical-align: top;
+  display: inline-block;
+}
+

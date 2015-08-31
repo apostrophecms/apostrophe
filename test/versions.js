@@ -39,6 +39,30 @@ describe('Versions', function() {
         'apostrophe-express': {
           secret: 'xxx',
           port: 7950
+        },
+        // Create a custom schema for test-person so we can
+        // play with comparing versions
+        'test-person-pages': {
+          extend: 'apostrophe-custom-pages',
+          addFields: [
+            {
+              label: 'Alive',
+              type: 'boolean',
+              name: 'alive'
+            },
+            {
+              label: 'Nicknames',
+              type: 'array',
+              name: 'nicknames',
+              schema: [
+                {
+                  type: 'string',
+                  name: 'nickname',
+                  label: 'Nickname'
+                }
+              ]
+            },
+          ]
         }
       },
       afterInit: function(callback) {
@@ -64,7 +88,7 @@ describe('Versions', function() {
     var object = {
       slug: 'one',
       published: true,
-      type: 'testPerson',
+      type: 'test-person',
       firstName: 'Gary',
       lastName: 'Ferber',
       age: 15,
@@ -143,6 +167,372 @@ describe('Versions', function() {
     });
   });
 
+  it('should be able to fetch all versions in proper order', function(done){
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
+        assert(!err);
+        assert(versions.length === 3);
+        assert(versions[0].createdAt > versions[1].createdAt);
+        assert(versions[1].createdAt > versions[2].createdAt);
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions and spot a simple field change', function(done){
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
+        assert(!err);
+        assert(versions.length === 3);
+        return apos.versions.compare(doc, versions[1], versions[0], function(err, changes) {
+          assert(!err);
+          assert(changes.length === 1);
+          assert(changes[0].action === 'change');
+          assert(changes[0].old === false);
+          assert(changes[0].current === true);
+          assert(changes[0].field);
+          assert(changes[0].field.label === 'Alive');
+          done();
+        });
+      });
+    });
+  });
+
+  it('should be able to compare versions with areas and spot a widget addition', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              }
+            ]
+          }
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              },
+              {
+                _id: 'woo2',
+                type: 'apostrophe-rich-text',
+                content: 'So amazing'
+              }
+            ]
+          }
+        }
+      }, function(err, changes) {
+        assert(!err);
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'body');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'add');
+        assert(change.current);
+        assert(change.current._id === 'woo2');
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions with areas and spot a widget removal', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              },
+              {
+                _id: 'woo2',
+                type: 'apostrophe-rich-text',
+                content: 'So amazing'
+              }
+            ]
+          }
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              }
+            ]
+          }
+        }
+      }, function(err, changes) {
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'body');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'remove');
+        assert(change.old);
+        assert(change.old._id === 'woo2');
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions with areas and spot a widget change', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              },
+              {
+                _id: 'woo2',
+                type: 'apostrophe-rich-text',
+                content: 'So amazing'
+              }
+            ]
+          }
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          body: {
+            type: 'area',
+            items: [
+              {
+                _id: 'woo',
+                type: 'apostrophe-rich-text',
+                content: 'So great'
+              },
+              {
+                _id: 'woo2',
+                type: 'apostrophe-rich-text',
+                content: 'So wimpy'
+              }
+            ]
+          }
+        }
+      }, function(err, changes) {
+        assert(!err);
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'body');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'change');
+        assert(change.old);
+        assert(change.old._id === 'woo2');
+        assert(change.old.content === 'So amazing');
+        assert(change.current);
+        assert(change.current._id === 'woo2');
+        assert(change.current.content === 'So wimpy');
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions with arrays and spot an addition', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'joe',
+              _id: 'a1'
+            }
+          ]
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'joe',
+              _id: 'a1'
+            },
+            {
+              nickname: 'jane',
+              _id: 'a2'
+            }
+          ]
+        }
+      }, function(err, changes) {
+        assert(!err);
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'nicknames');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'add');
+        assert(change.current);
+        assert(change.current._id === 'a2');
+        assert(change.current.nickname === 'jane');
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions with arrays and spot an item removal', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'joe',
+              _id: 'a1'
+            },
+            {
+              nickname: 'jane',
+              _id: 'a2'
+            }
+          ]
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'jane',
+              _id: 'a2'
+            }
+          ]
+        }
+      }, function(err, changes) {
+
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'nicknames');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'remove');
+        assert(change.old);
+        assert(change.old._id === 'a1');
+        done();
+      });
+    });
+  });
+
+  it('should be able to compare versions with arrays and spot an item change', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'joe',
+              _id: 'a1'
+            },
+            {
+              nickname: 'jane',
+              _id: 'a2'
+            }
+          ]
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          nicknames: [
+            {
+              nickname: 'sarah',
+              _id: 'a1'
+            },
+            {
+              nickname: 'jane',
+              _id: 'a2'
+            }
+          ]
+        }
+      }, function(err, changes) {
+        assert(!err);
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'nicknames');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 1);
+        var change = changes[0].changes[0];
+        assert(change.action === 'change');
+        assert(change.old);
+        assert(change.old._id === 'a1');
+        assert(change.old.nickname === 'joe');
+        assert(change.current);
+        assert(change.current._id === 'a1');
+        assert(change.current.nickname === 'sarah');
+        done();
+      });
+    });
+  });
   //////
   // When disabled the module does not create versions,
   // and docs can still be inserted
@@ -157,7 +547,7 @@ describe('Versions', function() {
   //         secret: 'xxx',
   //         port: 7949
   //       },
-  //       'apostrophe-doc-versions':{
+  //       'apostrophe-versions':{
   //       	enabled: false
   //       }
   //     },

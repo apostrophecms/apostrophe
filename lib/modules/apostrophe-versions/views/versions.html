@@ -1,0 +1,29 @@
+{% extends "apostrophe-modal:base.html" %}
+{% include "apostrophe-modal:macros.html" %}
+
+{% block controls %}
+  <div class="apos-modal-controls">
+    {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Finished')}) }}
+  </div>
+{% endblock %}
+
+{% block label %}
+{{ __('Versions') }}
+{% endblock %}
+
+{% block body %}
+  {# Loop over all versions and render changes in each one #}
+  {% for version in data.versions %}
+    <div class="apos-version" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
+      <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4>
+      <cite>{{ version.author }}</cite>
+      {% if version._previous %}
+        <h5 data-open-changes>See Changes</h5>
+        {# JS populates me #}
+        <div data-changes></div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endblock %}
+
+
