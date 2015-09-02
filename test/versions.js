@@ -62,6 +62,13 @@ describe('Versions', function() {
                 }
               ]
             },
+            {
+              label: 'Poems',
+              type: 'joinByArray',
+              name: '_poems',
+              withType: 'poem',
+              idsField: 'poemIds'
+            },
           ]
         }
       },
@@ -533,6 +540,45 @@ describe('Versions', function() {
       });
     });
   });
+
+  it('should be able to compare versions with joinByArray and spot an id change', function(done) {
+    var req = adminReq();
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+      assert(!err);
+      assert(doc);
+      // compare mock versions
+      apos.versions.compare(doc, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          poemIds: [ 'abc', 'def' ]
+        },
+      }, {
+        doc: {
+          title: 'whatever',
+          slug: 'whatever',
+          poemIds: [ 'abc', 'qed' ]
+        }
+      }, function(err, changes) {
+        assert(!err);
+        assert(changes.length === 1);
+        assert(changes[0].action === 'change');
+        assert(changes[0].key === 'poemIds');
+        assert(changes[0].changes);
+        assert(changes[0].changes.length === 2);
+        var change0 = changes[0].changes[0];
+        var change1 = changes[0].changes[1];
+        assert(change0.action === 'remove');
+        assert(change0.old);
+        assert(change0.old === 'def');
+        assert(change1.action === 'add');
+        assert(change1.current);
+        assert(change1.current === 'qed');
+        done();
+      });
+    });
+  });
+
   //////
   // When disabled the module does not create versions,
   // and docs can still be inserted
