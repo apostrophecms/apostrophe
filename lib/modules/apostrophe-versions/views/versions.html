@@ -17,11 +17,12 @@
     <div class="apos-version" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
       <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4>
       <cite>{{ version.author }}</cite>
-      {% if version._previous %}
+      <a href="#" data-revert="{{ version._id }}">Revert</a>
+      {% if version._previous -%}
         <h5 data-open-changes>See Changes</h5>
         {# JS populates me #}
         <div data-changes></div>
-      {% endif %}
+      {%- endif %}
     </div>
   {% endfor %}
 {% endblock %}

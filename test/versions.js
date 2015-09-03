@@ -82,10 +82,36 @@ describe('Versions', function() {
       }
     });
   });
+
   it('should have a db property', function() {
     assert(apos.versions.db);
   });
 
+  it('should accept a direct mongo insert of poems for join test purposes', function(done) {
+    return apos.docs.db.insert([
+      {
+        title: 'Poem ABC',
+        slug: 'poem-abc',
+        _id: 'abc',
+        type: 'poem'
+      },
+      {
+        title: 'Poem DEF',
+        slug: 'poem-def',
+        _id: 'def',
+        type: 'poem'
+      },
+      {
+        title: 'Poem QED',
+        slug: 'poem-qed',
+        _id: 'qed',
+        type: 'poem'
+      },
+    ], function(err) {
+      assert(!err);
+      done();
+    });
+  });
 
   //////
   // Versioning
@@ -160,7 +186,7 @@ describe('Versions', function() {
     apos.docs.find(adminReq(), { slug: 'one' }).toObject(function(err,doc) {
       apos.versions.db.find({ docId: doc._id }).sort({createdAt: -1}).toArray(function(err, versions) {
         assert(versions.length === 2);
-        apos.versions.revert(adminReq(), doc, versions[1], function(err) {
+        apos.versions.revert(adminReq(), versions[1], function(err) {
           assert(!err);
           // make sure the change propagated to the database
           apos.docs.find(adminReq(), { slug: 'one' }).toObject(function(err,doc) {
@@ -195,7 +221,7 @@ describe('Versions', function() {
       apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
         assert(!err);
         assert(versions.length === 3);
-        return apos.versions.compare(doc, versions[1], versions[0], function(err, changes) {
+        return apos.versions.compare(req, doc, versions[1], versions[0], function(err, changes) {
           assert(!err);
           assert(changes.length === 1);
           assert(changes[0].action === 'change');
@@ -215,7 +241,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -272,7 +298,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -328,7 +354,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -394,7 +420,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -443,7 +469,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -491,7 +517,7 @@ describe('Versions', function() {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -541,13 +567,13 @@ describe('Versions', function() {
     });
   });
 
-  it('should be able to compare versions with joinByArray and spot an id change', function(done) {
+  it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', function(done) {
     var req = adminReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
-      apos.versions.compare(doc, {
+      apos.versions.compare(req, doc, {
         doc: {
           title: 'whatever',
           slug: 'whatever',
@@ -571,9 +597,13 @@ describe('Versions', function() {
         assert(change0.action === 'remove');
         assert(change0.old);
         assert(change0.old === 'def');
+        console.log(change0);
+        console.log(change1);
+        assert(change0.text === 'Poem DEF');
         assert(change1.action === 'add');
         assert(change1.current);
         assert(change1.current === 'qed');
+        assert(change1.text === 'Poem QED');
         done();
       });
     });

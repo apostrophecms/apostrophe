@@ -146,6 +146,14 @@
   {%- endif -%}
 {%- endmacro -%}
 
+{%- macro integer(field) -%}
+  {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro float(field) -%}
+  {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
 {%- macro slug(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
@@ -187,16 +195,16 @@
 
 {# Maybe fancier later #}
 {%- macro email(field) -%}
-  {{ string(field) }}
+  {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
 {# Typically we enhance this with jquery ui datepicker later #}
 {%- macro date(field) -%}
-  {{ string(field) }}
+  {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
 {%- macro time(field) -%}
-  {{ string(field) }}
+  {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
 {%- macro checkboxes(field) -%}
