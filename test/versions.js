@@ -184,7 +184,7 @@ describe('Versions', function() {
 
   it('should be able to revert to a previous version', function(done){
     apos.docs.find(adminReq(), { slug: 'one' }).toObject(function(err,doc) {
-      apos.versions.db.find({ docId: doc._id }).sort({createdAt: -1}).toArray(function(err, versions) {
+      apos.versions.find(adminReq(), { docId: doc._id }, {}, function(err, versions) {
         assert(versions.length === 2);
         apos.versions.revert(adminReq(), versions[1], function(err) {
           assert(!err);
@@ -204,7 +204,7 @@ describe('Versions', function() {
     var req = adminReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
       assert(!err);
-      apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
+      apos.versions.find(adminReq(), { docId: doc._id }, {}, function(err, versions) {
         assert(!err);
         assert(versions.length === 3);
         assert(versions[0].createdAt > versions[1].createdAt);
@@ -597,8 +597,6 @@ describe('Versions', function() {
         assert(change0.action === 'remove');
         assert(change0.old);
         assert(change0.old === 'def');
-        console.log(change0);
-        console.log(change1);
         assert(change0.text === 'Poem DEF');
         assert(change1.action === 'add');
         assert(change1.current);
