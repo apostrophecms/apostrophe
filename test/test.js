@@ -32,6 +32,8 @@ describe('Modules', function(){
 
   require('./attachments.js');
 
+  require('./schemas.js');
+
   require('./docs.js');
 
   require('./pages.js');
