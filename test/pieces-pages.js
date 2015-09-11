@@ -45,7 +45,8 @@ describe('pieces-pages', function() {
           extend: 'apostrophe-pieces',
           name: 'event',
           label: 'Event',
-          alias: 'events'
+          alias: 'events',
+          sort: { title: 1 }
         },
         'events-pages': {
           extend: 'apostrophe-pieces-pages',
@@ -84,7 +85,7 @@ describe('pieces-pages', function() {
         published: true,
         type: 'event',
         title: 'Event ' + paddedInt,
-        sortTitle: 'event ' + paddedInt,
+        titleSortified: 'event ' + paddedInt,
         body: {
           type: 'area',
           items: [

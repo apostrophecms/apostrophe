@@ -223,6 +223,7 @@ describe('Versions', function() {
         assert(versions.length === 3);
         return apos.versions.compare(req, doc, versions[1], versions[0], function(err, changes) {
           assert(!err);
+          console.log(changes);
           assert(changes.length === 1);
           assert(changes[0].action === 'change');
           assert(changes[0].old === false);
