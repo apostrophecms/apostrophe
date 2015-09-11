@@ -1,3 +1,11 @@
 {%- include "pieceMacros.html" -%}
 
-{{ pieceFilters(data.schema, data.cursor) }}
+{{ pieceFilters(data.filters, data.cursor) }}
+
+<div class="apos-select-wrapper apos-inline-input apos-manage-sorts">
+  <select name="sort" data-selectize>
+    {% for sort in data.sorts %}
+      <option value="{{ sort.sort | jsonAttribute }}" label="{{ __(sort.label) }}"{%- if sort.name == data.sort -%} selected{%- endif -%}>{{ __(sort.label) }}</option>
+    {% endfor %}
+  </select>
+</div>

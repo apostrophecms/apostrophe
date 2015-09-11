@@ -20,11 +20,9 @@
   </span>
 {%- endmacro -%}
 
-{%- macro pieceFilters(schema, cursor) -%}
-  {%- for field in schema -%}
-    {%- if field.filter -%}
-      {{ piecePill(field.name, module.stringifyBooleanFilterChoices(field.filter.choices), module.stringifyBooleanFilterValue(cursor.get(field.name))) }}
-    {%- endif -%}
+{%- macro pieceFilters(filters, cursor) -%}
+  {%- for filter in filters -%}
+    {{ piecePill(filter.name, module.stringifyBooleanFilterChoices(filter.choices), module.stringifyBooleanFilterValue(cursor.get(filter.name))) }}
   {%- endfor -%}
 {%- endmacro -%}
 

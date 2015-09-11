@@ -1,39 +1,9 @@
 <tr>
-  {# Output a th for each field that has the list property. Also output #}
+  {# Output a th for each column that has the list property. Also output #}
   {# markup for sorting when appropriate. -Tom #}
-  {%- for field in data.schema -%}
-    {%- if field.list -%}
-      <th class="apos-manage-field apos-manage-{{ data.options.name | css }}-{{ field.name | css }}
-        {%- if field.list.sort %} apos-manage-sortable
-          {%- if field.list.sort.order == -1 %} apos-manage-sorts-down
-          {%- else %} apos-manage-sorts-up
-          {%- endif -%}
-        {%- endif -%}
-        {%- if data.sort.name == field.name %} apos-manage-sort-current
-          {%- if data.sort.order == -1 %} apos-manage-sorting-down
-          {%- else %} apos-manage-sorting-up
-          {%- endif -%}
-        {%- endif -%}
-        " data-name="{{ field.name }}">{#
-        #}{%- if field.list.sort -%}
-          <a href="#" data-sort="
-            {%- if data.sort.name == field.name -%}
-              {# Toggle to the opposite sort
-              #}{{ - data.sort.order }}
-            {%- else -%}
-              {{ field.list.sort.order }}
-            {%- endif -%}
-          ">
-        {%- endif -%}{#
-        #}{{ __(field.list.label or field.label) }}{#
-        #}{%- if field.list.sort -%}{#
-          #}<span class="apos-manage-sort-down" data-sort-direction="-1">▼</span>{#
-          #}<span class="apos-manage-sort-up" data-sort-direction="1">▲</span>{#
-        #}{%- endif -%}
-        {%- if field.list.sort -%}
-          </a>
-        {%- endif -%}
-      </th>
-    {%- endif -%}
+  {%- for column in data.columns -%}
+    <th class="apos-manage-column apos-manage-{{ data.options.name | css }}-{{ column.name | css }}" data-name="{{ column.name }}">{#
+      #}{{ __(column.label) }}{#
+      #}</th>
   {%- endfor -%}
 </tr>

@@ -1,11 +1,9 @@
 {% for piece in data.pieces %}
   <tr data-piece>
-    {% for field in data.schema %}
-      {% if field.list %}
-        <td class="apos-manage-{{ data.options.name | css }}-{{ field.name | css }}">
-            <span><a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{% if field.list.partial %}{{ field.list.partial(piece[field.name]) }}{% else %}{{ piece[field.name] }}{% endif %}</a></span>
-        </td>
-      {% endif %}
+    {% for column in data.columns %}
+      <td class="apos-manage-{{ data.options.name | css }}-{{ column.name | css }}">
+          <span><a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{% if column.partial %}{{ column.partial(piece[column.name]) }}{% else %}{{ piece[column.name] }}{% endif %}</a></span>
+      </td>
     {% endfor %}
   </tr>
 {% endfor %}
