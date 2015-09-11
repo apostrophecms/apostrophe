@@ -12,8 +12,8 @@
 {%- endblock -%}
 
 {%- block filters -%}
-  <div class="apos-ui-modal-filters-inner">
-    {{ pieceFilters() }}
+  {# ajax populates me #}
+  <div class="apos-ui-modal-filters-inner" data-filters>
   </div>
 {%- endblock -%}
 
@@ -23,10 +23,8 @@
 
 {%- block body -%}
   <table data-items class="apos-manage-table">
-    <thead>
-      <tr>
-        <th class="apos-manage-title">{{ __('Title') }}</th>
-      </tr>
+    <thead data-headings>
+      {# ajax populates me #}
     </thead>
     <tbody data-list>
       {# ajax populates me #}

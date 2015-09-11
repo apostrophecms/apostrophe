@@ -11,53 +11,20 @@
   </div>
 {%- endmacro -%}
 
-{%- macro piecePill(name, options) -%}
+{%- macro piecePill(name, choices, state) -%}
   <span class="apos-pill" data-pill data-name="{{ name }}">
-    {%- for pill in options -%}
-      <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-{{ name }}="{{ pill.value }}">{{ __(pill.label) }}</a>
+    {%- for pill in choices -%}
+      {# leading spaces on classes prevent concatenation
+      #}<a class="apos-pill-choice {% if loop.first %} apos-first{% endif %}{% if loop.last %} apos-last{% endif %}{% if pill.value == state %} apos-active{% endif %}" href="#" data-{{ name }}="{{ pill.value }}">{{ __(pill.label) }}</a>
     {%- endfor -%}
   </span>
 {%- endmacro -%}
 
-{%- macro piecePublishedFilter() -%}
-  {{
-    piecePill('published',
-      [
-        {
-          value: '1',
-          label: __('Published')
-        },
-        {
-          value: '0',
-          label: __('Draft')
-        },
-        {
-          value: 'any',
-          label: __('Both')
-        }
-      ]
-    )
-  }}
-{%- endmacro -%}
-
-{%- macro pieceTrashFilter() -%}
-  {{ piecePill('trash',
-      [
-        {
-          value: '0',
-          label: __('Live')
-        },
-        {
-          value: '1',
-          label: __('Trash')
-        }
-      ]
-    )
-  }}
-{%- endmacro -%}
-
-{%- macro pieceFilters() -%}
-  {{ piecePublishedFilter() }}
-  {{ pieceTrashFilter() }}
+{%- macro pieceFilters(schema, cursor) -%}
+  {%- for field in schema -%}
+    {%- if field.filter -%}
+      {{ piecePill(field.name, module.stringifyBooleanFilterChoices(field.filter.choices), module.stringifyBooleanFilterValue(cursor.get(field.name))) }}
+    {%- endif -%}
+  {%- endfor -%}
 {%- endmacro -%}
 
