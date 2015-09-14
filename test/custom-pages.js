@@ -64,7 +64,7 @@ describe('custom-pages', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'nifty'
+          type: 'nifty-page'
         }
       },
       remainder: '/'
@@ -88,7 +88,7 @@ describe('custom-pages', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'nifty'
+          type: 'nifty-page'
         }
       },
       remainder: '/foo'
@@ -112,7 +112,7 @@ describe('custom-pages', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'nifty'
+          type: 'nifty-page'
         }
       },
       remainder: '/bar/wacky/wonky/wibble/skip'
@@ -142,7 +142,7 @@ describe('custom-pages', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'nifty'
+          type: 'nifty-page'
         }
       },
       remainder: '/foo'
@@ -163,7 +163,7 @@ describe('custom-pages', function() {
     var req = {
       data: {
         bestPage: {
-          type: 'wibble'
+          type: 'wibble-page'
         }
       },
       remainder: '/foo'
@@ -198,7 +198,7 @@ describe('custom-pages', function() {
   it('should be able to insert a test page manually into the db', function(done) {
     var testItem =
       { _id: 'niftyPages1',
-        type: 'nifty',
+        type: 'nifty-page',
         slug: '/niftyPages',
         published: true,
         path: '/niftyPages',
@@ -214,6 +214,7 @@ describe('custom-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
+      console.log(body);
       assert(body.match(/niftyPages\-index/));
       return done();
     });
