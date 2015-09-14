@@ -25,6 +25,7 @@ function adminReq() {
   });
 }
 
+var initDone = false;
 
 describe('Versions', function() {
 	//////
@@ -42,8 +43,10 @@ describe('Versions', function() {
         },
         // Create a custom schema for test-person so we can
         // play with comparing versions
-        'test-person-pages': {
-          extend: 'apostrophe-custom-pages',
+        'test-people': {
+          extend: 'apostrophe-pieces',
+          name: 'test-person',
+          label: 'Test Person',
           addFields: [
             {
               label: 'Alive',
@@ -70,6 +73,10 @@ describe('Versions', function() {
               idsField: 'poemIds'
             },
           ]
+        },
+
+        'test-person-pages': {
+          extend: 'apostrophe-custom-pages'
         }
       },
       afterInit: function(callback) {
@@ -78,12 +85,14 @@ describe('Versions', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        initDone = true;
         done();
       }
     });
   });
 
   it('should have a db property', function() {
+    assert(initDone);
     assert(apos.versions.db);
   });
 
@@ -214,7 +223,7 @@ describe('Versions', function() {
     });
   });
 
-  it('should be able to compare versions and spot a simple field change', function(done){
+  it('should be able to compare versions and spot a simple field change', function(done) {
     var req = adminReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
       assert(!err);
@@ -223,7 +232,6 @@ describe('Versions', function() {
         assert(versions.length === 3);
         return apos.versions.compare(req, doc, versions[1], versions[0], function(err, changes) {
           assert(!err);
-          console.log(changes);
           assert(changes.length === 1);
           assert(changes[0].action === 'change');
           assert(changes[0].old === false);
