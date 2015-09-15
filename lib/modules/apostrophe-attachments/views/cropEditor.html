@@ -1,5 +1,5 @@
 {%- extends "apostrophe-modal:base.html" -%}
-{%- include "apostrophe-modal:macros.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
 
 {%- block modalClass -%}
   apos-crop-editor apos-ui-modal-no-sidebar
@@ -7,8 +7,8 @@
 
 {%- block controls -%}
   <div class="apos-modal-controls">
-    {{ modalButton({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save'}) }}
-    {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: 'Cancel'}) }}
+    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save'}) }}
+    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: 'Cancel'}) }}
   </div>
 {%- endblock -%}
 

@@ -1,14 +1,14 @@
 {%- extends "apostrophe-modal:base.html" -%}
-{%- include "apostrophe-modal:macros.html" -%}
-{%- include "pieceMacros.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{%- import "piecesMacros.html" as pieces with context -%}
 
 {%- block modalClass -%}
   {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
-  {{ modalButton({dataAttrs: ('data-create-' + data.options.name) | css, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.options.label) )}) }}
+  {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
+  {{ modals.button({dataAttrs: ('data-create-' + data.options.name) | css, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.options.label) )}) }}
 {%- endblock -%}
 
 {%- block filters -%}

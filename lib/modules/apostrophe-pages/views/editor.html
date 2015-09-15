@@ -1,11 +1,11 @@
 {% extends "apostrophe-modal:base.html" %}
-{% include "apostrophe-modal:macros.html" %}
+{% import "apostrophe-modal:macros.html" as modals %}
 {% import "apostrophe-schemas:macros.html" as schemas %}
 
 {% block controls %}
   <div class='apos-modal-controls'>
-    {{ modalButton({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
-    {{ modalButton({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
+    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
+    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
   </div>
 {% endblock %}
 

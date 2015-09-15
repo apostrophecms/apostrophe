@@ -1,6 +1,6 @@
-{%- include "pieceMacros.html" -%}
+{%- import "piecesMacros.html" as pieces with context -%}
 
-{{ pieceFilters(data.filters, data.cursor) }}
+{{ pieces.filters(data.filters, data.cursor) }}
 
 <div class="apos-select-wrapper apos-inline-input apos-manage-sorts">
   <select name="sort" data-selectize>

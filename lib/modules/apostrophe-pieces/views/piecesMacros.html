@@ -1,0 +1,35 @@
+{# This macro must be imported 'with context' from a pieces module #}
+{# subclass. -Tom #}
+
+
+
+{# bring in modals #}
+
+{%- import "apostrophe-modal:macros.html" as modals -%}
+
+{%- macro editControls() -%}
+  <div class="apos-modal-controls">
+    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save'}) }}
+    {{ modals.button({dataAttrs: 'data-save data-next', float: 'right', color: 'base', label: __('Add Next')}) }}
+    {{ modals.button({dataAttrs: 'data-copy data-action="copy"', float: 'right', color: 'base', label: 'Copy'}) }}
+    {{ modals.button({dataAttrs: 'data-versions data-action="versions"', float: 'right', color: 'base', label: 'Versions'}) }}
+    {{ modals.button({dataAttrs: 'data-trash data-action="trash"', float: 'right', color: 'base', label: 'Trash'}) }}
+    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: 'Cancel'}) }}
+  </div>
+{%- endmacro -%}
+
+{%- macro pill(name, choices, state) -%}
+  <span class="apos-pill" data-pill data-name="{{ name }}">
+    {%- for pill in choices -%}
+      {# leading spaces on classes prevent concatenation
+      #}<a class="apos-pill-choice {% if loop.first %} apos-first{% endif %}{% if loop.last %} apos-last{% endif %}{% if pill.value == state %} apos-active{% endif %}" href="#" data-{{ name }}="{{ pill.value }}">{{ __(pill.label) }}</a>
+    {%- endfor -%}
+  </span>
+{%- endmacro -%}
+
+{%- macro filters(filters, cursor) -%}
+  {%- for filter in filters -%}
+    {{ pill(filter.name, module.stringifyBooleanFilterChoices(filter.choices), module.stringifyBooleanFilterValue(cursor.get(filter.name))) }}
+  {%- endfor -%}
+{%- endmacro -%}
+

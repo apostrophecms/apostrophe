@@ -1,5 +1,5 @@
 {%- extends "apostrophe-modal:base.html" -%}
-{%- include 'pieceMacros.html' -%}
+{%- import "piecesMacros.html" as pieces with context -%}
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
 
 {%- block modalClass -%}
@@ -7,7 +7,7 @@
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ pieceEditControls() }}
+  {{ pieces.editControls() }}
 {%- endblock -%}
 
 {%- block label -%}
