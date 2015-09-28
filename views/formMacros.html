@@ -65,6 +65,7 @@
   <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-name="{{ name }}">
     <label>{{ __(label) | e }}</label>
     <textarea name="{{ name | e }}" rows="4"></textarea>
+    <div class="apos-error-max">{{ __('Too long.') }}</div>
   </fieldset>
 {%- endmacro -%}
 
@@ -101,7 +102,7 @@
     </div>
   </fieldset>
 {%- endmacro -%}
-  
+
 {%- macro formMultiSelect(name, label, choices) -%}
   {# check for a fields property on any of the choices, and add class if one exists #}
   {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
@@ -205,8 +206,12 @@
                     {{ choice.label | e }}
                   {%- endfor -%}
                 {%- elif (extra.type == 'select') -%}
-                  <label>{{ __(extra.label) | e }}</label>
-                  {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+                  <fieldset class="apos-fieldset-selectize apos-fieldset-select">
+                    <label>{{ __(label) | e }}</label>
+                    <div class="apos-select-wrapper apos-inline-input">
+                      {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+                    </div>
+                  </fieldset>
                 {%- elif (extra.type == 'tags') -%}
                   <label>{{ __(extra.label) | e }}</label>
                   {{ formTags(extra.name, label, { inline: true }) }}
