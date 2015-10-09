@@ -5,7 +5,7 @@
 {# rework this. Also note aposPageRange which is only necessary because range() seems #}
 {# busted in this release of nunjucks #}
 
-{% macro renderPager(options, url) %}
+{% macro render(options, url) %}
   {% if ((options.page > 1) or (options.total > 1)) %}
     <div class="apos-pager">
       {{ pagerPage(1, options, url) }}
