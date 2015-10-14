@@ -1,0 +1,21 @@
+.add-font(@name, @url, @style: normal, @weight: normal)
+{
+  @font-face
+  {
+    font-family: @name;
+    font-weight: @weight;
+    font-style: @style;
+    src: url('@{url}.eot');
+    src: url('@{url}.eot?#iefix') format('embedded-opentype'),
+         url('@{url}.woff') format('woff'), 
+         url('@{url}.ttf')  format('truetype'),
+         url('@{url}.svg#svgFontName') format('svg');
+  }
+
+  @selector: ~'.@{name}';
+
+  @{selector}
+  {
+    font-family: @name;
+  }
+}
