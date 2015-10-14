@@ -9,5 +9,15 @@
       display: block;
     }
   }
+  .apos-modal-breadcrumb {
+    list-style: none;
+  }
+  .apos-modal-breadcrumb-item {
+    display: inline-block;
+    &:not(:last-child):after
+    {
+        content: " » ";
+    }
+  }
 }
 
