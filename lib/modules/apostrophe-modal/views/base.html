@@ -2,22 +2,33 @@
 
 <div data-modal class="apos-ui-modal {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
   <div class="apos-ui-modal-header">
-    <span class="apos-ui-modal-title">
+    <span class="apos-ui-modal-title" data-modal-label>
       {% block label %}Give Me a Label!{% endblock %}
     </span>
     {% block controls %}{% endblock %}
   </div>
-  <div class="apos-ui-modal-instructions">
+  <ul class="apos-ui-modal-breadcrumb" data-modal-breadcrumb>
+    {# js populates me with label and sometimes more context #}
+    <li data-modal-breadcrumb-item></li>
+  </ul>
+  <div class="apos-ui-modal-instructions" data-modal-instructions>
     {% block instructions %}{% endblock %}
   </div>
-  <div class="apos-ui-modal-filters">
-    {% block filters %}{% endblock %}
-  </div>
-  <div class="apos-ui-modal-body">
-    {% block body %} I am a Modal! {% endblock %}
+  {# This is initially just *our* data-modal-content, but later could contain many #}
+  {# due to the slide transition. #}
+  <div data-modal-contents class="apos-modal-contents">
+    {# This is everything that slides in as part of a single sliding breadcrumb modal #}
+    <div data-modal-content class="apos-modal-content">
+      <div class="apos-ui-modal-filters">
+        {% block filters %}{% endblock %}
+      </div>
+      <div class="apos-ui-modal-body">
+        {% block body %} I am a Modal! {% endblock %}
 
-  </div>
-  <div class="apos-ui-modal-footer">
-    {% block footer %} {% endblock %}
+      </div>
+      <div class="apos-ui-modal-footer">
+        {% block footer %} {% endblock %}
+      </div>
+    </div>
   </div>
 </div>

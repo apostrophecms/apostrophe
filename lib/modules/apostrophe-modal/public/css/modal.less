@@ -1,0 +1,15 @@
+.apos-modal-slideable {
+  // 80% of viewport height as otherwise the sliding effect is
+  // ruined by varying modal heights
+  height: 80vh;
+  overflow: scroll;
+}
+
+// when actual sliding starts, we show only the current body
+.apos-modal-sliding .apos-modal-content {
+  display: none;
+  &.apos-modal-slide-current {
+    display: block;
+  }
+}
+
