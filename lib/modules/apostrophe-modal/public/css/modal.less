@@ -3,13 +3,11 @@
   // ruined by varying modal heights
   height: 80vh;
   overflow: scroll;
-}
-
-// when actual sliding starts, we show only the current body
-.apos-modal-sliding .apos-modal-content {
-  display: none;
-  &.apos-modal-slide-current {
-    display: block;
+  .apos-modal-content {
+    display: none;
+    &.apos-modal-slide-current {
+      display: block;
+    }
   }
 }
 

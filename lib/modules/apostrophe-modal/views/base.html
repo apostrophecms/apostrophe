@@ -15,8 +15,10 @@
   {# This is initially just *our* data-modal-content, but later could contain many #}
   {# due to a slide transition. #}
   <div data-modal-contents class="apos-modal-contents">
-    {# This is everything that slides in as part of a single sliding breadcrumb modal #}
-    <div data-modal-content class="apos-modal-content">
+    {# This is everything that slides in as part of a single sliding breadcrumb modal. #}
+    {# In a non-sliding modal this extra structure is harmless, it's all scoped to the #}
+    {# apos-modal-slideable class. -Tom #}
+    <div data-modal-content class="apos-modal-content apos-modal-slide-current">
       <div class="apos-ui-modal-filters">
         {% block filters %}{% endblock %}
       </div>
