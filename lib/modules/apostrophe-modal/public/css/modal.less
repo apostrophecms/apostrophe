@@ -2,14 +2,51 @@
   // 80% of viewport height as otherwise the sliding effect is
   // ruined by varying modal heights
   height: 80vh;
+  overflow: auto;
+  position: relative;
+}
+
+.apos-modal-content
+{
+  position: absolute;
+
+  height: 65vh;  // need to subtract header and breadcrumb height from 80vh
   overflow: scroll;
-}
+  width: 100%;
+ }
 
-// when actual sliding starts, we show only the current body
-.apos-modal-sliding .apos-modal-content {
-  display: none;
-  &.apos-modal-slide-current {
-    display: block;
+.apos-modal-sliding 
+.apos-modal-content
+{
+  .transform(translate3d(-1000px,0,0));
+  .transition(transform .5s ease);
+
+   &.apos-modal-slide-current {
+    .transform(translate3d(0,0,0));
   }
+
 }
 
+// next slide
+.apos-modal-content.apos-modal-slide-current + .apos-modal-content
+{
+	.transform(translate3d(1000px,0,0));
+}
+
+
+
+// THESE DON'T BELONG HERE ------------------------------ //
+
+.transform(@string)
+{
+  -webkit-transform:   ~'@{string}';
+  -moz-transform:      ~'@{string}';
+  -ms-transform:       ~'@{string}';
+  -o-transform:        ~'@{string}';
+}
+.transition(@properties) {
+  -webkit-transition: @properties;
+  -moz-transition: @properties;
+  -o-transition: @properties;
+  transition: @properties;
+}
