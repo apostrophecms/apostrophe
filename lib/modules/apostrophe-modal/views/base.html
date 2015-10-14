@@ -5,7 +5,11 @@
     <span class="apos-ui-modal-title" data-modal-title>
       {% block label %}Give Me a Label!{% endblock %}
     </span>
-    {% block controls %}{% endblock %}
+    {# This div is intended to allow JS to capture and move the controls, it should #}
+    {# not be styled, do that with your own markup when extending if needed #}
+    <div data-modal-controls>
+      {% block controls %}{% endblock %}
+    </div>
   </div>
   <div class="apos-ui-modal-instructions" data-modal-instructions>
     {% block instructions %}{% endblock %}

@@ -3,10 +3,8 @@
 {% import "apostrophe-schemas:macros.html" as schemas %}
 
 {% block controls %}
-  <div class="apos-modal-controls">
-    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
-    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
-  </div>
+  {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
+  {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
 {% endblock %}
 
 {% block label %}
