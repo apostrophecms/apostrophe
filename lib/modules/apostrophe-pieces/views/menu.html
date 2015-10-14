@@ -1,5 +1,5 @@
 {% if data.permissions.edit %}
-<ul class="apos-admin-bar-item apos-accordion-menu">
+{#<ul class="apos-admin-bar-item apos-accordion-menu">
   <li class="apos-accordion-title"><i class="{{ menuIcon }}"></i> {{ __(data.options.pluralLabel) }}</li>
   <li class="apos-accordion-items">
     <ul class="apos-page-bar">
@@ -13,5 +13,8 @@
       {% endif %}
     </ul>
   </li>
-</ul>
+</ul>#}
+  <div class="apos-admin-bar-item">
+    {{ __(data.options.pluralLabel) }}
+  </div>
 {% endif %}
