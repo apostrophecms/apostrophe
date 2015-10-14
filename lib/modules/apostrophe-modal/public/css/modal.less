@@ -15,22 +15,21 @@
   width: 100%;
  }
 
-.apos-modal-sliding 
+
 .apos-modal-content
 {
-  .transform(translate3d(-1000px,0,0));
-  .transition(transform .5s ease);
+  .transform(translate3d(-1000px,0,0));  // 1000px should be changed
+  .transition(transform .5s ease);       // transition should be changed
 
    &.apos-modal-slide-current {
     .transform(translate3d(0,0,0));
   }
-
 }
 
 // next slide
 .apos-modal-content.apos-modal-slide-current + .apos-modal-content
 {
-	.transform(translate3d(1000px,0,0));
+	.transform(translate3d(1000px,0,0));  
 }
 
 

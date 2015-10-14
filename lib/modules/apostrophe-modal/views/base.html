@@ -2,23 +2,23 @@
 
 <div data-modal class="apos-ui-modal {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
   <div class="apos-ui-modal-header">
-    <span class="apos-ui-modal-title" data-modal-label>
+    <span class="apos-ui-modal-title" data-modal-title>
       {% block label %}Give Me a Label!{% endblock %}
     </span>
     {% block controls %}{% endblock %}
   </div>
-  <ul class="apos-ui-modal-breadcrumb" data-modal-breadcrumb>
-    {# js populates me with label and sometimes more context #}
-    <li data-modal-breadcrumb-item></li>
-  </ul>
   <div class="apos-ui-modal-instructions" data-modal-instructions>
     {% block instructions %}{% endblock %}
   </div>
+  {# Base modals don't have breadcrumbs, but slideable modals do, extend baseSlideable.html #}
+  {% block breadcrumb %}{% endblock %}
   {# This is initially just *our* data-modal-content, but later could contain many #}
-  {# due to the slide transition. #}
+  {# due to a slide transition. #}
   <div data-modal-contents class="apos-modal-contents">
-    {# This is everything that slides in as part of a single sliding breadcrumb modal #}
-    <div data-modal-content class="apos-modal-content">
+    {# This is everything that slides in as part of a single sliding breadcrumb modal. #}
+    {# In a non-sliding modal this extra structure is harmless, it's all scoped to the #}
+    {# apos-modal-slideable class. -Tom #}
+    <div data-modal-content class="apos-modal-content apos-modal-slide-current">
       <div class="apos-ui-modal-filters">
         {% block filters %}{% endblock %}
       </div>
