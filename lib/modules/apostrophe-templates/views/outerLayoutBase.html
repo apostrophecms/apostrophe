@@ -3,7 +3,7 @@
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
   </head>
-  <body>
+  <body class="{% block bodyClass %}{% endblock %}">
     <div class="apos-admin-bar">
       <div class="apos-admin-bar-inner">
         <div class="apos-logo-tiny">
