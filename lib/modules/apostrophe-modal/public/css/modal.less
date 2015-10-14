@@ -2,12 +2,27 @@
   // 80% of viewport height as otherwise the sliding effect is
   // ruined by varying modal heights
   height: 80vh;
+  overflow: auto;
+  position: relative;
+}
+
+.apos-modal-content
+{
+  position: absolute;
+
+  height: 65vh;  // need to subtract header and breadcrumb height from 80vh
   overflow: scroll;
-  .apos-modal-content {
-    display: none;
-    &.apos-modal-slide-current {
-      display: block;
-    }
+  width: 100%;
+ }
+
+
+.apos-modal-content
+{
+  .transform(translate3d(-1000px,0,0));  // 1000px should be changed
+  .transition(transform .5s ease);       // transition should be changed
+
+   &.apos-modal-slide-current {
+    .transform(translate3d(0,0,0));
   }
   .apos-modal-breadcrumb {
     list-style: none;
@@ -21,3 +36,26 @@
   }
 }
 
+// next slide
+.apos-modal-content.apos-modal-slide-current + .apos-modal-content
+{
+	.transform(translate3d(1000px,0,0));  
+}
+
+
+
+// THESE DON'T BELONG HERE ------------------------------ //
+
+.transform(@string)
+{
+  -webkit-transform:   ~'@{string}';
+  -moz-transform:      ~'@{string}';
+  -ms-transform:       ~'@{string}';
+  -o-transform:        ~'@{string}';
+}
+.transition(@properties) {
+  -webkit-transition: @properties;
+  -moz-transition: @properties;
+  -o-transition: @properties;
+  transition: @properties;
+}
