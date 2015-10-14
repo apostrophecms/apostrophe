@@ -4,9 +4,9 @@
     {{ apos.assets.stylesheets(data.when) }}
   </head>
   <body class="{% block bodyClass %}{% endblock %}">
-    <div class="apos-ui apos-admin-bar">
+    <div class="apos-ui apos-admin-bar" data-apos-admin-bar>
       <div class="apos-admin-bar-inner">
-        <div class="apos-admin-bar-logo">
+        <div class="apos-admin-bar-logo" data-apos-admin-bar-logo>
           {% include 'logo.html' %}
         </div>
         {% block apostropheMenuBody %}

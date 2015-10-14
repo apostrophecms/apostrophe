@@ -14,3 +14,10 @@
 {
   
 }
+
+.apos-drop-shadow(@x-axis: 0, @y-axis: 2px, @blur: 4px, @color: fade(@apos-black, 50%))
+{
+  -webkit-box-shadow: @x-axis @y-axis @blur @color;
+  -moz-box-shadow: @x-axis @y-axis @blur @color;
+  box-shadow: @x-axis @y-axis @blur @color;
+}

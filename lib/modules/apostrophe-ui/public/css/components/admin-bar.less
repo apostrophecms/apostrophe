@@ -3,20 +3,29 @@
   position: fixed;
   top: @apos-padding-4;
   left: @apos-padding-4;
+  z-index: @apos-z-index-5;
   background-color: @apos-base;
   color: @apos-white;
   .apos-button-border(@apos-white);
   .apos-rounded();
+  .apos-drop-shadow();
 }
 
 .apos-admin-bar-logo
 {
   padding: @apos-padding-2;
   .apos-inline-block();
+  cursor: pointer;
 }
 
-.apos-admin-bar-item
+.apos-admin-bar .apos-admin-bar-item
+{
+  display: none;
+}
+
+.apos-admin-bar.apos-active .apos-admin-bar-item
 {
   .apos-inline-block();
   padding: @apos-padding-3 @apos-padding-2;
 }
+
