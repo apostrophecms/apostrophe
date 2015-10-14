@@ -1,2 +1,8 @@
-.add-font('roboto', '/modules/apostrophe-ui/fonts/roboto-regular-webfont');
-.add-font('roboto', '/modules/apostrophe-ui/fonts/roboto-bold-webfont', normal, 700);
+@apos-ui-font-path: '/modules/apostrophe-ui/fonts/';
+
+.add-font('roboto', @apos-ui-font-path + 'roboto-regular-webfont');
+.add-font('roboto', @apos-ui-font-path + 'roboto-light-webfont', normal, 300);
+.add-font('roboto', @apos-ui-font-path + 'roboto-bold-webfont', normal, 500);
+
+.add-font('karla', @apos-ui-font-path + 'karla-regular-webfont');
+.add-font('karla', @apos-ui-font-path + 'karla-bold-webfont', normal, 700);
