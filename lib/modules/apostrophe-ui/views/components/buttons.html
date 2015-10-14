@@ -1,0 +1,11 @@
+{% macro base(content, action, classes) -%}
+  <div class="{{ classes }}" data-{{ data.action }}>{{ content }}</div>
+{%- endmacro %}
+
+{% macro normal(content, action) -%}
+  {{ base(content, action, 'apos-button') }}
+{%- endmacro %}
+
+{% macro inContext(content, action) -%}
+  {{ base(content, action, 'apos-button apos-button--in-context') }}
+{%- endmacro %}
