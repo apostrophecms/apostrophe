@@ -1,3 +1,5 @@
+{% import 'apostrophe-ui:components/dropdown.html' as dropdown with context %}
+
 {% if data.permissions.edit %}
 {#<ul class="apos-admin-bar-item apos-accordion-menu">
   <li class="apos-accordion-title"><i class="{{ menuIcon }}"></i> {{ __(data.options.pluralLabel) }}</li>
@@ -15,8 +17,15 @@
   </li>
 </ul>#}
   <div class="apos-admin-bar-item">
-    <div class="apos-admin-bar-item-inner">
-      {{ __(data.options.pluralLabel) }}
+    <div class="apos-admin-bar-item">
+      {{ dropdown.base({
+        label: __(data.options.pluralLabel),
+        items: [
+          {label: 'One of the things', link: '#', action: 'data-something'},
+          {label: 'Another Stuff', link: '#', action: 'data-something'},
+          {label: 'OKAY', link: '#', action: 'data-something'}
+        ]}, 'admin', {direction: 'down'}
+      ) }}
     </div>
   </div>
 {% endif %}
