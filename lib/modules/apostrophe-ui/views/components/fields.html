@@ -14,11 +14,13 @@
 {%- endmacro %}
 
 {% macro selectInput(name, label, options) -%}
-  <select name="{{ name }}" class="apos-field-input apos-field-input-select">
-    {%- for option in options -%}
-      <option value="{{ option.value }}">{{ option.label }}</option>
-    {%- endfor -%}
-  </select>
+  <div class="apos-field-input-select-wrapper">
+    <select name="{{ name }}" class="apos-field-input apos-field-input-select">
+      {%- for option in options -%}
+        <option value="{{ option.value }}">{{ option.label }}</option>
+      {%- endfor -%}
+    </select>
+  </div>
 {%- endmacro %}
 
 {% macro string(name, label) -%}

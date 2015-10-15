@@ -1,7 +1,7 @@
 .apos-admin-bar
 {
   position: fixed;
-  height: 80px;
+  height: 86px;
   top: @apos-padding-4;
   left: @apos-padding-4;
   z-index: @apos-z-index-5;
@@ -16,6 +16,7 @@
   * { .apos-transition; }
   &.apos-active
   {
+    overflow-x: inherit;
     .apos-admin-bar-items{ transform: translateX(0); }
   }
 }
@@ -41,6 +42,7 @@
 .apos-admin-bar-item
 {
   cursor: pointer;
+  height: 80px;
   .apos-inline-block(middle);
 }
 
@@ -52,14 +54,19 @@
   height: 100%;
 }
 
-.apos-admin-bar-item:last-of-type
+.apos-admin-bar-item .apos-active
+{
+  background-color: darken(@apos-base, 10%);
+}
+
+.apos-admin-bar-items > div:last-child
 {
   padding-right: @apos-padding-3;
 }
 
 .apos-admin-bar-inner
 {
-  max-width: 80px;
+  max-width: 86px;
 }
 
 .apos-admin-bar-item-inner
@@ -67,6 +74,8 @@
   .apos-inline-block(middle);
   padding: 0 @apos-padding-2;
   .apos-transition();
+  height: 100%;
+  line-height: 4.9rem;
 }
 
 .apos-admin-bar.apos-active 
@@ -74,4 +83,9 @@
 {
   .apos-admin-bar-items { transform: translateX(0%); }
   .apos-admin-bar-inner { max-width: 1400px; }  
+}
+
+.apos-admin-bar .apos-admin-bar-item .apos-dropdown-items
+{
+  top: 102%;
 }
