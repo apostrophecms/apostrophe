@@ -1,10 +1,10 @@
 {% macro base(content, action, classes) -%}
   <a class="{{ classes }}" data-{{ action }}>{{ content }}</a>
-{%- endmacro %}
+{%- endmacro -%}
 
 {% macro normal(content, action) -%}
   {{ base(content, action, 'apos-button') }}
-{%- endmacro %}
+{%- endmacro -%}
 
 {% macro inContext(content, action) -%}
   {{ base(content, action, 'apos-button apos-button--in-context') }}
