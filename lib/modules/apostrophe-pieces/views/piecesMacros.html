@@ -14,11 +14,6 @@
   {{ buttons.minor('Versions', 'versions') }}
   {{ buttons.minor('Copy', 'copy') }}
   {{ buttons.major('Save', 'save') }}
-  {#{{ modals.button({dataAttrs: 'data-save data-next', float: 'right', color: 'base', label: __('Add Next')}) }}
-  {{ modals.button({dataAttrs: 'data-copy data-action="copy"', float: 'right', color: 'base', label: 'Copy'}) }}
-  {{ modals.button({dataAttrs: 'data-versions data-action="versions"', float: 'right', color: 'base', label: 'Versions'}) }}
-  {{ modals.button({dataAttrs: 'data-trash data-action="trash"', float: 'right', color: 'base', label: 'Trash'}) }}
-  {{ modals.button({dataAttrs: 'data-cancel', float: 'right', color: 'base', label: 'Cancel'}) }}#}
 {%- endmacro -%}
 
 {%- macro pill(name, choices, state) -%}

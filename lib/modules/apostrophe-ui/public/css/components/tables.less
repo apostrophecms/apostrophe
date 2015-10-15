@@ -4,4 +4,33 @@
 .apos-table
 {
   .apos-text-small;
+  width: 100%;
+  text-align: left;
 }
+
+.apos-table th,
+.apos-table tr,
+{
+  padding: @apos-padding-2;
+}
+
+// The Head ===================================
+
+.apos-table thead
+{
+  border-bottom: 1px solid @apos-dark;
+}
+
+
+
+.apos-table tr:nth-child(2n)
+{
+  background: @apos-light;
+}
+
+// //Set the first child to a wider width.
+// .apos-table th:first-child,
+// .apos-table td:first-child
+// {
+//   min-width: 350px;
+// }
