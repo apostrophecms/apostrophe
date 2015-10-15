@@ -2,6 +2,7 @@
 {
 	position: relative;
 	display: inline-block;
+	& > * { position: relative; }
 }
 
 .apos-dropdown .apos-button
@@ -27,7 +28,8 @@
 	display: inline-block;
 	min-width: 200px;
 	background-color: @apos-white;
-	.apos-rounded();
+	.apos-rounded;
+	.apos-drop-shadow;
 	visibility: hidden;
   opacity: 0;
   transform: translateZ(0); // todo get a house style for this
@@ -46,6 +48,6 @@
 	}
 }
 
-.apos-dropdown--down .apos-dropdown-items { top: 100%; }
-.apos-dropdown--up .apos-dropdown-items { bottom: 100%; }
+.apos-dropdown--down .apos-dropdown-items { top: 95%; }
+.apos-dropdown--up .apos-dropdown-items { bottom: 95%; }
 

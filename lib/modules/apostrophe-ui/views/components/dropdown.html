@@ -15,9 +15,9 @@
 
 	<div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.classes %} {{ options.classes}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
 		{% if type == 'button' %}
-			{{ buttons.normal(menu.label) }}
+			{{ buttons.normal(menu.label, 'apos-dropdown-label') }}
 		{% endif %}
-		<ul class="apos-dropdown-items">
+		<ul class="apos-dropdown-items" data-apos-dropdown-items>
   		{% for item in menu.items %}
 		    {{ menuItem(item, options) }}
   		{% endfor %}
