@@ -1,0 +1,6 @@
+{% macro string(name, label) -%}
+  <fieldset class="apos-field">
+    <label class="apos-field-label" for="{{ name }}">{{ label }}</label>
+    <input class="apos-field-input-text" type="text">
+  </fieldset>
+{%- endmacro %}
