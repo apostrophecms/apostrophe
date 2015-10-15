@@ -1,18 +1,1 @@
-{% extends "apostrophe-modal:base.html" %}
-{% import "apostrophe-modal:macros.html" as modals %}
-{% import "apostrophe-schemas:macros.html" as schemas %}
-
-{% block controls %}
-  <div class="apos-modal-controls">
-    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
-    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
-  </div>
-{% endblock %}
-
-{% block label %}
-{{ label }}
-{% endblock %}
-
-{% block body %}
-  {{ schemas.fields(data.schema) }}
-{% endblock %}
+{% extends "baseWidgetEditor.html" %}

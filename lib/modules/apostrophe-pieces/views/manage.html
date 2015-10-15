@@ -1,9 +1,9 @@
-{%- extends "apostrophe-modal:base.html" -%}
+{%- extends "apostrophe-modal:baseSlideable.html" -%}
 {%- import "apostrophe-modal:macros.html" as modals -%}
 {%- import "piecesMacros.html" as pieces with context -%}
 
 {%- block modalClass -%}
-  {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar
+  {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-modal-slideable
 {%- endblock -%}
 
 {%- block controls -%}
