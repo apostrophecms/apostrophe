@@ -21,6 +21,19 @@
   .apos-text-normal;
 }
 
+.apos-field-input-select-wrapper
+{
+  position: relative;
+  &:after
+  {
+    content: "\f0d7";
+    position: absolute;
+    top: @apos-padding-2;
+    right: @apos-padding-2;
+    .fa;
+  }
+}
+
 .apos-field-input-select
 {
   -webkit-appearance: none;
