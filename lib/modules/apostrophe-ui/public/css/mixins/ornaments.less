@@ -15,9 +15,38 @@
   
 }
 
-.apos-drop-shadow(@x-axis: 0, @y-axis: 2px, @blur: 4px, @color: fade(@apos-black, 50%))
+.apos-drop-shadow(@x-axis: 0, @y-axis: 2px, @blur: 7px, @spread:2px, @color: fade(#000000, 23%))
 {
-  -webkit-box-shadow: @x-axis @y-axis @blur @color;
-  -moz-box-shadow: @x-axis @y-axis @blur @color;
-  box-shadow: @x-axis @y-axis @blur @color;
+  -webkit-box-shadow: @x-axis @y-axis @blur @spread @color;
+  -moz-box-shadow: @x-axis @y-axis @blur @spread @color;
+  box-shadow: @x-axis @y-axis @blur @spread @color;
+}
+
+.apos-glow
+{
+  .apos-drop-shadow(0px, 0px, 7px, 2px, fade(@apos-base, 50%));
+}
+
+.apos-arrow-right
+{
+  &::after
+  {
+    .apos-inline-block(middle);
+    content: '';
+    margin-left: 10px;
+    border: 5px solid transparent;
+    border-left: 5px solid @apos-base;
+  }
+}
+
+.apos-arrow-left
+{
+  &::before
+  {
+    .apos-inline-block(middle);
+    content: '';
+    margin-right: 10px;
+    border: 5px solid transparent;
+    border-right: 5px solid @apos-base;
+  }
 }

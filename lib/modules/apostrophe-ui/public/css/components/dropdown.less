@@ -1,0 +1,51 @@
+.apos-dropdown
+{
+	position: relative;
+	display: inline-block;
+}
+
+.apos-dropdown .apos-button
+{
+	z-index: 5; // todo bo
+}
+
+.apos-dropdown.apos-active
+{
+	.apos-dropdown-items
+  {
+  	visibility: visible;
+    opacity: 1;
+    transform: translateX(0%);
+    transition-delay: 0s;
+  }
+}
+
+.apos-dropdown-items
+{
+	position: absolute;
+	left: 0;
+	display: inline-block;
+	min-width: 200px;
+	background-color: @apos-white;
+	.apos-rounded();
+	visibility: hidden;
+  opacity: 0;
+  transform: translateZ(0); // todo get a house style for this
+  transform: translateY(10%);
+  transition: all 0.5s ease 0s, visibility 0s linear 0.5s;
+  z-index: 3; // todo bo
+}
+
+.apos-dropdown-item
+{
+	padding: 20px 20px; // todo var this up
+	&:hover
+	{
+		cursor: pointer;
+		background-color: @apos-light;
+	}
+}
+
+.apos-dropdown--down .apos-dropdown-items { top: 100%; }
+.apos-dropdown--up .apos-dropdown-items { bottom: 100%; }
+
