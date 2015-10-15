@@ -25,3 +25,10 @@
   vertical-align: @align;
   display: inline-block;
 }
+
+.apos-transition(@what: all, @duration:0.2s, @ease:ease-out) {
+  -webkit-transition: @what @duration @ease;
+  -moz-transition: @what @duration @ease;
+  -o-transition: @what @duration @ease;
+  transition: @what @duration @ease;
+}
