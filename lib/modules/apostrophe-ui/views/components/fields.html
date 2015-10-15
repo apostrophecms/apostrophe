@@ -1,6 +1,13 @@
 {% macro string(name, label) -%}
-  <fieldset class="apos-field">
-    <label class="apos-field-label" for="{{ name }}">{{ label }}</label>
-    <input class="apos-field-input-text" type="text">
+  <fieldset class="apos-field apos-field-text">
+    <label class="apos-field-label apos-text-instruction" for="{{ name }}">{{ label }}</label>
+    <input name="{{ name }}" class="apos-field-input-text apos-text-normal" type="text">
+  </fieldset>
+{%- endmacro %}
+
+{% macro textarea(name, label) -%}
+  <fieldset class="apos-field apos-field-text-area">
+    <label class="apos-field-label apos-text-instruction" for="{{ name }}">{{ label }}</label>
+    <textarea name="{{ name }}" class="apos-field-input-text apos-text-normal"></textarea>
   </fieldset>
 {%- endmacro %}
