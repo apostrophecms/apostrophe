@@ -1,12 +1,10 @@
-{#% import 'apostrophe-ui:components/buttons.html' as fields with context %#}
-
 {% macro base(items) -%}
   <div class="apos-pill">
     {%- for item in items -%}
       {%- if item.default -%}
-        {{ buttons.base(item.label, '','apos-button apos-button--pill') }}
+        {{ buttons.base(item.label, '','apos-button--pill') }}
       {%- else -%}
-        {{ buttons.base(item.label, '','apos-button apos-button--pill apos-button--pill-inactive ') }}
+        {{ buttons.base(item.label, '','apos-button--pill apos-button--pill-inactive ') }}
       {%- endif -%}
     {%- endfor -%}
   </div>
