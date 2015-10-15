@@ -14,7 +14,10 @@
 @import 'global/z-index.less';
 @import 'global/sizes.less';
 
-.apos-ui 
+// UI-Scoped Styles ===================================
+// Styles here must be scoped to override the reset
+// which is scoped to the class '.apos-ui'
+.apos-ui
 {
 	// Globals =================================
 	@import 'global/reset.less';
@@ -26,4 +29,5 @@
 	@import 'components/buttons.less';
 	@import 'components/context-menu.less';
   @import 'components/fields.less';
+	@import 'components/tables.less';
 }
