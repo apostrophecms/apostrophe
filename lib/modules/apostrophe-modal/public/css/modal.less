@@ -1,0 +1,88 @@
+@apos-z-index-modal: @apos-z-index-7;
+
+// base class
+.apos-ui.apos-modal
+{
+	position: fixed;
+
+	top: 50px;
+    right: 50px;
+    bottom: 50px;
+    left: 50px;
+
+    z-index: @apos-z-index-modal;
+
+    overflow: hidden;
+    opacity: 1;
+
+    .transform(translate3d(0,0,0) scale3d(1,1,1););
+    .transition(transform .3s ease, opacity .3s ease;);
+}
+
+
+// Modal Body
+.apos-modal
+.apos-modal-content
+{
+  position: absolute;
+
+  height: ~'calc(100vh - 100px - 171px)';     // 100vh - 100 (position) - 171 (header + breadcrumb)
+  overflow: scroll;
+  width: 100%;
+
+  background-color: @apos-white;
+}
+
+// Stack Push Transition
+.apos-modal.apos-modal-stack-push
+{
+	opacity: 0;
+	.transform(translate3d(0,0,0) scale3d(1.2,1.2,1););
+	.transition(transform .3s ease, opacity .3s ease;);
+}
+
+
+
+// Sliding Transition
+// - In a 'slide' transition, the body translates
+//   out of the modal
+.apos-modal-slideable .apos-modal-content
+{
+  .transform(translate3d(-100%,0,0));
+  .transition(transform .3s ease);       // transition should be tweaked 
+}
+
+
+// current slide
+.apos-modal-slideable
+.apos-modal-content.apos-modal-slide-current
+{
+	.transform(translate3d(0,0,0));
+}
+
+// next slide
+.apos-modal-content.apos-modal-slide-current + .apos-modal-content
+{
+	.transform(translate3d(100%,0,0));  
+}
+
+
+
+
+// THESE DON'T BELONG HERE ------------------------------ //
+
+// replace these mixins with .apos-transform & .apos-transition
+
+.transform(@string)
+{
+  -webkit-transform:   ~'@{string}';
+  -moz-transform:      ~'@{string}';
+  -ms-transform:       ~'@{string}';
+  -o-transform:        ~'@{string}';
+}
+.transition(@properties) {
+  -webkit-transition: @properties;
+  -moz-transition: @properties;
+  -o-transition: @properties;
+  transition: @properties;
+}
