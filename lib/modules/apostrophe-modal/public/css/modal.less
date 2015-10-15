@@ -1,0 +1,79 @@
+.apos-modal-slideable {
+  // 80% of viewport height as otherwise the sliding effect is
+  // ruined by varying modal heights
+  height: 80vh;
+  overflow: hidden;
+  position: relative;
+}
+
+// Modal Body
+// - In a 'slide' transition, the body translates
+//   out of the modal
+.apos-modal-content
+{
+  position: absolute;
+
+  height: 65vh;  // need to subtract header and breadcrumb height from 80vh
+  overflow: scroll;
+  width: 100%;
+
+  .transform(translate3d(-100%,0,0));
+  .transition(transform .35s ease);       // transition should be tweaked 
+}
+
+// current slide
+.apos-modal-content.apos-modal-slide-current
+{
+	.transform(translate3d(0,0,0));
+}
+
+// next slide
+.apos-modal-content.apos-modal-slide-current + .apos-modal-content
+{
+	.transform(translate3d(100%,0,0));  
+}
+
+.apos-modal-header {
+  width: 100%;
+  height: 10vh;
+  background-color: white;
+  .apos-modal-title {
+    font-size: 36px;
+    display: inline-block;
+    padding: 2px;
+    width: 25%;
+    box-sizing: border-box;
+  }
+  .apos-modal-instructions {
+    margin-top: 12px;
+    font-size: 16px;
+    display: inline-block;
+    padding: 2px;
+    width: 20%;
+    box-sizing: border-box;
+  }
+  .apos-modal-controls {
+    display: inline-block;
+    width: 53%;
+    padding: 2px;
+    box-sizing: border-box;
+    position: relative;
+  }
+}
+
+
+// THESE DON'T BELONG HERE ------------------------------ //
+
+.transform(@string)
+{
+  -webkit-transform:   ~'@{string}';
+  -moz-transform:      ~'@{string}';
+  -ms-transform:       ~'@{string}';
+  -o-transform:        ~'@{string}';
+}
+.transition(@properties) {
+  -webkit-transition: @properties;
+  -moz-transition: @properties;
+  -o-transition: @properties;
+  transition: @properties;
+}
