@@ -1,24 +1,34 @@
-{% macro string(name, label) -%}
-  <fieldset class="apos-field apos-field-text">
-    <label for="{{ name }}" class="apos-field-label apos-text-instruction">{{ label }}</label>
-    <input name="{{ name }}" class="apos-field-input-text apos-text-normal" type="text">
+{% macro field(macro, type, name, label, options) -%}
+  <fieldset class="apos-field apos-field-{{ type }}">
+    <label for="{{ name }}" class="apos-field-label">{{ label }}</label>
+    {{ macro(name, label, options) }}
   </fieldset>
+{%- endmacro %}
+
+{% macro stringInput(name, label) -%}
+  <input name="{{ name }}" class="apos-field-input apos-field-input-text" type="text">
+{%- endmacro %}
+
+{% macro textareaInput(name, label) -%}
+  <textarea name="{{ name }}" class="apos-field-input apos-field-input-textarea"></textarea>
+{%- endmacro %}
+
+{% macro selectInput(name, label, options) -%}
+  <select name="{{ name }}" class="apos-field-input apos-field-input-select">
+    {%- for option in options -%}
+      <option value="{{ option.value }}">{{ option.label }}</option>
+    {%- endfor -%}
+  </select>
+{%- endmacro %}
+
+{% macro string(name, label) -%}
+  {{ field(stringInput, 'string', name, label) }}
 {%- endmacro %}
 
 {% macro textarea(name, label) -%}
-  <fieldset class="apos-field apos-field-text-area">
-    <label class="apos-field-label apos-text-instruction" for="{{ name }}">{{ label }}</label>
-    <textarea name="{{ name }}" class="apos-field-input-textarea apos-text-normal"></textarea>
-  </fieldset>
+  {{ field(textareaInput, 'textarea', name, label) }}
 {%- endmacro %}
 
 {% macro select(name, label, options) -%}
-  <fieldset class="apos-field apos-field-select">
-    <label for="{{ name }}" class="apos-field-label apos-text-instruction">{{ label }}</label>
-    <select name="{{ name }}" class="apos-field-select">
-      {%- for option in options -%}
-        <option value="{{ option.value }}">{{ option.label }}</option>
-      {%- endfor -%}
-    </select>
-  </fieldset>
+  {{ field(selectInput, 'select', name, label, options) }}
 {%- endmacro %}
