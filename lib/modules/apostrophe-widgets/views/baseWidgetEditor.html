@@ -1,0 +1,18 @@
+{% extends "apostrophe-modal:baseSlideable.html" %}
+{% import "apostrophe-modal:macros.html" as modals %}
+{% import "apostrophe-schemas:macros.html" as schemas %}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
+
+
+{% block controls %}
+  {{ buttons.minor('Cancel', 'cancel') }}
+  {{ buttons.major('Save', 'save') }}
+{% endblock %}
+
+{% block label %}
+{{ data.label }}
+{% endblock %}
+
+{% block body %}
+  {{ schemas.fields(data.schema) }}
+{% endblock %}
