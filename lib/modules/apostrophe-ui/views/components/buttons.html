@@ -1,35 +1,35 @@
-{% macro base(label, action, classes) -%}
-  <a class="{{ classes }}" data-{{ action }}>{{ label }}</a>
+{% macro base(label, options, classes) -%}
+  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" data-{{ options.action }}>{{ label }}</a>
 {%- endmacro -%}
 
-{% macro normal(label, action) -%}
-  {{ base(label, action, 'apos-button') }}
+{% macro normal(label, options) -%}
+  {{ base(label, options, '') }}
 {%- endmacro -%}
 
-{% macro disabled(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--disabled') }}
+{% macro disabled(label, options) -%}
+  {{ base(label, options, 'apos-button--disabled') }}
 {%- endmacro -%}
 
-{% macro inContext(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--in-context') }}
+{% macro inContext(label, options) -%}
+  {{ base(label, options, 'apos-button--in-context') }}
 {%- endmacro %}
 
-{% macro more(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--more') }}
+{% macro more(label, options) -%}
+  {{ base(label, options, 'apos-button--more') }}
 {%- endmacro %}
 
-{% macro global(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--global') }}
+{% macro global(label, options) -%}
+  {{ base(label, options, 'apos-button--global') }}
 {%- endmacro %}
 
-{% macro major(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--major') }}
+{% macro major(label, options) -%}
+  {{ base(label, options, 'apos-button--major') }}
 {%- endmacro %}
 
-{% macro minor(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--minor') }}
+{% macro minor(label, options) -%}
+  {{ base(label, options, 'apos-button--minor') }}
 {%- endmacro %}
 
-{% macro danger(label, action) -%}
-  {{ base(label, action, 'apos-button apos-button--danger') }}
+{% macro danger(label, options) -%}
+  {{ base(label, options, 'apos-button--danger') }}
 {%- endmacro %}

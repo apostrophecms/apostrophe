@@ -1,0 +1,11 @@
+{% macro base(label, options, classes) -%}
+  <a {{ ('href=' + options.url) if options.url }} class="apos-link {{ classes }}" data-{{ options.action }}>{{ label }}</a>
+{%- endmacro -%}
+
+{% macro major(label, options) -%}
+  {{ base(label, options, 'apos-link--major') }}
+{%- endmacro -%}
+
+{% macro danger(label, options) -%}
+  {{ base(label, options, 'apos-link--danger') }}
+{%- endmacro -%}
