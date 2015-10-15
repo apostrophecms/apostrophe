@@ -1,19 +1,19 @@
 {# the base template that all modals extend #}
 
 <div data-modal class="apos-ui-modal {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
-  <div class="apos-ui-modal-header">
-    <span class="apos-ui-modal-title" data-modal-title>
+  <div class="apos-modal-header">{#
+    #}<span class="apos-modal-title" data-modal-title>
       {% block label %}Give Me a Label!{% endblock %}
-    </span>
-    {# This div is intended to allow JS to capture and move the controls, it should #}
-    {# not be styled, do that with your own markup when extending if needed #}
-    <div data-modal-controls>
+    </span>{#
+    #}<div class="apos-modal-instructions" data-modal-instructions>
+      {% block instructions %}{% endblock %}
+    </div>{#
+      This div is intended to allow JS to capture and move the controls, it should
+      Not be styled, do that with your own markup when extending if needed
+    #}<div class="apos-modal-controls" data-modal-controls>
       {% block controls %}{% endblock %}
-    </div>
-  </div>
-  <div class="apos-ui-modal-instructions" data-modal-instructions>
-    {% block instructions %}{% endblock %}
-  </div>
+    </div>{#
+  #}</div>
   {# Base modals don't have breadcrumbs, but slideable modals do, extend baseSlideable.html #}
   {% block breadcrumb %}{% endblock %}
   {# This is initially just *our* data-modal-content, but later could contain many #}
