@@ -1,6 +1,6 @@
 {% macro string(name, label) -%}
   <fieldset class="apos-field apos-field-text">
-    <label class="apos-field-label apos-text-instruction" for="{{ name }}">{{ label }}</label>
+    <label for="{{ name }}" class="apos-field-label apos-text-instruction">{{ label }}</label>
     <input name="{{ name }}" class="apos-field-input-text apos-text-normal" type="text">
   </fieldset>
 {%- endmacro %}
@@ -8,6 +8,17 @@
 {% macro textarea(name, label) -%}
   <fieldset class="apos-field apos-field-text-area">
     <label class="apos-field-label apos-text-instruction" for="{{ name }}">{{ label }}</label>
-    <textarea name="{{ name }}" class="apos-field-input-text apos-text-normal"></textarea>
+    <textarea name="{{ name }}" class="apos-field-input-textarea apos-text-normal"></textarea>
+  </fieldset>
+{%- endmacro %}
+
+{% macro select(name, label, options) -%}
+  <fieldset class="apos-field apos-field-select">
+    <label for="{{ name }}" class="apos-field-label apos-text-instruction">{{ label }}</label>
+    <select name="{{ name }}" class="apos-field-select">
+      {%- for option in options -%}
+        <option value="{{ option.value }}">{{ option.label }}</option>
+      {%- endfor -%}
+    </select>
   </fieldset>
 {%- endmacro %}
