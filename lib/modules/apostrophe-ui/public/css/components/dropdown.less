@@ -2,11 +2,13 @@
 {
 	position: relative;
 	display: inline-block;
+	& > * { position: relative; }
 }
 
 .apos-dropdown .apos-button
 {
 	z-index: 5; // todo bo
+	.apos-transition;
 }
 
 .apos-dropdown.apos-active
@@ -27,12 +29,13 @@
 	display: inline-block;
 	min-width: 200px;
 	background-color: @apos-white;
-	.apos-rounded();
+	.apos-rounded;
+	.apos-drop-shadow;
 	visibility: hidden;
   opacity: 0;
-  transform: translateZ(0); // todo get a house style for this
+  transform: translateZ(0);
   transform: translateY(10%);
-  transition: all 0.5s ease 0s, visibility 0s linear 0.5s;
+  .apos-transition;
   z-index: 3; // todo bo
 }
 
@@ -46,6 +49,6 @@
 	}
 }
 
-.apos-dropdown--down .apos-dropdown-items { top: 100%; }
-.apos-dropdown--up .apos-dropdown-items { bottom: 100%; }
+.apos-dropdown--down .apos-dropdown-items { top: 95%; }
+.apos-dropdown--up .apos-dropdown-items { bottom: 95%; }
 
