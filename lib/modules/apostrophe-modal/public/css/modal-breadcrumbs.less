@@ -1,10 +1,29 @@
-.apos-modal-breadcrumb {
-    list-style: none;
-}
-.apos-modal-breadcrumb-item {
-	display: inline-block;
-	&:not(:last-child):after
+.apos-ui
+.apos-modal-breadcrumb
+{
+	width: 100%;
+	padding: 10px @apos-padding-8;
+
+	background-color: @apos-light;
+	list-style: none;
+
+
+	.apos-modal-breadcrumb-item 
 	{
-	    content: " » ";
+		position: relative;
+		.apos-inline-block(top);
+
+		line-height: 27px;
+		border-bottom: 1px dashed @apos-green;
+		margin-right: @apos-margin-3;
+
+		&:not(:last-child):after
+		{
+			position: absolute;
+			top: 0px;
+			right: -20px;
+	    content: " » ";  // replace this with triangle
+		}
 	}
 }
+

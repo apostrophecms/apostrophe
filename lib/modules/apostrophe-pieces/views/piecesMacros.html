@@ -4,16 +4,21 @@
 
 
 {# bring in modals #}
-
 {%- import "apostrophe-modal:macros.html" as modals -%}
+{# bring in buttons #}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {%- macro editControls() -%}
-  {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: 'Save'}) }}
-  {{ modals.button({dataAttrs: 'data-save data-next', float: 'right', color: 'base', label: __('Add Next')}) }}
+  {{ buttons.minor('Cancel', 'cancel') }}
+  {{ buttons.minor('Trash', 'trash') }}
+  {{ buttons.minor('Versions', 'versions') }}
+  {{ buttons.minor('Copy', 'copy') }}
+  {{ buttons.major('Save', 'save') }}
+  {#{{ modals.button({dataAttrs: 'data-save data-next', float: 'right', color: 'base', label: __('Add Next')}) }}
   {{ modals.button({dataAttrs: 'data-copy data-action="copy"', float: 'right', color: 'base', label: 'Copy'}) }}
   {{ modals.button({dataAttrs: 'data-versions data-action="versions"', float: 'right', color: 'base', label: 'Versions'}) }}
   {{ modals.button({dataAttrs: 'data-trash data-action="trash"', float: 'right', color: 'base', label: 'Trash'}) }}
-  {{ modals.button({dataAttrs: 'data-cancel', float: 'right', color: 'base', label: 'Cancel'}) }}
+  {{ modals.button({dataAttrs: 'data-cancel', float: 'right', color: 'base', label: 'Cancel'}) }}#}
 {%- endmacro -%}
 
 {%- macro pill(name, choices, state) -%}
