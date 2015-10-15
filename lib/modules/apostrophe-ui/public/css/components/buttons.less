@@ -1,45 +1,47 @@
 .apos-button
 {
-  .apos-inline-block();
+  .apos-inline-block;
   padding: @apos-padding-1 @apos-padding-2;
-  .apos-rounded();
-  .apos-button-border();
+  .apos-rounded;
+  .apos-button-border;
+  .apos-text-small;
   cursor: pointer;
 }
 
 .apos-button--in-context
 {
-  .apos-drop-shadow(0px, 0px, 7px, fadeout(@apos-base, 50%));
+  .apos-glow;
 }
 
 .apos-button--global
 {
   .apos-button-border(@apos-white);
-  background-color: @apos-green;
+  background-color: @apos-base;
   color: @apos-white;
+  .apos-drop-shadow;
 }
 
 .apos-button--more
 {
-
-}
-
-.apos-button--global
-{
-  
+  .apos-arrow-right;  
 }
 
 .apos-button--major
 {
-  
+  background-color: @apos-base;
+  color: @apos-white;
+  padding: @apos-padding-1 @apos-padding-4;
+  border: none;
 }
 
 .apos-button--minor
 {
-  
+  padding: @apos-padding-1 @apos-padding-4;
+  border: none;  
 }
 
 .apos-button--danger
 {
-  
+  .apos-button--major;
+  background-color: @apos-red;
 }
