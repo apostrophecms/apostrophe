@@ -1,6 +1,7 @@
 .apos-admin-bar
 {
   position: fixed;
+  height: 80px;
   top: @apos-padding-4;
   left: @apos-padding-4;
   z-index: @apos-z-index-5;
@@ -9,6 +10,7 @@
   .apos-button-border(@apos-white);
   .apos-rounded();
   .apos-drop-shadow();
+  overflow-x: hidden;
 }
 
 .apos-admin-bar-logo
@@ -21,11 +23,24 @@
 .apos-admin-bar .apos-admin-bar-item
 {
   display: none;
+  cursor: pointer;
 }
 
 .apos-admin-bar.apos-active .apos-admin-bar-item
 {
-  .apos-inline-block();
-  padding: @apos-padding-3 @apos-padding-2;
+  .apos-inline-block(middle);
+}
+
+.apos-admin-bar-item:before
+{
+  content: '';
+  .apos-inline-block(middle);
+  height: 100%;
+}
+
+.apos-admin-bar-item-inner
+{
+  .apos-inline-block(middle);
+  padding: 0 @apos-padding-2;
 }
 
