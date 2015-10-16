@@ -1,21 +1,15 @@
-{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
-
-{% if data.permissions.edit %}
-{#<ul class="apos-admin-bar-item apos-accordion-menu">
-  <li class="apos-accordion-title"><i class="{{ menuIcon }}"></i> {{ __(data.options.pluralLabel) }}</li>
-  <li class="apos-accordion-items">
-    <ul class="apos-page-bar">
-      <li href="#" class="apos-control apos-accordion-item apos-button apos-new-button apos-new-snippet-button" data-create-{{ data.options.name | css }}>{{ __('New %s', __(data.options.label)) }}</li>
-      <li href="#" class="apos-control apos-accordion-item apos-button apos-manage-button apos-manage-snippet-button" data-manage-{{ data.options.name | css }}>{{ __('Manage %s', __(data.options.pluralLabel)) }}</li>
-      {% if data.options.import %}
-        <li href="#" class="apos-control apos-accordion-item apos-button apos-manage-button apos-manage-snippet-button" data-import-{{ data.options.name | css }}>{{ __('Import %s', __(data.options.pluralLabel) ) }}</li>
-        {% if data.options.export %}
-          <li href="#" class="apos-control apos-accordion-item apos-button apos-manage-button apos-manage-snippet-button" data-export-{{ data.options.name | css }}>{{ __('Export %s', __(data.options.pluralLabel) ) }}</li>
-        {% endif %}
-      {% endif %}
-    </ul>
-  </li>
-</ul>#}
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
+{%- macro listMenu() -%}
+  <li href="#" class="apos-dropdown-item" data-create-{{ data.options.name | css }}>{{ __('New %s', __(data.options.label)) }}</li>
+  <li href="#" class="apos-dropdown-item" data-manage-{{ data.options.name | css }}>{{ __('Manage %s', __(data.options.pluralLabel)) }}</li>
+  {%- if data.options.import -%}
+    <li href="#" class="apos-dropdown-item" data-import-{{ data.options.name | css }}>{{ __('Import %s', __(data.options.pluralLabel) ) }}</li>
+    {%- if data.options.export -%}
+      <li href="#" class="apos-dropdown-item" data-export-{{ data.options.name | css }}>{{ __('Export %s', __(data.options.pluralLabel) ) }}</li>
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro -%}
+{%- if data.permissions.edit -%}
   <div class="apos-admin-bar-item">
     <div class="apos-admin-bar-item">
       {{ dropdowns.base({
@@ -24,8 +18,8 @@
           { label: 'One of the things', link: '#', action: 'data-something' },
           { label: 'Another Stuff', link: '#', action: 'data-something' },
           { label: 'OKAY', link: '#', action: 'data-something' }
-        ]}, 'admin', {direction: 'down'}
+        ]}, 'admin', { direction: 'down', listMacro: listMenu }
       ) }}
     </div>
   </div>
-{% endif %}
+{%- endif -%}
