@@ -4,14 +4,30 @@
 .apos-table
 {
   .apos-text-small;
-  width: 100%;
+  max-width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
   text-align: left;
+  @media screen and (max-width: 960px)
+  {
+    overflow: hidden;
+		display: block;
+  }
 }
+
+.apos-table table { width: 100%; }
 
 .apos-table th,
 .apos-table tr,
 {
   padding: @apos-padding-2;
+}
+
+.apos-table th,
+.apos-table td
+{
+  max-width: 300px;
+  //display: inline-block;
 }
 
 // The Head ===================================
@@ -22,7 +38,7 @@
 }
 
 
-
+// The Body ===================================
 .apos-table tr:nth-child(2n)
 {
   background: @apos-light;
