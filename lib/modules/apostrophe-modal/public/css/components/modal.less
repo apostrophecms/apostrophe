@@ -23,7 +23,8 @@
 
 // Variables  ===================================
 @apos-z-index-modal: @apos-z-index-7;
-@apos-modal-timing: 0.3s;
+@apos-modal-timing: 0.25s;
+@apos-modal-transition-curve: ease;
 
 
 // Base Class  ===================================
@@ -42,7 +43,7 @@
   opacity: 1;
 
   .apos-transform(translate3d(0,0,0) scale3d(1,1,1););
-  .apos-transitions(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
+  .apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
 }
 
 // Modal Body ===================================
@@ -69,7 +70,7 @@
 {
 	opacity: 0;
 	.apos-transform(translate3d(0,0,0) scale3d(1.2,1.2,1););
-	.apos-transitions(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
+	.apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
 }
 
 
@@ -80,7 +81,7 @@
 .apos-modal-slideable .apos-modal-content
 {
   .apos-transform(translate3d(-100%,0,0));
-  .apos-transition(transform, @apos-modal-timing, ease);       // transition should be tweaked 
+  .apos-transition(transform, @apos-modal-timing, @apos-modal-transition-curve); 
 }
 
 
