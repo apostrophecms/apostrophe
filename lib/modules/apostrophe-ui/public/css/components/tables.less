@@ -5,12 +5,11 @@
 {
   .apos-text-small;
   max-width: 100%;
-  min-width: 960px;
   border-collapse: collapse;
   text-align: left;
   @media screen and (max-width: 960px)
   {
-    overflow: hidden;
+    overflow: scroll;
 		display: block;
   }
 }
@@ -18,13 +17,13 @@
 .apos-table table
 {
   text-align: left;
+  min-width: 900px;
   width: 100%;
 }
 
 .apos-table th
 {
-  padding-top: @apos-padding-2;
-  padding-bottom: @apos-padding-2;
+  padding: @apos-padding-2;
 }
 
 .apos-table th,
@@ -32,11 +31,9 @@
 {
   max-width: 300px;
   min-width: 25px;
-  //display: inline-block;
 }
 
 // The Head ===================================
-
 .apos-table thead
 {
   border-bottom: 1px solid @apos-dark;
@@ -49,9 +46,10 @@
   background: @apos-light;
 }
 
-// //Set the first child to a wider width.
-// .apos-table th:first-child,
-// .apos-table td:first-child
-// {
-//   min-width: 350px;
-// }
+
+// Checkboxes ===================================
+
+.apos-table .apos-field-input-checkbox-indicator
+{
+  margin-left: 2px;
+}
