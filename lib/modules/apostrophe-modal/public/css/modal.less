@@ -1,8 +1,32 @@
-@apos-z-index-modal: @apos-z-index-7;
+// ===============================================================
+//    Apostrophe Modal
+// ===============================================================
+//
+//
+//    |-----------------------------------------------|
+//    |                                               |
+//    |                 modal-header       {controls} |
+//    |                                               |
+//    |-----------------------------------------------|
+//    |               modal-breadcrumb                |
+//    |-----------------------------------------------|
+//    |                                               |
+//    |                                               |
+//    |                                               |
+//    |                modal-contents                 |
+//    |                                               |
+//    |                                               |
+//    |                                               |
+//    |-----------------------------------------------|
+//
 
+
+// Variables  ===================================
+@apos-z-index-modal: @apos-z-index-7;
 @apos-modal-timing: 0.3s;
 
-// base class
+
+// Base Class  ===================================
 .apos-ui.apos-modal
 {
 	position: fixed;
@@ -17,11 +41,11 @@
   overflow: hidden;
   opacity: 1;
 
-  .transform(translate3d(0,0,0) scale3d(1,1,1););
-  .transition(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
+  .apos-transform(translate3d(0,0,0) scale3d(1,1,1););
+  .apos-transitions(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
 }
 
-// Modal Body
+// Modal Body ===================================
 .apos-modal
 .apos-modal-content
 {
@@ -40,56 +64,35 @@
   padding: @apos-padding-2;
 }
 
-// Stack Push Transition
+// Stack Push Transition ===================================
 .apos-modal.apos-modal-stack-push
 {
 	opacity: 0;
-	.transform(translate3d(0,0,0) scale3d(1.2,1.2,1););
-	.transition(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
+	.apos-transform(translate3d(0,0,0) scale3d(1.2,1.2,1););
+	.apos-transitions(transform @apos-modal-timing ease, opacity @apos-modal-timing ease;);
 }
 
 
 
-// Sliding Transition
+// Sliding Transition ===================================
 // - In a 'slide' transition, the body translates
 //   out of the modal
 .apos-modal-slideable .apos-modal-content
 {
-  .transform(translate3d(-100%,0,0));
-  .transition(transform @apos-modal-timing ease);       // transition should be tweaked 
+  .apos-transform(translate3d(-100%,0,0));
+  .apos-transition(transform, @apos-modal-timing, ease);       // transition should be tweaked 
 }
 
 
-// current slide
+// Current Slide ===================================
 .apos-modal-slideable
 .apos-modal-content.apos-modal-slide-current
 {
-	.transform(translate3d(0,0,0));
+	.apos-transform(translate3d(0,0,0));
 }
 
-// next slide
+// Next Slide ===================================
 .apos-modal-content.apos-modal-slide-current + .apos-modal-content
 {
-	.transform(translate3d(100%,0,0));  
-}
-
-
-
-
-// THESE DON'T BELONG HERE ------------------------------ //
-
-// replace these mixins with .apos-transform & .apos-transition
-
-.transform(@string)
-{
-  -webkit-transform:   ~'@{string}';
-  -moz-transform:      ~'@{string}';
-  -ms-transform:       ~'@{string}';
-  -o-transform:        ~'@{string}';
-}
-.transition(@properties) {
-  -webkit-transition: @properties;
-  -moz-transition: @properties;
-  -o-transition: @properties;
-  transition: @properties;
+	.apos-transform(translate3d(100%,0,0));  
 }

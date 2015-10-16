@@ -27,11 +27,27 @@
 }
 
 // spring cubic-bezier(0.13, 0.63, 0.34, 1.58)
-.apos-transition(@what: all, @duration:0.3s, @ease: ease-in-out) {
+.apos-transition(@what: all, @duration:0.3s, @ease: ease-in-out) 
+{
   -webkit-transition: @what @duration @ease;
   -moz-transition: @what @duration @ease;
   -o-transition: @what @duration @ease;
   transition: @what @duration @ease;
+}
+.apos-transitions(@transitions) 
+{
+  -webkit-transition: ~'@{transitions}';
+  -moz-transition: ~'@{transitions}';
+  -o-transition: ~'@{transitions}';
+  transition: ~'@{transitions}';
+}
+
+.apos-transform(@string)
+{
+  -webkit-transform:   ~'@{string}';
+  -moz-transform:      ~'@{string}';
+  -ms-transform:       ~'@{string}';
+  -o-transform:        ~'@{string}';
 }
 
 // No Text Selection ===================================
