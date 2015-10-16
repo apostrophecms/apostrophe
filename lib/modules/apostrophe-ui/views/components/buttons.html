@@ -1,5 +1,5 @@
 {% macro base(label, options, classes) -%}
-  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" data-{{ options.action }}>{{ label }}</a>
+  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" data-{{ options.action | css }}>{{ label }}</a>
 {%- endmacro -%}
 
 {% macro normal(label, options) -%}

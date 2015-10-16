@@ -245,7 +245,8 @@
 
 {# Often used directly in a custom fieldset with other controls #}
 {%- macro selectBody(field) -%}
-  <div class="apos-select-wrapper apos-inline-input">
+  {{ commonFields.select(field.name, field.choices) }}
+  {#<div class="apos-select-wrapper apos-inline-input">
     <select name="{{ field.name }}"
       {% for key, val in _attrs %}
         {{ key }}="{{ val }}"
@@ -260,7 +261,7 @@
         >{{ __(choice.label) }}</option>
       {% endfor %}
     </select>
-  </div>
+  </div>#}
 {%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}
