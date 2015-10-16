@@ -6,19 +6,18 @@
 	position: fixed;
 
 	top: 50px;
-    right: 50px;
-    bottom: 50px;
-    left: 50px;
+  right: 50px;
+  bottom: 50px;
+  left: 50px;
 
-    z-index: @apos-z-index-modal;
+  z-index: @apos-z-index-modal;
 
-    overflow: hidden;
-    opacity: 1;
+  overflow: hidden;
+  opacity: 1;
 
-    .transform(translate3d(0,0,0) scale3d(1,1,1););
-    .transition(transform .3s ease, opacity .3s ease;);
+  .transform(translate3d(0,0,0) scale3d(1,1,1););
+  .transition(transform .3s ease, opacity .3s ease;);
 }
-
 
 // Modal Body
 .apos-modal
@@ -31,6 +30,12 @@
   width: 100%;
 
   background-color: @apos-white;
+}
+
+.apos-modal
+.apos-form
+{
+  padding: @apos-padding-2;
 }
 
 // Stack Push Transition

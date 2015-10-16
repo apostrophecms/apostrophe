@@ -7,8 +7,7 @@
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
-  {{ modals.button({dataAttrs: ('data-create-' + data.options.name) | css, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.options.label) )}) }}
+  {{ pieces.manageControls() }}
 {%- endblock -%}
 
 {%- block filters -%}

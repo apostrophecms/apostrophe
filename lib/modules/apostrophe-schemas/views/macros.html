@@ -123,10 +123,14 @@
 {# macro to populate it. Usually not called directly #}
 
 {%- macro fieldset(field, bodyMacro) %}
-  <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
+  <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
+    <label for="{{ name }}" class="apos-field-label">{{ field.label }}</label>
     {{ bodyMacro(field) }}
   </fieldset>
+  {# <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
+    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
+    {{ bodyMacro(field) }}
+  </fieldset> #}
 {%- endmacro -%}
 
 {# This is used directly to output a text field #}
@@ -140,9 +144,9 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    <textarea name="{{ field.name }}" rows="{{ field.rows or 4 }}"></textarea>
+    <textarea name="{{ field.name }}" placeholder="{{ field.placeholder }}" class="apos-field-input apos-field-input-textarea"></textarea>
   {%- else -%}
-    <input name="{{ field.name }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
+    <input name="{{ field.name }}" placeholder="{{ field.placeholder }}" class="apos-field-input apos-field-input-text" type="text">
   {%- endif -%}
 {%- endmacro -%}
 
