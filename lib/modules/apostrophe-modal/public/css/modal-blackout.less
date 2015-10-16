@@ -12,4 +12,11 @@
 	z-index: @apos-z-index-blackout;
 
 	background-color: rgba(0, 0, 0, 0.5);
+	opacity: 1;
+
+	&.apos-modal-blackout-fade
+	{
+		opacity: 0;
+	}
+	.apos-transition(opacity, @apos-modal-timing, ease);
 }

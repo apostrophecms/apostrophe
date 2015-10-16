@@ -1,6 +1,8 @@
+{%- import "apostrophe-ui:components/fields.html" as fields -%}
 <tr>
   {# Output a th for each column that has the list property. Also output #}
   {# markup for sorting when appropriate. -Tom #}
+  <th>{{fields.checkbox(data.options.name + '-select-all')}}</th>
   {%- for column in data.columns -%}
     <th class="apos-manage-column apos-manage-{{ data.options.name | css }}-{{ column.name | css }}" data-name="{{ column.name }}">{#
       #}{{ __(column.label) }}{#

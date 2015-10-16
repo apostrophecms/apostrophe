@@ -16,6 +16,11 @@
   {{ buttons.major('Save', { action: 'save' }) }}
 {%- endmacro -%}
 
+{%- macro manageControls() -%}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
+{%- endmacro -%}
+
 {%- macro pill(name, choices, state) -%}
   <span class="apos-pill" data-pill data-name="{{ name }}">
     {%- for pill in choices -%}

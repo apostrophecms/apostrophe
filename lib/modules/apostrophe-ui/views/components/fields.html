@@ -1,32 +1,19 @@
-{% macro field(macro, type, name, label, options) -%}
-  <fieldset class="apos-field apos-field-{{ type }}">
-    <label for="{{ name }}" class="apos-field-label">{{ label }}</label>
-    {#
-      You can pass a placeholder in on the options object
-      or just use the label.
-    #}
-    {{ macro(name, options.placeholder or label, options) }}
-  </fieldset>
-{%- endmacro %}
-
-{% macro stringInput(name, placeholder) -%}
+{% macro string(name, placeholder) -%}
   <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-text" type="text">
 {%- endmacro %}
 
-{% macro textareaInput(name, placeholder) -%}
+{% macro textarea(name, placeholder) -%}
   <textarea name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-textarea"></textarea>
 {%- endmacro %}
 
-{% macro checkboxInput(name, placeholder) -%}
+{% macro checkbox(name, placeholder) -%}
   <label>
     <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-checkbox" type="checkbox">
     <span class="apos-field-input-checkbox-indicator"></span>
   </label>
-
 {%- endmacro %}
 
-
-{% macro selectInput(name, label, options) -%}
+{% macro select(name, options) -%}
   <div class="apos-field-input-select-wrapper">
     <select name="{{ name }}" class="apos-field-input apos-field-input-select">
       {%- for option in options -%}
@@ -34,16 +21,4 @@
       {%- endfor -%}
     </select>
   </div>
-{%- endmacro %}
-
-{% macro string(name, label) -%}
-  {{ field(stringInput, 'string', name, label) }}
-{%- endmacro %}
-
-{% macro textarea(name, label) -%}
-  {{ field(textareaInput, 'textarea', name, label) }}
-{%- endmacro %}
-
-{% macro select(name, label, options) -%}
-  {{ field(selectInput, 'select', name, label, options) }}
 {%- endmacro %}
