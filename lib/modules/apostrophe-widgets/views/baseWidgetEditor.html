@@ -6,7 +6,7 @@
 
 {% block controls %}
   {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  {{ buttons.major('Save', { action: 'save' }) }}
+  {{ buttons.major('Save ' + data.label, { action: 'save' }) }}
 {% endblock %}
 
 {% block label %}
