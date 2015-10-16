@@ -1,13 +1,23 @@
-<ul data-content-menu class="apos-ui-container apos-ui apos-ui-dropdown">
-  <li><span class="apos-ui-btn apos-content-menu-toggle" data-content-menu-toggle><i class="icon-plus"></i>{% if data.options.addLabel %}{{ __(data.options.addLabel) }}{% else %}{{ __('Add Content') }}{%endif %}</span>
-    <ul class="apos-editor2-content-menu-options apos-ui-menu" data-content-menu-options>
-      {% for name, options in data.options.widgets %}
-        {% if not data.widgetManagers[name] %}
-          {{ apos.log("Your area contains a widget of type " + name + " but there is no manager for that type. Maybe you forgot to configure the " + name + "-widgets module?") }}
-        {% else %}
-          <li data-add-item-type="{{ name }}"><i class="{{ data.widgetManagers[name].icon }} fw icon-fw"></i> {{ __(data.widgetManagers[name].label) }}</li>
-        {% endif %}
-      {% endfor %}
-    </ul>
-  </li>
-</ul>
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
+{%- macro listWidgets(widgets) -%}
+  {%- for name, options in widgets -%}
+    {%- if not data.widgetManagers[name] -%}
+      {{ apos.log("Your area contains a widget of type " + name + " but there is no manager for that type. Maybe you forgot to configure the " + name + "-widgets module?") }}
+    {%- else -%}
+      <li class="apos-dropdown-item" data-add-item-type="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endmacro -%}
+<div class="apos-ui">
+  {{ dropdowns.base(
+    {
+      label: 'Add Content',
+      items: data.options.widgets
+    },
+    'button',
+    {
+      direction: 'down',
+      listMacro: listWidgets
+    })
+  }}
+</div>

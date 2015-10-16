@@ -22,9 +22,13 @@
     	</div>
 		{% endif %}
 		<ul class="apos-dropdown-items" data-apos-dropdown-items>
-  		{% for item in menu.items %}
-		    {{ menuItem(item, options) }}
-  		{% endfor %}
+			{%- if options.listMacro -%}
+				{{ options.listMacro(menu.items) }}
+			{%- else -%}
+				{% for item in menu.items %}
+		    	{{ menuItem(item, options) }}
+		    {%- endfor -%}
+			{%- endif -%}
 		</ul>
 	</div>
 {%- endmacro %}
