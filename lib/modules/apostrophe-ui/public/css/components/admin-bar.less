@@ -1,7 +1,7 @@
 .apos-admin-bar
 {
   position: fixed;
-  height: 86px;
+  height: 80px;
   top: @apos-padding-4;
   left: @apos-padding-4;
   z-index: @apos-z-index-5;
@@ -10,15 +10,10 @@
   .apos-button-border(@apos-white);
   .apos-rounded();
   .apos-drop-shadow();
-  overflow-x: hidden;
+  overflow: hidden;
   .apos-transition;
 
   * { .apos-transition; }
-  &.apos-active
-  {
-    overflow-x: inherit;
-    .apos-admin-bar-items{ transform: translateX(0); }
-  }
 }
 
 .apos-admin-bar-logo
@@ -29,6 +24,7 @@
   background-color: @apos-base;
   cursor: pointer;
   z-index: 1; // todo bobo
+  svg { max-height: 36px; }
 }
 
 .apos-admin-bar-items
@@ -37,12 +33,16 @@
   white-space: nowrap;
   .apos-transition;
   transform: translateX(-130%);
+
+  .apos-admin-bar-item{ opacity: 0; }
+
 }
 
 .apos-admin-bar-item
 {
   cursor: pointer;
-  height: 80px;
+  height: 75px;
+  // height: 100%;
   .apos-inline-block(middle);
 }
 
@@ -66,7 +66,7 @@
 
 .apos-admin-bar-inner
 {
-  max-width: 86px;
+  max-width: 80px;
 }
 
 .apos-admin-bar-item-inner
@@ -81,7 +81,7 @@
 .apos-admin-bar.apos-active 
 
 {
-  .apos-admin-bar-items { transform: translateX(0%); }
+  .apos-admin-bar-items { transform: translateX(0%); .apos-admin-bar-item{ opacity: 1; } }
   .apos-admin-bar-inner { max-width: 1400px; }  
 }
 
