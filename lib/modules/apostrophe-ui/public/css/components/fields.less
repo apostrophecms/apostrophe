@@ -26,10 +26,6 @@
   width: 100%;
   border: none;
   .apos-text-normal;
-  &.apos-field-input-checkbox
-  {
-    display: inline;
-  }
 }
 
 // Select Specific ============================
@@ -52,4 +48,35 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+}
+
+// Checkboxes ===================================
+.apos-field-input-checkbox-indicator
+{
+  display: inline-block;
+  vertical-align: top;
+  height: 21px;
+  width: 21px;
+  border: 1px solid @apos-dark;
+  transform: scale(1);
+  .apos-transition(all, .1s, ease-in-out);
+  .apos-no-select;
+}
+
+.apos-field-input-checkbox:checked + .apos-field-input-checkbox-indicator
+{
+  background: @apos-primary;
+  border-color: @apos-primary;
+  border-width: 6px;
+
+}
+
+.apos-field-input-checkbox
+{
+  display: inline;
+  max-width: 21px; //Match it to our indicator box;
+  visibility: hidden;
+  position: absolute;
+  //&:checked + .apos-field-input-checkbox-indicator
+
 }

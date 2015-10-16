@@ -18,7 +18,11 @@
 {%- endmacro %}
 
 {% macro checkboxInput(name, placeholder) -%}
-  <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-checkbox" type="checkbox">
+  <label>
+    <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-checkbox" type="checkbox">
+    <span class="apos-field-input-checkbox-indicator"></span>
+  </label>
+
 {%- endmacro %}
 
 
