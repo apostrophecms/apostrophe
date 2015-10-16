@@ -14,5 +14,7 @@
 {% endblock %}
 
 {% block body %}
-  {{ schemas.fields(data.schema) }}
+  <div class="apos-form" data-form>
+    {{ schemas.fields(data.schema) }}
+  </div>
 {% endblock %}
