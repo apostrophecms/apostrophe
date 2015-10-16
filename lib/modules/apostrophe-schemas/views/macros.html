@@ -1,3 +1,5 @@
+{%- import "apostrophe-ui:components/fields.html" as commonFields with context -%}
+
 {# Called for you by fields() when a group is encountered. #}
 {%- macro openGroup(fields, group, active) -%}
   <div class="apos-modal-tab {% if active %}apos-active{% endif %}" data-tab-id="{{ group }}">
@@ -123,10 +125,14 @@
 {# macro to populate it. Usually not called directly #}
 
 {%- macro fieldset(field, bodyMacro) %}
-  <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
+  <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
+    <label for="{{ name }}" class="apos-field-label">{{ field.label }}</label>
     {{ bodyMacro(field) }}
   </fieldset>
+  {# <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
+    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
+    {{ bodyMacro(field) }}
+  </fieldset> #}
 {%- endmacro -%}
 
 {# This is used directly to output a text field #}
@@ -140,9 +146,9 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    <textarea name="{{ field.name }}" rows="{{ field.rows or 4 }}"></textarea>
+    {{ commonFields.textArea(field.name, field.placeholder) }}
   {%- else -%}
-    <input name="{{ field.name }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
+    {{ commonFields.string(field.name, field.placeholder) }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -239,7 +245,8 @@
 
 {# Often used directly in a custom fieldset with other controls #}
 {%- macro selectBody(field) -%}
-  <div class="apos-select-wrapper apos-inline-input">
+  {{ commonFields.select(field.name, field.choices) }}
+  {#<div class="apos-select-wrapper apos-inline-input">
     <select name="{{ field.name }}"
       {% for key, val in _attrs %}
         {{ key }}="{{ val }}"
@@ -254,7 +261,7 @@
         >{{ __(choice.label) }}</option>
       {% endfor %}
     </select>
-  </div>
+  </div>#}
 {%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}
@@ -334,8 +341,8 @@
                 {%- elif (extra.type == 'tags') -%}
                   {{ tagsBody(extra) }}
                 {%- else -%}
-                  {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
-                  {{ aposLog(extra) }}
+                  {{ apos.log("WARNING: unrecognized type for relationship field: ") }}
+                  {{ apos.log(extra) }}
                 {%- endif -%}
               {%- endfor -%}
             </span>

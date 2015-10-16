@@ -1,0 +1,92 @@
+.apos-admin-bar
+{
+  position: fixed;
+  height: 80px;
+  top: @apos-padding-4;
+  left: @apos-padding-4;
+  z-index: @apos-z-index-5;
+  background-color: @apos-base;
+  color: @apos-white;
+  .apos-button-border(@apos-white);
+  .apos-rounded();
+  .apos-drop-shadow();
+  overflow: hidden;
+  .apos-transition;
+  .apos-no-select;
+
+  * { .apos-transition; }
+}
+
+.apos-admin-bar-logo
+{
+  position: relative;
+  padding: @apos-padding-2;
+  .apos-inline-block();
+  background-color: @apos-base;
+  cursor: pointer;
+  z-index: 1; // todo bobo
+  svg { max-height: 36px; }
+}
+
+.apos-admin-bar-items
+{
+  display: inline-block;
+  white-space: nowrap;
+  .apos-transition;
+  transform: translateX(-130%);
+
+  .apos-admin-bar-item{ opacity: 0; }
+
+}
+
+.apos-admin-bar-item
+{
+  cursor: pointer;
+  height: 75px;
+  // height: 100%;
+  .apos-inline-block(middle);
+}
+
+
+.apos-admin-bar-item:before
+{
+  content: '';
+  .apos-inline-block(middle);
+  height: 100%;
+}
+
+.apos-admin-bar-item .apos-active
+{
+  background-color: darken(@apos-base, 10%);
+}
+
+.apos-admin-bar-items > div:last-child
+{
+  padding-right: @apos-padding-3;
+}
+
+.apos-admin-bar-inner
+{
+  max-width: 80px;
+}
+
+.apos-admin-bar-item-inner
+{
+  .apos-inline-block(middle);
+  padding: 0 @apos-padding-2;
+  .apos-transition();
+  height: 100%;
+  line-height: 4.9rem;
+}
+
+.apos-admin-bar.apos-active 
+
+{
+  .apos-admin-bar-items { transform: translateX(0%); .apos-admin-bar-item{ opacity: 1; } }
+  .apos-admin-bar-inner { max-width: 1400px; }  
+}
+
+.apos-admin-bar .apos-admin-bar-item .apos-dropdown-items
+{
+  top: 102%;
+}

@@ -7,8 +7,7 @@
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Done')}) }}
-  {{ modals.button({dataAttrs: ('data-create-' + data.options.name) | css, float: 'right', arrow: 'right', color: 'base', label: __( 'New %s', __(data.options.label) )}) }}
+  {{ pieces.manageControls() }}
 {%- endblock -%}
 
 {%- block filters -%}
@@ -22,14 +21,16 @@
 {%- endblock -%}
 
 {%- block body -%}
-  <table data-items class="apos-manage-table">
-    <thead data-headings>
-      {# ajax populates me #}
-    </thead>
-    <tbody data-list>
-      {# ajax populates me #}
-    </tbody>
-  </table>
+  <div class="apos-table">
+    <table data-items class="apos-manage-table">
+      <thead data-headings>
+        {# ajax populates me #}
+      </thead>
+      <tbody data-list>
+        {# ajax populates me #}
+      </tbody>
+    </table>
+  </div>
   {# ajax populates me #}
   <div data-pager></div>
 {%- endblock -%}

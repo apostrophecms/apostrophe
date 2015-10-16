@@ -1,10 +1,10 @@
-<ul class="apos-admin-bar-item apos-accordion-menu apos-pages-menu">
-  <li class="apos-accordion-title"><i class="icon-doc"></i></li>
-  <li class="apos-accordion-items">
-    <ul class="apos-page-bar">
-      {% for item in data.contextMenu %}
-        <li href="#" class="apos-control apos-accordion-item apos-button apos-{{ item.name }}" data-{{ item.name }}>{{ __(item.label) }}</li>
-      {% endfor %}
-    </ul>
-  </li>
-</ul>
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
+<div class="apos-ui">
+  <div class="apos-context-menu">
+    {{ dropdowns.base({
+        label: __("Page Menu"),
+        items: data.contextMenu
+      }, 'button', { buttonType: 'global' }) 
+    }}
+  </div>
+</div>

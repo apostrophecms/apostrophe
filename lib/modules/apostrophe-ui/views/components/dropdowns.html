@@ -1,0 +1,38 @@
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
+
+{% macro menuItem(content, options) -%}
+  <li class="apos-dropdown-item" data-{{ content.name }}>
+    {{ content.label }}
+  </li>
+{%- endmacro %}
+
+{% macro base(menu, type, options) -%}
+  {%- if options.direction -%}
+    {%- set direction = options.direction -%}
+  {%- else -%}
+    {%- set direction = 'up' -%}
+  {%- endif -%}
+
+  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.classes %} {{ options.classes}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
+    {%- if type == 'button' -%}
+      {%- if options.buttonType -%}
+        {{ buttons[options.buttonType](menu.label, { action: 'apos-dropdown-button-label' }) }}
+      {%- else -%}
+        {{ buttons.normal(menu.label, { action: 'apos-dropdown-button-label' }) }}
+      {%- endif -%}
+    {%- elif type == 'admin' -%}
+      <div class="apos-admin-bar-item-inner">
+        {{ menu.label }}
+      </div>
+    {%- endif -%}
+    <ul class="apos-dropdown-items" data-apos-dropdown-items>
+      {%- if options.listMacro -%}
+        {{ options.listMacro(menu.items) }}
+      {%- else -%}
+        {% for item in menu.items %}
+          {{ menuItem(item, options) }}
+        {%- endfor -%}
+      {%- endif -%}
+    </ul>
+  </div>
+{%- endmacro %}

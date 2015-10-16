@@ -3,17 +3,18 @@
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
   </head>
-  <body>
-    <div class="apos-admin-bar">
-      <div class="apos-admin-bar-inner">
-        <div class="apos-logo-tiny">
-          A
+  <body class="{% block bodyClass %}{% endblock %}">
+    <div class="apos-ui">
+      <div class="apos-admin-bar apos-active apos-text-meta" data-apos-admin-bar>
+        <div class="apos-admin-bar-inner">
+          <div class="apos-admin-bar-logo" data-apos-admin-bar-logo>
+            {% include 'logo.html' %}
+          </div>
+          {% block apostropheMenuBody %}
+          {% endblock %}
         </div>
-        {% block apostropheMenuBody %}
-        {% endblock %}
       </div>
     </div>
-
 
     {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
     <div class="apos-refreshable" data-apos-refreshable>

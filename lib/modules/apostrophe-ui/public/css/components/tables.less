@@ -1,0 +1,56 @@
+// ===============================================================
+// Tables and Tabular Data in Apostrophe
+// ===============================================================
+.apos-table
+{
+  .apos-text-small;
+  max-width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  @media screen and (max-width: 960px)
+  {
+    overflow: scroll;
+		display: block;
+  }
+}
+
+.apos-table table
+{
+  text-align: left;
+  min-width: 900px;
+  width: 100%;
+}
+
+.apos-table th,
+.apos-table td
+{
+  padding: @apos-padding-2;
+}
+
+.apos-table th,
+.apos-table td
+{
+  max-width: 300px;
+  min-width: 25px;
+}
+
+// The Head ===================================
+.apos-table thead
+{
+  border-bottom: 1px solid @apos-dark;
+}
+
+
+// The Body ===================================
+.apos-table tr:nth-child(2n)
+{
+  background: @apos-light;
+}
+
+
+// Checkboxes ===================================
+
+.apos-table .apos-field-input-checkbox-indicator
+{
+  margin-left: 2px;
+}
