@@ -4,13 +4,15 @@
     {{ apos.assets.stylesheets(data.when) }}
   </head>
   <body class="{% block bodyClass %}{% endblock %}">
-    <div class="apos-ui apos-admin-bar apos-text-meta" data-apos-admin-bar>
-      <div class="apos-admin-bar-inner">
-        <div class="apos-admin-bar-logo" data-apos-admin-bar-logo>
-          {% include 'logo.html' %}
+    <div class="apos-ui">
+      <div class="apos-admin-bar apos-text-meta" data-apos-admin-bar>
+        <div class="apos-admin-bar-inner">
+          <div class="apos-admin-bar-logo" data-apos-admin-bar-logo>
+            {% include 'logo.html' %}
+          </div>
+          {% block apostropheMenuBody %}
+          {% endblock %}
         </div>
-        {% block apostropheMenuBody %}
-        {% endblock %}
       </div>
     </div>
 

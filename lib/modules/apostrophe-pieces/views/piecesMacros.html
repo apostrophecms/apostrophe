@@ -9,11 +9,11 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {%- macro editControls() -%}
-  {{ buttons.minor('Cancel', 'cancel') }}
-  {{ buttons.minor('Trash', 'trash') }}
-  {{ buttons.minor('Versions', 'versions') }}
-  {{ buttons.minor('Copy', 'copy') }}
-  {{ buttons.major('Save', 'save') }}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.minor('Trash', { action: 'trash' }) }}
+  {{ buttons.minor('Versions', { action: 'versions' }) }}
+  {{ buttons.minor('Copy', { action: 'copy' }) }}
+  {{ buttons.major('Save', { action: 'save' }) }}
 {%- endmacro -%}
 
 {%- macro pill(name, choices, state) -%}

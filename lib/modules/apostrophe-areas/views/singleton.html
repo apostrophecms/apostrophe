@@ -1,11 +1,8 @@
-{# singleton needs its own copy of the widget options as #}
-{# JSON, in case the widget doesn't exist yet or goes away #}
-
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
 <div class="apos-singleton" {%- if data.area._edit %}data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{%- endif -%}>
   {%- if data.area._edit -%}
-    <div class="apos-ui-container">
-      <a data-edit-singleton class="apos-control apos-button apos-edit-singleton" href="#"><i class="icon-pencil"></i> Edit Singleton</a>
-      {# crashing: <a class="apos-control apos-button" href="#"><i class="icon-pencil"></i> {{ __((data.options.verb or data.manager.verb or 'Edit') + ' %s', __(data.options.label or data.manager.label)) }}</a> #}
+    <div class="apos-ui">
+      {{ buttons.inContext('Edit Singleton', { action: 'edit-singleton' }) }}
     </div>
   {%- endif -%}
   {%- if data.area._edit -%}

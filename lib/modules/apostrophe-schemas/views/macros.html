@@ -334,8 +334,8 @@
                 {%- elif (extra.type == 'tags') -%}
                   {{ tagsBody(extra) }}
                 {%- else -%}
-                  {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
-                  {{ aposLog(extra) }}
+                  {{ apos.log("WARNING: unrecognized type for relationship field: ") }}
+                  {{ apos.log(extra) }}
                 {%- endif -%}
               {%- endfor -%}
             </span>
