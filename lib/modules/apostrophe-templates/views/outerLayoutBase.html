@@ -4,6 +4,9 @@
     {{ apos.assets.stylesheets(data.when) }}
   </head>
   <body class="{% block bodyClass %}{% endblock %}">
+    {% block apostropheMenu %}
+    {# TODO: Check permissions and not just if they have a user? #}
+    {% if data.user or data.loginButton %} 
     <div class="apos-ui">
       <div class="apos-admin-bar apos-active apos-text-meta" data-apos-admin-bar>
         <div class="apos-admin-bar-inner">
@@ -11,12 +14,24 @@
             {% include 'logo.html' %}
           </div>
           {% block apostropheMenuBody %}
+          {# Default behavior for admin bar is to spit out every menu available except for pages. This can be overwritten with a project level outerLayout.html #}
+          <div class="apos-admin-bar-items" data-apos-admin-bar-items>
+            {% for name, item in apos %}
+              {% if apos.utils.isFunction(item.menu) and name != 'pages' %}
+                {{ item.menu() }}
+              {% endif %}
+            {% endfor %}
+          </div>
           {% endblock %}
         </div>
       </div>
     </div>
+    {% endif %}
+    {% endblock %}
 
+    {% if data.user %}
     {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+    {% endif %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block main %}{% endblock %}
     </div>
