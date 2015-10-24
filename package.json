@@ -42,6 +42,7 @@
     "less": "^2.0.0",
     "less-middleware": "^2.0.0",
     "lodash": "^3.1.0",
+    "minimatch": "^3.0.0",
     "mkdirp": "^0.5.0",
     "moment": "^2.9.0",
     "mongodb": "^2.0.0",

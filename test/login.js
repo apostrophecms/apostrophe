@@ -40,7 +40,8 @@ describe('Login', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7948
+          port: 7948,
+          csrf: false
         }
       },
       afterInit: function(callback) {

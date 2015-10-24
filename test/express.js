@@ -1,5 +1,5 @@
 var assert = require('assert');
-
+var _ = require('lodash');
 var apos;
 
 describe('Express', function(){
@@ -47,7 +47,86 @@ describe('Express', function(){
 
   var request = require('request');
 
-  it('should use the extended bodyParser for submitted forms', function(done){
+  var jar;
+
+  function getCsrfToken(jar) {
+    var csrfCookie = _.find(jar.getCookies('http://localhost:7936/'), { key: 'XSRF-TOKEN' });
+    if (!csrfCookie) {
+      return null;
+    }
+    var csrfToken = csrfCookie.value;
+    return csrfToken;
+  }
+
+  it('should successfully make a GET request to establish CSRF', function(done) {
+    // otherwise request does not track cookies
+    jar = request.jar();
+    request({
+      method: 'GET',
+      url: 'http://localhost:7936/tests/welcome',
+      jar: jar
+    }, function(err, response, body) {
+      assert(body.toString() === 'ok');
+      done();
+    });
+  });
+
+  it('should flunk a POST request with no X-XSRF-TOKEN header', function(done){
+    request({
+      method: 'POST',
+      url: 'http://localhost:7936/tests/body',
+      form: {
+        person: {
+          age: '30'
+        }
+      },
+      jar: jar,
+      headers: {}
+    }, function(err, response, body) {
+      assert(response.statusCode === 403);
+      done();
+    });
+  });
+
+  it('should flunk a POST request with no cookies at all', function(done){
+    request({
+      method: 'POST',
+      url: 'http://localhost:7936/tests/body',
+      form: {
+        person: {
+          age: '30'
+        }
+      },
+      headers: {}
+    }, function(err, response, body) {
+      assert(response.statusCode === 403);
+      done();
+    });
+  });
+
+  it('should flunk a POST request with the wrong CSRF token', function(done){
+    var csrfToken = 'BOGOSITY';
+    request({
+      method: 'POST',
+      url: 'http://localhost:7936/tests/body',
+      form: {
+        person: {
+          age: '30'
+        }
+      },
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
+      }
+    }, function(err, response, body) {
+      assert(response.statusCode === 403);
+      done();
+    });
+  });
+
+  it('should use the extended bodyParser for submitted forms', function(done) {
+    var csrfToken = getCsrfToken(jar);
+    assert(csrfToken);
   	request({
   		method: 'POST',
   		url: 'http://localhost:7936/tests/body',
@@ -55,14 +134,19 @@ describe('Express', function(){
   			person: {
   				age: '30'
   			}
-  		}
+  		},
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
+      }
   	}, function(err, response, body) {
   		assert(body.toString() === '30');
   		done();
   	});
   });
-  it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
 
+  it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
+    var csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
       url: 'http://localhost:7936/tests/body',
@@ -70,13 +154,19 @@ describe('Express', function(){
         person: {
           age: '30'
         }
+      },
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
       }
     }, function(err, response, body) {
       assert(body.toString() === '30');
       done();
     });
   });
+
   it('should be able to implement a route with apostrophe-module.route', function(done) {
+    var csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
       url: 'http://localhost:7936/modules/express-test/test2',
@@ -84,6 +174,10 @@ describe('Express', function(){
         person: {
           age: '30'
         }
+      },
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
       }
     }, function(err, response, body) {
       assert(body.toString() === '30');
@@ -101,7 +195,8 @@ describe('Express', function(){
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
-          port: 7937
+          port: 7937,
+          csrf: false
         },
         'express-test': {},
         'templates-test': {},
