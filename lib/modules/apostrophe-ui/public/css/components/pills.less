@@ -19,10 +19,19 @@
       .apos-rounded;
       .apos-rounded-right;
     }
+
+    &:hover
+    {
+      box-shadow: none;
+    }
   }
 
   .apos-button--pill-inactive
   {
     color: fade(@apos-dark, 30%);
+    &:hover
+    {
+      color: @apos-dark;
+    }
   }
 }

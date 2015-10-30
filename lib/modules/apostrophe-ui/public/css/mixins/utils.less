@@ -26,7 +26,6 @@
   display: inline-block;
 }
 
-// spring cubic-bezier(0.13, 0.63, 0.34, 1.58)
 .apos-transition(@what: all, @duration:0.15s, @ease: ease-in-out) 
 {
   -webkit-transition: @what @duration @ease;
@@ -40,6 +39,11 @@
   -moz-transition: ~'@{transitions}';
   -o-transition: ~'@{transitions}';
   transition: ~'@{transitions}';
+}
+
+.apos-transition--bounce
+{
+  .apos-transition(@ease: cubic-bezier(0.13, 0.63, 0.34, 1.58)) 
 }
 
 .apos-transform(@string)

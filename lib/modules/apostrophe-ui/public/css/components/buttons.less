@@ -10,6 +10,16 @@
   cursor: pointer;
   text-decoration: none;
   .apos-no-select;
+  .apos-transition--bounce;
+
+  &:hover
+  {
+    .apos-glow;
+  }
+  &:active
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
+  }
 }
 
 .apos-button--disabled
@@ -18,11 +28,25 @@
   background-color: @apos-light;
   opacity: 0.5;
   cursor: not-allowed;
+  &:hover, &:active
+  {
+    background-color: @apos-light;
+    box-shadow: none;
+  }
 }
 
 .apos-button--in-context
 {
   .apos-glow;
+
+  &:hover
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
+  }
+  &:active
+  {
+    .apos-drop-shadow(0px, 0px, 20px, 6px, fade(@apos-base, 30%));
+  }
 }
 
 .apos-button--global
@@ -31,11 +55,19 @@
   background-color: @apos-base;
   color: @apos-white;
   .apos-drop-shadow;
+  &:hover
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-black, 20%));
+  }
 }
 
 .apos-button--more
 {
   .apos-arrow-right;
+  &:hover
+  {
+
+  }
 }
 
 .apos-button--major
@@ -50,10 +82,18 @@
 {
   padding: @apos-padding-1 @apos-padding-4;
   border: none;  
+  &:hover
+  {
+    .apos-drop-shadow(@spread:0;);
+  }
 }
 
 .apos-button--danger
 {
   .apos-button--major;
   background-color: @apos-red;
+  &:hover
+  {
+    .apos-drop-shadow(@color:@apos-red, @spread:0);
+  }
 }

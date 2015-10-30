@@ -9,7 +9,7 @@
 .apos-dropdown .apos-button
 {
 	z-index: 5; // todo bo
-	.apos-transition(@ease:cubic-bezier(0.13, 0.63, 0.34, 1.58));
+	.apos-transition--bounce;
 }
 
 .apos-dropdown.apos-active
@@ -37,7 +37,7 @@
   opacity: 0;
   transform: translateZ(0);
   transform: translateY(10%);
-  .apos-transition(@ease:cubic-bezier(0.13, 0.63, 0.34, 1.58));
+  .apos-transition--bounce;
   z-index: 3; // todo bo
 }
 
