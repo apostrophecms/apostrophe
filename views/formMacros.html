@@ -132,13 +132,26 @@
   </select>
 {%- endmacro -%}
 
-{# Less ambiguous to work with than a checkbox #}
-{%- macro formBoolean(name, label) -%}
-  {{ formSelect(name, label, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }]) }}
+{# Less ambiguous to work with than a checkbox. However, displays a checkbox #}
+{# if the third parameter is truthy #}
+
+{%- macro formBoolean(name, label, checkbox) -%}
+  {% if checkbox %}
+    <fieldset class="apos-fieldset apos-fieldset-checkbox apos-fieldset-editor apos-fieldset-{{ name | css }}" apos-fieldset-checkbox data-name="{{ name }}">
+      <label>{{ __(label) | e }}</label>
+      <input type="checkbox" name="{{ name | e }}" />
+    </fieldset>
+  {% else %}
+    {{ formSelect(name, label, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }]) }}
+  {% endif %}
 {%- endmacro -%}
 
-{%- macro formBooleanStandalone(name, attrs) -%}
-  {{ formSelectStandalone(name, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }], attrs) }}
+{%- macro formBooleanStandalone(name, attrs, checkbox) -%}
+  {% if checkbox %}
+    <input type="checkbox" name="{{ name | e }}" />
+  {% else %}
+    {{ formSelectStandalone(name, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }], attrs) }}
+  {% endif %}
 {%- endmacro -%}
 
 {# See enableSingleton in snippets' main.js for the necessary plumbing, including #}
