@@ -10,6 +10,14 @@
   border-top-right-radius: 4px;
   border-bottom: 3px solid @apos-mid;
 
+  .apos-dropdown
+  {
+    vertical-align: top;
+    .apos-dropdown-items{ min-width: 100px; }
+    .apos-button { border: none; &:hover{ box-shadow: none; } }
+    &.apos-active .apos-button { border: 2px solid @apos-base; }
+  }
+
   .apos-modal-title 
   {
     .apos-inline-block(top);
@@ -51,5 +59,6 @@
     {
       margin-left: @apos-padding-2;
     }
+    .apos-dropdown { margin-right: @apos-padding-2; }
   }
 }

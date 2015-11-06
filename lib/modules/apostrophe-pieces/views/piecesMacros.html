@@ -7,13 +7,28 @@
 {%- import "apostrophe-modal:macros.html" as modals -%}
 {# bring in buttons #}
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
 
 {%- macro editControls() -%}
+  {{ dropdowns.base({
+    label: 'More',
+    items: [
+      {label: 'Versions', action: 'versions'},
+      {label: 'Copy', action: 'copy'},
+      {label: 'Trash', action: 'trash'}
+    ]}, 'button', 
+    {
+      direction: 'down',
+      class: 'arrow-down'
+    }
+  ) }}
+
   {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  {{ buttons.minor('Trash', { action: 'trash' }) }}
+  {# {{ buttons.minor('Trash', { action: 'trash' }) }}
   {{ buttons.minor('Versions', { action: 'versions' }) }}
-  {{ buttons.minor('Copy', { action: 'copy' }) }}
+  {{ buttons.minor('Copy', { action: 'copy' }) }} #}
   {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
+
 {%- endmacro -%}
 
 {%- macro manageControls() -%}

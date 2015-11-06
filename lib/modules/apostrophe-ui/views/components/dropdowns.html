@@ -1,7 +1,7 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% macro menuItem(content, options) -%}
-  <li class="apos-dropdown-item" data-{{ content.name }} >
+  <li class="apos-dropdown-item" data-apos-{{ content.action }} >
     {{ content.label }}
   </li>
 {%- endmacro %}
@@ -13,7 +13,7 @@
     {%- set direction = 'up' -%}
   {%- endif -%}
 
-  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.classes %} {{ options.classes}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
+  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
     {%- if type == 'button' -%}
       {%- if options.buttonType -%}
         {{ buttons[options.buttonType](menu.label, { action: 'apos-dropdown-button-label' }) }}
