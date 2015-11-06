@@ -15,6 +15,7 @@
 {%- endblock -%}
 
 {%- block body -%}
+  {{ apos.log('opening new modal') }}
   <form class="apos-form" data-form>
     {{ schemas.fields(data.schema) }}
   </form>
