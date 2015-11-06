@@ -26,6 +26,7 @@
   width: 100%;
   border: none;
   .apos-text-normal;
+  .apos-transition;
 }
 
 // Select Specific ============================
@@ -37,8 +38,8 @@
   {
     content: "\f0d7";
     position: absolute;
-    top: @apos-padding-2;
-    right: @apos-padding-2;
+    top: @apos-padding-2 + 5px;
+    right: @apos-padding-3;
     .fa;
   }
 }
@@ -48,6 +49,17 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  border-radius: 0;
+}
+
+.apos-field-input-text,
+.apos-field-input-select
+{
+  &:focus
+  {
+    outline:none;
+    .apos-glow;
+  }
 }
 
 // Checkboxes ===================================

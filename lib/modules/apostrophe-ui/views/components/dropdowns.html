@@ -1,7 +1,7 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% macro menuItem(content, options) -%}
-  <li class="apos-dropdown-item" data-{{ content.name }}>
+  <li class="apos-dropdown-item" data-{{ content.name }} >
     {{ content.label }}
   </li>
 {%- endmacro %}

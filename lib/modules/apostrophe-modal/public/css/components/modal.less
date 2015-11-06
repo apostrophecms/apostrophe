@@ -46,6 +46,13 @@
   .apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
 }
 
+.apos-modal--pushed
+{
+  .apos-modal-body
+  {
+    border-left: 220px solid @apos-light;
+  }
+}
 // Modal Body ===================================
 .apos-modal
 .apos-modal-content
@@ -59,10 +66,17 @@
   background-color: @apos-white;
 }
 
+.apos-modal-body
+{
+  background-color: lighten(@apos-light, 5%);
+}
+
 .apos-modal
 .apos-form
 {
   padding: @apos-padding-2;
+  max-width: 540px;
+  background-color: @apos-white;
 }
 
 // Stack Push Transition ===================================
