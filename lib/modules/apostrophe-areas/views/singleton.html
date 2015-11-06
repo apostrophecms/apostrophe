@@ -2,7 +2,9 @@
 <div class="apos-singleton" {%- if data.area._edit %}data-singleton data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{%- endif -%}>
   {%- if data.area._edit -%}
     <div class="apos-ui">
-      {{ buttons.inContext('Edit Singleton', { action: 'edit-singleton' }) }}
+      <div class="apos-singleton-controls">
+        {{ buttons.inContext('Edit Singleton', { action: 'edit-singleton' }) }}
+      </div>
     </div>
   {%- endif -%}
   {%- if data.area._edit -%}

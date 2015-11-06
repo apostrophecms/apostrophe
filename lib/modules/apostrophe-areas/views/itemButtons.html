@@ -1,17 +1,15 @@
-<div data-area-item-buttons class="apos-editor2-item-buttons apos-ui-group">
-  <div class="apos-ui-container apos-item-actions left apos-drag">
-    
-      <span class="apos-ui apos-ui-btn" data-drag-item><i class="icon-move"></i></span>
-      <span class="apos-ui-btn-group">
-        <span class="apos-ui apos-ui-btn" data-move-item='up'><i class="icon-arrow-up"></i></span>{#
-      #}<span class="apos-ui apos-ui-btn" data-move-item='down'><i class="icon-arrow-down"></i></span>
-      </span>
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
+<div class="apos-ui" data-apos-area-item-controls>
+  <div class="apos-area-item-controls apos-area-item-controls--move">
+    <div class="apos-button apos-button--in-context apos-button--group">
+      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down' }) }}
+      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item' }) }}
+    </div>
   </div>
 
-  <div class="apos-ui-container apos-item-actions right">
-    <span class="apos-ui-btn-group">
-      <span class="apos-ui apos-ui-btn" data-edit-item><i class="icon-pencil"></i></span>
-      <span class="apos-ui apos-ui-btn" data-trash-item><i class="icon-trash"></i></span>
-    </span>
+  <div class="apos-area-item-controls apos-area-item-controls--edit">
+    {{ buttons.inContext('Edit', { action: 'edit-item' }) }}
   </div>
 </div>
