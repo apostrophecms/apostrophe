@@ -1,54 +1,25 @@
-@apos-base: #dd3226;
+// Bright Brand Colors =============================
+@apos-green: #00BF9A;
+@apos-red: #EA433A;
+@apos-blue: #6666FF;
+@apos-purple: #B327BF;
+@apos-gold: #CC9300;
 
-@apos-lighten-10: lighten(@apos-base, 8%);
+// Grayscale Colors ================================
+@apos-white: #ffffff;
+@apos-light: #EEEEEE;
+@apos-mid: #D8D8D8;
+@apos-dark: #363B3B;
+@apos-black: #151616;
+
+@apos-base: @apos-green;
+
+@apos-darken: darken(@apos-base, 20%);
 @apos-disabled: fade(@apos-base, 50%);
-@apos-shade-5: darken(@apos-base, 3%);
-@apos-shade-10: darken(@apos-base, 10%);
-@apos-shade-20: darken(@apos-base, 20%);
-@apos-shade-30: darken(@apos-base, 30%);
 
-/* GREYS */
-
-@apos-grey70: lighten(@apos-grey,70%);
-@apos-grey60: lighten(@apos-grey,60%);
-@apos-grey50: lighten(@apos-grey,50%);
-@apos-grey55: lighten(@apos-grey,55%);
-@apos-grey40: lighten(@apos-grey,40%);
-@apos-grey30: lighten(@apos-grey,30%);
-@apos-grey20: lighten(@apos-grey,20%);
-@apos-grey10: lighten(@apos-grey,10%);
-@apos-grey5: lighten(@apos-grey,5%);
-
-@apos-grey: rgb(50,50,50);
-@apos-grey-light: rgb(238, 238, 238);
-
-@apos-grey-10: darken(@apos-grey,10%);
-@apos-grey-20: darken(@apos-grey,20%);
-
-@apos-grey-blue: rgb(157, 179, 180);
-@apos-steel: #353B3B;
-
-// Warn Yellow
-@apos-yellow: #FEE000;
-
-// Success Green
-@apos-green: #39B54A;
-.apos-bg-gradient {
-  /* fallback */
+.apos-bg {
   background-color: @apos-base;
-  /* Safari 4-5, Chrome 1-9 */
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(@apos-base), to(@apos-lighten-10));
-  /* Safari 5.1, Chrome 10+ */
-  background: -webkit-linear-gradient(top, @apos-base, @apos-lighten-10);
-  /* Firefox 3.6+ */
-  background: -moz-linear-gradient(top, @apos-base, @apos-lighten-10);
-  /* IE 10 */
-  background: -ms-linear-gradient(top, @apos-base, @apos-lighten-10);
 }
-
-// .apos-base-grad {
-//   .apos-bg-gradient(@apos-base, @apos-lighten-10);
-// }
 
 /*
 Copyright (c) 2003-2013,  CKSource - Frederico Knabben. All rights reserved.
@@ -118,10 +89,27 @@ For licensing,  see LICENSE.md or http://ckeditor.com/license
   -webkit-box-shadow: 0 0 3px rgba(0, 0, 0, .15);
   box-shadow: 0 0 3px rgba(0, 0, 0, .15);
 }
+// .apos-button--in-group
+// {
+//   padding: @apos-padding-1;
+//   background-color: transparent;
+//   border: none;
+//   &:hover
+//   {
+//     background-color: @apos-light;
+//   }
+// }
 .cke_inner {
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 2px solid @apos-base;
+  box-shadow: 0px 0px 7px 2px fade(@apos-base, 50%);
+  background-color: @apos-white;
+  color: @apos-dark;
+  cursor: pointer;
+  text-decoration: none;
   display: block;
   -webkit-touch-callout: none;
-  background: #fff;
   padding: 0;
 }
 .cke_float {
@@ -135,24 +123,7 @@ For licensing,  see LICENSE.md or http://ckeditor.com/license
   overflow: hidden;
 }
 .cke_top {
-  // border-bottom: 1px solid #b6b6b6;
-  padding: 6px 8px 2px;
   white-space: normal;
-  // -moz-box-shadow: 0 1px 0 #fff inset;
-  // -webkit-box-shadow: 0 1px 0 #fff inset;
-  // box-shadow: 0 1px 0 #fff inset;
-  // background: #cfd1cf;
-  // background-image: -webkit-gradient(linear, left top, left bottom, from(#f5f5f5), to(#cfd1cf));
-  // background-image: -moz-linear-gradient(top, #f5f5f5, #cfd1cf);
-  // background-image: -webkit-linear-gradient(top, #f5f5f5, #cfd1cf);
-  // background-image: -o-linear-gradient(top, #f5f5f5, #cfd1cf);
-  // background-image: -ms-linear-gradient(top, #f5f5f5, #cfd1cf);
-  // background-image: linear-gradient(top, #f5f5f5, #cfd1cf);
-  // filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#f5f5f5', endColorstr='#cfd1cf');
-}
-.cke_float .cke_top {
-  // border: 1px solid #b6b6b6;
-  // border-bottom-color: #999;
 }
 .cke_bottom {
   padding: 6px 8px 2px;
@@ -227,12 +198,9 @@ For licensing,  see LICENSE.md or http://ckeditor.com/license
   width: 120px;
   height: 100px;
   overflow: hidden;
-  background-color: #fff;
+  background-color: @apos-white;
   border: 1px solid #b6b6b6;
   border-bottom-color: #999;
-  // -moz-border-radius: 3px;
-  // -webkit-border-radius: 3px;
-  // border-radius: 3px;
   -moz-box-shadow: 0 0 3px rgba(0, 0, 0, .15);
   -webkit-box-shadow: 0 0 3px rgba(0, 0, 0, .15);
   box-shadow: 0 0 3px rgba(0, 0, 0, .15);
@@ -255,10 +223,6 @@ For licensing,  see LICENSE.md or http://ckeditor.com/license
 .cke_panel_container {
   overflow-y: auto;
   overflow-x: hidden;
-  // border: 10px solid red;
-  // background-color: #3f3f3f !important;
-  // background: -webkit-gradient(linear, 0 0, 0 100%, from(#3f3f3f), to(#323232));
-  // background: -webkit-linear-gradient(top, #3f3f3f, #323232);
 
   -webkit-border-radius: 3px;
           border-radius: 3px;
@@ -277,42 +241,11 @@ For licensing,  see LICENSE.md or http://ckeditor.com/license
 .cke_panel_listItem a {
   padding: 3px 4px;
   display: block;
-  border: 1px solid #fff;
+  border: 1px solid @apos-white;
   color: inherit!important;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
-
-// // start
-//   color: @apos-grey-blue !important;
-//   -webkit-transition: all .1s ease;
-//   -moz-transition: all .1s ease;
-//   // width: 100%;
-//   // margin-right: 0px;
-//   padding: 10px 15px;
-//   font-size: 12px;
-//   cursor: pointer;
-//   line-height: 2;
-//   border-bottom: 1px solid @apos-grey10;
-//   &:hover
-//   {
-//     color: #fff !important;
-//     background: @apos-grey-10 !important;
-//     text-shadow: none;
-//   }
-//   &:first-child
-//   {
-//     border-top-right-radius: 3px;
-//     border-top-left-radius: 3px;
-//   }
-//   &:last-child
-//   {
-//     border-bottom-right-radius: 3px;
-//     border-bottom-left-radius: 3px;
-//     border-bottom: none;
-//   }
-// //
-
 }
 * html .cke_panel_listItem a {
   width: 100%;
@@ -420,23 +353,7 @@ a:hover.cke_colorauto, a:hover.cke_colormore, a:focus.cke_colorauto, a:focus.cke
 }
 .cke_toolgroup {
   float: left;
-  margin: 0 6px 5px 0;
-  border: 1px solid #a6a6a6;
-  border-bottom-color: #979797;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-  border-radius: 3px;
-  -moz-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
-  -webkit-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
-  background: #e4e4e4;
-  background-image: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#e4e4e4));
-  background-image: -moz-linear-gradient(top, #fff, #e4e4e4);
-  background-image: -webkit-linear-gradient(top, #fff, #e4e4e4);
-  background-image: -o-linear-gradient(top, #fff, #e4e4e4);
-  background-image: -ms-linear-gradient(top, #fff, #e4e4e4);
-  background-image: linear-gradient(top, #fff, #e4e4e4);
-  filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#ffffff', endColorstr='#e4e4e4');
+  background: transparent;
 }
 .cke_hc .cke_toolgroup {
   border: 0;
@@ -460,8 +377,7 @@ a:hover.cke_colorauto, a:hover.cke_colormore, a:focus.cke_colorauto, a:focus.cke
 }
 a.cke_button {
   display: inline-block;
-  // height: 18px;
-  padding: 4px 6px;
+  padding: 10px;
   outline: 0;
   cursor: default;
   float: left;
@@ -471,22 +387,7 @@ a.cke_button {
   float: right;
 }
 .cke_hc .cke_button {
-  border: 1px solid black;
-  padding: 3px 5px;
-  margin: -2px 4px 0 -2px;
-}
-.cke_button_on {
-  -moz-box-shadow: 0 1px 5px rgba(0, 0, 0, .6) inset, 0 1px 0 rgba(0, 0, 0, .2);
-  -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, .6) inset, 0 1px 0 rgba(0, 0, 0, .2);
-  box-shadow: 0 1px 5px rgba(0, 0, 0, .6) inset, 0 1px 0 rgba(0, 0, 0, .2);
-  background: #b5b5b5;
-  background-image: -webkit-gradient(linear, left top, left bottom, from(#aaa), to(#cacaca));
-  background-image: -moz-linear-gradient(top, #aaa, #cacaca);
-  background-image: -webkit-linear-gradient(top, #aaa, #cacaca);
-  background-image: -o-linear-gradient(top, #aaa, #cacaca);
-  background-image: -ms-linear-gradient(top, #aaa, #cacaca);
-  background-image: linear-gradient(top, #aaa, #cacaca);
-  filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#aaaaaa', endColorstr='#cacaca');
+  padding: 10px;
 }
 .cke_hc .cke_button_on, .cke_hc a.cke_button_off:hover, .cke_hc a.cke_button_off:focus, .cke_hc a.cke_button_off:active, .cke_hc a.cke_button_disabled:hover, .cke_hc a.cke_button_disabled:focus, .cke_hc a.cke_button_disabled:active {
   border-width: 3px;
@@ -498,24 +399,9 @@ a.cke_button {
 .cke_hc .cke_button_disabled {
   opacity: .5;
 }
-a.cke_button_on:hover, a.cke_button_on:focus, a.cke_button_on:active {
-  -moz-box-shadow: 0 1px 6px rgba(0, 0, 0, .7) inset, 0 1px 0 rgba(0, 0, 0, .2);
-  -webkit-box-shadow: 0 1px 6px rgba(0, 0, 0, .7) inset, 0 1px 0 rgba(0, 0, 0, .2);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, .7) inset, 0 1px 0 rgba(0, 0, 0, .2);
+a.cke_button:hover, a.cke_button:focus, a.cke_button:active {
+  background-color: @apos-light;
 }
-// a.cke_button_off:hover, a.cke_button_off:focus, a.cke_button_off:active, a.cke_button_disabled:hover, a.cke_button_disabled:focus, a.cke_button_disabled:active {
-//   -moz-box-shadow: 0 0 1px rgba(0, 0, 0, .3) inset;
-//   -webkit-box-shadow: 0 0 1px rgba(0, 0, 0, .3) inset;
-//   box-shadow: 0 0 1px rgba(0, 0, 0, .3) inset;
-//   background: #ccc;
-//   background-image: -webkit-gradient(linear, left top, left bottom, from(#f2f2f2), to(#ccc));
-//   background-image: -moz-linear-gradient(top, #f2f2f2, #ccc);
-//   background-image: -webkit-linear-gradient(top, #f2f2f2, #ccc);
-//   background-image: -o-linear-gradient(top, #f2f2f2, #ccc);
-//   background-image: -ms-linear-gradient(top, #f2f2f2, #ccc);
-//   background-image: linear-gradient(top, #f2f2f2, #ccc);
-//   filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#f2f2f2', endColorstr='#cccccc');
-// }
 .cke_button_icon {
   cursor: inherit;
   background-repeat: no-repeat;
@@ -774,31 +660,14 @@ a.cke_button_on:hover, a.cke_button_on:focus, a.cke_button_on:active {
   margin: 0 6px 5px 0;
   border: 1px solid #a6a6a6;
   border-bottom-color: #979797;
-  // color: red;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
   border-radius: 3px;
   -moz-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
   -webkit-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
   box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 0 2px rgba(255, 255, 255, .15) inset, 0 1px 0 rgba(255, 255, 255, .15) inset;
-  // background: #e4e4e4;
-  // background-image: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#e4e4e4));
-  // background-image: -moz-linear-gradient(top, #fff, #e4e4e4);
-  // background-image: -webkit-linear-gradient(top, #fff, #e4e4e4);
-  // background-image: -o-linear-gradient(top, #fff, #e4e4e4);
-  // background-image: -ms-linear-gradient(top, #fff, #e4e4e4);
-  // background-image: linear-gradient(top, #fff, #e4e4e4);
-  // filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#ffffff', endColorstr='#e4e4e4');
 }
 .cke_combo_off a.cke_combo_button:hover, .cke_combo_off a.cke_combo_button:focus {
-  // background: #ccc;
-  // background-image: -webkit-gradient(linear, left top, left bottom, from(#f2f2f2), to(#ccc));
-  // background-image: -moz-linear-gradient(top, #f2f2f2, #ccc);
-  // background-image: -webkit-linear-gradient(top, #f2f2f2, #ccc);
-  // background-image: -o-linear-gradient(top, #f2f2f2, #ccc);
-  // background-image: -ms-linear-gradient(top, #f2f2f2, #ccc);
-  // background-image: linear-gradient(top, #f2f2f2, #ccc);
-  // filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#f2f2f2', endColorstr='#cccccc');
   outline: 0;
 }
 .cke_combo_off a.cke_combo_button:active, .cke_combo_on a.cke_combo_button {
@@ -806,14 +675,6 @@ a.cke_button_on:hover, a.cke_button_on:focus, a.cke_button_on:active {
   -moz-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 1px 5px rgba(0, 0, 0, .6) inset;
   -webkit-box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 1px 5px rgba(0, 0, 0, .6) inset;
   box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 1px 5px rgba(0, 0, 0, .6) inset;
-  // background: #b5b5b5;
-  // background-image: -webkit-gradient(linear, left top, left bottom, from(#aaa), to(#cacaca));
-  // background-image: -moz-linear-gradient(top, #aaa, #cacaca);
-  // background-image: -webkit-linear-gradient(top, #aaa, #cacaca);
-  // background-image: -o-linear-gradient(top, #aaa, #cacaca);
-  // background-image: -ms-linear-gradient(top, #aaa, #cacaca);
-  // background-image: linear-gradient(top, #aaa, #cacaca);
-  // filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#aaaaaa', endColorstr='#cacaca');
 }
 .cke_combo_on a.cke_combo_button:hover, .cke_combo_on a.cke_combo_button:focus, .cke_combo_on a.cke_combo_button:active {
   -moz-box-shadow: 0 1px 6px rgba(0, 0, 0, .7) inset, 0 1px 0 rgba(0, 0, 0, .2);
@@ -839,7 +700,7 @@ a.cke_button_on:hover, a.cke_button_on:focus, a.cke_button_on:active {
   overflow: hidden;
   float: left;
   cursor: default;
-  color: white;
+  color: @apos-dark;
   width: 60px;
 }
 .cke_rtl .cke_combo_text {
@@ -908,9 +769,6 @@ a.cke_path_item:hover, a.cke_path_item:focus, a.cke_path_item:active {
   background-color: #bfbfbf;
   color: #333;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
-  // -moz-border-radius: 2px;
-  // -webkit-border-radius: 2px;
-  // border-radius: 2px;
   -moz-box-shadow: 0 0 4px rgba(0, 0, 0, .5) inset, 0 1px 0 rgba(255, 255, 255, .5);
   -webkit-box-shadow: 0 0 4px rgba(0, 0, 0, .5) inset, 0 1px 0 rgba(255, 255, 255, .5);
   box-shadow: 0 0 4px rgba(0, 0, 0, .5) inset, 0 1px 0 rgba(255, 255, 255, .5);
@@ -938,6 +796,8 @@ a.cke_path_item:hover, a.cke_path_item:focus, a.cke_path_item:active {
   background-color: #fff;
 }
 .cke_chrome {
+  display: block !important;
+
   visibility: inherit;
 }
 .cke_voice_label {
@@ -968,53 +828,29 @@ legend.cke_voice_label {
   }
 }
 
-
-
-.cke
-{
-
-}
-.cke_inner
-{
-  border: 1px solid @apos-grey50;
-  background: rgba(255,255,255,0.5);
-  border-radius: 5px;
-}
-.cke_top
-{
-  padding: 8px 5px 3px 9px;
-}
-
 .cke_toolbar
 {
 
 }
 
-.cke_toolgroup,
 .cke_combo_button
 {
-  border: 1px solid #d32d21;
-}
-.cke_combo_button
-{
- .apos-bg-gradient();
- color: white;
+ background-color: @apos-white;
+ color: @apos-dark;
 }
 .cke_combo_text
 {
-  color: white;
+  color: @apos-dark;
 }
 a.cke_button
 {
-  .apos-bg-gradient();
+  background: transparent;
   .icon();
-  border-right: 1px solid #d32d21;
   max-width: 20px;
   &:last-child{ border-right: 0;}
   &::before
   {
-    color: white;
-    opacity:0.8;
+    color: @apos-dark;
     font-size: 12px;
     padding: 4px 5px;
   }
@@ -1027,15 +863,15 @@ a.cke_combo_button:focus,
 .cke_combo_off a.cke_combo_button:hover,
 .cke_combo_off a.cke_combo_button:focus
 {
-  background-color: darken(@apos-base, 10%);
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(darken(@apos-base, 10%)), to(@apos-lighten-10));
-  background: -webkit-linear-gradient(top, darken(@apos-base, 10%), @apos-lighten-10);
-  background: -moz-linear-gradient(top, darken(@apos-base, 10%), @apos-lighten-10);
-  background: -ms-linear-gradient(top, darken(@apos-base, 10%), @apos-lighten-10);
+  background-color: @apos-light, 10%;
  &::before
   {
     opacity: 1;
   }
+}
+
+a.cke_button_on::before {
+  color: @apos-base;
 }
 
 .icon-bold { &::before {content: "\f032";} }
