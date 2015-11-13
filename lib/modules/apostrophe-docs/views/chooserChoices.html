@@ -1,0 +1,14 @@
+{% for item in data.choices %}
+  {# If the join has relationship properties, we need to go one more step to #}
+  {# get to the item itself. The relationship properties are in #}
+  {# item.relationship. -Tom #}
+  {% set choice = item.item or item %}
+  {% set relationship = item.relationship %}
+  <div>
+    {{ apos.log('calling for ' + choice.type) }}
+    {{ data.outputChooserChoice(choice, relationship) }}
+    <a href="#" data-delete-item="{{ choice._id }}">x</a>
+    <a href="#" data-raise-item="{{ choice._id }}">^</a>
+    <a href="#" data-lower-item="{{ choice._id }}">v</a>
+  </div>
+{% endfor %}
