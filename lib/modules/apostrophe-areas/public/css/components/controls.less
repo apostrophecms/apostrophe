@@ -3,16 +3,16 @@
   position: absolute;
 }
 
-.apos-area-item-controls--move
+.apos-area-item-controls--context
 {
   top: @apos-padding-2;
   left: @apos-padding-2;
 }
 
-.apos-area-item-controls--edit
+.apos-area-item-controls--data
 {
   bottom: @apos-padding-2;
-  left: @apos-padding-2;  
+  left: @apos-padding-2;
 }
 
 .apos-singleton-controls
@@ -20,4 +20,9 @@
   position: absolute;
   bottom: @apos-padding-2;
   left: @apos-padding-2;
+}
+
+.apos-limit-reached [data-move-item]
+{
+  display: none;
 }

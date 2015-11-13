@@ -1,0 +1,15 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+<div class="apos-ui" data-apos-widget-controls>
+  <div class="apos-area-item-controls apos-area-item-controls--context">
+    <div class="apos-button apos-button--in-context apos-button--group">
+      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down' }) }}
+      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item' }) }}
+    </div>
+  </div>
+
+  <div class="apos-area-item-controls apos-area-item-controls--data">
+    {{ buttons.inContext('Edit ' + data.manager.label, { action: 'edit-item' }) }}
+  </div>
+</div>
