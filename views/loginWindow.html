@@ -12,12 +12,12 @@
             {% if message %}<div class="warning">{{ message }}</div>{% endif %}
             {% block fields %}
               <div class="login-username">
-                <label>Username or Email {% block usernameHint %}{% endblock %}</label>
-                <input type="text" name="username" />
+                <label for="username">Username or Email {% block usernameHint %}{% endblock %}</label>
+                <input type="text" name="username" id="username"/>
               </div>
               <div class="login-password">
-                <label>Password {% block passwordHint %}{% endblock %}</label>
-                <input type="password" name="password" />
+                <label for="password">Password {% block passwordHint %}{% endblock %}</label>
+                <input type="password" name="password" id="password" />
               </div>
             {% endblock %}
             <div class="login-submit clearfix">
