@@ -5,7 +5,6 @@
   {% set choice = item.item or item %}
   {% set relationship = item.relationship %}
   <div>
-    {{ apos.log('calling for ' + choice.type) }}
     {{ data.outputChooserChoice(choice, relationship) }}
     <a href="#" data-delete-item="{{ choice._id }}">x</a>
     <a href="#" data-raise-item="{{ choice._id }}">^</a>
