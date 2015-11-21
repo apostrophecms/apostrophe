@@ -5,7 +5,7 @@
 
 {# bring in modals #}
 {%- import "apostrophe-modal:macros.html" as modals -%}
-{# bring in buttons #}
+{# bring in buttons #}Add
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 {% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
 
@@ -32,8 +32,17 @@
 {%- endmacro -%}
 
 {%- macro manageControls() -%}
-  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
+  {% if data.chooser %}
+    {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+    {# "New" is less ambiguous than "Add" when you're already *choosing* things. -Tom #}
+    {{ buttons.minor('New ' + data.options.label, { action: 'create-' + data.options.name }) }}
+    {{ buttons.major('Save Choices', { action: 'save' }) }}
+  {% else %}
+    {# Technically it's "just" a cancel button but it's actually the most frequent action #}
+    {# when you're just managing stuff. There is no risk of losing work. -Tom #}
+    {{ buttons.major('Done', { action: 'cancel' }) }}
+    {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
+  {% endif %}
 {%- endmacro -%}
 
 {%- macro pill(name, choices, state) -%}

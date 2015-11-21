@@ -1,0 +1,10 @@
+{% if data.browse %}
+  <a class="apos-button" data-browse>Browse...</a>
+{% endif %}
+{# Existing selections #}
+<div data-choices>
+  {# AJAX populates me #}
+</div>
+{% if data.autocomplete %}
+  <input type="text" name="autocomplete" data-autocomplete />
+{% endif %}
