@@ -146,7 +146,7 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textArea(field.name, field.placeholder) }}
+    {{ commonFields.textarea(field.name, field.placeholder) }}
   {%- else -%}
     {{ commonFields.string(field.name, field.placeholder) }}
   {%- endif -%}
