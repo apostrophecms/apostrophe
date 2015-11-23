@@ -1,0 +1,22 @@
+<div class="apos-slideshow" data-slideshow>
+  <div data-slideshow-items>
+    {% for piece in data.widget._pieces %}
+      <div data-slideshow-item class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}">
+        <h4>{{ piece.title }}</h4>
+        <img src="{{ apos.attachments.url(piece.attachment, { size: data.options.size }) }}" />
+        {%- if piece.credit -%}
+          {%- if piece.creditUrl -%}
+            <a href="{{ piece.creditUrl }}">
+          {%- endif -%}
+          {{ piece.credit }}
+          {%- if piece.creditUrl -%}
+            </a>
+          {%- endif -%}
+        {%- endif -%}
+        {% if piece.description %}
+          <div>{{ piece.description | nlbr }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
