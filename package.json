@@ -8,7 +8,7 @@
     "bless": "^3.0.3",
     "broadband": "^0.1.0",
     "cheerio": "^0.17.0",
-    "clean-css": "~1.0.0",
+    "clean-css": "^3.4.8",
     "clone": "~0.1.11",
     "deep-get-set": "^0.1.1",
     "diff": "~1.0.4",
