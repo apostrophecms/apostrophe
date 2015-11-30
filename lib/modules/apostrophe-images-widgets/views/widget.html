@@ -1,20 +1,24 @@
 <div class="apos-slideshow" data-slideshow>
   <div data-slideshow-items>
-    {% for piece in data.widget._pieces %}
+    {% for entry in data.widget._pieces %}
+      {# Works whether there's a relationship in the join or not. Normally there always #}
+      {# is for slideshows, but just in case someone really hates cropping... -Tom #}
+      {% set image = entry.item or entry %}
+      {% set relationship = entry.relationship %}
       <div data-slideshow-item class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}">
-        <h4>{{ piece.title }}</h4>
-        <img src="{{ apos.attachments.url(piece.attachment, { size: data.options.size }) }}" />
-        {%- if piece.credit -%}
-          {%- if piece.creditUrl -%}
-            <a href="{{ piece.creditUrl }}">
+        <h4>{{ image.title }}</h4>
+        <img src="{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}" />
+        {%- if image.credit -%}
+          {%- if image.creditUrl -%}
+            <a href="{{ image.creditUrl }}">
           {%- endif -%}
-          {{ piece.credit }}
-          {%- if piece.creditUrl -%}
+          {{ image.credit }}
+          {%- if image.creditUrl -%}
             </a>
           {%- endif -%}
         {%- endif -%}
-        {% if piece.description %}
-          <div>{{ piece.description | nlbr }}</div>
+        {% if image.description %}
+          <div>{{ image.description | nlbr }}</div>
         {% endif %}
       </div>
     {% endfor %}
