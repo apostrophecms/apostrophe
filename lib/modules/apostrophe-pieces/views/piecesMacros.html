@@ -9,10 +9,19 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {%- macro editControls() -%}
+  {{ dropdowns.base({
+    label: 'More',
+    items: [
+      {label: 'Versions', action: 'versions'},
+      {label: 'Copy', action: 'copy'},
+      {label: 'Trash', action: 'trash'}
+    ]}, 'button',
+    {
+      direction: 'down',
+      class: 'arrow-down'
+    }
+  ) }}
   {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  {{ buttons.minor('Trash', { action: 'trash' }) }}
-  {{ buttons.minor('Versions', { action: 'versions' }) }}
-  {{ buttons.minor('Copy', { action: 'copy' }) }}
   {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
 {%- endmacro -%}
 
@@ -35,4 +44,3 @@
     {{ pill(filter.name, module.stringifyBooleanFilterChoices(filter.choices), module.stringifyBooleanFilterValue(cursor.get(filter.name))) }}
   {%- endfor -%}
 {%- endmacro -%}
-

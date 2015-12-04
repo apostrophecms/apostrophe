@@ -14,12 +14,15 @@
 
 .apos-dropdown.apos-active
 {
+	.apos-button { z-index: @apos-z-index-7; }
+
 	.apos-dropdown-items
   {
   	visibility: visible;
     opacity: 1;
     transform: translateX(0%);
     transition-delay: 0s;
+		z-index: @apos-z-index-6;
   }
 }
 
@@ -71,4 +74,3 @@
 		.apos-rounded-tr;
 	}
 }
-
