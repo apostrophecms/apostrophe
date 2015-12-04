@@ -1,18 +1,22 @@
-{%- extends "apostrophe-modal:baseSlideable.html" -%}
+{%- extends "apostrophe-modal:base.html" -%}
 {%- import "apostrophe-modal:macros.html" as modals -%}
 {%- import "piecesMacros.html" as pieces with context -%}
 
 {%- block modalClass -%}
-  {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-modal-slideable
+  {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar
 {%- endblock -%}
 
 {%- block controls -%}
   {{ pieces.manageControls() }}
 {%- endblock -%}
 
+{%- block instructions -%}
+  You can select content to display by entering the titles of individual {{data.options.pluralLabel}}, or tags.
+{%- endblock -%}
+
 {%- block filters -%}
   {# ajax populates me #}
-  <div class="apos-ui-modal-filters-inner" data-filters>
+  <div class="apos-modal-filters-inner" data-filters>
   </div>
 {%- endblock -%}
 

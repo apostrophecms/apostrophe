@@ -1,10 +1,15 @@
-.apos-modal-header {
+// Base + Non-Slideable ============================ 
+.apos-ui.apos-modal
+.apos-modal-header 
+{
+  position: relative;
   width: 100%;
 
-  height: 123px;
-  padding: @apos-padding-4 @apos-padding-6 0;
+  height: 180px;
+  padding: @apos-padding-4 @apos-padding-6 @apos-padding-3;
 
   background-color: @apos-white;
+
 
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
@@ -33,7 +38,7 @@
   .apos-modal-instructions 
   {
     .apos-inline-block(top);
-    width: 23%;
+    width: 33%;
     margin-right: 2%; 
 
     font-size: 16px;
@@ -41,10 +46,11 @@
     letter-spacing: 0px;
   }
 
-  .apos-modal-controls {
+  .apos-modal-controls 
+  {
     position: relative;
     .apos-inline-block(top);
-    width: 50%;
+    width: 40%;
 
     text-align: right;
 
@@ -59,6 +65,18 @@
     {
       margin-left: @apos-padding-2;
     }
-    .apos-dropdown { margin-right: @apos-padding-2; }
+    .apos-dropdown 
+    { 
+      margin-right: @apos-padding-2; 
+    }
   }
+}
+
+// Slideable ===========================
+// - has shorter header since it doesn't
+//   need filters
+.apos-ui.apos-modal.apos-modal-slideable
+.apos-modal-header
+{
+  height: 123px;
 }

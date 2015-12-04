@@ -1,0 +1,37 @@
+.apos-ui.apos-modal
+.apos-modal-header .apos-modal-filters
+{
+	position: absolute;
+	width: ~'calc(100% - ('@apos-padding-6~'*2))';
+
+	bottom: 27px;
+
+	.apos-modal-filters-toggles
+	{
+		width: 50%;
+		.apos-inline-block(top);
+
+		.apos-pill
+		{
+			margin-right: @apos-margin-2;
+		}
+	}
+
+	.apos-modal-filters-search 
+	{
+		width: 50%;
+		.apos-inline-block(top);
+
+		input
+		{
+			position: relative;
+			max-width: 50%;
+
+			padding: @apos-padding-1 @apos-padding-2;
+			float: right;
+
+			font-size: 14px;
+			line-height: 14px;
+		}
+	}
+}

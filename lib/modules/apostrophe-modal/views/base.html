@@ -1,4 +1,4 @@
-{# the base template that all modals extend #}
+  {# the base template that all modals extend #}
 
 <div data-modal class="apos-ui apos-modal {% block modalClass %}{% endblock %}" {% block dataAttrs %}{% endblock %}>
   <div class="apos-modal-header">{#
@@ -13,7 +13,10 @@
     #}<div class="apos-modal-controls" data-modal-controls>
       {% block controls %}{% endblock %}
     </div>{#
-  #}</div>
+  #}<div class="apos-modal-filters">
+      {% block filters %}{% endblock %}
+    </div>{#
+#}</div>
   {# Base modals don't have breadcrumbs, but slideable modals do, extend baseSlideable.html #}
   {% block breadcrumb %}{% endblock %}
   {# This is initially just *our* data-modal-content, but later could contain many #}
@@ -23,9 +26,7 @@
     {# In a non-sliding modal this extra structure is harmless, it's all scoped to the #}
     {# apos-modal-slideable class. -Tom #}
     <div data-modal-content class="apos-modal-content apos-modal-slide-current">
-      <div class="apos-modal-filters">
-        {% block filters %}{% endblock %}
-      </div>
+
       <div class="apos-modal-body">
         {% block body %} I am a Modal! {% endblock %}
 
