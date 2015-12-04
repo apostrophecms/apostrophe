@@ -1,16 +1,31 @@
 {% extends "apostrophe-modal:base.html" %}
 {% import "apostrophe-modal:macros.html" as modals %}
 {% import "apostrophe-schemas:macros.html" as schemas %}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% block controls %}
   <div class='apos-modal-controls'>
-    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Save')}) }}
-    {{ modals.button({dataAttrs: 'data-cancel', float: 'left', arrow: 'left', label: __('Cancel')}) }}
+  	{{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  	{{ buttons.major('Save', { action: 'save' }) }}
   </div>
 {% endblock %}
 
+{% block modalClass %}apos-modal--pushed{% endblock %}
+
 {% block label %}
-{{ label }}
+	{% if data.verb == 'update' %}
+		Page Settings
+	{% elif data.verb == 'insert' %}
+		New Page
+	{% endif %}
+{% endblock %}
+
+{% block instructions %}
+	{% if data.verb == 'update' %}
+		Change the settings of the page you're currently on.
+	{% elif data.verb == 'insert' %}
+		Set the options for a new page.
+	{% endif %}
 {% endblock %}
 
 {% block body %}

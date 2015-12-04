@@ -9,7 +9,7 @@
 .apos-dropdown .apos-button
 {
 	z-index: 5; // todo bo
-	.apos-transition(@ease:cubic-bezier(0.13, 0.63, 0.34, 1.58));
+	.apos-transition--bounce;
 }
 
 .apos-dropdown.apos-active
@@ -40,13 +40,14 @@
   opacity: 0;
   transform: translateZ(0);
   transform: translateY(10%);
-  .apos-transition(@ease:cubic-bezier(0.13, 0.63, 0.34, 1.58));
+  .apos-transition--bounce;
   z-index: 3; // todo bo
 }
 
 .apos-dropdown-item
 {
-	padding: 20px 20px; // todo var this up
+	padding: @apos-padding-2; // todo var this up
+	.apos-text-small;
 	&:hover
 	{
 		cursor: pointer;
@@ -73,4 +74,21 @@
 		.apos-rounded-tl;
 		.apos-rounded-tr;
 	}
+}
+
+.apos-dropdown--arrow-down
+{
+	.apos-button
+	{
+		&::after
+		{
+			position: absolute;
+	    content: "\f0d7";
+	    top: 10px;
+	    right: 0px;
+	    font-family: "FontAwesome";
+	    .apos-transition--bounce;
+		}
+	}
+	&.apos-active .apos-button::after{ right: 18px;}
 }

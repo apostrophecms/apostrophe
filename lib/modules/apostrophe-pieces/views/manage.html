@@ -3,7 +3,7 @@
 {%- import "piecesMacros.html" as pieces with context -%}
 
 {%- block modalClass -%}
-  {{ (data.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-modal-slideable
+  {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-modal-slideable
 {%- endblock -%}
 
 {%- block controls -%}
@@ -21,6 +21,9 @@
 {%- endblock -%}
 
 {%- block body -%}
+  {% if data.chooser %}
+    <div data-chooser></div>
+  {% endif %}
   <div class="apos-table">
     <table data-items class="apos-manage-table">
       <thead data-headings>
