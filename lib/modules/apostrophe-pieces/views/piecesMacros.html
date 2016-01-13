@@ -5,9 +5,12 @@
 
 {# bring in modals #}
 {%- import "apostrophe-modal:macros.html" as modals -%}
-{# bring in buttons #}Add
+{# bring in ui components #}
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 {% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
+{% import 'apostrophe-ui:components/pills.html' as pills with context %}
+{% import 'apostrophe-ui:components/fields.html' as fields with context %}
+
 
 {%- macro editControls() -%}
   {{ dropdowns.base({
@@ -41,17 +44,21 @@
   {% endif %}
 {%- endmacro -%}
 
-{%- macro pill(name, choices, state) -%}
-  <span class="apos-pill" data-pill data-name="{{ name }}">
-    {%- for pill in choices -%}
-      {# leading spaces on classes prevent concatenation
-      #}<a class="apos-pill-choice {% if loop.first %} apos-first{% endif %}{% if loop.last %} apos-last{% endif %}{% if pill.value == state %} apos-active{% endif %}" href="#" data-{{ name }}="{{ pill.value }}">{{ __(pill.label) }}</a>
-    {%- endfor -%}
-  </span>
-{%- endmacro -%}
 
 {%- macro filters(filters, cursor) -%}
-  {%- for filter in filters -%}
-    {{ pill(filter.name, module.stringifyBooleanFilterChoices(filter.choices), module.stringifyBooleanFilterValue(cursor.get(filter.name))) }}
-  {%- endfor -%}
+{# 
+  Toggles 
+
+  #}<div class="apos-modal-filters-toggles">
+    {%- for filter in filters -%}
+      {{ pills.base( module.filterChoicesToPillChoices(filter) ) }}
+    {%- endfor -%}
+  </div>{# 
+
+  Search 
+
+  #}<div class="apos-modal-filters-search">
+    {# we need data.options.label & pluralLabel #}
+    {{ fields.string('search-' + data.options.name, 'Search ' + data.options.name + 's...' ) }} 
+  </div>
 {%- endmacro -%}
