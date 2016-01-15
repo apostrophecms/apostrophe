@@ -7,5 +7,4 @@ services: mongodb
 # whitelist
 branches:
   only:
-    - master
     - unstable
