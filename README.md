@@ -61,6 +61,8 @@ Next, create the home page template, `lib/modules/apostrophe-pages/views/pages/h
 {% endblock %}
 ```
 
+Note that we're extending a layout template here, which saves us from reimplementing shared elements in every page template. We'll look at that later.
+
 Now we need to create the database, which will automatically populate the site with a home page. To list the command line tasks we type:
 
 `node app help`
@@ -221,3 +223,106 @@ And create a template for `default` pages in `lib/modules/apostrophe-pages/views
 ```
 
 It's similar to the home page, but displays the title of this particular page.
+
+Now you can access "New Page" from the "Pages Menu."
+
+## Editing the layout and adding navigation
+
+Now that we have subpages on the site, we need a way to navigate to them. Let's add a breadcrumb trail and a subnav of child pages to every page.
+
+We'll want these things to be in the shared layout template that all page templates extend. That's called `outerLayout.html`. By default it's an empty template that just extends `outerLayoutBase.html` and outputs whatever is in your page template. `outerLayoutBase.html` does the really gnarly work of outputting `link` and `script` tags and the Apostrophe admin bar. In some projects you may never touch that one.
+
+To override it for your project, create `lib/modules/apostrophe-templates/views/outerLayout.html` in your project. First make the folder:
+
+```
+mkdir -p lib/modules/apostrophe-templates/views
+```
+
+*You can override any template that is part of an Apostrophe module by creating a corresponding `views` folder in your project. Apostrophe's modules live in the `lib/modules` folder of the `apostrophe` npm module. If you recreate the same folder structure in your project, you can override individual template files by copying and modifying them there. Never edit the templates in `node_modules/apostrophe` itself to do project-specific work.*
+
+Here's an example of an `outerLayout.html` that includes "tabs" (children of the home page), a breadcrumb trail (links to ancestor pages), and subnavigation with links to child pages. With these links we can explore the whole site and come back again.
+
+We'll also open a `<main>` element to contain the content from the page template.
+
+```html
+{% extends "outerLayoutBase.html" %}
+{% block beforeMain %}
+
+  <nav class="tabs">
+    {# If we have ancestors, the first one is the home page. Otherwise, we are the home page #}
+    {% set home = data.page._ancestors[0] or data.page %}
+    {% for page in home._children %}
+      {# If this tab is the current page or its second ancestor, it's the current tab #}
+      {% set current = (data.page._id == page._id) or (data.page._ancestors[1]._id == page._id) %}
+      <a href="{{ page._url }}" class="{% if current %}current{% endif %}">{{ page.title }}</a>
+    {% endfor %}
+  </nav>
+
+  <nav class="breadcrumb">
+    {% for page in data.page._ancestors %}
+      <a href="{{ page._url }}">{{ page.title }}</a> &raquo;
+    {% endfor %}
+    <a class="self" href="{{ data.page.url }}">{{ data.page.title }}</a>
+  </nav>
+
+  <nav class="children">
+    {% for page in data.page._children %}
+      <a href="{{ page._url }}">{{ page.title }}</a>
+    {% endfor %}
+  </nav>
+  <main>
+{% endblock %}
+
+{% block afterMain %}
+  </main>
+{% endblock %}
+```
+
+*The `beforeMain` and `afterMain` blocks defined in `outerLayoutBase.html` are useful for doing things before and after the main content from the page template. You can also override `outerLayoutBase.html` completely if you don't like this structure.*
+
+*"What's with all the underscores?"* Properties like `_children` and `_ancestors` are loaded dynamically, depending on what pages this page is currently related to. Apostrophe uses the `_` notation to indicate that they should not be redundantly stored back to the database.
+
+Here are some additional styles for `site.less` to make the site a little more recognizable in structure once you've added some pages and subpages and so on:
+
+```
+/* quick and dirty LESS CSS for navigation */
+
+nav.tabs {
+  margin-left: 220px;
+  a {
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid gray;
+    &.current {
+      border-bottom: 1px solid white;
+    }
+  }
+}
+
+nav.breadcrumb {
+  margin-left: 220px;
+  margin-top: 20px;
+  a {
+    display: inline-block;
+  }
+  padding-bottom: 40px;
+  .self {
+    font-weight: bold;
+  }
+}
+
+nav.children {
+  margin-top: 20px;
+  float: left;
+  width: 200px;
+  padding-right: 20px;
+  a {
+    display: block;
+  }
+}
+
+main {
+  margin-left: 220px;
+  width: 1000px;
+}
+```
