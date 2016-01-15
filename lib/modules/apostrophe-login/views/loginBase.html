@@ -1,0 +1,36 @@
+{% extends data.outerLayout %}
+{% block title %}Login{% endblock %}
+
+{% block bodyClass %}apos-login-page{% endblock %}
+
+{% block main %}
+  <div class="apos-login-container">
+    <div class="apos-ui apos-login">
+      <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('LOGIN') }}{% endblock %}</div>
+      {% block form %}
+        <form action="{% block action %}{{ aposPrefix }}/login{% endblock %}" method="post">
+          {% if message %}<div class="warning">{{ message }}</div>{% endif %}
+          {% block fields %}
+            <div class="apos-field apos-login-username">
+              <label class="apos-field-label" for="username">{{ __('Username or Email') }} {% block usernameHint %}{% endblock %}</label>
+              <input class="apos-field-input apos-field-input-text" type="text" name="username" id="username" />
+            </div>
+            <div class="apos-field apos-login-password">
+              <label class="apos-field-label" for="password">{{ __('Password') }} {% block passwordHint %}{% endblock %}</label>
+              <input class="apos-field-input apos-field-input-text" type="password" name="password" id="password" />
+            </div>
+          {% endblock %}
+          <div class="apos-login-submit">
+            <input type="submit" class="apos-button" value="{% block buttonLabel %}{{ __('Log In') }}{% endblock %}" />
+          </div>
+          {% block forgot %}
+            {% if resetAvailable %}
+            <br />
+              <a class="apos-login-reset" href="{{ aposPrefix }}/apos-people/reset-request">{{ __('Reset My Password') }}</a>
+            {% endif %}
+          {% endblock %}
+        </form>
+      {% endblock %}
+    </div>
+  </div>
+{% endblock %}
