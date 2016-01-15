@@ -45,20 +45,20 @@
 {%- endmacro -%}
 
 
-{%- macro filters(filters, cursor) -%}
-{# 
-  Toggles 
+{%- macro filters(filters) -%}
+{#
+  Toggles
 
   #}<div class="apos-modal-filters-toggles">
-    {%- for filter in filters -%}
-      {{ pills.base( module.filterChoicesToPillChoices(filter) ) }}
+    {%- for filter in filters.options -%}
+      {{ pills.base( module.filterChoicesToPillChoices(filter), filters.choices[filter.name] ) }}
     {%- endfor -%}
-  </div>{# 
+  </div>{#
 
-  Search 
+  Search
 
   #}<div class="apos-modal-filters-search">
     {# we need data.options.label & pluralLabel #}
-    {{ fields.string('search-' + data.options.name, 'Search ' + data.options.name + 's...' ) }} 
+    {{ fields.string('search-' + data.options.name, 'Search ' + data.options.name + 's...', filters.q or '' ) }}
   </div>
 {%- endmacro -%}

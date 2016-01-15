@@ -1,5 +1,5 @@
-{% macro string(name, placeholder) -%}
-  <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-text" type="text">
+{% macro string(name, placeholder, value) -%}
+  <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-text" type="text" value="{{value}}">
 {%- endmacro %}
 
 {% macro textarea(name, placeholder) -%}
