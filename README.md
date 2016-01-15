@@ -176,3 +176,48 @@ Restart the site and refresh the page. Now you can see what you're doing!
 
 Similarly, we can push javascript files via the `scripts` key and the `public/js` folder in the `apostrophe-assets` module.
 
+## Adding pages
+
+We want to be able to have more than one page on our site. The "New Page" option on the "Page Menu" doesn't work yet because we haven't configured any page types. Each type corresponds to a template, such as our `home` template.
+
+Let's configure the `apostrophe-pages` module:
+
+```javascript
+'apostrophe-pages': {
+  types: [
+    {
+      name: 'default',
+      label: 'Default'
+    },
+    {
+      name: 'home',
+      label: 'Home'
+    }
+  ]
+},
+```
+
+And create a template for `default` pages in `lib/modules/apostrophe-pages/views/pages/default.html`:
+
+```html
+{% extends data.outerLayout %}
+{% block title %}{{ data.page.title }}{% endblock %}
+{% block main %}
+
+<h2>{{ data.page.title }}</h2>
+
+{{
+  apos.area(data.page, 'body', {
+    widgets: {
+      'apostrophe-rich-text': {
+        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+      },
+      'apostrophe-images': { size: 'one-half' }
+    }
+  })
+}}
+
+{% endblock %}
+```
+
+It's similar to the home page, but displays the title of this particular page.
