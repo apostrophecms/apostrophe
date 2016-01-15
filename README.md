@@ -164,7 +164,7 @@ Now create a folder for the LESS CSS files:
 
 And populate `site.less` in that folder:
 
-```javascript
+```css
 .apos-refreshable {
   margin-top: 150px;
 }
@@ -284,7 +284,7 @@ We'll also open a `<main>` element to contain the content from the page template
 
 Here are some additional styles for `site.less` to make the site a little more recognizable in structure once you've added some pages and subpages and so on:
 
-```
+```css
 /* quick and dirty LESS CSS for navigation */
 
 nav.tabs {
