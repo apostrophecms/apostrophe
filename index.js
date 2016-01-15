@@ -215,10 +215,6 @@ module.exports = function(options) {
     if (!self.shortName) {
       throw "Specify the `shortName` option and set it to the name of your project's repository or folder";
     }
-    self.hostName = self.options.hostName;
-    if (!self.hostName) {
-      throw "Specify the `hostName` option and set it to the preferred hostname of your site, such as mycompany.com";
-    }
     self.title = self.options.title;
     self.prefix = self.options.prefix || '';
   }
