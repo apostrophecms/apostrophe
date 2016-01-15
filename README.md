@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/punkave/apostrophe.svg?branch=master)](https://travis-ci.org/punkave/apostrophe)
+
 # How to make a website with Apostrophe 0.6 unstable
 
 We'll assume our project's short, filename-friendly name is `straw-man`.
