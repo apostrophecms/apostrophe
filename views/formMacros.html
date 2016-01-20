@@ -57,6 +57,32 @@
   {{ formText(name, label) }}
 {%- endmacro -%}
 
+{# Alternate version with select elements #}
+{%- macro formDateSelect(name, label, yearsBack, yearsForward) -%}
+  <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-date-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    {{ formDateSelectComponent('month', aposMonthChoices()) }}
+    {{ formDateSelectComponent('day', aposDayChoices()) }}
+    {{ formDateSelectComponent('year', aposYearChoices(yearFrom, yearTo)) }}
+  </fieldset>
+{%- endmacro -%}
+
+{%- macro formDateSelectComponent(component, choices) -%}
+  <div class="apos-select-wrapper apos-inline-input">
+    <select data-component="{{ component | e }}"
+      {% for key, val in _attrs %}
+        {{ key }}="{{ val | e }}"
+      {% endfor %}
+      data-selectize
+    >
+      {%- for choice in choices -%}
+        <option value="{{ choice.value | e }}" label="{{ __(choice.label) | e }}"{#
+        #}>{{ __(choice.label) | e }}</option>
+      {%- endfor -%}
+    </select>
+  </div>
+{%- endmacro -%}
+
 {%- macro formTime(name, label) -%}
   {{ formText(name, label) }}
 {%- endmacro -%}
