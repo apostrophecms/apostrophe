@@ -3,6 +3,6 @@
 
 {% block main %}
   {% for piece in data.pieces %}
-    <h4><a href="{{ data.page.slug }}/{{ piece.slug }}">{{ piece.title }}</a></h4>
+    <h4><a href="{{ piece._url }}">{{ piece.title }}</a></h4>
   {% endfor %}
 {% endblock %}
