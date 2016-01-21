@@ -490,3 +490,53 @@ Now create `show.html` in that folder:
 }}
 {% endblock %}
 ```
+
+### Pretty URLs for blog posts
+
+By default, the URL of a blog post looks like:
+
+`/blog/title-of-post-hyphenated`
+
+This isn't terrible, but blogs can have many posts with similar titles and a sense of chronology is really helpful. Let's override two methods in the `blog-posts-pages` module to add the year, month and day to the URLs.
+
+First install the `moment` npm module so we can format dates easily:
+
+`npm install --save moment`
+
+Now create `lib/modules/blog-posts-pages/index.js`:
+
+```javascript
+var moment = require('moment');
+
+module.exports = {
+  construct: function(self, options) {
+    // Build a prettier URL for a blog post by incorporating the publication date. Slugs are
+    // unique but this is nicer
+    self.buildUrl = function(page, piece) {
+      if (!page) {
+        return false;
+      }
+
+      var url = page._url + '/' + moment(page.publishedAt).format('YYYY/MM/DD') + '/' + piece.slug;
+      return url;
+    };
+
+    // Allow year/month/day in URLs to work. It's just window dressing; you can
+    // also hit a blog post with just the slug, via the self.dispatch call made
+    // in the apostrophe-pieces-pages module
+    self.dispatch('/:year/:month/:day/:slug', self.showPage);
+  }
+};
+```
+
+In this constructor we're overriding the `buildUrl` method, called for each piece when a URL for it is needed, to incorporate the publication date like this:
+
+`/blog/2016/01/01/happy-new-year`
+
+And to actually display the blog post when that URL is fetched, we add a `self.dispatch` call to respond to URLs that look like that and invoke the existing `self.showPage` method:
+
+```javascript
+self.dispatch('/:year/:month/:day/:slug', self.showPage);
+```
+
+*`self.dispatch` is a feature of `apostrophe-custom-pages`, the parent class of `apostrophe-pieces-pages` and the grandparent of our module.* Whenever a URL begins with the slug of a blog (a page powered by our module),  `self.dispatch` lets us use Express-style route patterns to handle the rest of the URL. This powerful feature allows us to serve any kind of content by "adding on" to the URL of a page.
