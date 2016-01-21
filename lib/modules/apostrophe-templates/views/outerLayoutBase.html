@@ -16,8 +16,8 @@
               {% block apostropheMenuBody %}
               {# Default behavior for admin bar is to spit out every menu available except for pages. This can be overwritten with a project level outerLayout.html #}
               <div class="apos-admin-bar-items" data-apos-admin-bar-items>
-                {% for name, item in apos %}
-                  {% if apos.utils.isFunction(item.menu) and name != 'pages' %}
+                {% for name, item in apos.modules %}
+                  {% if apos.utils.isFunction(item.menu) and name != 'apostrophe-pages' %}
                     {{ item.menu() }}
                   {% endif %}
                 {% endfor %}
