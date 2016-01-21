@@ -383,7 +383,5 @@ module.exports = {
 
 Two cool things happen here. First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
 
-Then, we add a constructor function in which we create a `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor.
-
-Our `beforeSave` method creates an easily sorted `publishedAt` field based on the publication date and time.
+Then, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
 
