@@ -330,7 +330,7 @@ main {
 }
 ```
 
-## Blog Posts
+## Blogging
 
 We want a blog. We don't have an official blog module yet, but we do have `apostrophe-pieces`, a parent class for all modules that manage global silos of content, such as blog posts. Let's subclass it to add blog posts to the project.
 
@@ -359,6 +359,19 @@ module.exports = {
       type: 'time',
       required: false,
       def: null
+    },
+    {
+      name: 'body',
+      label: 'Body',
+      type: 'area',
+      options: {
+        widgets: {
+          'apostrophe-rich-text': {
+            toolbar: [ 'Style', 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+          },
+          'apostrophe-images': { size: 'one-half' }
+        }
+      }
     }
   ],
 
@@ -393,9 +406,7 @@ module.exports = {
 
 Four cool things happen here.
 
-First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
-
-Second, we use `addColumns` and `addSorts` to configure the "Manage Blog Posts" view to be aware of the `publishedAt` property.
+First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields as well as a `body` content area. *By default pieces don't have any content areas.*
 
 Third, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
 
@@ -413,7 +424,7 @@ And fourth, we also override the `find` method and extend it. The `find` method 
 
 Now we can create blog posts just by clicking on the Apostrophe logo, pulling down the "blog posts" menu and clicking "New Blog Post." We can also manage existing blog posts.
 
-## Reading Blog Posts
+## Reading Blog Posts on the Site
 
 There's nowhere to read the blog posts yet! We need a blog module. Let's subclass `apostrophe-pieces-pages` to create `blog`. `apostrophe-pieces-pages` lets us add a page type to our site that displays an "index" view of many pieces, with pagination, and allows us to click through to view each piece on its own page. This is a perfect jumping-off point for creating a blog.
 
@@ -448,44 +459,13 @@ Now we need to add `blog-posts` to the list of page types allowed on the site:
 
 *If our module is named `blog-posts-pages`, `apostrophe-pieces-pages` will automatically trim off the "s" to arrive at a page type name for our blog.* That's how we knew what to add to the `types` array in order to let the user add a blog to the site.
 
-### Displaying blog posts
+### Body content for blog posts
 
 If we test the site now, we'll find that we an add a page of type "Blog" to the site via the "Page Menu," and it displays a list of blog post titles. When we click one, we get a page with... just the title. Not very satisfying.
 
-By default pieces don't have any content areas in them. Let's enhance our `addFields` option for the `blog-posts` module to add a `body` area:
+We have a body area with two widgets allowed in it, rich text and images (slideshows). And you can see that in the editor.
 
-```javascript
-  addFields: [
-    {
-      name: 'publicationDate',
-      label: 'Publication Date',
-      type: 'date'
-    },
-    {
-      name: 'publicationTime',
-      label: 'Publication Time',
-      type: 'time',
-      required: false,
-      def: null
-    },
-    {
-      name: 'body',
-      label: 'Body',
-      type: 'area',
-      options: {
-        widgets: {
-          'apostrophe-rich-text': {
-            toolbar: [ 'Style', 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
-          },
-          'apostrophe-images': { size: 'one-half' }
-        }
-      }
-    }
-```
-
-Now we have a body area with two widgets allowed in it, rich text and images (slideshows). And you can see that in the editor.
-
-But, when you click through on the blog page to view a post you still don't see the body. We need to override the `show.html` template in our `blog-posts-pages` module. First make a `views` folder for that module:
+But, when you click through on the blog page to view a post you still don't see the body. So we need to override the `show.html` template in our `blog-posts-pages` module. First make a `views` folder for that module:
 
 `mkdir -p lib/modules/blog-posts-pages/views`
 
