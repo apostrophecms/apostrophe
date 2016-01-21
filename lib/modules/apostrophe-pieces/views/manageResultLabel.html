@@ -1,0 +1,7 @@
+<div class='apos-manage-result-label'>
+	{%- if data.filters.q -%}
+		Showing {{ data.total }} results for <span>"{{ data.filters.q }}"</span>
+	{%- else -%}
+		Showing {{ data.skip + 1 }} - {{ data.skip + data.pieces.length }} of {{ data.total }} results
+	{%- endif -%}
+</div>
