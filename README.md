@@ -330,7 +330,7 @@ main {
 }
 ```
 
-## Blogging
+## Blog Posts
 
 We want a blog. We don't have an official blog module yet, but we do have `apostrophe-pieces`, a parent class for all modules that manage global silos of content, such as blog posts. Let's subclass it to add blog posts to the project.
 
@@ -384,4 +384,18 @@ module.exports = {
 Two cool things happen here. First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
 
 Then, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
+
+
+Finally, add this new module to the `modules` key in `app.js`. We did all of our configuration in `index.js`, so our options object can be empty:
+
+```javascript
+blog: {}
+```
+
+Now we can create blog posts just by clicking on the Apostrophe logo, pulling down the "blog posts" menu and clicking "New Blog Post." We can also manage existing blog posts.
+
+## Reading Blog Posts
+
+There's nowhere to read the blog posts yet! We need a blog module. Let's subclass `apostrophe-pieces-pages` to create `blog`. `apostrophe-pieces-pages` lets us add a page type to our site that displays an "index" view of many pieces, with pagination, and allows us to click through to view each piece on its own page. This is a perfect jumping-off point for creating a blog.
+
 
