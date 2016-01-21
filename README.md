@@ -448,3 +448,65 @@ Now we need to add `blog-posts` to the list of page types allowed on the site:
 
 *If our module is named `blog-posts-pages`, `apostrophe-pieces-pages` will automatically trim off the "s" to arrive at a page type name for our blog.* That's how we knew what to add to the `types` array in order to let the user add a blog to the site.
 
+### Displaying blog posts
+
+If we test the site now, we'll find that we an add a page of type "Blog" to the site via the "Page Menu," and it displays a list of blog post titles. When we click one, we get a page with... just the title. Not very satisfying.
+
+By default pieces don't have any content areas in them. Let's enhance our `addFields` option for the `blog-posts` module to add a `body` area:
+
+```javascript
+  addFields: [
+    {
+      name: 'publicationDate',
+      label: 'Publication Date',
+      type: 'date'
+    },
+    {
+      name: 'publicationTime',
+      label: 'Publication Time',
+      type: 'time',
+      required: false,
+      def: null
+    },
+    {
+      name: 'body',
+      label: 'Body',
+      type: 'area',
+      options: {
+        widgets: {
+          'apostrophe-rich-text': {
+            toolbar: [ 'Style', 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+          },
+          'apostrophe-images': { size: 'one-half' }
+        }
+      }
+    }
+```
+
+Now we have a body area with two widgets allowed in it, rich text and images (slideshows). And you can see that in the editor.
+
+But, when you click through on the blog page to view a post you still don't see the body. We need to override the `show.html` template in our `blog-posts-pages` module. First make a `views` folder for that module:
+
+`mkdir -p lib/modules/blog-posts-pages/views`
+
+*Apostrophe will automatically look here when templates for this module are rendered. If it doesn't find them it will look at the core Apostrophe module we're extending, `apostrophe-pieces-pages`.*
+
+Now create `show.html` in that folder:
+
+```html
+{% extends data.outerLayout %}
+{% block title %}{{ data.piece.title }}{% endblock %}
+
+{% block main %}
+<h2>{{ data.piece.title }}</h2>
+{{ apos.area(data.piece, 'body', {
+    widgets: {
+      'apostrophe-rich-text': {
+        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+      },
+      'apostrophe-images': { size: 'one-half' }
+    }
+  })
+}}
+{% endblock %}
+```
