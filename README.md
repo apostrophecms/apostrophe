@@ -329,3 +329,61 @@ main {
   width: 1000px;
 }
 ```
+
+## Blogging
+
+We want a blog. We don't have an official blog module yet, but we do have `apostrophe-pieces`, a parent class for all modules that manage global silos of content, such as blog posts. Let's subclass it to add blog posts to the project.
+
+We could do this right in `app.js`, but because we'll be writing some code, it makes more sense to create a new folder for the module:
+
+```
+mkdir -p lib/modules/blog-posts
+```
+
+Now create `index.js` in that file:
+
+```javascript
+module.exports = {
+  extend: 'apostrophe-pieces',
+  name: 'blogPost',
+  label: 'Blog Post',
+  addFields: [
+    {
+      name: 'publicationDate',
+      label: 'Publication Date',
+      type: 'date'
+    },
+    {
+      name: 'publicationTime',
+      label: 'Publication Time',
+      type: 'time',
+      required: false,
+      def: null
+    }
+  ],
+  construct: function(self, options) {
+    // When a blog post is saved in the editor, update the sorting-friendly
+    // publishedAt field based on publicationDate and publicationTime
+    self.beforeSave = function(req, doc, callback) {
+      if (doc.type !== self.name) {
+        return setImmediate(callback);
+      }
+      if (doc.publicationTime === null) {
+        // Make sure we specify midnight, if we leave off the time entirely we get
+        // midnight UTC, not midnight local time
+        doc.publishedAt = new Date(doc.publicationDate + ' 00:00:00');
+      } else {
+        doc.publishedAt = new Date(doc.publicationDate + ' ' + doc.publicationTime);
+      }
+      return setImmediate(callback);
+    };
+  }
+};
+```
+
+Two cool things happen here. First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
+
+Then, we add a constructor function in which we create a `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor.
+
+Our `beforeSave` method creates an easily sorted `publishedAt` field based on the publication date and time.
+
