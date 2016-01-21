@@ -389,7 +389,7 @@ Then, we add a constructor function in which we override the `beforeSave` method
 Finally, add this new module to the `modules` key in `app.js`. We did all of our configuration in `index.js`, so our options object can be empty:
 
 ```javascript
-blog: {}
+'blog-posts': {}
 ```
 
 Now we can create blog posts just by clicking on the Apostrophe logo, pulling down the "blog posts" menu and clicking "New Blog Post." We can also manage existing blog posts.
@@ -398,4 +398,34 @@ Now we can create blog posts just by clicking on the Apostrophe logo, pulling do
 
 There's nowhere to read the blog posts yet! We need a blog module. Let's subclass `apostrophe-pieces-pages` to create `blog`. `apostrophe-pieces-pages` lets us add a page type to our site that displays an "index" view of many pieces, with pagination, and allows us to click through to view each piece on its own page. This is a perfect jumping-off point for creating a blog.
 
+We can get this going right away in `app.js` (add it to `modules`):
+
+```javascript
+'blog-posts-pages': {
+  extend: 'apostrophe-pieces-pages'
+}
+```
+
+Now we need to add `blog-posts` to the list of page types allowed on the site:
+
+```javascript
+'apostrophe-pages': {
+  types: [
+    {
+      name: 'default',
+      label: 'Default'
+    },
+    {
+      name: 'home',
+      label: 'Home'
+    },
+    {
+      name: 'blog-posts-page',
+      label: 'Blog'
+    }
+  ]
+}
+```
+
+*If our module is named `blog-posts-pages`, `apostrophe-pieces-pages` will automatically trim off the "s" to arrive at a page type name for our blog.* That's how we knew what to add to the `types` array in order to let the user add a blog to the site.
 
