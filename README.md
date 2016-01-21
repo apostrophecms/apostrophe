@@ -361,7 +361,9 @@ module.exports = {
       def: null
     }
   ],
+
   construct: function(self, options) {
+
     // When a blog post is saved in the editor, update the sorting-friendly
     // publishedAt field based on publicationDate and publicationTime
     self.beforeSave = function(req, doc, callback) {
@@ -377,20 +379,37 @@ module.exports = {
       }
       return setImmediate(callback);
     };
+
+    // Override "find" and set a default sort based on publication date/time, typical for blogs
+    var superFind = self.find;
+    self.find = function(req, criteria, projection) {
+      var cursor = superFind(req, criteria, projection);
+      cursor.sort(self.options.sort || { publishedAt: -1 });
+      return cursor;
+    };
   }
 };
 ```
 
-Two cool things happen here. First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
+Four cool things happen here.
 
-Then, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
+First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields.
 
+Second, we use `addColumns` and `addSorts` to configure the "Manage Blog Posts" view to be aware of the `publishedAt` property.
 
-Finally, add this new module to the `modules` key in `app.js`. We did all of our configuration in `index.js`, so our options object can be empty:
+Third, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
+
+And fourth, we also override the `find` method and extend it. The `find` method returns a cursor to be used to fetch blog posts. We call the `sort` filter and set a default sort based on the publication date and time, in reverse chronological order, typical for blogs.
+
+*Note the use of the "super pattern" to capture the original version of `self.find` and call it from the new one.*
+
+**Finally, add this new module to the `modules` key in `app.js`.** We did all of our configuration in `index.js`, so our options object can be empty:
 
 ```javascript
 'blog-posts': {}
 ```
+
+*Apostrophe merges any configuration found in `modules` in app.js last, on top of whatever is found in `lib/modules/your-module-name/index.js`.*
 
 Now we can create blog posts just by clicking on the Apostrophe logo, pulling down the "blog posts" menu and clicking "New Blog Post." We can also manage existing blog posts.
 
