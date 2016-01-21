@@ -20,6 +20,7 @@ mkdir straw-man
 cd straw-man
 git init
 npm init
+mkdir -p node_modules
 cd node_modules
 ln -s ~/src/apostrophe-06 apostrophe
 ```
