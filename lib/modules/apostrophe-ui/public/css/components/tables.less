@@ -3,6 +3,7 @@
 // ===============================================================
 .apos-table
 {
+  padding: 0 @apos-padding-6;
   .apos-text-small;
   max-width: 100%;
   border-collapse: collapse;
@@ -24,7 +25,7 @@
 .apos-table th,
 .apos-table td
 {
-  padding: @apos-padding-2 @apos-padding-6;
+  padding: @apos-padding-2;
 }
 
 .apos-table th,
@@ -32,13 +33,16 @@
 {
   max-width: 300px;
   min-width: 25px;
-
   a
   {
     .apos-text-small;
     color: @apos-dark;
     text-decoration: none;
   }
+}
+.apos-table td:first-child //check-box input
+{
+  width: 21px;
 }
 
 // The Head ===================================
