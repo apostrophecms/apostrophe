@@ -1,10 +1,12 @@
 .apos-ui.apos-modal
 .apos-modal-header .apos-modal-filters
 {
-	position: absolute;
-	width: ~'calc(100% - ('@apos-padding-6~'*2))';
-
-	bottom: 27px;
+	margin-top: @apos-margin-3;
+	
+	//commenting out below as the filter position should be more flexible -sam
+	//position: absolute;
+	//width: ~'calc(100% - ('@apos-padding-6~'*2))';
+	//bottom: 27px;
 
 	.apos-modal-filters-toggles
 	{
@@ -25,7 +27,8 @@
 		input
 		{
 			position: relative;
-			max-width: 50%;
+			//max-width: 50%; px value is actually working better here -sam
+			max-width: 314px;
 
 			padding: @apos-padding-1 @apos-padding-2;
 			float: right;
