@@ -43,3 +43,12 @@
 }
 
 [data-widget="apostrophe-rich-text"].apos-active .apos-ui { display: none; }
+
+.apos-area [data-widget] .apos-area-item-controls { opacity: 0; }
+.apos-area [data-widget]:hover .apos-area-item-controls { opacity: 1; }
+.apos-area [data-widget="apostrophe-rich-text"].apos-empty
+{
+  min-height: 80px;
+  background-color: @apos-light;
+  .apos-area-item-controls { opacity: 1; }
+}
