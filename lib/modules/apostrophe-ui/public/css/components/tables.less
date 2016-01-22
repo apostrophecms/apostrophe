@@ -8,6 +8,7 @@
   max-width: 100%;
   border-collapse: collapse;
   text-align: left;
+  background-color: @apos-lighter;
   @media screen and (max-width: 960px)
   {
     overflow: scroll;
@@ -49,14 +50,14 @@
 .apos-table thead
 {
   border-bottom: 1px solid @apos-dark;
+
+  tr:nth-child(1n){ background-color: @apos-lighter; }
 }
 
 
 // The Body ===================================
-.apos-table tr:nth-child(2n)
-{
-  background: @apos-light;
-}
+.apos-table tr:nth-child(1n){ background-color: @apos-white; }
+.apos-table tr:nth-child(2n){ background-color: @apos-lighter; }
 
 
 // Checkboxes ===================================
