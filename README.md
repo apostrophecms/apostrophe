@@ -22,6 +22,7 @@ mkdir straw-man
 cd straw-man
 git init
 npm init
+mkdir -p node_modules
 cd node_modules
 ln -s ~/src/apostrophe-06 apostrophe
 ```
@@ -328,3 +329,214 @@ main {
   width: 1000px;
 }
 ```
+
+## Blogging
+
+We want a blog. We don't have an official blog module yet, but we do have `apostrophe-pieces`, a parent class for all modules that manage global silos of content, such as blog posts. Let's subclass it to add blog posts to the project.
+
+We could do this right in `app.js`, but because we'll be writing some code, it makes more sense to create a new folder for the module:
+
+```
+mkdir -p lib/modules/blog-posts
+```
+
+Now create `index.js` in that file:
+
+```javascript
+module.exports = {
+  extend: 'apostrophe-pieces',
+  name: 'blogPost',
+  label: 'Blog Post',
+  addFields: [
+    {
+      name: 'publicationDate',
+      label: 'Publication Date',
+      type: 'date'
+    },
+    {
+      name: 'publicationTime',
+      label: 'Publication Time',
+      type: 'time',
+      required: false,
+      def: null
+    },
+    {
+      name: 'body',
+      label: 'Body',
+      type: 'area',
+      options: {
+        widgets: {
+          'apostrophe-rich-text': {
+            toolbar: [ 'Style', 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+          },
+          'apostrophe-images': { size: 'one-half' }
+        }
+      }
+    }
+  ],
+
+  construct: function(self, options) {
+
+    // When a blog post is saved in the editor, update the sorting-friendly
+    // publishedAt field based on publicationDate and publicationTime
+    self.beforeSave = function(req, doc, callback) {
+      if (doc.type !== self.name) {
+        return setImmediate(callback);
+      }
+      if (doc.publicationTime === null) {
+        // Make sure we specify midnight, if we leave off the time entirely we get
+        // midnight UTC, not midnight local time
+        doc.publishedAt = new Date(doc.publicationDate + ' 00:00:00');
+      } else {
+        doc.publishedAt = new Date(doc.publicationDate + ' ' + doc.publicationTime);
+      }
+      return setImmediate(callback);
+    };
+
+    // Override "find" and set a default sort based on publication date/time, typical for blogs
+    var superFind = self.find;
+    self.find = function(req, criteria, projection) {
+      var cursor = superFind(req, criteria, projection);
+      cursor.sort(self.options.sort || { publishedAt: -1 });
+      return cursor;
+    };
+  }
+};
+```
+
+Four cool things happen here.
+
+First, we extend the `apostrophe-pieces` module to create a module for managing blog posts, and we use `addFields` to extend the schema to include publication date and time fields as well as a `body` content area. *By default pieces don't have any content areas.*
+
+Third, we add a constructor function in which we override the `beforeSave` method. `apostrophe-pieces` automatically calls `beforeSave` whenever a blog post is saved in the editor. By default `beforeSave` does nothing. Our version will update an easily sorted `publishedAt` field based on the publication date and time.
+
+And fourth, we also override the `find` method and extend it. The `find` method returns a cursor to be used to fetch blog posts. We call the `sort` filter and set a default sort based on the publication date and time, in reverse chronological order, typical for blogs.
+
+*Note the use of the "super pattern" to capture the original version of `self.find` and call it from the new one.*
+
+**Finally, add this new module to the `modules` key in `app.js`.** We did all of our configuration in `index.js`, so our options object can be empty:
+
+```javascript
+'blog-posts': {}
+```
+
+*Apostrophe merges any configuration found in `modules` in app.js last, on top of whatever is found in `lib/modules/your-module-name/index.js`.*
+
+Now we can create blog posts just by clicking on the Apostrophe logo, pulling down the "blog posts" menu and clicking "New Blog Post." We can also manage existing blog posts.
+
+## Reading Blog Posts on the Site
+
+There's nowhere to read the blog posts yet! We need a blog module. Let's subclass `apostrophe-pieces-pages` to create `blog`. `apostrophe-pieces-pages` lets us add a page type to our site that displays an "index" view of many pieces, with pagination, and allows us to click through to view each piece on its own page. This is a perfect jumping-off point for creating a blog.
+
+We can get this going right away in `app.js` (add it to `modules`):
+
+```javascript
+'blog-posts-pages': {
+  extend: 'apostrophe-pieces-pages'
+}
+```
+
+Now we need to add `blog-posts` to the list of page types allowed on the site:
+
+```javascript
+'apostrophe-pages': {
+  types: [
+    {
+      name: 'default',
+      label: 'Default'
+    },
+    {
+      name: 'home',
+      label: 'Home'
+    },
+    {
+      name: 'blog-posts-page',
+      label: 'Blog'
+    }
+  ]
+}
+```
+
+*If our module is named `blog-posts-pages`, `apostrophe-pieces-pages` will automatically trim off the "s" to arrive at a page type name for our blog.* That's how we knew what to add to the `types` array in order to let the user add a blog to the site.
+
+### Body content for blog posts
+
+If we test the site now, we'll find that we an add a page of type "Blog" to the site via the "Page Menu," and it displays a list of blog post titles. When we click one, we get a page with... just the title. Not very satisfying.
+
+We have a body area with two widgets allowed in it, rich text and images (slideshows). And you can see that in the editor.
+
+But, when you click through on the blog page to view a post you still don't see the body. So we need to override the `show.html` template in our `blog-posts-pages` module. First make a `views` folder for that module:
+
+`mkdir -p lib/modules/blog-posts-pages/views`
+
+*Apostrophe will automatically look here when templates for this module are rendered. If it doesn't find them it will look at the core Apostrophe module we're extending, `apostrophe-pieces-pages`.*
+
+Now create `show.html` in that folder:
+
+```html
+{% extends data.outerLayout %}
+{% block title %}{{ data.piece.title }}{% endblock %}
+
+{% block main %}
+<h2>{{ data.piece.title }}</h2>
+{{ apos.area(data.piece, 'body', {
+    widgets: {
+      'apostrophe-rich-text': {
+        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+      },
+      'apostrophe-images': { size: 'one-half' }
+    }
+  })
+}}
+{% endblock %}
+```
+
+### Pretty URLs for blog posts
+
+By default, the URL of a blog post looks like:
+
+`/blog/title-of-post-hyphenated`
+
+This isn't terrible, but blogs can have many posts with similar titles and a sense of chronology is really helpful. Let's override two methods in the `blog-posts-pages` module to add the year, month and day to the URLs.
+
+First install the `moment` npm module so we can format dates easily:
+
+`npm install --save moment`
+
+Now create `lib/modules/blog-posts-pages/index.js`:
+
+```javascript
+var moment = require('moment');
+
+module.exports = {
+  construct: function(self, options) {
+    // Build a prettier URL for a blog post by incorporating the publication date. Slugs are
+    // unique but this is nicer
+    self.buildUrl = function(page, piece) {
+      if (!page) {
+        return false;
+      }
+
+      var url = page._url + '/' + moment(page.publishedAt).format('YYYY/MM/DD') + '/' + piece.slug;
+      return url;
+    };
+
+    // Allow year/month/day in URLs to work. It's just window dressing; you can
+    // also hit a blog post with just the slug, via the self.dispatch call made
+    // in the apostrophe-pieces-pages module
+    self.dispatch('/:year/:month/:day/:slug', self.showPage);
+  }
+};
+```
+
+In this constructor we're overriding the `buildUrl` method, called for each piece when a URL for it is needed, to incorporate the publication date like this:
+
+`/blog/2016/01/01/happy-new-year`
+
+And to actually display the blog post when that URL is fetched, we add a `self.dispatch` call to respond to URLs that look like that and invoke the existing `self.showPage` method:
+
+```javascript
+self.dispatch('/:year/:month/:day/:slug', self.showPage);
+```
+
+*`self.dispatch` is a feature of `apostrophe-custom-pages`, the parent class of `apostrophe-pieces-pages` and the grandparent of our module.* Whenever a URL begins with the slug of a blog (a page powered by our module),  `self.dispatch` lets us use Express-style route patterns to handle the rest of the URL. This powerful feature allows us to serve any kind of content by "adding on" to the URL of a page.
