@@ -1,0 +1,12 @@
+.apos-field {
+  &.apos-required {
+    label::after {
+      content: ' * Required';
+    }
+  }
+  &.apos-error-required {
+    label {
+      color: @apos-red;
+    }
+  }
+}
