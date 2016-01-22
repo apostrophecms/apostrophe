@@ -2,6 +2,8 @@
   <head>
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
+    {% block extraHead %}
+    {% endblock %}
   </head>
   <body class="{% block bodyClass %}{% endblock %}">
     {% block apostropheMenu %}
@@ -43,5 +45,7 @@
       {{ data.js.globalCalls }}
       {{ data.js.reqCalls }}
     </script>
+    {% block extraBody %}
+    {% endblock %}
   </body>
 </html>
