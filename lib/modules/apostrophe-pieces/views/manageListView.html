@@ -1,0 +1,16 @@
+<div class="apos-table">
+  <div class="apos-choose-manage-views" data-manage-views><a href="#" data-apos-choose-manage-view="grid"><i class="fa fa-th-large"></i></a><a href="#" data-apos-choose-manage-view="list" class="apos-active"><i class="fa fa-th-list"></i></a></div>
+  <div class="apos-manage-showing" data-result-label>
+    {% include "manageResultLabel.html" %}
+  </div>
+  <table data-items class="apos-manage-table">
+    <thead data-headings>
+      {% include "manageHeadings.html" %}
+    </thead>
+    <tbody data-list>
+      {% include "manageListPage.html" %}
+    </tbody>
+  </table>
+</div>
+{# ajax populates me #}
+<div data-pager></div>

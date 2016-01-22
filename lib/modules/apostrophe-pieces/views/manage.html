@@ -28,19 +28,7 @@
   {% if data.chooser %}
     <div data-chooser></div>
   {% endif %}
-  <div class="apos-table">
-    <table data-items class="apos-manage-table">
-      <div data-result-label>
-        {# ajax populates me #}
-      </div>
-      <thead data-headings>
-        {# ajax populates me #}
-      </thead>
-      <tbody data-list>
-        {# ajax populates me #}
-      </tbody>
-    </table>
+  <div class="apos-manage-view" data-apos-manage-view>
+    {# ajax populates me with either the grid view or the table view #}
   </div>
-  {# ajax populates me #}
-  <div data-pager></div>
 {%- endblock -%}
