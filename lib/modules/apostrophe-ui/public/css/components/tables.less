@@ -3,10 +3,12 @@
 // ===============================================================
 .apos-table
 {
+  padding: 0 @apos-padding-6;
   .apos-text-small;
   max-width: 100%;
   border-collapse: collapse;
   text-align: left;
+  background-color: @apos-lighter;
   @media screen and (max-width: 960px)
   {
     overflow: scroll;
@@ -32,20 +34,30 @@
 {
   max-width: 300px;
   min-width: 25px;
+  a
+  {
+    .apos-text-small;
+    color: @apos-dark;
+    text-decoration: none;
+  }
+}
+.apos-table td:first-child //check-box input
+{
+  width: 21px;
 }
 
 // The Head ===================================
 .apos-table thead
 {
   border-bottom: 1px solid @apos-dark;
+
+  tr{ background-color: @apos-lighter; }
 }
 
 
 // The Body ===================================
-.apos-table tr:nth-child(2n)
-{
-  background: @apos-light;
-}
+.apos-table tbody tr:nth-child(2n+1){ background-color: @apos-white; }
+.apos-table tbody tr:nth-child(2n){ background-color: @apos-lighter; }
 
 
 // Checkboxes ===================================
