@@ -1,0 +1,6 @@
+{% for piece in data.pieces %}
+  <div class="apos-manage-grid-piece" data-piece="{{ piece._id }}">
+    <div class="apos-manage-grid-select">{{fields.checkbox(data.options.name + '-select')}}</div>
+    <a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{{ piece.title }}</a>
+  </div>
+{% endfor %}
