@@ -44,6 +44,7 @@
 
   .apos-transform(translate3d(0,0,0) scale3d(1,1,1););
   .apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
+	.apos-table { overflow-y: scroll; }
 }
 
 .apos-modal--pushed
@@ -59,7 +60,7 @@
 {
   position: absolute;
 
-  height: ~'calc(100vh - 100px - 171px)';     // 100vh - 100 (position) - 171 (header + breadcrumb)
+  height: ~'calc(100vh - 100px - 189px - 82px)';     // 100vh - 100 (position) - 189 (header + breadcrumb) - 82px (footer bar)
   overflow: scroll;
   width: 100%;
 

@@ -6,23 +6,25 @@
 {# busted in this release of nunjucks #}
 
 {% macro render(options, url) %}
-  {% if ((options.page > 1) or (options.total > 1)) %}
-    <div class="apos-pager">
-      {{ pagerPage(1, options, url) }}
-      {% if options.page > 4 %}
-        <span class="apos-pager-gap">&hellip;</span>
-      {% endif %}
+  <div class="apos-ui">
+    {% if ((options.page > 1) or (options.total > 1)) %}
+      <div class="apos-pager">
+        {{ pagerPage(1, options, url) }}
+        {% if options.page > 4 %}
+          <span class="apos-pager-gap">&hellip;</span>
+        {% endif %}
 
-      {% for page in apos.pager.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
-        {{ pagerPageInner(page, options, url) }}
-      {% endfor %}
+        {% for page in apos.pager.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
+          {{ pagerPageInner(page, options, url) }}
+        {% endfor %}
 
-      {% if options.page < (options.total - 3) %}
-        <span class="apos-pager-gap">&hellip;</span>
-      {% endif %}
-      {{ pagerPage(options.total, options, url) }}
-    </div>
-  {% endif %}
+        {% if options.page < (options.total - 3) %}
+          <span class="apos-pager-gap">&hellip;</span>
+        {% endif %}
+        {{ pagerPage(options.total, options, url) }}
+      </div>
+    {% endif %}
+  </div>
 {% endmacro %}
 
 {% macro pagerPageInner(page, options, url) %}
@@ -45,4 +47,3 @@
     </span>
   {% endif %}
 {% endmacro %}
-
