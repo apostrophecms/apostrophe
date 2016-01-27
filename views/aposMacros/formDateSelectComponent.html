@@ -1,0 +1,15 @@
+{%- macro formDateSelectComponent(component, choices) -%}
+  <div class="apos-select-wrapper apos-inline-input">
+    <select data-component="{{ component | e }}"
+      {% for key, val in _attrs %}
+        {{ key }}="{{ val | e }}"
+      {% endfor %}
+      data-selectize
+    >
+      {%- for choice in choices -%}
+        <option value="{{ choice.value | e }}" label="{{ __(choice.label) | e }}"{#
+        #}>{{ __(choice.label) | e }}</option>
+      {%- endfor -%}
+    </select>
+  </div>
+{%- endmacro -%}

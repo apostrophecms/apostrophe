@@ -1,0 +1,75 @@
+{# See $.selective in content.js for the necessary plumbing #}
+
+{# moreOptions is merged with options. This makes it easier to #}
+{# pass some default options and then customize a few #}
+
+{%- macro formSelective(name, label, options = {}, moreOptions = {}) -%}
+  {%- set _options = aposMerge(options, moreOptions) -%}
+
+  {%- if _options.inline -%}
+    <div class="apos-inline-selective" data-selective data-name="{{ name }}">
+  {%- else -%}
+    <fieldset class="apos-fieldset apos-fieldset-selective apos-fieldset-lister apos-fieldset-{{ name | css }}"  data-name="{{ name }}" data-selective>
+    <div class="apos-select-wrapper apos-inline-input">
+    <label>{{ label | e }}</label>
+  {%- endif -%}
+    <input type="text" data-autocomplete {% if _options.placeholder %}placeholder="{{ __( _options.placeholder ) | e }}"{%endif %}/>
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+    <ul data-list class="apos-selective-list">
+      {# This is a template for creating the real items, #}
+      {# it will be cloned as needed #}
+      <li class="apos-fieldset-selective-item" data-item>
+        <div class="apos-ui-container apos-fieldset-selective-item-inner">
+          <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
+            <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
+            <span class="apos-selective-label" data-label>
+              {{ __(Title) }}
+            </span>
+          </div>
+          {%- if _options.extras or _options.relationship -%}
+            <span class="apos-selective-extras">
+              {# TODO: extend our support for different types of extra fields, #}
+              {# style them meaningfully. Usually on same row with item #}
+              {%- for extra in (_options.extras or _options.relationship) -%}
+                {%- if (extra.type == 'checkbox') or (extra.type == 'boolean') -%}
+                  <input type="checkbox" name="{{ extra.name }}" data-extras />
+                  <label>{{ __(extra.label) | e }}</label>
+                {%- elif (extra.type == 'string') or (extra.type == 'text') -%}
+                  <label>{{ __(extra.label) | e }}</label>
+                  <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
+                {%- elif (extra.type == 'radio') -%}
+                  {%- for choice in extra.choices -%}
+                    <input type="radio" name="{{ choice.value }}" data-extras />
+                    {{ choice.label | e }}
+                  {%- endfor -%}
+                {%- elif (extra.type == 'select') -%}
+                  <fieldset class="apos-fieldset-selectize apos-fieldset-select">
+                    <label>{{ __(label) | e }}</label>
+                    <div class="apos-select-wrapper apos-inline-input">
+                      {{ formSelectStandalone(extra.name, extra.choices, { 'data-extras': '' }) }}
+                    </div>
+                  </fieldset>
+                {%- elif (extra.type == 'tags') -%}
+                  <label>{{ __(extra.label) | e }}</label>
+                  {{ formTags(extra.name, label, { inline: true }) }}
+                {%- else -%}
+                  {{ aposLog("WARNING: unrecognized type for relationship field: ") }}
+                  {{ aposLog(extra) }}
+                {%- endif -%}
+              {%- endfor -%}
+            </span>
+          {% endif %}
+          {% if _options.propagate %}
+            <span class="apos-propagate"><input type="checkbox" data-propagate /><label>{{ __('Apply to Subpages') }}</label></span>
+          {% endif %}
+        </div>
+      </li>
+
+    </ul>
+  {%- if _options.inline -%}
+    </div>
+  {%- else -%}
+      </div>
+    </fieldset>
+  {%- endif -%}
+{%- endmacro -%}

@@ -1,0 +1,19 @@
+{#
+  // If you need to include extra fields on a select option
+  // format a JSON string in 'data-extra' like this:
+  //
+  // <option data-extra='{ "myField": "thing" }' > Label </option>
+  //
+  // Also see the showFields case below in the formSelectStandalone macro.
+  // -matt
+#}
+{%- macro formSelect(name, label, choices) -%}
+  {# check for a fields property on any of the choices, and add class if one exists #}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if aposContainsProperty(choices, 'showFields') else '' %}
+  <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-select apos-fieldset-{{ name | css }}{{ selectFields }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+      <div class="apos-select-wrapper apos-inline-input">
+      {{ formSelectStandalone(name, choices) }}
+    </div>
+  </fieldset>
+{%- endmacro -%}
