@@ -1,0 +1,7 @@
+{%- macro formBooleanStandalone(name, attrs, checkbox) -%}
+  {% if checkbox %}
+    <input type="checkbox" name="{{ name | e }}" />
+  {% else %}
+    {{ formSelectStandalone(name, [ { value: '1', label: 'Yes' }, { value: '0', label: 'No' }], attrs) }}
+  {% endif %}
+{%- endmacro -%}

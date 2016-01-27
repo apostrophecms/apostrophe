@@ -1,0 +1,17 @@
+{# Often useful in a custom fieldset with other controls #}
+{%- macro formSelectStandalone(name, choices, _attrs = {}) -%}
+  <select name="{{ name | e }}"
+    {% for key, val in _attrs %}
+      {{ key }}="{{ val | e }}"
+    {% endfor %}
+    data-selectize
+  >
+    {% for choice in choices %}
+      <option value="{{ choice.value | e }}" label="{{ choice.label | e }}"
+      {% if choice.showFields -%}
+       data-extra='{ "showFields": "{{ choice.showFields | join(',') }}" }'
+      {%- endif %}
+      >{{ __(choice.label) | e }}</option>
+    {% endfor %}
+  </select>
+{%- endmacro -%}

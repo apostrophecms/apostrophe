@@ -1,0 +1,13 @@
+{%- macro formCheckboxes(name, label, choices) -%}
+  <fieldset class="apos-fieldset apos-fieldset-checkboxes apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    <ul class="apos-checkbox-choices">
+      {%- for choice in choices -%}
+        <li class="apos-checkbox-choice">
+          <label>{{ choice.label }}</label>
+          <input type="checkbox" name="{{ name }}" value="{{ choice.value }}">
+        </li>
+      {%- endfor -%}
+    </ul>
+  </fieldset>
+{%- endmacro -%}

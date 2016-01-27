@@ -1,0 +1,7 @@
+{# Pill button group wrapped in a fieldset like the rest #}
+{%- macro formPill(name, label, options) -%}
+  <fieldset class="apos-fieldset apos-fieldset-pill apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    {{ formPillStandalone(name, options) }}
+  </fieldset>
+{%- endmacro -%}
