@@ -150,12 +150,12 @@ describe('Users', function() {
   it('should succeed in updating a users property', function(done){
     apos.users.find(adminReq(), { username: 'JaneD' })
     .toObject(function(err, user){
-      console.log(err);
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
       user.firstName = 'Jill';
       apos.users.update(adminReq(), user, function(err){
+        console.log(err);
         assert(!err);
         apos.users.find(adminReq(), { _id: user._id })
         .toObject(function(err, user){
@@ -186,13 +186,13 @@ describe('Users', function() {
   it('should change an existing user password and verify the new password', function(done){
     apos.users.find(adminReq(), { username: 'JaneD' })
     .toObject(function(err, user){
-      console.log(err);
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
       assert(!user.password);
       user.password = 'password123';
       apos.users.update(adminReq(), user, function(err){
+        console.log(err);
         assert(!err);
         apos.users.find(adminReq(), { username: 'JaneD' })
         .toObject(function(err, user){
