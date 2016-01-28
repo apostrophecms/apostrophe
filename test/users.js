@@ -148,9 +148,9 @@ describe('Users', function() {
   });
 
   it('should succeed in updating a users property', function(done){
-    this.timeout(5000);
-
-    apos.users.find(adminReq(), { username: 'JaneD' }).toObject(function(err, user){
+    apos.users.find(adminReq(), { username: 'JaneD' })
+    .toObject(function(err, user){
+      console.log(err);
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
@@ -184,10 +184,9 @@ describe('Users', function() {
 
   // change an existing user's password and verify the new password
   it('should change an existing user password and verify the new password', function(done){
-    this.timeout(5000);
-
     apos.users.find(adminReq(), { username: 'JaneD' })
     .toObject(function(err, user){
+      console.log(err);
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
