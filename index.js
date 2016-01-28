@@ -132,7 +132,13 @@ module.exports = function(options) {
       }
       return callback(null);
     });
-  }
+  };
+
+  // Helper function for other modules to determine whether the application
+  // is running as a server or a task
+  self.isTask = function() {
+    return !!self.argv._.length;
+  };
 
   defineModules();
 
