@@ -155,7 +155,6 @@ describe('Users', function() {
       assert(user.username == 'JaneD');
       user.firstName = 'Jill';
       apos.users.update(adminReq(), user, function(err){
-        console.log(err);
         assert(!err);
         apos.users.find(adminReq(), { _id: user._id })
         .toObject(function(err, user){
@@ -192,7 +191,6 @@ describe('Users', function() {
       assert(!user.password);
       user.password = 'password123';
       apos.users.update(adminReq(), user, function(err){
-        console.log(err);
         assert(!err);
         apos.users.find(adminReq(), { username: 'JaneD' })
         .toObject(function(err, user){
