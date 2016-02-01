@@ -267,7 +267,7 @@ function AposSlideshowWidgetEditor(options)
 
       var title = $(item).find('.apos-value[data-name="title"]');
       $(title).text(info.title);
-      
+
       var date = $(item).find('.apos-value[data-name="date"]');
       $(date).text(info.createdAt );
 
@@ -685,7 +685,7 @@ function AposSlideshowWidgetEditor(options)
 
   self.setItemThumbnail = function(item, $item)
   {
-    if (_.contains(['gif', 'jpg', 'png'], item.extension)) {
+    if (_.includes(['gif', 'jpg', 'png'], item.extension)) {
       var url = 'url(' + apos.filePath(item, { size: 'full', crop: item.crop }) + ')';
       $item.find('[data-image-background]').css('background-image', url);
     } else {
