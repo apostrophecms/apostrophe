@@ -62,7 +62,7 @@ describe('Docs', function() {
 
 
   it('should make sure all of the expected indexes are configured', function(done){
-    var expectedIndexes = ['type', 'slug', 'sortTitle', 'tags', 'published'];
+    var expectedIndexes = ['type', 'slug', 'titleSortified', 'tags', 'published'];
     var actualIndexes = []
 
     apos.docs.db.indexInformation(function(err, info){
