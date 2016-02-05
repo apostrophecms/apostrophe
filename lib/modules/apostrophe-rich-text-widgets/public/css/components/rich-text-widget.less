@@ -1,0 +1,40 @@
+[data-widget="apostrophe-rich-text"].apos-active .apos-ui { display: none; }
+[data-widget="apostrophe-rich-text"] .apos-ui .apos-area-item-controls--data
+{
+  bottom: auto;
+  top: @apos-padding-2;
+  left: auto;
+  right: @apos-padding-2;
+}
+.apos-area [data-widget="apostrophe-rich-text"].apos-empty
+{
+  min-height: 80px;
+  background-color: @apos-light;
+  .apos-area-item-controls { opacity: 1; }
+}
+
+.apos-area [data-widget="apostrophe-rich-text"]
+{
+  &:hover
+  {
+    [data-rich-text]
+    {
+      outline: @apos-green dashed 1px;
+    }
+  }
+}
+
+.apos-area [data-widget="apostrophe-rich-text"] [data-rich-text]
+{
+  // add top margin for ckeditor controls
+  &.cke_focus
+  {
+    margin-top: 50px;  //ckeditor height ~44px
+  }
+
+  // focus state
+  &:focus
+  {
+    outline: @apos-green dashed 1px;
+  }
+}

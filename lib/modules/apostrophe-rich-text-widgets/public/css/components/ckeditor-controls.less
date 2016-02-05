@@ -1,0 +1,94 @@
+// CKEditor Toolbar Styles
+.cke
+{
+  // styles dropdown button
+  .cke_combo__styles
+  {
+    .cke_combo_button
+    {
+      margin: 0;
+      border: none;
+      box-shadow: none !important;
+
+      border-right: 1px solid transparent;
+      border-top-right-radius:  0px;
+      border-bottom-right-radius: 0px;
+      background: transparent;
+
+      &:active
+      {
+        border: none;
+        border-right: 1px solid @apos-mid;
+      }
+
+      &:hover
+      {
+        background: @apos-light;
+      }
+
+      .apos-transition(background);
+
+      .cke_combo_text
+      {
+        position: relative;
+        padding-left: 36px;
+        min-width: 96px;
+
+        line-height: 40px;
+        font-size: 1.35em;
+
+        cursor: pointer;
+
+        &:before
+        {
+          position: absolute;
+          left: 16px;
+          top: 18px;
+
+          .fa;
+          content: '\f0d7';
+          font-size: 0.8em;
+        }
+        &:after
+        {
+          position: absolute;
+          left: 16px;
+          top: 9px;
+
+          .fa;
+          content: '\f0d8';
+          font-size: 0.8em;
+        }
+      }
+
+      .cke_combo_arrow
+      {
+        display: none;
+      }
+    }
+  }
+
+  // active state
+  &.cke_combo_on
+  {
+    .cke_combo_button
+    {
+        background: @apos-lighter;
+        border-right: 1px solid @apos-mid;
+    }
+  }
+
+
+  // Toolbar Icons
+  .cke_button__undo::before
+  {
+    .fa;
+    content: "\f0e2";
+  }
+  .cke_button__redo::before
+  {
+    .fa;
+    content: "\f0e2";
+    .apos-transform(rotateY(180deg));
+  }
+}
