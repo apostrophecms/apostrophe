@@ -31,9 +31,11 @@
         {% block body %} I am a Modal! {% endblock %}
 
       </div>
-      <div class="apos-modal-footer">
-        {% block footer %} {% endblock %}
-      </div>
+      {% block footerContainer %}
+        <div class="apos-modal-footer">
+          {% block footer %}{% endblock %}
+        </div>
+      {% endblock %}
     </div>
   </div>
 </div>
