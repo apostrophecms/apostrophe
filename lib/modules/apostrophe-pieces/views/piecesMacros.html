@@ -39,7 +39,7 @@
   {% else %}
     {# Technically it's "just" a cancel button but it's actually the most frequent action #}
     {# when you're just managing stuff. There is no risk of losing work. -Tom #}
-    {{ buttons.major('Done', { action: 'cancel' }) }}
+    {{ buttons.minor('Finished', { action: 'cancel' }) }}
     {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
   {% endif %}
 {%- endmacro -%}
