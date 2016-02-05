@@ -12,6 +12,11 @@
 {% import 'apostrophe-ui:components/fields.html' as fields with context %}
 
 
+{%- macro createControls() -%}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Create ' + data.options.label, { action: 'save' }) }}
+{%- endmacro -%}
+
 {%- macro editControls() -%}
   {{ dropdowns.base({
     label: 'More',
