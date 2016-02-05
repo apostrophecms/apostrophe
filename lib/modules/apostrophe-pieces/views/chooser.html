@@ -1,7 +1,7 @@
 {%- extends "manage.html" -%}
 
 {%- block instructions -%}
-  IMMA CHOOSER WUDDUP
+  {{ __('Choose %s to associate with this item.', __(data.options.pluralLabel) | e) }}
 {%- endblock -%}
 
 {%- block modalClass -%}
