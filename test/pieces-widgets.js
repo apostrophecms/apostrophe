@@ -191,18 +191,77 @@ describe('pieces-widgets', function() {
     });
   });
 
+  // This code is pulled from express tests in order to properly test POST route
+  var jar;
+
+  function getCsrfToken(jar) {
+    var csrfCookie = _.find(jar.getCookies('http://localhost:7944/'), { key: 'XSRF-TOKEN' });
+    if (!csrfCookie) {
+      return null;
+    }
+    var csrfToken = csrfCookie.value;
+    return csrfToken;
+  }
+
   it('should be able to autocomplete docs', function(done) {
-    return request('http://localhost:7944/modules/apostrophe-docs/autocomplete?term=wig', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
+    // otherwise request does not track cookies
+    jar = request.jar();
+    request({
+      method: 'GET',
+      url: 'http://localhost:7944/page-with-events',
+      jar: jar
+    }, function(err, response, body) {
       assert.equal(response.statusCode, 200);
-      // Is it JSON?
-      var events = JSON.parse(body);
-      assert(events);
-      assert(Array.isArray(events));
-      assert(events[0].label === 'Event Wiggly');
-      assert(events.length === 1);
-      done();
+      var csrfToken = getCsrfToken(jar);
+      // Now let's get a modal so we can bless the joins
+      return request({
+        method: 'POST',
+        url: 'http://localhost:7944/modules/events-widgets/modal',
+        json: {
+          _id: 'wevent007'
+        },
+        jar: jar,
+        headers: {
+          'X-XSRF-TOKEN': csrfToken
+        }
+      }, function(err, response, body) {
+        assert(!err);
+        // Is our status code good?
+        assert.equal(response.statusCode, 200);
+        return request({
+          method: 'POST',
+          url: 'http://localhost:7944/modules/apostrophe-docs/autocomplete',
+          json: {
+            term: 'wig',
+            field: {
+              type: 'joinByArray',
+              name: '_pieces',
+              label: 'Individually',
+              idsField: 'pieceIds',
+              withType: 'event'
+            }
+          },
+          jar: jar,
+          headers: {
+            'X-XSRF-TOKEN': csrfToken
+          }
+        }, function(err, response, body) {
+          assert(!err);
+          // Is our status code good?
+          assert.equal(response.statusCode, 200);
+          var events;
+          if (typeof body === 'string') {
+            events = JSON.parse(body);
+          } else {
+            events = body;
+          }
+          assert(events);
+          assert(Array.isArray(events));
+          assert(events[0].label === 'Event Wiggly');
+          assert(events.length === 1);
+          done();
+        });
+      });
     });
   });
 });
