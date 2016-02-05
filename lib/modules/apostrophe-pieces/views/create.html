@@ -3,7 +3,7 @@
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
 
 {%- block modalClass -%}
-  apos-pieces-editor apos-peices-create {{ data.options.name | css }}-editor apos-ui-modal-no-sidebar apos-ui-modal-has-tabs apos-modal-slideable
+  apos-pieces-editor apos-pieces-create {{ data.options.name | css }}-editor apos-ui-modal-no-sidebar apos-ui-modal-has-tabs apos-modal-slideable
 {%- endblock -%}
 
 {%- block controls -%}
@@ -11,7 +11,7 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Create New %s', data.options.label) }}
+  {{ __('Create %s', data.options.label) }}
 {%- endblock -%}
 
 {%- block instructions -%}
