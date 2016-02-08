@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/punkave/apostrophe.svg?branch=master)](https://travis-ci.org/punkave/apostrophe)
+[![Build Status](https://travis-ci.org/punkave/apostrophe.svg?branch=unstable)](https://travis-ci.org/punkave/apostrophe)
 
 # How to make a website with Apostrophe 0.6 unstable
 
