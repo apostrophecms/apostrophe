@@ -75,6 +75,7 @@
   }
 }
 
+// grid item
 .apos-ui .apos-manage-grid-view {
   margin-left: 60px;
   margin-right: 60px;
@@ -85,5 +86,39 @@
     overflow: hidden;
     margin-right: 40px;
     margin-bottom: 40px;
+
+    .apos-manage-grid-select{
+      .apos-inline-block(top);
+    }
+
+    // thumbnail
+    .apos-manage-grid-image{
+      width: 240px;
+      height: 180px;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center;
+    }
+    // label
+    a{
+      display: block;
+      padding: @apos-padding-1 @apos-padding-2;
+
+      background-color: @apos-light;
+      color: @apos-black;
+      text-decoration: none;
+
+      .apos-transition();
+    }
+
+    &:hover
+    {
+      cursor: pointer;
+      a {
+        background-color: @apos-green;
+        color: @apos-white;
+     }
+    }
+
   }
 }
