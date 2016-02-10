@@ -1,12 +1,6 @@
 {% for piece in data.pieces %}
   <div class="apos-manage-grid-piece" data-edit-{{piece.type}}="{{ piece._id }}">
-    {#
-       apostrophe-images uses 'attachement' for the image field.
-       This should be standardized or at least check for other possibilities
-       ('thumbnail', 'image', etc).  -- matt c.
-    #}
     <div class="apos-manage-grid-image" style="background-image: url({{ apos.attachments.url(piece.attachment, { size: 'two-thirds' } ) }})"></div>
-    {#<div class="apos-manage-grid-select">{{fields.checkbox(data.options.name + '-select')}}</div>#}
     <a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{{ piece.title }}</a>
   </div>
 {% endfor %}

@@ -1,0 +1,19 @@
+{#
+  Buttons to change the manager view.  Each button should have an
+  [data-apos-choose-manage-view="VIEW_NAME"].
+
+  Each view should also have two templates named:
+    (1) "manage" + VIEW_NAME + "Page.html"
+    (2) "manage" + VIEW_NAME + "View.html"
+
+  Follow the pattern for the 'grid' view in the apostrophe-images module.
+
+  - matt c.
+#}
+{%- if data.options.manageViews and data.options.manageViews.length > 1 -%}
+  <div class="apos-choose-manage-views" data-manage-views>
+    {%- for view in data.options.manageViews -%}
+      <a href="#" data-apos-choose-manage-view="{{ view }}" {% if loop.first %}class="apos-active"{% endif %}>{{view}}</a>
+    {%- endfor -%}
+  </div>
+{%- endif -%}

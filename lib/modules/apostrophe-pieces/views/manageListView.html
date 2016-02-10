@@ -1,11 +1,5 @@
 <div class="apos-table">
-  {%- if data.options.manageViews and data.options.manageViews.length > 1 -%}
-    <div class="apos-choose-manage-views" data-manage-views>
-      {%- for view in data.options.manageViews -%}
-        <a href="#" data-apos-choose-manage-view="{{ view }}" {% if loop.first %}class="apos-active"{% endif %}><i class="fa fa-th-{% if view == 'grid' %}large{% elif view == 'list' %}list{% else %}{{view}}{% endif %}"></i></a>
-      {%- endfor -%}
-    </div>
-  {%- endif -%}
+    {% include "manageViewChoices.html" %}
   <div class="apos-manage-showing" data-result-label>
     {% include "manageResultLabel.html" %}
   </div>
