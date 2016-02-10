@@ -1,5 +1,11 @@
 <div class="apos-table">
-  <div class="apos-choose-manage-views" data-manage-views><a href="#" data-apos-choose-manage-view="grid"><i class="fa fa-th-large"></i></a><a href="#" data-apos-choose-manage-view="list" class="apos-active"><i class="fa fa-th-list"></i></a></div>
+  {%- if data.options.manageViews and data.options.manageViews.length > 1 -%}
+    <div class="apos-choose-manage-views" data-manage-views>
+      {%- for view in data.options.manageViews -%}
+        <a href="#" data-apos-choose-manage-view="{{ view }}" {% if loop.first %}class="apos-active"{% endif %}><i class="fa fa-th-{% if view == 'grid' %}large{% elif view == 'list' %}list{% else %}{{view}}{% endif %}"></i></a>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
   <div class="apos-manage-showing" data-result-label>
     {% include "manageResultLabel.html" %}
   </div>
