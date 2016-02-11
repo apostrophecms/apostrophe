@@ -1,6 +1,6 @@
 {% for piece in data.pieces %}
   <div class="apos-manage-grid-piece" data-edit-{{piece.type}}="{{ piece._id }}">
-    <div class="apos-manage-grid-image" style="background-image: url({{ apos.attachments.url(piece.attachment, { size: 'one-third' } ) }})"></div>
+    <div class="apos-manage-grid-image"><img src="{{ apos.attachments.url(piece.attachment, { size: 'one-third' } ) }}" alt=""></div>
     <a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{{ piece.title }}</a>
   </div>
 {% endfor %}
