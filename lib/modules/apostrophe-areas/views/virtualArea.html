@@ -1,2 +1,6 @@
 {# This is a shim #}
-{{ apos.area(data.options) }}
+{%- if data.options.type -%}
+  {{ apos.singleton(data.options) }}
+{%- else -%}
+  {{ apos.area(data.options) }}
+{%- endif -%}
