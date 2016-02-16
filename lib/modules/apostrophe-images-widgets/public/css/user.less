@@ -1,0 +1,25 @@
+
+// Image Widget Editor within Modal
+
+.apos-modal-body [data-widget="apostrophe-images"]
+{
+
+  [data-slideshow] [data-slideshow-items]
+  {
+    width: 100%;
+    height: auto !important;  // The element has inline "height: 0px", but i'm not sure where this is coming from. -Matt C.
+    max-height: 400px;
+    overflow: hidden;
+
+    .apos-slideshow-item
+    {
+      img
+      {
+        height: auto;
+        width: auto;
+        max-width: 100%;
+        max-height: 100%;
+      }
+    }
+  }
+}
