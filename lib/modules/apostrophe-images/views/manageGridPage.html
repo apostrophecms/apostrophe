@@ -1,6 +1,8 @@
-{% for piece in data.pieces %}
-  <div class="apos-manage-grid-piece" data-edit-{{piece.type}}="{{ piece._id }}">
+{%- import "apostrophe-ui:components/fields.html" as fields -%}
+{% for piece in data.pieces -%}
+  <div class="apos-manage-grid-piece" data-focus-{{ piece.type }} data-edit-dbl-{{ data.options.name | css }}="{{ piece._id }}">
     <div class="apos-manage-grid-image"><img src="{{ apos.attachments.url(piece.attachment, { size: 'one-third' } ) }}" alt=""></div>
-    <a href="#" data-edit-{{ data.options.name | css }}="{{ piece._id }}">{{ piece.title }}</a>
+    {{fields.checkbox(data.options.name + '-select')}}
+    <div class="apos-manage-grid-piece-label">{{ piece.title }}</div>
   </div>
-{% endfor %}
+{%- endfor %}
