@@ -8,12 +8,12 @@ Edit Image
 {%- endblock -%}
 
 {%- block body -%}
-  <form class="apos-form" data-form>
+  <div class="apos-form">
     <div class="apostrophe-image-editor-fields">
       {{ schemas.fields(apos.utils.filterOut(data.schema, 'name', 'attachment')) }}
     </div>
-    <div class="apostrophe-images-editor-attachment">
+    <div class="apostrophe-images-editor-attachment" data-apos-form>
       {{ apos.schemas.field(apos.utils.find(data.schema, 'name', 'attachment')) }}
     </div>
-  </form>
+  </div>
 {%- endblock -%}
