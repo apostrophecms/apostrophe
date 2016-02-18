@@ -2,20 +2,20 @@
 
 {%- macro fields(fields, options = {}) -%}
   {%- set groups = apos.schemas.toGroups(fields) -%}
-  <div class="apos-modal-schema{% if groups.length > 1 %} apos-modal-schema--with-tabs{% endif %}" data-apos-form>
-    <div class="apos-modal-tabs">
+  <div class="apos-schema{% if groups.length > 1 %} apos-schema--with-tabs{% endif %}" data-apos-form>
+    <div class="apos-schema-tabs">
       {%- if groups.length > 1 -%}
         {%- for group in groups -%}
-          <div class="apos-modal-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
+          <div class="apos-schema-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
             {{ group.label }}
           </div>
         {%- endfor -%}
       {%- endif -%}
     </div>
-    <div class="apos-modal-groups">
+    <div class="apos-schema-groups">
       {%- for group in groups -%}
-        <div class="apos-modal-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
-          <div class="apos-modal-group-inner">
+        <div class="apos-schema-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
+          <div class="apos-schema-group-inner">
             {%- for field in group.fields -%}
               {{ apos.schemas.field(field) }}
             {%- endfor -%}
