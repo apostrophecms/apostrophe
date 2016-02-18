@@ -1,29 +1,95 @@
 {%- import "apostrophe-ui:components/fields.html" as commonFields with context -%}
 
-{%- macro fields(fields, options = {}) -%}
-  {%- set groups = apos.schemas.toGroups(fields) -%}
-  <div class="apos-modal-schema{% if groups.length > 1 %} apos-modal-schema--with-tabs{% endif %}" data-form>
-    <div class="apos-modal-tabs">
-      {%- if groups.length > 1 -%}
-        {%- for group in groups -%}
-          <div class="apos-modal-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
-            {{ group.label }}
-          </div>
-        {%- endfor -%}
-      {%- endif -%}
-    </div>
-    <div class="apos-modal-groups">
-      {%- for group in groups -%}
-        <div class="apos-modal-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
-          <div class="apos-modal-group-inner">
-            {%- for field in group.fields -%}
-              {{ apos.schemas.field(field) }}
-            {%- endfor -%}
-          </div>
-        </div>
-      {%- endfor -%}
+{# Called for you by fields() when a group is encountered. #}
+{%- macro openGroup(fields, group, active) -%}
+  <div class="apos-modal-tab {% if active %}apos-active{% endif %}" data-tab-id="{{ group }}">
+    <div class="apos-modal-tab-content">
+{%- endmacro -%}
+
+{# Called for you by fields() when a group ends. #}
+{%- macro closeGroup() -%}
     </div>
   </div>
+{%- endmacro -%}
+
+{# Output all the fields in a schema. Second argument is optional, contains options. #}
+
+{# NOTE: all of the options below may have surprising results if used #}
+{# in a schema with groups (aka tabs). If you are using tabs we #}
+{# suggest you specify a template name for any custom fields rather #}
+{# than attempting to template them inline with multiple calls to #}
+{# fields(). #}
+
+{# If "from" is set, start with that field. If "after" is set, start after it. #}
+{# If "to" is set, end with that field. If "before" is set, end just before it. #}
+{# You can use "from", "to", "after" and "before" to output a portion of the schema fields #}
+{# in order, automatically, then output one in a customized way, then resume #}
+{# outputting the rest automatically. #}
+
+{# You can also output specific fields by specifying only: [ 'field1', 'field2' ... ] #}
+{# or exclude specific fields by specifying except: [ 'field1', 'field2' ... ]. #}
+
+{# Fields are always output in the order specified at configuration time. #}
+
+{%- macro fields(fields, options = { from: false, to: false, except: [], only: false }) -%}
+
+  {%- -%}
+
+  {%- set groups = apos.utils.filter(fields, 'type', 'group') -%}
+  {%- set firstGroupReached = false -%}
+  {%- set fromFound = false -%}
+  {%- set toFound = false -%}
+  {%- for field in fields -%}
+    {%- if (not (options.from or options.after)) or (field.name == options.from) -%}
+      {%- set fromFound = true -%}
+    {%- endif -%}
+    {%- if (field.name == options.before) -%}
+      {%- set toFound = true -%}
+    {%- endif -%}
+    {%- set found = fromFound and (not toFound) -%}
+    {%- set notExcepted = (not apos.utils.contains(options.except, field.name)) -%}
+    {%- set allowed = (not options.only) or apos.utils.contains(options.only, field.name) -%}
+    {%- set notContextual = (not field.contextual) -%}
+
+    {%- if (found and notExcepted and allowed and notContextual) -%}
+      {%- if field.group and (field.group != lastGroup) -%}
+        {%- if lastGroup -%}
+          {{ closeGroup() }}
+          {%- set activeGroup = false -%}
+        {%- else -%}
+          {%- set activeGroup = true -%}
+          {# First grouped control encountered, open the tabs div #}
+          <div class="apos-modal-tabs">
+            <div class="apos-modal-tab-control">
+              {%- for group in groups -%}
+                <div class="apos-modal-tab-title {% if loop.first -%}apos-active{%- endif %}" data-tab="{{ group.name }}"><i class="{{ group.icon }}"></i> {{ group.label }}</div>
+              {%- endfor -%}
+            </div>
+        {%- endif -%}
+        {{ openGroup(fields, field.group, activeGroup) }}
+        {%- set lastGroup = field.group -%}
+      {%- endif -%}
+      {# Invokes standard templates for each type in
+        apostrophe-schemas/templates/views, or custom renderers
+        if supplied for the field's type or that individual field #}
+      {{ apos.schemas.field(field) }}
+      {%- if field.help -%}
+        <p class="apos-help">{{ field.help }}</p>
+      {%- endif -%}
+    {%- endif -%}
+    {%- if (field.name == options.to) -%}
+      {%- set toFound = true -%}
+    {%- endif -%}
+    {%- if (field.name == options.after) -%}
+      {%- set fromFound = true -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {# Nunjucks won't let us just test lastGroup from here due to #}
+  {# scoping issues https://github.com/mozilla/nunjucks/issues/166 #}
+  {%- if apos.utils.filterNonempty(fields, 'group').length -%}
+    {{ closeGroup() }}
+    </div>
+  {%- endif -%}
 {%- endmacro -%}
 
 {%- macro array(name, label, schema) -%}
@@ -292,3 +358,4 @@
     </ul>
   </div>
 {%- endmacro -%}
+

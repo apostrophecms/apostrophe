@@ -10,8 +10,6 @@
   </div>
 {% endblock %}
 
-{% block modalClass %}apos-modal--pushed{% endblock %}
-
 {% block label %}
 	{% if data.verb == 'update' %}
 		Page Settings
@@ -30,7 +28,7 @@
 
 {% block body %}
   {# Needed so we can swap page types dynamically. -Tom #}
-  <div class="apos-form" data-page-schema-fields>
-    {{ schemas.fields(data.schema) }}
-  </div>
+  {{ schemas.fields(data.schema) }}
 {% endblock %}
+
+{% block footerContainer %}{% endblock %}
