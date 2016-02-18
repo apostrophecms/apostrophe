@@ -1,0 +1,34 @@
+{%- extends "apostrophe-modal:baseSlideable.html" -%}
+{%- import "piecesMacros.html" as pieces with context -%}
+{%- import "apostrophe-schemas:macros.html" as schemas -%}
+
+{%- block modalClass -%}
+  apos-pieces-editor {{ data.options.name | css }}-editor apos-ui-modal-no-sidebar apos-ui-modal-has-tabs apos-modal-slideable
+{%- endblock -%}
+
+{%- block controls -%}
+  {{ pieces.editControls() }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Edit %s', data.options.label) }}
+{%- endblock -%}
+
+{%- block filters -%}
+  {# ajax populates me #}
+  <div class="apos-modal-filters-inner" data-filters>
+  </div>
+{%- endblock -%}
+
+{%- block body -%}
+  <form class="apos-form" data-form>
+    {{ schemas.fields(data.schema) }}
+  </form>
+{%- endblock -%}
+
+{%- block instructions -%}
+  Fill out the fields to edit an existing {{ data.options.label }}.
+{%- endblock -%}
+
+{% block footerContainer %}
+{% endblock %}

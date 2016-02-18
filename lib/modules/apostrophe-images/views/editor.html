@@ -1,0 +1,19 @@
+{% extends 'editorBase.html' %}
+
+{%- block label -%}
+Edit Image
+{%- endblock -%}
+
+{%- block filters -%}
+{%- endblock -%}
+
+{%- block body -%}
+  <form class="apos-form" data-form>
+    <div class="apostrophe-image-editor-fields">
+      {{ schemas.fields(apos.utils.filterOut(data.schema, 'name', 'attachment')) }}
+    </div>
+    <div class="apostrophe-images-editor-attachment">
+      {{ apos.schemas.field(apos.utils.find(data.schema, 'name', 'attachment')) }}
+    </div>
+  </form>
+{%- endblock -%}
