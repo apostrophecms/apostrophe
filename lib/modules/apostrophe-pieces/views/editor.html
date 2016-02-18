@@ -21,14 +21,11 @@
 {%- endblock -%}
 
 {%- block body -%}
-  <form class="apos-form" data-form>
-    {{ schemas.fields(data.schema) }}
-  </form>
+  {{ schemas.fields(data.schema) }}
 {%- endblock -%}
 
 {%- block instructions -%}
   Fill out the fields to edit an existing {{ data.options.label }}.
 {%- endblock -%}
 
-{% block footerContainer %}
-{% endblock %}
+{% block footerContainer %}{% endblock %}

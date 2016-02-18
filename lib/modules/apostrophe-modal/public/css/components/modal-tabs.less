@@ -1,0 +1,49 @@
+.apos-modal
+{
+  @apos-tabs-width: 220px;
+
+  .apos-schema-tabs
+  {
+    float: left;
+    height: 100%;
+    width: @apos-tabs-width;
+    background-color: @apos-light;
+  }
+
+  .apos-schema--with-tabs .apos-schema-tabs {}
+
+  .apos-schema-tab
+  {
+    padding: @apos-padding-2;
+    border-bottom: 1px solid @apos-dark;
+    cursor: pointer;
+    &.apos-active
+    {
+      background-color: @apos-white;
+      cursor: default;
+    }
+  }
+
+  .apos-schema-group
+  {
+    display: none;
+    float: left;
+    width: calc(~"100% - " @apos-tabs-width);
+    height: 100%;
+    overflow: scroll;
+  }
+
+  .apos-schema-group.apos-active
+  {
+    display: block;
+  }
+
+  .apos-schema-group-inner
+  {
+    width: 100%;
+    max-width: 540px;
+    min-height: 100%;
+    padding: @apos-padding-2;
+    background-color: @apos-white;
+  }
+}
