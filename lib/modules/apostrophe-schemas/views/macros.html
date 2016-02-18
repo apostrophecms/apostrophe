@@ -2,7 +2,7 @@
 
 {%- macro fields(fields, options = {}) -%}
   {%- set groups = apos.schemas.toGroups(fields) -%}
-  <div class="apos-schema{% if groups.length > 1 %} apos-schema--with-tabs{% endif %}" data-apos-form>
+  <div data-apos-form class="apos-schema{% if groups.length > 1 %} apos-schema--with-tabs{% endif %}">
     <div class="apos-schema-tabs">
       {%- if groups.length > 1 -%}
         {%- for group in groups -%}
