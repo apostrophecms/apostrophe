@@ -8,6 +8,10 @@
 // 900: out-of-flow controls such as the page settings gear and the admin bar only
 // 901: modal blackout
 // 902: modals
+// 950: dropdown (including the toggle which is its parent), however
+//   this is a descendant element so it doesn't ordinarily conflict
+//   with the z-index of modals
+// 951: selectize dropdown (must beat "Add Content" and the like)
 
 .apos-modal .apos-modal-body
 {
