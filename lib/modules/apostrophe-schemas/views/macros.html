@@ -2,7 +2,7 @@
 
 {%- macro fields(fields, options = {}) -%}
   {%- set groups = apos.schemas.toGroups(fields) -%}
-  <div class="apos-modal-schema{% if groups.length > 1 %} apos-modal-schema--with-tabs{% endif %}" data-form>
+  <div class="apos-modal-schema{% if groups.length > 1 %} apos-modal-schema--with-tabs{% endif %}" data-apos-form>
     <div class="apos-modal-tabs">
       {%- if groups.length > 1 -%}
         {%- for group in groups -%}
@@ -25,39 +25,6 @@
     </div>
   </div>
 {%- endmacro -%}
-
-{%- macro array(name, label, schema) -%}
-  <fieldset class="apos-fieldset apos-fieldset-array apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
-    <div class="apos-fieldset-row">
-      {#- <label>{{ __(label) }}</label> -#}
-      {#- Cannot be inside the sortable div -#}
-      <span class="apos-ui-container">
-        <a href="#" class="apos-control apos-button" data-add>
-          <i class="icon-plus"></i>
-          Add {{ __(label) }}
-        </a>
-      </span>
-    </div>
-
-    <div data-elements>
-      <div data-element class="apos-template apos-array-item">
-        <div class="apos-ui-container right">
-          <span class="apos-ui-btn-group">
-            <!-- <a href="#" class="apos-ui apos-ui-btn apos-array-move" data-move><i class="icon-move"></i></a> -->
-            <span class="apos-ui apos-ui-btn" data-move-item="up"><i class="icon-arrow-up"></i></span>{#
-            #}<span class="apos-ui apos-ui-btn" data-move-item="down"><i class="icon-arrow-down"></i></span>{#
-            #}<a href="#" class="apos-ui apos-ui-btn apos-array-remove" data-remove><i class="icon-remove"></i></a>
-          </span>
-        </div>
-        {{ fields(schema) }}
-      </div>
-    </div>
-
-  </fieldset>
-{%- endmacro -%}
-
-{# Standard form markup, for convenience and consistency #}
-
 {# Output a fieldset for the given field, and call the given #}
 {# macro to populate it. Usually not called directly #}
 
@@ -83,7 +50,7 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textArea(field.name, field.placeholder) }}
+    {{ commonFields.textarea(field.name, field.placeholder) }}
   {%- else -%}
     {{ commonFields.string(field.name, field.placeholder) }}
   {%- endif -%}
@@ -239,56 +206,7 @@
   {{ fieldset(field, joinBody) }}
 {%- endmacro -%}
 
+{# ajax populates joins, see apostrophe-docs/views/chooser.html #}
 {%- macro joinBody(field) -%}
-  {# This inner div allows it to be used both inside and outside #}
-  {# of a fieldset. -Tom #}
-  <div data-selective data-name="{{ field.name }}">
-    <input type="text" data-autocomplete {% if field.placeholder %}placeholder="{{ __( field.placeholder ) }}"{%endif %}/>
-    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
-    <ul data-list class="apos-selective-list">
-      {# This is a template for creating the real items, #}
-      {# it will be cloned as needed #}
-      <li class="apos-fieldset-selective-item" data-item>
-        <div class="apos-ui-container apos-fieldset-selective-item-inner">
-          <div class="apos-fieldset-selective-item-inner-bg apos-ui-btn apos-ui--dark">
-            <span class="apos-remove" data-remove><i8 class="icon icon-remove"></i></span>
-            <span class="apos-selective-label" data-label>
-              {#{ __(Title) }#}{{ title }}
-            </span>
-          </div>
-          {%- if field.extras or field.relationship -%}
-            <span class="apos-selective-extras">
-              {# TODO: extend our support for different types of extra fields, #}
-              {# style them meaningfully. Usually on same row with item #}
-              {%- for extra in (field.extras or field.relationship) -%}
-                {%- if (extra.type == 'checkbox') or (extra.type == 'boolean') -%}
-                  <input type="checkbox" name="{{ extra.name }}" data-extras />
-                  <label>{{ __(extra.label) }}</label>
-                {%- elif (extra.type == 'string') or (extra.type == 'text') -%}
-                  <label>{{ __(extra.label) }}</label>
-                  <input data-extras name="{{ extra.name }}" type="{{ extra.type }}" />
-                {%- elif (extra.type == 'radio') -%}
-                  {%- for choice in extra.choices -%}
-                    <input type="radio" name="{{ choice.value }}" data-extras />
-                    {{ choice.label }}
-                  {%- endfor -%}
-                {%- elif (extra.type == 'select') -%}
-                  <label>{{ __(extra.label) }}</label>
-                  {{ selectBody(extra) }}
-                {%- elif (extra.type == 'tags') -%}
-                  {{ tagsBody(extra) }}
-                {%- else -%}
-                  {{ apos.log("WARNING: unrecognized type for relationship field: ") }}
-                  {{ apos.log(extra) }}
-                {%- endif -%}
-              {%- endfor -%}
-            </span>
-          {% endif %}
-          {% if field.propagate %}
-            <span class="apos-propagate"><input type="checkbox" data-propagate /><label>{{ __('Apply to Subpages') }}</label></span>
-          {% endif %}
-        </div>
-      </li>
-    </ul>
-  </div>
+  <div data-chooser>{# ajax populates me #}</div>
 {%- endmacro -%}
