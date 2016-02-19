@@ -177,6 +177,22 @@
   {{ selectBody(field | merge({ choices: [ { value: '1', label: __('Yes') }, { value: '0', label: __('No') }] })) }}
 {%- endmacro -%}
 
+{%- macro array(field) -%}
+  <fieldset class="apos-field apos-field-{{field.type | css}} apos-field-{{ field.name | css }}"  data-name="{{ field.name }}" {{ field.attributes }}>
+    <div class="apos-fieldset-row">
+      <label>X Amount of {{ __(field.label) }}</label>
+      {#- Cannot be inside the sortable div -#}
+      <span class="apos-ui-container">
+        <a href="#" class="apos-control apos-button" data-apos-edit-array>
+          <i class="icon-plus"></i>
+          Add {{ __(field.label) }}
+        </a>
+      </span>
+    </div>
+
+  </fieldset>
+{%- endmacro -%}
+
 {%- macro singleton(field) -%}
   {{ fieldset(field, singletonBody) }}
 {%- endmacro -%}
