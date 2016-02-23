@@ -1,4 +1,4 @@
-<div class="apos-singleton" {% if slug %} data-slug="{{ slug }}" {% endif %} data-type="{{ type }}" data-options='{{ options | prune | jsonAttribute({ single: true }) }}'>
+<div class="apos-singleton apos-singleton-{{ type | css }}" {% if slug %} data-slug="{{ slug }}" {% endif %} data-type="{{ type }}" data-options='{{ options | prune | jsonAttribute({ single: true }) }}'>
   <div class="apos-normal-view">
     {%- if edit -%}
       <div class="apos-ui-container apos-ui-container-{{ type | css }}">
