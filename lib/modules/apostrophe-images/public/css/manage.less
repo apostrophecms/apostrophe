@@ -197,3 +197,19 @@
   // .apos-transform(translate3d(-100%, 0,0));
   .apos-transition(@duration: .3s);
 }
+
+
+// chooser view (no sidebar)
+.apos-modal.apos-ui .apos-manage-view.apos-manage-view--chooser
+{
+  .apos-manager-grid-choices-container
+  {
+    display: none;
+  }
+
+  .apos-manage-grid-view
+  {
+    width: 100%;
+    left: 0;
+  }
+}
