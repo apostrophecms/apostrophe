@@ -9,7 +9,7 @@
         {{ buttons.minor('Edit', { action: 'edit-' + data.options.name | css, value: piece._id, icon: 'caret-right' }) }}
       </div>
     </div>
-    {{fields.checkbox(data.options.name + '-select')}}
     <div class="apos-manage-grid-piece-label">{{ piece.title }}</div>
+    {{ fields.checkbox(data.options.name + '-select') }}
   </div>
 {%- endfor %}
