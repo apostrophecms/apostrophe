@@ -1,7 +1,7 @@
 <div class="apos-singleton" {% if slug %} data-slug="{{ slug }}" {% endif %} data-type="{{ type }}" data-options='{{ options | prune | jsonAttribute({ single: true }) }}'>
   <div class="apos-normal-view">
     {%- if edit -%}
-      <div class="apos-ui-container">
+      <div class="apos-ui-container apos-ui-container-{{ type | css }}">
         <a class="apos-control apos-button apos-edit-singleton apos-edit-singleton-{{ type | css }}" href="#"><i class="icon-pencil"></i> {{ __((options.verb or itemType.verb or 'Edit') + ' %s', __(options.label or itemType.label)) }}</a>
       </div>
       <div class="apos-clear"></div>
