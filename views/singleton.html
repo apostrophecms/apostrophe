@@ -2,7 +2,7 @@
   <div class="apos-normal-view">
     {%- if edit -%}
       <div class="apos-ui-container">
-        <a class="apos-control apos-button apos-edit-singleton" href="#"><i class="icon-pencil"></i> {{ __((options.verb or itemType.verb or 'Edit') + ' %s', __(options.label or itemType.label)) }}</a>
+        <a class="apos-control apos-button apos-edit-singleton apos-edit-singleton-{{ type | css }}" href="#"><i class="icon-pencil"></i> {{ __((options.verb or itemType.verb or 'Edit') + ' %s', __(options.label or itemType.label)) }}</a>
       </div>
       <div class="apos-clear"></div>
     {%- endif -%}
