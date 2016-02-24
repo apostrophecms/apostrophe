@@ -1,5 +1,5 @@
 {% macro base(label, options, classes) -%}
-  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" data-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}{{ label }}</a>
+  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" {{ options.attributes }} data-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}>{{ label }}{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</a>
 {%- endmacro -%}
 
 {% macro normal(label, options) -%}
@@ -16,6 +16,10 @@
 
 {% macro more(label, options) -%}
   {{ base(label, options, 'apos-button--more') }}
+{%- endmacro %}
+
+{% macro action(label, options) -%}
+  {{ base(label, options, 'apos-button--action') }}
 {%- endmacro %}
 
 {% macro global(label, options) -%}
