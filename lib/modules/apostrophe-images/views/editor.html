@@ -10,7 +10,7 @@ Edit Image
 {%- block body -%}
   <div class="apos-form">
     <div class="apostrophe-image-editor-fields">
-      {{ schemas.fields(apos.utils.filterOut(data.schema, 'name', 'attachment')) }}
+      {{ schemas.fields(apos.utils.reject(data.schema, 'name', 'attachment')) }}
     </div>
     <div class="apostrophe-images-editor-attachment" data-apos-form>
       {{ apos.schemas.field(apos.utils.find(data.schema, 'name', 'attachment')) }}
