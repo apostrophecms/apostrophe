@@ -10,9 +10,9 @@
       <a href="#" data-crop-attachment>crop</a>
     {% endif %}
   </div>
-  <input type="file" style="display:none" />
+  <input type="file" name="{{ field.name }}" style="display:none" data-uploader />
   <a href="#" data-trash-attachment>{#{{ buttons.danger('Delete File', {}) }}#}</a>
-  {{ buttons.action('Replace File', {action: 'uploader', attributes: 'name=' + field.name }) }}
+  {{ buttons.action('Upload File', {action: 'uploader-target' }) }}
 {% endmacro %}
 
 {{ schemas.fieldset(data, attachment) }}

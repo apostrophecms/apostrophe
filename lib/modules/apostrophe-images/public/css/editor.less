@@ -1,5 +1,7 @@
 
 .apostrophe-image-manager
+.apos-modal-content .apos-form,
+.apostrophe-image-editor
 .apos-modal-content .apos-form
 {
   max-width: 100%;
@@ -8,12 +10,15 @@
   {
     .apos-inline-block(top);
     height: 100%;
-    padding-left: 2em;
+    width: ~'calc(100% - 750px)';
+    padding: 20px;
+    background: @apos-white;
 
     .apos-attachment-preview
     {
       position: relative;
       // width: 50%;
+      width: auto;
       max-width: 500px;
       height: auto;
       overflow: hidden;
