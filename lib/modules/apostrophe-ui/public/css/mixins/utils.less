@@ -54,6 +54,19 @@
   -o-transform:        ~'@{string}';
 }
 
+.apos-animation(@props)
+{
+	-webkit-animation: ~'@{props}';
+	-moz-animation:    ~'@{props}';
+	animation:         ~'@{props}';
+}
+.apos-keyframes(@name; @arguments)
+{
+	@-moz-keyframes @name { @arguments(); }
+	@-webkit-keyframes @name { @arguments(); }
+	@keyframes @name { @arguments(); }
+}
+
 // No Text Selection ===================================
 .apos-no-select
 {
