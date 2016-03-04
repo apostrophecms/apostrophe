@@ -1,5 +1,6 @@
+{{ apos.log(data.arrayItems) }}
 {% for item in data.arrayItems %}
   <div class="apos-array-item">
-    {{item or "I'm a title"}}
+    {{item.title or "I'm a title"}}
   </div>
 {% endfor %}

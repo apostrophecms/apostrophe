@@ -3,7 +3,7 @@
 
 {%- block body -%}
   <div class="apos-chooser" data-apos-array-items></div>
-  <div class="apos-manage-view apos-manage-view--chooser" data-array-item>
+  <div class="apos-array-editor" data-apos-array-item>
     <div data-element class="apos-template apos-array-item">
       <div class="apos-ui-container right">
         <span class="apos-ui-btn-group">
@@ -13,7 +13,6 @@
           #}<a href="#" class="apos-ui apos-ui-btn apos-array-remove" data-remove><i class="icon-remove"></i></a>
         </span>
       </div>
-      {{ schemas.fields(data.schema) }}
     </div>
   </div>
 {%- endblock -%}
