@@ -184,12 +184,12 @@
 {%- macro array(field) -%}
   <fieldset class="apos-field apos-field-{{field.type | css}} apos-field-{{ field.name | css }}"  data-name="{{ field.name }}" {{ field.attributes }}>
     <div class="apos-fieldset-row">
-      <label>X Amount of {{ __(field.label) }}</label>
       {#- Cannot be inside the sortable div -#}
-      <span class="apos-ui-container">
+      <span class="apos-ui-container" name="{{ field.name }}">
+        <label data-array-length></label>
         <a href="#" class="apos-control apos-button" data-apos-edit-array>
           <i class="icon-plus"></i>
-          Add {{ __(field.label) }}
+          Edit {{ __(field.label) }}
         </a>
       </span>
     </div>
