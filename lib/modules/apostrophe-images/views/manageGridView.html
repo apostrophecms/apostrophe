@@ -1,10 +1,14 @@
 {%- import "apostrophe-ui:components/fields.html" as fields -%}
+{# Choices Sidebar #}
+<div class="apos-manager-grid-choices-container"></div>
+
 <div class="apos-manage-grid-view">
     {% include "manageViewChoices.html" %}
   <div class="apos-manage-showing" data-result-label>
     {% include "manageResultLabel.html" %}
   </div>
   <div data-items class="apos-manage-grid-page">
+    {# Grid View #}
     {% include "manageGridPage.html" %}
   </div>
 </div>

@@ -7,19 +7,18 @@
   [data-slideshow] [data-slideshow-items]
   {
     width: 100%;
-    height: auto !important;  // The element has inline "height: 0px", but i'm not sure where this is coming from. -Matt C.
+    height: auto;
+    // min-height: 250;  // The element has inline "height: 0px", but i'm not sure where this is coming from. -Matt C.
     max-height: 400px;
     overflow: hidden;
 
-    .apos-slideshow-item
+    .apos-slideshow-item, img
     {
-      img
-      {
-        height: auto;
-        width: auto;
-        max-width: 100%;
-        max-height: 100%;
-      }
+      height: 100%;
+      width: 100%;
+      background-position: center center;
+      background-size: contain;
+      background-repeat: no-repeat;
     }
   }
 }

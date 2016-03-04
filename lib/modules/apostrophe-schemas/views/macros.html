@@ -19,7 +19,9 @@
         <div class="apos-schema-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
           <div class="apos-schema-group-inner">
             {%- for field in group.fields -%}
-              {{ apos.schemas.field(field) }}
+              {%- if not field.contextual -%}
+                {{ apos.schemas.field(field) }}
+              {%- endif -%}
             {%- endfor -%}
           </div>
         </div>
@@ -191,7 +193,6 @@
         </a>
       </span>
     </div>
-
   </fieldset>
 {%- endmacro -%}
 

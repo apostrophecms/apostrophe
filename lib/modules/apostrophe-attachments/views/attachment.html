@@ -1,15 +1,18 @@
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
+{%- import "apostrophe-ui:components/buttons.html" as buttons -%}
+
 
 {% macro attachment(field) %}
   <div class="apos-attachment-existing" data-existing>
-    <div class="apos-attachment-preview" data-preview></div>
+    <div class="apos-attachment-preview"><img data-preview src="" alt=""></div>
     <span class="apos-attachment-name" data-name></span>
     {% if field.crop %}
       <a href="#" data-crop-attachment>crop</a>
     {% endif %}
-    <a href="#" data-trash-attachment>x</a>
   </div>
-  <input type="file" name="{{ field.name }}" data-uploader />
+  <input type="file" name="{{ field.name }}" style="display:none" data-uploader />
+  {#<a href="#" data-trash-attachment>{{ buttons.danger('Delete File', { action: 'trash-attachment' }) }}</a>#}
+  {{ buttons.action('Upload File', {action: 'uploader-target' }) }}
 {% endmacro %}
 
 {{ schemas.fieldset(data, attachment) }}

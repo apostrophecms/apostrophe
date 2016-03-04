@@ -1,0 +1,46 @@
+
+.apostrophe-image-manager
+.apos-modal-content .apos-form,
+.apostrophe-image-editor
+.apos-modal-content .apos-form
+{
+  max-width: 100%;
+
+  .apostrophe-images-editor-attachment
+  {
+    .apos-inline-block(top);
+    height: 100%;
+    width: ~'calc(100% - 750px)';
+    padding: 20px;
+    background: @apos-white;
+
+    .apos-attachment-preview
+    {
+      position: relative;
+      // width: 50%;
+      width: auto;
+      max-width: 500px;
+      height: auto;
+      overflow: hidden;
+
+      background-repeat: no-repeat;
+      img
+      {
+        width: 100%;
+        height: auto;
+      }
+    }
+    .apos-attachment-name
+    {
+      display: block;
+      font-size: 1em;
+      margin: 0.5em 0;
+    }
+  }
+
+  .apostrophe-image-editor-fields
+  {
+    .apos-inline-block(top);
+    width: 750px;
+  }
+}

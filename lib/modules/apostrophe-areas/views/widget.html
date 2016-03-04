@@ -4,7 +4,7 @@
 {# whitelisting them for the inline JSON attributes) #}
 
 <div data-widget="{{ data.widget.type }}" data='{{ data.dataFiltered | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}'>
-  {%- if data.widget._edit -%}
+  {%- if data.widget._edit and data.options.edit != false -%}
     {%- include 'widgetControls.html' -%}
   {%- endif -%}
   {{ data.output() | safe }}

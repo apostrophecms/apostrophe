@@ -26,14 +26,14 @@
   display: inline-block;
 }
 
-.apos-transition(@what: all, @duration:0.15s, @ease: ease-in-out) 
+.apos-transition(@what: all, @duration:0.15s, @ease: ease-in-out)
 {
   -webkit-transition: @what @duration @ease;
   -moz-transition: @what @duration @ease;
   -o-transition: @what @duration @ease;
   transition: @what @duration @ease;
 }
-.apos-transitions(@transitions) 
+.apos-transitions(@transitions)
 {
   -webkit-transition: ~'@{transitions}';
   -moz-transition: ~'@{transitions}';
@@ -43,7 +43,7 @@
 
 .apos-transition--bounce
 {
-  .apos-transition(@ease: cubic-bezier(0.13, 0.63, 0.34, 1.58)) 
+  .apos-transition(@ease: cubic-bezier(0.13, 0.63, 0.34, 1.58))
 }
 
 .apos-transform(@string)
@@ -52,6 +52,19 @@
   -moz-transform:      ~'@{string}';
   -ms-transform:       ~'@{string}';
   -o-transform:        ~'@{string}';
+}
+
+.apos-animation(@props)
+{
+	-webkit-animation: ~'@{props}';
+	-moz-animation:    ~'@{props}';
+	animation:         ~'@{props}';
+}
+.apos-keyframes(@name; @arguments)
+{
+	@-moz-keyframes @name { @arguments(); }
+	@-webkit-keyframes @name { @arguments(); }
+	@keyframes @name { @arguments(); }
 }
 
 // No Text Selection ===================================
@@ -63,4 +76,14 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+// Center Veritlce ====================================
+.apos-center-verticle(@position: relative)
+{
+  position: @position;
+  top: 50%;
+  -webkit-transform: translate3d(0,-50%,0);
+  -ms-transform: translate3d(0,-50%,0);
+  transform: translate3d(0,-50%,0);
 }

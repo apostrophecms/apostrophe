@@ -1,5 +1,6 @@
 .apos-button
 {
+  position: relative;
   .apos-inline-block;
   padding: @apos-padding-1 @apos-padding-2;
   .apos-rounded;
@@ -12,6 +13,13 @@
   .apos-no-select;
   .apos-transition--bounce;
 
+  .apos-button-label
+  {
+    opacity: 1;
+    .apos-transition();
+  }
+
+
   &:hover
   {
     .apos-glow;
@@ -20,7 +28,38 @@
   {
     .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
   }
+
+  &[data-busy="1"]
+  {
+    .apos-button-label { opacity: 0; }
+    &:after
+    {
+      opacity: 1;
+      .apos-rotate();
+    }
+  }
 }
+
+// SPINNER =====================
+
+.apos-button:after
+{
+  position: absolute;
+  left: ~'calc(50% - 12px)';
+  top: 8px;
+  width: 24px;
+  height: 24px;
+
+  color: @apos-green;
+  font-size: 24px;
+  .fa;
+  content: '\f110';
+  opacity: 0;
+  line-height: 100%;
+  .apos-transition();
+}
+
+// TYPES =======================
 
 .apos-button--disabled
 {
@@ -59,6 +98,10 @@
   {
     .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-black, 20%));
   }
+  &:after
+  {
+    color: @apos-white;
+  }
 }
 
 .apos-button--more
@@ -76,6 +119,10 @@
   color: @apos-white;
   padding: @apos-padding-1 @apos-padding-4;
   border: none;
+  &:after
+  {
+    color: @apos-white;
+  }
 }
 
 .apos-button--minor
@@ -86,6 +133,14 @@
   {
     .apos-drop-shadow(@spread:0;);
   }
+}
+
+.apos-button--action
+{
+  background-color: @apos-white;
+  color: @apos-dark;
+  padding: @apos-padding-1 @apos-padding-2;
+  .apos-button-border(@apos-green);
 }
 
 .apos-button--danger
