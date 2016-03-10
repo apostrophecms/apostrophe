@@ -7,7 +7,7 @@
     {%- else -%}
       {% include "areaControls.html" %}
     {%- endif -%}
-    <div data-widgets>
+    <div class="apos-area-widgets" data-widgets>
   {%- endif -%}
   {%- for widget in data.area.items -%}
     {{ apos.areas.widget(widget, data.options.widgets[widget.type]) }}

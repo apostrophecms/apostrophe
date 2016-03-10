@@ -9,16 +9,19 @@
   {%- endfor -%}
 {%- endmacro -%}
 <div class="apos-ui">
-  {{ dropdowns.base(
-    {
-      label: data.options.addContentLabel or "Add Content",
-      items: data.options.widgets
-    },
-    'button',
-    {
-      direction: 'down',
-      listMacro: listWidgets,
-      buttonType: 'inContext'
-    })
-  }}
+  <div class="apos-area-controls">
+    {{ dropdowns.base(
+      {
+        label: data.options.addContentLabel or "Add Content",
+        items: data.options.widgets
+      },
+      'button',
+      {
+        direction: 'down',
+        listMacro: listWidgets,
+        buttonType: 'inContext',
+        class: 'add-content'
+      })
+    }}
+  </div>
 </div>
