@@ -9,22 +9,29 @@
   &.apos-limit-reached>.apos-ui .apos-area-controls { display: none; }
   // When we are dragging a widget, we want it to be at the forefront.
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
+  &.apos-empty
+  {
+    // When there aren't any widgets in an area, the add content controls
+    // should appear absolutely positioned in the empty state.
+    >.apos-ui .apos-area-controls
+    {
+      position: absolute;
+      bottom: @apos-padding-2;
+      left: @apos-padding-2;
+    }
+    // When there aren't any widgets in an area, it should have a min-height
+    // and a background color set by default.
+    >.apos-area-widgets
+    {
+      min-height: 80px;
+      background-color: @apos-light;
+    }
+  }
 }
 
 .apos-area-controls
 {
   z-index: @apos-z-index-5;
-}
-
-.apos-area-widgets
-{
-  // When there aren't any widgets in an area, it should have a min-height
-  // and a background color set by default.
-  &.apos-empty
-  {
-    min-height: 100px;
-    background-color: @apos-light;
-  }
 }
 
 .apos-area-widget {
@@ -51,13 +58,6 @@
 {
   bottom: @apos-padding-1;
   left: @apos-padding-1;
-}
-
-.apos-area-controls--singleton
-{
-  position: absolute;
-  bottom: @apos-padding-2;
-  left: @apos-padding-2;
 }
 
 .apos-area-widget--contextual>.apos-ui .apos-area-widget-controls--data { display: none; }
