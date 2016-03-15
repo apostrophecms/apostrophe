@@ -11,6 +11,10 @@
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
   &.apos-empty
   {
+    // When there aren't any widgets in an area, it should have a min-height
+    // and a background color set by default.
+    min-height: 80px;
+    background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
     >.apos-ui .apos-area-controls
@@ -18,13 +22,6 @@
       position: absolute;
       bottom: @apos-padding-2;
       left: @apos-padding-2;
-    }
-    // When there aren't any widgets in an area, it should have a min-height
-    // and a background color set by default.
-    >.apos-area-widgets
-    {
-      min-height: 80px;
-      background-color: @apos-light;
     }
   }
 }
