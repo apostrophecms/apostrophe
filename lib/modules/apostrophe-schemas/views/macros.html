@@ -172,7 +172,8 @@
 
 {# Less ambiguous to work with than a checkbox #}
 {%- macro boolean(field) -%}
-  {{ fieldset(field, booleanBody) }}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if apos.utils.containsProperty(field.choices, 'showFields') else '' %}
+  {{ fieldset(field | merge({ classes: selectMultiple }), booleanBody) }}
 {%- endmacro -%}
 
 {% macro booleanBody(field) %}
