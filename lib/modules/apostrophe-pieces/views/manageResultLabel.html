@@ -1,6 +1,8 @@
 <div class='apos-manage-result-label'>
 	{%- if data.filters.q -%}
 		Showing {{ data.total }} results for <span>"{{ data.filters.q }}"</span>
+	{%- elif data.total == 0 -%}
+		No results for current filters.
 	{%- else -%}
 		Showing {{ data.skip + 1 }} - {{ data.skip + data.pieces.length }} of {{ data.total }} results
 	{%- endif -%}
