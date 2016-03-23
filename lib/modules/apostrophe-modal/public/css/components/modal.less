@@ -46,7 +46,11 @@
 
   .apos-transform(translate3d(0,0,0) scale3d(1,1,1));
   .apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
-	.apos-table { overflow-y: scroll; }
+	.apos-table tbody
+  { 
+    height: 100%;
+    overflow-y: scroll;
+  } 
 }
 
 .apos-modal--pushed
@@ -64,7 +68,6 @@
 
 	// this is replaced dynamically with js
   height: ~'calc(100vh - 100px - 189px - 82px)';     // 100vh - 100 (position) - 189 (header + breadcrumb) - 82px (footer bar)
-  overflow: scroll;
   width: 100%;
 
   // background-color: @apos-white;
@@ -74,7 +77,8 @@
 .apos-modal-body
 {
 	height: 100%;
-	overflow: scroll;
+	overflow-y: scroll;
+  .apos-scrollbar;
   background-color: lighten(@apos-light, 5%);
 }
 
