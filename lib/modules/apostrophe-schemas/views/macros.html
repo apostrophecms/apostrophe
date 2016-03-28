@@ -6,8 +6,6 @@
     <div class="apos-schema-tabs">
       {%- if groups.length > 1 -%}
         {%- for group in groups -%}
-        {{ apos.log(group.name) }}
-        {{ apos.log(group.fields) }}
           {%- if group.fields.length -%}
             <div class="apos-schema-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
               {{ group.label }}
