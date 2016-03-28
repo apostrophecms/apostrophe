@@ -1,15 +1,15 @@
 <div class="apos-slideshow{% block outerClass %}{% endblock %}" data-slideshow>
   <div data-slideshow-items>
-    {% block items %}
-      {% for entry in data.widget._pieces %}
+    {%- block items -%}
+      {%- for entry in data.widget._pieces -%}
         {# Works whether there's a relationship in the join or not. Normally there always #}
         {# is for slideshows, but just in case someone really hates cropping... -Tom #}
-        {% set image = entry.item or entry %}
-        {% set relationship = entry.relationship %}
+        {%- set image = entry.item or entry -%}
+        {%- set relationship = entry.relationship -%}
         <div data-slideshow-item class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %}" style="background-image: url({{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }})">
-          {% block title %}<h4>{{ image.title }}</h4>{% endblock %}
-          <img data-image style="display: none" src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" />
-          {% block credit %}
+          {%- block title -%}<h4>{{ image.title }}</h4>{%- endblock -%}
+          <img data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" />
+          {%- block credit -%}
             {%- if image.credit -%}
               {%- if image.creditUrl -%}
                 <a href="{{ image.creditUrl }}">
@@ -19,20 +19,20 @@
                 </a>
               {%- endif -%}
             {%- endif -%}
-          {% endblock %}
-          {% block description %}
-            {% if image.description %}
+          {%- endblock -%}
+          {%- block description -%}
+            {%- if image.description -%}
               <div>{{ image.description | nlbr }}</div>
-            {% endif %}
-          {% endblock %}
+            {%- endif -%}
+          {%- endblock -%}
         </div>
-      {% endfor %}
-    {% endblock %}
+      {%- endfor -%}
+    {%- endblock -%}
   </div>
 </div>
 {% block arrows %}
   {% if data.widget._pieces.length > 1 %}
-    <a href="#" data-next class="apos-slideshow-button apos-slideshow-next"><i class="fa fa-angle-right"></i></a>
-    <a href="#" data-previous class="apos-slideshow-button apos-slideshow-prev"><i class="fa fa-angle-left"></i></a>
+    <a href="#" data-next class="apos-slideshow-button apos-slideshow-next default-style"><i class="fa fa-angle-right"></i></a>
+    <a href="#" data-previous class="apos-slideshow-button apos-slideshow-prev default-style"><i class="fa fa-angle-left"></i></a>
   {% endif %}
 {% endblock %}

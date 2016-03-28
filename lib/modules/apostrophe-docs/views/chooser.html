@@ -1,5 +1,6 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
 {% if data.browse %}
-  <a class="apos-button" data-browse>Browse...</a>
+  {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
 {% endif %}
 {# Existing selections #}
 <div data-choices>

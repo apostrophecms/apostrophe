@@ -4,21 +4,24 @@
     {%- if not data.widgetManagers[name] -%}
       {{ apos.log("Your area contains a widget of type " + name + " but there is no manager for that type. Maybe you forgot to configure the " + name + "-widgets module?") }}
     {%- else -%}
-      <li class="apos-dropdown-item" data-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
+      <li class="apos-dropdown-item" data-apos-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
     {%- endif -%}
   {%- endfor -%}
 {%- endmacro -%}
 <div class="apos-ui">
-  {{ dropdowns.base(
-    {
-      label: data.options.addContentLabel or "Add Content",
-      items: data.options.widgets
-    },
-    'button',
-    {
-      direction: 'down',
-      listMacro: listWidgets,
-      buttonType: 'inContext'
-    })
-  }}
+  <div class="apos-area-controls">
+    {{ dropdowns.base(
+      {
+        label: data.options.addContentLabel or "Add Content",
+        items: data.options.widgets
+      },
+      'button',
+      {
+        direction: 'down',
+        listMacro: listWidgets,
+        buttonType: 'inContext',
+        class: 'add-content'
+      })
+    }}
+  </div>
 </div>

@@ -4,12 +4,14 @@
 	display: inline-block;
   .apos-no-select;
 	& > * { position: relative; }
+	.apos-drop-shadow;
 }
 
 .apos-dropdown .apos-button
 {
 	z-index: 5; // todo bo
 	.apos-transition--bounce;
+	.apos-drop-shadow(0, 0, 0, 0);
 }
 
 .apos-dropdown.apos-active
@@ -65,6 +67,11 @@
 		.apos-rounded-bl;
 		.apos-rounded-br;
 	}
+	&.apos-active>.apos-button
+	{
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+	}
 }
 
 .apos-dropdown--up
@@ -73,6 +80,11 @@
 	{
 		.apos-rounded-tl;
 		.apos-rounded-tr;
+	}
+	&.apos-active>.apos-button
+	{
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
 	}
 }
 

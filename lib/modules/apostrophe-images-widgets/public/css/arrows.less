@@ -7,8 +7,12 @@
   height: 40px;
   border-radius: 100%;
 
-  border: 2px solid @apos-dark;
   text-align: center;
+
+  &.default-style
+  {
+    border: 2px solid @apos-dark;
+  }
 
   i
   {
@@ -32,7 +36,7 @@
     i { left: 2px; }
   }
 
-  &:hover
+  &:hover.default-style
   {
     background-color: @apos-dark;
     i { color: @apos-white; }

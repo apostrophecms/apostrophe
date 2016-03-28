@@ -7,24 +7,28 @@
       <div class="apos-schema-tabs">
         {%- if groups.length > 1 -%}
           {%- for group in groups -%}
+            {%- if group.fields.length -%}
             <div class="apos-schema-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
               {{ group.label }}
             </div>
+            {%- endif -%}
           {%- endfor -%}
         {%- endif -%}
       </div>
     {%- endif -%}
     <div class="apos-schema-groups">
       {%- for group in groups -%}
-        <div class="apos-schema-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
-          <div class="apos-schema-group-inner">
-            {%- for field in group.fields -%}
-              {%- if not field.contextual -%}
-                {{ apos.schemas.field(field) }}
-              {%- endif -%}
-            {%- endfor -%}
+        {%- if group.fields.length -%}
+          <div class="apos-schema-group{% if loop.first %} apos-active{% endif %}" data-apos-group="{{ group.name }}">
+            <div class="apos-schema-group-inner">
+              {%- for field in group.fields -%}
+                {%- if not field.contextual -%}
+                  {{ apos.schemas.field(field) }}
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
           </div>
-        </div>
+        {%- endif -%}
       {%- endfor -%}
     </div>
   </div>
@@ -98,7 +102,7 @@
     <ul data-list class="apos-tag-list">
       <li data-item class="apos-ui-container">
         <span class="label-and-remove apos-ui-btn apos-ui--dark">
-          <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
+          <a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>
           <span data-label>{{ __('Example label') }}</span>
           {# Link to remove this choice #}
         </span>
@@ -174,7 +178,8 @@
 
 {# Less ambiguous to work with than a checkbox #}
 {%- macro boolean(field) -%}
-  {{ fieldset(field, booleanBody) }}
+  {% set selectFields = ' apos-fieldset-select-show-fields' if apos.utils.containsProperty(field.choices, 'showFields') else '' %}
+  {{ fieldset(field | merge({ classes: selectMultiple }), booleanBody) }}
 {%- endmacro -%}
 
 {% macro booleanBody(field) %}

@@ -4,10 +4,8 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% block controls %}
-  <div class='apos-modal-controls'>
-  	{{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  	{{ buttons.major('Save', { action: 'save' }) }}
-  </div>
+	{{ buttons.minor('Cancel', { action: 'cancel' }) }}
+	{{ buttons.major('Save', { action: 'save' }) }}
 {% endblock %}
 
 {% block label %}

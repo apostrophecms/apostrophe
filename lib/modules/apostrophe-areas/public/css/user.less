@@ -1,9 +1,69 @@
 
-@import 'components/structure.less';
+.apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
-.apos-ui
+.apos-area
 {
-  @import 'components/controls.less';
+  // When an area's limit is reached, it shouldn't display controls
+  // to add more content. We use direct children selectors to in order
+  // to support nested areas.
+  &.apos-limit-reached>.apos-ui .apos-area-controls { display: none; }
+  // When we are dragging a widget, we want it to be at the forefront.
+  .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
+  &.apos-empty
+  {
+    // When there aren't any widgets in an area, it should have a min-height
+    // and a background color set by default.
+    min-height: 80px;
+    background-color: @apos-light;
+    // When there aren't any widgets in an area, the add content controls
+    // should appear absolutely positioned in the empty state.
+    >.apos-ui .apos-area-controls
+    {
+      position: absolute;
+      bottom: @apos-padding-2;
+      left: @apos-padding-2;
+    }
+  }
 }
 
-@import 'components/nested-controls.less';
+.apos-area-controls
+{
+  z-index: @apos-z-index-5;
+}
+
+.apos-area-widget {
+  >.apos-ui .apos-area-widget-controls { opacity: 0; }
+  &:hover>.apos-ui .apos-area-widget-controls { opacity: 1; }
+  // When an area has a limit of one, its children widgets shouldn't
+  // display the arrow organization controls.
+  >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
+}
+
+.apos-area-widget-controls
+{
+  position: absolute;
+  z-index: @apos-z-index-4;
+}
+
+.apos-area-widget-controls--context
+{
+  top: @apos-padding-1;
+  left: @apos-padding-1;
+}
+
+.apos-area-widget-controls--data
+{
+  bottom: @apos-padding-1;
+  left: @apos-padding-1;
+}
+
+.apos-area-widget--contextual>.apos-ui .apos-area-widget-controls--data { display: none; }
+
+// Styles for the drag-target separator between widgets.
+.apos-area-item-separator
+{
+  padding: @apos-padding-2;
+  margin: @apos-margin-1 0;
+  border: 4px dashed @apos-mid;
+  &.apos-hover { background-color: @apos-light; }
+}
