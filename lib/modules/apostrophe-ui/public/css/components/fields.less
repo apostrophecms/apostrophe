@@ -98,6 +98,7 @@
 .apos-field-tags .apos-tags
 {
   position: relative;
+  .apos-field-input { position: relative; }
   .apos-tag-add
   {
     position: absolute;
@@ -109,7 +110,9 @@
   {
     position: relative;
     padding: @apos-padding-2;
+    padding-top: @apos-padding-2 - 6px;
     background-color: @apos-lighter;
+    &.apos-empty { display: none; }
   }
   .apos-tag-list-item
   {
