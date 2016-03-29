@@ -91,21 +91,17 @@
   {# selective, and in both standalone and fieldset situations. -Tom #}
   <div class="apos-tags" data-name="{{ field.name }}" data-selective>
     {# Text entry for autocompleting the next item #}
-    <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
-    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
-    <span class="apos-ui-container apos-ui-inline-btn" data-add>
-      <a href="#" class="apos-ui-btn"><i class="icon icon-plus"></i> Add</a>
-    </span>
-
     <ul data-list class="apos-tag-list">
-      <li data-item class="apos-ui-container">
-        <span class="label-and-remove apos-ui-btn apos-ui--dark">
-          <a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>
-          <span data-label>{{ __('Example label') }}</span>
-          {# Link to remove this choice #}
-        </span>
+      <li data-item class="apos-tag-list-item">
+        <a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>
+        <span class="apos-tag-entry" data-label>{{ __('Example label') }}</span>
+        {# Link to remove this choice #}
       </li>
     </ul>
+    <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
+    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+    <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> Add</a>
+
   </div>
 {%- endmacro -%}
 
