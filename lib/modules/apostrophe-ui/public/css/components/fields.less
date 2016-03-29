@@ -111,14 +111,15 @@
     position: relative;
     padding: @apos-padding-2;
     padding-top: @apos-padding-2 - 6px;
-    background-color: @apos-lighter;
+    padding-left: @apos-padding-2 - 10px;
+    background-color: fade(@apos-light, 50%);
     &.apos-empty { display: none; }
   }
   .apos-tag-list-item
   {
     .apos-inline-block;
     margin-top: 6px;
-    &:not(:first-of-type) { margin-left: 6px; }
+    margin-left: 10px;
   }
   .apos-tag-entry
   {
