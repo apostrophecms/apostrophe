@@ -93,3 +93,39 @@
   //&:checked + .apos-field-input-checkbox-indicator
 
 }
+
+// Tags ========================================
+.apos-field-tags .apos-tags
+{
+  position: relative;
+  .apos-field-input { position: relative; }
+  .apos-tag-add
+  {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: @apos-padding-2;
+  }
+  .apos-tag-list
+  {
+    position: relative;
+    padding: @apos-padding-2;
+    padding-top: @apos-padding-2 - 6px;
+    padding-left: @apos-padding-2 - 10px;
+    background-color: fade(@apos-light, 50%);
+    &.apos-empty { display: none; }
+  }
+  .apos-tag-list-item
+  {
+    .apos-inline-block;
+    margin-top: 6px;
+    margin-left: 10px;
+  }
+  .apos-tag-entry
+  {
+    .apos-text-normal;
+    text-transform: capitalize;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed @apos-primary;
+  }
+}
