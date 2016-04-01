@@ -11,9 +11,9 @@
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
   &.apos-empty
   {
-    // When there aren't any widgets in an area, it should have a min-height
+    // When there aren't any widgets in an area, it should have a height
     // and a background color set by default.
-    min-height: 80px;
+    height: 80px;
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
@@ -62,8 +62,24 @@
 // Styles for the drag-target separator between widgets.
 .apos-area-item-separator
 {
-  padding: @apos-padding-2;
-  margin: @apos-margin-1 0;
-  border: 4px dashed @apos-mid;
-  &.apos-hover { background-color: @apos-light; }
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border: 0px dashed @apos-primary;
+  &.apos-hover { background-color: fade(@apos-primary, 50%); }
+  .apos-transition;
+}
+
+.apos-dragging .apos-area-item-separator
+{
+  border-width: 1px;
+  opacity: 1;
+  padding: @apos-padding-1;
+  margin: @apos-margin-1/2 0;
+}
+
+.apos-empty .apos-area-item-separator
+{
+  height: 100%;
+  padding: 0;
 }
