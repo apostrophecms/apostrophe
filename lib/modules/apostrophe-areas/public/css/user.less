@@ -9,7 +9,7 @@
   &.apos-limit-reached
   {
     >.apos-ui .apos-area-controls,
-    >[data-widgets]>.apos-ui .apos-area-controls { display: none; }
+    >[data-widgets]>[data-apos-widget-wrapper]>.apos-ui .apos-area-controls { display: none; }
   }
   // When we are dragging a widget, we want it to be at the forefront.
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
@@ -30,12 +30,13 @@
   }
 }
 
-.apos-area-controls
+.apos-area-controls { z-index: @apos-z-index-5; }
+
+.apos-area-widget-wrapper>.apos-ui>.apos-area-controls
 {
   position: relative;
   max-height: 0;
   opacity: 0;
-  z-index: @apos-z-index-5;
   .apos-transition;
 }
 
@@ -44,8 +45,6 @@
   max-height: 100px;
   opacity: 1;
 }
-
-[data-apos-area-controls-original] .apos-area-controls { opacity: 1; max-height: inherit; }
 
 // [data-apos-area-controls][data-apos-area-controls-original] .apos-area-controls
 // {
