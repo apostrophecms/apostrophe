@@ -18,9 +18,10 @@
   .apos-dropdown
   {
     vertical-align: top;
+    box-shadow: none;
+    &:hover, &.apos-active { .apos-drop-shadow; }
     .apos-dropdown-items{ min-width: 100px; }
-    .apos-button { border: none; &:hover{ box-shadow: none; } }
-    &.apos-active .apos-button { border: 2px solid @apos-base; }
+    .apos-button { border: none; &:hover { box-shadow: none; } }
   }
 
   .apos-modal-title
