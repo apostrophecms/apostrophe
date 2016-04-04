@@ -28,7 +28,14 @@
 
 .apos-area-controls
 {
+  display: none;
   z-index: @apos-z-index-5;
+}
+
+.apos-area:hover
+{
+  >.apos-ui>.apos-area-controls,
+  >[data-widgets]>.apos-ui>.apos-area-controls { display: inline-block; }
 }
 
 .apos-area-widget {
