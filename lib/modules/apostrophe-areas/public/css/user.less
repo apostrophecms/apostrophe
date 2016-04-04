@@ -6,7 +6,11 @@
   // When an area's limit is reached, it shouldn't display controls
   // to add more content. We use direct children selectors to in order
   // to support nested areas.
-  &.apos-limit-reached>.apos-ui .apos-area-controls { display: none; }
+  &.apos-limit-reached
+  {
+    >.apos-ui .apos-area-controls,
+    >[data-widgets]>.apos-ui .apos-area-controls { display: none; }
+  }
   // When we are dragging a widget, we want it to be at the forefront.
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
   &.apos-empty
@@ -28,15 +32,28 @@
 
 .apos-area-controls
 {
-  display: none;
+  position: relative;
+  max-height: 0;
+  opacity: 0;
   z-index: @apos-z-index-5;
+  .apos-transition;
 }
 
-.apos-area:hover
+.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
 {
-  >.apos-ui>.apos-area-controls,
-  >[data-widgets]>.apos-ui>.apos-area-controls { display: inline-block; }
+  max-height: 100px;
+  opacity: 1;
 }
+
+[data-apos-area-controls-original] .apos-area-controls { opacity: 1; max-height: inherit; }
+
+// [data-apos-area-controls][data-apos-area-controls-original] .apos-area-controls
+// {
+//   opacity: 0;
+//   position: relative;
+//   max-height: 100px !important;
+// }
+// [data-apos-area-controls][data-apos-area-controls-original] .apos-area-controls:hover { max-height: 100px !important; opacity: 1; }
 
 .apos-area-widget {
   >.apos-ui .apos-area-widget-controls { opacity: 0; }

@@ -2,9 +2,15 @@
 {# however ginormous joined objects are elided. Use APIs to #}
 {# get them if you need them (TODO: consider ways of #}
 {# whitelisting them for the inline JSON attributes) #}
+{%- if data.widget._edit -%}
+  <div class="apos-area-widget-wrapper" data-apos-widget-wrapper>
+{%- endif -%}
 <div class="apos-area-widget{% if data.manager.options.contextualOnly %} apos-area-widget--contextual{% endif %}" data-widget="{{ data.widget.type }}" data='{{ data.dataFiltered | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}'>
   {%- if data.widget._edit and data.options.edit != false -%}
     {%- include 'widgetControls.html' -%}
   {%- endif -%}
   {{ data.output() | safe }}
 </div>
+{%- if data.widget._edit -%}
+  </div>
+{%- endif -%}
