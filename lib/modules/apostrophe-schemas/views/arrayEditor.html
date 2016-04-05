@@ -2,9 +2,8 @@
 {%- extends "apostrophe-modal:baseSlideable.html" -%}
 
 {%- block controls  -%}
-  <div class="apos-array-save-item apos-button" data-apos-save-array-items>
-    Save Items
-  </div>
+  <div class="apos-array-save-item apos-button apos-button--minor" data-apos-cancel>Cancel</div>{#
+#}<div class="apos-array-save-item apos-button" data-apos-save-array-items>Save Items</div>
 {%- endblock -%}
 {%- block body -%}
   <div class="apos-chooser" data-apos-array-items></div>

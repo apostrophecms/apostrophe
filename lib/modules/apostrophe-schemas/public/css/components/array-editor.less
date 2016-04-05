@@ -4,7 +4,21 @@
   width: 75%;
 }
 
-.apos-modal .apos-schema-tabs.apos-array-items { width: 100%; }
+.apos-modal .apos-schema-tabs.apos-array-items
+{
+  width: 100%;
+  i
+  {
+    float: right;
+    color: @apos-mid;
+    &:hover
+    {
+      cursor: pointer;
+      color: @apos-dark;
+    }
+    .apos-transition();
+  }
+}
 
 // TODO re-figure .apos-modal .apos-schema-group {} width when no tabs are present.
 // Question: Do we need tabs in arrays?
