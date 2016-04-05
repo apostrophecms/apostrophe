@@ -6,14 +6,18 @@
   // When an area's limit is reached, it shouldn't display controls
   // to add more content. We use direct children selectors to in order
   // to support nested areas.
-  &.apos-limit-reached>.apos-ui .apos-area-controls { display: none; }
+  &.apos-limit-reached
+  {
+    >.apos-ui .apos-area-controls,
+    >[data-apos-widgets]>[data-apos-widget-wrapper]>.apos-ui .apos-area-controls { display: none; }
+  }
   // When we are dragging a widget, we want it to be at the forefront.
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
   &.apos-empty
   {
-    // When there aren't any widgets in an area, it should have a min-height
+    // When there aren't any widgets in an area, it should have a height
     // and a background color set by default.
-    min-height: 80px;
+    height: 80px;
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
@@ -26,8 +30,21 @@
   }
 }
 
-.apos-area-controls
+.apos-area-controls { z-index: @apos-z-index-5; }
+
+.apos-area-widget-wrapper>.apos-ui>.apos-area-controls
 {
+  position: relative;
+  max-height: 0;
+  opacity: 0;
+  .apos-transition;
+  z-index: @apos-z-index-1;
+}
+
+.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
+{
+  max-height: 100px;
+  opacity: 1;
   z-index: @apos-z-index-5;
 }
 
@@ -62,8 +79,24 @@
 // Styles for the drag-target separator between widgets.
 .apos-area-item-separator
 {
-  padding: @apos-padding-2;
-  margin: @apos-margin-1 0;
-  border: 4px dashed @apos-mid;
-  &.apos-hover { background-color: @apos-light; }
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border: 0px dashed @apos-primary;
+  &.apos-hover { background-color: fade(@apos-primary, 50%); }
+  .apos-transition;
+}
+
+.apos-dragging .apos-area-item-separator
+{
+  border-width: 1px;
+  opacity: 1;
+  padding: @apos-padding-1;
+  margin: @apos-margin-1/2 0;
+}
+
+.apos-empty .apos-area-item-separator
+{
+  height: 100%;
+  padding: 0;
 }
