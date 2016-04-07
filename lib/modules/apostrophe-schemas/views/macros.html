@@ -3,17 +3,19 @@
 {%- macro fields(fields, options = {}) -%}
   {%- set groups = apos.schemas.toGroups(fields) -%}
   <div data-apos-form class="apos-schema{% if groups.length > 1 %} apos-schema--with-tabs{% endif %}">
-    <div class="apos-schema-tabs">
-      {%- if groups.length > 1 -%}
-        {%- for group in groups -%}
-          {%- if group.fields.length -%}
+    {%- if options.tabs != false -%}
+      <div class="apos-schema-tabs">
+        {%- if groups.length > 1 -%}
+          {%- for group in groups -%}
+            {%- if group.fields.length -%}
             <div class="apos-schema-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
               {{ group.label }}
             </div>
-          {%- endif -%}
-        {%- endfor -%}
-      {%- endif -%}
-    </div>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
     <div class="apos-schema-groups">
       {%- for group in groups -%}
         {%- if group.fields.length -%}
@@ -180,33 +182,19 @@
   {{ selectBody(field | merge({ choices: [ { value: '1', label: __('Yes') }, { value: '0', label: __('No') }] })) }}
 {%- endmacro -%}
 
-{%- macro array(name, label, schema) -%}
-  <fieldset class="apos-fieldset apos-fieldset-array apos-fieldset-{{ name | css }}"  data-name="{{ name }}">
+{%- macro array(field) -%}
+  <fieldset class="apos-field apos-field-{{field.type | css}} apos-field-{{ field.name | css }}"  data-name="{{ field.name }}" {{ field.attributes }}>
     <div class="apos-fieldset-row">
-      {#- <label>{{ __(label) }}</label> -#}
       {#- Cannot be inside the sortable div -#}
-      <span class="apos-ui-container">
-        <a href="#" class="apos-control apos-button" data-add>
-          <i class="icon-plus"></i>
-          Add {{ __(label) }}
+      <span class="apos-ui-container" name="{{ field.name }}">
+        <label for="{{ field.name }}" class="apos-field-label"></label>
+        <label data-array-length></label><br>
+        <a href="#" class="apos-control apos-button" data-apos-edit-array>
+          Edit {{ __(field.label) }}
+          <i class="fa fa-angle-right"></i>
         </a>
       </span>
     </div>
-
-    <div data-elements>
-      <div data-element class="apos-template apos-array-item">
-        <div class="apos-ui-container right">
-          <span class="apos-ui-btn-group">
-            <!-- <a href="#" class="apos-ui apos-ui-btn apos-array-move" data-move><i class="icon-move"></i></a> -->
-            <span class="apos-ui apos-ui-btn" data-move-item="up"><i class="icon-arrow-up"></i></span>{#
-            #}<span class="apos-ui apos-ui-btn" data-move-item="down"><i class="icon-arrow-down"></i></span>{#
-            #}<a href="#" class="apos-ui apos-ui-btn apos-array-remove" data-remove><i class="icon-remove"></i></a>
-          </span>
-        </div>
-        {{ fields(schema) }}
-      </div>
-    </div>
-
   </fieldset>
 {%- endmacro -%}
 
