@@ -187,10 +187,11 @@
     <div class="apos-fieldset-row">
       {#- Cannot be inside the sortable div -#}
       <span class="apos-ui-container" name="{{ field.name }}">
-        <label data-array-length></label>
+        <label for="{{ field.name }}" class="apos-field-label"></label>
+        <label data-array-length></label><br>
         <a href="#" class="apos-control apos-button" data-apos-edit-array>
-          <i class="icon-plus"></i>
           Edit {{ __(field.label) }}
+          <i class="fa fa-angle-right"></i>
         </a>
       </span>
     </div>
