@@ -12,7 +12,7 @@
   </div>
   <input type="file" name="{{ field.name }}" style="display:none" data-uploader />
   {#<a href="#" data-trash-attachment>{{ buttons.danger('Delete File', { action: 'trash-attachment' }) }}</a>#}
-  {{ buttons.action('Upload File', {action: 'uploader-target' }) }}
+  {{ buttons.action('Upload File', { action: 'uploader-target' }) }}
 {% endmacro %}
 
 {{ schemas.fieldset(data, attachment) }}
