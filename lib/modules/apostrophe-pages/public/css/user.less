@@ -1,3 +1,12 @@
+.apos-modal .apos-reorganize-tree
+{
+  height: 100%;
+  max-width: 740px;
+  margin-left: 220px;
+  padding-top: @apos-padding-2;
+  background-color: @apos-white;
+}
+
 .apos-reorganize-tree .jqtree-tree
 {
   .jqtree-element
@@ -16,9 +25,24 @@
     border-left: 2px dashed @apos-primary;
   }
   .jqtree-folder.jqtree-closed>ul.jqtree_common { border-color: @apos-mid; }
-  .apos-reorganize-controls
+  .apos-reorganize-controls a
   {
-    padding-left: @apos-padding-2;
-    a {}
+    display: inline-block;
+    vertical-align: middle;
+    color: @apos-mid;
+    padding-left: @apos-padding-1;
+    .apos-transition;
+    &.apos-visit:hover { color: @apos-primary; }
+    &.apos-delete:hover { color: @apos-delete; }
   }
+  .jqtree-selected .apos-reorganize-controls a { color: @apos-dark }
+  li.jqtree-selected > .jqtree_common.jqtree-element,
+  li.jqtree-selected > .jqtree_common.jqtree-element:hover
+  {
+    background: none !important;
+  }
+  li { .apos-transition; }
+  li.jqtree-selected { background: @apos-mid; }
+  .jqtree-moving > .jqtree_common.jqtree-element .jqtree-title { outline: 0; }
+  .jqtree-moving { background: @apos-primary !important; }
 }
