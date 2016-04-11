@@ -1,9 +1,10 @@
 {% extends "apostrophe-modal:base.html" %}
 {% import "apostrophe-modal:macros.html" as modals %}
+{% import 'apostrophe-ui:components/buttons.html' as buttons %}
 
 {% block controls %}
   <div class="apos-modal-controls">
-    {{ modals.button({dataAttrs: 'data-save', float: 'right', color: 'base', label: __('Finished')}) }}
+    {{ buttons.major('Finished', { action: 'save' }) }}
   </div>
 {% endblock %}
 
@@ -22,3 +23,5 @@
   <div class="apos-reorganize-tree" data-tree>
   </div>
 {% endblock %}
+
+{% block footerContainer %}{% endblock %}
