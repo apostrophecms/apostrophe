@@ -1,3 +1,24 @@
-.apos-reorganize-tree
+.apos-reorganize-tree .jqtree-tree
 {
+  .jqtree-element
+  {
+    padding: 5px 0;
+  }
+  .jqtree-title
+  {
+    color: @apos-black;
+    margin-left: 2em;
+  }
+  .jqtree-folder { padding-left: @apos-padding-1; }
+  .jqtree-folder>ul.jqtree_common
+  {
+    margin-left: 7px;
+    border-left: 2px dashed @apos-primary;
+  }
+  .jqtree-folder.jqtree-closed>ul.jqtree_common { border-color: @apos-mid; }
+  .apos-reorganize-controls
+  {
+    padding-left: @apos-padding-2;
+    a {}
+  }
 }

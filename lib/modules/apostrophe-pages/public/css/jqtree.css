@@ -47,7 +47,7 @@ ul.jqtree-tree {
     ul.jqtree-tree li.jqtree-ghost span {
       display: block; }
     ul.jqtree-tree li.jqtree-ghost span.jqtree-circle {
-      border: solid 2px #0000ff;
+      border: solid 2px #00BF9A;
       -webkit-border-radius: 100px;
       -moz-border-radius: 100px;
       border-radius: 100px;
@@ -60,7 +60,7 @@ ul.jqtree-tree {
       -moz-box-sizing: border-box;
       box-sizing: border-box; }
     ul.jqtree-tree li.jqtree-ghost span.jqtree-line {
-      background-color: #0000ff;
+      background-color: #00BF9A;
       height: 2px;
       padding: 0;
       position: absolute;
@@ -74,7 +74,7 @@ ul.jqtree-tree {
     display: block;
     left: -2px;
     top: 0;
-    border: solid 2px #0000ff;
+    border: solid 2px #00BF9A;
     border-radius: 6px;
     margin: 0;
     box-sizing: content-box; }
@@ -87,7 +87,7 @@ ul.jqtree-tree {
     background: -o-linear-gradient(top, #BEE0F5, #89AFCA);
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
   ul.jqtree-tree .jqtree-moving > .jqtree-element .jqtree-title {
-    outline: dashed 1px #0000ff; }
+    outline: dashed 1px #00BF9A; }
 
 ul.jqtree-tree.jqtree-rtl {
   direction: rtl; }
