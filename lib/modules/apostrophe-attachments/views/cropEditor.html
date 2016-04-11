@@ -7,10 +7,8 @@
 {%- endblock -%}
 
 {%- block controls -%}
-  <div class="apos-modal-controls">
     {{ buttons.minor('Cancel', { action: 'cancel' }) }}
     {{ buttons.major('Save Crop', { action: 'save' }) }}
-  </div>
 {%- endblock -%}
 
 {%- block label -%}
@@ -18,13 +16,7 @@
 {%- endblock -%}
 
 {% block body %}
-  <img class="apos-crop-image" data-crop-image />
-{% endblock %}
+  <img class="apos-crop-image" data-crop-image />{#
+#}{% endblock %}
 
-{% block footer %}
-
-  <div class="apos-progress-container">
-    {% include "progress.html" %}
-  </div>`
-
-{% endblock %}
+{% block footerContainer %}{% endblock %}
