@@ -34,16 +34,19 @@
 
 .apos-area-widget-wrapper>.apos-ui>.apos-area-controls
 {
-  position: relative;
-  max-height: 0;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid @apos-primary;
+  bottom: 0;
   opacity: 0;
+  transform: translateY(50%);
   .apos-transition;
   z-index: @apos-z-index-1;
 }
 
-.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
+.apos-area-widget-wrapper>.apos-ui>.apos-area-controls:hover
 {
-  max-height: 100px;
   opacity: 1;
   z-index: @apos-z-index-5;
 }
@@ -99,4 +102,16 @@
 {
   height: 100%;
   padding: 0;
+}
+
+.apos-ui .apos-dropdown.apos-dropdown--area-controls
+{
+  display: inherit;
+  .apos-drop-shadow(0, 0, 0, 0);
+  >.apos-button
+  {
+    border: 2px solid @apos-white;
+    .apos-rounded(@apos-padding-3);
+  }
+  &.apos-active>.apos-button>i { transform: rotate(45deg); }
 }
