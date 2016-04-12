@@ -42,58 +42,27 @@
   }
 }
 
-.apos-area-controls
-{
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  opacity: 0;
-  display: none;
-  &.apos-area-controls--singleton
-  {
-    display: block;
-    opacity: 1;
-    text-align: left;
-  }
-}
-
-[data-apos-area-controls-original] .apos-area-controls
-{
-  top: 0;
-  transform: translateY(-50%);
-  z-index: @apos-z-index-1;
-}
-
-.apos-area-widget-wrapper>.apos-ui>.apos-area-controls
-{
-  bottom: 0;
-  transform: translateY(50%);
-  .apos-transition;
-  z-index: @apos-z-index-1;
-}
-
 .apos-area-widget {
   >.apos-ui .apos-area-widget-controls { opacity: 0; }
-  &:hover>.apos-ui .apos-area-widget-controls { opacity: 0.3; }
+  &:hover>.apos-ui .apos-area-widget-controls { opacity: @apos-translucent-opacity; }
   >.apos-ui .apos-area-widget-controls:hover { opacity: 1; }
   // When an area has a limit of one, its children widgets shouldn't
   // display the arrow organization controls.
   >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
 }
 
+// Widget controls positioning
 .apos-area-widget-controls
 {
   position: absolute;
   z-index: @apos-z-index-5;
   .apos-transition;
 }
-
 .apos-area-widget-controls--context
 {
   top: @apos-padding-1;
   left: @apos-padding-1;
 }
-
 .apos-area-widget-controls--data
 {
   bottom: @apos-padding-1;
@@ -155,33 +124,59 @@
   }
 }
 
+.apos-area-controls
+{
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  opacity: 0;
+  display: none;
+  z-index: @apos-z-index-1;
+
+  &.apos-area-controls--singleton
+  {
+    display: block;
+    opacity: 1;
+    text-align: left;
+  }
+}
+
+[data-apos-area-controls-original] .apos-area-controls
+{
+  top: 0;
+  transform: translateY(-50%);
+}
+
+.apos-area-widget-wrapper>.apos-ui>.apos-area-controls
+{
+  bottom: 0;
+  transform: translateY(50%);
+  .apos-transition;
+  // z-index: @apos-z-index-1;
+}
+
+// We only want to show area add content controls for the actively hovered area,
+// which is determined in area's editor.js.
 .apos-area.apos-hover
 {
   >[data-apos-area-controls-original]>.apos-area-controls,
   >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
   {
     display: block;
-    z-index: @apos-z-index-1;
     opacity: @apos-translucent-opacity;
     &:hover { opacity: 1; }
   }
-  .apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
-  {
-    z-index: @apos-z-index-1;
-    opacity: @apos-translucent-opacity;
-  }
 }
-
-.apos-area-controls.apos-active { opacity: 1 !important; display: block; }
-
-.apos-dragging .apos-area-controls { opacity: 0 !important; }
-
-.apos-rich-text-active .apos-area-controls { display: none !important; }
-
-.apos-area-divider
+// The horizontal line under the add content button which divides areas
+.apos-area-controls .apos-area-divider
 {
   width: 100%;
   height: 3px;
   transform: translateY(-13px);
   background-color: @apos-base;
+  z-index: 0;
 }
+// TODO figure out how to select these specifically enough that !important isn't necessary
+.apos-area-controls.apos-active { opacity: 1 !important; display: block;}
+.apos-dragging .apos-area-controls { opacity: 0 !important; }
+.apos-rich-text-active .apos-area-controls { display: none !important; }
