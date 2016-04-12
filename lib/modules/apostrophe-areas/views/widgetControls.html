@@ -8,8 +8,9 @@
       {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item' }) }}
     </div>
   </div>
-
-  <div class="apos-area-widget-controls apos-area-widget-controls--data">
-    {{ buttons.inContext('Edit ' + data.manager.label, { action: 'edit-item' }) }}
-  </div>
+  {%- if not data.manager.removeEditButton -%}
+    <div class="apos-area-widget-controls apos-area-widget-controls--data">
+      {{ buttons.inContext('Edit ' + data.manager.label, { action: 'edit-item' }) }}
+    </div>
+  {%- endif -%}
 </div>
