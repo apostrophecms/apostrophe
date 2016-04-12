@@ -55,7 +55,7 @@
 .apos-area-widget-controls
 {
   position: absolute;
-  z-index: @apos-z-index-5;
+  z-index: @apos-z-index-4;
   .apos-transition;
 }
 .apos-area-widget-controls--context
@@ -176,6 +176,6 @@
   z-index: 0;
 }
 // TODO figure out how to select these specifically enough that !important isn't necessary
-.apos-area-controls.apos-active { opacity: 1 !important; display: block;}
+.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-5; }
 .apos-dragging .apos-area-controls { opacity: 0 !important; }
 .apos-rich-text-active .apos-area-controls { display: none !important; }
