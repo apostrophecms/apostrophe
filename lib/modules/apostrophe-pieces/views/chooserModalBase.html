@@ -1,7 +1,7 @@
 {%- extends "manage.html" -%}
 
 {%- block instructions -%}
-  {{ __('Choose %s to associate with this item.', __(data.options.pluralLabel) | e) }}
+  {{ __('Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
 {%- endblock -%}
 
 {%- block modalClass -%}
@@ -9,7 +9,7 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Choose %s', __(data.options.pluralLabel) | e ) }}
+  {{ __('Choose ' + data.options.pluralLabel) }}
 {%- endblock -%}
 
 {%- block breadcrumb -%}
