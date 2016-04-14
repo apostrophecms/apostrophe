@@ -1,3 +1,73 @@
+.apos-modal.apos-versions-modal
+.apos-versions
+{
+  margin: 0 auto;
+  width: 50%;
+  min-width: 400px;
+
+  .apos-version
+  {
+    display: block;
+    width: 100%;
+    margin: 1em 0 3em;
+
+    .apos-author
+    {
+      width: 60px;
+      .apos-inline-block(top);
+      .apos-avatar-wrapper
+      {
+        width: 46px;
+        height: 46px;
+        background: @apos-mid;
+        border-radius: 100%;
+      }
+    }
+    .apos-changes
+    {
+      width: ~'calc(100% - 90px)';
+      .apos-inline-block(top);
+    }
+
+    // date
+    h4
+    {
+      font-size: 16px;
+      font-weight: bold;
+      .apos-inline-block(top);
+    }
+    cite
+    {
+      margin-right: 0.2em;
+      font-weight: bold;
+      .apos-inline-block(top);
+    }
+    a[data-apos-revert]
+    {
+      float: right;
+      .apos-inline-block(top);
+      margin-right: 1em;
+    }
+    h5[data-open-changes]
+    {
+      margin-top: 0.5em;
+      color: @apos-gold;
+    }
+
+  }
+}
+
+
+
+
+
+
+
+
+
+// OLD =======================================
+
+
 .apos-toggle-open
 {
   display: none;
@@ -39,4 +109,3 @@
   vertical-align: top;
   display: inline-block;
 }
-
