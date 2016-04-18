@@ -23,6 +23,9 @@
                     {{ item.menu() }}
                   {% endif %}
                 {% endfor %}
+                {% if apos.utils.isFunction(apos.users.accountMenu) %}
+                  {{ apos.users.accountMenu() }}
+                {% endif %}
               </div>
               {% endblock %}
             </div>
