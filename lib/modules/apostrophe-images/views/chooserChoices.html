@@ -1,0 +1,16 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+{% for item in data.choices %}
+  {% set choice = item.item or item %}
+  {% set relationship = item.relationship %}
+  <div class="apos-chooser-choice">
+    {% include data.choiceTemplate %}
+    <div class="apos-button apos-button--in-context apos-button--group apos-chooser-controls">
+      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}
+      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id }) }}
+      {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
+      {%- if data.relationship -%}
+        {{ buttons.inGroup('', { icon: 'crop', action: 'relate-item' , value: choice._id}) }}
+      {%- endif -%}
+    </div>
+  </div>
+{% endfor %}
