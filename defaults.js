@@ -6,6 +6,7 @@ module.exports = {
     'apostrophe-i18n': {},
     'apostrophe-db': {},
     'apostrophe-caches': {},
+    'apostrophe-migrations': {},
     'apostrophe-express': {},
     'apostrophe-push': {},
     'apostrophe-urls': {},
