@@ -16,7 +16,7 @@
   <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
     {%- if type == 'button' -%}
       {%- if options.buttonType -%}
-        {{ buttons[options.buttonType](menu.label, { action: 'dropdown-button-label' }) }}
+        {{ buttons[options.buttonType](menu.label, apos.utils.merge({ action: 'dropdown-button-label' }, options) ) }}
       {%- else -%}
         {{ buttons.normal(menu.label, { action: 'dropdown-button-label' }) }}
       {%- endif -%}
