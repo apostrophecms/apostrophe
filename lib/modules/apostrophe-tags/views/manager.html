@@ -15,11 +15,11 @@
 {%- endblock -%}
 
 {% block instructions %}
-  <p>
+{#  <p>
     {{ __('Create, edit, and remove tags.') }}
-  </p>
+  </p>#}
   <div class="apos-manage-tag-add-wrapper">
-    <input type="text" class="apos-field-input apos-field-input-text" placeholder="Add a tag..."/>
+    <input data-apos-manage-tag-add-field type="text" class="apos-field-input apos-field-input-text" placeholder="Find or add a tag..."/>
     <a href="#" data-apos-manage-tag-add class="apos-manage-tag-add fa fa-plus"></a>
   </div>
 {% endblock %}
