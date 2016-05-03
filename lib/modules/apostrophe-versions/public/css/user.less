@@ -51,7 +51,14 @@
     h5[data-open-changes]
     {
       margin-top: 0.5em;
+      margin-bottom: 1em;
       color: @apos-gold;
+
+      &:hover
+      {
+        cursor: pointer;
+        text-decoration: underline;
+      }
     }
 
   }
@@ -76,16 +83,20 @@
 .apos-change
 {
   display: block;
-  margin-right: 24px;
-  &.apos-change-action-add {
-    color: green;
+  margin-left: 24px;
+  &.apos-change-action-change h5 {
+    color: @apos-blue;
   }
-  &.apos-change-action-remove {
-    color: red;
+  &.apos-change-action-add h5 {
+    margin-left: 1.5em;
+    color: @apos-green;
   }
-  &.apos-change-action-change {
-    color: darkblue;
+  &.apos-change-action-remove h5 {
+    margin-left: 1.5em;
+    color: @apos-red;
+    text-decoration: line-through;
   }
+
   &.apos-change-action-move-up::before {
     content: "▲ ";
   }
@@ -93,19 +104,16 @@
     content: "▼ ";
   }
   h5 {
-    vertical-align: top;
-    display: inline-block;
+    .apos-inline-block(top);
     margin: 0;
     margin-bottom: 2px;
   }
   h6 {
-    vertical-align: top;
-    display: inline-block;
+    .apos-inline-block(top);
   }
 }
 
 .apos-changes
 {
-  vertical-align: top;
-  display: inline-block;
+  .apos-inline-block(top);
 }
