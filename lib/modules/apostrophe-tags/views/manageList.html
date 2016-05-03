@@ -1,0 +1,13 @@
+<div class="apos-manage-tags">
+  {%- for result in data.results -%}
+    <div class="apos-manage-tag">
+      <div class="apos-manage-tag-label">
+        <input type="text" class="apos-field-input apos-field-input-text" disabled=true value="{{ result }}"/>
+      </div>
+      <div class="apos-manage-tag-controls">
+        <div data-apos-tag-edit="{{ result }}" class="apos-manage-tag-control fa fa-pencil"></div>
+        <div data-apos-tag-trash="{{ result }}" class="apos-manage-tag-control fa fa-trash-o"></div>
+      </div>
+    </div>
+  {%- endfor -%}
+</div>
