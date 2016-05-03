@@ -1,4 +1,19 @@
-.apos-tags-view
+.apos-ui
+{
+  .apos-manage-tag-add-wrapper
+  {
+    position: relative;
+  }
+  .apos-manage-tag-add
+  {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    padding: @apos-padding-2;
+  }
+}
+.apos-manage-tags-view
 {
   .apos-manage-tags
   {
@@ -6,12 +21,10 @@
     width: 50%;
     min-width: 400px;
   }
-  .apos-manage-tag
-  {
-    position: relative;
-  }
+  .apos-manage-tag { position: relative; }
   .apos-manage-tag-label .apos-field-input:disabled
   {
+    background-color: transparent;
     padding: @apos-padding-1 @apos-padding-2;
   }
   .apos-manage-tag-controls

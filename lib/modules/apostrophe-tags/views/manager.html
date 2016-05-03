@@ -18,15 +18,16 @@
   <p>
     {{ __('Create, edit, and remove tags.') }}
   </p>
+  <div class="apos-manage-tag-add-wrapper">
+    <input type="text" class="apos-field-input apos-field-input-text" placeholder="Add a tag..."/>
+    <a href="#" data-apos-manage-tag-add class="apos-manage-tag-add fa fa-plus"></a>
+  </div>
 {% endblock %}
 
 {%- block body -%}
-  <div class="apos-tags-view" data-apos-tags-view>
+  <div class="apos-manage-tags-view" data-apos-tags-view>
     {# ajax populates me with either the grid view or the table view #}
   </div>
 {%- endblock -%}
 
-{%- block footer -%}
-  {# ajax populates me #}
-  <div data-apos-pager></div>
-{%- endblock -%}
+{%- block footerContainer -%}{%- endblock -%}
