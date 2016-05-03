@@ -24,12 +24,16 @@
         <div class="apos-avatar-wrapper">
         </div>
       </div>{#
+      #}<div class="apos-changes-meta">
+          <cite>{{ version.author }}</cite><span>made changes on </span>
+          <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4><br>
+          {%- if version._previous -%}
+            <h5 data-open-changes>See Changes</h5>
+          {%- endif -%}
+      </div>{#
+      #}{{ buttons.major('Revert', { action: 'revert', value: version._id })}}{#
       #}<div class="apos-changes">
-        <cite>{{ version.author }}</cite><span>made changes on </span>
-        <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4>
-        {{ buttons.major('Revert', { action: 'revert', value: version._id })}}
         {% if version._previous -%}
-          <h5 data-open-changes>See Changes</h5>
           {# JS populates me #}
           <div data-changes></div>
         {%- endif %}
@@ -38,3 +42,5 @@
   {% endfor %}
 </div>
 {% endblock %}
+
+{% block footerContainer %}{% endblock %}
