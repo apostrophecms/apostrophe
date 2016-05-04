@@ -1,6 +1,5 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
-{%- set edit = data.options.widgets[data.options.type].edit -%}
-{%- if not data.area.items.length and edit != false -%}
+{%- if data.options.widgets[data.options.type].edit != false -%}
   <div class="apos-ui">
     <div class="apos-area-controls apos-area-controls--singleton">
       {{ buttons.inContext('Add ' + data.widgetManagers[data.options.type].label, { action: 'add-item', value: data.options.type }) }}
