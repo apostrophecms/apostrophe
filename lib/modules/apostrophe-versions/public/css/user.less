@@ -23,9 +23,9 @@
         border-radius: 100%;
       }
     }
-    .apos-changes
+    .apos-changes-meta
     {
-      width: ~'calc(100% - 90px)';
+      width: ~'calc(100% - 220px)';
       .apos-inline-block(top);
     }
 
@@ -50,62 +50,60 @@
     }
     h5[data-open-changes]
     {
+      .apos-inline-block(top);
       margin-top: 0.5em;
+      margin-bottom: 1em;
       color: @apos-gold;
+
+      &:hover
+      {
+        cursor: pointer;
+        text-decoration: underline;
+      }
     }
 
   }
 }
 
-
-
-
-
-
-
-
-
-// OLD =======================================
-
-
-.apos-toggle-open
+// Changes Diff Container
+.apos-modal.apos-versions-modal
+.apos-versions .apos-version >
+.apos-changes
 {
-  display: none;
+  width: 100%;
+  padding-left: 60px;
 }
 
+// Each Change, can be multiple per version
+.apos-modal.apos-versions-modal
+.apos-versions
 .apos-change
 {
   display: block;
-  margin-right: 24px;
-  &.apos-change-action-add {
-    color: green;
+  &.apos-change-action-change h5 {
+    color: @apos-blue;
   }
-  &.apos-change-action-remove {
-    color: red;
+  &.apos-change-action-add h5 {
+    margin-left: 1.5em;
+    color: @apos-green;
   }
-  &.apos-change-action-change {
-    color: darkblue;
-  }
-  &.apos-change-action-move-up::before {
-    content: "▲ ";
-  }
-  &.apos-change-action-move-down::before {
-    content: "▼ ";
+  &.apos-change-action-remove h5 {
+    margin-left: 1.5em;
+    color: @apos-red;
+    text-decoration: line-through;
   }
   h5 {
-    vertical-align: top;
-    display: inline-block;
+    .apos-inline-block(top);
     margin: 0;
     margin-bottom: 2px;
   }
   h6 {
-    vertical-align: top;
-    display: inline-block;
+    .apos-inline-block(top);
   }
-}
-
-.apos-changes
-{
-  vertical-align: top;
-  display: inline-block;
+  // &.apos-change-action-move-up::before {
+  //   content: "▲ ";
+  // }
+  // &.apos-change-action-move-down::before {
+  //   content: "▼ ";
+  // }
 }
