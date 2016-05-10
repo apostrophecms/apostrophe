@@ -9,8 +9,9 @@
     </div>
   </div>
   {%- if not data.manager.removeEditButton -%}
+    {%- set label = data.options.label or data.manager.label -%}
     <div class="apos-area-widget-controls apos-area-widget-controls--data">
-      {{ buttons.inContext('Edit ' + data.manager.label, { action: 'edit-item' }) }}
+      {{ buttons.inContext('Edit ' + label, { action: 'edit-item' }) }}
     </div>
   {%- endif -%}
 </div>
