@@ -29,6 +29,7 @@ module.exports = {
     'apostrophe-global': {},
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
+    'apostrophe-html-widgets': {},
     'apostrophe-groups': {},
     'apostrophe-users': {},
     'apostrophe-images': {},
