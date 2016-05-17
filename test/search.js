@@ -26,6 +26,11 @@ function adminReq() {
 }
 
 describe('Search', function() {
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

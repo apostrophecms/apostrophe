@@ -28,6 +28,10 @@ function adminReq() {
 
 describe('Login', function() {
 
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

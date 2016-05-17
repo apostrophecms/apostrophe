@@ -29,6 +29,10 @@ function adminReq() {
 
 describe('Users', function() {
 
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

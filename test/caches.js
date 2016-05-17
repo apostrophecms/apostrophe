@@ -1,6 +1,11 @@
 var assert = require('assert');
 
 describe('Caches', function() {
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   var apos;
   var cache;
   it('should exist on the apos object', function(done) {

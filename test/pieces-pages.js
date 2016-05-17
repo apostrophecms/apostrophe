@@ -27,6 +27,11 @@ function adminReq() {
 }
 
 describe('pieces-pages', function() {
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

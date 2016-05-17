@@ -4,6 +4,10 @@ var apos;
 
 describe('Express', function(){
 
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   it('express should exist on the apos object', function(done){
     apos = require('../index.js')({
       root: module,

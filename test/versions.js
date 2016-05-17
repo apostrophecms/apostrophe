@@ -28,6 +28,11 @@ function adminReq() {
 var initDone = false;
 
 describe('Versions', function() {
+
+    after(function() {
+      apos.db.dropDatabase();
+    });
+
 	//////
   // EXISTENCE
   //////

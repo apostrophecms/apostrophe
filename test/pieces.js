@@ -29,6 +29,10 @@ function adminReq() {
 
 describe('Pieces', function() {
 
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

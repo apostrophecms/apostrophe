@@ -27,6 +27,11 @@ function adminReq() {
 }
 
 describe('Tags', function() {
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   it('should be a property of the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
@@ -80,8 +85,8 @@ describe('Tags', function() {
     });
   });
 
-  it('should have a get method that returns a list of tags', function(done){
-    return apos.tags.get(adminReq(), {}, function(err, tags){
+  it('should have a listTags method that returns a list of tags', function(done){
+    return apos.tags.listTags(adminReq(), {}, function(err, tags){
       assert(!err);
       assert(tags);
       assert(Array.isArray(tags));
@@ -90,7 +95,7 @@ describe('Tags', function() {
   });
 
   it('should have a prefix option on the get method that filters the tags', function(done){
-    return apos.tags.get(adminReq(), { prefix: 'tag' }, function(err, tags){
+    return apos.tags.listTags(adminReq(), { prefix: 'tag' }, function(err, tags){
       assert(!err);
       assert(_.contains(tags, 'tag1', 'tag2', 'tag3', 'tag4'));
       assert(!_.contains(tags, 'agressive'));
@@ -99,7 +104,7 @@ describe('Tags', function() {
   });
 
   it('should have a contains option on the get method that filters the tags', function(done){
-    return apos.tags.get(adminReq(), { contains: 'ag' }, function(err, tags){
+    return apos.tags.listTags(adminReq(), { contains: 'ag' }, function(err, tags){
       assert(!err);
       assert(_.contains(tags, 'agressive', 'tag1', 'tag2', 'tag3', 'tag4'));
       done();
@@ -107,7 +112,7 @@ describe('Tags', function() {
   });
 
   it('should return an empty array if a prefix or contains option does not match', function(done){
-    return apos.tags.get(adminReq(), { contains: '9046gobbledygook1678' }, function(err, tags){
+    return apos.tags.listTags(adminReq(), { contains: '9046gobbledygook1678' }, function(err, tags){
       assert(!err);
       assert(tags.length === 0);
       done();
