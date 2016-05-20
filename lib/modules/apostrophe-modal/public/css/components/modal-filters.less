@@ -1,5 +1,5 @@
-.apos-ui.apos-modal
-.apos-modal-header .apos-modal-filters
+.apos-ui.apos-modal .apos-modal-header .apos-modal-filters,
+.apos-ui.apos-modal .apos-modal-body .apos-modal-filters
 {
 	margin-top: @apos-margin-2;
 
@@ -16,7 +16,9 @@
 		.apos-pill
 		{
 			margin-right: @apos-margin-2;
+			margin-bottom: @apos-margin-1;
 		}
+		margin-bottom: -@apos-margin-1;
 	}
 
 	.apos-modal-filters-search
@@ -36,5 +38,14 @@
 			font-size: 14px;
 			line-height: 14px;
 		}
+	}
+}
+
+.apos-ui.apos-modal .apos-modal-body .apos-modal-filters .apos-modal-filters-toggles
+{
+	.apos-pill
+	{
+		margin-right: 0;
+		margin-left: @apos-margin-2;
 	}
 }
