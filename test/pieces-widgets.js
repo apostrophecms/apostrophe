@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('pieces-widgets', function() {
+describe('Pieces Widgets', function() {
 
   after(function() {
     apos.db.dropDatabase();
