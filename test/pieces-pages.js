@@ -26,7 +26,7 @@ function adminReq() {
   });
 }
 
-describe('pieces-pages', function() {
+describe('Pieces Pages', function() {
 
   after(function() {
     apos.db.dropDatabase();

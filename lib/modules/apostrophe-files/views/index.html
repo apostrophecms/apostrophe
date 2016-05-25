@@ -1,7 +1,0 @@
-{# One AJAX-loaded "page" of media library items #}
-
-{% include "macros.html" %}
-
-{% for file in data.files %}
-  {{ indexItem(file) }}
-{% endfor %}
