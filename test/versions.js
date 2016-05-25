@@ -29,9 +29,11 @@ var initDone = false;
 
 describe('Versions', function() {
 
-    after(function() {
-      apos.db.dropDatabase();
-    });
+  this.timeout(5000);
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
 
 	//////
   // EXISTENCE

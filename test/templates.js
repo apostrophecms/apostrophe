@@ -4,6 +4,8 @@ var apos;
 
 describe('Templates', function(){
 
+  this.timeout(5000);
+
   it('should have a templates property', function(done) {
   	apos = require('../index.js')({
       root: module,

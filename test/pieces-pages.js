@@ -28,6 +28,8 @@ function adminReq() {
 
 describe('Pieces Pages', function() {
 
+  this.timeout(5000);
+
   after(function() {
     apos.db.dropDatabase();
   });

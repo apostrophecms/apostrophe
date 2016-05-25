@@ -1,10 +1,13 @@
 var assert = require('assert');
 
 describe('Utils', function(){
+
+  this.timeout(5000);
+
   var apos;
 
   it('should exist on the apos object', function(done){
-    apos = require('../index.js')({ 
+    apos = require('../index.js')({
       root: module,
       shortName: 'test',
       hostName: 'test.com',
@@ -26,7 +29,7 @@ describe('Utils', function(){
       assert(typeof(parseInt(id)) === 'number');
       return done();
     });
-    
+
     it('globalReplace: should replace multiple instances of a string', function(done){
       var s = apos.utils.globalReplace('apostrophe is for cool kids. therefore apostrophe is cool.', 'apostrophe', 'comma');
 
@@ -34,7 +37,7 @@ describe('Utils', function(){
       assert(s.split('comma').length == 3);
       return done();
     });
-    
+
     it('truncatePlaintext: should tuncate a message without cutting off a word', function(done){
       var s = apos.utils.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
 
@@ -44,7 +47,7 @@ describe('Utils', function(){
 
     it('escapeHtml: should replace html tags with html string entites', function(done){
       var s = apos.utils.escapeHtml('<div>hello</div>');
-      
+
       assert(s.indexOf('<') < 0 && s.indexOf('&lt;') >= 0);
       return done();
     });
@@ -58,7 +61,7 @@ describe('Utils', function(){
 
     it('capitalizeFirst: should capitalize the first letter', function(done){
       var s = apos.utils.capitalizeFirst('hello');
-      
+
       assert(s.indexOf('hello') < 0 && s.indexOf('H' == 0));
       return done();
     });
@@ -80,9 +83,9 @@ describe('Utils', function(){
 
     it('addSlashIfNeeded: should add a slash "/" to the end of a path if necessary', function(done){
       var s = apos.utils.addSlashIfNeeded('/my/path');
-      
+
       assert(s === '/my/path/');
       return done();
-    }); 
+    });
   });
 });

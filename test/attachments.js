@@ -6,6 +6,8 @@ var apos;
 
 describe('Attachment', function() {
 
+  this.timeout(5000);
+
   var uploadSource = __dirname + "/data/upload_tests/";
   var uploadTarget = __dirname + "/public/uploads/attachments/";
   var collectionName = 'aposAttachments';
@@ -186,7 +188,7 @@ describe('Attachment', function() {
 
             done();
           });
-        }); 
+        });
       });
     });
 

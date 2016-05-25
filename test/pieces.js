@@ -29,6 +29,8 @@ function adminReq() {
 
 describe('Pieces', function() {
 
+  this.timeout(5000);
+
   after(function() {
     apos.db.dropDatabase();
   });

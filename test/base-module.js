@@ -1,10 +1,13 @@
 var assert = require('assert');
 
 describe('Base Module', function(){
+
+  this.timeout(5000);
+
   var apos;
 
   it('should be subclassable', function(done){
-    apos = require('../index.js')({ 
+    apos = require('../index.js')({
       root: module,
       shortName: 'test',
       hostName: 'test.com',

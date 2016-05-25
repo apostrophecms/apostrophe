@@ -3,6 +3,8 @@ var assert = require('assert'),
 
 describe('Apostrophe', function() {
 
+  this.timeout(5000);
+
   it('should exist', function(done) {
     var apos = require('../index.js');
     assert(apos);

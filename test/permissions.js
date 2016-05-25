@@ -2,6 +2,9 @@ var assert = require('assert');
 var _ = require('lodash');
 
 describe('Permissions', function() {
+
+  this.timeout(5000);
+
   var apos;
 
   it('should have a permissions property', function(done) {
