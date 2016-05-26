@@ -45,6 +45,42 @@
   }
 }
 
+.apos-modal-content .apos-form
+{
+  .apostrophe-images-editor-attachment
+  {
+    .apos-inline-block(top);
+    height: 100%;
+    width: ~'calc(100% - 750px)';
+    padding: 20px;
+    background: @apos-white;
+    .apos-field-attachment { margin-bottom: 0; }
+    .apos-attachment-preview
+    {
+      position: relative;
+      // width: 50%;
+      width: auto;
+      max-width: 500px;
+      height: auto;
+      overflow: hidden;
+
+      background-repeat: no-repeat;
+      img
+      {
+        width: 100%;
+        height: auto;
+      }
+    }
+  }
+
+  .apostrophe-image-editor-fields
+  {
+    .apos-inline-block(top);
+    width: 750px;
+  }
+}
+
+
 .apos-crop-editor .jcrop-holder { margin: 0 auto; }
 .apos-crop-editor .jcrop-keymgr { top: -20px; }
 .apos-crop-editor .apos-modal-body { overflow: hidden; }
