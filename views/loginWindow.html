@@ -7,7 +7,7 @@
       {% if user %}
         logout bro
       {% else %}
-        <form action="/login" method="post">
+        <form action="{{ aposPrefix }}/login" method="post">
           <div class="login-inputs">
             {% if message %}<div class="warning">{{ message }}</div>{% endif %}
             {% block fields %}
