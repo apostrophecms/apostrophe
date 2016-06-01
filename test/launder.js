@@ -1,6 +1,9 @@
 var assert = require('assert');
 
 describe('Launder', function(){
+
+  this.timeout(5000);
+
   var apos;
 
   it('should exist on the apos object', function(done){

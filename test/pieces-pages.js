@@ -26,7 +26,14 @@ function adminReq() {
   });
 }
 
-describe('pieces-pages', function() {
+describe('Pieces Pages', function() {
+
+  this.timeout(5000);
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////

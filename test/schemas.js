@@ -66,6 +66,9 @@ var simpleFields = [
 ];
 
 describe('Schemas', function() {
+
+  this.timeout(5000);
+
   //////
   // EXISTENCE
   //////

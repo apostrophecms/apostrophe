@@ -2,7 +2,13 @@ var assert = require('assert');
 var _ = require('lodash');
 var apos;
 
-describe('Express', function(){
+describe('Express', function() {
+
+  this.timeout(5000);
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
 
   it('express should exist on the apos object', function(done){
     apos = require('../index.js')({

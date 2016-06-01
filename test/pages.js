@@ -27,6 +27,13 @@ function adminReq() {
 }
 
 describe('Pages', function() {
+
+  this.timeout(5000);
+
+  after(function() {
+    apos.db.dropDatabase();
+  });
+
   //////
   // EXISTENCE
   //////
@@ -166,7 +173,7 @@ describe('Pages', function() {
       {
         _id: '4333',
         type: 'testPage',
-        slug: 'another-parent',
+        slug: '/another-parent',
         published: true,
         path: '/another-parent',
         level: 3,
@@ -278,7 +285,7 @@ describe('Pages', function() {
     var parentId = '1234';
 
     var newPage = {
-      slug: 'new-page',
+      slug: '/new-page',
       published: true,
       type: 'testPage',
       title: 'New Page'
@@ -293,7 +300,7 @@ describe('Pages', function() {
   });
 
   it('is able to insert a new page in the correct order', function(done) {
-    var cursor = apos.pages.find(anonReq(), { slug: 'new-page' });
+    var cursor = apos.pages.find(anonReq(), { slug: '/new-page' });
 
     cursor.toObject(function(err, page){
       assert.equal(page.rank, 2);

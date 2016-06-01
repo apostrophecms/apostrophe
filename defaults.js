@@ -24,7 +24,6 @@ module.exports = {
     'apostrophe-modal': {},
     'apostrophe-attachments': {},
     'apostrophe-pager': {},
-    'apostrophe-files': {},
     'apostrophe-pages': {},
     'apostrophe-global': {},
     'apostrophe-areas': {},
@@ -34,6 +33,8 @@ module.exports = {
     'apostrophe-users': {},
     'apostrophe-images': {},
     'apostrophe-images-widgets': {},
+    'apostrophe-files': {},
+    'apostrophe-files-widgets': {},
     'apostrophe-service-bridge': {}
   }
 };

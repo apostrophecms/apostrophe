@@ -2,6 +2,9 @@ var assert = require('assert'),
     _ = require('lodash');
 
 describe('Apostrophe', function() {
+
+  this.timeout(5000);
+
   it('should exist', function(done) {
     var apos = require('../index.js');
     assert(apos);
@@ -49,7 +52,7 @@ describe('Apostrophe', function() {
       shortName: 'test',
       overrideTest: 'test',   // concated in local_fn_b.js
       hostName: 'test.com',
-      __localPath: '/data/local_fn_b.js',  
+      __localPath: '/data/local_fn_b.js',
       __testDefaults: {
           modules: {}
       },
