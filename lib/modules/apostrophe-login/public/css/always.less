@@ -1,13 +1,25 @@
 
-.apos-login-page
+.apos-login-wrapper
 {
+  height: 100%;
   background-color: @apos-primary;
-  .apos-refreshable { margin-top: 100px; }
 }
-
+.apos-login-content
+{
+  position: absolute;
+  top: @apos-margin-5;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
+}
+.apos-login-logo
+{
+  text-align: center;
+  margin-bottom: @apos-margin-5;
+  svg { width: 84px; height: 84px; }
+}
 .apos-login.apos-ui
 {
-  margin: 0 auto;
   max-width: 300px;
   background-color: @apos-light;
   padding: @apos-padding-2;

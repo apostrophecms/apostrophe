@@ -2,6 +2,9 @@
   <head>
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
+    {% block standardHead %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% endblock %}
     {% block extraHead %}
     {% endblock %}
   </head>
