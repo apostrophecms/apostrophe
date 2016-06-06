@@ -1,6 +1,7 @@
 
 var assert = require('assert');
 var _ = require('lodash');
+var t = require('./testUtils');
 
 var apos;
 
@@ -66,36 +67,13 @@ describe('Attachment', function() {
   var request = require('request');
   var fs = require('fs');
 
-  // mock up a request
-  function anonReq() {
-    return {
-      res: {
-        __: function(x) { return x; }
-      },
-      browserCall: apos.app.request.browserCall,
-      getBrowserCalls: apos.app.request.getBrowserCalls,
-      query: {}
-    };
-  }
-
-  function adminReq() {
-    return _.merge(anonReq(), {
-      user: {
-        _id: 'testfileuser',
-        _permissions: {
-          admin: true
-        }
-      }
-    });
-  }
-
   describe('accept', function() {
     before(function() {
       wipeIt();
     });
 
     function accept(filename, callback) {
-      return apos.attachments.accept(adminReq(), {
+      return apos.attachments.accept(t.req.admin(apos), {
         name: filename,
         path: uploadSource + filename
       }, function(err, info) {
@@ -131,7 +109,7 @@ describe('Attachment', function() {
     it('should not upload an exe file', function(done) {
       var filename = 'bad_file.exe';
 
-      return apos.attachments.accept(adminReq(), {
+      return apos.attachments.accept(t.req.admin(apos), {
         name: filename,
         path: uploadSource + filename
       }, function(err, info) {
@@ -146,7 +124,7 @@ describe('Attachment', function() {
         var crop = { top: 10, left: 10, width: 80, height: 80 };
 
         return apos.attachments.crop(
-          adminReq(),
+          t.req.admin(apos),
           result._id,
           crop,
           function(err) {
@@ -173,7 +151,7 @@ describe('Attachment', function() {
     it('should clone an attachment', function(done) {
       return accept('clone.txt', function(result) {
 
-        return apos.attachments.clone(adminReq(), result, function(err, targetInfo) {
+        return apos.attachments.clone(t.req.admin(apos), result, function(err, targetInfo) {
           assert(!err);
           assert(targetInfo._id !== result._id);
 

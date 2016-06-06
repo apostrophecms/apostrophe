@@ -2,29 +2,9 @@ var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
+var t = require('./testUtils');
 
 var apos;
-
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      _permissions: {
-        admin: true
-      }
-    }
-  });
-}
 
 describe('Login', function() {
 
@@ -78,7 +58,7 @@ describe('Login', function() {
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
-    apos.users.insert(adminReq(), user, function(err) {
+    apos.users.insert(t.req.admin(apos), user, function(err) {
       assert(!err);
       done();
     });

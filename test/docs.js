@@ -1,29 +1,9 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var t = require('./testUtils')
 
 var apos;
-
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      _permissions: {
-        admin: true
-      }
-    }
-  });
-}
 
 describe('Docs', function() {
 
@@ -167,7 +147,7 @@ describe('Docs', function() {
     assert(manager.find);
     assert(manager.schema);
 
-    var cursor = manager.find(anonReq(), { slug: 'carl' });
+    var cursor = manager.find(t.req.anon(apos), { slug: 'carl' });
     assert(cursor);
     cursor.toObject(function(err, person) {
       assert(!err);
@@ -208,13 +188,13 @@ describe('Docs', function() {
   //////
 
   it('should have a find method on docs that returns a cursor', function(){
-    var cursor = apos.docs.find(anonReq());
+    var cursor = apos.docs.find(t.req.anon(apos));
     assert(cursor);
   });
 
 
   it('should be able to find all PUBLISHED test documents and ouput them as an array', function(done){
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' });
 
     cursor.toArray(function(err, docs){
       assert(!err);
@@ -232,7 +212,7 @@ describe('Docs', function() {
   //////
 
   it('should be able to specify which fields to get by passing a projection object', function(done){
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }, { age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }, { age: 1 });
     cursor.toArray(function(err, docs){
 
       assert(!err);
@@ -250,7 +230,7 @@ describe('Docs', function() {
   //////
 
   it('should be that non-admins DO NOT get unpublished docs by default', function(done) {
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' });
     cursor.toArray(function(err, docs){
       _.each(docs, function(doc){
         // There SHOULD NOT be a firstName
@@ -262,7 +242,7 @@ describe('Docs', function() {
   });
 
   it('should be that non-admins do not get unpublished docs, even if they ask for them', function(done) {
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }).published(false);
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).published(false);
     cursor.toArray(function(err, docs){
       assert(docs.length === 0);
       done();
@@ -270,7 +250,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get unpublished docs if they ask for them', function(done) {
-    var cursor = apos.docs.find(adminReq(), { type: 'testPerson' }).published(false);
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson' }).published(false);
     cursor.toArray(function(err, docs){
       assert(!docs[0].published);
       done();
@@ -278,7 +258,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get a mixture of unpublished docs and published docs if they ask', function(done) {
-    var cursor = apos.docs.find(adminReq(), { type: 'testPerson' }).published(null);
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson' }).published(null);
     cursor.toArray(function(err, docs) {
       assert(docs.length === 4);
       done();
@@ -290,7 +270,7 @@ describe('Docs', function() {
   //////
 
   it('should be able to sort', function(done) {
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }).sort({ age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).sort({ age: 1 });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'larry');
       done();
@@ -298,7 +278,7 @@ describe('Docs', function() {
   });
 
   it('should be able to sort by multiple keys', function(done) {
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson' }).sort({ firstName:1 , age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).sort({ firstName:1 , age: 1 });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'carl');
       assert(docs[1].slug == 'larry');
@@ -321,7 +301,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    apos.docs.insert(adminReq(), object, function(err, object) {
+    apos.docs.insert(t.req.admin(apos), object, function(err, object) {
       assert(!err);
       assert(object);
       assert(object._id);
@@ -331,7 +311,7 @@ describe('Docs', function() {
 
 
   it ('should be able to insert a new object into the docs collection in the database', function(done){
-    var cursor = apos.docs.find(adminReq(), { type: 'testPerson', slug: 'one' });
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson', slug: 'one' });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'one');
       done();
@@ -351,7 +331,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    apos.docs.insert(adminReq(), object, function(err, object){
+    apos.docs.insert(t.req.admin(apos), object, function(err, object){
       assert(!err);
       assert(object);
       assert(object.slug.match(/^one\d+$/));
@@ -370,7 +350,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    apos.docs.insert(anonReq(), object, function(err, object){
+    apos.docs.insert(t.req.anon(apos), object, function(err, object){
       // did it return an error?
       assert(err);
       done();
@@ -382,7 +362,7 @@ describe('Docs', function() {
   //////
 
   it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', function(done) {
-    var cursor = apos.docs.find(adminReq(), { slug: 'one' }).toArray(function(err,docs){
+    var cursor = apos.docs.find(t.req.admin(apos), { slug: 'one' }).toArray(function(err,docs){
       assert(!err);
       // we should have a document
       assert(docs);
@@ -394,7 +374,7 @@ describe('Docs', function() {
       // we want update the alive property
       object.alive = false
 
-      apos.docs.update(adminReq(), object, function(err, object) {
+      apos.docs.update(t.req.admin(apos), object, function(err, object) {
         assert(!err);
         assert(object);
         // has the property been updated?
@@ -406,14 +386,14 @@ describe('Docs', function() {
 
   it('should append an updated slug with a numeral if the updated slug already exists', function(done){
 
-    var cursor = apos.docs.find(adminReq(), { type: 'testPerson', slug: 'one' });
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson', slug: 'one' });
     cursor.toObject(function(err, doc) {
       assert(!err);
       assert(doc);
 
       doc.slug = 'peter';
 
-      apos.docs.update(adminReq(), doc, function(err, doc) {
+      apos.docs.update(t.req.admin(apos), doc, function(err, doc) {
         assert(!err);
         assert(doc);
         // has the updated slug been appended?
@@ -424,14 +404,14 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the update method if you are not an admin', function(done){
-    var cursor = apos.docs.find(anonReq(), { type: 'testPerson', slug: 'lori' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson', slug: 'lori' });
     cursor.toObject(function(err, doc) {
       assert(!err);
       assert(doc);
 
       doc.slug = 'laurie';
 
-      apos.docs.update(anonReq(), doc, function(err, doc) {
+      apos.docs.update(t.req.anon(apos), doc, function(err, doc) {
         // did it return an error?
         assert(err);
         done();
@@ -444,14 +424,14 @@ describe('Docs', function() {
   //////
 
   it('should have a "trash" method on docs', function(done) {
-    apos.docs.trash(adminReq(), { slug: 'carl' }, function(err) {
+    apos.docs.trash(t.req.admin(apos), { slug: 'carl' }, function(err) {
       assert(!err);
       done();
     });
   });
 
   it('should not be able to find the trashed object', function(done){
-    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).toObject(function(err,doc){
+    var cursor = apos.docs.find(t.req.admin(apos), { slug: 'carl' }).toObject(function(err,doc){
       assert(!err);
       // we should not have a document
       assert(!doc);
@@ -460,7 +440,7 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the trash method if you are not an admin', function(done){
-    apos.docs.trash(anonReq(), { slug: 'lori' }, function(err) {
+    apos.docs.trash(t.req.anon(apos), { slug: 'lori' }, function(err) {
       assert(err);
       done();
     });
@@ -468,7 +448,7 @@ describe('Docs', function() {
 
 
   it('should be able to find the trashed object when using the "trash" method on find()', function(done){
-    var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err,doc){
+    var cursor = apos.docs.find(t.req.admin(apos), { slug: 'carl' }).trash(true).toObject(function(err,doc){
       assert(!err);
       // we should have a document
       assert(doc);
@@ -481,9 +461,9 @@ describe('Docs', function() {
   //////
 
   it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
-    apos.docs.rescue(adminReq(), { slug: 'carl' }, function(err) {
+    apos.docs.rescue(t.req.admin(apos), { slug: 'carl' }, function(err) {
       assert(!err);
-      var cursor = apos.docs.find(adminReq(), { slug: 'carl' }).toObject(function(err, doc){
+      var cursor = apos.docs.find(t.req.admin(apos), { slug: 'carl' }).toObject(function(err, doc){
         assert(!err);
         // we should have a document
         assert(doc);
@@ -493,7 +473,7 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the rescue method if you are not an admin', function(done) {
-    apos.docs.rescue(anonReq(), { slug: 'carl' }, function(err) {
+    apos.docs.rescue(t.req.anon(apos), { slug: 'carl' }, function(err) {
       // was there an error?
       assert(err);
       done();
@@ -508,19 +488,19 @@ describe('Docs', function() {
 
     return async.series({
       trashCarl: function(callback) {
-        return apos.docs.trash(adminReq(), { slug: 'carl' }, function(err){
+        return apos.docs.trash(t.req.admin(apos), { slug: 'carl' }, function(err){
           assert(!err);
           return callback(null);
         });
       },
       emptyTrash: function(callback) {
-        return apos.docs.emptyTrash(adminReq(), {}, function(err) {
+        return apos.docs.emptyTrash(t.req.admin(apos), {}, function(err) {
           assert(!err);
           return callback(null);
         });
       },
       find: function(callback) {
-        return apos.docs.find(adminReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
+        return apos.docs.find(t.req.admin(apos), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
           assert(!err);
           // we should not have a document
           assert(!doc);
@@ -533,19 +513,19 @@ describe('Docs', function() {
   it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
     return async.series({
       trashLarry: function(callback){
-        return apos.docs.trash(adminReq(), { slug: 'larry' }, function(err){
+        return apos.docs.trash(t.req.admin(apos), { slug: 'larry' }, function(err){
           assert(!err);
           return callback(null);
         });
       },
       emptyTrash: function(callback){
-        apos.docs.emptyTrash(anonReq(), {}, function(err) {
+        apos.docs.emptyTrash(t.req.anon(apos), {}, function(err) {
           assert(!err);
           return callback(null);
         });
       },
       find: function(callback){
-        return apos.docs.find(adminReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
+        return apos.docs.find(t.req.admin(apos), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
           assert(!err);
           // we should have a document
           assert(doc);

@@ -5,27 +5,6 @@ var request = require('request');
 
 var apos;
 
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      permissions: {
-        admin: true
-      }
-    }
-  });
-}
-
 describe('custom-pages', function() {
 
   this.timeout(5000);

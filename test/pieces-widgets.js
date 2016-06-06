@@ -2,29 +2,9 @@ var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
+var t = require('./testUtils');
 
 var apos;
-
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      _permissions: {
-        admin: true
-      }
-    }
-  });
-}
 
 describe('Pieces Widgets', function() {
 
@@ -154,7 +134,7 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    var req = adminReq();
+    var req = t.req.admin(apos);
     return async.eachSeries(testItems, function(item, callback) {
       return apos.docs.insert(req, item, callback);
     }, function(err) {
