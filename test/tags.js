@@ -2,29 +2,9 @@ var assert = require('assert');
 var _ = require('lodash');
 var request = require('request');
 var async = require('async');
+var t = require('./testUtils');
 
 var apos;
-
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      _permissions: {
-        admin: true
-      }
-    }
-  });
-}
 
 describe('Tags', function() {
 
@@ -80,7 +60,7 @@ describe('Tags', function() {
     ]
 
     return async.eachSeries(testDocs, function(doc, callback) {
-      apos.docs.insert(adminReq(), doc, callback);
+      apos.docs.insert(t.req.admin(apos), doc, callback);
     }, function(err) {
       assert(!err);
       done();
@@ -88,7 +68,7 @@ describe('Tags', function() {
   });
 
   it('should have a listTags method that returns a list of tags', function(done){
-    return apos.tags.listTags(adminReq(), {}, function(err, tags){
+    return apos.tags.listTags(t.req.admin(apos), {}, function(err, tags){
       assert(!err);
       assert(tags);
       assert(Array.isArray(tags));
@@ -97,7 +77,7 @@ describe('Tags', function() {
   });
 
   it('should have a prefix option on the get method that filters the tags', function(done){
-    return apos.tags.listTags(adminReq(), { prefix: 'tag' }, function(err, tags){
+    return apos.tags.listTags(t.req.admin(apos), { prefix: 'tag' }, function(err, tags){
       assert(!err);
       assert(_.contains(tags, 'tag1', 'tag2', 'tag3', 'tag4'));
       assert(!_.contains(tags, 'agressive'));
@@ -106,7 +86,7 @@ describe('Tags', function() {
   });
 
   it('should have a contains option on the get method that filters the tags', function(done){
-    return apos.tags.listTags(adminReq(), { contains: 'ag' }, function(err, tags){
+    return apos.tags.listTags(t.req.admin(apos), { contains: 'ag' }, function(err, tags){
       assert(!err);
       assert(_.contains(tags, 'agressive', 'tag1', 'tag2', 'tag3', 'tag4'));
       done();
@@ -114,7 +94,7 @@ describe('Tags', function() {
   });
 
   it('should return an empty array if a prefix or contains option does not match', function(done){
-    return apos.tags.listTags(adminReq(), { contains: '9046gobbledygook1678' }, function(err, tags){
+    return apos.tags.listTags(t.req.admin(apos), { contains: '9046gobbledygook1678' }, function(err, tags){
       assert(!err);
       assert(tags.length === 0);
       done();

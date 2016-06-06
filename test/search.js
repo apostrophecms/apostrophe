@@ -1,29 +1,9 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var t = require('./testUtils');
 
 var apos;
-
-function anonReq() {
-  return {
-    res: {
-      __: function(x) { return x; }
-    },
-    browserCall: apos.app.request.browserCall,
-    getBrowserCalls: apos.app.request.getBrowserCalls,
-    query: {}
-  };
-}
-
-function adminReq() {
-  return _.merge(anonReq(), {
-    user: {
-      _permissions: {
-        admin: true
-      }
-    }
-  });
-}
 
 describe('Search', function() {
 
@@ -60,7 +40,7 @@ describe('Search', function() {
   });
 
   it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done){
-    var req = adminReq();
+    var req = t.req.admin(apos);
     apos.docs.insert(req, {
       title: 'Testing Search Event',
       type: 'event',
