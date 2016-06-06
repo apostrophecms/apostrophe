@@ -192,6 +192,50 @@ describe('Attachment', function() {
       });
     });
 
+    it('should generate the "full" URL when no size specified for image', function() {
+      var url = apos.attachments.url({
+        group: 'images',
+        name: 'test',
+        extension: 'jpg',
+        _id: 'test'
+      });
+      assert(url === '/uploads/attachments/test-test.full.jpg');
+    });
+
+    it('should generate the "one-half" URL when one-half size specified for image', function() {
+      var url = apos.attachments.url({
+        group: 'images',
+        name: 'test',
+        extension: 'jpg',
+        _id: 'test'
+      }, {
+        size: 'one-half'
+      });
+      assert(url === '/uploads/attachments/test-test.one-half.jpg');
+    });
+
+    it('should generate the original URL when "original" size specified for image', function() {
+      var url = apos.attachments.url({
+        group: 'images',
+        name: 'test',
+        extension: 'jpg',
+        _id: 'test'
+      }, {
+        size: 'original'
+      });
+      assert(url === '/uploads/attachments/test-test.jpg');
+    });
+
+    it('should generate the original URL when no size specified for pdf', function() {
+      var url = apos.attachments.url({
+        group: 'office',
+        name: 'test',
+        extension: 'pdf',
+        _id: 'test'
+      });
+      assert(url === '/uploads/attachments/test-test.pdf');
+    });
+
   });
 
 })
