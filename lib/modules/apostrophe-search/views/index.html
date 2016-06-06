@@ -1,27 +1,21 @@
 {% extends data.outerLayout %}
 {% block title %}{{ data.page.title }}{% endblock %}
 
-{% macro base(name, value, label) %}
-  <div class="ld-filter-option">{#
-    #}<input type="checkbox"{% if value %} checked="checked"{% endif %} name="{{ name }}" data-filter="{{ name }}">{#
-    #}<label for="{{ name }}" class="ld-meta ld-meta--meta3">{{ label or name }}</label>{#
-  #}</div>
-{% endmacro %}
-
 {% block main %}
-
   <form data-apos-search-page-form method="GET" action="{{ data.url | e }}#main">
-    <div class="ld-meta">Filter Results By Type</div>
-    <ul>
-      {% for filter in data.filters %}
-        <li>
-          <input data-apos-search-filter type="checkbox" name="{{ filter.name | e }}"
-            {% if filter.value %}checked{% endif %}
-            value="1"
-          />{{ filter.label | e }}
-        </li>
-      {% endfor %}
-    </ul>
+    {% if data.filters %}
+      <div class="ld-meta">Filter Results By Type</div>
+      <ul>
+        {% for filter in data.filters %}
+          <li>
+            <input data-apos-search-filter type="checkbox" name="{{ filter.name | e }}"
+              {% if filter.value %}checked{% endif %}
+              value="1"
+            />{{ filter.label | e }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
     <div class="ld-meta">New Search</div>
     <input type="search" data-apos-search-field value="{{ data.query.q | e }}" name="q" />
     <input type="submit" value="Search" />
@@ -29,6 +23,6 @@
   {% for doc in data.docs %}
     <h4>{% if doc._url %}<a href="{{ doc._url }}">{% endif %}{{ doc.title }}{% if doc._url %}</a>{% endif %}</h4>
   {% endfor %}
+  {% include "pager.html" %}
 {% endblock %}
 
-{% include "pager.html" %}
