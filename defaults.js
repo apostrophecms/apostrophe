@@ -22,6 +22,7 @@ module.exports = {
     'apostrophe-tags': {},
     'apostrophe-modal': {},
     'apostrophe-attachments': {},
+    'apostrophe-oembed': {},
     'apostrophe-pager': {},
     'apostrophe-pages': {},
     'apostrophe-search': {},
