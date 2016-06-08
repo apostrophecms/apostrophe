@@ -30,6 +30,8 @@ module.exports = {
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
     'apostrophe-html-widgets': {},
+    'apostrophe-video-fields': {},
+    'apostrophe-video-widgets': {},
     'apostrophe-groups': {},
     'apostrophe-users': {},
     'apostrophe-images': {},
