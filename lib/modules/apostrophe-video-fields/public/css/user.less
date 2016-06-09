@@ -6,5 +6,19 @@
   }
   .apos-video-player {
     margin-bottom: 1em;
+    &.apos-oembed-busy
+    {
+      &:after
+      {
+        opacity: 1;
+        .apos-rotate();
+      }
+    }
   }
+}
+
+// SPINNER =====================
+.apos-field-video .apos-video-player:after
+{
+  .apos-busy-spinner(@top: 130px);
 }
