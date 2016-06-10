@@ -152,12 +152,21 @@ module.exports = function(options) {
     afterInit
   ], function(err) {
     if (err) {
-      throw err;
+      if (options.initFailed) {
+        // Report error in an extensible way
+        return options.initFailed(err);
+      } else {
+        // In the absence of a callback to handle initialization failure,
+        // we have to assume there's just one instance of Apostrophe and
+        // we can print the error and end the app
+        console.error(err);
+        process.exit(1);
+      }
     }
     if (self.argv._.length) {
       self.emit('runTask');
     } else {
-      // The apostrophe-express-init module adds this method
+      // The apostrophe-express module adds this method
       self.listen();
     }
   });
@@ -283,14 +292,6 @@ module.exports = function(options) {
     return self.options.afterInit(callback);
   }
 
-  function afterListen(callback) {
-    // Give project-level code a chance to run after we
-    // start listening. Not called at all for tasks
-    if (!self.options.afterListen) {
-      return setImmediate(callback);
-    }
-    return self.options.afterListen(callback);
-  }
 };
 
 var abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets' ];

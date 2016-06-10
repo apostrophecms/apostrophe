@@ -122,8 +122,11 @@ span.jqtree-dragging {
   cursor: pointer;
   padding: 2px 8px; }
 
-/* IE 6, 7, 8 */
-@media \0screen\,screen\9 {
-  ul.jqtree-tree li.jqtree-ghost span.jqtree-circle {
-    background: url(jqtree-circle.png) no-repeat;
-    border: 0 none; } }
+// Generates a LESS compiler error, and we don't do IE 6/7/8
+// workarounds for jqtree. -Tom
+//
+// /* IE 6, 7, 8 */
+// @media \0screen\,screen\9 {
+//   ul.jqtree-tree li.jqtree-ghost span.jqtree-circle {
+//     background: url(jqtree-circle.png) no-repeat;
+//     border: 0 none; } }
