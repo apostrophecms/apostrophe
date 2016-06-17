@@ -3,4 +3,10 @@
 {% block title %}Not Found{% endblock %}
 
 {% block main %}
+<a href="{{ data.home._url }}">Home: {{ data.home.slug }}</a>
+
+{% for tab in data.tabs %}
+  <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
+{% endfor %}
+
 {% endblock %}

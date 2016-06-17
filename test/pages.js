@@ -10,9 +10,9 @@ describe('Pages', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
-  });
+  // after(function() {
+  //   apos.db.dropDatabase();
+  // });
 
   //////
   // EXISTENCE
@@ -156,7 +156,7 @@ describe('Pages', function() {
         slug: '/another-parent',
         published: true,
         path: '/another-parent',
-        level: 3,
+        level: 1,
         rank: 0
       }
     ];
@@ -392,15 +392,24 @@ describe('Pages', function() {
       assert.equal(response.statusCode, 200);
       //Did we get our page back?
       assert(body.match(/Sing to me, Oh Muse./));
+      // Does the response prove that data.home was available?
+      assert(body.match(/Home: \//));
+      // Does the response prove that data.tabs was available?
+      assert(body.match(/Tab: \/another-parent/));
       //console.log(body);
       return done();
     })
   });
+
   it('should not be able to serve a nonexistent page', function(done){
     return request('http://localhost:7940/nobodyschild', function(err, response, body){
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 404);
+      // Does the response prove that data.home was available?
+      assert(body.match(/Home: \//));
+      // Does the response prove that data.tabs was available?
+      assert(body.match(/Tab: \/another-parent/));
       //console.log(body);
       return done();
     })
