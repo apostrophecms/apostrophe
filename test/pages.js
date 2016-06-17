@@ -394,7 +394,7 @@ describe('Pages', function() {
       assert(body.match(/Sing to me, Oh Muse./));
       // Does the response prove that data.home was available?
       assert(body.match(/Home: \//));
-      // Does the response prove that data.tabs was available?
+      // Does the response prove that data.home._children was available?
       assert(body.match(/Tab: \/another-parent/));
       //console.log(body);
       return done();
@@ -408,7 +408,7 @@ describe('Pages', function() {
       assert.equal(response.statusCode, 404);
       // Does the response prove that data.home was available?
       assert(body.match(/Home: \//));
-      // Does the response prove that data.tabs was available?
+      // Does the response prove that data.home._children was available?
       assert(body.match(/Tab: \/another-parent/));
       //console.log(body);
       return done();
