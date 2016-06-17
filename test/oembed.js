@@ -62,8 +62,6 @@ describe('Login', function() {
       url: youtube
     }), function(err, response, body) {
       assert(!err);
-      console.log(body);
-      console.log(response.statusCode);
       assert(response.statusCode === 200);
       var data = JSON.parse(body);
       assert(data.type === 'video');
