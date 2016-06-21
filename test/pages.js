@@ -415,4 +415,53 @@ describe('Pages', function() {
     })
   });
 
+  it('should detect that the home page is an ancestor of any page except itself', function() {
+    assert(
+      apos.pages.isAncestorOf({
+          path: '/'
+        }, {
+          path: '/about'
+        }
+      )
+    );
+    assert(
+      apos.pages.isAncestorOf({
+          path: '/'
+        }, {
+          path: '/about/grandkid'
+        }
+      )
+    );
+    assert(!
+      apos.pages.isAncestorOf({
+          path: '/'
+        }, {
+          path: '/'
+        }
+      )
+    );
+
+  });
+
+  it('should detect a tab as the ancestor of its great grandchild but not someone else\'s', function() {
+    assert(
+      apos.pages.isAncestorOf({
+          path: '/about'
+        }, {
+          path: '/about/test/thing'
+        }
+      )
+    );
+
+    assert(
+      !apos.pages.isAncestorOf({
+          path: '/about'
+        }, {
+          path: '/wiggy/test/thing'
+        }
+      )
+    );
+
+  });
+
 });
