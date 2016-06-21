@@ -39,6 +39,9 @@
 {%- macro fieldset(field, bodyMacro) %}
   <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
     <label for="{{ name }}" class="apos-field-label">{{ field.label }}</label>
+    {%- if field.help -%}
+      <div class="apos-field-help">{{ __(field.help) }}</div>
+    {%- endif -%}
     {{ bodyMacro(field) }}
   </fieldset>
   {# <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
