@@ -5,4 +5,7 @@
   {% for piece in data.pieces %}
     <h4><a href="{{ piece._url }}">{{ piece.title }}</a></h4>
   {% endfor %}
+  {% import 'apostrophe-pager:macros.html' as pager with context %}
+  {{ pager.render({ page: data.currentPage, total: data.totalPages }, data.url) }}
 {% endblock %}
+
