@@ -9,14 +9,14 @@
     {%- else -%}
       {% include "areaControls.html" %}
     {%- endif -%}
+    <div class="apos-area-widgets" data-apos-widgets>
   {%- endif -%}
-  <div class="apos-area-widgets" data-apos-widgets>
-    {%- for widget in data.area.items -%}
-      {%- set widgetOptions = data.options.widgets[widget.type] or {} -%}
-      {%- if not canEdit -%}
-        {%- set widgetOptions = apos.utils.merge(widgetOptions, { edit: false }) -%}
-      {%- endif -%}
-      {{ apos.areas.widget(widget, widgetOptions) }}
-    {%- endfor -%}
-  </div>
+  {%- for widget in data.area.items -%}
+    {%- set widgetOptions = data.options.widgets[widget.type] or {} -%}
+    {%- if not canEdit -%}
+      {%- set widgetOptions = apos.utils.merge(widgetOptions, { edit: false }) -%}
+    {%- endif -%}
+    {{ apos.areas.widget(widget, widgetOptions) }}
+  {%- endfor -%}
+  {%- if canEdit %}</div>{% endif -%}
 </div>
