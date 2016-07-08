@@ -47,7 +47,7 @@
     "minimatch": "^3.0.0",
     "mkdirp": "^0.5.0",
     "moment": "^2.9.0",
-    "mongodb": "^2.0.0",
+    "mongodb": "2.1.x",
     "moog-require": "^0.3.0",
     "nunjucks": "^2.0.0",
     "oembetter": "^0.1.10",
