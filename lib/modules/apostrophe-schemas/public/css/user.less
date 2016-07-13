@@ -5,12 +5,20 @@
 .apos-field {
   &.apos-required {
     label::after {
-      content: ' * Required';
+      content: ' *';
+      color: @apos-base;
     }
   }
   &.apos-error-required {
     label {
       color: @apos-red;
+      
+      &:after {
+        color: @apos-red;
+        content: ' (required)';
+      }
     }
+    
+    input { .apos-glow(@apos-red); }
   }
 }
