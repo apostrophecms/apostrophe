@@ -44,9 +44,9 @@
   box-shadow: @x-axis @y-axis @blur @spread @color;
 }
 
-.apos-glow
+.apos-glow(@color: @apos-base)
 {
-  .apos-drop-shadow(0px, 0px, 7px, 2px, fade(@apos-base, 50%));
+  .apos-drop-shadow(0px, 0px, 7px, 2px, fade(@color, 50%));
 }
 
 .apos-arrow-right
