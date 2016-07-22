@@ -21,6 +21,8 @@ describe('Modules', function(){
 
   require('./utils.js');
 
+  require('./urls.js');
+
   require('./db.js');
 
   require('./caches.js');
