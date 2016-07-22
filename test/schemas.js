@@ -163,7 +163,7 @@ describe('Schemas', function() {
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       // without def, the default is undefined, so this is right
-      assert(_.keys(result).length === 3);
+      assert(_.keys(result.tags).length === 3);
       assert(Array.isArray(result.tags));
       assert(result.tags[0] === '4');
       assert(result.tags[1] === '5');
