@@ -61,6 +61,8 @@ function AposAnnotator(options) {
     });
 
     self.$el.find('[data-items]').append($item);
+    apos.emit('enhance', $item);
+
     try {
       self.debriefItem($item);
     } catch (e) {
