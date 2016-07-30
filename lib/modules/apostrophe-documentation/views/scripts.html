@@ -1,8 +1,8 @@
-{% extends data.outerLayout %}
-{% block main %}
+{{ apos.assets.scripts(data.when) }}
 <script type="text/javascript">
+  {{ data.js.globalCalls }}
+  {{ data.js.reqCalls }}
   setTimeout(function() {
     console.log(JSON.stringify(apos.synth.definitions, null, '  '));
   }, 500);
 </script>
-{% endblock %}
