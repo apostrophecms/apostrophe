@@ -38,7 +38,6 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
-    'apostrophe-service-bridge': {},
-    'apostrophe-documentation': {}
+    'apostrophe-service-bridge': {}
   }
 };
