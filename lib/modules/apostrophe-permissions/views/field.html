@@ -1,0 +1,4 @@
+{%- import "apostrophe-schemas:macros.html" as schemas -%}
+{% for permission in data.permissions %}
+  {{ schemas.booleanBody({ name: permission.value }) }}
+{% endfor %}
