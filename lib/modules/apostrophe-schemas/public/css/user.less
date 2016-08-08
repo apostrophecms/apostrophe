@@ -2,23 +2,37 @@
 @import 'components/array-field.less';
 @import 'components/help.less';
 
-.apos-field {
-  &.apos-required {
-    label::after {
-      content: ' *';
-      color: @apos-base;
-    }
+.apos-required {
+  label::after {
+    content: ' *';
+    color: @apos-base;
   }
-  &.apos-error-required {
-    label {
-      color: @apos-red;
-      
-      &:after {
-        color: @apos-red;
-        content: ' (required)';
-      }
-    }
-    
-    input { .apos-glow(@apos-red); }
+}
+
+/////////////////////////////
+// generic state styles
+/////////////////////////////
+.apos-error
+{
+  input { .apos-glow(@apos-red); }
+  label { color: @apos-red; }
+}
+
+.apos-warning
+{
+  input { .apos-glow(@apos-gold); }
+  label { color: @apos-gold; }
+}
+
+/////////////////////////////
+// specific states
+/////////////////////////////
+
+.apos-error--required
+{
+  label:after
+  {
+    color: @apos-red;
+    content: ' (required)';
   }
 }
