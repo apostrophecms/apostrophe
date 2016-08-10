@@ -1,4 +1,84 @@
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
-{% for permission in data.permissions %}
-  {{ schemas.booleanBody({ name: permission.value }) }}
-{% endfor %}
+{%- import "apostrophe-ui:components/buttons.html" as buttons -%}
+
+
+{% macro permissions(field) %}
+
+  {% set selectiveOptions = { propagate: field.propagate } %}
+
+  {% if (not options.which) or apos.utils.contains(field.which, 'view') %}
+    <div data-view-permissions class="apos-view-permissions">
+      {{ schemas.select({
+        name: 'loginRequired',
+        label: 'Who can view this?',
+        choices:
+          [
+            {
+              value: '',
+              label: 'Public'
+            },
+            {
+              value: 'loginRequired',
+              label: 'Login Required'
+            },
+            {
+              value: 'certainPeople',
+              label: 'Certain People'
+            }
+          ]
+      ) }}
+      <span class="apos-propagate"><input type="checkbox" name="loginRequiredPropagate" /><label>{{ __('Apply to Subpages') }}</label></span>
+      <div data-apos-view-certain-people>
+        {{ formSelective('viewGroupIds', 'Groups', selectiveOptions, { placeholder: "Type a group's name" }) }}
+        {{ formSelective('viewPersonIds', 'Individuals', selectiveOptions, { placeholder: "Type a person's name" }) }}
+      </div>
+      <p class="apos-view-permissions-hint">{{ __('Admins can always see everything.') }}</p>
+    </div>
+      </div>
+    </fieldset>
+  {% endif %}
+
+  {% if (not options.which) or aposContains(options.which, 'edit') %}
+    {# This outer div is for hiding the entirety of edit permissions via JS. -Tom #}
+    <div data-edit-permissions-container>
+      {# Toggles open data-edit-permissions #}
+      <fieldset class="apos-fieldset  apos-fieldset-select">
+        {# <div data-show-edit-permissions class="apos-select-wrapper apos-inline-input apos-accordion-toggle">
+          <span class="apos-ui-container apos-ui-inline-btn apos-ui-inline-btn--left">
+            <div class="apos-ui-btn">
+              <i class="icon icon-plus"></i>
+            </div>
+          </span>
+          {{ __('Who can edit this?') }}
+        </div> #}
+        <div data-edit-permissions class="apos-edit-permissions apos-page-settings-toggle-content">
+          <label class="apos-modal-form-title">{{ __('Who can edit this?') }}</label>
+          {{ formSelective('editGroupIds', 'Groups', selectiveOptions, { placeholder: "Type a group's name" }) }}
+          {{ formSelective('editPersonIds', 'Individuals', selectiveOptions, { placeholder: "Type a person's name" }) }}
+          {# This won't be true for some site somewhere, give it a class #}
+          <p class="apos-edit-permissions-hint">{{ __('Admins can always edit everything.') }}</p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endmacro %}
+  <div data-permissions>
+  <input type="file" name="{{ field.name }}" style="display:none" data-uploader />
+{% endmacro %}
+
+{{ schemas.fieldset(data, permissions) }}
+
+  {{ permissionsEditor(field{ noWorkflow: true, which: [ 'edit' ] }) }}
+</div>
+
+{# options:
+  propagate: include the "apply to subpages" checkbox
+  noWorkflow: don't present the "can publish" option even
+    if workflow is on for the project as a whole
+  which: if present, an array which may contain "view" and "edit".
+    If not present, both types of permissions are presented
+#}
+
+{% include "formMacros.html" %}
+
+

@@ -70,19 +70,19 @@ describe('Permissions', function() {
       assert(apos.permissions.can(req({ user: { _permissions: { guest: 1 } } }), 'view-doc', { published: true, loginRequired: 'loginRequired' }));
     });
     it('permits view-doc for individual with proper id', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', { published: true, loginRequired: 'certainPeople', docPermissions: [ 'view-1' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', { published: true, loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
     });
     it('forbids view-doc for individual with wrong id', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 2 } }), 'view-doc', { published: true, loginRequired: 'certainPeople', docPermissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 2 } }), 'view-doc', { published: true, loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
     });
     it('permits view-doc for individual with group id', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'certainPeople', docPermissions: [ 'view-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'certainUsers', docPermissions: [ 'view-1002' ] }));
     });
     it('forbids view-doc for individual with wrong group id', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'certainPeople', docPermissions: [ 'view-1003' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'certainUsers', docPermissions: [ 'view-1003' ] }));
     });
-    it('certainPeople will not let you slide past to an unpublished doc', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', {  loginRequired: 'certainPeople', docPermissions: [ 'view-1' ] }));
+    it('certainUsers will not let you slide past to an unpublished doc', function() {
+      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', {  loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
     });
     it('permits view-doc for unpublished doc for individual with group id for editing', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { docPermissions: [ 'edit-1002' ] }));
@@ -126,20 +126,20 @@ describe('Permissions', function() {
   //         _id: 'doc-4',
   //         slug: 'doc-4',
   //         published: true,
-  //         loginRequired: 'certainPeople',
+  //         loginRequired: 'certainUsers',
   //         docPermissions: [ 'view-1' ]
   //       },
   //       {
   //         _id: 'doc-5',
   //         slug: 'doc-5',
-  //         loginRequired: 'certainPeople',
+  //         loginRequired: 'certainUsers',
   //         docPermissions: [ 'view-1' ]
   //       },
   //       {
   //         _id: 'doc-6',
   //         slug: 'doc-6',
   //         published: true,
-  //         loginRequired: 'certainPeople',
+  //         loginRequired: 'certainUsers',
   //         docPermissions: [ 'view-1002' ]
   //       },
   //       {
@@ -214,12 +214,12 @@ describe('Permissions', function() {
 
   //   it('permits view-doc for individual with proper id', function() {
   //     assert(find(results, function(result) {
-  //       return (result.loginRequired === 'certainPeople') && result.docPermissions && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1');
+  //       return (result.loginRequired === 'certainUsers') && result.docPermissions && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1');
   //     }));
   //   });
-  //   it('certainPeople will not let you slide past to an unpublished doc', function() {
+  //   it('certainUsers will not let you slide past to an unpublished doc', function() {
   //     assert(!find(results, function(result) {
-  //       return (result.loginRequired === 'certainPeople') && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1') && (!result.published);
+  //       return (result.loginRequired === 'certainUsers') && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1') && (!result.published);
   //     }));
   //   });
 
@@ -235,7 +235,7 @@ describe('Permissions', function() {
 
   //   it('forbids view-doc for individual with wrong id', function() {
   //     assert(!find(results, function(result) {
-  //       return (result.loginRequired === 'certainPeople') && result.docPermissions && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1');
+  //       return (result.loginRequired === 'certainUsers') && result.docPermissions && (result.docPermissions.length === 1) && (result.docPermissions[0] === 'view-1');
   //     }));
   //   });
 
@@ -251,13 +251,13 @@ describe('Permissions', function() {
 
   //   it('permits view-doc for individual with proper group id', function() {
   //     assert(find(results, function(result) {
-  //       return (result.loginRequired === 'certainPeople') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'view-1002'; }));
+  //       return (result.loginRequired === 'certainUsers') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'view-1002'; }));
   //     }));
   //   });
 
   //   it('permits view-doc for unpublished doc for individual with group id for editing', function() {
   //     assert(find(results, function(result) {
-  //       return (result.loginRequired !== 'certainPeople') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'edit-1002'; }));
+  //       return (result.loginRequired !== 'certainUsers') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'edit-1002'; }));
   //     }));
   //   });
 
@@ -273,7 +273,7 @@ describe('Permissions', function() {
 
   //   it('forbids view-doc for individual with wrong group id', function() {
   //     assert(!find(results, function(result) {
-  //       return (result.loginRequired === 'certainPeople') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'view-1002'; }));
+  //       return (result.loginRequired === 'certainUsers') && result.docPermissions && (find(result.docPermissions, function(p) { return p === 'view-1002'; }));
   //     }));
   //   });
 
