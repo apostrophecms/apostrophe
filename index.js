@@ -262,6 +262,13 @@ module.exports = function(options) {
   function instantiateModules(callback) {
     self.modules = {};
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
+      if (self.options.modules[item] && (self.options.modules[item].instantiate === false)) {
+        // We don't want an actual instance of this module, we are using it
+        // as an abstract base class in this particular project (but still
+        // configuring it, to easily carry those options to subclasses, which
+        // is how we got here)
+        return setImmediate(callback);
+      }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
           return callback(err);

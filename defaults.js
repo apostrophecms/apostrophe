@@ -13,6 +13,7 @@ module.exports = {
     'apostrophe-templates': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
+    'apostrophe-admin-bar': {},
     'apostrophe-login': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
