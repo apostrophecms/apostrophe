@@ -70,9 +70,11 @@ describe('Images', function() {
 
   // Test pieces.list()
   it('should clean up any existing images for testing', function(done) {
-    return apos.docs.db.remove({ type: 'apostrophe-image' }, function(err) {
+    // Newer mongo returns a promise from remove even if there's a callback,
+    // which in turn confuses mocha if we use a return statement here. So don't. -Tom
+    apos.docs.db.remove({ type: 'apostrophe-image' }, function(err) {
       assert(!err);
-      return done();
+      done();
     });
   });
 

@@ -25,7 +25,7 @@ describe('Caches', function() {
     cache = apos.caches.get('testMonkeys');
   });
   it('should not crash on clear', function(done) {
-    return cache.clear(done);
+    cache.clear(done);
   });
   it('should not contain capuchin yet', function(done) {
     return cache.get('capuchin', function(err, monkey) {
@@ -49,7 +49,7 @@ describe('Caches', function() {
     });
   });
   it('should not crash on clear #2', function(done) {
-    return cache.clear(done);
+    cache.clear(done);
   });
   it('should not contain capuchin anymore', function(done) {
     return cache.get('capuchin', function(err, monkey) {

@@ -10,31 +10,7 @@
   </head>
   <body class="{% block bodyClass %}{% endblock %}">
     {% block apostropheMenu %}
-      {# TODO: Check permissions and not just if they have a user? #}
-      {% if data.user or data.loginButton %}
-        <div class="apos-ui">
-          <div class="apos-admin-bar apos-active apos-text-meta" data-apos-admin-bar>
-            <div class="apos-admin-bar-inner">
-              <div class="apos-admin-bar-logo" data-apos-admin-bar-logo data-apos-actionable='data-apos-admin-bar'>
-                {% include 'logo.html' %}
-              </div>
-              {% block apostropheMenuBody %}
-              {# Default behavior for admin bar is to spit out every menu available except for pages. This can be overwritten with a project level outerLayout.html #}
-              <div class="apos-admin-bar-items" data-apos-admin-bar-items>
-                {% for name, item in apos.modules %}
-                  {% if apos.utils.isFunction(item.menu) and name != 'apostrophe-pages' %}
-                    {{ item.menu() }}
-                  {% endif %}
-                {% endfor %}
-                {% if apos.utils.isFunction(apos.users.accountMenu) %}
-                  {{ apos.users.accountMenu() }}
-                {% endif %}
-              </div>
-              {% endblock %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
+      {{ apos.adminBar.output() }}
     {% endblock %}
 
     {% if data.user %}

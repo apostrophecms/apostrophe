@@ -46,3 +46,12 @@
   .jqtree-moving > .jqtree_common.jqtree-element .jqtree-title { outline: 0; }
   .jqtree-moving { background: @apos-primary !important; }
 }
+
+.apos-schema .apos-field-apply-login-required-to-subpages
+{
+  // Give a sense of hierarchy, since this relates to the previous item
+  margin-left: 20px;
+  margin-top: -10px;
+  // Don't let the LESS compiler mis-compile it, let the browser see it
+  width: calc(~'100% - 20px');
+}

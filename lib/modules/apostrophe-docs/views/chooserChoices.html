@@ -5,7 +5,7 @@
   {# item.relationship. -Tom #}
   {% set choice = item.item or item %}
   {% set relationship = item.relationship %}
-  <div class="apos-chooser-choice">
+  <div class="apos-chooser-choice{{ ' apos-chooser-choice--removed' if item.__removed }}">
     {% include data.choiceTemplate %}
     <div class="apos-button apos-button--in-context apos-button--group apos-chooser-controls">
       {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}

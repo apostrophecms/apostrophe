@@ -18,7 +18,7 @@ describe('Pieces', function() {
   // EXISTENCE
   //////
 
-  it('should initialize with a schema and a manager', function(done) {
+  it('should initialize with a schema', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
@@ -42,7 +42,6 @@ describe('Pieces', function() {
       afterInit: function(callback) {
         assert(apos.modules['things']);
         assert(apos.modules['things'].schema);
-        assert(apos.modules['things'].manager);
         apos.argv._ = [];
         return callback(null);
       },
