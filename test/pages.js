@@ -29,7 +29,17 @@ describe('Pages', function() {
           port: 7940
         },
         'apostrophe-pages': {
-          park: []
+          park: [],
+          types: [
+            {
+              name: 'home',
+              label: 'Home'
+            },
+            {
+              name: 'testPage',
+              label: 'Test Page'
+            }
+          ]
         }
       },
       afterInit: function(callback) {

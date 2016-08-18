@@ -271,6 +271,8 @@ module.exports = function(options) {
       }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
+          console.error(err.stack);
+          console.error(err);
           return callback(err);
         }
         return callback(null);
@@ -301,7 +303,7 @@ module.exports = function(options) {
 
 };
 
-var abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets' ];
+var abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets', 'apostrophe-doc-type-manager' ];
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),

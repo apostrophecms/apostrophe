@@ -28,6 +28,7 @@ module.exports = {
     'apostrophe-pages': {},
     'apostrophe-search': {},
     'apostrophe-global': {},
+    'apostrophe-any-page-manager': {},
     'apostrophe-areas': {},
     'apostrophe-rich-text-widgets': {},
     'apostrophe-html-widgets': {},

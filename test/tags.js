@@ -42,20 +42,23 @@ describe('Tags', function() {
         title: 'Tag Test Doc 1',
         slug: '/tag-test-doc-1',
         published: true,
-        tags: ['tag1', 'tag2', 'agressive']
+        tags: ['tag1', 'tag2', 'agressive'],
+        type: 'default'
       },
       {
         title: 'Tag Test Doc 2',
         slug: '/tag-test-doc-2',
         published: true,
-        tags: ['tag3', 'tag4', 'pizza']
+        tags: ['tag3', 'tag4', 'pizza'],
+        type: 'default'
       },
       {
         title: 'Tag Test Doc Event',
         type: 'event',
         slug: 'tag-test-doc-event',
         published: true,
-        tags: ['featured event']
+        tags: ['featured event'],
+        type: 'default'
       },
     ]
 

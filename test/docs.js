@@ -26,6 +26,10 @@ describe('Docs', function() {
         'apostrophe-express': {
           secret: 'xxx',
           port: 7939
+        },
+        'test-people': {
+          extend: 'apostrophe-doc-type-manager',
+          name: 'test-person'
         }
       },
       afterInit: function(callback) {
@@ -89,7 +93,7 @@ describe('Docs', function() {
         _id: 'lori',
         slug: 'lori',
         published: true,
-        type: 'testPerson',
+        type: 'test-person',
         firstName: 'Lori',
         lastName: 'Pizzaroni',
         age: 32,
@@ -99,7 +103,7 @@ describe('Docs', function() {
         _id: 'larry',
         slug: 'larry',
         published: true,
-        type: 'testPerson',
+        type: 'test-person',
         firstName: 'Larry',
         lastName: 'Cherber',
         age: 28,
@@ -109,7 +113,7 @@ describe('Docs', function() {
         _id: 'carl',
         slug: 'carl',
         published: true,
-        type: 'testPerson',
+        type: 'test-person',
         firstName: 'Carl',
         lastName: 'Sagan',
         age: 62,
@@ -126,22 +130,22 @@ describe('Docs', function() {
 
   it('should be able to carry out schema joins', function(done) {
 
-    apos.docs.setManager('testPerson', {
+    apos.docs.setManager('test-person', {
       schema: [
         {
           name: '_friend',
           type: 'joinByOne',
-          withType: 'testPerson',
+          withType: 'test-person',
           idField: 'friendId',
           label: 'Friend'
         }
       ],
       find: function(req, criteria, projection) {
-        return apos.docs.find(req, criteria, projection).type('testPerson');
+        return apos.docs.find(req, criteria, projection).type('test-person');
       }
     });
 
-    var manager = apos.docs.getManager('testPerson');
+    var manager = apos.docs.getManager('test-person');
 
     assert(manager);
     assert(manager.find);
@@ -166,13 +170,13 @@ describe('Docs', function() {
   it('should fail if you try to insert a document with the same unique key twice', function(done){
     apos.docs.db.insert([
       {
-        type: 'testPerson',
+        type: 'test-person',
         published: false,
         age: 70,
         slug: 'peter'
       },
       {
-        type: 'testPerson',
+        type: 'test-person',
         published: false,
         age: 70,
         slug: 'peter'
@@ -194,14 +198,14 @@ describe('Docs', function() {
 
 
   it('should be able to find all PUBLISHED test documents and ouput them as an array', function(done){
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' });
 
     cursor.toArray(function(err, docs){
       assert(!err);
       // There should be only 3 results.
       assert(docs.length === 3);
-      // They should all have a type of testPerson
-      assert(docs[0].type === 'testPerson');
+      // They should all have a type of test-person
+      assert(docs[0].type === 'test-person');
       done();
     });
   });
@@ -212,7 +216,7 @@ describe('Docs', function() {
   //////
 
   it('should be able to specify which fields to get by passing a projection object', function(done){
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }, { age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' }, { age: 1 });
     cursor.toArray(function(err, docs){
 
       assert(!err);
@@ -230,7 +234,7 @@ describe('Docs', function() {
   //////
 
   it('should be that non-admins DO NOT get unpublished docs by default', function(done) {
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' });
     cursor.toArray(function(err, docs){
       _.each(docs, function(doc){
         // There SHOULD NOT be a firstName
@@ -242,7 +246,7 @@ describe('Docs', function() {
   });
 
   it('should be that non-admins do not get unpublished docs, even if they ask for them', function(done) {
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).published(false);
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' }).published(false);
     cursor.toArray(function(err, docs){
       assert(docs.length === 0);
       done();
@@ -250,7 +254,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get unpublished docs if they ask for them', function(done) {
-    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson' }).published(false);
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'test-person' }).published(false);
     cursor.toArray(function(err, docs){
       assert(!docs[0].published);
       done();
@@ -258,7 +262,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get a mixture of unpublished docs and published docs if they ask', function(done) {
-    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson' }).published(null);
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'test-person' }).published(null);
     cursor.toArray(function(err, docs) {
       assert(docs.length === 4);
       done();
@@ -270,7 +274,7 @@ describe('Docs', function() {
   //////
 
   it('should be able to sort', function(done) {
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).sort({ age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' }).sort({ age: 1 });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'larry');
       done();
@@ -278,7 +282,7 @@ describe('Docs', function() {
   });
 
   it('should be able to sort by multiple keys', function(done) {
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson' }).sort({ firstName:1 , age: 1 });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' }).sort({ firstName:1 , age: 1 });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'carl');
       assert(docs[1].slug == 'larry');
@@ -294,7 +298,7 @@ describe('Docs', function() {
     var object = {
       slug: 'one',
       published: true,
-      type: 'testPerson',
+      type: 'test-person',
       firstName: 'Gary',
       lastName: 'Ferber',
       age: 15,
@@ -311,7 +315,7 @@ describe('Docs', function() {
 
 
   it ('should be able to insert a new object into the docs collection in the database', function(done){
-    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson', slug: 'one' });
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'test-person', slug: 'one' });
     cursor.toArray(function(err, docs) {
       assert(docs[0].slug == 'one');
       done();
@@ -324,7 +328,7 @@ describe('Docs', function() {
     var object = {
       slug: 'one',
       published: true,
-      type: 'testPerson',
+      type: 'test-person',
       firstName: 'Harry',
       lastName: 'Gerber',
       age: 29,
@@ -343,7 +347,7 @@ describe('Docs', function() {
     var object = {
       slug: 'not-for-you',
       published: false,
-      type: 'testPerson',
+      type: 'test-person',
       firstName: 'Darry',
       lastName: 'Derrber',
       age: 5,
@@ -386,7 +390,7 @@ describe('Docs', function() {
 
   it('should append an updated slug with a numeral if the updated slug already exists', function(done){
 
-    var cursor = apos.docs.find(t.req.admin(apos), { type: 'testPerson', slug: 'one' });
+    var cursor = apos.docs.find(t.req.admin(apos), { type: 'test-person', slug: 'one' });
     cursor.toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -404,7 +408,7 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the update method if you are not an admin', function(done){
-    var cursor = apos.docs.find(t.req.anon(apos), { type: 'testPerson', slug: 'lori' });
+    var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person', slug: 'lori' });
     cursor.toObject(function(err, doc) {
       assert(!err);
       assert(doc);

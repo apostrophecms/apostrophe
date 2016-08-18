@@ -107,7 +107,7 @@ describe('Apostrophe', function() {
       afterInit: function(callback) {
         // color = blue is inherited from our implicit subclass of the base module
         assert(apos.assets && apos.assets.color === 'blue');
-        // make sure that our modules match what is specifed in deafults.js
+        // make sure that our modules match what is specifed in defaults.js
         assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);
         return done();
       }

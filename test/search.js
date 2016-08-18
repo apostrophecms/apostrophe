@@ -26,6 +26,11 @@ describe('Search', function() {
         'apostrophe-express': {
           secret: 'xxx',
           port: 7945
+        },
+        'events': {
+          extend: 'apostrophe-pieces',
+          name: 'event',
+          label: 'Event'
         }
       },
       afterInit: function(callback) {
