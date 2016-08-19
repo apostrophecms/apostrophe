@@ -28,6 +28,7 @@ describe('Versions', function() {
           secret: 'xxx',
           port: 7950
         },
+
         // Create a custom schema for test-person so we can
         // play with comparing versions
         'test-people': {
@@ -60,6 +61,12 @@ describe('Versions', function() {
               idsField: 'poemIds'
             },
           ]
+        },
+
+        'poems': {
+          extend: 'apostrophe-pieces',
+          name: 'poem',
+          label: 'Poem'
         },
 
         'test-person-pages': {

@@ -196,6 +196,8 @@ describe('custom-pages', function() {
 
   it('should match a dispatch route on a real live page request', function(done) {
     return request('http://localhost:7941/niftyPages', function(err, response, body){
+      console.error(err);
+      console.error(body);
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);

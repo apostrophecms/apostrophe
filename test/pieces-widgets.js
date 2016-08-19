@@ -39,6 +39,16 @@ describe('Pieces Widgets', function() {
           extend: 'apostrophe-pieces-widgets'
         },
         'apostrophe-pages': {
+          types: [
+            {
+              name: 'home',
+              label: 'Home'
+            },
+            {
+              name: 'default',
+              label: 'Default'
+            }
+          ],
           park: [
             {
               title: 'Page With Events Widget',

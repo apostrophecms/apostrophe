@@ -25,8 +25,12 @@
 {% endblock %}
 
 {% block body %}
-  {# Needed so we can swap page types dynamically. -Tom #}
-  {{ schemas.fields(data.schema) }}
+  {# HEY! DON'T REMOVE THIS DIV! Needed so we can swap page types dynamically. If #}
+  {# this is causing grief for you with sliders or something, fix that to cope. #}
+  {# No going halfsies. -Tom #}
+  <div data-page-schema-fields>
+    {{ schemas.fields(data.schema) }}
+  </div>
 {% endblock %}
 
 {% block footerContainer %}{% endblock %}
