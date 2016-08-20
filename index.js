@@ -271,6 +271,7 @@ module.exports = function(options) {
       }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
+          console.error('Error while constructing the ' + item + ' module');
           console.error(err.stack);
           console.error(err);
           return callback(err);
