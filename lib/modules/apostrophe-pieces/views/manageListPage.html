@@ -4,7 +4,8 @@
     <td>{{fields.checkbox(data.options.name + '-select')}}</td>
     {% for column in data.columns %}
       <td class="apos-manage-{{ data.options.name | css }}-{{ column.name | css }}">
-        <span><a href="#" data-apos-edit-{{ data.options.name | css }}="{{ piece._id }}">
+        {% set verb = 'rescue' if piece.trash else 'edit' %}
+        <span><a href="#" data-apos-{{ verb }}-{{ data.options.name | css }}="{{ piece._id }}">
           {%- if column.partial -%}
             {{ column.partial(piece[column.name]) }}
           {%- else -%}
