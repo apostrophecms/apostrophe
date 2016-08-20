@@ -13,9 +13,20 @@
 
 
 {%- macro createControls() -%}
+  {{ dropdowns.base({
+    label: 'More',
+    items: [
+      {label: 'Copy', action: 'copy'},
+      {label: 'Trash', action: 'trash'}
+    ]}, 'button',
+    {
+      direction: 'down',
+      class: 'arrow-down'
+    }
+  ) }}
   {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-  {{ buttons.major('Create ' + data.options.label, { action: 'save' }) }}
-{%- endmacro -%}
+  {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
+{% endmacro %}
 
 {%- macro editControls() -%}
   {{ dropdowns.base({
