@@ -42,6 +42,7 @@ describe('Users', function() {
     });
   });
 
+  var janeOne, janeTwo, janeThree;
 
   // Test pieces.newInstance()
   it('should be able to insert a new user', function(done) {
@@ -60,6 +61,7 @@ describe('Users', function() {
     assert(apos.users.insert);
     apos.users.insert(t.req.admin(apos), user, function(err) {
       assert(!err);
+      janeOne = user;
       done();
     });
 
@@ -81,7 +83,8 @@ describe('Users', function() {
         assert(user);
         assert(user.username == 'JaneD');
         done();
-      });
+      }
+    );
   });
 
   it('should verify a user password', function(done){
@@ -132,6 +135,107 @@ describe('Users', function() {
     });
   });
 
+  it('should be able to move a user to the trash', function(done) {
+    apos.users.trash(t.req.admin(apos), janeOne._id, function(err) {
+      assert(!err);
+      return apos.docs.db.findOne({_id: janeOne._id, trash: true}, function(err, doc) {
+        assert(!err);
+        assert(doc);
+        done();
+      });
+    });
+  });
+
+  it('should be able to insert a user with a previously used email if the other is in the trash', function(done) {
+    var user = apos.users.newInstance();
+
+    user.firstName = 'Dane';
+    user.lastName = 'Joe';
+    user.title = 'Dane Joe';
+    user.username = 'DaneJ';
+    user.password = '321password';
+    user.email = 'jane@aol.com';
+    apos.users.insert(t.req.admin(apos), user, function(err) {
+      assert(!err);
+      janeTwo = user;
+      done();
+    });
+  });
+
+  it('should be able to rescue the first user from the trash and the email should be deduplicated', function(done) {
+    apos.users.rescue(t.req.admin(apos), janeOne._id, function(err) {
+      assert(!err);
+      return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
+        assert(!err);
+        assert(doc);
+        assert(doc.email.match(/deduplicate.*jane/));
+        done();
+      });
+    })
+  });
+
+  it('there should be two users in the safe at this point and neither with a null username', function(done) {
+    apos.users.safe.find({}).toArray(function(err, docs) {
+      assert(!err);
+      assert(docs.length === 2);
+      _.each(docs, function(doc) {
+        assert(doc.username);
+      });
+      done();
+    });
+  });
+
+  it('should be able to move a user to the trash', function(done) {
+    apos.users.trash(t.req.admin(apos), janeOne._id, function(err) {
+      assert(!err);
+      return apos.docs.db.findOne({_id: janeOne._id, trash: true}, function(err, doc) {
+        assert(!err);
+        assert(doc);
+        done();
+      });
+    });
+  });
+
+  it('should be able to insert a user with a previously used username if the other is in the trash', function(done) {
+    var user = apos.users.newInstance();
+
+    user.firstName = 'Jane';
+    user.lastName = 'Doe';
+    user.title = 'Jane Doe';
+    user.username = 'JaneD';
+    user.password = '321password';
+    user.email = 'somethingelse@aol.com';
+    apos.users.insert(t.req.admin(apos), user, function(err) {
+      assert(!err);
+      janeThree = user;
+      done();
+    });
+  });
+
+  it('should be able to rescue the first user from the trash and the username should be deduplicated', function(done) {
+    apos.users.rescue(t.req.admin(apos), janeOne._id, function(err) {
+      assert(!err);
+      return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
+        assert(!err);
+        assert(doc);
+        assert(doc.username.match(/deduplicate.*JaneD/));
+        done();
+      });
+    })
+  });
+
+  it('there should be three users in the safe at this point and none with a null username', function(done) {
+    apos.users.safe.find({}).toArray(function(err, docs) {
+      assert(!err);
+      assert(docs.length === 3);
+      _.each(docs, function(doc) {
+        assert(doc.username);
+      });
+      done();
+    });
+  });
+
+
   it('should succeed in updating a users property', function(done){
     apos.users.find(t.req.admin(apos), { username: 'JaneD' })
     .toObject(function(err, user){
@@ -159,7 +263,7 @@ describe('Users', function() {
       assert(user);
       assert(user.username == 'JaneD');
 
-      apos.users.verifyPassword(user, '123password', function(err){
+      apos.users.verifyPassword(user, '321password', function(err){
         assert(!err);
         done();
       });
