@@ -280,7 +280,7 @@ describe('Pages', function() {
       type: 'testPage',
       title: 'New Page'
     };
-    apos.pages.insert(t.req.admin(apos), parentId, newPage, function(err, page){
+    apos.pages.insert(t.req.admin(apos), parentId, newPage, function(err, page) {
       // did it return an error?
       assert(!err);
       //Is the path generally correct?
