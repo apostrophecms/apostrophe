@@ -159,6 +159,7 @@ module.exports = function(options) {
         // In the absence of a callback to handle initialization failure,
         // we have to assume there's just one instance of Apostrophe and
         // we can print the error and end the app
+        console.error(err.stack);
         console.error(err);
         process.exit(1);
       }
