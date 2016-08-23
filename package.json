@@ -24,7 +24,7 @@
     "bless": "^3.0.3",
     "body-parser": "^1.12.0",
     "broadband": "^0.1.1",
-    "cheerio": "^0.20.0",
+    "cheerio": "^0.22.0",
     "clean-css": "^3.0.9",
     "connect-flash": "^0.1.1",
     "connect-mongo": "^1.0.0",
