@@ -56,8 +56,8 @@ module.exports = function(options) {
   // CURRENT EVENTS
   //
   // 'enhance' is triggered to request progressive enhancement
-  // of form elements newly loaded into the DOM (jQuery selectize).
-  // It is typically used in admin modals.
+  // of form elements newly loaded into the DOM.
+  // It is most often listened for in admin modals.
   //
   // 'ready' is triggered when the main content area of the page
   // has been refreshed.

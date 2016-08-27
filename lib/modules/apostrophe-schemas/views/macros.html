@@ -157,22 +157,6 @@
 {# Often used directly in a custom fieldset with other controls #}
 {%- macro selectBody(field) -%}
   {{ commonFields.select(field.name, field.choices) }}
-  {#<div class="apos-select-wrapper apos-inline-input">
-    <select name="{{ field.name }}"
-      {% for key, val in _attrs %}
-        {{ key }}="{{ val }}"
-      {% endfor %}
-      data-selectize
-    >
-      {% for choice in field.choices %}
-        <option value="{{ choice.value }}" label="{{ choice.label }}"
-        {% if choice.showFields -%}
-         data-extra='{ "showFields": "{{ choice.showFields | join(',') }}" }'
-        {%- endif %}
-        >{{ __(choice.label) }}</option>
-      {% endfor %}
-    </select>
-  </div>#}
 {%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}

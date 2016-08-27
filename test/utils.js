@@ -1,4 +1,5 @@
 var assert = require('assert');
+var _ = require('lodash');
 
 describe('Utils', function(){
 
@@ -87,5 +88,76 @@ describe('Utils', function(){
       assert(s === '/my/path/');
       return done();
     });
+
+    it('clonePermanent: should discard properties beginning with _ other than _id', function() {
+      assert(_.isEqual(
+        apos.utils.clonePermanent({
+          tree: {
+            branch: {
+              leaf: true,
+              _leaf: true
+            },
+            branches: [
+              'one',
+              'two',
+              'three'
+            ]
+          },
+          _tree: true,
+          _blee: {
+            bloo: true
+          }
+        }),
+        {
+          tree: {
+            branch: {
+              leaf: true
+            },
+            branches: [
+              'one',
+              'two',
+              'three'
+            ]
+          }
+        }
+      ));
+    });
+
+    it('clonePermanent with keepScalars: should discard properties beginning with _ other than _id unless they are scalars (non-objects)', function() {
+      assert(_.isEqual(
+        apos.utils.clonePermanent({
+          tree: {
+            branch: {
+              leaf: true,
+              _leaf: true
+            },
+            branches: [
+              'one',
+              'two',
+              'three'
+            ]
+          },
+          _tree: true,
+          _blee: {
+            bloo: true
+          }
+        }, true),
+        {
+          tree: {
+            branch: {
+              leaf: true,
+              _leaf: true
+            },
+            branches: [
+              'one',
+              'two',
+              'three'
+            ]
+          },
+          _tree: true
+        }
+      ));
+    });
+
   });
 });
