@@ -111,9 +111,15 @@
   >.apos-dropdown-items
   {
     text-align: left;
-    left: auto;
+    // left: auto;
+    left: 0;
+    right: 0;
+    top: 15px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 200px;
     .apos-rounded;
-    transform: translate(-46%, -20px);
+    // transform: translate(-46%, -20px);
   }
 }
 
@@ -121,8 +127,8 @@
 {
   &.apos-active
   {
-    >.apos-button>i { transform: translateX(-50%) rotate(45deg); }
-    >.apos-dropdown-items { transform: translate(-46%, -10px); }
+    >.apos-button>i { transform: translateX(-50%) rotate(45deg); margin-left: -0.2px; }
+    // >.apos-dropdown-items { transform: translate(-46%, -10px); }
   }
 }
 
