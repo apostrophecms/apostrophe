@@ -829,6 +829,9 @@ function AposSlideshowWidgetEditor(options)
     $item.find('[data-hyperlink]').val(item.hyperlink);
     $item.find('[data-hyperlink-title]').val(item.hyperlinkTitle);
     $item.findByName('newWindow').val(item.hyperlinkTarget ? '1' : '0' );
+    apos.emit('enhance',$item);
+
+
 
     if (extraFields || typeof(extraFields) === 'object') {
       $item.find('[data-remove]').after('<a class="apos-slideshow-control apos-edit" data-extra-fields-edit><i class="icon-cog"></i></a>');
