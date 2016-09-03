@@ -56,7 +56,7 @@ describe('Express', function() {
   var jar;
 
   function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7936/'), { key: 'XSRF-TOKEN' });
+    var csrfCookie = _.find(jar.getCookies('http://localhost:7936/'), { key: apos.csrfCookieName });
     if (!csrfCookie) {
       return null;
     }
