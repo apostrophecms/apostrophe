@@ -1,0 +1,109 @@
+.apos-modal.apos-versions-modal
+.apos-versions
+{
+  margin: 0 auto;
+  width: 50%;
+  min-width: 400px;
+
+  .apos-version
+  {
+    display: block;
+    width: 100%;
+    margin: 1em 0 3em;
+
+    .apos-author
+    {
+      width: 60px;
+      .apos-inline-block(top);
+      .apos-avatar-wrapper
+      {
+        width: 46px;
+        height: 46px;
+        background: @apos-mid;
+        border-radius: 100%;
+      }
+    }
+    .apos-changes-meta
+    {
+      width: ~'calc(100% - 220px)';
+      .apos-inline-block(top);
+    }
+
+    // date
+    h4
+    {
+      font-size: 16px;
+      font-weight: bold;
+      .apos-inline-block(top);
+    }
+    cite
+    {
+      margin-right: 0.2em;
+      font-weight: bold;
+      .apos-inline-block(top);
+    }
+    a[data-apos-revert]
+    {
+      float: right;
+      .apos-inline-block(top);
+      margin-right: 1em;
+    }
+    h5[data-open-changes]
+    {
+      .apos-inline-block(top);
+      margin-top: 0.5em;
+      margin-bottom: 1em;
+      color: @apos-gold;
+
+      &:hover
+      {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    }
+
+  }
+}
+
+// Changes Diff Container
+.apos-modal.apos-versions-modal
+.apos-versions .apos-version >
+.apos-changes
+{
+  width: 100%;
+  padding-left: 60px;
+}
+
+// Each Change, can be multiple per version
+.apos-modal.apos-versions-modal
+.apos-versions
+.apos-change
+{
+  display: block;
+  &.apos-change-action-change h5 {
+    color: @apos-blue;
+  }
+  &.apos-change-action-add h5 {
+    margin-left: 1.5em;
+    color: @apos-green;
+  }
+  &.apos-change-action-remove h5 {
+    margin-left: 1.5em;
+    color: @apos-red;
+    text-decoration: line-through;
+  }
+  h5 {
+    .apos-inline-block(top);
+    margin: 0;
+    margin-bottom: 2px;
+  }
+  h6 {
+    .apos-inline-block(top);
+  }
+  // &.apos-change-action-move-up::before {
+  //   content: "▲ ";
+  // }
+  // &.apos-change-action-move-down::before {
+  //   content: "▼ ";
+  // }
+}

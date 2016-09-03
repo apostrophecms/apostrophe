@@ -1,0 +1,63 @@
+.apos-ui
+{
+
+  .apos-chooser-manage-view-wrapper
+  {
+    .apos-inline-block;
+    float: left;
+    max-width: 75%;
+    .apos-table { padding-left: @apos-padding-2; }
+  }
+
+  .apos-chooser
+  {
+    .apos-inline-block;
+    float: left;
+    height: 100%;
+    overflow-y: scroll;
+    width: 25%;
+    background-color: @apos-light;
+  }
+
+  .apos-chooser-choices
+  {
+
+  }
+
+  .apos-chooser-choice
+  {
+    position: relative;
+    display: block;
+    margin: @apos-margin-1;
+    padding: @apos-padding-2;
+    background-color: @apos-mid;
+    &:hover
+    {
+      background-color: @apos-primary;
+      color: @apos-white;
+    }
+    &.apos-chooser-choice--removed
+    {
+      text-decoration: line-through;
+    }
+  }
+
+  .apos-chooser-controls
+  {
+    display: none;
+    position: absolute;
+    top: -@apos-padding-1;
+    right: -@apos-padding-1;
+    .apos-button
+    {
+      z-index: 1;
+    }
+  }
+
+  .apos-chooser-choice:hover .apos-chooser-controls
+  {
+    display: block;
+  }
+
+  .apos-chooser-full .apos-field-input { display: none; }
+}

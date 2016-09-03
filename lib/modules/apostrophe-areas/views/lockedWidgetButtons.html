@@ -1,0 +1,14 @@
+{# Things you can do to a lockup, not an item #}
+<div class="apos-ui" data-apos-area-lockup-controls>
+  {# This is a template, it will be replaced with an instance for each available #}
+  {# lockup type by js. Edit up a storm, but make sure it keeps the apos-template #}
+  {# class so it is not visible #}
+  <div class="apos-ui-container apos-item-actions center">
+    <span class="apos-ui-btn-group">
+      <span class="apos-ui apos-ui-btn" title="{{ __('Edit')}}" data-edit-item><i class="icon-pencil"></i></span>
+      <span class="apos-ui-btn" title="{{ __('Release') }}" data-unlock-item><i class="icon-external-link"></i></span>
+      <span class="apos-ui apos-ui-btn" title="{{ __('Delete') }}" data-trash-item><i class="icon-trash"></i></span>
+      
+    </span>
+  </div>
+</div>

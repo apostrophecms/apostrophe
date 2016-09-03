@@ -1,0 +1,19 @@
+<h4>Default Page Template</h4>
+
+<a href="{{ data.home._url }}">Home: {{ data.home.slug }}</a>
+
+{% for tab in data.home._children %}
+  <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
+{% endfor %}
+
+{# events widget is needed for pieces-widgets test #}
+{{
+  apos.area(data.page, 'body', {
+    widgets: {
+      'events': {},
+      'apostrophe-rich-text': {
+        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
+      }
+    }
+  })
+}}

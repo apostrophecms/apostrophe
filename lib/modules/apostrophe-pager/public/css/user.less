@@ -1,0 +1,30 @@
+.apos-ui
+{
+
+  .apos-pager
+  {
+    display: inline-block;
+    padding: @apos-padding-1;
+    .apos-rounded;
+    background-color: @apos-light;
+  }
+
+  .apos-pager-number
+  {
+    padding: @apos-padding-1 4px;
+    a
+    {
+      text-decoration: none;
+      color: @apos-black;
+    }
+    &.apos-active
+    {
+      color: @apos-mid;
+    }
+    &.apos-last:after
+    {
+      content: ' (Last)';
+    }
+  }
+
+}

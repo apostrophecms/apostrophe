@@ -1,0 +1,12 @@
+
+// ROTATE
+.apos-rotate(@time: 1s)
+{
+  .apos-animation(apos-rotate @time linear infinite);
+}
+.apos-keyframes(apos-rotate;
+  {
+		from { .apos-transform(rotateZ(0deg)) }
+		to { .apos-transform(rotateZ(360deg)) }
+	}
+);

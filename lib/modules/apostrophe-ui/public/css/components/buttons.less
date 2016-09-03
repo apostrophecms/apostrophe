@@ -1,0 +1,197 @@
+.apos-button
+{
+  position: relative;
+  .apos-inline-block;
+  padding: @apos-padding-1 @apos-padding-2;
+  .apos-rounded;
+  .apos-button-border;
+  .apos-text-small;
+  background-color: @apos-white;
+  color: @apos-dark;
+  cursor: pointer;
+  text-decoration: none;
+  .apos-no-select;
+  .apos-transition--bounce;
+
+  .apos-button-label
+  {
+    opacity: 1;
+    .apos-transition();
+  }
+
+
+  &:hover
+  {
+    .apos-glow;
+  }
+  &:active
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
+  }
+  &.apos-button--square
+  {
+    border-radius: 0px;
+  }
+
+  &[data-busy="1"]
+  {
+    .apos-button-label { opacity: 0; }
+    &:after
+    {
+      opacity: 1;
+      .apos-rotate();
+    }
+  }
+
+  i { margin-left: 4px; }
+}
+
+// SPINNER =====================
+
+.apos-button:after
+{
+  position: absolute;
+  left: ~'calc(50% - 12px)';
+  top: 8px;
+  width: 24px;
+  height: 24px;
+
+  color: @apos-green;
+  font-size: 24px;
+  .fa;
+  content: '\f110';
+  opacity: 0;
+  line-height: 100%;
+  .apos-transition();
+}
+
+// TYPES =======================
+
+.apos-button--disabled
+{
+  border: none;
+  background-color: @apos-light;
+  opacity: 0.5;
+  cursor: not-allowed;
+  &:hover, &:active
+  {
+    background-color: @apos-light;
+    box-shadow: none;
+  }
+}
+
+.apos-button--in-context
+{
+  .apos-glow;
+
+  &:hover
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
+  }
+  &:active
+  {
+    .apos-drop-shadow(0px, 0px, 20px, 6px, fade(@apos-base, 30%));
+  }
+}
+
+.apos-button--global
+{
+  .apos-button-border(@apos-white);
+  background-color: @apos-base;
+  color: @apos-white;
+  .apos-drop-shadow;
+  &:hover
+  {
+    .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-black, 20%));
+  }
+  &:after
+  {
+    color: @apos-white;
+  }
+  &[apos--danger]
+  {
+    background-color: @apos-red;
+  }
+}
+
+.apos-button--more
+{
+  .apos-arrow-right;
+  &:hover
+  {
+
+  }
+}
+
+.apos-button--major
+{
+  background-color: @apos-base;
+  color: @apos-white;
+  padding: @apos-padding-1 @apos-padding-4;
+  border: none;
+  &:after
+  {
+    color: @apos-white;
+  }
+}
+
+.apos-button--minor
+{
+  padding: @apos-padding-1 @apos-padding-4;
+  border: none;
+  &:hover
+  {
+    .apos-drop-shadow(@spread:0;);
+  }
+}
+
+.apos-button--action
+{
+  background-color: @apos-white;
+  color: @apos-dark;
+  padding: @apos-padding-1 @apos-padding-2;
+  .apos-button-border(@apos-green);
+}
+
+.apos-button--danger
+{
+  .apos-button--major;
+  background-color: @apos-red;
+  &:hover
+  {
+    .apos-drop-shadow(@color:@apos-red, @spread:0);
+  }
+}
+
+.apos-button--group
+{
+  padding: 0 @apos-padding-1;
+}
+
+.apos-button--in-group
+{
+  padding: @apos-padding-1;
+  background-color: transparent;
+  border: none;
+  .apos-transition;
+  &:hover
+  {
+    background-color: @apos-light;
+    .apos-drop-shadow(0, 0, 0, 0);
+  }
+}
+
+.apos-button--circular
+{
+  line-height: 0;
+  i
+  {
+    position: absolute;
+    margin-left: 0px;
+    margin-left: 0.5px;
+    transform: translateX(-50%);
+    .apos-transition--bounce;
+  }
+  padding: 12px;
+  .apos-rounded(@apos-padding-3);
+}

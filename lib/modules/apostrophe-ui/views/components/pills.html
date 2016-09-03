@@ -1,0 +1,13 @@
+{% macro base(items, choice) -%}
+  <div class="apos-pill">
+    {%- for item in items -%}
+      {%- if not choice and item.default -%}
+        {{ buttons.base(item.label, { action: item.action, value: item.value }, 'apos-button--pill') }}
+      {%- elif item.value == choice -%}
+        {{ buttons.base(item.label, { action: item.action, value: item.value }, 'apos-button--pill') }}
+      {%- else -%}
+        {{ buttons.base(item.label, { action: item.action, value: item.value }, 'apos-button--pill apos-button--pill-inactive ') }}
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+{%- endmacro -%}

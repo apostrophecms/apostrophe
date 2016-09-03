@@ -1,0 +1,22 @@
+{# area needs its own copy of the widget options as #}
+{# JSON, for adding new widgets #}
+{%- set canEdit = data.area._edit and data.options.edit != false -%}
+{%- set isSingleton = data.options.limit == 1 and data.options.type -%}
+<div class="apos-area" data-apos-area{% if canEdit %} data-apos-area-edit{% if not data.options.virtual %} data-autosave{% endif %} data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data-doc-id="{{ data.area._docId }}" data-dot-path="{{ data.area._dotPath }}"{% endif %}>
+  {%- if canEdit -%}
+    {%- if isSingleton -%}
+      {% include "singletonControls.html" %}
+    {%- else -%}
+      {% include "areaControls.html" %}
+    {%- endif -%}
+    <div class="apos-area-widgets" data-apos-widgets>
+  {%- endif -%}
+  {%- for widget in data.area.items -%}
+    {%- set widgetOptions = data.options.widgets[widget.type] or {} -%}
+    {%- if not canEdit -%}
+      {%- set widgetOptions = apos.utils.merge(widgetOptions, { edit: false }) -%}
+    {%- endif -%}
+    {{ apos.areas.widget(widget, widgetOptions) }}
+  {%- endfor -%}
+  {%- if canEdit %}</div>{% endif -%}
+</div>

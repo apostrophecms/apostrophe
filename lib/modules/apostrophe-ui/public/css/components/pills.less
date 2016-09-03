@@ -1,0 +1,37 @@
+.apos-pill
+{
+  .apos-inline-block;
+  
+  .apos-button--pill
+  {
+    border: none;
+    background-color: @apos-light;
+    .apos-rounded(0);
+    
+    &:first-child
+    {
+      .apos-rounded;
+      .apos-rounded-left;      
+    }
+
+    &:last-child
+    {
+      .apos-rounded;
+      .apos-rounded-right;
+    }
+
+    &:hover
+    {
+      box-shadow: none;
+    }
+  }
+
+  .apos-button--pill-inactive
+  {
+    color: fade(@apos-dark, 30%);
+    &:hover
+    {
+      color: @apos-dark;
+    }
+  }
+}

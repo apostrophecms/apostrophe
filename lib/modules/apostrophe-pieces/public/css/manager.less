@@ -1,0 +1,81 @@
+.apos-manage-field {
+  font-weight: normal;
+  .apos-manage-sort-up, .apos-manage-sort-down {
+    &::before {
+      content: ' ';
+    }
+    text-decoration: none;
+  }
+  &.apos-manage-sort-current {
+    font-weight: bold;
+    background-color: gray;
+    a {
+      color: white;
+    }
+  }
+
+  // These rules are written this way so that the priority works
+  // the way we want it to.
+
+  // We show the arrow for the sort you WOULD GET if you clicked.
+  // The -sorts- classes indicate the default sort for this column
+  // and are useful if it is not the currently sorted column. The
+  // -sorting- classes indicate that this column is the active
+  // sort right now. Rules are ordered so that -sorting- wins. -Tom
+
+  &.apos-manage-sorts-up {
+    .apos-manage-sort-down {
+      display: none;
+    }
+    .apos-manage-sort-up {
+      display: inline;
+    }
+  }
+  &.apos-manage-sorts-down {
+    .apos-manage-sort-up {
+      display: none;
+    }
+    .apos-manage-sort-down {
+      display: inline;
+    }
+  }
+  &.apos-manage-sorting-up {
+    .apos-manage-sort-down {
+      display: inline;
+    }
+    .apos-manage-sort-up {
+      display: none;
+    }
+  }
+  &.apos-manage-sorting-down {
+    .apos-manage-sort-up {
+      display: inline;
+    }
+    .apos-manage-sort-down {
+      display: none;
+    }
+  }
+}
+
+.apos-ui .apos-choose-manage-views {
+  float: right;
+  padding: @apos-padding-2 @apos-padding-6;
+  font-size: 28px;
+  line-height: 38px;
+  color: @apos-dark;
+  a {
+    padding-right: 20px;
+    &:last-child {
+      padding-right: 0;
+    }
+    color: @apos-base;
+    &.apos-active {
+      color: @apos-dark;
+    }
+  }
+}
+
+.apos-ui .apos-table .apos-manage-link {
+  &.fa { .fa; }
+  color: @apos-primary;
+}

@@ -1,0 +1,10 @@
+{%- import "apostrophe-schemas:macros.html" as schemas -%}
+{%- import "apostrophe-ui:components/buttons.html" as buttons -%}
+
+
+{% macro video(field) %}
+  <input type="text" class="apos-field-input apos-field-input-text" name="{{ field.name }}" />
+  <div class="apos-video-player" data-apos-video-player></div>
+{% endmacro %}
+
+{{ schemas.fieldset(data, video) }}

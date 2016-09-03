@@ -1,0 +1,12 @@
+{% extends 'apostrophe-templates:layout.html' %}
+
+{% block title %}Not Found{% endblock %}
+
+{% block main %}
+<a href="{{ data.home._url }}">Home: {{ data.home.slug }}</a>
+
+{% for tab in data.home._children %}
+  <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
+{% endfor %}
+
+{% endblock %}

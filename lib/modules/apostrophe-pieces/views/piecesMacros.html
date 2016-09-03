@@ -1,0 +1,80 @@
+{# This macro must be imported 'with context' from a pieces module #}
+{# subclass. -Tom #}
+
+
+
+{# bring in modals #}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{# bring in ui components #}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
+{% import 'apostrophe-ui:components/pills.html' as pills with context %}
+{% import 'apostrophe-ui:components/fields.html' as fields with context %}
+
+
+{%- macro createControls() -%}
+  {{ dropdowns.base({
+    label: 'More',
+    items: [
+      {label: 'Copy', action: 'copy'},
+      {label: 'Trash', action: 'trash'}
+    ]}, 'button',
+    {
+      direction: 'down',
+      class: 'arrow-down'
+    }
+  ) }}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
+{% endmacro %}
+
+{%- macro editControls() -%}
+  {{ dropdowns.base({
+    label: 'More',
+    items: [
+      {label: 'Versions', action: 'versions'},
+      {label: 'Copy', action: 'copy'},
+      {label: 'Trash', action: 'trash'}
+    ]}, 'button',
+    {
+      direction: 'down',
+      class: 'arrow-down'
+    }
+  ) }}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
+
+{%- endmacro -%}
+
+{%- macro manageControls() -%}
+  {% if data.chooser %}
+    {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+    {# "New" is less ambiguous than "Add" when you're already *choosing* things. -Tom #}
+    {{ buttons.minor('New ' + data.options.label, { action: 'create-' + data.options.name }) }}
+    {{ buttons.major('Save Choices', { action: 'save' }) }}
+  {% else %}
+    {# Technically it's "just" a cancel button but it's actually the most frequent action #}
+    {# when you're just managing stuff. There is no risk of losing work. -Tom #}
+    {{ buttons.minor('Finished', { action: 'cancel' }) }}
+    {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
+  {% endif %}
+{%- endmacro -%}
+
+
+{%- macro filters(filters) -%}
+{#
+  Toggles
+
+  #}<div class="apos-modal-filters-toggles">
+    {%- for filter in filters.options -%}
+      {{ pills.base( module.filterChoicesToPillChoices(filter), filters.choices[filter.name] ) }}
+    {%- endfor -%}
+  </div>{#
+
+  Search
+
+  #}<div class="apos-modal-filters-search">
+    {# we need data.options.label & pluralLabel #}
+    {{ fields.string('search-' + data.options.name, 'Search ' + data.options.pluralLabel + '...', filters.q or '' ) }}
+  </div>
+{%- endmacro -%}

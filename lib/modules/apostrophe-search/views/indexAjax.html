@@ -1,0 +1,6 @@
+{% block main %}
+  {% for doc in data.docs %}
+    <h4>{% if doc._url %}<a href="{{ doc._url }}">{% endif %}{{ doc.title }}{% if doc._url %}</a>{% endif %}</h4>
+  {% endfor %}
+{% endblock %}
+

@@ -1,6 +1,21 @@
+test/public/modules/*
+test/public/css/master-*
 npm-debug.log
 *.DS_Store
+*.npmignore
 node_modules
-# We do not commit CSS, only LESS
-public/css/*.css
-test/public
+test/node_modules
+
+# We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
+*/public/css/*.css
+lib/modules/*/public/css/*.css
+lib/modules/apostrophe-assets/public/css/vendor/cropper.css
+lib/modules/apostrophe-assets/public/css/vendor/pikaday.css
+lib/modules/apostrophe-ui/public/css/vendor/font-awesome/font-awesome.css
+
+# Dont commit test generated css
+test/public/css/*.css
+test/public/css/master-*.less
+
+# Dont commit test uploads
+test/public/uploads

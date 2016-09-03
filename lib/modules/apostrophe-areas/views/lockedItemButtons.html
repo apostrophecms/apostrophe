@@ -1,0 +1,27 @@
+{# Part of a lockup, different set of options #}
+<div class="apos-ui" data-apos-area-locked-item-controls>
+  <div class="apos-ui-container apos-item-actions left">
+    <!-- <span class="apos-ui-btn-group"> -->
+      <span class="apos-ui apos-ui-btn" title="{{ __('Move') }}" data-drag-item><i class="icon-move"></i></span>
+    <!-- </span> -->
+    <span class="apos-ui-btn-group">
+      <span class="apos-ui apos-ui-btn" data-apos-move-item='up'><i class="icon-arrow-up"></i></span>{#
+    #}<span class="apos-ui apos-ui-btn" data-apos-move-item='down'><i class="icon-arrow-down"></i></span>
+    </span>
+  </div>
+  <div class="apos-ui-container apos-item-actions right">
+    <span class="apos-ui-btn-group">
+      <span class="apos-ui apos-ui-btn" title="{{ __('Edit') }}" data-edit-item><i class="icon-pencil"></i></span>{#
+      #}<span class="apos-ui-dropdown">{#
+        #}<span class="apos-ui-btn" data-content-menu-toggle=""><i class="icon-ellipsis-horizontal"></i></span>{#
+        #}<ul class="apos-editor2-content-menu-options apos-ui-menu apos-template" data-lockups-menu data-content-menu-options="">
+          <li class="apos-template apos-ui-menu-item" data-lockup-type><i></i></li>
+        </ul>{#
+      #}</span>
+      <!-- <span class="apos-ui-btn" ><i class="icon-move"></i></span> -->{#
+      #}<span class="apos-ui apos-ui-btn" title="{{ __('Delete Text') }}" data-trash-item><i class="icon-trash"></i></span>
+    </span>
+  </div>
+</div>
+
+{# template for lockups #}

@@ -1,0 +1,22 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{%- import "apostrophe-ui:components/buttons.html" as buttons with context -%}
+
+{%- block modalClass -%}
+  apos-crop-editor apos-ui-modal-no-sidebar
+{%- endblock -%}
+
+{%- block controls -%}
+    {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+    {{ buttons.major('Save Crop', { action: 'save' }) }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Crop Image') }}
+{%- endblock -%}
+
+{% block body %}
+  <img class="apos-crop-image" data-crop-image />{#
+#}{% endblock %}
+
+{% block footerContainer %}{% endblock %}

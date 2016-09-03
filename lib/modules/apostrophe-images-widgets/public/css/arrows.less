@@ -1,0 +1,46 @@
+.apos-area .apos-slideshow-button
+{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 40px;
+  height: 40px;
+  border-radius: 100%;
+
+  text-align: center;
+
+  &.default-style
+  {
+    border: 2px solid @apos-dark;
+  }
+
+  i
+  {
+    position: relative;
+    top: -2px;
+    left: -2px;
+    line-height: 40px;
+    font-size: 2em;
+    color: @apos-dark;
+    .apos-transition();
+  }
+
+  &.apos-slideshow-prev
+  {
+    left: 2.5%;
+  }
+
+  &.apos-slideshow-next
+  {
+    right: 2.5%;
+    i { left: 2px; }
+  }
+
+  &:hover.default-style
+  {
+    background-color: @apos-dark;
+    i { color: @apos-white; }
+  }
+  .apos-transition();
+}

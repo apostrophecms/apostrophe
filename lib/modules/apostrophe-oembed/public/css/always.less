@@ -1,0 +1,24 @@
+// Always fill the provided column, width-wise. apos.oembed.play will then
+// compute the height based on the aspect ratio in the oembed response
+
+.apos-video-player
+{
+  width: 100%;
+  iframe {
+    width: 100%;
+  }
+  &.apos-oembed-busy
+  {
+    margin: auto;
+    background-image: url('/modules/apostrophe-oembed/images/busy.gif');
+  }
+  &.apos-oembed-invalid
+  {
+    width: 100%;
+    text-align: center;
+    margin-top: 2em;
+    font-size: 24px;
+    color: red;
+  }
+}
+

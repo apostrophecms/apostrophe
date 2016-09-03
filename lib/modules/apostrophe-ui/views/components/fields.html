@@ -1,0 +1,24 @@
+{% macro string(name, placeholder, value) -%}
+  <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-text" type="text" value="{{value}}">
+{%- endmacro %}
+
+{% macro textarea(name, placeholder) -%}
+  <textarea name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-textarea"></textarea>
+{%- endmacro %}
+
+{% macro checkbox(name, placeholder) -%}
+  <label>
+    <input name="{{ name }}" placeholder="{{placeholder}}" class="apos-field-input apos-field-input-checkbox" type="checkbox">
+    <span class="apos-field-input-checkbox-indicator"></span>
+  </label>
+{%- endmacro %}
+
+{% macro select(name, options) -%}
+  <div class="apos-field-input-select-wrapper">
+    <select name="{{ name }}" class="apos-field-input apos-field-input-select">
+      {%- for option in options -%}
+        <option value="{{ option.value }}">{{ option.label }}</option>
+      {%- endfor -%}
+    </select>
+  </div>
+{%- endmacro %}

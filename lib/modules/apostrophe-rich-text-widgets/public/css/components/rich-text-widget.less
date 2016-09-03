@@ -1,0 +1,35 @@
+[data-apos-widget="apostrophe-rich-text"]
+{
+  // Specific positioning of widget controls for rich text widgets.
+  >.apos-ui
+  {
+    >.apos-area-widget-controls--context
+    {
+      top: 0;
+      transform: translateY(-50%);
+    }
+    >.apos-area-widget-controls--data
+    {
+      left: auto;
+      bottom: auto;
+      top: 0;
+      transform: translateY(-50%);
+      right: @apos-padding-1;
+    }
+  }
+  // When a rich text widget is active, we don't want to show any additional
+  // nested Apostrophe admin elements.
+  &.apos-active .apos-ui { display: none; }
+  // Rich texts have an empty state with a min-height and a background color.
+  &.apos-empty
+  {
+    min-height: 80px;
+    background-color: @apos-light;
+    .apos-area-widget-controls { opacity: 1; }
+  }
+  // A focus state for rich text widgets while editing.
+  >[data-rich-text]:focus
+  {
+    outline: @apos-green dashed 1px;
+  }
+}

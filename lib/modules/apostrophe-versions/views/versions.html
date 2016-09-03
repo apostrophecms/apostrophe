@@ -1,0 +1,46 @@
+{% extends "apostrophe-modal:base.html" %}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
+
+{%- block modalClass -%}
+  apos-versions-modal
+{%- endblock -%}
+
+{% block controls %}
+  <div class="apos-modal-controls">
+    {{ buttons.minor('Finished', { action: 'cancel' }) }}
+  </div>
+{% endblock %}
+
+{% block label %}
+{{ __('Versions') }}
+{% endblock %}
+
+{% block body %}
+<div class="apos-versions">
+  {# Loop over all versions and render changes in each one #}
+  {% for version in data.versions %}
+    <div class="apos-version" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
+      <div class="apos-author">
+        <div class="apos-avatar-wrapper">
+        </div>
+      </div>{#
+      #}<div class="apos-changes-meta">
+          <cite>{{ version.author }}</cite><span>made changes on </span>
+          <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4><br>
+          {%- if version._previous -%}
+            <h5 data-open-changes>See Changes</h5>
+          {%- endif -%}
+      </div>{#
+      #}{{ buttons.major('Revert', { action: 'revert', value: version._id })}}{#
+      #}<div class="apos-changes">
+        {% if version._previous -%}
+          {# JS populates me #}
+          <div data-changes></div>
+        {%- endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block footerContainer %}{% endblock %}

@@ -1,0 +1,96 @@
+.apos-rounded(@radius: 4px)
+{
+  -webkit-border-radius: @radius;
+  -moz-border-radius: @radius;
+  border-radius: @radius;
+}
+
+.apos-rounded-tl(@radius: 4px){ border-top-left-radius: @radius; }
+.apos-rounded-tr(@radius: 4px){ border-top-right-radius: @radius; }
+.apos-rounded-bl(@radius: 4px){ border-bottom-left-radius: @radius; }
+.apos-rounded-br(@radius: 4px){ border-bottom-right-radius: @radius; }
+
+.apos-rounded-left
+{
+  border-top-right-radius: 0px;
+  -webkit-border-top-right-radius: 0px;
+  -moz-border-top-left-radius: 0px;
+
+  border-bottom-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0px;
+  -moz-border-bottom-right-radius: 0px;
+}
+
+.apos-rounded-right
+{
+  border-top-left-radius: 0px;
+  -webkit-border-top-left-radius: 0px;
+  -moz-border-top-left-radius: 0px;
+
+  border-bottom-left-radius: 0px;
+  -webkit-border-bottom-left-radius: 0px;
+  -moz-border-bottom-left-radius: 0px;
+}
+
+.apos-button-border(@color: @apos-base)
+{
+  border: 2px solid @color;
+}
+
+.apos-drop-shadow(@x-axis: 0, @y-axis: 2px, @blur: 7px, @spread:2px, @color: fade(@apos-black, 23%))
+{
+  -webkit-box-shadow: @x-axis @y-axis @blur @spread @color;
+  -moz-box-shadow: @x-axis @y-axis @blur @spread @color;
+  box-shadow: @x-axis @y-axis @blur @spread @color;
+}
+
+.apos-glow(@color: @apos-base)
+{
+  .apos-drop-shadow(0px, 0px, 7px, 2px, fade(@color, 50%));
+}
+
+.apos-arrow-right
+{
+  &::after
+  {
+    .apos-transition;
+    position: relative;
+    .apos-inline-block(middle);
+    content: '';
+    transform: translateX(0);
+    margin-left: 10px;
+    border: 5px solid transparent;
+    border-left: 5px solid @apos-base;
+
+  }
+  &:hover::after
+  {
+    transform: translateX(3px);
+  }
+  &:active::after
+  {
+    transform: translateX(9px);
+  }
+}
+
+.apos-arrow-left
+{
+  &::before
+  {
+    .apos-inline-block(middle);
+    content: '';
+    margin-right: 10px;
+    border: 5px solid transparent;
+    border-right: 5px solid @apos-base;
+  }
+}
+
+.apos-scrollbar
+{
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb
+  { 
+    background: @apos-base; 
+    // border-radius: 3px;
+  }
+}

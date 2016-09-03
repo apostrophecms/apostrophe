@@ -1,0 +1,18 @@
+{%- import "apostrophe-ui:components/fields.html" as fields -%}
+{% for piece in data.pieces %}
+  <tr data-piece="{{ piece._id }}">
+    <td>{{fields.checkbox(data.options.name + '-select')}}</td>
+    {% for column in data.columns %}
+      <td class="apos-manage-{{ data.options.name | css }}-{{ column.name | css }}">
+        {% set verb = 'rescue' if piece.trash else 'edit' %}
+        <span><a href="#" data-apos-{{ verb }}-{{ data.options.name | css }}="{{ piece._id }}">
+          {%- if column.partial -%}
+            {{ column.partial(piece[column.name]) }}
+          {%- else -%}
+            {{ piece[column.name] }}
+          {%- endif -%}
+        </a></span>
+      </td>
+    {% endfor %}
+  </tr>
+{% endfor %}

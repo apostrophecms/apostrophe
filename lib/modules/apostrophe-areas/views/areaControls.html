@@ -1,0 +1,19 @@
+<div class="apos-ui" data-apos-area-controls data-apos-area-controls-original>
+  <div class="apos-area-controls">
+    <div class="apos-dropdown apos-dropdown--area-controls apos-dropdown--down" data-apos-dropdown="{{ direction }}">
+      <div class="apos-button apos-button--major apos-button--circular apos-button--in-context" data-apos-add-content>
+        <i class="fa fa-plus"></i>
+      </div>
+      <ul class="apos-dropdown-items" data-apos-dropdown-items>
+        {%- for name, options in data.options.widgets -%}
+          {%- if data.widgetManagers[name] -%}
+            <li class="apos-dropdown-item" data-apos-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
+          {%- else -%}
+            {{ apos.log("Your area contains a widget of type " + name + " but there is no manager for that type. Maybe you forgot to configure the " + name + "-widgets module?") }}
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+    <div class="apos-area-divider"></div>
+  </div>
+</div>

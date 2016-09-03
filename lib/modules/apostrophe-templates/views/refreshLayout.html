@@ -1,0 +1,8 @@
+{% block beforeMain %}{% endblock %}
+{% block main %}{% endblock %}
+{% block afterMain %}{% endblock %}
+<script type="text/javascript">
+  {# globalCalls already will have happened at initial page load, but we should #}
+  {# make the request-specific calls #}
+  {{ data.js.reqCalls }}
+</script>

@@ -1,0 +1,33 @@
+{% macro radioTableHeader(choices) %}
+  <td></td>
+  {%- for choice in choices -%}
+    <td>{{ choice.label }}</td>
+  {%- endfor -%}
+{% endmacro %}
+
+{% macro radioTableRows(rows, choices) %}
+  {%- for row in rows -%}
+    <tr>
+      <th>{{ row.label}}</th>
+      {%- for choice in choices -%}
+        <td><input type="radio" name="{{ data.name }}[{{ row.name }}]" value="{{ choice.value }}"/></td>
+      {%- endfor -%}
+    </tr>
+  {%- endfor -%}
+{% endmacro %}
+
+
+<fieldset class="apos-fieldset apos-fieldset-radio-table apos-fieldset-{{ data.name | css }}" data-name="{{ data.name }}">
+  <label>{{ data.label }}</label>
+  {# Text entry for autocompleting the next item #}
+  {# { label: 'Admin', value: 'admin'}
+  { name:'blog', label: 'Blog' } #}
+  <table>
+    <thead>
+      <tr>
+        {{ radioTableHeader(data.choices) }}
+      </tr>
+    </thead>
+    {{ radioTableRows(data.rows, data.choices) }}
+  </table>
+</fieldset>

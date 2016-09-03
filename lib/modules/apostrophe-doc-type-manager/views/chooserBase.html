@@ -1,0 +1,11 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
+{% if data.browse %}
+  {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
+{% endif %}
+{# Existing selections #}
+<div data-choices>
+  {# AJAX populates me #}
+</div>
+{% if data.autocomplete %}
+  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" data-autocomplete />
+{% endif %}

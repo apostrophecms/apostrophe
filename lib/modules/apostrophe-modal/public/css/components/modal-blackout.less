@@ -1,0 +1,39 @@
+// ===============================================================
+//    Apostrophe Modal-Blackout
+//
+//    -  Opaque overlay which appears in between page and modals
+//
+// ===============================================================
+
+
+// Variables  ===================================
+@apos-z-index-blackout: @apos-z-index-5;
+
+
+// Base Class ===================================
+.apos-modal-blackout
+{
+	position: fixed;
+
+	top: 0;
+	bottom:	0;
+	left: 0;
+	right: 0;
+
+	z-index: @apos-z-index-blackout;
+
+	background-color: rgba(0, 0, 0, 0.5);
+	opacity: 1;
+
+	&.apos-modal-blackout-fade
+	{
+		opacity: 0;
+	}
+	.apos-transition(opacity, @apos-modal-timing, @apos-modal-transition-curve);
+}
+
+body.apos-active-blackout
+{
+	overflow: hidden;
+	width: 100%;
+}

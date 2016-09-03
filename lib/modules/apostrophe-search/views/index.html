@@ -1,0 +1,28 @@
+{% extends data.outerLayout %}
+{% block title %}{{ data.page.title }}{% endblock %}
+
+{% block main %}
+  <form data-apos-search-page-form method="GET" action="{{ data.url | e }}#main">
+    {% if data.filters %}
+      <div class="ld-meta">Filter Results By Type</div>
+      <ul>
+        {% for filter in data.filters %}
+          <li>
+            <input data-apos-search-filter type="checkbox" name="{{ filter.name | e }}"
+              {% if filter.value %}checked{% endif %}
+              value="1"
+            />{{ filter.label | e }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <div class="ld-meta">New Search</div>
+    <input type="search" data-apos-search-field value="{{ data.query.q | e }}" name="q" />
+    <input type="submit" value="Search" />
+  </form>
+  {% for doc in data.docs %}
+    <h4>{% if doc._url %}<a href="{{ doc._url }}">{% endif %}{{ doc.title }}{% if doc._url %}</a>{% endif %}</h4>
+  {% endfor %}
+  {% include "pager.html" %}
+{% endblock %}
+

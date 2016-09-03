@@ -1,0 +1,59 @@
+.apos-ui
+{
+  .apos-manage-tag-add-wrapper
+  {
+    position: relative;
+  }
+  .apos-manage-tag-add
+  {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    padding: @apos-padding-2;
+    text-decoration: none;
+    .apos-transition;
+    color: @apos-primary;
+    &:hover { color: darken(@apos-primary, 10%); }
+  }
+}
+.apos-manage-tags-view
+{
+  .apos-manage-tags
+  {
+    margin: 0 auto;
+    width: 50%;
+    min-width: 400px;
+    min-height: 100%;
+    background-color: @apos-white;
+  }
+  .apos-manage-tag { position: relative; }
+  .apos-manage-tag-label .apos-field-input:disabled
+  {
+    background-color: transparent;
+    padding: @apos-padding-1 @apos-padding-2;
+  }
+  .apos-manage-tag-controls
+  {
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    right: 0;
+  }
+  .apos-manage-tag-control
+  {
+    padding: @apos-padding-1;
+    text-decoration: none;
+    color: @apos-mid;
+    .apos-transition;
+  }
+  .apos-manage-tag-control--rename, .apos-manage-tag-control--edit
+  {
+    &:hover { color: @apos-primary; }
+  }
+  .apos-manage-tag-control--delete:hover { color: @apos-delete; }
+  .apos-manage-tag .apos-manage-tag-control--rename { display: none; }
+  .apos-manage-tag.apos-active .apos-manage-tag-control--rename { display: inline-block; }
+  .apos-manage-tag.apos-active .apos-manage-tag-control--edit { display: none; }
+
+}

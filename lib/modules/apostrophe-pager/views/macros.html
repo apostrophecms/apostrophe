@@ -1,0 +1,49 @@
+{# Output an easily styled classic pager, if needed #}
+{# ACHTUNG: the math was done pretty carefully to accommodate 5 links in the pager. #}
+{# If you want more you'll have to hunt down the right changes. This would be easier #}
+{# if 'let' statements really worked in nunjucks. TODO: when they update nunjucks, #}
+{# rework this. Also note apos.pager.pageRange which is only necessary because range() seems #}
+{# busted in this release of nunjucks #}
+
+{% macro render(options, url) %}
+  <div class="apos-ui">
+    {% if ((options.page > 1) or (options.total > 1)) %}
+      <div class="apos-pager">
+        {{ pagerPage(1, options, url) }}
+        {% if options.page > 4 %}
+          <span class="apos-pager-gap">&hellip;</span>
+        {% endif %}
+
+        {% for page in apos.pager.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
+          {{ pagerPageInner(page, options, url) }}
+        {% endfor %}
+
+        {% if options.page < (options.total - 3) %}
+          <span class="apos-pager-gap">&hellip;</span>
+        {% endif %}
+        {{ pagerPage(options.total, options, url) }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro pagerPageInner(page, options, url) %}
+  {% if ((page > 1) and (page < options.total)) %}
+    {{ pagerPage(page, options, url) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro pagerPage(page, options, url) %}
+  {% if (page <= options.total) %}
+    <span class="apos-pager-number{% if page == 1 %} apos-first{% endif %}{% if page == options.total %} apos-last{% endif %}{% if page == options.page %} apos-active{% endif %}">
+      {%- if (options.page != page) -%}
+        {# Dual markup for javascript applicatons and plain old links #}
+        <a data-apos-page="{{ page }}" href="{{ url | build({ page: page }) }}">
+      {%- endif -%}
+      {{ page }}
+      {%- if (options.page != page) -%}
+        </a>
+      {%- endif -%}
+    </span>
+  {% endif %}
+{% endmacro %}

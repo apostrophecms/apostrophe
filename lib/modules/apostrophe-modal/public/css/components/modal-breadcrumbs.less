@@ -1,0 +1,30 @@
+.apos-ui.apos-modal
+.apos-modal-breadcrumb
+{
+	width: 100%;
+	padding: 10px @apos-padding-8;
+
+	background-color: @apos-light;
+	list-style: none;
+
+
+	.apos-modal-breadcrumb-item
+	{
+		position: relative;
+		.apos-inline-block(top);
+
+		line-height: 27px;
+		border-bottom: 1px dashed @apos-green;
+		margin-right: @apos-margin-3;
+		cursor: pointer;
+
+		&:not(:last-child):after
+		{
+			position: absolute;
+			top: 6px;
+			right: -20px;
+			.fa;
+			content: "\f0da";
+		}
+	}
+}

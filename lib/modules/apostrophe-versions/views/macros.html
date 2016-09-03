@@ -1,0 +1,29 @@
+{% macro renderChanges(changes) %}
+  {% if changes and changes.length %}
+    <div class="apos-changes {% if change.changes.length > 1 %}apos-multiple-changes{% endif %}">
+      {% for change in changes %}
+        {{ renderChange(change) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro renderChange(change) %}
+  <div class="apos-change apos-change-action-{{ change.action }}">
+    {# Render a change and its sub-changes recursively #}
+    {% if change.text %}
+      <h5 data-change-text>{{ change.text }}</h5>
+    {% else %}
+      <h5>
+        {% if change.field %}
+          {{ change.field.label }}
+        {% elif change.manager %}
+          {{ change.manager.label }}
+        {% endif %}
+        {% if change.changes.length %}:{% endif %}
+      </h5>
+    {% endif %}
+    {{ renderChanges(change.changes) }}
+  </div>
+{% endmacro %}
+
