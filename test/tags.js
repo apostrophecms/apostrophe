@@ -22,7 +22,11 @@ describe('Tags', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7946
+          port: 7946,
+          csrf: {
+            // We're not here to test CSRF, so make the test simpler
+            exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
+          }
         }
       },
       afterInit: function(callback) {
@@ -105,7 +109,11 @@ describe('Tags', function() {
   });
 
   it('should provide an api route for autocomplete', function(done){
-    return request('http://localhost:7946/modules/apostrophe-tags/autocomplete?term=ag', function(err, response, body) {
+    return request({
+      url: 'http://localhost:7946/modules/apostrophe-tags/autocomplete',
+      method: 'POST',
+      form: { term: 'ag' },
+    }, function(err, response, body) {
       assert(!err);
       assert(body);
       body = JSON.parse(body);
@@ -120,16 +128,20 @@ describe('Tags', function() {
     });
   });
 
-  it('should provide an option to search by prefix in the autocomplete route', function(done){
-    return request('http://localhost:7946/modules/apostrophe-tags/autocomplete?term=ag&prefix=true', function(err, response, body) {
+  it('should provide an api route for autocomplete', function(done){
+    return request({
+      url: 'http://localhost:7946/modules/apostrophe-tags/autocomplete',
+      method: 'POST',
+      form: { term: 'ag', prefix: true },
+    }, function(err, response, body) {
       assert(!err);
       assert(body);
-
       body = JSON.parse(body);
+      assert(Array.isArray(body));
 
-      //make sure we don't have any results that didn't match our term.
+      // make sure we don't have any results that didn't match our term.
       _.each(body, function(item) {
-        assert(!item.value.match(/tag/));
+        assert(item.value !== 'pizza');
       });
 
       done();

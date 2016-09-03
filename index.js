@@ -1,25 +1,3 @@
-// An interesting tactic for finding rogue
-// console.error calls
-// var superError = console.error;
-// console.error = function(s) {
-//   if (s && s.chain) {
-//     console.error = superError;
-//     console.trace();
-//     process.exit(1);
-//   }
-//   superError.call(console, s);
-// }
-
-// var superLog = console.log;
-// console.log = function(s) {
-//   if (s && s.match && s.match(/public\/uploads/)) {
-//     console.log = superLog;
-//     console.trace();
-//     process.exit(1);
-//   }
-//   return superLog(s);
-// };
-
 var path = require('path');
 var _ = require('lodash');
 var argv = require('yargs').argv;
