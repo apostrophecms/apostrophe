@@ -1,0 +1,11 @@
+{# A pill button with several mutually exclusive choices (a nicer radio button basically). This is not a complete fieldset, see formPill. Often used to build filters, several on a line #}
+
+{# Sometimes a pill button group is useful without a fieldset #}
+{# Designed to be plumbed with javascript, note the data attributes #}
+{%- macro formPillStandalone(name, options) -%}
+  <span class="apos-pill" data-pill data-name="{{ name }}">
+    {%- for pill in options -%}
+      <a class="apos-pill-choice {% if loop.first %}apos-first{% endif %}{% if loop.last %}apos-last{% endif %}" href="#" data-choice="{{ pill.value }}">{{ __(pill.label) }}</a>
+    {%- endfor -%}
+  </span>
+{%- endmacro -%}

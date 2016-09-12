@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "0.5.313",
+  "version": "0.5.385",
   "description": "Apostrophe is a user-friendly content management system. You'll need more than this core module. See apostrophenow.org to get started.",
   "main": "./lib/apostrophe.js",
   "dependencies": {
@@ -12,9 +12,10 @@
     "clone": "~0.1.11",
     "deep-get-set": "^0.1.1",
     "diff": "~1.0.4",
+    "encodeurl": "^1.0.1",
     "express": "~3.0.5",
     "extend": "~1.1.3",
-    "find-the-fat": "^0.1.1",
+    "find-big-objects": "^0.1.3",
     "glob": "^4.2.1",
     "hash_file": "0.0.8",
     "he": "~0.4.1",
@@ -42,8 +43,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "sh scripts/prepublish.sh"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

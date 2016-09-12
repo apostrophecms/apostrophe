@@ -1,0 +1,6 @@
+{%- macro formText(name, label, options = {}) -%}
+  <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    <input name="{{ name | e }}" type="text" {% if options.limit %}maxlength="{{ options.limit }}" {% endif %}>
+  </fieldset>
+{%- endmacro -%}

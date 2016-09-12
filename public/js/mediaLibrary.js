@@ -272,7 +272,6 @@ function AposMediaLibrary(options) {
     if (self.$edit) {
       self.$edit.remove();
     }
-    self.moveToScrollTop(self.$normal);
     self.$normal.show();
 
     if (item.group === 'images') {
@@ -322,6 +321,8 @@ function AposMediaLibrary(options) {
       self.$show.find('[data-rescue]').hide();
       self.$show.find('[data-edit]').hide();
     }
+    // Do this last so the image height can be considered
+    self.moveToScrollTop(self.$normal);
   };
 
   self.editItem = function(item) {
@@ -505,16 +506,47 @@ function AposMediaLibrary(options) {
     };
   };
 
+  // Shift the given element to appear at scroll top. In theory what
+  // we want is just position: fixed for the show pane, so the current item
+  // is always onscreen. In reality, the current item can be taller than
+  // the screen. So when an item is clicked in the index view, we move
+  // the show pane to be visible as of that moment, and then allow the user
+  // to scroll freely to see all of it, until the next item is clicked. -Tom
+
   self.moveToScrollTop = function($el) {
-    var offset = $el.offset();
-    var scrollTop = $(document).scrollTop();
-    var showTop = self.$show.offset().top;
-    if (scrollTop > (showTop + 20)) {
-      offset.top = scrollTop + 20;
-    } else {
-      offset.top = showTop;
-    }
-    $el.offset(offset);
+
+    $el.imagesReady(function() {
+      var indexOffset = self.$index.offset();
+      var indexHeight = self.$index.height();
+
+      var offset = $el.offset();
+      var scrollTop = $(document).scrollTop();
+      var showTop = self.$show.offset().top;
+
+      if (scrollTop > (showTop + 20)) {
+        offset.top = scrollTop + 20;
+      } else {
+        offset.top = showTop;
+      }
+
+      $el.offset(offset);
+
+      // A shim at the bottom of the modal to ensure it is tall enough
+      // to accommodate the item being moved to scroll top. -Tom
+      var $shim = self.$el.find('[data-expand-shim]');
+      if (!$shim.length) {
+        $shim = $('<div data-expand-shim></div>');
+        self.$el.append($shim);
+      }
+
+      var height = $el.height();
+      var overrun = (offset.top + height) - (indexOffset.top + indexHeight);
+      if (overrun < 0) {
+        overrun = 0;
+      }
+      $shim.height(overrun);
+      $shim.css('clear', 'both');
+    });
   };
 
   self.getImagePath = function(image, size) {

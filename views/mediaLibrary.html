@@ -47,14 +47,15 @@
         </fieldset>
       {% endif %}
 
-
     {% if browseByTag %}
+      {% set tagPlaceHolder = placeHolderTag or 'All Tags' %}
+      {% set tagLabel = labelTag or 'Tagged' %}
       <fieldset class="apos-fieldset apos-fieldset-float apos-fieldset-text apos-fieldset-select apos-fieldset-selectize">
-        <label>{{ __('Tagged') }}:</label>
+        <label>{{ __(tagLabel) }}:</label>
         <div class="apos-select-wrapper apos-inline-input">
           {{ formSelectStandalone('tag',
             [
-              { label: 'All Tags', value: '' }
+              { label: tagPlaceHolder, value: '' }
             ],
             {},
             { plain: true }

@@ -1,0 +1,8 @@
+{%- macro formMultiSelect(name, label, choices) -%}
+  <fieldset class="apos-fieldset apos-fieldset-selectize select-multiple apos-fieldset-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+      <div class="apos-select-wrapper apos-inline-input">
+      {{ formSelectStandalone(name, choices, {select: 'multiple'}) }}
+    </div>
+  </fieldset>
+{%- endmacro -%}

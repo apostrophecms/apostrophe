@@ -3,6 +3,16 @@
 // These are not restricted to logged-in users, they do get used in
 // other situations
 
+// Z-INDEX GUIDE
+// 899: last z-index available for page content and in-flow editing controls
+// 900: out-of-flow controls such as the page settings gear and the admin bar only
+// 901: modal blackout
+// 902: modals
+// 950: dropdown (including the toggle which is its parent), however
+//   this is a descendant element so it doesn't ordinarily conflict
+//   with the z-index of modals
+// 951: selectize dropdown (must beat "Add Content" and the like)
+
 .apos-modal .apos-modal-body
 {
   // max-height: 450px;
@@ -254,8 +264,8 @@
   position: fixed;
   top: 0px;
   left: 0px;
-  // Just below first modal, do not use >= 899 for other things please
-  z-index: 899;
+  // Just below first modal
+  z-index: 901;
 }
 
 .apos-modal
@@ -265,8 +275,8 @@
   width: 800px;
   background-color: #ddd;
   opacity: 1.0;
-  // Do not use >= 899 for other things please
-  z-index: 900;
+  // just above modal blackout, stacking with other modals
+  z-index: 902;
   // padding: 10px;
   // * {.apos-montserrat; color: @apos-grey;}
   strong {.apos-montserrat-bold;}

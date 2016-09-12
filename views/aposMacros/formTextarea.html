@@ -1,0 +1,7 @@
+{%- macro formTextarea(name, label) -%}
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    <textarea name="{{ name | e }}" rows="4"></textarea>
+    <div class="apos-error-max">{{ __('Too long.') }}</div>
+  </fieldset>
+{%- endmacro -%}

@@ -1,0 +1,9 @@
+{# See enableArea in snippets' main.js for the necessary plumbing #}
+{# (TODO: factor that out to content.js or editor.js) #}
+{%- macro formArea(name, label) -%}
+  <fieldset class="apos-fieldset apos-fieldset-editor apos-fieldset-{{ name | css }}" data-editable data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    {# js adds this area to the dialog #}
+    <div data-{{ name }}-edit-view></div>
+  </fieldset>
+{%- endmacro -%}

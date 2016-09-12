@@ -121,8 +121,8 @@
           (options.success || function(data) {
             var $items = $.parseHTML(data);
             $el.append($items);
-            $el.data('page', page);
           })(data);
+          $el.data('page', page);
           stop();
           $el.trigger('aposScrollLoaded');
         },

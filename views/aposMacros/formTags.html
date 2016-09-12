@@ -1,0 +1,32 @@
+{%- macro formTags(name, label, options) -%}
+  {%- if options.inline -%}
+    <div class="apos-inline-tags" data-name="{{ name }}" data-selective>
+  {%- else -%}
+    <fieldset class="apos-fieldset apos-fieldset-text apos-fieldset-{{ name | css}}" data-name="{{ name }}" data-selective>
+      <label>{{ __(label) | e }}</label>
+  {%- endif -%}
+    <div class="apos-inline-input">
+      {# Text entry for autocompleting the next item #}
+      <input type="text" name="{{ name | e }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="autocomplete" />
+      <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+      <span class="apos-ui-container apos-ui-inline-btn" data-add>
+        <a href="#" class="apos-ui-btn"><i class="icon icon-plus"></i> Add</a>
+      </span>
+
+      <ul data-list class="apos-tag-list">
+        <li data-item class="apos-ui-container">
+          <span class="label-and-remove apos-ui-btn apos-ui--dark">
+            <a href="#" class="apos-tag-remove icon-remove" data-remove></a>
+            <span data-label>{{ __('Example label') }}</span>
+            {# Link to remove this choice #}
+          </span>
+        </li>
+      </ul>
+    </div>
+
+  {%- if options.inline -%}
+    </div>
+  {%- else -%}
+    </fieldset>
+  {%- endif -%}
+{%- endmacro -%}

@@ -237,11 +237,12 @@ function AposSlideshowWidgetEditor(options)
      reflect();
     });
 
-    // on Edit button click, reveal extra fields
+    // on Edit button click, reveal extra fields... without breaking toggle
     self.$el.on('click', '[data-extra-fields-edit]', function(){
-      self.$el.find('[data-item]').removeClass('apos-slideshow-reveal-extra-fields');
       var $button = $(this);
-      $button.closest('[data-item]').toggleClass('apos-slideshow-reveal-extra-fields');
+      var $ours = $button.closest('[data-item]');
+      $ours.toggleClass('apos-slideshow-reveal-extra-fields');
+      self.$el.find('[data-item]').not($ours).removeClass('apos-slideshow-reveal-extra-fields');
       return false;
     });
 

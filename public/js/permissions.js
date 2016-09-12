@@ -18,7 +18,7 @@ apos.permissions = {};
     // Non-admin users can't manipulate edit permissions.
     // (Hackers could try, but the server ignores anything submitted.)
 
-    if (!apos.data.permissions.admin) {
+    if (!(apos.data.permissions.admin || options.editorsCanChangeEditPermissions)) {
       $el.find('[data-edit-permissions-container]').hide();
     }
 

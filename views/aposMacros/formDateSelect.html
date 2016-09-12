@@ -1,0 +1,9 @@
+{# Alternate version with select elements #}
+{%- macro formDateSelect(name, label, yearsFrom, yearsTo) -%}
+  <fieldset class="apos-fieldset apos-fieldset-selectize apos-fieldset-date-select apos-fieldset-{{ name | css }}" data-name="{{ name }}">
+    <label>{{ __(label) | e }}</label>
+    {{ formDateSelectComponent('month', aposMonthChoices()) }}
+    {{ formDateSelectComponent('day', aposDayChoices()) }}
+    {{ formDateSelectComponent('year', aposYearChoices(yearsFrom, yearsTo)) }}
+  </fieldset>
+{%- endmacro -%}
