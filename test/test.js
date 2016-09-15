@@ -17,54 +17,54 @@ describe('Modules', function(){
   // Removes some non-determinism of tasks timing out when running on travis
   this.timeout(5000);
 
-  // require('./base-module.js');
+  require('./base-module.js');
 
-  // require('./utils.js');
+  require('./utils.js');
 
-  // require('./urls.js');
+  require('./urls.js');
 
-  // require('./db.js');
+  require('./db.js');
 
-  // require('./caches.js');
+  require('./caches.js');
 
-  // require('./express.js');
+  require('./express.js');
 
-  // require('./templates.js');
+  require('./templates.js');
 
-  // require('./launder.js');
+  require('./launder.js');
 
-  // require('./permissions.js');
+  require('./permissions.js');
 
   require('./areas.js');
 
-  // require('./attachments.js');
+  require('./attachments.js');
 
-  // require('./schemas.js');
+  require('./schemas.js');
 
-  // require('./docs.js');
+  require('./docs.js');
 
-  // require('./pages.js');
+  require('./pages.js');
 
-  // require('./custom-pages.js');
+  require('./custom-pages.js');
 
-  // require('./pieces.js');
+  require('./pieces.js');
 
-  // require('./pieces-pages.js');
+  require('./pieces-pages.js');
 
-  // require('./pieces-widgets.js');
+  require('./pieces-widgets.js');
 
-  // require('./search.js');
+  require('./search.js');
 
-  // require('./tags.js');
+  require('./tags.js');
 
-  // require('./users.js');
+  require('./users.js');
 
-  // require('./login.js');
+  require('./login.js');
 
-  // require('./versions.js');
+  require('./versions.js');
 
-  // require('./images.js');
+  require('./images.js');
 
-  // require('./oembed.js');
+  require('./oembed.js');
 
 });
