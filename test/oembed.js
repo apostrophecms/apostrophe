@@ -6,7 +6,7 @@ var request = require('request');
 var qs = require('qs');
 var apos;
 
-describe('Login', function() {
+describe('Oembed', function() {
 
   this.timeout(5000);
 
