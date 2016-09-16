@@ -35,6 +35,8 @@ describe('Modules', function(){
 
   require('./permissions.js');
 
+  require('./areas.js');
+
   require('./attachments.js');
 
   require('./schemas.js');
