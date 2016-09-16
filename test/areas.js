@@ -96,4 +96,59 @@ describe('Areas', function() {
     }, { wrapper: 'div'}) === '<div><h2>So cool</h2></div><div><h2>Something else cool</h2></div>');
   });
 
+  it('returns the plaintext of an area via the plaintext method', function() {
+    assert.strictEqual(apos.areas.plaintext({
+      type: 'area',
+      items: [
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>So cool</h2>'
+        },
+        {
+          type: 'something-else',
+          content: '<h3>Do not return me</h3>'
+        },
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>Something else cool</h2>'
+        }
+      ]
+    }), 'So cool\nSomething else cool');
+    console.log('hmm:');
+    console.log(apos.areas.plaintext({
+      type: 'area',
+      items: [
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>So cool</h2>'
+        },
+        {
+          type: 'something-else',
+          content: '<h3>Do not return me</h3>'
+        },
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>Something else cool</h2>'
+        }
+      ]
+    }, { limit: 15 }));
+    assert.strictEqual(apos.areas.plaintext({
+      type: 'area',
+      items: [
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>So cool</h2>'
+        },
+        {
+          type: 'something-else',
+          content: '<h3>Do not return me</h3>'
+        },
+        {
+          type: 'apostrophe-rich-text',
+          content: '<h2>Something else cool</h2>'
+        }
+      ]
+    }, { limit: 15 }), 'So cool...');
+  });
+
 });
