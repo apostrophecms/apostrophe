@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1
+
+Full Windows compatibility restored. The "recursively copy asset folders if on Windows" behavior from 0.5 was reimplemented. This is necessary to allow Apostrophe to run as a non-administrator on Windows. Running as administrator is the moral equivalent of running as root on Linux, which we would never recommend.
+
+Since Apostrophe did not function previously on Windows and there is no behavior change on Mac/Linux this is effectively a bug fix rather than a new feature, thus 2.1.1.
+
 ## 2.1.0
 
 * Introduced the new `apos.areas.richText` and `apos.areas.plaintext` methods, which are also available in templates by the same names.
