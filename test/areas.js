@@ -114,8 +114,6 @@ describe('Areas', function() {
         }
       ]
     }), 'So cool\nSomething else cool');
-    console.log('hmm:');
-    console.log(apos.areas.plaintext({
       type: 'area',
       items: [
         {

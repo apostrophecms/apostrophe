@@ -67,4 +67,6 @@ describe('Modules', function(){
 
   require('./oembed.js');
 
+  require('./admin-bar.js');
+
 });
