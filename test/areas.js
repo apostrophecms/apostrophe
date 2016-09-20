@@ -114,22 +114,6 @@ describe('Areas', function() {
         }
       ]
     }), 'So cool\nSomething else cool');
-      type: 'area',
-      items: [
-        {
-          type: 'apostrophe-rich-text',
-          content: '<h2>So cool</h2>'
-        },
-        {
-          type: 'something-else',
-          content: '<h3>Do not return me</h3>'
-        },
-        {
-          type: 'apostrophe-rich-text',
-          content: '<h2>Something else cool</h2>'
-        }
-      ]
-    }, { limit: 15 }));
     assert.strictEqual(apos.areas.plaintext({
       type: 'area',
       items: [

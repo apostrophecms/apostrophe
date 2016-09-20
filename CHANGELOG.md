@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.3
+
+* A typo in the unit tests caused unit tests to fail. This has been fixed.
+* The recent addition of the HTML5 doctype caused the login page to be invisible in the sandbox project (not the boilerplate project). This has been fixed.
+* The recent addition of the HTML5 doctype caused the admin bar to appear with a slight visual defect. This has been fixed.
+
+All tests passing.
+
 ## 2.1.2
 
 Fix for [#668](https://github.com/punkave/apostrophe/issues/668), crash occurring when admin bar group leader starts out too close to the end of the admin bar items array.
