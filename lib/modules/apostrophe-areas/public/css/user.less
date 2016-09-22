@@ -45,8 +45,8 @@
 
 .apos-area-widget {
   >.apos-ui .apos-area-widget-controls { opacity: 0; }
-  &:hover>.apos-ui .apos-area-widget-controls { opacity: @apos-translucent-opacity; }
-  >.apos-ui .apos-area-widget-controls:hover { opacity: 1; }
+  // &:hover>.apos-ui .apos-area-widget-controls { opacity: @apos-translucent-opacity; }
+  >.apos-ui .apos-area-widget-controls:hover { opacity: 1 !important; }
   // When an area has a limit of one, its children widgets shouldn't
   // display the arrow organization controls.
   >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
@@ -64,6 +64,7 @@
 {
   top: @apos-padding-1;
   left: @apos-padding-1;
+  // padding: @apos-padding-2 !important;
 }
 .apos-area-widget-controls--data
 {

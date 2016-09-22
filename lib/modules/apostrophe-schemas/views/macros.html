@@ -4,7 +4,7 @@
   {%- set groups = apos.schemas.toGroups(fields) -%}
   <div data-apos-form class="apos-schema{% if groups.length > 1 %} apos-schema--with-tabs{% endif %}">
     {%- if options.tabs != false -%}
-      <div class="apos-schema-tabs">
+      <div class="apos-schema-tabs" data-schema-tabs>
         {%- if groups.length > 1 -%}
           {%- for group in groups -%}
             {%- if group.fields.length -%}
