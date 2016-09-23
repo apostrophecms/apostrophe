@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.4
+
+* Previously chosen items that now reside in the trash no longer break the chooser for editing joins
+* All joins editable; certain edge cases weren't getting blessed
+* A field appears properly when two diferent choices list it for `showFields`
+* As in 0.5, a required field hidden by `showFields` is not required (but will be if you elect the choice that shows it)
+
 ## 2.1.3
 
 * A typo in the unit tests caused unit tests to fail. This has been fixed.
