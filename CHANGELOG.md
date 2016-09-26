@@ -1,12 +1,21 @@
 # Changelog
 
+## 2.1.4
+
+All tests passing.
+
+* Previously chosen items that now reside in the trash no longer break the chooser for editing joins
+* All joins editable; certain edge cases weren't getting blessed
+* A field appears properly when two diferent choices list it for `showFields`
+* As in 0.5, a required field hidden by `showFields` is not required (but will be if you elect the choice that shows it)
+
 ## 2.1.3
+
+All tests passing.
 
 * A typo in the unit tests caused unit tests to fail. This has been fixed.
 * The recent addition of the HTML5 doctype caused the login page to be invisible in the sandbox project (not the boilerplate project). This has been fixed.
 * The recent addition of the HTML5 doctype caused the admin bar to appear with a slight visual defect. This has been fixed.
-
-All tests passing.
 
 ## 2.1.2
 
