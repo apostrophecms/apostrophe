@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.5
+
+All tests passing.
+
+* Admin bar: previously grouped fields can be re-grouped successfully, so concatenating admin bar configuration works just as well as concatenating `addFields` arrays
+* Files widget displays upload button in the same user-friendly position as the images widget
+* Font size for tabs and help labels is explicit to avoid side effects from project-level CSS
+
 ## 2.1.4
 
 All tests passing.
