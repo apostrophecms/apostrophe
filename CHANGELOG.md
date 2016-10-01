@@ -59,3 +59,4 @@ Inaugural npm release of Apostrophe 2.x, which was used prior to that in many pr
 
 
 
+>>>>>>> master
