@@ -35,6 +35,8 @@ describe('Modules', function(){
 
   require('./permissions.js');
 
+  require('./areas.js');
+
   require('./attachments.js');
 
   require('./schemas.js');
@@ -64,5 +66,7 @@ describe('Modules', function(){
   require('./images.js');
 
   require('./oembed.js');
+
+  require('./admin-bar.js');
 
 });
