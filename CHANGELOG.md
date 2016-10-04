@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.1
+
+All tests passing.
+
+Fixed an oversight: the new `pageBeforeCopy` global method now takes `req` as its first parameter. Since `2.2.0` was first published 5 minutes ago and this method has not yet been documented this is not regarded as a bc break.
+
 ## 2.2.0
 
 All tests passing.
