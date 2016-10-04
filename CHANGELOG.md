@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.0
+
+All tests passing.
+
+* Fixed bug that broke removal of permissions for pages.
+* "Copy Page" feature added to the page menu.
+* Automatically reposition the autocomplete dropdown for joins if it would collide with the bottom of the window.
+* Include page slugs in the autocomplete dropdown for joins with pages.
+* `chooserChoiceBase.html` restored; some projects were depending on extending it, which is a useful technique.
+
 ## 2.1.5
 
 All tests passing.
