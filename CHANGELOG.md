@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2
+
+All tests passing.
+
+* Addition of slugs to projection for autocomplete is now done in a way that still allows overrides at the doc level to add other properties.
+* Addition of slugs to projection for autocomplete works for joins with a specific page type, too.
+* Fixed a chicken-and-egg problem in the global module that kicked in if the "global" doc contains widgets powered by modules not yet initialized at the time the global module checks for the existence of the doc.
+
 ## 2.2.1
 
 All tests passing.
