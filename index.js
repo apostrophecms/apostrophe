@@ -210,6 +210,7 @@ module.exports = function(options) {
       throw "Specify the `shortName` option and set it to the name of your project's repository or folder";
     }
     self.title = self.options.title;
+    self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
   }
 
