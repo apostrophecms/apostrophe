@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.0
+
+All tests passing.
+
+* Fixed a bug affecting the use of `arrangeFields` in modules that extend another module's use of `arrangeFields`. Added unit test based directly on a real-world project.
+* `baseUrl` project-wide option added, yielding the same benefit as in 0.5: you get absolute URLs for all pages everywhere. (If you don't want absolute URLs, just don't set it.) This is very beneficial when generating `og:meta` tags for Facebook, or generating emails.
+* A direct link to the original file has been added to the file manager's editor modal.
+
 ## 2.2.2
 
 All tests passing.
