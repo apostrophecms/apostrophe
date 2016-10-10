@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.3.0
+
+All tests passing.
+
+* Fixed a bug affecting the use of `arrangeFields` in modules that extend another module's use of `arrangeFields`. Added unit test based directly on a real-world project.
+* `baseUrl` project-wide option added, yielding the same benefit as in 0.5: you get absolute URLs for all pages everywhere. (If you don't want absolute URLs, just don't set it.) This is very beneficial when generating `og:meta` tags for Facebook, or generating emails.
+* A direct link to the original file has been added to the file manager's editor modal.
+
+## 2.2.2
+
+All tests passing.
+
+* Addition of slugs to projection for autocomplete is now done in a way that still allows overrides at the doc level to add other properties.
+* Addition of slugs to projection for autocomplete works for joins with a specific page type, too.
+* Fixed a chicken-and-egg problem in the global module that kicked in if the "global" doc contains widgets powered by modules not yet initialized at the time the global module checks for the existence of the doc.
+
+## 2.2.1
+
+All tests passing.
+
+Fixed an oversight: the new `pageBeforeCopy` global method now takes `req` as its first parameter. Since `2.2.0` was first published 5 minutes ago and this method has not yet been documented this is not regarded as a bc break.
+
+## 2.2.0
+
+All tests passing.
+
+* Fixed bug that broke removal of permissions for pages.
+* "Copy Page" feature added to the page menu.
+* Automatically reposition the autocomplete dropdown for joins if it would collide with the bottom of the window.
+* Include page slugs in the autocomplete dropdown for joins with pages.
+* `chooserChoiceBase.html` restored; some projects were depending on extending it, which is a useful technique.
+
+## 2.1.5
+
+All tests passing.
+
+* Admin bar: previously grouped fields can be re-grouped successfully, so concatenating admin bar configuration works just as well as concatenating `addFields` arrays
+* Files widget displays upload button in the same user-friendly position as the images widget
+* Font size for tabs and help labels is explicit to avoid side effects from project-level CSS
+
 ## 2.1.4
 
 All tests passing.
@@ -59,3 +99,4 @@ Inaugural npm release of Apostrophe 2.x, which was used prior to that in many pr
 
 
 
+>>>>>>> master

@@ -45,6 +45,134 @@ var simpleFields = [
   }
 ];
 
+var realWorldCase = {
+  "addFields": [
+    {
+      "type": "string",
+      "name": "title",
+      "label": "Title",
+      "required": true,
+      "sortify": true
+    },
+    {
+      "type": "slug",
+      "name": "slug",
+      "label": "Slug",
+      "required": true
+    },
+    {
+      "type": "tags",
+      "name": "tags",
+      "label": "Tags"
+    },
+    {
+      "type": "boolean",
+      "name": "published",
+      "label": "Published",
+      "def": true
+    },
+    {
+      "type": "boolean",
+      "name": "trash",
+      "label": "Trash",
+      "contextual": true,
+      "def": false
+    },
+    {
+      "type": "slug",
+      "name": "slug",
+      "label": "Old URL",
+      "required": true,
+      "page": true
+    },
+    {
+      "name": "title",
+      "label": "Description",
+      "type": "string",
+      "required": true
+    },
+    {
+      "type": "boolean",
+      "name": "published",
+      "label": "Published",
+      "required": true,
+      "def": true,
+      "contextual": true
+    },
+    {
+      "name": "urlType",
+      "label": "Link To",
+      "type": "select",
+      "choices": [
+        {
+          "label": "Internal Page",
+          "value": "internal",
+          "showFields": [
+            "_newPage"
+          ]
+        },
+        {
+          "label": "External URL",
+          "value": "external",
+          "showFields": [
+            "externalUrl"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "externalUrl",
+      "label": "URL",
+      "type": "url"
+    },
+    {
+      "name": "_newPage",
+      "type": "joinByOne",
+      "withType": "apostrophe-page",
+      "label": "Page Title",
+      "idField": "pageId"
+    }
+  ],
+  "removeFields": [
+    "tags"
+  ],
+  "arrangeFields": [
+    {
+      "name": "basics",
+      "label": "Basics",
+      "fields": [
+        "title",
+        "slug",
+        "published",
+        "tags"
+      ]
+    },
+    {
+      "name": "permissions",
+      "label": "Permissions",
+      "fields": [
+        "loginRequired",
+        "_viewUsers",
+        "_viewGroups",
+        "_editUsers",
+        "_editGroups"
+      ],
+      "last": true
+    },
+    {
+      "name": "info",
+      "label": "Info",
+      "fields": [
+        "slug",
+        "urlType",
+        "_newPage",
+        "title",
+        "externalUrl"
+      ]
+    }
+  ]
+};
+
 describe('Schemas', function() {
 
   this.timeout(5000);
@@ -120,6 +248,17 @@ describe('Schemas', function() {
     assert(schema[0].name === 'name');
     assert(schema[1].name === 'variety');
     assert(_.keys(schema[1].choices).length === 3);
+  });
+
+  it('should compose a schema for a complex real world case correctly', function() {
+    var schema = apos.schemas.compose(realWorldCase);
+    assert(schema);
+    var externalUrl = _.find(schema, { name: 'externalUrl' });
+    assert(externalUrl);
+    assert(externalUrl.group.name === 'info');
+    var _newPage = _.find(schema, { name: '_newPage' });
+    assert(_newPage);
+    assert(_newPage.group.name === 'info');
   });
 
   it('should convert simple data correctly', function(done) {
