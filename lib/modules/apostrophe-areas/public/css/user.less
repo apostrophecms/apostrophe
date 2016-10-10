@@ -43,10 +43,17 @@
   }
 }
 
+.apos-area-widget-controls { opacity: 0; }
+// Some helpers for general hide/show/peek editing controls
+
+.apos-hide { opacity: 0; }
+.apos-show { opacity: 1; }
+.apos-peek { opacity: @apos-translucent-opacity; }
+
 .apos-area-widget {
-  >.apos-ui .apos-area-widget-controls { opacity: 0; }
-  // &:hover>.apos-ui .apos-area-widget-controls { opacity: @apos-translucent-opacity; }
-  >.apos-ui .apos-area-widget-controls:hover { opacity: 1 !important; }
+
+  >.apos-ui .apos-area-widget-controls:hover { opacity: 1 }
+
   // When an area has a limit of one, its children widgets shouldn't
   // display the arrow organization controls.
   >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
@@ -136,7 +143,7 @@
   width: 100%;
   text-align: center;
   opacity: 0;
-  display: none;
+  // display: none;
   z-index: @apos-z-index-1;
 
   &.apos-area-controls--singleton
@@ -169,6 +176,7 @@
   {
     display: block;
     opacity: @apos-translucent-opacity;
+    z-index: @apos-z-index-4;
     &:hover { opacity: 1; }
   }
 }
