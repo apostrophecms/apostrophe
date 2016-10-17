@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.1
+
+All tests passing.
+
+* Fixed a bug in the new "copy page" feature that affects pages that have `null` properties.
+* Improved the experience of using the widget controls to manage the widgets in an area.
+* The `login` module now has an alias, `apos.login`, like other core modules.
+* Updated the jquery projector plugin to the latest version.
+
 ## 2.3.0
 
 All tests passing.

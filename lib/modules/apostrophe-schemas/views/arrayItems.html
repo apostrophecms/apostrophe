@@ -1,4 +1,4 @@
-<div class="apos-schema-tabs apos-array-items">
+<div class="apos-schema-tabs apos-array-items" data-schema-tabs>
   {% for item in data.arrayItems %}
     <div class="apos-schema-tab apos-array-item{{ ' apos-active' if (data.active == loop.index0)}}" data-apos-array-items-trigger="{{loop.index0}}" data-id="{{ item.id }}">
       {{ item._title or "Untitled" }}
