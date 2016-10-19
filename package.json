@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "0.5.385",
+  "version": "0.5.386",
   "description": "Apostrophe is a user-friendly content management system. You'll need more than this core module. See apostrophenow.org to get started.",
   "main": "./lib/apostrophe.js",
   "dependencies": {
@@ -31,7 +31,7 @@
     "password-hash": "~1.2.1",
     "qs": "~0.5.6",
     "regexp-quote": "0.0.0",
-    "request": "~2.12.0",
+    "request": "^2.12.0",
     "sanitize-html": "^1.5.3",
     "sluggo": "^0.2.0",
     "uglify-js": "~2.2.5",
