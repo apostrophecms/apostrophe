@@ -50,8 +50,21 @@
 .apos-show { opacity: 1; }
 .apos-peek { opacity: @apos-translucent-opacity; }
 
-.apos-area-widget {
+.apos-peek
+{
+  pointer-events: none;
+}
 
+.apos-area-widget
+{
+  position: relative;
+  z-index: 5;
+  &:hover { z-index: 10; }
+}
+
+.apos-area-widget {
+  &:hover { background: red; }
+  &:hover .apos-peek { pointer-events: auto;}
   >.apos-ui .apos-area-widget-controls:hover { opacity: 1 }
 
   // When an area has a limit of one, its children widgets shouldn't
@@ -111,6 +124,13 @@
   .apos-drop-shadow(0, 0, 0, 0);
   >.apos-button
   {
+    position: absolute;
+    height: 28px;
+    width: 28px;
+    margin: auto;
+    left: 0;
+    right: 0;
+    top: -14px;
     border: 2px solid @apos-white;
     .apos-rounded(@apos-padding-3);
     .apos-drop-shadow();
@@ -172,19 +192,19 @@
 .apos-area.apos-hover
 {
   >[data-apos-area-controls-original]>.apos-area-controls,
-  >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
+  >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls,
   {
     display: block;
     opacity: @apos-translucent-opacity;
     z-index: @apos-z-index-4;
-    &:hover { opacity: 1; }
+    &:hover { opacity: 1; speak: none;}
   }
 }
 // The horizontal line under the add content button which divides areas
 .apos-area-controls .apos-area-divider
 {
   width: 100%;
-  height: 3px;
+  // height: 3px;
   transform: translateY(-13px);
   background-color: @apos-base;
   z-index: 0;
