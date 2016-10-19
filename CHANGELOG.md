@@ -10,7 +10,7 @@ Workarounds for two limitations in MongoDB that impact the use of Apostrophe cur
 you need to invoke `$near` or another MongoDB operator that cannot be used within `$and`. The object
 you pass to `addLateCriteria` is merged with the criteria object that is built normally by the cursor.
 **Use of this filter is strongly discouraged unless you must use operators that do
-not support `*$and`.** 
+not support `$and`.** 
 * Custom filters that invoke `$near` or other MongoDB operators that are incompatible
 with `$text` queries may call `self.set('regexSearch', true)` to force the cursor to use
 a regular expression search rather than full MongoDB full-text search, if and when the
