@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.4.0
+
+All tests passing.
+
+Workarounds for two limitations in MongoDB that impact the use of Apostrophe cursors:
+
+* The `addLateCriteria` cursor filter has been introduced. This filter should be used only when
+you need to invoke `$near` or another MongoDB operator that cannot be used within `$and`. The object
+you pass to `addLateCriteria` is merged with the criteria object that is built normally by the cursor.
+**Use of this filter is strongly discouraged unless you must use operators that do
+not support `*$and`.** 
+* Custom filters that invoke `$near` or other MongoDB operators that are incompatible
+with `$text` queries may call `self.set('regexSearch', true)` to force the cursor to use
+a regular expression search rather than full MongoDB full-text search, if and when the
+`search()` filter is called on the same cursor. This was implemented to allow combination
+of full-text and geographical searches, subject of course to the limitation that regular expression
+search is not indexed. It also doesn't sort by quality, but `$near` provides its own sort
+by distance.
+
+Since these are new features a minor version level bump is appropriate. However neither of these is a feature that a typical site developer will need to call directly.
+
 ## 2.3.2
 
 All tests passing.
