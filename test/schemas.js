@@ -173,6 +173,19 @@ var realWorldCase = {
   ]
 };
 
+var hasArea = {
+  addFields: [
+    {
+      type: 'area',
+      name: 'body',
+      label: 'Body',
+      widgets: {
+        'apostrophe-rich-text': {}
+      }
+    }
+  ]
+};
+
 describe('Schemas', function() {
 
   this.timeout(5000);
@@ -397,7 +410,6 @@ describe('Schemas', function() {
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
-      console.log(result);
       assert(_.keys(result).length === 1);
       // hashing is not the business of schemas, see the
       // apostrophe-users module
@@ -411,4 +423,51 @@ describe('Schemas', function() {
     });
   });
 
+  it('should convert CSV areas correctly', function(done) {
+    var schema = apos.schemas.compose(hasArea);
+    assert(schema.length === 1);
+    var input = {
+      irrelevant: 'Irrelevant',
+      // Should get escaped, not be treated as HTML
+      body: 'This is the greatest <h1>thing</h1>'
+    };
+    var req = t.req.admin(apos);
+    var result = {};
+    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+      assert(!err);
+      // no irrelevant or missing fields
+      assert(_.keys(result).length === 1);
+      // expected fields came through
+      assert(result.body);
+      assert(result.body.type === 'area');
+      assert(result.body.items);
+      assert(result.body.items[0]);
+      assert(result.body.items[0].type === 'apostrophe-rich-text');
+      assert(result.body.items[0].content === apos.utils.escapeHtml(input.body));
+      done();
+    });
+  });
+
+  it('should convert CSV areas gracefully when they are undefined', function(done) {
+    var schema = apos.schemas.compose(hasArea);
+    assert(schema.length === 1);
+    var input = {
+      irrelevant: 'Irrelevant',
+      // Should get escaped, not be treated as HTML
+      body: undefined
+    };
+    var req = t.req.admin(apos);
+    var result = {};
+    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+      assert(!err);
+      // no irrelevant or missing fields
+      assert(_.keys(result).length === 1);
+      // expected fields came through
+      assert(result.body);
+      assert(result.body.type === 'area');
+      assert(result.body.items);
+      assert(!result.body.items[0]);
+      done();
+    });
+  });
 });
