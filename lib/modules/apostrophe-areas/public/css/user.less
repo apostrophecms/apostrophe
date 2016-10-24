@@ -11,7 +11,6 @@
 
 .apos-area
 {
-  &:hover { background: red; }
   // When an area's limit is reached, it shouldn't display controls
   // to add more content. We use direct children selectors to in order
   // to support nested areas.
@@ -58,8 +57,6 @@
 .apos-peek { opacity: @apos-translucent-opacity; }
 
 .apos-area-widget {
-  // z-index: @apos-z-index-2;
-  // &:hover { z-index: @apos-z-index-4; }
   &:hover .apos-peek { pointer-events: auto;}
   >.apos-ui .apos-area-widget-controls:hover { opacity: 1 }
 
