@@ -1,5 +1,9 @@
 
-@apos-translucent-opacity: 0.4;
+@apos-translucent-opacity: 0.8;
+.apos-hide { opacity: 0; }
+.apos-show { opacity: 1; }
+
+// .apos-peek { pointer-events: none; }
 
 .apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
@@ -23,7 +27,8 @@
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
-    >.apos-ui .apos-area-controls
+
+    > .apos-ui .apos-area-controls
     {
       position: absolute;
       opacity: @apos-translucent-opacity;
@@ -40,137 +45,7 @@
       left: @apos-padding-2;
       &:hover { opacity: 1; }
     }
-  }
-}
 
-.apos-area-widget-controls { opacity: 0; }
-// Some helpers for general hide/show/peek editing controls
-
-.apos-hide { opacity: 0; }
-.apos-show { opacity: 1; }
-.apos-peek { opacity: @apos-translucent-opacity; }
-
-.apos-peek
-{
-  pointer-events: none;
-}
-
-.apos-area-widget
-{
-  position: relative;
-  z-index: 5;
-  &:hover { z-index: 10; }
-}
-
-.apos-area-widget {
-  &:hover { background: red; }
-  &:hover .apos-peek { pointer-events: auto;}
-  >.apos-ui .apos-area-widget-controls:hover { opacity: 1 }
-
-  // When an area has a limit of one, its children widgets shouldn't
-  // display the arrow organization controls.
-  >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
-}
-
-// Widget controls positioning
-.apos-area-widget-controls
-{
-  position: absolute;
-  z-index: @apos-z-index-4;
-  .apos-transition;
-  &:hover { z-index: @apos-z-index-9; }
-}
-.apos-area-widget-controls--context
-{
-  top: @apos-padding-1;
-  left: @apos-padding-1;
-}
-.apos-area-widget-controls--data
-{
-  bottom: @apos-padding-1;
-  left: @apos-padding-1;
-}
-
-.apos-area-widget--contextual>.apos-ui .apos-area-widget-controls--data { display: none; }
-
-// Styles for the drag-target separator between widgets.
-.apos-area-item-separator
-{
-  opacity: 0;
-  padding: 0;
-  margin: 0;
-  border: 0px dashed @apos-base;
-  &.apos-hover { background-color: fade(@apos-base, 50%); }
-  .apos-transition;
-}
-
-.apos-dragging .apos-area-item-separator
-{
-  border-width: 1px;
-  opacity: 1;
-  padding: @apos-padding-1;
-  margin: @apos-margin-1/2 0;
-}
-
-.apos-empty .apos-area-item-separator
-{
-  height: 100%;
-  padding: 0;
-}
-
-.apos-ui .apos-dropdown.apos-dropdown--area-controls
-{
-  display: inherit;
-  .apos-drop-shadow(0, 0, 0, 0);
-  >.apos-button
-  {
-    position: absolute;
-    height: 28px;
-    width: 28px;
-    margin: auto;
-    left: 0;
-    right: 0;
-    top: -14px;
-    border: 2px solid @apos-white;
-    .apos-rounded(@apos-padding-3);
-    .apos-drop-shadow();
-  }
-  >.apos-dropdown-items
-  {
-    text-align: left;
-    left: 0;
-    right: 0;
-    top: 15px;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 200px;
-    .apos-rounded;
-  }
-}
-
-.apos-ui .apos-dropdown.apos-dropdown--area-controls
-{
-  &.apos-active
-  {
-    >.apos-button>i { transform: translateX(-50%) rotate(45deg); margin-left: -0.2px; }
-    // >.apos-dropdown-items { transform: translate(-46%, -10px); }
-  }
-}
-
-.apos-area-controls
-{
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  opacity: 0;
-  padding: 20px 0;
-  z-index: @apos-z-index-1;
-
-  &.apos-area-controls--singleton
-  {
-    display: block;
-    opacity: 1;
-    text-align: left;
   }
 }
 
@@ -187,29 +62,184 @@
   .apos-transition;
 }
 
-// We only want to show area add content controls for the actively hovered area,
-// which is determined in area's editor.js.
-.apos-area.apos-hover
+// have to get above apos-ui reset scoping
+.apos-ui
 {
-  >[data-apos-area-controls-original]>.apos-area-controls,
-  >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls,
+  // Widget controls positioning
+  // .apos-area .apos-ui { position: absolute; }
+  .apos-area-widget-controls
   {
-    display: block;
-    opacity: @apos-translucent-opacity;
+    position: absolute;
+    opacity: 0;
     z-index: @apos-z-index-4;
-    &:hover { opacity: 1; speak: none;}
+    .apos-transition;
+    &:hover { z-index: @apos-z-index-9; }
+  }
+  .apos-area-widget-controls--context
+  {
+    top: @apos-padding-2;
+    left: @apos-padding-2;
+  }
+  .apos-area-widget-controls--data
+  {
+    bottom: @apos-padding-2;
+    left: @apos-padding-2;
+  }
+
+  // The horizontal line under the add content button which divides areas
+  .apos-area-controls .apos-area-divider
+  {
+    width: 100%;
+    transform: translateY(-13px);
+    background-color: @apos-base;
+    // z-index: 0;
+  }
+
+  .apos-area-controls
+  {
+    position: absolute;
+    background-color: @apos-primary;
+    width: 100%;
+    text-align: center;
+    // opacity: 0;
+    // top: 3px;
+    margin-top: -1px;
+    height: 2px;
+    // z-index: @apos-z-index-1;
+    .apos-drop-shadow;
+    .apos-glow;
+    &:before,
+    &:after
+    {
+      position: relative;
+      content: "";
+      height: 4px;
+      display: block;
+      width: 100%;
+    }
+    &:before { top: -4px; }
+    &:after { top: -2px; }
+
+    &.apos-area-controls--singleton
+    {
+      display: block;
+      opacity: 1;
+      text-align: left;
+    }
+  }
+
+  .apos-dropdown.apos-dropdown--area-controls
+  {
+    &.apos-active
+    {
+      >.apos-button>i { transform: translateX(-50%) rotate(45deg); margin-left: -0.2px; }
+    }
   }
 }
-// The horizontal line under the add content button which divides areas
-.apos-area-controls .apos-area-divider
+
+// hide show the things
+.apos-area
 {
-  width: 100%;
-  // height: 3px;
-  transform: translateY(-13px);
-  background-color: @apos-base;
-  z-index: 0;
+  // z-index: auto;
+  // area controls (Add Content) 
+  .apos-ui
+  {
+    // position: absolute;
+    // width: 100%;
+    // .apos-transition;
+    // opacity: 0;
+    // z-index: @apos-z-index-1;
+  }
+
+  .apos-ui.apos-active
+  {
+    opacity: 1;
+  }
+
+  .apos-area-widget:hover
+  {
+    & > .apos-ui .apos-area-widget-controls
+    {
+      opacity: @apos-translucent-opacity;
+    }
+  }
+
+  // &:hover > .apos-ui > .apos-area-widget-controls,
+  // .apos-area-widget-wrapper:hover > .apos-ui > .apos-area-widget-controls,
+  // >[data-apos-area-controls-original]>.apos-area-controls,
+  // >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
+  // {
+  //   z-index: 10;
+  //   opacity: @apos-translucent-opacity;
+  //   &:hover { opacity: 1; }
+  // }
+
+
+
+  [data-apos-area-controls]:hover { opacity: 1; }
+  .apos-area-controls.active
+  {
+    opacity: 1;
+    display: block;
+    z-index: @apos-z-index-9; 
+  }
+
+  ///////////////////
+  // controls
+  .apos-ui.apos-peek { opacity: @apos-translucent-opacity; }
+
 }
-// TODO figure out how to select these specifically enough that !important isn't necessary
-.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-5; }
-.apos-dragging .apos-area-controls { opacity: 0 !important; }
-.apos-rich-text-active .apos-area-controls { display: none !important; }
+
+.apos-ui .apos-dropdown.apos-dropdown--area-controls
+{
+  .apos-transition;
+  display: inherit;
+  .apos-drop-shadow(0, 0, 0, 0);
+  >.apos-button
+  {
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    margin: auto;
+    left: 0;
+    right: 0;
+    top: -13px;
+    border: 2px solid @apos-white;
+    .apos-drop-shadow();
+  }
+  >.apos-dropdown-items
+  {
+    text-align: left;
+    left: 0;
+    right: 0;
+    top: 4px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 200px;
+    .apos-rounded;
+  }
+}
+
+
+// hide ui that you edit right on the page
+.apos-area-widget--contextual >.apos-ui .apos-area-widget-controls--data { display: none; }
+
+// special consideration for 'block-like' areas
+[data-apos-area-role="layout"]
+{
+  & > .apos-ui .apos-area-controls,
+  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-ui .apos-area-controls
+  {
+    background-color: @apos-secondary;
+    .apos-glow(@apos-secondary);
+    .apos-button--circular { background-color: @apos-secondary; }
+  }
+  & > .apos-ui,
+  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-ui
+  {
+    position: relative;
+    display: block;
+    height: 20px;
+    .apos-area-controls { bottom: 10px; }
+  }
+}

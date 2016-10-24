@@ -184,6 +184,9 @@
 .apos-button--circular
 {
   line-height: 0;
+  padding: 10px;
+  border-radius: 50%;
+
   i
   {
     position: absolute;
@@ -191,7 +194,12 @@
     margin-left: 0.5px;
     transform: translateX(-50%);
     .apos-transition--bounce;
+    &:before
+    {
+      font-size: 14px;
+      // top: -0.5px;
+      left: 0.5px;
+      position: relative;
+    }
   }
-  padding: 12px;
-  .apos-rounded(@apos-padding-3);
 }

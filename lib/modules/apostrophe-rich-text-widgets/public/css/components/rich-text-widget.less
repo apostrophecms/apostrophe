@@ -5,16 +5,16 @@
   {
     >.apos-area-widget-controls--context
     {
-      top: auto;
-      bottom: 100%;
+      // top: auto;
+      // bottom: 100%;
     }
     >.apos-area-widget-controls--data
     {
-      left: auto;
-      bottom: auto;
-      top: 0;
-      transform: translateY(-50%);
-      right: @apos-padding-1;
+      // left: auto;
+      // bottom: auto;
+      // top: 0;
+      // transform: translateY(-50%);
+      // right: @apos-padding-1;
     }
   }
   // When a rich text widget is active, we don't want to show any additional
@@ -33,3 +33,5 @@
     outline: @apos-green dashed 1px;
   }
 }
+
+.apos-rich-text-active .apos-area-controls { display: none !important; }
