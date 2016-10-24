@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.5.0
+
+All tests passing.
+
+* Implemented `apos.areas.fromPlaintext`, which accepts a string of plaintext (not markup) and returns an area with a single `apostrophe-rich-text` widget in it, containing that text. Useful in implementing importers.
+* The so-called `csv` import mode of `apos.schemas.convert` works properly for areas, using the above. Although it is called csv this mode is really suitable for any situation in which you have plaintext representations of each property in an object and would like those sanitized and converted to populate a doc.
+* Bug fix: emit the `enhance` Apostrophe event only once on page load. This event is emitted only when there is new content that has been added to the page, e.g. once at page load, and also when a new widget is added or updated, etc. The first argument to your event handler will be a jQuery element which will contain only new elements.
+* Legacy support for `data/port` and `data/address` files has been restored. (Note that `PORT` and `ADDRESS` environment variables supersede these. In modern Stagecoach deployments `data/port` is often a space-separated list of ports, and the `deployment/start` script parses these out and launches multiple processes with different PORT variables.)
+
+## 2.4.0
+
+All tests passing.
+
+Workarounds for two limitations in MongoDB that impact the use of Apostrophe cursors:
+
+* The `addLateCriteria` cursor filter has been introduced. This filter should be used only when
+you need to invoke `$near` or another MongoDB operator that cannot be used within `$and`. The object
+you pass to `addLateCriteria` is merged with the criteria object that is built normally by the cursor.
+**Use of this filter is strongly discouraged unless you must use operators that do
+not support `$and`.** 
+* Custom filters that invoke `$near` or other MongoDB operators that are incompatible
+with `$text` queries may call `self.set('regexSearch', true)` to force the cursor to use
+a regular expression search rather than full MongoDB full-text search, if and when the
+`search()` filter is called on the same cursor. This was implemented to allow combination
+of full-text and geographical searches, subject of course to the limitation that regular expression
+search is not indexed. It also doesn't sort by quality, but `$near` provides its own sort
+by distance.
+
+Since these are new features a minor version level bump is appropriate. However neither of these is a feature that a typical site developer will need to call directly.
+
 ## 2.3.2
 
 All tests passing.
