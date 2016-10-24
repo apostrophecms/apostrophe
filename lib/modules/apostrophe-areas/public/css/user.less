@@ -113,22 +113,27 @@
   padding: 0;
 }
 
+// [data-apos-area-controls] .apos-area-controls { opacity: 1 !important;}
 .apos-ui .apos-dropdown.apos-dropdown--area-controls
 {
+  height: 5px;
   display: inherit;
   .apos-drop-shadow(0, 0, 0, 0);
   >.apos-button
   {
+    position: relative;
+    top: -7px;
     border: 2px solid @apos-white;
     .apos-rounded(@apos-padding-3);
     .apos-drop-shadow();
+
   }
   >.apos-dropdown-items
   {
     text-align: left;
     left: 0;
     right: 0;
-    top: 12px;
+    top: 6px;
     margin-left: auto;
     margin-right: auto;
     max-width: 200px;
@@ -172,7 +177,8 @@
 .apos-area-widget-wrapper>.apos-ui>.apos-area-controls
 {
   bottom: 0;
-  transform: translateY(50%);
+  // transform: translateY(50%);
+  height: 5px;
   .apos-transition;
 }
 
@@ -194,7 +200,7 @@
 {
   width: 100%;
   height: 2px;
-  transform: translateY(-13px);
+  transform: translateY(-2px);
   background-color: @apos-base;
   .apos-glow;
   z-index: 0;
@@ -216,6 +222,7 @@
   & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-ui .apos-area-controls
   {
     top: auto;
+    padding: 10px 0;
     transform: none;
     position: relative;
     .apos-area-divider
