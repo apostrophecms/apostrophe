@@ -4,7 +4,6 @@
 <div class="apos-text-normal">{% block title %}{{ choice.title }}{% endblock %}</div>
 {%- block inline -%}
   {%- set inline = apos.utils.filter(data.relationship, 'inline', true) -%}
-  {{ apos.log(inline) }}
   {%- if inline.length -%}
     <div data-relationship-inline="{{ choice._id }}" class="apos-relationship-inline">
       {% for field in inline %}
