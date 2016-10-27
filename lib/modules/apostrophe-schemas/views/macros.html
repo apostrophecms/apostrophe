@@ -129,8 +129,7 @@
 {%- endmacro -%}
 
 {%- macro checkboxesBody(field) -%}
-
-    {%- for choice in field.choices -%}
+  {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">
         <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}">
@@ -138,7 +137,7 @@
         {{ choice.label }}
       </label>
     </div>
-    {%- endfor -%}
+  {%- endfor -%}
 {%- endmacro -%}
 
 {#
