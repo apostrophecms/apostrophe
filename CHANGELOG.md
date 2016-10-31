@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.1
+
+All tests passing.
+
+* The `minSize` option to `apostrophe-images` widgets now works properly when cropping.
+* The cropper no longer starts out cropping to the entire image, as this made it unclear what was happening. However if you click the crop button and then just save you still get reasonable behavior.
+* Bigger crop handles.
+* Textarea focus state receives the same "glow" as a regular text input field.
+* Small documentation updates.
+
 ## 2.5.0
 
 All tests passing.
