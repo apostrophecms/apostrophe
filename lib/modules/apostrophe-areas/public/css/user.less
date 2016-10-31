@@ -54,7 +54,7 @@
 
 .apos-hide { opacity: 0; }
 .apos-show { opacity: 1; }
-.apos-peek { opacity: @apos-translucent-opacity; }
+.apos-area .apos-peek { opacity: @apos-translucent-opacity; }
 
 .apos-area-widget {
   &:hover .apos-peek { pointer-events: auto;}
@@ -211,7 +211,7 @@
 .apos-rich-text-active .apos-area-controls { display: none !important; }
 
 // Special consideration for 'block-like' areas
-[data-apos-area-role="layout"]
+.apos-area--block-level-controls
 {
   & > .apos-ui
   {
