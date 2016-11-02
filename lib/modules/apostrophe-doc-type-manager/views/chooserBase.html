@@ -6,6 +6,8 @@
 <div data-choices>
   {# AJAX populates me #}
 </div>
+{# Initially hidden #}
+<div class="apos-chooser-limit-reached">You will need to remove an item before you can select another.</div>
 {% if data.autocomplete %}
   <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" data-autocomplete />
 {% endif %}
