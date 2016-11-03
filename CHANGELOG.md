@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.5.2
+
+All tests passing.
+
+* New `blockLevelControls: true` option to areas ensures controls for "blocks," i.e. "layout" widgets whose primary purpose is to contain other widgets, can be easily distinguished from controls for "regular" areas nested inside them. Think of a "two-column" or "three-column" widget with three areas in its template. The controls for these areas are displayed in a distinct color and various visual affordances are made to ensure they are accessible when things would otherwise be tightly spaces.
+* General improvements to the usability of area-related controls.
+* The search index now correctly includes the text of string and select schema fields found in widgets, pieces, pages, etc., as it always did before in 0.5. You may use `searchable: false` to disable this on a per-field basis.
+* Search indexing has been refactored for clarity (no changes to working APIs).
+* Checkboxes for the `checkboxes` schema field type are now styled.
+* "View file" links in the file library are now styled as buttons.
+
+## 2.5.1
+
+All tests passing.
+
+* The `minSize` option to `apostrophe-images` widgets now works properly when cropping.
+* The cropper no longer starts out cropping to the entire image, as this made it unclear what was happening. However if you click the crop button and then just save you still get reasonable behavior.
+* Bigger crop handles.
+* Textarea focus state receives the same "glow" as a regular text input field.
+* Small documentation updates.
+
 ## 2.5.0
 
 All tests passing.
