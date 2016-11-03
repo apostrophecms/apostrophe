@@ -11,6 +11,7 @@
 
   .apos-chooser
   {
+    position: relative;
     .apos-inline-block;
     float: left;
     height: 100%;
@@ -41,6 +42,19 @@
       text-decoration: line-through;
     }
   }
+  
+  .apos-chooser-limit-reached
+  {
+    position: fixed;
+    width: 25%;
+    background: @apos-gold;
+    color: @apos-white;
+    z-index: @apos-z-index-1;
+    bottom: 0;
+    display: none;
+    padding: @apos-padding-3;
+    text-align: center;
+  }
 
   .apos-chooser-controls
   {
@@ -59,5 +73,11 @@
     display: block;
   }
 
-  .apos-chooser-full .apos-field-input { display: none; }
+  .apos-chooser-full
+  {
+    .apos-chooser-limit-reached { display: block; }
+    .apos-field-input { display: none; }
+
+  }
+  
 }

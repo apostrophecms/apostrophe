@@ -144,3 +144,11 @@
 
   .apos-transition();
 }
+
+// full state
+.apos-chooser-full .apos-manage-grid-piece:not(.apos-focus):hover
+{
+  cursor: not-allowed;
+  .apos-field-input-checkbox-indicator:hover { cursor: not-allowed; }
+  &::before { border: 2px solid @apos-gold; }
+}
