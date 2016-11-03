@@ -4,7 +4,6 @@
   {%- if data.limit == 1 -%}
     {{ __('Choose ' + data.options.label + ' to associate with this item.') }}
   {%- else -%}
-  {{ apos.log('plural') }}
     {{ __('Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
   {%- endif -%}
 {%- endblock -%}
