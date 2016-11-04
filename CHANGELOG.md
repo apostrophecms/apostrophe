@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.0
+
+* `relationship` fields defined for `joinByArray` can now have an `inline: true` flag. If they are inline, they are presented right in the chooser, rather than appearing in a separate modal dialog reachable by clicking an icon. This feature should be used sparingly, but that's true of relationship fields in general.
+* Permissions editing for pages now takes advantage of the new inline relationship fields to make the "apply to subpages" functionality easier to discover.
+* When uploading files or images, the title field is automatically suggested based on the filename.
+* Improvements in form field UX and design.
+* When choosing pieces (including images), if you elect to create a new piece it is automatically added to the selection.
+* When choosing pieces, if the `limit` is reached and it is greater than 1, a helpful message appears, and the UI changes to make clear that you cannot add items until you remove one. If the limit is exactly 1, a new selection automatically replaces the current selection, and singular language is used to clarify what is happening.
+* Syntax errors in "related types" such as cursors now produce an improved error message with filename and line number.
+* Showstopper errors during startup are reported in a less redundant way.
+
 ## 2.5.2
 
 All tests passing.
