@@ -7,10 +7,16 @@
 		margin-top: @apos-margin-2;
 	}
 	
+	.apos-modal-filters-toggles,
+	.apos-modal-filters-search
+	{
+		float: left;
+	}
+
 	.apos-modal-filters-toggles
 	{
 		width: 70%;
-		.apos-inline-block(top);
+		// .apos-inline-block(top);
 
 		.apos-pill
 		{
@@ -23,15 +29,16 @@
 	.apos-modal-filters-search
 	{
 		width: 30%;
-		.apos-inline-block(bottom);
 		
 		input
 		{
 			position: relative;
+			margin-top: @apos-padding-2;
 			//max-width: 50%; px value is actually working better here -sam
 			max-width: 314px;
+			.apos-rounded;
 
-			padding: @apos-padding-1 @apos-padding-2;
+			padding: (@apos-padding-1 - 1.5px) @apos-padding-2;
 			float: right;
 
 			font-size: 13px;
