@@ -4,10 +4,13 @@
 
   .apos-schema-tabs
   {
+    position: fixed;
     float: left;
     height: 100%;
     width: @apos-tabs-width;
     background-color: @apos-light;
+    // If tab number exceeds viewport allow scroll
+    overflow: scroll;
   }
 
   .apos-schema--with-tabs .apos-schema-tabs {}
@@ -45,6 +48,7 @@
     width: 100%;
     max-width: 540px;
     min-height: 100%;
+    margin-left: @apos-tabs-width;
     padding: @apos-padding-2;
     background-color: @apos-white;
   }
