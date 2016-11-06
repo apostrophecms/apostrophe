@@ -13,7 +13,7 @@
     {%- set direction = 'up' -%}
   {%- endif -%}
 
-  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}" data-apos-dropdown={{ direction }} data-apos-actionable>
+  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}"{%- if options.action -%} data-apos-{{ options.action }}{%- endif %} data-apos-dropdown={{ direction }} data-apos-actionable>
     {%- if type == 'button' -%}
       {%- if options.buttonType -%}
         {{ buttons[options.buttonType](menu.label, apos.utils.merge({ action: 'dropdown-button-label' }, options) ) }}

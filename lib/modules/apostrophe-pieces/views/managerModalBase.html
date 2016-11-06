@@ -3,7 +3,7 @@
 {%- import "piecesMacros.html" as pieces with context -%}
 
 {%- block modalClass -%}
-  {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar
+  {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-manager
 {%- endblock -%}
 
 {%- block controls -%}
@@ -11,7 +11,7 @@
 {%- endblock -%}
 
 {%- block instructions -%}
-  You can select content to display by entering the titles of individual {{ data.options.pluralLabel }}, or tags.
+  Here you can add new {{ data.options.pluralLabel }} or click on existing {{ data.options.pluralLabel }} to edit them.
 {%- endblock -%}
 
 {%- block filters -%}

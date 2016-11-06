@@ -68,7 +68,24 @@
   #}<div class="apos-modal-filters-toggles">
     {%- for filter in filters.options -%}
       {{ pills.base( module.filterChoicesToPillChoices(filter), filters.choices[filter.name] ) }}
-    {%- endfor -%}
+    {%- endfor -%}{#
+    
+    Bulk operations (nested inside the 70% div for the toggles so it shares that space)
+  
+    #}{{ dropdowns.base({
+        label: 'Bulk',
+        items: [
+          {
+            label: 'Move to Trash' if filters.choices.trash == '0' else 'Rescue from Trash',
+            action: 'bulk-trash' if filters.choices.trash == '0' else 'bulk-rescue'
+          }
+        ]}, 'button',
+        {
+          action: 'bulk',
+          direction: 'down',
+          class: 'arrow-down apos-manager-bulk'
+        }
+      ) }}
   </div>{#
 
   Search
