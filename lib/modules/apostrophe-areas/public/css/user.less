@@ -8,7 +8,6 @@
   pointer-events: none;
 }
 
-
 .apos-area
 {
   // When an area's limit is reached, it shouldn't display controls
@@ -49,7 +48,10 @@
   }
 }
 
-.apos-area-widget-controls { opacity: 0; }
+.apos-area-widget-controls
+{
+  opacity: 0;
+}
 // Some helpers for general hide/show/peek editing controls
 
 .apos-hide { opacity: 0; }
@@ -58,7 +60,7 @@
 
 .apos-area-widget {
   &:hover .apos-peek { pointer-events: auto;}
-  >.apos-ui .apos-area-widget-controls:hover { opacity: 1 }
+  >.apos-ui .apos-area-widget-controls:hover { opacity: 1; }
 
   // When an area has a limit of one, its children widgets shouldn't
   // display the arrow organization controls.
@@ -69,9 +71,9 @@
 .apos-area-widget-controls
 {
   position: absolute;
-  z-index: @apos-z-index-4;
+  z-index: @apos-z-index-3;
   .apos-transition;
-  &:hover { z-index: @apos-z-index-9; }
+  &:hover { z-index: @apos-z-index-4; }
 }
 .apos-area-widget-controls--context
 {
@@ -206,7 +208,7 @@
   z-index: 0;
 }
 // TODO figure out how to select these specifically enough that !important isn't necessary
-.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-5; }
+.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-7; }
 .apos-dragging .apos-area-controls { opacity: 0 !important; }
 .apos-rich-text-active .apos-area-controls { display: none !important; }
 
