@@ -1,7 +1,11 @@
 {%- extends "managerModal.html" -%}
 
 {%- block instructions -%}
-  {{ __('Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
+  {%- if data.limit == 1 -%}
+    {{ __('Choose ' + data.options.label + ' to associate with this item.') }}
+  {%- else -%}
+    {{ __('Choose ' + data.options.pluralLabel + ' to associate with this item.') }}
+  {%- endif -%}
 {%- endblock -%}
 
 {%- block modalClass -%}
@@ -9,8 +13,12 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Choose ' + data.options.pluralLabel) }}
-{%- endblock -%}
+  {%- if data.limit == 1 -%}
+    {{ __('Choose ' + data.options.label) }}
+  {%- else -%}
+    {{ __('Choose ' + data.options.pluralLabel) }}
+  {%- endif -%}
+{% endblock %}
 
 {%- block breadcrumb -%}
   <ul class="apos-modal-breadcrumb" data-modal-breadcrumb>

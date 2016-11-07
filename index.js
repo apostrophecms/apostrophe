@@ -136,9 +136,14 @@ module.exports = function(options) {
       } else {
         // In the absence of a callback to handle initialization failure,
         // we have to assume there's just one instance of Apostrophe and
-        // we can print the error and end the app
+        // we can print the error and end the app.
+        
+        // Currently v8's err.stack property contains both the stack and the error message,
+        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
+        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
+          console.error(err);
+        }
         console.error(err.stack);
-        console.error(err);
         process.exit(1);
       }
     }
@@ -210,6 +215,7 @@ module.exports = function(options) {
       throw "Specify the `shortName` option and set it to the name of your project's repository or folder";
     }
     self.title = self.options.title;
+    self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
   }
 
@@ -251,8 +257,6 @@ module.exports = function(options) {
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
           console.error('Error while constructing the ' + item + ' module');
-          console.error(err.stack);
-          console.error(err);
           return callback(err);
         }
         return callback(null);

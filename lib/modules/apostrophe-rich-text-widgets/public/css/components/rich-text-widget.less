@@ -5,8 +5,8 @@
   {
     >.apos-area-widget-controls--context
     {
-      top: 0;
-      transform: translateY(-50%);
+      top: auto;
+      bottom: 100%;
     }
     >.apos-area-widget-controls--data
     {
@@ -33,3 +33,5 @@
     outline: @apos-green dashed 1px;
   }
 }
+
+[data-apos-widget-wrapper="apostrophe-rich-text"]:hover { z-index: @apos-z-index-6; }

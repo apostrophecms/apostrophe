@@ -38,7 +38,7 @@
   {
     content: "\f0d7";
     position: absolute;
-    top: @apos-padding-2;
+    top: @apos-padding-3;
     right: @apos-padding-3;
     .fa;
     pointer-events: none;
@@ -51,10 +51,13 @@
   -moz-appearance: none;
   appearance: none;
   border-radius: 0;
+  
+  &:hover { cursor: pointer; }
 }
 
 .apos-field-input-text,
-.apos-field-input-select
+.apos-field-input-select,
+.apos-field-input-textarea
 {
   &:focus
   {
@@ -106,6 +109,56 @@
   }
 }
 
+.apos-form-checkbox 
+{
+  position: relative;
+  padding: @apos-padding-2 0 @apos-padding-2 @apos-padding-2;
+    
+  &:nth-child(even)
+  {
+    background-color: @apos-lighter;
+  }
+  
+  &-label
+  {
+    color: @apos-dark;
+    
+    &:hover 
+    {
+      cursor: pointer;
+    }
+  }
+  
+  &-input 
+  {
+    margin-right: @apos-margin-2;
+    opacity: 0;
+    z-index: -1;
+    
+    &:checked ~ .apos-form-checkbox-indicator 
+    {
+      background: @apos-primary;
+      border-color: @apos-primary;
+      border-width: 6px; 
+    }
+  }
+  
+  &-indicator
+  {
+    position: absolute;
+    display: inline-block;
+    vertical-align: top;
+    height: 21px;
+    width: 21px;
+    left: 0;
+    margin-left: @apos-margin-2;
+    border: 1px solid @apos-dark;
+    .apos-transition(all, .1s, ease-in-out);
+    .apos-no-select;
+
+    &:hover { cursor: pointer; }
+  }  
+}
 
 // Tags ========================================
 .apos-field-tags .apos-tags
