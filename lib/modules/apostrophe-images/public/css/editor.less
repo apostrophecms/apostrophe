@@ -2,10 +2,14 @@
 .apostrophe-image-manager
 .apos-modal-content .apos-form,
 .apostrophe-image-editor
-.apos-modal-content .apos-form
+.apos-modal-content .apos-form,
+.apostrophe-file-editor
+.apos-modal-content .apos-form,
+
 {
   max-width: 100%;
 
+  img { max-width: 100%; }
   .apostrophe-images-editor-attachment
   {
     .apos-inline-block(top);
@@ -40,8 +44,26 @@
 
   .apostrophe-image-editor-fields
   {
-    .apos-inline-block(top);
-    width: 750px;
+    float: left;
+    width: 100%;
+  }
+
+  .apos-schema-group
+  {
+    position: relative;
+    width: 45%;
+    float: left;
+    margin-left: 15%;
+    overflow: visible;
+  }
+
+  .apos-field { max-width: none; }
+
+  .apos-field-attachment
+  {
+    position: absolute;
+    left: 100%;
+    width: 70%;
   }
 }
 
@@ -78,6 +100,11 @@
     .apos-inline-block(top);
     width: 750px;
   }
+}
+
+.apostrophe-image-editor-fields
+{
+
 }
 
 
