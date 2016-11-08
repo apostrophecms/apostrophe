@@ -1,6 +1,20 @@
 # Changelog
 
+## 2.6.1
+
+All tests passing.
+
+* Choosers and schema arrays play nicely with the new fixed-position tabs.
+* Better CSS solution to positioning the attachment upload buttons which doesn't interfere with other styles.
+* Images in the chooser choices column "stay in their lane."
+* Better error message when an attempt to edit an area with a hyphenated name is used.
+* Array edit button fixed.
+* The `type()` cursor filter now has a finalizer and merges its criteria there at the very end, so that you can override a previous call to it at any time prior to invoking `toArray` or similar.
+* Area controls no longer interfere with visibility of widget type selection menu.
+
 ## 2.6.0
+
+All tests passing.
 
 * `relationship` fields defined for `joinByArray` can now have an `inline: true` flag. If they are inline, they are presented right in the chooser, rather than appearing in a separate modal dialog reachable by clicking an icon. This feature should be used sparingly, but that's true of relationship fields in general.
 * Permissions editing for pages now takes advantage of the new inline relationship fields to make the "apply to subpages" functionality easier to discover.
