@@ -16,6 +16,12 @@
   }
 }
 
+.apos-manage-table
+{
+  font-size: 13px;
+  @media @apos-breakpoint-desktop-xl { .apos-text-small; }
+}
+
 .apos-table table
 {
   text-align: left;
@@ -26,7 +32,8 @@
 .apos-table th,
 .apos-table td
 {
-  padding: @apos-padding-2;
+  padding: @apos-padding-1;
+  @media @apos-breakpoint-desktop-xl { padding: @apos-padding-2; }
 }
 
 .apos-table th,
@@ -36,9 +43,11 @@
   min-width: 25px;
   a
   {
-    .apos-text-small;
+    display: block;
     color: @apos-dark;
     text-decoration: none;
+    .apos-transition;
+    &:hover { color: @apos-primary; }
   }
 }
 .apos-table td:first-child //check-box input

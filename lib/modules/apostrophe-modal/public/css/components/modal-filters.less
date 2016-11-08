@@ -1,17 +1,22 @@
 .apos-ui.apos-modal .apos-modal-header .apos-modal-filters,
 .apos-ui.apos-modal .apos-modal-body .apos-modal-filters
 {
-	margin-top: @apos-margin-2;
 
-	//commenting out below as the filter position should be more flexible -sam
-	//position: absolute;
-	//width: ~'calc(100% - ('@apos-padding-6~'*2))';
-	//bottom: 27px;
+	.apos-pill
+	{
+		margin-top: @apos-margin-2;
+	}
+	
+	.apos-modal-filters-toggles,
+	.apos-modal-filters-search
+	{
+		float: left;
+	}
 
 	.apos-modal-filters-toggles
 	{
 		width: 70%;
-		.apos-inline-block(top);
+		// .apos-inline-block(top);
 
 		.apos-pill
 		{
@@ -24,19 +29,25 @@
 	.apos-modal-filters-search
 	{
 		width: 30%;
-		.apos-inline-block(top);
-
+		
 		input
 		{
 			position: relative;
+			margin-top: @apos-padding-2;
 			//max-width: 50%; px value is actually working better here -sam
 			max-width: 314px;
+			.apos-rounded;
 
-			padding: @apos-padding-1 @apos-padding-2;
+			padding: (@apos-padding-1 - 1.5px) @apos-padding-2;
 			float: right;
 
-			font-size: 14px;
-			line-height: 14px;
+			font-size: 13px;
+			line-height: 13px;
+			@media @apos-breakpoint-desktop-xl
+			{
+				font-size: 14px;
+				line-height: 14px;
+			}
 		}
 	}
 }
