@@ -41,30 +41,6 @@
       margin: 0.5em 0;
     }
   }
-
-  .apostrophe-image-editor-fields
-  {
-    float: left;
-    width: 100%;
-  }
-
-  .apos-schema-group
-  {
-    position: relative;
-    width: 45%;
-    float: left;
-    margin-left: 15%;
-    overflow: visible;
-  }
-
-  .apos-field { max-width: none; }
-
-  .apos-field-attachment
-  {
-    position: absolute;
-    left: 100%;
-    width: 70%;
-  }
 }
 
 .apos-modal-content .apos-form
@@ -94,16 +70,32 @@
       }
     }
   }
-
-  .apostrophe-image-editor-fields
-  {
-    .apos-inline-block(top);
-    width: 750px;
-  }
 }
 
 .apostrophe-image-editor-fields
 {
+  float: left;
+  width: 100%;
+
+  .apos-schema-group
+  {
+    position: relative;
+    width: 45%;
+    float: left;
+    margin-left: 15%;
+    overflow: visible;
+  }
+
+  .apos-field { max-width: none; }
+
+  .apos-field-attachment
+  {
+    position: absolute;
+    left: 100%;
+    width: 80%;
+
+    img { max-width: 100%; }
+  }
 
 }
 
