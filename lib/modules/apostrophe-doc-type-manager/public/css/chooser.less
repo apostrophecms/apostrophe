@@ -4,17 +4,16 @@
   .apos-chooser-manage-view-wrapper
   {
     .apos-inline-block;
-    float: left;
-    max-width: 85%;
+    float: right;
+    width: 85%;
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     .apos-table { padding-left: @apos-padding-2; }
   }
 
   .apos-chooser
   {
-    position: relative;
+    position: fixed;
     .apos-inline-block;
-    float: left;
     height: 100%;
     overflow-y: scroll;
     width: 15%;
@@ -44,6 +43,7 @@
     {
       text-decoration: line-through;
     }
+    img { width: 100%; }
   }
   
   .apos-chooser-limit-reached

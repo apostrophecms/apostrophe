@@ -9,12 +9,9 @@ Edit File
 
 {%- block body -%}
 {#- Borrow CSS classes from the image editor, same effect sought. -Tom -#}
-<div class="apos-form">{#
-  #}<div class="apostrophe-image-editor-fields">
-    {{ schemas.fields(apos.utils.reject(data.schema, 'name', 'attachment')) }}
-  </div>{#
-  #}<div class="apostrophe-images-editor-attachment" data-apos-form>
-    {{ apos.schemas.field(apos.utils.find(data.schema, 'name', 'attachment')) }}
+<div class="apos-form">
+  <div class="apostrophe-image-editor-fields">
+    {{ schemas.fields(data.schema) }}
   </div>
 </div>
 {%- endblock -%}
