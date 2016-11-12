@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.6.2
+
+All tests passing.
+
+* The auto-suggestion of titles upon uploading files also suggests slugs.
+* The auto-suggestion of titles and slugs applies to both "files" and "images."
+* Reduce the clutter in the versions collection by checking for meaningful change on the server side, where final sanitization of HTML, etc. has taken place to iron out distinctions without a difference.
+* Use the permission name `edit-attachment` consistently, so that calling `addPublic('edit-attachment')` has the intended effect.
+* Manage view of pieces does not crash if `updatedAt` is missing from a piece.
+
 ## 2.6.1
 
 All tests passing.
