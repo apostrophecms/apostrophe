@@ -173,6 +173,21 @@ var realWorldCase = {
   ]
 };
 
+var pageSlug = [
+  {
+    type: 'slug',
+    name: 'slug',
+    page: true
+  }
+];
+
+var regularSlug = [
+  {
+    type: 'slug',
+    name: 'slug'
+  }
+];
+
 var hasArea = {
   addFields: [
     {
@@ -470,4 +485,50 @@ describe('Schemas', function() {
       done();
     });
   });
+  
+  it('should clean up extra slashes in page slugs', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === '/wiggy/wacky/wobbly/whizzle');
+      done();
+    });
+  });
+
+  it('retains trailing / on the home page', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === '/');
+      done();
+    });
+  });
+
+  it('does not keep slashes when page: true not present for slug', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: regularSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
+      done();
+    });
+  });
+
 });
