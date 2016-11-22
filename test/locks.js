@@ -154,6 +154,7 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
+            return;
           }
         });
       }
@@ -188,6 +189,7 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
+            return;
           }
         });
       }
@@ -202,6 +204,7 @@ describe('Locks', function() {
     var four = apos.modules['apostrophe-locks-3'];
     var active = 0;
     var successful = 0;
+    var finished = false;
     attempt(one);
     attempt(two);
     attempt(three);
@@ -211,7 +214,11 @@ describe('Locks', function() {
         assert(!err);
         active++;
         if (active > 1) {
-          done();
+          if (!finished) {
+            done();
+          }
+          finished = true;
+          return;
         }
         setTimeout(release, 75 + Math.random() * 50);
       });
@@ -223,7 +230,11 @@ describe('Locks', function() {
         active--;
         return locks.unlock('test', function(err) {
           if (err) {
-            done();
+            if (!finished) {
+              done();
+            }
+            finished = true;
+            return;
           }
           successful++;
           assert(successful !== 4);
