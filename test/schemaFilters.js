@@ -144,22 +144,10 @@ describe('Schema Filters', function() {
     });
   });
 
-  it('filter for _cats can select people with any of three cats via "or"', function(done) {
+  it('_catsAnd filter can select people with all three cats', function(done) {
     var req = t.req.admin(apos);
     var cursor = apos.people.find(req);
-    cursor._cats({ rule: 'or', ids: [ cats[0]._id, cats[1]._id, cats[2]._id ] });
-    return cursor.toArray(function(err, people) {
-      assert(!err);
-      // Everybody except person 0 has the first cat
-      assert(people.length === 9);
-      done();
-    });
-  });
-
-  it('filter for _cats can select people with all of three cats via "and"', function(done) {
-    var req = t.req.admin(apos);
-    var cursor = apos.people.find(req);
-    cursor._cats({ rule: 'and', ids: [ cats[0]._id, cats[1]._id, cats[2]._id ] });
+    cursor._catsAnd([ cats[0]._id, cats[1]._id, cats[2]._id ]);
     return cursor.toArray(function(err, people) {
       assert(!err);
       // Only people 3-9 have cat 2
@@ -192,6 +180,20 @@ describe('Schema Filters', function() {
       done();
     });
   });
+  
+  it('can obtain choices for _cats', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toChoices('_cats', function(err, cats) {
+      assert(!err);
+      // Only the cats that are actually somebody's cat come up
+      assert(cats.length === 9);
+      assert(cats[0].value);
+      assert(cats[0].label);
+      assert(cats[0].slug);
+      done();
+    })
+  });
 
   it('filter for _favorite exists', function() {
     var req = t.req.admin(apos);
@@ -212,19 +214,6 @@ describe('Schema Filters', function() {
     });
   });
 
-  it('filter for _favorite can use "and" syntax (although that is silly)', function(done) {
-    var req = t.req.admin(apos);
-    var cursor = apos.people.find(req);
-    cursor._favorite({ rule: 'and', ids: [ cats[0]._id ] });
-    return cursor.toArray(function(err, people) {
-      assert(!err);
-      // Only person 0 prefers the first cat
-      assert(people.length === 1);
-      assert(people[0].i === 0);
-      done();
-    });
-  });
-
   it('filter for _favorite can use array syntax', function(done) {
     var req = t.req.admin(apos);
     var cursor = apos.people.find(req);
@@ -234,18 +223,6 @@ describe('Schema Filters', function() {
       // Only person 0 prefers the first cat
       assert(people.length === 1);
       assert(people[0].i === 7);
-      done();
-    });
-  });
-
-  it('filter for _favorite can use "or" syntax', function(done) {
-    var req = t.req.admin(apos);
-    var cursor = apos.people.find(req);
-    cursor._favorite({ rule: 'or', ids: [ cats[0]._id, cats[1]._id, cats[2]._id ] });
-    return cursor.toArray(function(err, people) {
-      assert(!err);
-      // There should be as many people preferring these cats as there are cats
-      assert(people.length === 3);
       done();
     });
   });
@@ -271,6 +248,20 @@ describe('Schema Filters', function() {
       assert(people.length === 11);
       done();
     });
+  });
+
+  it('can obtain choices for _favorite', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toChoices('_favorite', function(err, cats) {
+      assert(!err);
+      // Only the cats that are actually someone's favorite come up
+      assert(cats.length === 10);
+      assert(cats[0].value);
+      assert(cats[0].label);
+      assert(cats[0].slug);
+      done();
+    })
   });
 
 });
