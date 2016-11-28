@@ -2,6 +2,13 @@
 
 All tests passing.
 
+## 2.8.0
+
+All tests passing.
+
+* `apostrophe-pieces-pages` is about 2x faster; discovered we were inefficiently deep-cloning `req` when cloning a cursor.
+* 
+
 ## 2.7.0
 
 * We do a better job of defaulting to a sort by search match quality if full-text search is present in a query. Under the hood this is powered by the new `defaultSort` filter, which just stores a default value for the `sort` filter to be used only if `search` (and anything else with an implicit preferred sort order) is not present. No more lame search results for blog posts. You can explicitly set the `sort()` filter in a cursor override if you really want to, but trust us, when `search` is present sorting by anything but search quality produces poor results.
