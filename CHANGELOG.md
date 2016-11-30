@@ -2,6 +2,17 @@
 
 All tests passing.
 
+## 2.8.0
+
+All tests passing.
+
+* `APOS_MONGODB_URI` environment variable is used to connect to MongoDB if present. Helpful for cloud hosting. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* `APOS_S3_BUCKET`, `APOS_S3_ENDPOINT` (optional), `APOS_S3_SECRET`, `APOS_S3_KEY`, and `APOS_S3_REGION` environment variables can be used to configure Apostrophe to use S3 for uploaded media storage. This behavior kicks in if `APOS_S3_BUCKET` is set. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* New advisory locking API accessible via `apos.locks.lock` and `apos.locks.unlock`. `apostrophe-migrations:migrate` is now wrapped in a lock. More locks are coming, although Apostrophe was carefully designed for benign worst case outcomes during race conditions.
+* Better asset deployment for Heroku and other cloud services. `node app apostrophe:generation --create-bundle=NAME` now creates a new folder, `NAME`, containing assets that would otherwise have been written to `public`. Launching a server with the `APOS_BUNDLE` environment variable set to `NAME` will then copy that bundle's contents into `public` before listening for connections. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* `apostrophe-pieces-pages` index pages are about 2x faster; discovered we were inefficiently deep-cloning `req` when cloning a cursor.
+* Helpful error message if you forget to set the `name` property of one of your `types` when configuring `apostrophe-pages`.
+
 ## 2.7.0
 
 * We do a better job of defaulting to a sort by search match quality if full-text search is present in a query. Under the hood this is powered by the new `defaultSort` filter, which just stores a default value for the `sort` filter to be used only if `search` (and anything else with an implicit preferred sort order) is not present. No more lame search results for blog posts. You can explicitly set the `sort()` filter in a cursor override if you really want to, but trust us, when `search` is present sorting by anything but search quality produces poor results.

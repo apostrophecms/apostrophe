@@ -5,6 +5,7 @@ module.exports = {
     'apostrophe-launder': {},
     'apostrophe-i18n': {},
     'apostrophe-db': {},
+    'apostrophe-locks': {},
     'apostrophe-caches': {},
     'apostrophe-migrations': {},
     'apostrophe-express': {},

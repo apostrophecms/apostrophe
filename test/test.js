@@ -26,7 +26,9 @@ describe('Modules', function(){
   require('./db.js');
   
   require('./caches.js');
-  
+
+  require('./locks.js');
+
   require('./express.js');
   
   require('./templates.js');
