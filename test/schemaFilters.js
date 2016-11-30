@@ -28,7 +28,28 @@ describe('Schema Filters', function() {
           extend: 'apostrophe-pieces',
           name: 'cat',
           label: 'Cat',
-          alias: 'cats'
+          alias: 'cats',
+          addFields: [
+            {
+              type: 'select',
+              name: 'flavor',
+              label: 'Flavor',
+              choices: [
+                {
+                  label: 'Grape',
+                  value: 'grape'
+                },
+                {
+                  label: 'Cherry',
+                  value: 'cherry'
+                },
+                {
+                  label: 'Mint',
+                  value: 'mint'
+                }
+              ]
+            }
+          ]
         },
         'people': {
           extend: 'apostrophe-pieces',
@@ -69,6 +90,9 @@ describe('Schema Filters', function() {
           people[i].i = i;
           people[i].published = true;
         }
+        cats[0].flavor = 'cherry';
+        cats[1].flavor = 'mint';
+        cats[4].flavor = 'mint';
         var req = t.req.admin(apos);
         return async.series([
           purgeCats,
@@ -264,4 +288,61 @@ describe('Schema Filters', function() {
     })
   });
 
+  it('filter for flavor exists', function() {
+    var req = t.req.admin(apos);
+    var cursor = apos.cats.find(req);
+    assert(cursor.flavor);
+  });
+
+  it('filter for flavor can select cats of a specified flavor', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.cats.find(req);
+    cursor.flavor('mint');
+    return cursor.toArray(function(err, cats) {
+      assert(!err);
+      assert(cats.length === 2);
+      assert(_.find(cats, { i: 1 }));
+      assert(_.find(cats, { i: 4 }));
+      done();
+    });
+  });
+
+  it('filter for flavor can use array syntax', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.cats.find(req);
+    cursor.flavor([ 'mint', 'cherry' ]);
+    return cursor.toArray(function(err, cats) {
+      assert(!err);
+      assert(cats.length === 3);
+      assert(_.find(cats, { i: 0 }));
+      assert(_.find(cats, { i: 1 }));
+      assert(_.find(cats, { i: 4 }));
+      done();
+    });
+  });
+
+  it('when not used filter for flavor has no effect', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.cats.find(req);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      assert(cats.length === 11);
+      done();
+    });
+  });
+
+  it('can obtain choices for flavor', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.cats.find(req);
+    return cursor.toChoices('flavor', function(err, flavors) {
+      assert(!err);
+      // Only the flavors associated with at least one cat come up, in alpha order
+      assert(flavors.length === 2);
+      assert(flavors[0].value === 'cherry');
+      assert(flavors[0].label === 'Cherry');
+      assert(flavors[1].value === 'mint');
+      assert(flavors[1].label === 'Mint');
+      done();
+    })
+  });
 });

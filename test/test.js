@@ -43,7 +43,6 @@ describe('Modules', function(){
 
   require('./schemaFilters.js');
 
-  
   require('./docs.js');
   
   require('./pages.js');
