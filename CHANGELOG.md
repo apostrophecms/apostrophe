@@ -1,6 +1,16 @@
 # Changelog
 
+## 2.9.0
+
 All tests passing.
+
+* Two major new features in this release: built-in filters for most schema fields, and built-in AJAX support for `apostrophe-pieces-pages`. These combine to eliminate the need for custom code in a wide array of situations where you wish to allow users to browse and filter blog posts, events, etc. In most cases there is no longer any need to write your own `cursor.js` or your own AJAX implementation. The provided AJAX implementation handles browser history operations, bookmarking and sharing properly and is SEO-friendly.
+
+[See the official summary of the pull request for details and examples of usage.](https://github.com/punkave/apostrophe/pull/766)
+
+* We also fixed a bug in the `refinalize` feature of cursors. state.criteria is now cloned before finalize and restored after it. Otherwise many criteria are added twice after refinalize which causes a fatal error with a few, like text search in mongodb.
+
+In addition, we merged a contribution from Fotis Paraskevopoulos that allows a `bodyParser` option with `json` and `urlencoded` properties to be passed to the `apostrophe-express` module. Those properties are passed on to configure those two body parser middleware functions.
 
 ## 2.8.0
 
