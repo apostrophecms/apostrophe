@@ -219,6 +219,88 @@ describe('Schema Filters', function() {
     })
   });
 
+  it('filter for cats exists', function() {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    assert(cursor.cats);
+  });
+
+  it('filter for cats can select people with a specified cat (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    // Four people should have cat 5 (because their i is greater than 5, see
+    // the sample data generator above)
+    cursor.cats(cats[5].slug);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      assert(people.length === 4);
+      done();
+    });
+  });
+
+  it('filter for cats can select people with any of three cats via array (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    cursor.cats([ cats[0].slug, cats[1].slug, cats[2].slug ]);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      // Everybody except person 0 has the first cat
+      assert(people.length === 9);
+      done();
+    });
+  });
+
+  it('catsAnd filter can select people with all three cats (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    cursor.catsAnd([ cats[0].slug, cats[1].slug, cats[2].slug ]);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      // Only people 3-9 have cat 2
+      assert(people.length === 7);
+      done();
+    });
+  });
+
+  it('filter for cats can select sad people with no cat (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    cursor.cats('none');
+    return cursor.toArray(function(err, _people) {
+      assert(!err);
+      // Persons 0 and 10 have no cats
+      assert(_people.length === 2);
+      var ids = _.pluck(_people, '_id');
+      assert(_.contains(ids, people[0]._id));
+      assert(_.contains(ids, people[10]._id));
+      done();
+    });
+  });
+
+  it('when not used filter for cats (by slug) has no effect', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      assert(people.length === 11);
+      done();
+    });
+  });
+  
+  it('can obtain choices for cats (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toChoices('cats', function(err, cats) {
+      assert(!err);
+      // Only the cats that are actually somebody's cat come up
+      assert(cats.length === 9);
+      assert(cats[0].value);
+      assert(cats[0].label);
+      assert(cats[0].value === 'cat-0');
+      done();
+    });
+  });
+
   it('filter for _favorite exists', function() {
     var req = t.req.admin(apos);
     var cursor = apos.people.find(req);
@@ -286,6 +368,88 @@ describe('Schema Filters', function() {
       assert(cats[0].slug);
       done();
     })
+  });
+
+  it('filter for favorite (by slug) exists', function() {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    assert(cursor._favorite);
+  });
+
+  it('filter for favorite can select people with a specified favorite cat (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    // Only one person has each favorite
+    cursor.favorite(cats[3].slug);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      assert(people.length === 1);
+      assert(people[0].i === 3);
+      done();
+    });
+  });
+
+  it('filter for favorite can select people with a specified favorite cat (by slug) plus a search without a refinalize crash', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    // Only one person has each favorite
+    cursor.favorite(cats[3].slug);
+    return cursor.search('person').toArray(function(err, people) {
+      assert(!err);
+      assert(people.length === 1);
+      assert(people[0].i === 3);
+      done();
+    });
+  });
+
+  it('filter for favorite (by slug) can use array syntax', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    cursor.favorite([ cats[7].slug ]);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      // Only person 0 prefers the first cat
+      assert(people.length === 1);
+      assert(people[0].i === 7);
+      done();
+    });
+  });
+
+  it('filter for favorite (by slug) can select sad people who dislike cats', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    cursor.favorite('none');
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      // Only person 10 has no favorite cat
+      assert(people.length === 1);
+      assert(people[0].i === 10);
+      done();
+    });
+  });
+
+  it('when not used filter for favorite (by slug) has no effect', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toArray(function(err, people) {
+      assert(!err);
+      assert(people.length === 11);
+      done();
+    });
+  });
+
+  it('can obtain choices for favorite (by slug)', function(done) {
+    var req = t.req.admin(apos);
+    var cursor = apos.people.find(req);
+    return cursor.toChoices('favorite', function(err, cats) {
+      assert(!err);
+      // Only the cats that are actually someone's favorite come up
+      assert(cats.length === 10);
+      assert(cats[0].value);
+      assert(cats[0].label);
+      assert(cats[0].value === 'cat-0');
+      done();
+    });
   });
 
   it('filter for flavor exists', function() {
