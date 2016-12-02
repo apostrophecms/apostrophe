@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.9.2
+
+* Starting with MongoDB 3.3.x (?), it is an error to pass `safe: true` when calling `ensureIndex`, and it has never done anything in any version. In our defense, cargo-cult practice was probably adopted back in the days when MongoDB would invoke your write callback without actually confirming anything unless you passed `safe: true`, but apparently this was never a thing for indexes. Removed all the `safe: true` arguments from `ensureIndex` calls.
+* Added a `beforeAjax` Apostrophe event to facilitate progress display and animations when using the new `data-apos-ajax-content` feature.
+
 ## 2.9.1
 
 * Fixed an omission that prevented the use of the back button to undo the very first click when using the new `data-apos-ajax-context`. Later clicks worked just fine, but for the first one to work we need a call to `replaceState` to make it possible to restore the original query.
