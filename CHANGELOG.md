@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.9.1
+
+* Fixed an omission that prevented the use of the back button to undo the very first click when using the new `data-apos-ajax-context`. Later clicks worked just fine, but for the first one to work we need a call to `replaceState` to make it possible to restore the original query.
+
 ## 2.9.0
 
 All tests passing.
