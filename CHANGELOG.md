@@ -2,6 +2,8 @@
 
 ## 2.10.2
 
+All tests passing.
+
 A very minor fix, but 2.10.1 had a very noisy console.log statement left in.
 
 ## 2.10.1
