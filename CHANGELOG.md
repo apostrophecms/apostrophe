@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.10.1
+
+All tests passing.
+
+* The built-in cursor filters for `float` and `integer` no longer incorrectly default to filtering for docs with the value `0` if the value being filtered for is undefined or null. They default to not filtering at all, which is correct.
+
 ## 2.10.0
 
 All tests passing.
