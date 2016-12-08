@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.10.3
+
+All tests passing.
+
+Fixed bug in `autoPreserveText` feature of our `data-apos-ajax-context` mechanism; also, restricted it to text inputs and textareas that actually have the focus so that you can replace their values normally at other times
+
 ## 2.10.2
 
 All tests passing.
