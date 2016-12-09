@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.11.0
+
+All tests passing.
+
+You can now add middleware to your Apostrophe site via any module in your project. Just add an `self.expressMiddleware` method to your module, which takes the usual `req, res, next` arguments. Or, if it's more convenient, set `self.expressMiddleware` to an array of such functions. "Module middleware" is added immediately after the minimum required Apostrophe middleware (bodyParser, `req.data`, etc), and before any routes.
+
 ## 2.10.3
 
 All tests passing.
