@@ -1,8 +1,11 @@
 # Changelog
 
-## 2.11.1
+## 2.12.0
 
-Developers are no longer required to explicitly set `instantiate: false` when adding an npm module that uses the `improve` property to enhance a different module. In addition, bugs were fixed in the underlying `moog-require` module to ensure that assets can be loaded from the `public` and `views` folders of modules that use `improve`.
+All tests passing.
+
+* Developers are no longer required to set `instantiate: false` in `app.js` when configuring an npm module that uses the `improve` property to implicitly subclass and enhance a different module. In addition, bugs were fixed in the underlying `moog-require` module to ensure that assets can be loaded from the `public` and `views` folders of modules that use `improve`.
+* `string` has replaced `csv` as the property name of the schema field converters that handle plaintext. Backwards compatibility has been implemented so that existing `csv` converters will work transparently and calls to `convert` with `csv` as the `from` argument still work as well. In all new custom field types you should say `string` rather than `csv`. There is no change in the functionality or implementation other than the name.
 
 ## 2.11.0
 
