@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.11.1
+
+Developers are no longer required to explicitly set `instantiate: false` when adding an npm module that uses the `improve` property to enhance a different module. In addition, bugs were fixed in the underlying `moog-require` module to ensure that assets can be loaded from the `public` and `views` folders of modules that use `improve`.
+
 ## 2.11.0
 
 All tests passing.
