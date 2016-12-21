@@ -11,7 +11,7 @@ describe('Utils', function(){
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       afterInit: function(callback) {
         assert(apos.utils);
         return done();

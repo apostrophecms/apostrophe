@@ -8,7 +8,7 @@ describe('Db', function(){
     var apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       afterInit: function(callback) {
         assert(apos.db);
         assert(apos.db.serverConfig.port === 27017)

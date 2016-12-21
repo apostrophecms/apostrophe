@@ -14,7 +14,7 @@ describe('Express', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -197,7 +197,7 @@ describe('Express', function() {
  		apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
@@ -242,5 +242,75 @@ describe('Express', function() {
   		done();
   	});
   });
+  
+  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl option is set on apos object', function(done) {
 
+    apos = require('../index.js')({
+      root: module,
+      shortName: 'test',
+      baseUrl: 'https://example.com',
+      modules: {
+        'apostrophe-express': {
+          port: 7957,
+          csrf: false
+        },
+        'express-test': {},
+        'templates-test': {},
+        'templates-subclass-test': {}
+      },
+      afterInit: function(callback) {
+        assert(apos.baseUrl);
+        assert(apos.baseUrl === 'https://example.com');
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        var req = apos.tasks.getReq({ url: '/test' });
+        assert(req.baseUrl === 'https://example.com');
+        assert(req.absoluteUrl === 'https://example.com/test');
+        done();
+      }
+    });    
+  });
+
+  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl and prefix options are set on apos object', function(done) {
+
+    apos = require('../index.js')({
+      root: module,
+      shortName: 'test',
+      baseUrl: 'https://example.com',
+      prefix: '/subdir',
+      modules: {
+        'apostrophe-express': {
+          port: 7958,
+          csrf: false
+        },
+        'express-test': {},
+        'templates-test': {},
+        'templates-subclass-test': {}
+      },
+      afterInit: function(callback) {
+        assert(apos.baseUrl);
+        assert(apos.baseUrl === 'https://example.com');
+        assert(apos.prefix === '/subdir');
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        var req = apos.tasks.getReq({ url: '/test' });
+        assert(req.baseUrl === 'https://example.com');
+        assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
+        assert(req.absoluteUrl === 'https://example.com/subdir/test');
+        done();
+      }
+    });    
+  });
 });
