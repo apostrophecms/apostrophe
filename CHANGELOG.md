@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.13.1
+
+All tests passing.
+
+The `apostrophe-attachments` module now calls `apos.ui.busy` correctly on the fieldset so that the busy and completed indicators are correctly shown and hidden. Previously the string `0` was passed, which is not falsy.
+
 ## 2.12.0
 
 All tests passing.
