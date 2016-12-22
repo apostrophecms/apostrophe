@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.13.2
+
+All tests passing.
+
+The `data-apos-ajax-context` feature had a bug which prevented ordinary anchor links from performing AJAX refreshes correctly.
+
 ## 2.13.1
 
 All tests passing.
