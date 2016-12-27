@@ -11,7 +11,7 @@
 {%- endblock -%}
 
 {%- block instructions -%}
-  You can select content to display by entering the titles of individual {{ data.options.pluralLabel }}, or tags.
+  {{ __('You can select content to display by entering the titles of individual %s, or tags.', __(data.options.pluralLabel |  d(''))) }}
 {%- endblock -%}
 
 {%- block filters -%}
@@ -21,7 +21,7 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Manage ' + data.options.pluralLabel) }}
+  {{ __('Manage %s', __(data.options.pluralLabel | d(''))) }}
 {%- endblock -%}
 
 {%- block body -%}

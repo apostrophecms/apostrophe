@@ -9,20 +9,20 @@
 {% endblock %}
 
 {% block label %}
-{{ __('Choose ' + data.options.pluralLabel) }}
+{{ __('Choose %s', __(data.options.pluralLabel | d(''))) }}
 {% endblock %}
 
 {% block body %}
 <ul>
-  <li><a href="#">Individually</a></li>
-  <li><a href="#">Automatically</a></li>
+  <li><a href="#">{{ __('Individually') }}</a></li>
+  <li><a href="#">{{ __('Automatically') }}</a></li>
 </ul>
 
 {# Populated via js #}
 <div data-individual-view></div>
 
 <div data-automatic-view>
-  <h4>By Tag</h4>
+  <h4>{{ __("By Tag") }}</h4>
   <input type="text" />
 </div>
 {% endblock %}

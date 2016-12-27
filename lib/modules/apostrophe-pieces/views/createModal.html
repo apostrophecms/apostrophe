@@ -15,5 +15,5 @@
 {%- endblock -%}
 
 {%- block instructions -%}
-  Fill out the fields to add a new {{ data.options.label }}.
+  {{ __('Fill out the fields to add a new %s.', data.options.label | d(''))}}
 {%- endblock -%}
