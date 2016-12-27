@@ -10,19 +10,19 @@
 
 {% block label %}
 	{% if data.verb == 'update' %}
-		Page Settings
+        {{ __('Page Settings') }}
 	{% elif data.verb == 'insert' %}
-		New Page
+        {{ __('New Page') }}
   {% elif data.verb == 'copy' %}
-    Copy Page
+        {{ __('Copy Page') }}
 	{% endif %}
 {% endblock %}
 
 {% block instructions %}
 	{% if data.verb == 'update' %}
-		Change the settings of the page you're currently on.
+        {{ __("Change the settings of the page you're currently on.") }}
 	{% elif data.verb == 'insert' %}
-		Set the options for a new page.
+        {{ __("Set the options for a new page.") }}
 	{% endif %}
 {% endblock %}
 

@@ -2,7 +2,7 @@
 {%- if not data.page.published or (data.piece and not data.piece.published) -%}
 <div class="apos-context-menu">
   {{ dropdowns.base({
-      label: __("Unpublished"),
+      label: "Unpublished",
       items: data.publishMenu
     }, 'button', { buttonType: 'global', attributes: 'apos--danger' })
   }}
