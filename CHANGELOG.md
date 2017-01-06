@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.14.0
+
+All tests passing.
+
+* A version rollback dialog box for the `global` doc is now opened if an element with the `data-apos-versions-global` attribute is clicked. There is currently no such element in the standard UI but you may introduce one in your own layout if you have mission-critical content in the `global` doc that is awkward to recreate after an accidental deletion, such as a custom sitewide nav.
+* An error message is correctly displayed when login fails.
+* Many UI messages are now passed through the `__()` internationalization helper correctly. Thanks to `timaebi`.
+
 ## 2.13.2
 
 All tests passing.
