@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.14.1
+
+All tests passing.
+
+* The `apos.utils.clonePermanent` method no longer turns objects into long arrays of nulls if they happen to have a `length` property. `lodash` uses the `length` property as an indicator that the object should be treated as an array, but this would be an unrealistic restriction on Apostrophe schema field names. Instead, `clonePermanent` now uses `Array.isArray` to distinguish true arrays. This fixes a nasty bug when importing content from A1.5 and subsequently editing it.
+
+* When a user is logged in there is an `apos.user` object on the browser side. Due to a bug this was an empty object. It now contains `title`, `_id` and `username` properties as intended.
+
 ## 2.14.0
 
 All tests passing.

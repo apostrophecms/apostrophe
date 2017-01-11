@@ -159,5 +159,31 @@ describe('Utils', function(){
       ));
     });
 
+    it('clonePermanent should not behave bizarrely with a test case from the punkave site', function() {
+      var input = {
+        "attachment" : {
+      		"_id" : "a205filea1media97",
+      		"title" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30792414_5081-225x300-jpg",
+      		"width" : 225,
+      		"height" : 300,
+      		"length" : 22014,
+      		"md5" : 22014,
+      		"extension" : "jpg",
+      		"group" : "images",
+      		"name" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30792414_5081-225x300-jpg",
+      		"landscape" : false,
+      		"portrait" : true,
+      		"a15Export" : true,
+      		"tags" : [
+      			"p'window",
+      			"2009"
+      		],
+      		"searchText" : "http window punkave com wp content uploads 2009 01 n56601994 30792414 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30792414 5081 225x300 jpg jpg",
+      		"type" : "attachment"
+      	}
+      };
+      var clone = apos.utils.clonePermanent(input);
+      assert(clone.attachment._id === "a205filea1media97");
+    });
   });
 });
