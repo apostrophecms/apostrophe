@@ -16,7 +16,7 @@ describe('Modules', function(){
 
   // Removes some non-determinism of tasks timing out when running on travis
   this.timeout(5000);
-
+  
   require('./base-module.js');
   
   require('./utils.js');
@@ -26,9 +26,9 @@ describe('Modules', function(){
   require('./db.js');
   
   require('./caches.js');
-
+  
   require('./locks.js');
-
+  
   require('./express.js');
   
   require('./templates.js');
@@ -42,9 +42,9 @@ describe('Modules', function(){
   require('./attachments.js');
   
   require('./schemas.js');
-
+  
   require('./schemaFilters.js');
-
+  
   require('./docs.js');
   
   require('./pages.js');
