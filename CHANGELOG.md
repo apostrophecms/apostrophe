@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.14.3
+
+All tests passing.
+
+The mechanism that preserves text fields when performing AJAX refreshes was preserving
+other types of `input` elements. Checkboxes, radio buttons and `type="submit"` are now
+properly excluded from this mechanism.
+
 ## 2.14.2
 
 Fixed [#385](https://github.com/punkave/apostrophe/issues/385): if a page is moved to the trash, its slug must always change, even if it has been edited so that it no longer has its parent's slug as a prefix. In addition, if the resulting slug of a descendant of the page moving to the trash conflicts with an existing page in the trash, steps are taken to ensure uniqueness.
