@@ -9,9 +9,13 @@ test/node_modules
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
 */public/css/*.css
 lib/modules/*/public/css/*.css
+*/public/css/*.css
+lib/modules/*/public/css/*.css
 lib/modules/apostrophe-assets/public/css/vendor/cropper.css
 lib/modules/apostrophe-assets/public/css/vendor/pikaday.css
 lib/modules/apostrophe-ui/public/css/vendor/font-awesome/font-awesome.css
+# Never commit a CSS map file, anywhere
+*.css.map
 
 # Dont commit test generated css
 test/public/css/*.css

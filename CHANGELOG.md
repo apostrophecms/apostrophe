@@ -1,5 +1,15 @@
 # Changelog
 
+** 2.15.0
+
+All tests passing.
+
+* `apos.permissions.addPublic` accepts multiple arguments and array arguments,
+adding all of the permission names given including any listed in the arrays.
+* Permissions checks for pieces admin routes longer check for req.user, checking for the appropriate `edit-` permission is sufficient and makes addPublic more useful.
+* Updated the `i18n` module to address a problem where labels that happened to be numbers rather than strings would crash the template if passed to `__()`.
+* Documentation improvements.
+
 ** 2.14.3
 
 All tests passing.
