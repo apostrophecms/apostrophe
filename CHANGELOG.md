@@ -1,5 +1,9 @@
 # Changelog
 
+** 2.15.2
+
+Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
+
 ** 2.15.1
 
 Due to a miscommunication the version number 2.15.0 had been previously used. The description below was originally intended for 2.15.0 and has been published as 2.15.1 purely to address the version numbering conflict.
