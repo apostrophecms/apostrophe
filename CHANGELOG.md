@@ -1,6 +1,22 @@
 # Changelog
 
+** 2.16.0
+
+All tests passing.
+
+* Reintroduced the reorganize feature for editors who have permissions for some pages but not others. You are able to see the pages you can edit and also their ancestors, in order to navigate the tree. However you are able to drag pages only to parents you can edit.
+
+* Introduced the new `deleteFromTrash` option to the `apostrophe-pages` module. If this option is enabled, a new icon appears in "reorganize" when looking at pages in the trash. This icon allows you to permanently delete a page and its descendants from the site.
+
+The use of this option can lead to unhappy customers if they do not clearly understand it is a permanent action. For that reason, it is disabled by default. However it can be quite useful when transitioning from the initial site build to long-term support. We recommend enabling it during that period and disabling it again after cleanup.
+
+* "Reorganize" no longer displays nonfunctional "view" and "trash" icons for the trash and pages inside it.
+
+* The tests for the `apostrophe-locks` module are now deterministic and should always pass.
+
 ** 2.15.2
+
+All tests passing.
 
 Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
 
