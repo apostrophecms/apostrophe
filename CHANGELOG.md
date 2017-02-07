@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.16.1
+
+All tests passing.
+
+* If you have tried using `piecesFilters` with a `tags` field type, you may have noticed that when the query string parameter is present but empty, you get no results. This is suboptimal because that's a common result if you use an HTML form to drive the query. An empty string for a `tags` filter now correctly does nothing.
+
+* In `apostrophe-rich-text-widgets`, initialize CKEditor on `instanceReady`, rather than via a dodgy timeout. Thanks to Frederik Ekelund for finding a better way!
+
 ** 2.16.0
 
 All tests passing.
