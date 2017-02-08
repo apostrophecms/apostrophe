@@ -8,7 +8,8 @@
 {%- block body -%}
   <div class="apos-chooser" data-apos-array-items></div>
   <div class="apos-array-add-item apos-button apos-button--major apos-button--square" data-apos-add-array-item>{{ __('+ Add Item') }}</div>
-    <div class="apos-array-editor" data-apos-array-item></div>
+  <div data-apos-array-limit-reached class="apos-array-limit-reached apos-button apos-button--major apos-button--square apos-button--disabled">{{ __("Limit Reached") }}</div>
+  <div class="apos-array-editor" data-apos-array-item></div>
   </div>
 {%- endblock -%}
 
