@@ -1,10 +1,12 @@
 <div class="apos-schema-tabs apos-array-items" data-schema-tabs>
   {% for item in data.arrayItems %}
     <div class="apos-schema-tab apos-array-item{{ ' apos-active' if (data.active == loop.index0)}}" data-apos-array-items-trigger="{{loop.index0}}" data-id="{{ item.id }}">
-      {{ item._title or "Untitled" }}
-      <i class="fa fa-remove" data-apos-delete-array-item></i>
-      <i class="fa fa-arrow-down" data-apos-move-array-item="down"></i>
-      <i class="fa fa-arrow-up" data-apos-move-array-item="up"></i>
+      <div class="apos-array-item-controls">
+				<i class="fa fa-remove" data-apos-delete-array-item></i>
+      	<i class="fa fa-arrow-down" data-apos-move-array-item="down"></i>
+      	<i class="fa fa-arrow-up" data-apos-move-array-item="up"></i>	
+      </div>
+      <p>{{ item._title or "Untitled" }}</p>
     </div>
   {% endfor %}
 </div>
