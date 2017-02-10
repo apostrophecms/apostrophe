@@ -1,5 +1,33 @@
 # Changelog
 
+** 2.16.1
+
+All tests passing.
+
+* If you have tried using `piecesFilters` with a `tags` field type, you may have noticed that when the query string parameter is present but empty, you get no results. This is suboptimal because that's a common result if you use an HTML form to drive the query. An empty string for a `tags` filter now correctly does nothing.
+
+* In `apostrophe-rich-text-widgets`, initialize CKEditor on `instanceReady`, rather than via a dodgy timeout. Thanks to Frederik Ekelund for finding a better way!
+
+** 2.16.0
+
+All tests passing.
+
+* Reintroduced the reorganize feature for editors who have permissions for some pages but not others. You are able to see the pages you can edit and also their ancestors, in order to navigate the tree. However you are able to drag pages only to parents you can edit.
+
+* Introduced the new `deleteFromTrash` option to the `apostrophe-pages` module. If this option is enabled, a new icon appears in "reorganize" when looking at pages in the trash. This icon allows you to permanently delete a page and its descendants from the site.
+
+The use of this option can lead to unhappy customers if they do not clearly understand it is a permanent action. For that reason, it is disabled by default. However it can be quite useful when transitioning from the initial site build to long-term support. We recommend enabling it during that period and disabling it again after cleanup.
+
+* "Reorganize" no longer displays nonfunctional "view" and "trash" icons for the trash and pages inside it.
+
+* The tests for the `apostrophe-locks` module are now deterministic and should always pass.
+
+** 2.15.2
+
+All tests passing.
+
+Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
+
 ** 2.15.1
 
 Due to a miscommunication the version number 2.15.0 had been previously used. The description below was originally intended for 2.15.0 and has been published as 2.15.1 purely to address the version numbering conflict.
