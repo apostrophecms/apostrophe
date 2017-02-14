@@ -2,6 +2,8 @@
 
 ** 2.17.0
 
+All tests passing.
+
 * `array` schema fields now accept a `limit` option. They also support the `def` property to set defaults for individual fields. The array editor code has been refactored for better reliability and performance and documentation for the methods has been written.
 
 * Relative `@import` statements now work when you push plain `.css` files as Apostrophe assets. There is no change in behavior for LESS files. Thanks to Fredrik Ekelund.
