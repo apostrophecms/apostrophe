@@ -1,6 +1,200 @@
 # Changelog
 
+** 2.17.0
+
+All tests passing.
+
+* `array` schema fields now accept a `limit` option. They also support the `def` property to set defaults for individual fields. The array editor code has been refactored for better reliability and performance and documentation for the methods has been written.
+
+* Relative `@import` statements now work when you push plain `.css` files as Apostrophe assets. There is no change in behavior for LESS files. Thanks to Fredrik Ekelund.
+
+* Controls such as the "Finished" button of the reorganize modal were floating off the screen. This has been fixed.
+
+** 2.16.1
+
+All tests passing.
+
+* If you have tried using `piecesFilters` with a `tags` field type, you may have noticed that when the query string parameter is present but empty, you get no results. This is suboptimal because that's a common result if you use an HTML form to drive the query. An empty string for a `tags` filter now correctly does nothing.
+
+* In `apostrophe-rich-text-widgets`, initialize CKEditor on `instanceReady`, rather than via a dodgy timeout. Thanks to Frederik Ekelund for finding a better way!
+
+** 2.16.0
+
+All tests passing.
+
+* Reintroduced the reorganize feature for editors who have permissions for some pages but not others. You are able to see the pages you can edit and also their ancestors, in order to navigate the tree. However you are able to drag pages only to parents you can edit.
+
+* Introduced the new `deleteFromTrash` option to the `apostrophe-pages` module. If this option is enabled, a new icon appears in "reorganize" when looking at pages in the trash. This icon allows you to permanently delete a page and its descendants from the site.
+
+The use of this option can lead to unhappy customers if they do not clearly understand it is a permanent action. For that reason, it is disabled by default. However it can be quite useful when transitioning from the initial site build to long-term support. We recommend enabling it during that period and disabling it again after cleanup.
+
+* "Reorganize" no longer displays nonfunctional "view" and "trash" icons for the trash and pages inside it.
+
+* The tests for the `apostrophe-locks` module are now deterministic and should always pass.
+
+** 2.15.2
+
+All tests passing.
+
+Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
+
+** 2.15.1
+
+Due to a miscommunication the version number 2.15.0 had been previously used. The description below was originally intended for 2.15.0 and has been published as 2.15.1 purely to address the version numbering conflict.
+
+All tests passing.
+
+* `apos.permissions.addPublic` accepts multiple arguments and array arguments,
+adding all of the permission names given including any listed in the arrays.
+* Permissions checks for pieces admin routes longer check for req.user, checking for the appropriate `edit-` permission is sufficient and makes addPublic more useful.
+* Updated the `i18n` module to address a problem where labels that happened to be numbers rather than strings would crash the template if passed to `__()`.
+* Documentation improvements.
+
+** 2.14.3
+
+All tests passing.
+
+The mechanism that preserves text fields when performing AJAX refreshes was preserving
+other types of `input` elements. Checkboxes, radio buttons and `type="submit"` are now
+properly excluded from this mechanism.
+
+## 2.14.2
+
+Fixed [#385](https://github.com/punkave/apostrophe/issues/385): if a page is moved to the trash, its slug must always change, even if it has been edited so that it no longer has its parent's slug as a prefix. In addition, if the resulting slug of a descendant of the page moving to the trash conflicts with an existing page in the trash, steps are taken to ensure uniqueness.
+
+## 2.14.1
+
+All tests passing.
+
+* The `apos.utils.clonePermanent` method no longer turns objects into long arrays of nulls if they happen to have a `length` property. `lodash` uses the `length` property as an indicator that the object should be treated as an array, but this would be an unrealistic restriction on Apostrophe schema field names. Instead, `clonePermanent` now uses `Array.isArray` to distinguish true arrays. This fixes a nasty bug when importing content from A1.5 and subsequently editing it.
+
+* When a user is logged in there is an `apos.user` object on the browser side. Due to a bug this was an empty object. It now contains `title`, `_id` and `username` properties as intended.
+
+## 2.14.0
+
+All tests passing.
+
+* A version rollback dialog box for the `global` doc is now opened if an element with the `data-apos-versions-global` attribute is clicked. There is currently no such element in the standard UI but you may introduce one in your own layout if you have mission-critical content in the `global` doc that is awkward to recreate after an accidental deletion, such as a custom sitewide nav.
+* An error message is correctly displayed when login fails.
+* Many UI messages are now passed through the `__()` internationalization helper correctly. Thanks to `timaebi`.
+
+## 2.13.2
+
+All tests passing.
+
+The `data-apos-ajax-context` feature had a bug which prevented ordinary anchor links from performing AJAX refreshes correctly.
+
+## 2.13.1
+
+All tests passing.
+
+The `apostrophe-attachments` module now calls `apos.ui.busy` correctly on the fieldset so that the busy and completed indicators are correctly shown and hidden. Previously the string `0` was passed, which is not falsy.
+
+## 2.12.0
+
+All tests passing.
+
+* Developers are no longer required to set `instantiate: false` in `app.js` when configuring an npm module that uses the `improve` property to implicitly subclass and enhance a different module. In addition, bugs were fixed in the underlying `moog-require` module to ensure that assets can be loaded from the `public` and `views` folders of modules that use `improve`.
+* `string` has replaced `csv` as the property name of the schema field converters that handle plaintext. Backwards compatibility has been implemented so that existing `csv` converters will work transparently and calls to `convert` with `csv` as the `from` argument still work as well. In all new custom field types you should say `string` rather than `csv`. There is no change in the functionality or implementation other than the name.
+
+## 2.11.0
+
+All tests passing.
+
+You can now add middleware to your Apostrophe site via any module in your project. Just add an `self.expressMiddleware` method to your module, which takes the usual `req, res, next` arguments. Or, if it's more convenient, set `self.expressMiddleware` to an array of such functions. "Module middleware" is added immediately after the minimum required Apostrophe middleware (bodyParser, `req.data`, etc), and before any routes.
+
+## 2.10.3
+
+All tests passing.
+
+Fixed bug in `autoPreserveText` feature of our `data-apos-ajax-context` mechanism; also, restricted it to text inputs and textareas that actually have the focus so that you can replace their values normally at other times
+
+## 2.10.2
+
+All tests passing.
+
+A very minor fix, but 2.10.1 had a very noisy console.log statement left in.
+
+## 2.10.1
+
+All tests passing.
+
+* The built-in cursor filters for `float` and `integer` no longer incorrectly default to filtering for docs with the value `0` if the value being filtered for is undefined or null. They default to not filtering at all, which is correct.
+
+## 2.10.0
+
+All tests passing.
+
+* Apostrophe now automatically recompiles modified Nunjucks templates. This means you can hit refresh in your browser after hitting save in your editor when working on `.html` files. Also note that this has always worked for `.less` files.
+* Fixed a longstanding bug in `joinByArrayReverse`, which now works properly.
+
+## 2.9.2
+
+All tests passing.
+
+* Starting with MongoDB 3.3.x (?), it is an error to pass `safe: true` when calling `ensureIndex`, and it has never done anything in any version. In our defense, cargo-cult practice was probably adopted back in the days when MongoDB would invoke your write callback without actually confirming anything unless you passed `safe: true`, but apparently this was never a thing for indexes. Removed all the `safe: true` arguments from `ensureIndex` calls.
+* Added a `beforeAjax` Apostrophe event to facilitate progress display and animations when using the new `data-apos-ajax-content` feature.
+
+## 2.9.1
+
+All tests passing.
+
+* Fixed an omission that prevented the use of the back button to undo the very first click when using the new `data-apos-ajax-context`. Later clicks worked just fine, but for the first one to work we need a call to `replaceState` to make it possible to restore the original query.
+
+## 2.9.0
+
+All tests passing.
+
+* Two major new features in this release: built-in filters for most schema fields, and built-in AJAX support for `apostrophe-pieces-pages`. These combine to eliminate the need for custom code in a wide array of situations where you wish to allow users to browse and filter blog posts, events, etc. In most cases there is no longer any need to write your own `cursor.js` or your own AJAX implementation. The provided AJAX implementation handles browser history operations, bookmarking and sharing properly and is SEO-friendly.
+
+[See the official summary of the pull request for details and examples of usage.](https://github.com/punkave/apostrophe/pull/766)
+
+* We also fixed a bug in the `refinalize` feature of cursors. state.criteria is now cloned before finalize and restored after it. Otherwise many criteria are added twice after refinalize which causes a fatal error with a few, like text search in mongodb.
+
+In addition, we merged a contribution from Fotis Paraskevopoulos that allows a `bodyParser` option with `json` and `urlencoded` properties to be passed to the `apostrophe-express` module. Those properties are passed on to configure those two body parser middleware functions.
+
+## 2.8.0
+
+All tests passing.
+
+* `APOS_MONGODB_URI` environment variable is used to connect to MongoDB if present. Helpful for cloud hosting. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* `APOS_S3_BUCKET`, `APOS_S3_ENDPOINT` (optional), `APOS_S3_SECRET`, `APOS_S3_KEY`, and `APOS_S3_REGION` environment variables can be used to configure Apostrophe to use S3 for uploaded media storage. This behavior kicks in if `APOS_S3_BUCKET` is set. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* New advisory locking API accessible via `apos.locks.lock` and `apos.locks.unlock`. `apostrophe-migrations:migrate` is now wrapped in a lock. More locks are coming, although Apostrophe was carefully designed for benign worst case outcomes during race conditions.
+* Better asset deployment for Heroku and other cloud services. `node app apostrophe:generation --create-bundle=NAME` now creates a new folder, `NAME`, containing assets that would otherwise have been written to `public`. Launching a server with the `APOS_BUNDLE` environment variable set to `NAME` will then copy that bundle's contents into `public` before listening for connections. See the new [deploying Apostrophe in the cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html).
+* `apostrophe-pieces-pages` index pages are about 2x faster; discovered we were inefficiently deep-cloning `req` when cloning a cursor.
+* Helpful error message if you forget to set the `name` property of one of your `types` when configuring `apostrophe-pages`.
+
+## 2.7.0
+
+* We do a better job of defaulting to a sort by search match quality if full-text search is present in a query. Under the hood this is powered by the new `defaultSort` filter, which just stores a default value for the `sort` filter to be used only if `search` (and anything else with an implicit preferred sort order) is not present. No more lame search results for blog posts. You can explicitly set the `sort()` filter in a cursor override if you really want to, but trust us, when `search` is present sorting by anything but search quality produces poor results.
+* Fixed bugs in the sanitizer for page slugs. It is now impossible to save a slug with trailing or consecutive slashes (except the home page slug which is allowed to consist of a single "trailing" slash). Added unit tests.
+* Apostrophe's dropdown menus, etc. will more robustly maintain their font size in the presence of project-level CSS. There is an explicit default font size for `.apos-ui`.
+
+## 2.6.2
+
+All tests passing.
+
+* The auto-suggestion of titles upon uploading files also suggests slugs.
+* The auto-suggestion of titles and slugs applies to both "files" and "images."
+* Reduce the clutter in the versions collection by checking for meaningful change on the server side, where final sanitization of HTML, etc. has taken place to iron out distinctions without a difference.
+* Use the permission name `edit-attachment` consistently, so that calling `addPublic('edit-attachment')` has the intended effect.
+* Manage view of pieces does not crash if `updatedAt` is missing from a piece.
+
+## 2.6.1
+
+All tests passing.
+
+* Choosers and schema arrays play nicely with the new fixed-position tabs.
+* Better CSS solution to positioning the attachment upload buttons which doesn't interfere with other styles.
+* Images in the chooser choices column "stay in their lane."
+* Better error message when an attempt to edit an area with a hyphenated name is used.
+* Array edit button fixed.
+* The `type()` cursor filter now has a finalizer and merges its criteria there at the very end, so that you can override a previous call to it at any time prior to invoking `toArray` or similar.
+* Area controls no longer interfere with visibility of widget type selection menu.
+
 ## 2.6.0
+
+All tests passing.
 
 * `relationship` fields defined for `joinByArray` can now have an `inline: true` flag. If they are inline, they are presented right in the chooser, rather than appearing in a separate modal dialog reachable by clicking an icon. This feature should be used sparingly, but that's true of relationship fields in general.
 * Permissions editing for pages now takes advantage of the new inline relationship fields to make the "apply to subpages" functionality easier to discover.

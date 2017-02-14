@@ -1,12 +1,31 @@
-.apos-array-editor
+.apos-modal .apos-array-editor
 {
-  float: left;
+  float: right;
   width: 75%;
+
+  .apos-schema-group { width: 100%; }
+}
+
+.apos-ui {
+  .apos-array-item-controls
+  {
+    display: flex;
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    align-items: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    margin-right: @apos-margin-1;
+  }
 }
 
 .apos-modal .apos-schema-tabs.apos-array-items
 {
-  width: 100%;
+  width: 25%;
   i
   {
     float: right;
@@ -17,6 +36,9 @@
       cursor: pointer;
       color: @apos-dark;
     }
+    &:first-child {
+      margin-left: 0;
+    }
     .apos-transition();
   }
 }
@@ -24,15 +46,24 @@
 // TODO re-figure .apos-modal .apos-schema-group {} width when no tabs are present.
 // Question: Do we need tabs in arrays?
 
-
 // "Add Item" button
 .apos-modal
-.apos-array-add-item
 {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 25%;
+  .apos-array-add-item, .apos-array-limit-reached
+  {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 25%;
+    text-align: center;
+    padding: @apos-padding-2*.75 0;
+  }
 
-  padding: @apos-padding-2*.75 @apos-padding-4;
+  .apos-array-limit-reached
+  {
+    display: none;
+    &:hover {
+      background-color: @apos-base;
+    }
+  }
 }

@@ -22,7 +22,7 @@ describe('Pages', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -88,10 +88,6 @@ describe('Pages', function() {
       assert(home.type === 'home');
       assert(home.parked);
       assert(home.published);
-      // Verify that clonePermanent did its
-      // job and removed properties not meant
-      // to be stored in mongodb
-      assert(!home._children);
       done();
     });
   });
@@ -474,4 +470,28 @@ describe('Pages', function() {
 
   });
 
+  it('is able to move parent to the trash', function(done) {
+    apos.pages.moveToTrash(t.req.admin(apos), '1234', function(err) {
+      if (err) {
+        console.log(err);
+      }
+      assert(!err);
+      var cursor = apos.pages.find(t.req.anon(apos), {_id: '1234'});
+      cursor.toObject(function(err, page){
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        assert(!page);
+        var cursor2 = apos.pages.find(t.req.anon(apos), { _id: '1234' }).
+          permission(false).trash(null).toObject(function(err, page) {
+            assert.equal(page.path, '/trash/parent');
+            assert(page.trash);
+            assert.equal(page.level, 2);
+            return done();
+          }
+        );
+      });
+    });
+  });
 });

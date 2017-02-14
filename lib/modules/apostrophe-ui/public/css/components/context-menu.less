@@ -1,8 +1,13 @@
 .apos-context-menu-container
 {
   position: fixed;
-  bottom: @apos-padding-4;
-  left: @apos-padding-4;
+  bottom: @apos-padding-2;
+  left: @apos-padding-2;
+  @media @apos-breakpoint-desktop-xl
+  {
+    bottom: @apos-padding-4;
+    left: @apos-padding-4;
+  }
   z-index: @apos-z-index-5;
 
   .apos-context-menu

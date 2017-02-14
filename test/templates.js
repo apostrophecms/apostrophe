@@ -11,7 +11,7 @@ describe('Templates', function(){
   	apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',

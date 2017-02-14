@@ -18,7 +18,7 @@ describe('Apostrophe', function() {
       root: module,
       shortName: 'test',
       overrideTest: 'test', // overriden by data/local.js
-      hostName: 'test.com',
+      
       __testDefaults: {
           modules: {}
       },
@@ -34,7 +34,7 @@ describe('Apostrophe', function() {
       root: module,
       shortName: 'test',
       overrideTest: 'test', // overriden by data/local_fn.js
-      hostName: 'test.com',
+      
       __localPath: '/data/local_fn.js',
       __testDefaults: {
           modules: {}
@@ -51,7 +51,7 @@ describe('Apostrophe', function() {
       root: module,
       shortName: 'test',
       overrideTest: 'test',   // concated in local_fn_b.js
-      hostName: 'test.com',
+      
       __localPath: '/data/local_fn_b.js',
       __testDefaults: {
           modules: {}
@@ -67,7 +67,7 @@ describe('Apostrophe', function() {
     var apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       __testDefaults: {
           modules: {
               'apostrophe-test-module': {},
@@ -84,7 +84,7 @@ describe('Apostrophe', function() {
     var apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       __testDefaults: {
           modules: {
               'apostrophe-test-module': {},
@@ -103,7 +103,7 @@ describe('Apostrophe', function() {
     var apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       afterInit: function(callback) {
         // color = blue is inherited from our implicit subclass of the base module
         assert(apos.assets && apos.assets.color === 'blue');

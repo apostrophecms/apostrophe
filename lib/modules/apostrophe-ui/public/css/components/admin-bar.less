@@ -1,9 +1,9 @@
 .apos-admin-bar
 {
   position: fixed;
-  height: 80px;
-  top: @apos-padding-4;
-  left: @apos-padding-4;
+  height: 60px;
+  top: @apos-padding-2;
+  left: @apos-padding-2;
   z-index: @apos-z-index-5;
   background-color: @apos-base;
   color: @apos-white;
@@ -11,8 +11,15 @@
   .apos-rounded();
   .apos-drop-shadow();
   overflow: hidden;
-  .apos-transition;
+  // .apos-transition;
   .apos-no-select;
+
+  @media @apos-breakpoint-desktop-xl
+  {
+    height: 80px;
+    top: @apos-padding-4;
+    left: @apos-padding-4;
+  }
 
   * { .apos-transition; }
 }
@@ -20,12 +27,27 @@
 .apos-admin-bar-logo
 {
   position: relative;
-  padding: @apos-padding-2;
+  padding: 13px 15px 8px 15px;
+  @media @apos-breakpoint-desktop-xl
+  {
+    padding: @apos-padding-2;
+  }
   .apos-inline-block();
-  // background-color: @apos-base;
+  
   cursor: pointer;
   z-index: 1; // todo bobo
-  svg { max-height: 36px; }
+
+  svg
+  {
+    max-height: 30px;
+    max-width: 30px;
+    @media @apos-breakpoint-desktop-xl
+    {
+      max-height: 36px;
+      max-width: 36px;
+    }
+  }
+
 }
 
 .apos-admin-bar-items
@@ -42,7 +64,17 @@
 .apos-admin-bar-item
 {
   cursor: pointer;
-  height: 75px;
+  height: 56px;
+  @media @apos-breakpoint-desktop-xl
+  {
+    height: 75px;  
+  }
+
+  &:hover
+  {
+    background-color: darken(@apos-primary, 3%)
+  }
+  
   // height: 100%;
   .apos-inline-block(middle);
 }
@@ -67,16 +99,31 @@
 
 .apos-admin-bar-inner
 {
-  max-width: 80px;
+  max-width: 60px;
+  font-size: 13px;
+  @media @apos-breakpoint-desktop-xl
+  {
+    font-size: 16px;
+    max-width: 80px;
+  }
 }
 
 .apos-admin-bar-item-inner
 {
   .apos-inline-block(middle);
-  padding: 0 @apos-padding-2;
-  .apos-transition();
+  padding: 0 @apos-padding-1;
+  @media @apos-breakpoint-desktop-xl
+  {
+    padding: 0 @apos-padding-2;
+  }
+  
+  // .apos-transition();
   height: 100%;
-  line-height: 4.9em;
+  line-height: 4.5em;
+  @media @apos-breakpoint-desktop-xl
+  {
+    line-height: 4.9em;
+  }
 }
 
 .apos-admin-bar.apos-active
@@ -101,4 +148,5 @@
   // Direct links should look the same as other dropdown menu items. -Tom
   color: inherit;
   text-decoration: inherit;
+  transition: none;
 }

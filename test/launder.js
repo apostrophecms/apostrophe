@@ -10,7 +10,7 @@ describe('Launder', function(){
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       afterInit: function(callback) {
         assert(apos.launder);
         return done();

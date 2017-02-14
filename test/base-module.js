@@ -10,7 +10,7 @@ describe('Base Module', function(){
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         // will push an asset for us to look for later
         'apostrophe-test-module-push': {}

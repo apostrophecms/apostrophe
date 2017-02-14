@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block label %}
-{{ data.label }}
+{{ __(data.label | d('')) }}
 {% endblock %}
 
 {% block body %}

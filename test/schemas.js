@@ -173,6 +173,21 @@ var realWorldCase = {
   ]
 };
 
+var pageSlug = [
+  {
+    type: 'slug',
+    name: 'slug',
+    page: true
+  }
+];
+
+var regularSlug = [
+  {
+    type: 'slug',
+    name: 'slug'
+  }
+];
+
 var hasArea = {
   addFields: [
     {
@@ -198,7 +213,7 @@ describe('Schemas', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -423,7 +438,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should convert CSV areas correctly', function(done) {
+  it('should convert string areas correctly', function(done) {
     var schema = apos.schemas.compose(hasArea);
     assert(schema.length === 1);
     var input = {
@@ -433,7 +448,7 @@ describe('Schemas', function() {
     };
     var req = t.req.admin(apos);
     var result = {};
-    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
       // no irrelevant or missing fields
       assert(_.keys(result).length === 1);
@@ -448,7 +463,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should convert CSV areas gracefully when they are undefined', function(done) {
+  it('should convert string areas gracefully when they are undefined', function(done) {
     var schema = apos.schemas.compose(hasArea);
     assert(schema.length === 1);
     var input = {
@@ -458,7 +473,7 @@ describe('Schemas', function() {
     };
     var req = t.req.admin(apos);
     var result = {};
-    return apos.schemas.convert(req, schema, 'csv', input, result, function(err) {
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
       // no irrelevant or missing fields
       assert(_.keys(result).length === 1);
@@ -470,4 +485,75 @@ describe('Schemas', function() {
       done();
     });
   });
+  
+  it('should accept csv as a bc equivalent for string in convert', function(done) {
+    var schema = apos.schemas.compose(hasArea);
+    assert(schema.length === 1);
+    var input = {
+      irrelevant: 'Irrelevant',
+      // Should get escaped, not be treated as HTML
+      body: 'This is the greatest <h1>thing</h1>'
+    };
+    var req = t.req.admin(apos);
+    var result = {};
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
+      assert(!err);
+      // no irrelevant or missing fields
+      assert(_.keys(result).length === 1);
+      // expected fields came through
+      assert(result.body);
+      assert(result.body.type === 'area');
+      assert(result.body.items);
+      assert(result.body.items[0]);
+      assert(result.body.items[0].type === 'apostrophe-rich-text');
+      assert(result.body.items[0].content === apos.utils.escapeHtml(input.body));
+      done();
+    });
+  });
+
+  it('should clean up extra slashes in page slugs', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === '/wiggy/wacky/wobbly/whizzle');
+      done();
+    });
+  });
+
+  it('retains trailing / on the home page', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === '/');
+      done();
+    });
+  });
+
+  it('does not keep slashes when page: true not present for slug', function(done) {
+    var req = t.req.admin(apos);
+    var schema = apos.schemas.compose({ addFields: regularSlug });
+    assert(schema.length === 1);
+    var input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    var result = {};
+    return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
+      assert(!err);
+      assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
+      done();
+    });
+  });
+
 });

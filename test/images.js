@@ -47,7 +47,7 @@ describe('Images', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           port: 7951

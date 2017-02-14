@@ -21,7 +21,7 @@ describe('Docs', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      hostName: 'test.com',
+      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -488,7 +488,7 @@ describe('Docs', function() {
   // EMPTY TRASH
   //////
 
-  it('should have an "emptyTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
+  it('should have an "deleteFromTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
 
     return async.series({
       trashCarl: function(callback) {
@@ -497,8 +497,8 @@ describe('Docs', function() {
           return callback(null);
         });
       },
-      emptyTrash: function(callback) {
-        return apos.docs.emptyTrash(t.req.admin(apos), {}, function(err) {
+      deleteFromTrash: function(callback) {
+        return apos.docs.deleteFromTrash(t.req.admin(apos), {}, function(err) {
           assert(!err);
           return callback(null);
         });
@@ -514,7 +514,7 @@ describe('Docs', function() {
     }, done);
   });
 
-  it('should not allow you to call the emptyTrash method if you are not an admin', function(done){
+  it('should not allow you to call the deleteFromTrash method if you are not an admin', function(done){
     return async.series({
       trashLarry: function(callback){
         return apos.docs.trash(t.req.admin(apos), { slug: 'larry' }, function(err){
@@ -522,8 +522,8 @@ describe('Docs', function() {
           return callback(null);
         });
       },
-      emptyTrash: function(callback){
-        apos.docs.emptyTrash(t.req.anon(apos), {}, function(err) {
+      deleteFromTrash: function(callback){
+        apos.docs.deleteFromTrash(t.req.anon(apos), {}, function(err) {
           assert(!err);
           return callback(null);
         });

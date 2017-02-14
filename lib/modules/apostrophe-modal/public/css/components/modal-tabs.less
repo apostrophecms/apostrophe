@@ -1,23 +1,37 @@
 .apos-modal
 {
-  @apos-tabs-width: 220px;
-
   .apos-schema-tabs
   {
+    position: fixed;
     float: left;
     height: 100%;
-    width: @apos-tabs-width;
+    width: 25%;
+    padding-bottom: 50px;
     background-color: @apos-light;
+    // If tab number exceeds viewport allow scroll
+    overflow: scroll;
+    p {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    @media @apos-breakpoint-desktop-xl { width: 25%; }
   }
 
   .apos-schema--with-tabs .apos-schema-tabs {}
 
   .apos-schema-tab
   {
-    padding: @apos-padding-2;
+    display: flex;
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    padding: @apos-padding-2 @apos-padding-1;
     border-bottom: 1px solid @apos-dark;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
+    @media @apos-breakpoint-desktop-xl { font-size: 16px; }
     &.apos-active
     {
       background-color: @apos-white;
@@ -28,8 +42,9 @@
   .apos-schema-group
   {
     display: none;
-    float: left;
-    width: calc(~"100% - " @apos-tabs-width);
+    float: right;
+    width: 75%;
+    @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
     overflow-y: scroll;
     .apos-scrollbar;
@@ -43,7 +58,6 @@
   .apos-schema-group-inner
   {
     width: 100%;
-    max-width: 540px;
     min-height: 100%;
     padding: @apos-padding-2;
     background-color: @apos-white;

@@ -12,6 +12,6 @@
         <img src="/modules/apos/images/small-spinner.gif">
       </span>
     {%- endif -%}
-    {{ options.label }}
+    {{ __(options.label | d('')) }}
   </a>
 {%- endmacro -%}

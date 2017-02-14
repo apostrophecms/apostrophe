@@ -9,19 +9,20 @@
   .apos-chooser-manage-view-wrapper
   {
     .apos-inline-block;
-    float: left;
-    max-width: 75%;
+    float: right;
+    width: 85%;
+    @media @apos-breakpoint-desktop-xl { width: 75%; }
     .apos-table { padding-left: @apos-padding-2; }
   }
   
   .apos-chooser
   {
-    position: relative;
+    position: fixed;
     .apos-inline-block;
-    float: left;
     height: 100%;
     overflow-y: scroll;
-    width: 25%;
+    width: 15%;
+    @media @apos-breakpoint-desktop-xl { width: 25%; }
     background-color: @apos-light;
   }
 
@@ -35,7 +36,8 @@
     position: relative;
     display: block;
     margin: @apos-margin-1;
-    padding: @apos-padding-2;
+    padding: (@apos-padding-1 * 1.5) @apos-padding-1;
+    @media @apos-breakpoint-desktop-xl { padding: @apos-padding-2; }
     background-color: @apos-mid;
     &:hover
     {
@@ -46,6 +48,7 @@
     {
       text-decoration: line-through;
     }
+    img { width: 100%; }
   }
   
   .apos-chooser-limit-reached

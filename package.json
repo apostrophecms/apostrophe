@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.6.0",
+  "version": "2.17.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -38,7 +38,7 @@
     "express-session": "^1.10.3",
     "glob": "^5.0.0",
     "he": "^0.5.0",
-    "i18n": "^0.5.0",
+    "i18n": "^0.8.0",
     "joinr": "^1.0.1",
     "launder": "^0.1.1",
     "less": "^2.0.0",
@@ -48,7 +48,7 @@
     "mkdirp": "^0.5.0",
     "moment": "^2.9.0",
     "mongodb": "^2.0.0",
-    "moog-require": "^0.3.0",
+    "moog-require": "^0.4.0",
     "nunjucks": "^2.0.0",
     "oembetter": "^0.1.10",
     "passport": "^0.3.0",
