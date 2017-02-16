@@ -1,6 +1,7 @@
 {%- extends "apostrophe-modal:base.html" -%}
 {%- import "apostrophe-modal:macros.html" as modals -%}
 {%- import "piecesMacros.html" as pieces with context -%}
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
 
 {%- block modalClass -%}
   {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-manager
@@ -31,6 +32,33 @@
 {%- endblock -%}
 
 {%- block footer -%}
-  {# ajax populates me #}
+  <div data-batch apos-manage-batch-operations>
+    <select name="batch-operation" class="apos-manage-batch-operations-select">
+      {% for operation in data.options.batchOperations %}
+        <option value="{{ operation.name }}">
+          {{ __('%s Selected', operation.label) }} (0)
+        </option>
+      {% endfor %}
+    </select>
+    {% if apos.utils.filterNonempty(data.options.batchOperations, 'string') %}
+      <div class="apos-manage-batch-operations-strings">
+    {% endif %}
+    {% for operation in data.options.batchOperations %}
+      {% if operation.string %}
+        <div data-apos-batch-string="{{ operation.name }}" class="apos-manage-batch-operations-string">
+          <label>{{ operation.string.label }}</label>
+          <input name="{{ operation.name }}-string" />
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% if apos.utils.filterNonempty(data.options.batchOperations, 'string') %}
+      </div>
+    {% endif %}
+    <div class="apos-manage-batch-operations-buttons">
+      {% for operation in data.options.batchOperations %}
+        {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch', value: operation.name }) }}
+      {% endfor %}
+    </div>
+  </div>
   <div data-pager></div>
 {%- endblock -%}
