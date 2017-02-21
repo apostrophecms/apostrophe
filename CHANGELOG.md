@@ -2,6 +2,8 @@
 
 ** 2.17.1
 
+All tests passing.
+
 * Fixed XSS (cross-site scripting) vulnerability in `req.browserCall` and `apos.push.browserCall`.
 
 * Removed confusing strikethrough of "Apply to Subpages" subform when the permission is being removed rather than added.
