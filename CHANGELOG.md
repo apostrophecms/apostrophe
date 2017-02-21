@@ -1,5 +1,17 @@
 # Changelog
 
+** 2.17.1
+
+* Fixed XSS (cross-site scripting) vulnerability in `req.browserCall` and `apos.push.browserCall`.
+
+* Removed confusing strikethrough of "Apply to Subpages" subform when the permission is being removed rather than added.
+
+* Improved UX of area widget controls.
+
+* Improved modal array tab UI and CSS.
+
+* The `oembedReady` Apostrophe event is now emitted correctly after `apostrophe-oembed` renders an oembed-based player, such as a YouTube video player for the `apostrophe-video` widget. This event can be listened for via `apos.on('apostrophe-oembed', fn)` and receives a jQuery object referring to the relevant element.
+
 ** 2.17.0
 
 All tests passing.
