@@ -2,6 +2,8 @@
 
 ** 2.17.2
 
+All tests passing.
+
 * Members of a group that has the admin permission for a specific piece type can now move pieces of that type to and from the trash. (This was always intended, so this is a bug fix.)
 * For better out-of-the-box SEO, an `alt` attribute with the title of the image is now part of the `img` markup of `apostrophe-images` widgets.
 
