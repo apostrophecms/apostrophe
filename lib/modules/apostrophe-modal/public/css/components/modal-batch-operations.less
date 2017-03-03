@@ -34,8 +34,12 @@
 	}
 
 	.apos-tags {
-		float: right;
-		display: flex;
+		margin-left: 40px;
+	}
+
+	.apos-field-tags .apos-field-label {
+		position: absolute;
+		margin-top: 10px;
 	}
 
 	.apos-field-tags .apos-tags .apos-tag-add {
@@ -56,22 +60,8 @@
 
 	.apos-field-tags {
 		.apos-tag-list {
-			position: relative;
-			padding: 5px 8px;
-			white-space: nowrap;
-			max-width: 300px;
-			overflow-x: scroll;
-			order: 2;
-			// .apos-tag-list-item:last-child:after {
-				&:after{
-				// content: "";
-				position: absolute;
-				height: 100%;
-				width: 10px;
-				right: 0;
-				top: 0;
-				background: linear-gradient(to right,  rgba(30,87,153,0) 0%,rgba(229,229,229,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
-			}
+			margin-bottom: 2px;
+			max-width: 400px;
 		}
 		.apos-tag-remove {
 			color: @apos-red;
