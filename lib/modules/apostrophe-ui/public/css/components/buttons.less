@@ -70,19 +70,6 @@
 
 // TYPES =======================
 
-.apos-button--disabled
-{
-  border: none;
-  background-color: @apos-light;
-  opacity: 0.5;
-  cursor: not-allowed;
-  &:hover, &:active
-  {
-    background-color: @apos-light;
-    box-shadow: none;
-  }
-}
-
 .apos-button--in-context
 {
   .apos-glow;
@@ -200,6 +187,17 @@
     .apos-transition--bounce;
   }
 
+}
+
+.apos-button--disabled
+{
+  border: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  &:hover, &:active
+  {
+    box-shadow: none;
+  }
 }
 
 .apos-button-group {
