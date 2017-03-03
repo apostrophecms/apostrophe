@@ -204,21 +204,6 @@ describe('Attachment', function() {
       assert(url === '/uploads/attachments/test-test.jpg');
     });
 
-    it('should generate a srcset string for an image attachment', function() {
-      var srcset = apos.attachments.srcset({
-        group: 'images',
-        name: 'test',
-        extension: 'jpg',
-        _id: 'test'
-      });
-      assert(srcset === ['/uploads/attachments/test-test.max.jpg 1600w',
-        '/uploads/attachments/test-test.full.jpg 1140w',
-        '/uploads/attachments/test-test.two-thirds.jpg 760w',
-        '/uploads/attachments/test-test.one-half.jpg 570w',
-        '/uploads/attachments/test-test.one-third.jpg 380w',
-        '/uploads/attachments/test-test.one-sixth.jpg 190w'].join(', '));
-    });
-
     it('should generate the original URL when no size specified for pdf', function() {
       var url = apos.attachments.url({
         group: 'office',

@@ -8,7 +8,7 @@
         {%- set relationship = entry.relationship -%}
         <div data-slideshow-item class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %}" style="background-image: url({{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }})">
           {%- block title -%}<h4>{{ image.title }}</h4>{%- endblock -%}
-          <img data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" srcset="{{ apos.attachments.srcset(image.attachment) }}" sizes="{{ data.options.sizesAttr | default('100vw') }}" />
+          <img data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" srcset="{{ apos.images.srcset(image.attachment) }}" sizes="{{ data.options.sizesAttr | default('100vw') }}" />
           {%- block credit -%}
             {%- if image.credit -%}
               {%- if image.creditUrl -%}

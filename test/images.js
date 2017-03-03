@@ -47,7 +47,7 @@ describe('Images', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           port: 7951
@@ -104,6 +104,21 @@ describe('Images', function() {
       assert(count === 2);
       return done();
     });
+  });
+
+  it('should generate a srcset string for an image', function() {
+    var srcset = apos.images.srcset({
+      group: 'images',
+      name: 'test',
+      extension: 'jpg',
+      _id: 'test'
+    });
+    assert(srcset === ['/uploads/attachments/test-test.max.jpg 1600w',
+      '/uploads/attachments/test-test.full.jpg 1140w',
+      '/uploads/attachments/test-test.two-thirds.jpg 760w',
+      '/uploads/attachments/test-test.one-half.jpg 570w',
+      '/uploads/attachments/test-test.one-third.jpg 380w',
+      '/uploads/attachments/test-test.one-sixth.jpg 190w'].join(', '));
   });
 
 })
