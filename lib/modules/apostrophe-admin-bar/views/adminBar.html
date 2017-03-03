@@ -32,7 +32,7 @@
                     <a href="{{ apos.prefix }}{{ subItem.options.href }}">
                   {%- endif -%}
                   {{ __(subItem.label | d('')) }}
-                  {%- if subItem.href -%}
+                  {%- if subItem.options.href -%}
                     </a>
                   {%- endif -%}
                 </li>

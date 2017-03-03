@@ -71,9 +71,9 @@
 .apos-area-widget-controls
 {
   position: absolute;
-  z-index: @apos-z-index-3;
+  z-index: @apos-z-index-5;
   .apos-transition;
-  &:hover { z-index: @apos-z-index-4; }
+  &:hover { z-index: @apos-z-index-6; }
 }
 .apos-area-widget-controls--context
 {
@@ -107,6 +107,17 @@
   opacity: 1;
   padding: @apos-padding-1;
   margin: @apos-margin-1/2 0;
+}
+
+.apos-dragging .apos-empty .apos-area-widgets
+{
+  display: block;
+  height: 100%;
+}
+
+.apos-dragging .apos-empty .apos-area-item-separator
+{
+  height: 100%;
 }
 
 .apos-empty .apos-area-item-separator

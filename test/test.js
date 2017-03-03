@@ -32,6 +32,8 @@ describe('Modules', function(){
   require('./express.js');
   
   require('./templates.js');
+
+  require('./push.js');
   
   require('./launder.js');
   

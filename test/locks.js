@@ -220,7 +220,7 @@ describe('Locks', function() {
           finished = true;
           return;
         }
-        setTimeout(release, 75 + Math.random() * 50);
+        setTimeout(release, 200);
       });
       function release() {
         // We have to decrement this before we start the call to
