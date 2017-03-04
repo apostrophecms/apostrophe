@@ -1,5 +1,17 @@
 # Changelog
 
+** 2.18.0
+
+All tests passing.
+
+* New batch editing features for pieces! You can now use the checkboxes to select many items and then carry out the following operations in one step: trash, rescue from trash, publish, unpublish, tag and untag.
+
+In addition there is a clearly documented procedure for creating new batch editing features with a minimum of new code.
+
+* Several bugs in the array editor were fixed. Up, down and remove buttons work properly again, an aesthetic glitch was resolved and redundant ordinal numbers do not creep in when managing the order of an array without the `titleField` option.
+
+* Logging out completely destroys the session. While the standard behavior of `req.logout` in the Passport module is only to break the relationship between the `user` object and the session, users expect a clean break.
+
 ** 2.17.2
 
 All tests passing.
