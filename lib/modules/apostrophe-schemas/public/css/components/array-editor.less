@@ -49,6 +49,20 @@
 // "Add Item" button
 .apos-modal
 {
+  // Like apos-chooser, but without the 15% width, and let's
+  // stop trying to reuse it because separate evolution already
+  // broke this once. -Tom
+  .apos-array-chooser
+  {
+    position: fixed;
+    .apos-inline-block;
+    height: 100%;
+    overflow-y: scroll;
+    width: 25%;
+    @media @apos-breakpoint-desktop-xl { width: 25%; }
+    background-color: @apos-light;
+  }
+
   .apos-array-add-item, .apos-array-limit-reached
   {
     position: absolute;
