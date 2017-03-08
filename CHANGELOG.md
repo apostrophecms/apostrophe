@@ -1,5 +1,15 @@
 # Changelog
 
+** 2.18.1
+
+All tests passing.
+
+* Performance enhancement: when fetching `req.data.home` directly in the absence of `req.page._ancestors[0]`, such as on the home page itself or a non-page route like `/login`, we must apply the same default filters before applying the filter options, namely `.areas(false).joins(false)`, otherwise duplicate queries are made.
+
+* Fixed bug in as-yet-unused `schemas.export` method caught by babel's linter.
+
+Thanks to Michelin for their support of this work.
+
 ** 2.18.0
 
 All tests passing.
