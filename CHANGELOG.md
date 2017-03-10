@@ -1,6 +1,6 @@
 # Changelog
 
-** 2.18.1
+** 2.18.2
 
 All tests passing.
 
