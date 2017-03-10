@@ -10,7 +10,7 @@
         {%- set defaultSizesAttr = '(max-width: ' + imageSize.width + 'px) 100vw, ' + imageSize.width + 'px' -%}
         <div data-slideshow-item class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %}">
           {%- block title -%}<h4>{{ image.title }}</h4>{%- endblock -%}
-          <img alt="{{ image.title }}" data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" srcset="{% block imgSrcset %}{{ apos.images.srcset(image.attachment) }}{% endblock %}" sizes="{{ data.options.sizesAttr | default(defaultSizesAttr) }}" />
+          <img alt="{{ image.title }}" data-image src="{% block imgSrc %}{{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }}{% endblock %}" srcset="{% block imgSrcset %}{{ apos.images.srcset(image.attachment, relationship) }}{% endblock %}" sizes="{{ data.options.sizesAttr | default(defaultSizesAttr) }}" />
           {%- block credit -%}
             {%- if image.credit -%}
               {%- if image.creditUrl -%}
