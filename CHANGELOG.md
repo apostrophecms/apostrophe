@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.19.1
+
+* When saving any doc with a schema, if an attachment field does not match a valid attachment that has actually been uploaded, that field is correctly nulled out. In addition, if the attachment's file extension is not in a valid fileGroup as configured via the attachments module, the field is nulled out. Finally, the `crop: true` option for attachments is saved successfully. This option allows for attachments to have a crop that is inherent to them, useful when there is no widget standing between the doc and the attachment.
+
+All of these changes correct bugs in intended behavior. Certain checks were present in the code but not completely functional. If you need to update your configuration to add file extensions, [apostrophe-attachments](http://apostrophecms.org/docs/modules/apostrophe-attachments/).
+
 ** 2.19.0
 
 All tests passing.
@@ -298,7 +304,7 @@ Workarounds for two limitations in MongoDB that impact the use of Apostrophe cur
 you need to invoke `$near` or another MongoDB operator that cannot be used within `$and`. The object
 you pass to `addLateCriteria` is merged with the criteria object that is built normally by the cursor.
 **Use of this filter is strongly discouraged unless you must use operators that do
-not support `$and`.** 
+not support `$and`.**
 * Custom filters that invoke `$near` or other MongoDB operators that are incompatible
 with `$text` queries may call `self.set('regexSearch', true)` to force the cursor to use
 a regular expression search rather than full MongoDB full-text search, if and when the
