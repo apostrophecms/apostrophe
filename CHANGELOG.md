@@ -2,6 +2,8 @@
 
 ** 2.19.1
 
+All tests passing.
+
 * When saving any doc with a schema, if an attachment field does not match a valid attachment that has actually been uploaded, that field is correctly nulled out. In addition, if the attachment's file extension is not in a valid fileGroup as configured via the attachments module, the field is nulled out. Finally, the `crop: true` option for attachments is saved successfully. This option allows for attachments to have a crop that is inherent to them, useful when there is no widget standing between the doc and the attachment.
 
 All of these changes correct bugs in intended behavior. Certain checks were present in the code but not completely functional. If you need to update your configuration to add file extensions, [apostrophe-attachments](http://apostrophecms.org/docs/modules/apostrophe-attachments/).
