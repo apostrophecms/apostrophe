@@ -1,5 +1,27 @@
 # Changelog
 
+** 2.20.0
+
+All tests passing.
+
+* Support for batch uploads. The `apostrophe-images` and `apostrophe-files` modules now implement batch uploads by default.
+
+When you click "New File" or "New Image," you now go directly to the file browser, and if you select multiple files they are uploaded without a modal dialog appearing for each one; the title and slug are populated from the filename, and that's that.
+
+You can also drag one or more files directly to the chooser/manager modal.
+
+If you are choosing files or images for a widget, they are automatically selected after a batch upload.
+
+This feature can be disabled by setting the `createViaUpload` option to `false` for `apostrophe-images` or `apostrophe-files`. If you are adding `required` fields to `apostrophe-images` or `apostrophe-files`, then batch uploading is not the best option for you because it would bypass that.
+
+**If you wish, you can enable the feature for your own `apostrophe-pieces` modules that have an `attachment` field in their schema by setting the `createViaUpload` option to `true`.** However please note that this does not currently do anything for pieces that refer to an image or file indirectly via widget.
+
+* Various UX fixes to the manager and chooser modals.
+
+* If there is a `minSize` setting in play, that information is displayed to the user when choosing images.
+
+* When batch file uploads fail, a more useful set of error messages are displayed.
+
 ** 2.19.1
 
 All tests passing.
