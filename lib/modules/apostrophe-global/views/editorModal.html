@@ -1,0 +1,10 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+{%- extends 'editorBase.html' -%}
+{%- block controls -%}
+{{ buttons.minor('Cancel', { action: 'cancel' }) }}
+{{ buttons.minor('Versions', { action: 'versions' }) }}
+{{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
+{%- endblock -%}
+{%- block instructions -%}
+  {{ __('Here you can edit settings that apply to the site as a whole. The "versions" button also rolls back changes to shared content present on all pages.', (data.options.label | d(''))) }}
+{%- endblock -%}
