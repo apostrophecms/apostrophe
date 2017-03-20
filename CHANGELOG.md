@@ -12,9 +12,9 @@ You can also drag one or more files directly to the chooser/manager modal.
 
 If you are choosing files or images for a widget, they are automatically selected after a batch upload.
 
-This feature can be disabled by setting the `createViaUpload` option to `false` for `apostrophe-images` or `apostrophe-files`. If you are adding `required` fields to `apostrophe-images` or `apostrophe-files`, then batch uploading is not the best option for you because it would bypass that.
+This feature can be disabled by setting the `insertViaUpload` option to `false` for `apostrophe-images` or `apostrophe-files`. If you are adding `required` fields to `apostrophe-images` or `apostrophe-files`, then batch uploading is not the best option for you because it would bypass that.
 
-**If you wish, you can enable the feature for your own `apostrophe-pieces` modules that have an `attachment` field in their schema by setting the `createViaUpload` option to `true`.** However please note that this does not currently do anything for pieces that refer to an image or file indirectly via widget.
+**If you wish, you can enable the feature for your own `apostrophe-pieces` modules that have an `attachment` field in their schema by setting the `insertViaUpload` option to `true`.** However please note that this does not currently do anything for pieces that refer to an image or file indirectly via widget.
 
 * Various UX fixes to the manager and chooser modals.
 
