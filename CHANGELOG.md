@@ -4,6 +4,8 @@
 
 All tests passing.
 
+This is a significant update with two useful new features and various minor improvements.
+
 * Support for batch uploads. The `apostrophe-images` and `apostrophe-files` modules now implement batch uploads by default.
 
 When you click "New File" or "New Image," you now go directly to the file browser, and if you select multiple files they are uploaded without a modal dialog appearing for each one; the title and slug are populated from the filename, and that's that.
@@ -16,9 +18,19 @@ This feature can be disabled by setting the `insertViaUpload` option to `false` 
 
 **If you wish, you can enable the feature for your own `apostrophe-pieces` modules that have an `attachment` field in their schema by setting the `insertViaUpload` option to `true`.** However please note that this does not currently do anything for pieces that refer to an image or file indirectly via widget.
 
+* Global preference editing, and a standard UI to roll back to earlier versions of global content. There is now a "Global Content" admin bar button. By default, this launches the version rollback dialog box for shared global content.
+
+However, if you use `addFields` to add schema fields to the `apostrophe-global` module, this button instead launches an editing modal where you can edit those fields, and also offers a "Versions" button accessible from there.
+
+Global preferences set in this way are accessible in all situations where `data.global` is available. This is very useful for creating project-wide preference settings.
+
+All the usual features of schemas can be used, including `groupFields`. Of course, if you choose to use joins or widgets in global content, you should keep the performance impact in mind.
+
 * Various UX fixes to the manager and chooser modals.
 
 * If there is a `minSize` setting in play, that information is displayed to the user when choosing images.
+
+* The `checkboxes` schema field type now supports the `browseFilters` feature.
 
 * When batch file uploads fail, a more useful set of error messages are displayed.
 
