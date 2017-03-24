@@ -1,3 +1,21 @@
+.apos-buttons
+{
+  background: @white;
+  .apos-rounded;
+  .apos-button-border(@apos-green);
+  .apos-button-group
+  {
+    float: left;
+    margin: 0 @apos-padding-1 / 2;
+  }
+  .apos-button
+  {
+    border-radius: 0;
+  }
+}
+
+[data-apos-trash-item].apos-button { color: @apos-red; }
+
 .apos-button
 {
   position: relative;
@@ -26,6 +44,7 @@
   &:hover
   {
     .apos-glow;
+    cursor: pointer;
   }
   &:active
   {
@@ -46,7 +65,7 @@
     }
   }
 
-  i { margin-left: 4px; }
+  // i { margin-left: 4px; }
 }
 
 // SPINNER =====================
@@ -167,8 +186,11 @@
   .apos-transition;
   &:hover
   {
-    background-color: @apos-light;
+    color: @apos-primary;
     .apos-drop-shadow(0, 0, 0, 0);
+    &[data-apos-trash-item] {
+      color: darken(@apos-red, 20%);
+    }
   }
 }
 
