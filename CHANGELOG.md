@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.20.1
+
+All tests passing.
+
+When autocompleting doc titles to add them to a join, Apostrophe again utilizes search result quality to display the best results first.
+
 ** 2.20.0
 
 All tests passing.
