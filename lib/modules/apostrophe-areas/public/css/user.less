@@ -86,7 +86,7 @@
   left: @apos-padding-1;
 }
 
-.apos-area-widget--contextual>.apos-ui .apos-button-group--data { display: none; }
+.apos-area-widget--contextual>.apos-ui .apos-area-widget-controls--data { display: none; }
 
 // Styles for the drag-target separator between widgets.
 .apos-area-item-separator
@@ -247,11 +247,9 @@
   }
 
   // color contextual controls as well
-  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-buttons
+  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-button--in-context
   {
     .apos-glow(@apos-secondary);
     border: 2px solid @apos-secondary;
-    .apos-button:hover { color: @apos-secondary; }
-    .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
   }
 }
