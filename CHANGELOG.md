@@ -1,5 +1,19 @@
 # Changelog
 
+** 2.20.3
+
+* The search filter is once again available when choosing images. This involved a deeper fix to modals: filters for sliding modals were not being properly captured and hoisted into the shared part of the outer div. This is now being done exactly as it is done for the controls (buttons) and the instructions.
+
+To avoid incompatibility with existing uses of `self.$filters`, such as in the manage modal, they are captured to `self.$modalFilters`. A small change to the manage modal was needed to take advantage of this.
+
+* Moved a warning message from `console.log` to `console.error`. `stdout` should never be used for warnings and errors. Moving toward clean output so that command line tasks can be safely used in pipelines.
+
+** 2.20.2
+
+All tests passing.
+
+Improved UI for editing widgets. The edit button is no longer separate from the area-related controls such as up, down, etc. This reduces clutter and reduces difficulty in accessing widgets while editing.
+
 ** 2.20.1
 
 All tests passing.
