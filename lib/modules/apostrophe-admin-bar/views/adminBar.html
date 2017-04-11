@@ -20,7 +20,7 @@
             <a href="{{ apos.prefix }}{{ item.options.href }}">
           {%- endif -%}
             {{ __(item.label | d('')) }}
-          {%- if item.href -%}
+          {%- if item.options.href -%}
             </a>
           {%- endif -%}
           </div>
