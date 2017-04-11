@@ -1,5 +1,24 @@
 # Changelog
 
+** 2.21.0
+
+All tests passing.
+
+* For a small performance boost, `defer` option can be set to `true` when configuring any widget module.
+This defers calls to the `load` method until just before the page is rendered, allowing a single query
+to fetch them all in simple cases. This is best applied
+to the `apostrophe-images-widgets` module and similar widgets. It should not be applied if you wish
+to access the results of the join in asynchronous code, because they are not available until the last
+possible moment.
+
+Thanks to Michelin for their support of this work.
+
+* You can also set `deferImageLoading` to `true` for the `apostrophe-globals` module if you want the
+same technique to be applied when loading the `global` doc's widgets. This does not always yield a
+performance improvement.
+
+* Bug fix: if two crops of the same image were present in separate widgets on a page, only one of the crops would be seen in template code. This issue has been resolved.
+
 ** 2.20.3
 
 All tests passing.
