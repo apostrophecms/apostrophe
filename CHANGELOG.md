@@ -1,6 +1,6 @@
 # Changelog
 
-** 2.21.0
+** 2.22.0
 
 * Apostrophe now supports publishing CSS and JS assets via S3 rather than serving them directly.
 
@@ -9,6 +9,25 @@ Apostrophe already had an option to build asset "bundles" and deploy them at sta
 See the [updated cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html) for details, but the change is simple: if you follow the rest of the HOWTO, and name your bundle `uploadfs`, your public assets will be served via your S3 bucket in all cases where Apostrophe is constructing the URL.
 
 Thanks to Michelin for their support of this work.
+
+** 2.21.0
+
+All tests passing.
+
+* For a small performance boost, `defer` option can be set to `true` when configuring any widget module.
+This defers calls to the `load` method until just before the page is rendered, allowing a single query
+to fetch them all in simple cases. This is best applied
+to the `apostrophe-images-widgets` module and similar widgets. It should not be applied if you wish
+to access the results of the join in asynchronous code, because they are not available until the last
+possible moment.
+
+Thanks to Michelin for their support of this work.
+
+* You can also set `deferImageLoading` to `true` for the `apostrophe-globals` module if you want the
+same technique to be applied when loading the `global` doc's widgets. This does not always yield a
+performance improvement.
+
+* Bug fix: if two crops of the same image were present in separate widgets on a page, only one of the crops would be seen in template code. This issue has been resolved.
 
 ** 2.20.3
 
@@ -495,7 +514,3 @@ Packaging and documentation issues only.
 ## 2.0.0
 
 Inaugural npm release of Apostrophe 2.x, which was used prior to that in many projects via git dependencies.
-
-
-
->>>>>>> master
