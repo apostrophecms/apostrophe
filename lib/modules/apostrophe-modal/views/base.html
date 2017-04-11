@@ -13,8 +13,9 @@
     #}<div class="apos-modal-controls" data-modal-controls>
       {% block controls %}{% endblock %}
     </div>{#
-  #}<div class="apos-modal-filters">
-      {% block filters %}{% endblock %}
+  #}<div class="apos-modal-filters" data-modal-filters>
+      {% block filters %}
+{% endblock %}
     </div>{#
 #}</div>
   {# Base modals don't have breadcrumbs, but slideable modals do, extend baseSlideable.html #}
