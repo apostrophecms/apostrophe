@@ -1,5 +1,15 @@
 # Changelog
 
+** 2.22.0
+
+* Apostrophe now supports publishing CSS and JS assets via S3 rather than serving them directly.
+
+Apostrophe already had an option to build asset "bundles" and deploy them at startup, as described in our [cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html). However this serves the assets from the cloud webserver, such as a Heroku dyno or EC2 instance. It is now possible to serve the assets from Amazon S3.
+
+See the [updated cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html) for details, but the change is simple: if you follow the rest of the HOWTO, and name your bundle `uploadfs`, your public assets will be served via your S3 bucket in all cases where Apostrophe is constructing the URL.
+
+Thanks to Michelin for their support of this work.
+
 ** 2.21.0
 
 All tests passing.
@@ -504,7 +514,3 @@ Packaging and documentation issues only.
 ## 2.0.0
 
 Inaugural npm release of Apostrophe 2.x, which was used prior to that in many projects via git dependencies.
-
-
-
->>>>>>> master
