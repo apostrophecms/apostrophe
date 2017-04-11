@@ -2,6 +2,8 @@
 
 ** 2.22.0
 
+All tests passing.
+
 * Apostrophe now supports publishing CSS and JS assets via S3 rather than serving them directly.
 
 Apostrophe already had an option to build asset "bundles" and deploy them at startup, as described in our [cloud HOWTO](http://apostrophecms.org/docs/tutorials/howtos/deploying-apostrophe-in-the-cloud.html). However this serves the assets from the cloud webserver, such as a Heroku dyno or EC2 instance. It is now possible to serve the assets from Amazon S3.
