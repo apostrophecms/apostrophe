@@ -77,7 +77,7 @@
 
   #}<div class="apos-modal-filters-toggles">
     {%- for filter in filters.options -%}
-      {{ pills.base( module.filterChoicesToPillChoices(filter), filters.choices[filter.name] ) }}
+      {{ fields.select(filter.name, apos.utils.concat([ { label: filter.label or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }}
     {%- endfor -%}{#
 
   Search
