@@ -13,7 +13,10 @@
   </label>
 {%- endmacro %}
 
-{# "selected" value is typically not passed, but we do push it in when rendering manage filters. -Tom #}
+{# Output a select element with the given name and options. options is in the usual array #}
+{# format: objects with value and label properties. If "selected" is present, the option with #}
+{# the matching value receives a "selected" attribute. (In most cases this is handled through #}
+{# front-end JavaScript, however for filters in the "manage" view we do push it in server-side.) #}
 
 {% macro select(name, options, selected) -%}
   <div class="apos-field-input-select-wrapper">
