@@ -13,11 +13,13 @@
   </label>
 {%- endmacro %}
 
-{% macro select(name, options) -%}
+{# "selected" value is typically not passed, but we do push it in when rendering manage filters. -Tom #}
+
+{% macro select(name, options, selected) -%}
   <div class="apos-field-input-select-wrapper">
     <select name="{{ name }}" class="apos-field-input apos-field-input-select">
       {%- for option in options -%}
-        <option value="{{ option.value }}">{{ __(option.label | d('')) }}</option>
+        <option {{ "selected" if option.value == selected }} value="{{ option.value }}">{{ __(option.label | d('')) }}</option>
       {%- endfor -%}
     </select>
   </div>
