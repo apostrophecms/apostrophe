@@ -1,5 +1,9 @@
 # Changelog
 
+** 2.22.1
+
+* Future-dated blog posts can now be edited. Although the blog module is separate, Apostrophe's core code was at fault for not calling `findForEditing` in the method that the `retrieve` route invokes to fetch a post for editing purposes.
+
 ** 2.22.0
 
 * Apostrophe now supports publishing CSS and JS assets via S3 rather than serving them directly.
