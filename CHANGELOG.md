@@ -1,5 +1,29 @@
 # Changelog
 
+** 2.23.0
+
+All tests passing.
+
+* The "manage" view of `apostrophe-pieces` now supports robust filters, in the same way they were already supported on the front end for `apostrophe-pieces-pages`. Use the `addFilters` option to configure them. There is bc with existing filters that relied on the old assumption that manage filters have a boolean API. However now you can specify any field with a cursor filter, which includes most schema fields, notably including joins.
+
+Note that since all of the options are presented in a dropdown, not all fields are good candidates for this feature.
+
+The "manage" view filters now refresh to reflect only the options that still make sense based on the other filters you have selected, reducing user frustration.
+
+See [reusable content with pieces](http://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html) for more information and examples.
+
+Thanks to Michelin for their support of this work.
+
+* `apos.utils.isFalse` allows you to check for values that are strictly `=== false` in templates.
+
+* `apos.utils.startCase` converts property names to English, roughly speaking. It is used as a fallback if a filter does not have a `label` property. This is primarily for bc, you should add a `label` property to your fields.
+
+* Production now matches the dev environment with regard to relative URLs in LESS files, such as those used to specify background images or font files. Previously the behavior was different in dev and production, which is a bug.
+
+* You can now pass a `less` option to `apostrophe-assets`, which is merged with the options given to `less.render` both in dev and production. You can use this, for instance, to enable `strictMath`.
+
+* `apostrophe.oembed`'s `fetch` method now propagates its `options` object to `oembetter` correctly. Thanks to Fotis Paraskevopoulos.
+
 ** 2.22.0
 
 All tests passing.
