@@ -219,3 +219,11 @@
 {%- macro joinBody(field) -%}
   <div data-chooser>{# ajax populates me #}</div>
 {%- endmacro -%}
+
+{%- macro object(field) -%}
+  <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }}" data-name="{{ field.name }}">
+  {% for item in field.schema %}
+    {{ apos.schemas.field(item) }}
+  {% endfor %}
+  </fieldset>
+{%- endmacro -%}
