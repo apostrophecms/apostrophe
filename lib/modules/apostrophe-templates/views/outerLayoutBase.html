@@ -15,12 +15,20 @@
     {% endblock %}
 
     {% if data.user %}
-    <div class="apos-ui">
-      <div class="apos-context-menu-container">
-        {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
-        {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
-      </div>
-    </div>
+      {% block apostropheContextMenuWrapper %}
+        <div class="apos-ui">
+          {% block apostropheContextMenu %}
+            <div class="apos-context-menu-container">
+              {% block beforeApostropheContextMenu %}
+              {% endblock %}
+              {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
+              {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+              {% block afterApostropheContextMenu %}
+              {% endblock %}
+            </div>
+          {% endblock %}
+        </div>
+      {% endblock %}
     {% endif %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
