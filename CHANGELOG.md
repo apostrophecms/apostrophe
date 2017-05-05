@@ -1,5 +1,23 @@
 # Changelog
 
+** 2.24.0
+
+All tests passing.
+
+There is now an `object` schema field type. It works much like the `array` schema field type, however there is just one object, represented as an object property of the doc in the database. Thanks to Michelin's development team for contributing this feature.
+
+** 2.23.2
+
+All tests passing.
+
+The options object of `enhanceDate` is now passed on to `pikaday`. Considered a bug fix since the options object was erroneously ignored.
+
+* 2.23.1
+
+All tests passing.
+
+cleanCss needs to know that the output CSS files are going to live in apos-minified in order to correctly parse `@import` statements that pull in plain .css files. Also, the mechanism for prefixing URLs in CSS code was not applied at the correct stage of the bundling process (the minify stage), which broke the ability to reference fonts, images, etc. via URLs beginning with /modules when using an S3 asset bundle.
+
 ** 2.23.0
 
 All tests passing.
