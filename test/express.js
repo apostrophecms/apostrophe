@@ -6,10 +6,6 @@ describe('Express', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
-  });
-
   it('express should exist on the apos object', function(done){
     apos = require('../index.js')({
       root: module,
@@ -18,7 +14,7 @@ describe('Express', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7936
+          port: 7900
         },
         'express-test': {},
         'templates-test': {},
@@ -56,7 +52,7 @@ describe('Express', function() {
   var jar;
 
   function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7936/'), { key: apos.csrfCookieName });
+    var csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: apos.csrfCookieName });
     if (!csrfCookie) {
       return null;
     }
@@ -69,7 +65,7 @@ describe('Express', function() {
     jar = request.jar();
     request({
       method: 'GET',
-      url: 'http://localhost:7936/tests/welcome',
+      url: 'http://localhost:7900/tests/welcome',
       jar: jar
     }, function(err, response, body) {
       assert(body.toString() === 'ok');
@@ -80,7 +76,7 @@ describe('Express', function() {
   it('should flunk a POST request with no X-XSRF-TOKEN header', function(done){
     request({
       method: 'POST',
-      url: 'http://localhost:7936/tests/body',
+      url: 'http://localhost:7900/tests/body',
       form: {
         person: {
           age: '30'
@@ -97,7 +93,7 @@ describe('Express', function() {
   it('should flunk a POST request with no cookies at all', function(done){
     request({
       method: 'POST',
-      url: 'http://localhost:7936/tests/body',
+      url: 'http://localhost:7900/tests/body',
       form: {
         person: {
           age: '30'
@@ -114,7 +110,7 @@ describe('Express', function() {
     var csrfToken = 'BOGOSITY';
     request({
       method: 'POST',
-      url: 'http://localhost:7936/tests/body',
+      url: 'http://localhost:7900/tests/body',
       form: {
         person: {
           age: '30'
@@ -135,7 +131,7 @@ describe('Express', function() {
     assert(csrfToken);
   	request({
   		method: 'POST',
-  		url: 'http://localhost:7936/tests/body',
+  		url: 'http://localhost:7900/tests/body',
   		form: {
   			person: {
   				age: '30'
@@ -155,7 +151,7 @@ describe('Express', function() {
     var csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
-      url: 'http://localhost:7936/tests/body',
+      url: 'http://localhost:7900/tests/body',
       json: {
         person: {
           age: '30'
@@ -175,7 +171,7 @@ describe('Express', function() {
     var csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
-      url: 'http://localhost:7936/modules/express-test/test2',
+      url: 'http://localhost:7900/modules/express-test/test2',
       json: {
         person: {
           age: '30'
@@ -187,7 +183,8 @@ describe('Express', function() {
       }
     }, function(err, response, body) {
       assert(body.toString() === '30');
-      done();
+      // Last one before a new apos object
+      return destroy(apos, done);
     });
   });
 
@@ -201,7 +198,7 @@ describe('Express', function() {
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
-          port: 7937,
+          port: 7900,
           csrf: false
         },
         'express-test': {},
@@ -231,7 +228,7 @@ describe('Express', function() {
  	it('should take same requests at the prefix', function(done){
     request({
   		method: 'POST',
-  		url: 'http://localhost:7937/prefix/tests/body',
+  		url: 'http://localhost:7900/prefix/tests/body',
   		form: {
   			person: {
   				age: '30'
@@ -239,7 +236,8 @@ describe('Express', function() {
   		}
   	}, function(err, response, body) {
   		assert(body.toString() === '30');
-  		done();
+      // Last one before a new apos object
+      return destroy(apos, done);
   	});
   });
   
@@ -251,7 +249,7 @@ describe('Express', function() {
       baseUrl: 'https://example.com',
       modules: {
         'apostrophe-express': {
-          port: 7957,
+          port: 7900,
           csrf: false
         },
         'express-test': {},
@@ -272,7 +270,8 @@ describe('Express', function() {
         var req = apos.tasks.getReq({ url: '/test' });
         assert(req.baseUrl === 'https://example.com');
         assert(req.absoluteUrl === 'https://example.com/test');
-        done();
+        // Last one before a new apos object
+        return destroy(apos, done);
       }
     });    
   });
@@ -286,7 +285,7 @@ describe('Express', function() {
       prefix: '/subdir',
       modules: {
         'apostrophe-express': {
-          port: 7958,
+          port: 7900,
           csrf: false
         },
         'express-test': {},
@@ -309,7 +308,8 @@ describe('Express', function() {
         assert(req.baseUrl === 'https://example.com');
         assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
         assert(req.absoluteUrl === 'https://example.com/subdir/test');
-        done();
+        // Last use of this apos object
+        return destroy(apos, done);
       }
     });    
   });

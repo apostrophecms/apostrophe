@@ -1,11 +1,41 @@
 var assert = require('assert'),
     _ = require('lodash'),
-    fs = require('fs');
+    fs = require('fs'),
+    async = require('async');
 
 if (!fs.existsSync(__dirname +'/node_modules')) {
   fs.mkdirSync(__dirname + '/node_modules');
   fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
 }
+
+// Global function to properly clean up an apostrophe instance and drop its
+// database to create a sane environment for the next test
+
+function destroy(apos, done) {
+  if (!apos) {
+    done();
+    return;
+  }
+  return async.series([
+    drop,
+    destroy
+  ], function(err) {
+    assert(!err);
+    return done();
+  });
+  function drop(callback) {
+    return apos.db.dropDatabase(callback);
+  }
+  function destroy(callback) {
+    return apos.destroy(callback);
+  }
+};
+
+// To ease writing test files this is global.
+//
+// Use of global. anywhere in a normal project is a worst practice. -Tom
+
+global.destroy = destroy;
 
 require('./bootstrapping.js');
 
@@ -32,7 +62,7 @@ describe('Modules', function(){
   require('./express.js');
   
   require('./templates.js');
-
+  
   require('./push.js');
   
   require('./launder.js');
@@ -58,7 +88,7 @@ describe('Modules', function(){
   require('./pieces-pages.js');
   
   require('./pieces-widgets.js');
-  
+
   require('./search.js');
   
   require('./tags.js');

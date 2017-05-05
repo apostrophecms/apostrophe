@@ -10,8 +10,8 @@ describe('Tags', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   it('should be a property of the apos object', function(done) {
@@ -22,7 +22,7 @@ describe('Tags', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7946,
+          port: 7900,
           csrf: {
             // We're not here to test CSRF, so make the test simpler
             exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
@@ -110,7 +110,7 @@ describe('Tags', function() {
 
   it('should provide an api route for autocomplete', function(done){
     return request({
-      url: 'http://localhost:7946/modules/apostrophe-tags/autocomplete',
+      url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
       method: 'POST',
       form: { term: 'ag' },
     }, function(err, response, body) {
@@ -130,7 +130,7 @@ describe('Tags', function() {
 
   it('should provide an api route for autocomplete', function(done){
     return request({
-      url: 'http://localhost:7946/modules/apostrophe-tags/autocomplete',
+      url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
       method: 'POST',
       form: { term: 'ag', prefix: true },
     }, function(err, response, body) {

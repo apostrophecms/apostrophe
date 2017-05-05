@@ -111,6 +111,10 @@ module.exports = function(options) {
       return callback(null);
     });
   };
+  
+  self.destroy = function(callback) {
+    return self.callAll('apostropheDestroy', callback);
+  };
 
   // Helper function for other modules to determine whether the application
   // is running as a server or a task

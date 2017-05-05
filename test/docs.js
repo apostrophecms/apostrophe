@@ -9,8 +9,8 @@ describe('Docs', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   //////
@@ -25,7 +25,7 @@ describe('Docs', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7939
+          port: 7900
         },
         'test-people': {
           extend: 'apostrophe-doc-type-manager',

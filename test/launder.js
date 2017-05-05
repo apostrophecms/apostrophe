@@ -4,6 +4,10 @@ describe('Launder', function(){
 
   this.timeout(5000);
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   var apos;
 
   it('should exist on the apos object', function(done){

@@ -202,8 +202,12 @@ var hasArea = {
 };
 
 describe('Schemas', function() {
-
+  
   this.timeout(5000);
+
+  after(function(done) {
+    return destroy(apos, done);
+  });
 
   //////
   // EXISTENCE
@@ -217,7 +221,7 @@ describe('Schemas', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7951
+          port: 7900
         }
       },
       afterInit: function(callback) {

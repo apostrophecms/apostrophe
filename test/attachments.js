@@ -7,6 +7,10 @@ var apos;
 
 describe('Attachment', function() {
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   this.timeout(5000);
 
   var uploadSource = __dirname + "/data/upload_tests/";
@@ -46,7 +50,7 @@ describe('Attachment', function() {
       
       modules: {
         'apostrophe-express': {
-          port: 7938
+          port: 7900
         }
       },
       afterInit: function(callback) {

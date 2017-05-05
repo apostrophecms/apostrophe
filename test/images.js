@@ -40,6 +40,10 @@ describe('Images', function() {
 
   this.timeout(5000);
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   it('should be a property of the apos object', function(done) {
     this.timeout(5000);
     this.slow(2000);
@@ -50,7 +54,7 @@ describe('Images', function() {
       
       modules: {
         'apostrophe-express': {
-          port: 7951
+          port: 7900
         }
       },
       afterInit: function(callback) {

@@ -6,8 +6,8 @@ describe('Areas', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   //////
@@ -22,7 +22,7 @@ describe('Areas', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7953,
+          port: 7900,
           csrf: false
         }
       },
