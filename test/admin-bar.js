@@ -6,10 +6,6 @@ describe('Admin bar', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
-  });
-
   //////
   // EXISTENCE
   //////
@@ -22,7 +18,7 @@ describe('Admin bar', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7954,
+          port: 7900,
           csrf: false
         },
         'apostrophe-admin-bar': {
@@ -60,7 +56,7 @@ describe('Admin bar', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        done();
+        return destroy(apos, done);
       },
     });
   });
@@ -73,7 +69,7 @@ describe('Admin bar', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7955,
+          port: 7900,
           csrf: false
         },
         'apostrophe-admin-bar': {
@@ -111,7 +107,7 @@ describe('Admin bar', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        done();
+        return destroy(apos, done);
       },
     });
   });

@@ -10,8 +10,8 @@ describe('Pages', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Pages', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7940
+          port: 7900
         },
         'apostrophe-pages': {
           park: [],
@@ -392,7 +392,7 @@ describe('Pages', function() {
 
 
   it('should be able to serve a page', function(done){
-    return request('http://localhost:7940/child', function(err, response, body){
+    return request('http://localhost:7900/child', function(err, response, body){
       assert(!err);
       //Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -408,7 +408,7 @@ describe('Pages', function() {
   });
 
   it('should not be able to serve a nonexistent page', function(done){
-    return request('http://localhost:7940/nobodyschild', function(err, response, body){
+    return request('http://localhost:7900/nobodyschild', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);

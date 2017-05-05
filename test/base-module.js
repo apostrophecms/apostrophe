@@ -2,9 +2,13 @@ var assert = require('assert');
 
 describe('Base Module', function(){
 
-  this.timeout(5000);
-
   var apos;
+
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
+  this.timeout(5000);
 
   it('should be subclassable', function(done){
     apos = require('../index.js')({

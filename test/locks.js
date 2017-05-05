@@ -9,6 +9,10 @@ describe('Locks', function() {
 
   this.timeout(5000);
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   it('should be a property of the apos object', function(done) {
     this.timeout(5000);
     this.slow(2000);
@@ -19,7 +23,7 @@ describe('Locks', function() {
       
       modules: {
         'apostrophe-express': {
-          port: 7956
+          port: 7900
         },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
         // we're doing it to deliberately force them to contend with each other,

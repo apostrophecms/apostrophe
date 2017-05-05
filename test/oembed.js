@@ -10,8 +10,8 @@ describe('Oembed', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Oembed', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7952,
+          port: 7900,
           csrf: false
         }
       },
@@ -57,7 +57,7 @@ describe('Oembed', function() {
   });
 
   it('Should deliver an oembed response for YouTube', function(done) {
-    return request('http://localhost:7952/modules/apostrophe-oembed/query?' + qs.stringify(
+    return request('http://localhost:7900/modules/apostrophe-oembed/query?' + qs.stringify(
     {
       url: youtube
     }), function(err, response, body) {

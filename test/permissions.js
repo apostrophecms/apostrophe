@@ -7,6 +7,10 @@ describe('Permissions', function() {
 
   var apos;
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   it('should have a permissions property', function(done) {
     apos = require('../index.js')({
       root: module,

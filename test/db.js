@@ -1,11 +1,17 @@
 var assert = require('assert');
 
+var apos;
+
 describe('Db', function(){
+
+  after(function(done) {
+    return destroy(apos, done);
+  });
 
   this.timeout(5000);
 
   it('should exist on the apos object with a connection at port 27017', function(done){
-    var apos = require('../index.js')({
+    apos = require('../index.js')({
       root: module,
       shortName: 'test',
       
