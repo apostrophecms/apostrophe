@@ -4,8 +4,7 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% block controls %}
-	{{ buttons.minor('Cancel', { action: 'cancel' }) }}
-	{{ buttons.major('Save', { action: 'save' }) }}
+  {{ module.editControls() }}
 {% endblock %}
 
 {% block label %}
