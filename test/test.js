@@ -20,7 +20,10 @@ function destroy(apos, done) {
     drop,
     destroy
   ], function(err) {
-    assert(!err);
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
     return done();
   });
   function drop(callback) {
