@@ -91,7 +91,7 @@ describe('Modules', function(){
   require('./pieces-pages.js');
   
   require('./pieces-widgets.js');
-
+  
   require('./search.js');
   
   require('./tags.js');

@@ -29,7 +29,16 @@ describe('Docs', function() {
         },
         'test-people': {
           extend: 'apostrophe-doc-type-manager',
-          name: 'test-person'
+          name: 'test-person',
+          addFields: [
+            {
+              name: '_friend',
+              type: 'joinByOne',
+              withType: 'test-person',
+              idField: 'friendId',
+              label: 'Friend'
+            }
+          ]
         }
       },
       afterInit: function(callback) {
@@ -130,21 +139,6 @@ describe('Docs', function() {
 
   it('should be able to carry out schema joins', function(done) {
 
-    apos.docs.setManager('test-person', {
-      schema: [
-        {
-          name: '_friend',
-          type: 'joinByOne',
-          withType: 'test-person',
-          idField: 'friendId',
-          label: 'Friend'
-        }
-      ],
-      find: function(req, criteria, projection) {
-        return apos.docs.find(req, criteria, projection).type('test-person');
-      }
-    });
-
     var manager = apos.docs.getManager('test-person');
 
     assert(manager);
@@ -197,7 +191,7 @@ describe('Docs', function() {
   });
 
 
-  it('should be able to find all PUBLISHED test documents and ouput them as an array', function(done){
+  it('should be able to find all PUBLISHED test documents and output them as an array', function(done){
     var cursor = apos.docs.find(t.req.anon(apos), { type: 'test-person' });
 
     cursor.toArray(function(err, docs){
