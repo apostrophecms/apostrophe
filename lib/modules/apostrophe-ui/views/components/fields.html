@@ -1,14 +1,14 @@
-{% macro string(name, placeholder, value) -%}
-  <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text" type="text" value="{{__(value | d(''))}}">
+{% macro string(name, placeholder, value, readonly) -%}
+  <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text" type="text" value="{{__(value | d(''))}}" {% if readonly %}disabled{% endif %}>
 {%- endmacro %}
 
-{% macro textarea(name, placeholder) -%}
-  <textarea name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea"></textarea>
+{% macro textarea(name, placeholder, readonly) -%}
+  <textarea name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea" {% if readonly %}disabled{% endif %}></textarea>
 {%- endmacro %}
 
-{% macro checkbox(name, placeholder) -%}
+{% macro checkbox(name, placeholder, readonly) -%}
   <label>
-    <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox" type="checkbox">
+    <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox" type="checkbox" {% if readonly %}disabled{% endif %}>
     <span class="apos-field-input-checkbox-indicator"></span>
   </label>
 {%- endmacro %}
@@ -18,9 +18,9 @@
 {# the matching value receives a "selected" attribute. (In most cases this is handled through #}
 {# front-end JavaScript, however for filters in the "manage" view we do push it in server-side.) #}
 
-{% macro select(name, options, selected) -%}
+{% macro select(name, options, selected, readonly) -%}
   <div class="apos-field-input-select-wrapper">
-    <select name="{{ name }}" class="apos-field-input apos-field-input-select">
+    <select name="{{ name }}" class="apos-field-input apos-field-input-select" {% if readonly %}disabled{% endif %}>
       {%- for option in options -%}
         <option {{ "selected" if option.value == selected }} value="{{ option.value }}">{{ __(option.label | d('')) }}</option>
       {%- endfor -%}

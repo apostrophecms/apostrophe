@@ -7,7 +7,9 @@
       <ul class="apos-dropdown-items" data-apos-dropdown-items>
         {%- for name, options in data.options.widgets -%}
           {%- if data.widgetManagers[name] -%}
-            <li class="apos-dropdown-item" data-apos-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
+            {%- if not options.readonly -%}
+              <li class="apos-dropdown-item" data-apos-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
+            {% endif %}
           {%- else -%}
             {{ apos.log("Your area contains a widget of type " + name + " but there is no manager for that type. Maybe you forgot to configure the " + name + "-widgets module?") }}
           {%- endif -%}

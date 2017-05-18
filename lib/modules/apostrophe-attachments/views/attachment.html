@@ -17,7 +17,7 @@
     </div>
   </div>
   <input type="file" name="{{ field.name }}" style="display:none" data-uploader />
-  {{ buttons.action('Upload File', { action: 'uploader-target' }) }}
+  {% if not field.readonly %}{{ buttons.action('Upload File', { action: 'uploader-target' }) }}{% endif %}
 {% endmacro %}
 
 {{ schemas.fieldset(data, attachment) }}

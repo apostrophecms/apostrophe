@@ -13,7 +13,7 @@
   {%- endif -%}
   {%- for widget in data.area.items -%}
     {%- set widgetOptions = data.options.widgets[widget.type] or {} -%}
-    {%- if not canEdit -%}
+    {%- if not canEdit or widgetOptions.readonly -%}
       {%- set widgetOptions = apos.utils.merge(widgetOptions, { edit: false }) -%}
     {%- endif -%}
     {{ apos.areas.widget(widget, widgetOptions) }}

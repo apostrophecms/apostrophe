@@ -3,7 +3,7 @@
 
 
 {% macro video(field) %}
-  <input type="text" class="apos-field-input apos-field-input-text" name="{{ field.name }}" />
+  {% if not field.readonly %}<input type="text" class="apos-field-input apos-field-input-text" name="{{ field.name }}" />{% endif %}
   <div class="apos-video-player" data-apos-video-player></div>
 {% endmacro %}
 
