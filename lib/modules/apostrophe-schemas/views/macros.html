@@ -61,9 +61,9 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textarea(field.name, field.placeholder, field.readonly) }}
+    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly) }}
   {%- else -%}
-    {{ commonFields.string(field.name, field.placeholder, '', field.readonly) }}
+    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly) }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -84,7 +84,7 @@
 {%- endmacro -%}
 
 {%- macro passwordBody(field) -%}
-  <input class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readonly %}disabled{% endif %}>
+  <input class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
@@ -98,12 +98,12 @@
     {# Text entry for autocompleting the next item #}
     <ul data-list class="apos-tag-list">
       <li data-item class="apos-tag-list-item">
-        {% if not field.readonly %}<a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>{% endif %}
+        {% if not field.readOnly %}<a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>{% endif %}
         <span class="apos-tag-entry" data-label>{{ __('Example label') }}</span>
         {# Link to remove this choice #}
       </li>
     </ul>
-    {% if not field.readonly %}
+    {% if not field.readOnly %}
       <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
       <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
       <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
@@ -134,7 +134,7 @@
   {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">
-        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}" {% if field.readonly %}disabled{% endif %}>
+        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}" {% if field.readOnly %}disabled{% endif %}>
         <span class="apos-form-checkbox-indicator"></span>
         {{ __(choice.label | d('')) }}
       </label>
@@ -159,7 +159,7 @@
 
 {# Often used directly in a custom fieldset with other controls #}
 {%- macro selectBody(field) -%}
-  {{ commonFields.select(field.name, field.choices, '', field.readonly) }}
+  {{ commonFields.select(field.name, field.choices, '', field.readOnly) }}
 {%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}
@@ -219,7 +219,7 @@
 
 {# ajax populates joins, see apostrophe-docs/views/chooser.html #}
 {%- macro joinBody(field) -%}
-  <div data-chooser data-readonly="{{ field.readonly }}">{# ajax populates me #}</div>
+  <div data-chooser data-readOnly="{{ field.readOnly }}">{# ajax populates me #}</div>
 {%- endmacro -%}
 
 {%- macro object(field) -%}

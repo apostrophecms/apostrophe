@@ -7,7 +7,7 @@
       <ul class="apos-dropdown-items" data-apos-dropdown-items>
         {%- for name, options in data.options.widgets -%}
           {%- if data.widgetManagers[name] -%}
-            {%- if not options.readonly -%}
+            {%- if not options.readOnly -%}
               <li class="apos-dropdown-item" data-apos-add-item="{{ name }}">{{ __(data.widgetManagers[name].label) }}</li>
             {% endif %}
           {%- else -%}
