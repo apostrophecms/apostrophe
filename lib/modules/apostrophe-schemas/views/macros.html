@@ -23,7 +23,7 @@
             <div class="apos-schema-group-inner">
               {%- for field in group.fields -%}
                 {%- if not field.contextual -%}
-                  {{ apos.schemas.field(field) }}
+                  {{ apos.schemas.field(field, options.readOnly) }}
                 {%- endif -%}
               {%- endfor -%}
             </div>
@@ -108,7 +108,7 @@
       <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
       <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
     {% endif %}
-    
+
   </div>
 {%- endmacro -%}
 
@@ -225,7 +225,7 @@
 {%- macro object(field) -%}
   <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }}" data-name="{{ field.name }}">
   {% for item in field.schema %}
-    {{ apos.schemas.field(item) }}
+    {{ apos.schemas.field(item, field.readOnly) }}
   {% endfor %}
   </fieldset>
 {%- endmacro -%}
