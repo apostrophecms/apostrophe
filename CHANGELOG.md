@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.25.0
+
+* There is now a `readOnly` option for the standard schema field types. Thanks to Michelin for contributing this feature.
+
+* Apostrophe now displays useful warnings and, in some cases, errors at startup when schemas are improperly configured. This is particularly useful if you have found it frustrating to configure joins correctly. We are continuing to deepen the coverage here.
+
+* In the manage view, the "published" and "trash" filters now always offer both "yes" and "no," regardless of whether anything is available in those categories. This is necessary because these are the respective defaults, and these are also unusual cases in which it is actually interesting to know nothing is available.
+
 ** 2.24.0
 
 All tests passing.
