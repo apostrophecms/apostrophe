@@ -2,6 +2,8 @@
 
 ** 2.25.0
 
+All tests passing.
+
 * There is now a `readOnly` option for the standard schema field types. Thanks to Michelin for contributing this feature.
 
 * Apostrophe now displays useful warnings and, in some cases, errors at startup when schemas are improperly configured. This is particularly useful if you have found it frustrating to configure joins correctly. We are continuing to deepen the coverage here.
