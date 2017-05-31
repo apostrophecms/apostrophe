@@ -43,6 +43,7 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
-    'apostrophe-service-bridge': {}
+    'apostrophe-service-bridge': {},
+    'apostrophe-notifications': {}
   }
 };

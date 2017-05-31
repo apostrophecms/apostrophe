@@ -1,0 +1,84 @@
+.apos-notification-container
+{
+  position: fixed;
+  .transition();
+  height: 300px;
+  width: 550px;
+  // start off canvas
+  left: -1000px;
+  top: 90px;
+  z-index: 999;
+  br {display: none; }
+}
+
+.apos-notification-container--ready
+{
+  left: -537px;
+}
+
+.apos-notification
+{
+  position: relative;
+  .apos-dark-grad();
+  -webkit-transition: margin-left 0.2s ease-in-out;
+  display: block;
+  clear: both;
+  padding: 7px 16px 7px 10px;
+  width: 210px;
+  border-radius: 3px;
+  border: 1px solid @apos-steel;
+  margin-bottom: 10px;
+  margin-left: 0;
+  p
+  {
+    .apos-cabin-bold();
+    font-size: 10px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  &.apos-notification--fired
+  {
+    margin-left: 100%;
+  }
+  &.apos-template
+  {
+    display: none;
+  }
+}
+.apos-notification-close
+{
+  font-size: 14px;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: white;
+  opacity: 0.7;
+  &:hover
+  {
+    opacity: 1;
+    color: white;
+  }
+}
+
+.apos-notification--error
+{
+  .apos-base-grad();
+  border: 1px solid @apos-base;
+}
+
+.apos-notification--warn
+{
+  .apos-bg-gradient(@apos-yellow, darken(@apos-yellow, 10%));
+  border: 1px solid @apos-yellow;
+  p
+  {
+    color: darken(@apos-grey20, 10%);
+  }
+}
+
+.apos-notification--success
+{
+  .apos-bg-gradient(@apos-green, darken(@apos-green, 10%));
+  border: 1px solid @apos-green;
+}
