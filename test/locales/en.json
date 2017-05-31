@@ -8,6 +8,5 @@
 	"Username or Email": "Username or Email",
 	"Password": "Password",
 	"Log In": "Log In",
-	"An error has occurred": "An error has occurred",
-	"An error has occurred. We're working on it. We apologize for the inconvenience.": "An error has occurred. We're working on it. We apologize for the inconvenience."
+	"Your username or password was incorrect": "Your username or password was incorrect"
 }
