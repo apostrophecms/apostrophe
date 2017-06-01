@@ -15,6 +15,7 @@ module.exports = {
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
     'apostrophe-admin-bar': {},
+    'apostrophe-notifications': {},
     'apostrophe-login': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
@@ -43,7 +44,6 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
-    'apostrophe-service-bridge': {},
-    'apostrophe-notifications': {}
+    'apostrophe-service-bridge': {}
   }
 };
