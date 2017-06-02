@@ -3,7 +3,9 @@
   width: 33vw;
   top: @apos-padding-2;
   right: @apos-padding-2;
-  z-index: @apos-z-index-5;
+  // Must be visible atop modals, notifications often occur in a
+  // process involving steps through modals. -Tom
+  z-index: @apos-z-index-8;
 
   @media @apos-breakpoint-desktop-xl
   {
