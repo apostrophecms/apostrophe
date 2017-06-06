@@ -22,6 +22,7 @@
 
 {%- block body -%}
   <form class="apos-form" data-apos-form>
+    {% include "apostrophe-docs:inTrash.html" %}
     {{ schemas.fields(data.schema) }}
   </form>
 {%- endblock -%}

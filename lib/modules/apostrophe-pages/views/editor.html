@@ -26,14 +26,8 @@
 {% endblock %}
 
 {% block body %}
-  {# js shows if page is currently in trash. #}
-  {# We won't get that far unless trashInTree is in effect. #}
-  <div data-apos-page-in-trash apos-page-in-trash>
-    <p>This page is currently in the trash.</p>
-    <fieldset>
-      <label for="trash">Trash</label><input data-apos-trash-checkbox type="checkbox" name="trash" checked />
-    </fieldset>
-  </div>
+  {# Only made visible by JS when appropriate #}
+  {% include "apostrophe-docs:inTrash.html" %}
   {# HEY! DON'T REMOVE THIS DIV! Needed so we can swap page types dynamically. If #}
   {# this is causing grief for you with sliders or something, fix that to cope. #}
   {# No going halfsies. -Tom #}

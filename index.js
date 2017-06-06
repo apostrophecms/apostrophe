@@ -116,10 +116,23 @@ module.exports = function(options) {
     return self.callAll('apostropheDestroy', callback);
   };
 
-  // Helper function for other modules to determine whether the application
-  // is running as a server or a task
+  // Returns true if Apostrophe is running as a command line task
+  // rather than as a server
   self.isTask = function() {
     return !!self.argv._.length;
+  };
+  
+  // Returns an array of modules that are instances of the given
+  // module name, i.e. they are of that type or they extend it.
+  // For instance, `apos.instancesOf('apostrophe-pieces')` returns
+  // an array of active modules in your project that extend
+  // pieces, such as `apostrophe-users`, `apostrophe-groups` and
+  // your own piece types
+
+  self.instancesOf = function(name) {
+    return _.filter(self.modules, function(module) {
+      return self.synth.instanceOf(module, name);
+    });
   };
 
   defineModules();
