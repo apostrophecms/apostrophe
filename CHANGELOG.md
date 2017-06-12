@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.26.1
+
+All tests passing.
+
+* Fixed short-lived bug introduced in 2.26.0 re: detecting missing widget types.
+
 ** 2.26.0
 
 All tests passing.
