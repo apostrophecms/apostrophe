@@ -542,5 +542,47 @@ describe('Docs', function() {
     }
     assert(exception);
   });
+  
+  it('should respect explicitOrder()', function(done) {
+    
+    var testItems = [];
+    var i;
+    for (i = 0; (i < 100); i++) {
+      testItems.push({
+        _id: 'i' + i,
+        slug: 'i' + i,
+        published: true,
+        type: 'test',
+        title: 'title: ' + i
+      });
+    }
+
+    return apos.docs.db.insert(testItems, function(err) {
+      assert(!err);
+      return apos.docs.find(t.req.anon(apos), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray(function(err, docs) {
+        assert(!err);
+        assert(docs[0]._id === 'i7');
+        assert(docs[1]._id === 'i3');
+        assert(docs[2]._id === 'i27');
+        assert(docs[3]._id === 'i9');
+        assert(!docs[4]);
+        return done();
+      });
+    });
+
+  });
+
+  it('should respect explicitOrder with skip and limit', function(done) {
+
+    // Relies on test data of previous test
+    return apos.docs.find(t.req.anon(apos), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray(function(err, docs) {
+      assert(!err);
+      assert(docs[0]._id === 'i27');
+      assert(docs[1]._id === 'i9');
+      assert(!docs[2]);
+      return done();
+    });
+
+  });
 
 });

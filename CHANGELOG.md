@@ -1,5 +1,21 @@
 # Changelog
 
+** 2.26.0
+
+All tests passing.
+
+* Do not crash on missing widget types, print good warning messages.
+
+* Complete implementation of the [explicitOrder](http://apostrophecms.org/docs/modules/apostrophe-docs/server-apostrophe-cursor.html#explicit-order) cursor filter, replacing a nonfunctional implementation.
+
+* If the mongodb connection is lost, the default behavior is now to retry it forever, so when MongoDB does get restarted Apostrophe will find it. In addition, a `connect` object may be passed to the `apostrophe-db` module to be passed on to the MongoDB connect call.
+
+* Spaces added between DOM attributes for better HTML5 compliance.
+
+* `required` subfields are now enforced when editing fields of type `array`.
+
+Thanks to Michelin for their support of much of the work in this release.
+
 ** 2.25.0
 
 All tests passing.

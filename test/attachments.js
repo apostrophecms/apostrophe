@@ -17,8 +17,7 @@ describe('Attachment', function() {
   var uploadTarget = __dirname + "/public/uploads/attachments/";
   var collectionName = 'aposAttachments';
 
-  function wipeIt() {
-    apos.db.collection(collectionName).drop();
+  function wipeIt(callback) {
     deleteFolderRecursive(__dirname + '/public/uploads');
 
     function deleteFolderRecursive (path) {
@@ -36,6 +35,13 @@ describe('Attachment', function() {
         fs.rmdirSync(path);
       }
     }
+
+    apos.db.collection(collectionName, function(err, collection) {
+      assert(!err);
+      assert(collection);
+      collection.remove({}, callback);
+    });
+
   }
 
   // after(wipeIt);
@@ -67,14 +73,17 @@ describe('Attachment', function() {
       }
     });
   });
+  
+  describe('wipe', function() {
+    it('should clear previous material if any', function(done) {
+      wipeIt(done);
+    });
+  });
 
   var request = require('request');
   var fs = require('fs');
 
   describe('accept', function() {
-    before(function() {
-      wipeIt();
-    });
 
     function accept(filename, callback) {
       return apos.attachments.accept(t.req.admin(apos), {
