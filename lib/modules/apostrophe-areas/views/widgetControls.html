@@ -5,12 +5,11 @@
     {% for group in groups %}
       <div class="apos-button-group {{ group.classes }}">
         {% for button in group.controls %}
+          {% set label = button.label or '' %}
           {% if button.label == '$editLabel' %}
             {% set label = data.options.editLabel or 'Edit ' + data.manager.label %}
-          {% else %}
-            {% set label = button.label or '' %}
           {% endif %}
-          {{ buttons.inGroup(button.label, button) }}
+          {{ buttons.inGroup(label, button) }}
         {% endfor %}
       </div>
     {% endfor %}
