@@ -2,9 +2,9 @@
 <div class="apos-ui" data-apos-widget-controls>
   <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context">
     <div class="apos-button-group">
-      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down' }) }}
+      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item', tooltip: 'Drag' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up', tooltip: 'Move Up' }) }}
+      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down', tooltip: 'Move Down' }) }}
     </div>
     {%- if not data.manager.removeEditButton -%}
       {%- set label = data.options.editLabel or 'Edit ' + data.manager.label -%}
@@ -13,7 +13,7 @@
       </div>
     {%- endif -%}
     <div class="apos-button-group">
-      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item' }) }}
+      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item', tooltip: 'Trash' }) }}
     </div>
   </div>
 </div>
