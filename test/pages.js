@@ -80,7 +80,7 @@ describe('Pages', function() {
   });
 
   it('parked homepage exists', function(done) {
-    return apos.pages.find(t.req.anon(apos), { slug: '/' }).toObject(function(err, home) {
+    return apos.pages.find(t.req.anon(apos), { level: 0 }).toObject(function(err, home) {
       assert(!err);
       assert(home);
       assert(home.slug === '/');
