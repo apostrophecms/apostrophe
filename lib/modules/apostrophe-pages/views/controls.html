@@ -4,7 +4,7 @@
 
 {% for control in data.controls %}
   {% if control.type == 'dropdown' %}
-    {{ dropdowns.base(control) }}
+  {{ dropdowns.base(control, control.dropdownType or 'button', control.dropdownOptions or {}) }}
   {% elif control.type == 'minor' %}
     {{ buttons.minor(control.label, control) }}
   {% elif control.type == 'major' %}
