@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.27.1
+
+All tests passing.
+
+* Fixed recently introduced bug preventing page type switching.
+
 ** 2.27.0
 
 All tests passing.
