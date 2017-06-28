@@ -4,7 +4,7 @@ var argv = require('yargs').argv;
 var fs = require('fs');
 var async = require('async');
 var i18n = require('i18n');
-
+var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 
 module.exports = function(options) {
@@ -15,6 +15,7 @@ module.exports = function(options) {
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
   self.options = mergeConfiguration(options, defaults);
+  autodetectBundles();
   acceptGlobalOptions();
 
   self.handlers = {};
@@ -221,7 +222,40 @@ module.exports = function(options) {
     }
     return module;
   }
+  
+  function autodetectBundles() {
+    var modules = _.keys(self.options.modules);
+    _.each(modules, function(name) {
+      var path = getNpmPath(name);
+      if (!path) {
+        return;
+      }
+      var module = require(path);
+      if (module.moogBundle) {
+        self.options.bundles = (self.options.bundles || []).concat(name);
+        _.each(module.moogBundle.modules, function(name) {
+          if (!_.has(self.options.modules, name)) {
+            var bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            if (bundledModule.improve) {
+              self.options.modules[name] = {};
+            }
+          }
+        });
+      }
+    });
+  }
 
+  function getNpmPath(name) {
+    var parentPath = path.resolve(self.rootDir);
+    try {
+      return npmResolve.sync(name, { basedir: parentPath });
+    } catch (e) {
+      // Not found via npm. This does not mean it doesn't
+      // exist as a project-level thing
+      return null;
+    }
+  }
+  
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
 
