@@ -1,5 +1,25 @@
 # Changelog
 
+** 2.27.1
+
+All tests passing.
+
+* Fixed recently introduced bug preventing page type switching.
+
+** 2.27.0
+
+All tests passing.
+
+* Lazy schema field configuration, in general and especially for joins. No more need to specify `idField`, `idsField`, `relationshipsField` or even `label` for your schema fields. `withType` can be inferred too in many cases, depending on the name of the join field. You can still specify all of the details by hand.
+
+Also, for reverse joins, there is a new `reverseOf` option, allowing you to just specify the name of the join you are reversing. This is much easier to understand than specifying the `idField` of the other join. However that is still permitted.
+
+Lazy configuration is in place for doc types (like pages and pieces) and widget types. It can be extended to other uses of schemas by calling the new validation methods.
+
+* ckeditor 4.6.2. Resolves #896: you can now create links properly in Microsoft Edge. Our policy is now to check in periodically with new ckeditor releases and just make sure they are compatible with our editor skin before releasing them.
+
+* `apos.areas.fromRichText` can be used to create an area with a single rich text widget from a trusted string of HTML. Not intended for mixed media, just rich text. Related: both `fromRichText` and `fromPlaintext` now correctly give their widgets an `_id` property.
+
 ** 2.26.1
 
 All tests passing.
