@@ -1,6 +1,1 @@
-<div class="apos-images-chooser-choice">
-  {%- if apos.attachments.relationshipHasFocalPoint(relationship) -%}
-    {%- set focalPoint = apos.attachments.focalPointToOffset(choice.attachment, relationship) -%}
-    <span style="top: {{ focalPoint.y }}px; left: {{ focalPoint.x }}px" class="apos-focal-point fa fa-dot-circle-o" ></span>{#
-#}<img src="{{ apos.attachments.url(choice.attachment, { size: 'one-sixth', crop: not apos.utils.isUndefined(relationship.top) and relationship }) }}" />{#
-#}</div>
+<div class="apos-images-chooser-choice"><img src="{{ apos.attachments.url(choice.attachment, { size: 'one-sixth', crop: not apos.utils.isUndefined(relationship.top) and relationship }) }}" /></div>
