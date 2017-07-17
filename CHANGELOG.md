@@ -1,5 +1,16 @@
 # Changelog
 
+** 2.28.0
+
+All tests passing.
+
+* Notifications are available, replacing the use of `alert`. This feature is primarily for Apostrophe's own administrative features; you can use it when extending the editing UI. Call `apos.notify('message')` to display a simple message. You can specify several `type` options such as `error` and `info`, and you can also use `%s` wildcards. Everything is localized on the server side. [See the documentation for more information](http://apostrophecms.org/docs/modules/apostrophe-notifications/browser-apostrophe-notifications.html#trigger).
+* The `apostrophe-images` widget now provides a focal point editor. See the new [responsive images HOWTO](http://apostrophecms.org/docs/tutorials/howtos/responsive-images.html). Thanks to Michelin for their support of this work.
+* UX: clicking "edit" on an image you have already selected no longer deselects the image.
+* Bug fix: corrected issue that sometimes prevented joins with pages from editing properly.
+* Bug fix: added sort index on `level` and `rank`, preventing MongoDB errors on very large page trees.
+* UX: a complete URL is suggested at startup when testing locally. Thanks to Alex Gleason.
+
 ** 2.27.1
 
 All tests passing.
