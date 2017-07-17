@@ -1,0 +1,25 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{%- import "apostrophe-ui:components/buttons.html" as buttons with context -%}
+
+{%- block modalClass -%}
+  apos-crop-editor apos-ui-modal-no-sidebar
+{%- endblock -%}
+
+{%- block controls -%}
+    {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+    {{ buttons.major('Save Focal Point', { action: 'save' }) }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Set Focal Point') }}
+{%- endblock -%}
+
+{% block body %}
+  <div class="apos-focal-point-image-box" data-focal-point-image-box>
+    <span class="apos-focal-point fa fa-dot-circle-o" data-focal-point></span>
+    <img class="apos-focal-point-image" data-focal-point-image />
+  </div>
+{% endblock %}
+
+{% block footerContainer %}{% endblock %}
