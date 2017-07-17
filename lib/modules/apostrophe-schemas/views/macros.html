@@ -23,7 +23,7 @@
             <div class="apos-schema-group-inner">
               {%- for field in group.fields -%}
                 {%- if not field.contextual -%}
-                  {{ apos.schemas.field(field) }}
+                  {{ apos.schemas.field(field, options.readOnly) }}
                 {%- endif -%}
               {%- endfor -%}
             </div>
@@ -61,9 +61,9 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textarea(field.name, field.placeholder) }}
+    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly) }}
   {%- else -%}
-    {{ commonFields.string(field.name, field.placeholder) }}
+    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly) }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -84,7 +84,7 @@
 {%- endmacro -%}
 
 {%- macro passwordBody(field) -%}
-  <input class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password">
+  <input class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
@@ -98,14 +98,16 @@
     {# Text entry for autocompleting the next item #}
     <ul data-list class="apos-tag-list">
       <li data-item class="apos-tag-list-item">
-        <a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>
+        {% if not field.readOnly %}<a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>{% endif %}
         <span class="apos-tag-entry" data-label>{{ __('Example label') }}</span>
         {# Link to remove this choice #}
       </li>
     </ul>
-    <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
-    <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
-    <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
+    {% if not field.readOnly %}
+      <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
+      <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
+      <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
+    {% endif %}
 
   </div>
 {%- endmacro -%}
@@ -132,7 +134,7 @@
   {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">
-        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}">
+        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}" {% if field.readOnly %}disabled{% endif %}>
         <span class="apos-form-checkbox-indicator"></span>
         {{ __(choice.label | d('')) }}
       </label>
@@ -157,7 +159,7 @@
 
 {# Often used directly in a custom fieldset with other controls #}
 {%- macro selectBody(field) -%}
-  {{ commonFields.select(field.name, field.choices) }}
+  {{ commonFields.select(field.name, field.choices, '', field.readOnly) }}
 {%- endmacro -%}
 
 {# Less ambiguous to work with than a checkbox #}
@@ -217,5 +219,13 @@
 
 {# ajax populates joins, see apostrophe-docs/views/chooser.html #}
 {%- macro joinBody(field) -%}
-  <div data-chooser>{# ajax populates me #}</div>
+  <div data-chooser data-read-only="{{ field.readOnly }}">{# ajax populates me #}</div>
+{%- endmacro -%}
+
+{%- macro object(field) -%}
+  <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }}" data-name="{{ field.name }}">
+  {% for item in field.schema %}
+    {{ apos.schemas.field(item, field.readOnly) }}
+  {% endfor %}
+  </fieldset>
 {%- endmacro -%}
