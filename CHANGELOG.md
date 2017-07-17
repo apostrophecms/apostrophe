@@ -1,5 +1,99 @@
 # Changelog
 
+** 2.27.1
+
+All tests passing.
+
+* Fixed recently introduced bug preventing page type switching.
+
+** 2.27.0
+
+All tests passing.
+
+* Lazy schema field configuration, in general and especially for joins. No more need to specify `idField`, `idsField`, `relationshipsField` or even `label` for your schema fields. `withType` can be inferred too in many cases, depending on the name of the join field. You can still specify all of the details by hand.
+
+Also, for reverse joins, there is a new `reverseOf` option, allowing you to just specify the name of the join you are reversing. This is much easier to understand than specifying the `idField` of the other join. However that is still permitted.
+
+Lazy configuration is in place for doc types (like pages and pieces) and widget types. It can be extended to other uses of schemas by calling the new validation methods.
+
+* ckeditor 4.6.2. Resolves #896: you can now create links properly in Microsoft Edge. Our policy is now to check in periodically with new ckeditor releases and just make sure they are compatible with our editor skin before releasing them.
+
+* `apos.areas.fromRichText` can be used to create an area with a single rich text widget from a trusted string of HTML. Not intended for mixed media, just rich text. Related: both `fromRichText` and `fromPlaintext` now correctly give their widgets an `_id` property.
+
+** 2.26.1
+
+All tests passing.
+
+* Fixed short-lived bug introduced in 2.26.0 re: detecting missing widget types.
+
+** 2.26.0
+
+All tests passing.
+
+* Do not crash on missing widget types, print good warning messages.
+
+* Complete implementation of the [explicitOrder](http://apostrophecms.org/docs/modules/apostrophe-docs/server-apostrophe-cursor.html#explicit-order) cursor filter, replacing a nonfunctional implementation.
+
+* If the mongodb connection is lost, the default behavior is now to retry it forever, so when MongoDB does get restarted Apostrophe will find it. In addition, a `connect` object may be passed to the `apostrophe-db` module to be passed on to the MongoDB connect call.
+
+* Spaces added between DOM attributes for better HTML5 compliance.
+
+* `required` subfields are now enforced when editing fields of type `array`.
+
+Thanks to Michelin for their support of much of the work in this release.
+
+** 2.25.0
+
+All tests passing.
+
+* There is now a `readOnly` option for the standard schema field types. Thanks to Michelin for contributing this feature.
+
+* Apostrophe now displays useful warnings and, in some cases, errors at startup when schemas are improperly configured. This is particularly useful if you have found it frustrating to configure joins correctly. We are continuing to deepen the coverage here.
+
+* In the manage view, the "published" and "trash" filters now always offer both "yes" and "no," regardless of whether anything is available in those categories. This is necessary because these are the respective defaults, and these are also unusual cases in which it is actually interesting to know nothing is available.
+
+** 2.24.0
+
+All tests passing.
+
+There is now an `object` schema field type. It works much like the `array` schema field type, however there is just one object, represented as an object property of the doc in the database. Thanks to Michelin's development team for contributing this feature.
+
+** 2.23.2
+
+All tests passing.
+
+The options object of `enhanceDate` is now passed on to `pikaday`. Considered a bug fix since the options object was erroneously ignored.
+
+* 2.23.1
+
+All tests passing.
+
+cleanCss needs to know that the output CSS files are going to live in apos-minified in order to correctly parse `@import` statements that pull in plain .css files. Also, the mechanism for prefixing URLs in CSS code was not applied at the correct stage of the bundling process (the minify stage), which broke the ability to reference fonts, images, etc. via URLs beginning with /modules when using an S3 asset bundle.
+
+** 2.23.0
+
+All tests passing.
+
+* The "manage" view of `apostrophe-pieces` now supports robust filters, in the same way they were already supported on the front end for `apostrophe-pieces-pages`. Use the `addFilters` option to configure them. There is bc with existing filters that relied on the old assumption that manage filters have a boolean API. However now you can specify any field with a cursor filter, which includes most schema fields, notably including joins.
+
+Note that since all of the options are presented in a dropdown, not all fields are good candidates for this feature.
+
+The "manage" view filters now refresh to reflect only the options that still make sense based on the other filters you have selected, reducing user frustration.
+
+See [reusable content with pieces](http://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html) for more information and examples.
+
+Thanks to Michelin for their support of this work.
+
+* `apos.utils.isFalse` allows you to check for values that are strictly `=== false` in templates.
+
+* `apos.utils.startCase` converts property names to English, roughly speaking. It is used as a fallback if a filter does not have a `label` property. This is primarily for bc, you should add a `label` property to your fields.
+
+* Production now matches the dev environment with regard to relative URLs in LESS files, such as those used to specify background images or font files. Previously the behavior was different in dev and production, which is a bug.
+
+* You can now pass a `less` option to `apostrophe-assets`, which is merged with the options given to `less.render` both in dev and production. You can use this, for instance, to enable `strictMath`.
+
+* `apostrophe.oembed`'s `fetch` method now propagates its `options` object to `oembetter` correctly. Thanks to Fotis Paraskevopoulos.
+
 ** 2.22.0
 
 All tests passing.

@@ -15,6 +15,7 @@ module.exports = {
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
     'apostrophe-admin-bar': {},
+    'apostrophe-notifications': {},
     'apostrophe-login': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
