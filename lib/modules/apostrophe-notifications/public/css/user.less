@@ -3,8 +3,6 @@
   width: 33vw;
   top: @apos-padding-2;
   right: @apos-padding-2;
-  // Must be visible atop modals, notifications often occur in a
-  // process involving steps through modals. -Tom
   z-index: @apos-z-index-8;
 
   @media @apos-breakpoint-desktop-xl
@@ -28,7 +26,7 @@
   &-message {
     font-size: 16px;
     margin-right: 32px;
-    padding: @apos-padding-1 @apos-padding-2;
+    padding: @apos-padding-1 @apos-padding-2 !important;
   }
   
   &--hidden {
