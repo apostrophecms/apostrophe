@@ -13,6 +13,9 @@
           {{ buttons.inGroup('', { icon: 'eye', action: 'focal-point-item' , value: choice._id }) }}
         {% endif %}
       {%- endif -%}
+      {%- if item._edit or item.item._edit -%}
+        {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', value: choice._id}) }}
+      {%- endif -%}
       {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
     </div>
   </div>

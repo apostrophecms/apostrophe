@@ -14,6 +14,9 @@
         {%- if data.relationship and (apos.utils.filterEmpty(data.relationship, 'inline').length) -%}
           {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id}) }}
         {%- endif -%}
+        {%- if item._edit or item.item._edit -%}
+          {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', value: choice._id}) }}
+        {%- endif -%}
         {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
       </div>
     {% endif %}
