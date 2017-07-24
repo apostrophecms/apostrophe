@@ -82,7 +82,7 @@ describe('Attachment', function() {
   describe('accept', function() {
 
     function accept(filename, callback) {
-      return apos.attachments.accept(t.req.admin(apos), {
+      return apos.attachments.insert(t.req.admin(apos), {
         name: filename,
         path: uploadSource + filename
       }, function(err, info) {
@@ -118,7 +118,7 @@ describe('Attachment', function() {
     it('should not upload an exe file', function(done) {
       var filename = 'bad_file.exe';
 
-      return apos.attachments.accept(t.req.admin(apos), {
+      return apos.attachments.insert(t.req.admin(apos), {
         name: filename,
         path: uploadSource + filename
       }, function(err, info) {
