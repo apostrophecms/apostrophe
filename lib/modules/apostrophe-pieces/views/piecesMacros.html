@@ -86,7 +86,7 @@
             {% set id = apos.utils.generateId() %}
             <label class="apos-modal-filter-selection" for="{{ id }}"><input type="checkbox" id="{{ id }}" name="{{ filter.name }}" value="{{ chosen }}" checked /> {{ apos.utils.find(filter.choices, 'value', chosen).label }}</label>
           {%- endfor -%}
-          {{ fields.select(filter.name, apos.utils.concat([ { label: 'Choose One', value: '**CHOOSE**' } ], filter.choices), '**CHOOSE**') }}
+          {{ fields.select(filter.name, apos.utils.concat([ { label: 'Choose One', value: '**CHOOSE**' } ], apos.utils.difference(filter.choices, filters.choices[filter.name], 'value')), '**CHOOSE**') }}
         {%- else -%}
           {{ fields.select(filter.name, apos.utils.concat([ { label: filter.anyLabel or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }}
         {%- endif -%}
