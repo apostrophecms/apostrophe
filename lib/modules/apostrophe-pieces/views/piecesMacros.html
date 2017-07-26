@@ -81,7 +81,15 @@
         {%- if not apos.utils.isFalse(filter.label) -%}
           <label for="{{ filter.name }}">{{ filter.label or apos.utils.startCase(filter.name) }}</label>
         {%- endif -%}
-        {{ fields.select(filter.name, apos.utils.concat([ { label: filter.anyLabel or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }}
+        {%- if filter.multiple -%}
+          {%- for chosen in filters.choices[filter.name] -%}
+            {% set id = apos.utils.generateId() %}
+            <label class="apos-modal-filter-selection" for="{{ id }}"><input type="checkbox" id="{{ id }}" name="{{ filter.name }}" value="{{ chosen }}" checked /> {{ apos.utils.find(filter.choices, 'value', chosen).label }}</label>
+          {%- endfor -%}
+          {{ fields.select(filter.name, apos.utils.concat([ { label: 'Choose One', value: '**CHOOSE**' } ], filter.choices), '**CHOOSE**') }}
+        {%- else -%}
+          {{ fields.select(filter.name, apos.utils.concat([ { label: filter.anyLabel or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }}
+        {%- endif -%}
       </span>
     {%- endfor -%}{#
 
