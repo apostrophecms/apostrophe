@@ -145,6 +145,14 @@ module.exports = function(options) {
     });
   };
 
+  // Returns true if the object is an instance of the given
+  // moog type name or a subclass thereof. A convenience wrapper
+  // for `apos.synth.instanceOf`
+
+  self.instanceOf = function(object, name) {
+    return self.synth.instanceOf(object, name);
+  }
+
   defineModules();
 
   // No return statement here because we need to
