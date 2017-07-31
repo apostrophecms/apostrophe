@@ -113,6 +113,15 @@ module.exports = function(options) {
     });
   };
   
+  // Destroys the Apostrophe object, freeing resources such as
+  // HTTP server ports and database connections. Does **not**
+  // delete any data; the persistent database and media files
+  // remain available for the next startup. Invokes
+  // the `apostropheDestroy` methods of all modules that
+  // provide one; use this mechanism to free your own
+  // server-side resources that could prevent garbage
+  // collection by the JavaScript engine, such as timers
+  // and intervals.
   self.destroy = function(callback) {
     return self.callAll('apostropheDestroy', callback);
   };
