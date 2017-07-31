@@ -2,11 +2,11 @@ var assert = require('assert');
 
 describe('Caches', function() {
 
-  this.timeout(5000);
-
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
+
+  this.timeout(5000);
 
   var apos;
   var cache;

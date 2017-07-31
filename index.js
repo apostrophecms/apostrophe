@@ -4,7 +4,7 @@ var argv = require('yargs').argv;
 var fs = require('fs');
 var async = require('async');
 var i18n = require('i18n');
-
+var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 
 module.exports = function(options) {
@@ -15,6 +15,7 @@ module.exports = function(options) {
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
   self.options = mergeConfiguration(options, defaults);
+  autodetectBundles();
   acceptGlobalOptions();
 
   self.handlers = {};
@@ -111,12 +112,46 @@ module.exports = function(options) {
       return callback(null);
     });
   };
+  
+  // Destroys the Apostrophe object, freeing resources such as
+  // HTTP server ports and database connections. Does **not**
+  // delete any data; the persistent database and media files
+  // remain available for the next startup. Invokes
+  // the `apostropheDestroy` methods of all modules that
+  // provide one; use this mechanism to free your own
+  // server-side resources that could prevent garbage
+  // collection by the JavaScript engine, such as timers
+  // and intervals.
+  self.destroy = function(callback) {
+    return self.callAll('apostropheDestroy', callback);
+  };
 
-  // Helper function for other modules to determine whether the application
-  // is running as a server or a task
+  // Returns true if Apostrophe is running as a command line task
+  // rather than as a server
   self.isTask = function() {
     return !!self.argv._.length;
   };
+  
+  // Returns an array of modules that are instances of the given
+  // module name, i.e. they are of that type or they extend it.
+  // For instance, `apos.instancesOf('apostrophe-pieces')` returns
+  // an array of active modules in your project that extend
+  // pieces, such as `apostrophe-users`, `apostrophe-groups` and
+  // your own piece types
+
+  self.instancesOf = function(name) {
+    return _.filter(self.modules, function(module) {
+      return self.synth.instanceOf(module, name);
+    });
+  };
+
+  // Returns true if the object is an instance of the given
+  // moog type name or a subclass thereof. A convenience wrapper
+  // for `apos.synth.instanceOf`
+
+  self.instanceOf = function(object, name) {
+    return self.synth.instanceOf(object, name);
+  }
 
   defineModules();
 
@@ -204,7 +239,40 @@ module.exports = function(options) {
     }
     return module;
   }
+  
+  function autodetectBundles() {
+    var modules = _.keys(self.options.modules);
+    _.each(modules, function(name) {
+      var path = getNpmPath(name);
+      if (!path) {
+        return;
+      }
+      var module = require(path);
+      if (module.moogBundle) {
+        self.options.bundles = (self.options.bundles || []).concat(name);
+        _.each(module.moogBundle.modules, function(name) {
+          if (!_.has(self.options.modules, name)) {
+            var bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            if (bundledModule.improve) {
+              self.options.modules[name] = {};
+            }
+          }
+        });
+      }
+    });
+  }
 
+  function getNpmPath(name) {
+    var parentPath = path.resolve(self.rootDir);
+    try {
+      return npmResolve.sync(name, { basedir: parentPath });
+    } catch (e) {
+      // Not found via npm. This does not mean it doesn't
+      // exist as a project-level thing
+      return null;
+    }
+  }
+  
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
 

@@ -8,6 +8,10 @@ describe('Urls', function() {
   var apos;
   var start;
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   it('should exist on the apos object', function(done){
     apos = require('../index.js')({
       root: module,

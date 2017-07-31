@@ -11,8 +11,8 @@ describe('Versions', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
 	//////
@@ -26,7 +26,7 @@ describe('Versions', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7950
+          port: 7900
         },
 
         // Create a custom schema for test-person so we can
@@ -622,7 +622,7 @@ describe('Versions', function() {
   //     modules: {
   //       'apostrophe-express': {
   //         secret: 'xxx',
-  //         port: 7949
+  //         port: 7900
   //       },
   //       'apostrophe-versions':{
   //       	enabled: false

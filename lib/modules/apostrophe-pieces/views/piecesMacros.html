@@ -11,7 +11,7 @@
 {% import 'apostrophe-ui:components/pills.html' as pills with context %}
 {% import 'apostrophe-ui:components/fields.html' as fields with context %}
 
-
+{# Maintained for bc. Newer templates call the module's createControls helper. #}
 {%- macro createControls() -%}
   {{ dropdowns.base({
     label: 'More',
@@ -28,6 +28,7 @@
   {{ buttons.major('Save ' + data.options.label, { action: 'save' }) }}
 {% endmacro %}
 
+{# Maintained for bc. Newer templates call the module's editControls helper. #}
 {%- macro editControls() -%}
   {{ dropdowns.base({
     label: 'More',

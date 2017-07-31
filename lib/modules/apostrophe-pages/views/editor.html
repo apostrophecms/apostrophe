@@ -4,8 +4,7 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% block controls %}
-	{{ buttons.minor('Cancel', { action: 'cancel' }) }}
-	{{ buttons.major('Save', { action: 'save' }) }}
+  {{ module.editControls() }}
 {% endblock %}
 
 {% block label %}
@@ -20,9 +19,9 @@
 
 {% block instructions %}
 	{% if data.verb == 'update' %}
-        {{ __("Change the settings of the page you're currently on.") }}
+    {{ __("Change the settings of a page.") }}
 	{% elif data.verb == 'insert' %}
-        {{ __("Set the options for a new page.") }}
+    {{ __("Set the options for a new page.") }}
 	{% endif %}
 {% endblock %}
 

@@ -9,8 +9,8 @@ describe('Search', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return destroy(apos, done);
   });
 
   //////
@@ -25,7 +25,7 @@ describe('Search', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7945
+          port: 7900
         },
         'events': {
           extend: 'apostrophe-pieces',

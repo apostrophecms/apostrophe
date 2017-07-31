@@ -1,5 +1,4 @@
 {%- extends "editorModal.html" -%}
-{%- import "piecesMacros.html" as pieces with context -%}
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
 
 {%- block modalClass -%}
@@ -7,7 +6,7 @@
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ pieces.createControls() }}
+  {{ module.createControls() }}
 {%- endblock -%}
 
 {%- block label -%}
