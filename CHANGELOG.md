@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.29.1
+
+All tests passing.
+
+* Fixed a short-lived issue with the reorganize feature.
+
 ** 2.29.0
 
 All tests passing.
