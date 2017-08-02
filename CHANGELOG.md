@@ -1,5 +1,12 @@
 # Changelog
 
+** 2.29.2
+
+All tests passing.
+
+* Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
+* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+
 ** 2.29.1
 
 All tests passing.
