@@ -4,7 +4,11 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 
 {% block controls %}
-  {{ module.editControls() }}
+  {% if data.verb == 'insert' %}
+    {{ module.createControls() }}
+  {% else %}
+    {{ module.editControls() }}
+  {% endif %}
 {% endblock %}
 
 {% block label %}
