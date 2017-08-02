@@ -1,5 +1,29 @@
 # Changelog
 
+** 2.30.0
+
+All tests passing.
+
+It is now easier to set up Redis or another alternative session store:
+
+```
+'apostrophe-express': {
+  session: {
+    secret: 'your-secret-here',
+    store: {
+      name: 'connect-redis',
+      options: {
+        // redis-specific options here
+      }
+    }
+  }
+}
+```
+
+For bc, you can still pass a live instance of a store as the `store` option, but this way is easier; all you have to do is `npm install --save` your connect-compatible session store of choice and configure it.
+
+Thanks to Michelin for their support of this work.
+
 ** 2.29.2
 
 All tests passing.
