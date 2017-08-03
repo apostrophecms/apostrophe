@@ -9,18 +9,19 @@
     {% block extraHead %}
     {% endblock %}
   </head>
-  <body class="{% block bodyClass %}{% endblock %}">
+  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}">
     {% block apostropheMenu %}
       {{ apos.adminBar.output() }}
     {% endblock %}
 
     {% if data.user %}
-    <div class="apos-ui">
-      <div class="apos-context-menu-container">
-        {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
-        {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+      <div class="apos-ui">
+        <div class="apos-context-menu-container">
+          {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
+          {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+          {{ apos.pages.afterContextMenu() }}
+        </div>
       </div>
-    </div>
     {% endif %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}

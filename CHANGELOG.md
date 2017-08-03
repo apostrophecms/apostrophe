@@ -1,5 +1,82 @@
 # Changelog
 
+** 2.30.0
+
+All tests passing.
+
+It is now easier to set up Redis or another alternative session store:
+
+```
+'apostrophe-express': {
+  session: {
+    secret: 'your-secret-here',
+    store: {
+      name: 'connect-redis',
+      options: {
+        // redis-specific options here
+      }
+    }
+  }
+}
+```
+
+For bc, you can still pass a live instance of a store as the `store` option, but this way is easier; all you have to do is `npm install --save` your connect-compatible session store of choice and configure it.
+
+Thanks to Michelin for their support of this work.
+
+** 2.29.2
+
+All tests passing.
+
+* Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
+* The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
+
+** 2.29.1
+
+All tests passing.
+
+* Fixed a short-lived issue with the reorganize feature.
+
+** 2.29.0
+
+All tests passing.
+
+This is a significant update containing various accommodations required by the shortly forthcoming Apostrophe 2.x version of the `apostrophe-workflow` module, as well as other recent enhancements in our queue.
+
+* Editing an area "in context" on the page when it is part of a widget or piece will always work, even if `contextual: true` was not set. That property is optional and prevents the area from also appearing in the dialog box for editing the content type.
+
+* Multiple select filters are now available for the "manage" view of any piece type. Just like configuring single-select filters, except that you'll add `multiple: true` to the relevant object in your `addFilters` configuration for the module. Thanks to Michelin for their support of this work.
+
+* When editing a previous selection of pieces for a join or widget, you can also easily edit them without locating them again in the manage view.
+
+* "Next" and "previous" links can now be easily added to your `show.html` pages for pieces. Just set the `next` and `previous` options for your `apostrophe-pieces-pages` subclass to `true`, or to an object with a `projection` property for best performance. This will populate `data.previous` and `data.next` in your `show.html` template. *For blogs they may seem backwards; they refer to relative position on the index page, and blogs are reverse-chronological. Just switch the terms on the front end in your template in cases where they appear confusing.*
+
+* There is now a "pages" option on the admin bar, for cases where "reorganize" is not visible because "Page Settings" is not accessible to the user for the current page.
+
+* If the `trashInSchema` option is set to `true` when configuring `apostrophe-docs`, pages that are in the trash retain their position in the page tree rather than moving to a separate "trash" subtree. In the "reorganize" interface, they are grouped into trash cans displayed beneath each parent page, rather than a single global trash can. This is necessary for the new workflow module and also helpful in any situation where trying to find pages in the trash is more troublesome than explaining this alternative approach.
+
+When `trashInSchema` is `true`, users can also change the trash status of a piece or page via "Page Settings" or the "Edit" dialog box of the piece, and it is possible to access "Page Settings" for any page via "Reorganize."
+
+* The buttons displayed for each widget in an Apostrophe area can be adjusted via the `addWidgetControlGroups` option of the `apostrophe-areas` module, which can be used to introduce additional buttons.
+
+* Empty `beforeMove` and `afterMove` methods have been added to the `apostrophe-pages` module for the convenience of modules using `improve` to enhance it.
+
+* The `apostrophe-doc-type-manager` module now has `getEditPermissionName` and `getAdminPermissionName` methods. These can be overridden by subclasses. For instance, all page subtypes return `edit-apostrophe-page` for the former because page types can be changed.
+
+* `apos.destroy(function() { ... })` may be called to shut down a running Apostrophe instance. This does **not** delete any data. It simply releases the database connection, HTTP server port, etc. This mechanism is extensible by implementing an `apostropheDestroy` method in your own module.
+
+* `before` option for `expressMiddleware`. As before any module can provide middleware via an `expressMiddleware` property which may be a function or array of functions. In addition, if that property is an object, it may also have a `before` subproperty specifying a module whose middleware should run after it. In this case the actual middleware function or functions must be in a `middleware` subproperty.
+
+* `apos.instancesOf(name)` returns an array of modules that extend `name` or a subclass of it. `apos.instanceOf(object, name)` returns true if the given `object` is a moog instance of `name` or a subclass of it.
+
+* `apos.permissions.criteria` can now supply MongoDB criteria restricted to the types the user can edit when a general permission name like `edit` or `edit-doc` is asked for. *This was never a security bug because permissions for actual editing were checked when individual edits occurred. The change makes it easier to display lists of editable content of mixed types.*
+
+* Extending the indexes of Apostrophe's `aposDocs` collection is easier to achieve in modules that use `improve` to extend `apostrophe-docs`.
+
+* Removed tests for obsolete, unsupported Node.js 0.10.x. Node.js 4.x is now the minimum version. *We do not intend to break ES5 compliance in 2.x, however testing old versions of Node that are not maintained with security patches in any freely available repository is not practical.*
+
+* `insert` method for `apos.attachments`, mirroring the other modules better. Thanks to Arthur Agombart.
+
 ** 2.28.0
 
 All tests passing.
@@ -220,7 +297,7 @@ Thanks to Michelin for their support of this work.
 
 All tests passing.
 
-* Performance enhancement: when fetching `req.data.home` directly in the absence of `req.page._ancestors[0]`, such as on the home page itself or a non-page route like `/login`, we must apply the same default filters before applying the filter options, namely `.areas(false).joins(false)`, otherwise duplicate queries are made.
+* Performance enhancement: when fetching `req.data.home` directly in the absence of `req.data.page._ancestors[0]`, such as on the home page itself or a non-page route like `/login`, we must apply the same default filters before applying the filter options, namely `.areas(false).joins(false)`, otherwise duplicate queries are made.
 
 * Fixed bug in as-yet-unused `schemas.export` method caught by babel's linter.
 

@@ -7,6 +7,10 @@ describe('Templates', function(){
 
   this.timeout(5000);
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   it('should have a templates property', function(done) {
   	apos = require('../index.js')({
       root: module,
@@ -15,7 +19,7 @@ describe('Templates', function(){
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7934
+          port: 7900
         },
         'express-test': {},
         'templates-test': {},

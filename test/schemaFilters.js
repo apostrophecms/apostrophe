@@ -10,6 +10,10 @@ describe('Schema Filters', function() {
 
   this.timeout(5000);
 
+  after(function(done) {
+    return destroy(apos, done);
+  });
+
   //////
   // EXISTENCE
   //////
@@ -22,7 +26,7 @@ describe('Schema Filters', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7956
+          port: 7900
         },
         'cats': {
           extend: 'apostrophe-pieces',
