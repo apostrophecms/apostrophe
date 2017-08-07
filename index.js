@@ -308,7 +308,9 @@ module.exports = function(options) {
   // a node_modules subdirectory with a symlink to the
   // module itself is created so that the module can
   // be found by Apostrophe during testing. Invoked
-  // when options.testModule is true
+  // when options.testModule is true. There must be a
+  // test/ or tests/ subdir of the module containing
+  // a test.js file that runs under mocha via devDependencies.
 
   function testModule() {
     if (!options.testModule) {
@@ -326,7 +328,7 @@ module.exports = function(options) {
       secret: 'irrelevant'
     });
     var m = findTestModule();
-    // Allow tests to be in the module dir, or in test/, or in tests/
+    // Allow tests to be in test/ or in tests/
     var testDir = require('path').dirname(m.filename);
     var moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
@@ -336,6 +338,10 @@ module.exports = function(options) {
       fs.mkdirSync(testDir + '/node_modules');
       fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
     }
+    
+    // Not quite superfluous: it'll return self.root, but
+    // it also makes sure we encounter mocha along the way
+    // and throws an exception if we don't
     function findTestModule() {
       var m = module;
       while (m) {
@@ -425,12 +431,3 @@ module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
-
-// Set up a node_modules folder that can see the apostrophe module and this module,
-// so Apostrophe can bootstrap normally from test/. Used when implementing
-// unit tests of Apostrophe and modules that extend it. Not needed in
-// normal projects
-
-module.exports.testEnvironmentForCurrentModule = function() {
-  
-}
