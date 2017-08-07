@@ -14,11 +14,50 @@ module.exports = function(options) {
   self.root = options.root || getRoot();
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
+  testModule();
+
   self.options = mergeConfiguration(options, defaults);
   autodetectBundles();
   acceptGlobalOptions();
 
   self.handlers = {};
+  
+  defineModules();
+
+  // No return statement here because we need to
+  // return "self" after kicking this process off
+
+  async.series([
+    instantiateModules,
+    modulesReady,
+    modulesAfterInit,
+    afterInit
+  ], function(err) {
+    if (err) {
+      if (options.initFailed) {
+        // Report error in an extensible way
+        return options.initFailed(err);
+      } else {
+        // In the absence of a callback to handle initialization failure,
+        // we have to assume there's just one instance of Apostrophe and
+        // we can print the error and end the app.
+        
+        // Currently v8's err.stack property contains both the stack and the error message,
+        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
+        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
+          console.error(err);
+        }
+        console.error(err.stack);
+        process.exit(1);
+      }
+    }
+    if (self.argv._.length) {
+      self.emit('runTask');
+    } else {
+      // The apostrophe-express module adds this method
+      self.listen();
+    }
+  });
 
   // EVENT HANDLING
   //
@@ -151,45 +190,8 @@ module.exports = function(options) {
 
   self.instanceOf = function(object, name) {
     return self.synth.instanceOf(object, name);
-  }
-
-  defineModules();
-
-  // No return statement here because we need to
-  // return "self" after kicking this process off
-
-  async.series([
-    instantiateModules,
-    modulesReady,
-    modulesAfterInit,
-    afterInit
-  ], function(err) {
-    if (err) {
-      if (options.initFailed) {
-        // Report error in an extensible way
-        return options.initFailed(err);
-      } else {
-        // In the absence of a callback to handle initialization failure,
-        // we have to assume there's just one instance of Apostrophe and
-        // we can print the error and end the app.
-        
-        // Currently v8's err.stack property contains both the stack and the error message,
-        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
-        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
-          console.error(err);
-        }
-        console.error(err.stack);
-        process.exit(1);
-      }
-    }
-    if (self.argv._.length) {
-      self.emit('runTask');
-    } else {
-      // The apostrophe-express module adds this method
-      self.listen();
-    }
-  });
-
+  };
+  
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
   return self;
@@ -234,6 +236,11 @@ module.exports = function(options) {
   function getRoot() {
     var m = module;
     while (m.parent) {
+      // The test file is the root as far as we are concerned,
+      // not mocha itself
+      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
+        return m;
+      }
       m = m.parent;
       module = m;
     }
@@ -276,7 +283,15 @@ module.exports = function(options) {
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
 
-    self.argv = argv;
+    if (options.testModule) {
+      // Test command lines have arguments not
+      // intended as command line task arguments
+      self.argv = {
+        _: []
+      };
+    } else {
+      self.argv = argv;
+    }
 
     self.shortName = self.options.shortName;
     if (!self.shortName) {
@@ -285,6 +300,54 @@ module.exports = function(options) {
     self.title = self.options.title;
     self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
+  }
+  
+  // Tweak the Apostrophe environment suitably for
+  // unit testing a separate npm module that extends
+  // Apostrophe, like apostrophe-workflow. For instance,
+  // a node_modules subdirectory with a symlink to the
+  // module itself is created so that the module can
+  // be found by Apostrophe during testing. Invoked
+  // when options.testModule is true
+
+  function testModule() {
+    if (!options.testModule) {
+      return;
+    }
+    if (!options.shortName) {
+      options.shortName = 'test';
+    }
+    defaults = _.cloneDeep(defaults);
+    _.defaults(defaults, {
+      'apostrophe-express': {}
+    });
+    _.defaults(defaults['apostrophe-express'], {
+      port: 7900,
+      secret: 'irrelevant'
+    });
+    var m = findTestModule();
+    // Allow tests to be in the module dir, or in test/, or in tests/
+    var testDir = require('path').dirname(m.filename);
+    var moduleDir = testDir.replace(/\/tests?$/, '');
+    if (testDir === moduleDir) {
+      throw new Error('Test file must be in test/ or tests/ subdirectory of module');
+    }
+    if (!fs.existsSync(testDir + '/node_modules')) {
+      fs.mkdirSync(testDir + '/node_modules');
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+    }
+    function findTestModule() {
+      var m = module;
+      while (m) {
+        if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
+          return m;
+        }
+        m = m.parent;
+        if (!m) {
+          throw new Error('mocha does not seem to be running, is this really a test?');
+        }
+      }
+    }    
   }
 
   function defineModules() {
@@ -362,3 +425,12 @@ module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
+
+// Set up a node_modules folder that can see the apostrophe module and this module,
+// so Apostrophe can bootstrap normally from test/. Used when implementing
+// unit tests of Apostrophe and modules that extend it. Not needed in
+// normal projects
+
+module.exports.testEnvironmentForCurrentModule = function() {
+  
+}
