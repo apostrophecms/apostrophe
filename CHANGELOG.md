@@ -1,5 +1,19 @@
 # Changelog
 
+** 2.31.0
+
+All tests passing.
+
+* The new `testModule: true` option causes Apostrophe to supply much of the boilerplate for a published npm apostrophe module that wants to test itself as part of an apostrophe instance, i.e. apostrophe-workflow, apostrophe-caches-redis, etc. See those modules for examples of usage. This is a feature for those writing their own npm modules that wish to unit test by initializing Apostrophe and loading the module in question.
+
+* Fixed caching bugs, notably the oembed cache, which is now operating properly. Oembed responses, such as YouTube iframe markup, are now cached for an hour as originally intended which improves frontend loading time.
+
+* Page type changes only refreshed the schema fields on the first change — now they do it properly after every change.
+
+* Page type changes use the "busy" mechanism while refreshing the schema fields to prevent user interface race conditions and avoid user confusion.
+
+* `trash` is never offered as a schema field of the `global` doc (mainly a concern with `apostrophe-workflow`).
+
 ** 2.30.0
 
 All tests passing.
