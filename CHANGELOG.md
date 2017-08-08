@@ -1,5 +1,9 @@
 # Changelog
 
+** 2.23.1
+
+* Fixed an S3 asset bundle generation bug that caused `.less` files to be imported with the wrong file extension if the `public` folder did not yet exist at the time `--create-bundle` was used. Thanks to Michelin for their support of this work.
+
 ** 2.31.0
 
 All tests passing.
