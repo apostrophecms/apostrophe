@@ -1,8 +1,10 @@
 # Changelog
 
-** 2.23.1
+** 2.32.0
 
 * Fixed an S3 asset bundle generation bug that caused `.less` files to be imported with the wrong file extension if the `public` folder did not yet exist at the time `--create-bundle` was used. Thanks to Michelin for their support of this work.
+
+* Also added an `apostrophe-caches:clear` task to aid in testing various functionality. You must specify the cache name since caches may or may not even be known to Apostrophe at task startup time based on whether and when code calls `.get` for each cache name.
 
 ** 2.31.0
 
