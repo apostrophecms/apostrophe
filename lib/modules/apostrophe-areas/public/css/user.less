@@ -75,7 +75,7 @@
   .apos-transition;
   &:hover { z-index: @apos-z-index-6; }
 }
-.apos-area-widget-controls--context
+.apos-area-widget-controls--context, .apos-area-widget-controls--topLeft, 
 {
   top: @apos-padding-1;
   left: @apos-padding-1;
@@ -84,6 +84,26 @@
 {
   bottom: @apos-padding-1;
   left: @apos-padding-1;
+}
+
+.apos-area-widget-controls--topRight
+{
+  right: @apos-padding-1;
+  left: initial;
+}
+
+.apos-area-widget-controls--bottomLeft
+{
+  top: initial;
+  bottom: @apos-padding-1;
+}
+
+.apos-area-widget-controls--bottomRight
+{
+  top: initial;
+  left: initial;
+  right: @apos-padding-1;
+  bottom: @apos-padding-1;
 }
 
 .apos-area-widget--contextual>.apos-ui .apos-button-group--data { display: none; }
