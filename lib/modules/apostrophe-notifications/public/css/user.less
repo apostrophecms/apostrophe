@@ -12,6 +12,19 @@
   }
 }
 
+// Styles for a notification inside a modal so that
+// the notification container is nestled in the lower right of the modal
+.apos-modal {
+  .apos-notification-container {
+    height: 100%;
+    .apos-notification {
+        position: absolute;
+        bottom: 56px;
+        right: 16px;
+    }
+  }
+}
+
 .apos-notification {
   background-color: @apos-white;
   color: @apos-dark;
