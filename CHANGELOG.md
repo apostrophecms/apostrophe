@@ -1,6 +1,18 @@
 # Changelog
 
+** 2.33.0
+
+All tests passing.
+
+* The login page can be disabled via the new `localLogin` option of the `apostrophe-login` module. Set it explicitly to `false` to disable the login URL completely.
+* Refactoring: the `apostrophe-login` module now has an `afterLogin` method which takes care of invoking the `loginAfterLogin` callAll method on all modules that have one, and then redirecting appropriately. This code was factored out to make it easier to use in the new [apostrophe-passport](https://npmjs.org/package/apostrophe-passport) module, which allows the use of almost any [Passport](http://passportjs.org)-based strategy, such as Facebook login, Google login, Github login, etc.
+* `apos.users.ensureGroup` now delivers the group to its callback as the second argument.
+
+Thanks to Michelin for their support of this work.
+
 ** 2.32.0
+
+All tests passing.
 
 * Fixed an S3 asset bundle generation bug that caused `.less` files to be imported with the wrong file extension if the `public` folder did not yet exist at the time `--create-bundle` was used. Thanks to Michelin for their support of this work.
 
