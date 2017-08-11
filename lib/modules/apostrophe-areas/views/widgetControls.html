@@ -2,7 +2,7 @@
 <div class="apos-ui" data-apos-widget-controls>
   <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context
   {% if data.options.position %}
-    apos-area-widget-controls--{{ data.options.position }}
+    apos-area-widget-controls--{{ data.options.position | css }}
   {% endif %} ">
     {% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
     {% for group in groups %}
