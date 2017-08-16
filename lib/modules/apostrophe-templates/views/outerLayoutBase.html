@@ -31,10 +31,12 @@
     </div>
     {{ apos.assets.templates(data.when) }}
     {{ apos.assets.scripts(data.when) }}
-    <script type="text/javascript">
-      {{ data.js.globalCalls }}
-      {{ data.js.reqCalls }}
-    </script>
+    {% block jsCalls %}
+      <script type="text/javascript">
+        {{ data.js.globalCalls }}
+        {{ data.js.reqCalls }}
+      </script>
+    {% endblock %}
     {% block extraBody %}
     {% endblock %}
   </body>
