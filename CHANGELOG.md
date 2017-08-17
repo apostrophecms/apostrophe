@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.33.1
+
+All tests passing.
+
+* Fixed potential crash in version pruning mechanism.
+
 ** 2.33.0
 
 All tests passing.
