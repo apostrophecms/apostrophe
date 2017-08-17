@@ -1,7 +1,7 @@
 .apos-notification-container {
   position: fixed;
   width: 33vw;
-  top: @apos-padding-2;
+  bottom: @apos-padding-2;
   right: @apos-padding-2;
   z-index: @apos-z-index-8;
 
@@ -9,19 +9,6 @@
   {
     top: @apos-padding-4;
     left: @apos-padding-4;
-  }
-}
-
-// Styles for a notification inside a modal so that
-// the notification container is nestled in the lower right of the modal
-.apos-modal {
-  .apos-notification-container {
-    height: 100%;
-    .apos-notification {
-        position: absolute;
-        bottom: 56px;
-        right: 16px;
-    }
   }
 }
 
