@@ -1,5 +1,6 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert'),
-    _ = require('lodash');
+_ = require('lodash');
 
 describe('Apostrophe', function() {
 

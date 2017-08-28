@@ -1,3 +1,4 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 
@@ -9,7 +10,7 @@ describe('Urls', function() {
   var start;
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   it('should exist on the apos object', function(done){

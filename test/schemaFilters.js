@@ -1,7 +1,7 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-;
 
 var apos;
 var cats = [], people = [];
@@ -11,7 +11,7 @@ describe('Schema Filters', function() {
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   //////

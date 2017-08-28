@@ -1,3 +1,4 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var apos;
@@ -56,7 +57,7 @@ describe('Admin bar', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        return destroy(apos, done);
+        return t.destroy(apos, done);
       },
     });
   });
@@ -107,7 +108,7 @@ describe('Admin bar', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        return destroy(apos, done);
+        return t.destroy(apos, done);
       },
     });
   });

@@ -1,5 +1,5 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
-;
 
 var apos;
 
@@ -8,7 +8,7 @@ describe('Templates', function(){
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   it('should have a templates property', function(done) {

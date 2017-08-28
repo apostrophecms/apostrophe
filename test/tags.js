@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var request = require('request');
 var async = require('async');
-;
 
 var apos;
 
@@ -11,7 +11,7 @@ describe('Tags', function() {
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   it('should be a property of the apos object', function(done) {

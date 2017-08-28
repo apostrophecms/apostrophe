@@ -1,3 +1,4 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 
@@ -8,7 +9,7 @@ describe('Permissions', function() {
   var apos;
 
   after(function(done) {
-    return destroy(apos, function() {
+    return t.destroy(apos, function() {
       return done();
     });
   });
