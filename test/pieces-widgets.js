@@ -2,7 +2,7 @@ var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
+;
 
 var apos;
 
@@ -144,7 +144,7 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     return async.eachSeries(testItems, function(item, callback) {
       return apos.docs.insert(req, item, callback);
     }, function(err) {

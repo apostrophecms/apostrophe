@@ -1,7 +1,7 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var t = require('./testUtils');
+;
 
 var apos;
 
@@ -45,7 +45,7 @@ describe('Search', function() {
   });
 
   it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done){
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     apos.docs.insert(req, {
       title: 'Testing Search Event',
       type: 'event',

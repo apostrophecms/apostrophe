@@ -2,7 +2,7 @@
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var t = require('./testUtils');
+;
 
 var apos;
 
@@ -85,7 +85,7 @@ describe('Images', function() {
   it('should add images for testing', function(done) {
     assert(apos.images.insert);
     return async.each(mockImages, function(image, callback) {
-      return apos.images.insert(t.req.admin(apos), image, callback);
+      return apos.images.insert(apos.tasks.getReq(), image, callback);
     }, function(err) {
       assert(!err);
       done();
@@ -93,7 +93,7 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter', function(done) {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toArray(function(err, images) {
       assert(!err);
       assert(images.length === 2);
@@ -102,7 +102,7 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter in toCount, which uses a cloned cursor', function(done) {
-    var req = t.req.anon(apos)
+    var req = apos.tasks.getAnonReq()
     return apos.images.find(req).minSize([ 200, 200 ]).toCount(function(err, count) {
       assert(!err);
       assert(count === 2);
