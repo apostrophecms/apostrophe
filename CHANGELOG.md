@@ -1,5 +1,19 @@
 # Changelog
 
+** 2.34.0
+
+All tests passing.
+
+* Conflict resolution has been added to Apostrophe. When two users attempt to edit the same document, whether "in context" on the page or via a dialog box, Apostrophe now makes the latecomer aware of the issue and gives them the option to take control of the document after warning that the first party could lose work.
+
+Since the first user may have simply abandoned their work, Apostrophe also indicates how long it has been since the first user last made a change.
+
+If the same user attempts to edit a document in two tabs or windows, something very similar happens, although the message is different.
+
+* In a related change, Apostrophe does not begin attempting to save an area on the page until the user interacts with it for the first time. This fixes many commonly reported frustrating situations in which one user is editing and the other is logged in but merely looking at the page, creating a ping-pong exchange of save requests.
+
+* Apostrophe's unit tests have been restructured so that a single test file can be run conveniently, via `mocha test/docs.js`, for instance, and there is no longer a need for us to update `test/test.js` every time a test is added. Also, the unit tests use the same `apos.tasks.getReq` and `apos.tasks.getAnonReq` methods that are used by real-life command line tasks, which provide a more faithful simulation of an Express request object and one we anticipate extending as needed.
+
 ** 2.33.1
 
 All tests passing.
