@@ -1,3 +1,4 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 
 describe('Base Module', function(){
@@ -5,7 +6,7 @@ describe('Base Module', function(){
   var apos;
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   this.timeout(5000);

@@ -1,9 +1,10 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 
 describe('Caches', function() {
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   this.timeout(5000);

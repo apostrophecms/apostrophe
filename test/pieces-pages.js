@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
@@ -11,7 +11,7 @@ describe('Pieces Pages', function() {
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   //////
@@ -92,7 +92,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should populate the ._url property of pieces in any docs query', function(done) {
-    return apos.docs.find(t.req.anon(apos), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
       assert(!err);
       assert(piece);
       assert(piece._url);

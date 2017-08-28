@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
@@ -11,7 +11,7 @@ describe('Login', function() {
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   //////
@@ -58,7 +58,7 @@ describe('Login', function() {
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
-    apos.users.insert(t.req.admin(apos), user, function(err) {
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       done();
     });

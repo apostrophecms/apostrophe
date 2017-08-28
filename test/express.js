@@ -1,3 +1,4 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var apos;
@@ -184,7 +185,7 @@ describe('Express', function() {
     }, function(err, response, body) {
       assert(body.toString() === '30');
       // Last one before a new apos object
-      return destroy(apos, done);
+      return t.destroy(apos, done);
     });
   });
 
@@ -237,7 +238,7 @@ describe('Express', function() {
   	}, function(err, response, body) {
   		assert(body.toString() === '30');
       // Last one before a new apos object
-      return destroy(apos, done);
+      return t.destroy(apos, done);
   	});
   });
   
@@ -271,7 +272,7 @@ describe('Express', function() {
         assert(req.baseUrl === 'https://example.com');
         assert(req.absoluteUrl === 'https://example.com/test');
         // Last one before a new apos object
-        return destroy(apos, done);
+        return t.destroy(apos, done);
       }
     });    
   });
@@ -309,7 +310,7 @@ describe('Express', function() {
         assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
         assert(req.absoluteUrl === 'https://example.com/subdir/test');
         // Last use of this apos object
-        return destroy(apos, done);
+        return t.destroy(apos, done);
       }
     });    
   });

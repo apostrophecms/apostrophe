@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
@@ -11,7 +11,7 @@ describe('Users', function() {
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   //////
@@ -59,7 +59,7 @@ describe('Users', function() {
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
-    apos.users.insert(t.req.admin(apos), user, function(err) {
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       janeOne = user;
       done();
@@ -77,7 +77,7 @@ describe('Users', function() {
 
   // retrieve a user by their username
   it('should be able to retrieve a user by their username', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
       .toObject(function(err, user){
         assert(!err);
         assert(user);
@@ -88,7 +88,7 @@ describe('Users', function() {
   });
 
   it('should verify a user password', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
       .toObject(function(err, user){
         assert(!err);
         assert(user);
@@ -102,7 +102,7 @@ describe('Users', function() {
   });
 
   it('should not verify an incorrect user password', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
       .toObject(function(err, user){
         assert(!err);
         assert(user);
@@ -129,14 +129,14 @@ describe('Users', function() {
     assert(user.type === 'apostrophe-user');
 
     assert(apos.users.insert);
-    apos.users.insert(t.req.admin(apos), user, function(err) {
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(err);
       done();
     });
   });
 
   it('should be able to move a user to the trash', function(done) {
-    apos.users.trash(t.req.admin(apos), janeOne._id, function(err) {
+    apos.users.trash(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
       return apos.docs.db.findOne({_id: janeOne._id, trash: true}, function(err, doc) {
         assert(!err);
@@ -155,7 +155,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
-    apos.users.insert(t.req.admin(apos), user, function(err) {
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       janeTwo = user;
       done();
@@ -163,7 +163,7 @@ describe('Users', function() {
   });
 
   it('should be able to rescue the first user from the trash and the email should be deduplicated', function(done) {
-    apos.users.rescue(t.req.admin(apos), janeOne._id, function(err) {
+    apos.users.rescue(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
       return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
         assert(!err);
@@ -186,7 +186,7 @@ describe('Users', function() {
   });
 
   it('should be able to move a user to the trash', function(done) {
-    apos.users.trash(t.req.admin(apos), janeOne._id, function(err) {
+    apos.users.trash(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
       return apos.docs.db.findOne({_id: janeOne._id, trash: true}, function(err, doc) {
         assert(!err);
@@ -205,7 +205,7 @@ describe('Users', function() {
     user.username = 'JaneD';
     user.password = '321password';
     user.email = 'somethingelse@aol.com';
-    apos.users.insert(t.req.admin(apos), user, function(err) {
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       janeThree = user;
       done();
@@ -213,7 +213,7 @@ describe('Users', function() {
   });
 
   it('should be able to rescue the first user from the trash and the username should be deduplicated', function(done) {
-    apos.users.rescue(t.req.admin(apos), janeOne._id, function(err) {
+    apos.users.rescue(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
       return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
         assert(!err);
@@ -237,15 +237,15 @@ describe('Users', function() {
 
 
   it('should succeed in updating a users property', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
     .toObject(function(err, user){
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
       user.firstName = 'Jill';
-      apos.users.update(t.req.admin(apos), user, function(err){
+      apos.users.update(apos.tasks.getReq(), user, function(err){
         assert(!err);
-        apos.users.find(t.req.admin(apos), { _id: user._id })
+        apos.users.find(apos.tasks.getReq(), { _id: user._id })
         .toObject(function(err, user){
           assert(!err);
           assert(user);
@@ -257,7 +257,7 @@ describe('Users', function() {
   });
 
   it('should verify a user password after their info has been updated', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
     .toObject(function(err, user){
       assert(!err);
       assert(user);
@@ -272,16 +272,16 @@ describe('Users', function() {
 
   // change an existing user's password and verify the new password
   it('should change an existing user password and verify the new password', function(done){
-    apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
     .toObject(function(err, user){
       assert(!err);
       assert(user);
       assert(user.username == 'JaneD');
       assert(!user.password);
       user.password = 'password123';
-      apos.users.update(t.req.admin(apos), user, function(err){
+      apos.users.update(apos.tasks.getReq(), user, function(err){
         assert(!err);
-        apos.users.find(t.req.admin(apos), { username: 'JaneD' })
+        apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
         .toObject(function(err, user){
           assert(!err);
           assert(user);

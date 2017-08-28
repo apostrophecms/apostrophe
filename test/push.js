@@ -1,5 +1,5 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
-var t = require('./testUtils');
 
 var apos;
 
@@ -8,7 +8,7 @@ describe('Templates', function(){
   this.timeout(5000);
 
   after(function(done) {
-    return destroy(apos, done);
+    return t.destroy(apos, done);
   });
 
   it('should have a push property', function(done) {
@@ -38,7 +38,7 @@ describe('Templates', function(){
   });
 
   it('should be able to push a browser call and get back an HTML-safe JSON string', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     req.browserCall('test(?)', { data: '<script>alert(\'ruh roh\');</script>' });
     var calls = req.getBrowserCalls();
     assert(calls.indexOf('<\\/script>') !== -1);
