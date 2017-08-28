@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.34.1
+
+All tests passing.
+
+Fixed an issue impacting unit test harness only. It didn't come up initially because it had to do with automatically creating `test/node_modules`, which existed our dev environment.
+
+No code changes outside of tests.
+
 ** 2.34.0
 
 All tests passing.

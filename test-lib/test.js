@@ -1,9 +1,9 @@
 var fs = require('fs');
 var async = require('async');
 
-if (!fs.existsSync(__dirname +'/node_modules')) {
-  fs.mkdirSync(__dirname + '/node_modules');
-  fs.symlinkSync(__dirname + '/..', __dirname +'/node_modules/apostrophe', 'dir');
+if (!fs.existsSync(__dirname + '/../test/node_modules')) {
+  fs.mkdirSync(__dirname + '/../test/node_modules');
+  fs.symlinkSync(__dirname + '/..', __dirname +'/../test/node_modules/apostrophe', 'dir');
 }
 
 // Global function to properly clean up an apostrophe instance and drop its
