@@ -584,5 +584,47 @@ describe('Docs', function() {
     });
 
   });
+  
+  it('should be able to lock a document', function(done) {
+    var req = t.req.admin(apos);
+    apos.docs.lock(req, 'i27', 'abc', function(err) {
+      assert(!err);
+      done();
+    });
+  });
+
+  it('should not be able to lock a document with a different contextId', function(done) {
+    var req = t.req.admin(apos);
+    apos.docs.lock(req, 'i27', 'def', function(err) {
+      assert(err);
+      assert(err === 'locked');
+      done();
+    });
+  });
+
+  it('should be able to unlock a document', function(done) {
+    var req = t.req.admin(apos);
+    apos.docs.unlock(req, 'i27', 'abc', function(err) {
+      assert(!err);
+      done();
+    });
+  });
+
+  it('should be able to re-lock an unlocked document', function(done) {
+    var req = t.req.admin(apos);
+    apos.docs.lock(req, 'i27', 'def', function(err) {
+      console.log(err);
+      assert(!err);
+      done();
+    });
+  });
+
+  it('should be able to lock a locked document with force: true', function(done) {
+    var req = t.req.admin(apos);
+    apos.docs.lock(req, 'i27', 'abc', { force: true }, function(err) {
+      assert(!err);
+      done();
+    });
+  });
 
 });
