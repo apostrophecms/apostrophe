@@ -1,5 +1,11 @@
 # Changelog
 
+** 2.34.2
+
+All tests passing.
+
+Fixed a bug that generated an error message regarding conflict resolution when attempting to edit an area inside a piece editor dialog box.
+
 ** 2.34.1
 
 All tests passing.
