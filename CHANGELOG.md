@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.34.3
+
+All tests passing.
+
+A bug was fixed that prevented nested area editing. The bug appeared in version 2.34.0.
+
+Note that editing an area on the page has never been possible when it is part of the schema of an array field. That is not a new issue. It is being tracked and discussed. Today's fix was for a regression that impacted all nested areas.
+
 ** 2.34.2
 
 All tests passing.
