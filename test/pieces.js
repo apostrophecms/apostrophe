@@ -114,8 +114,9 @@ describe('Pieces', function() {
   // Test pieces.insert()
   it('should be able to insert a piece into the database', function(done) {
     assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err) {
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err, piece) {
       assert(!err);
+      assert(testThing === piece);
       done();
     });
   });
@@ -139,9 +140,9 @@ describe('Pieces', function() {
   it('should be able to update a piece in the database', function(done) {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err) {
+    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err, piece) {
       assert(!err);
-
+      assert(testThing === piece);
       // Now let's get the piece and check if it was updated
       var req = apos.tasks.getReq();
       req.body = {};
