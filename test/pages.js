@@ -473,7 +473,7 @@ describe('Pages', function() {
   it('is able to move parent to the trash', function(done) {
     apos.pages.moveToTrash(apos.tasks.getReq(), '1234', function(err) {
       if (err) {
-        console.log(err);
+        console.error(err);
       }
       assert(!err);
       var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '1234'});

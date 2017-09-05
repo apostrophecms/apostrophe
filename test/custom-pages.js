@@ -203,7 +203,6 @@ describe('custom-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      console.log(body);
       assert(body.match(/niftyPages\-index/));
       return done();
     });
