@@ -3,8 +3,8 @@
 {% if groups.length %}
   <div class="apos-ui" data-apos-widget-controls>
     <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context
-    {% if data.options.position %}
-      apos-area-widget-controls--{{ data.options.position | css }}
+    {% if data.options.controls.position %}
+      apos-area-widget-controls--{{ data.options.controls.position | css }}
     {% endif %} ">
       {% for group in groups %}
         <div class="apos-button-group {{ group.classes }}">

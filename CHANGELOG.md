@@ -1,8 +1,49 @@
 # Changelog
 
+** 2.35.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* `apos.areas.isEmpty(data.page, 'body')` will now tell you if that area is considered empty (it contains no widgets, or the widgets consider themselves empty).
+
+* The new `controls` option may be passed to any widget, via `apos.singleton` or via the configuration for that specific widget type in an `apos.area` call. In this example, the widget cannot be removed, cannot be moved, and has its controls positioned at the upper right instead of the upper left:
+
+```
+{{
+  apos.singleton(data.page, 'footer', 'apostrophe-rich-text', {
+    controls: {
+      removable: false,
+      movable: false,
+      position: 'top-right'
+      }
+    }
+  })
+}}
+```
+
+The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`. 
+
+The `removable` and `movable` suboptions are primarily intended for singletons.
+
+* By popular demand, the `insert` and `update` methods of pieces now pass the piece to their callback as the second argument.
+
+* Better CSS reset for Apostrophe's admin UI.
+
+* `callOne` added for convenience when you want to invoke a method normally invoked by `callAll` in the same way, but for only one module. Thanks to Arthur.
+
+* If an attachment does not exist, `apos.attachments.url` no longer results in a template error page. Instead a fallback icon is displayed and an error message is logged. Developers should still always check whether attachments and joined objects still exist in their templates. Thanks to Raphaël DiRago.
+
+* Notifications within modals move to lower right corner of modal for readability.
+
+* Cleaned up font paths.
+
+* Accommodations for the latest release of the separately published apostrophe-workflow module.
+
 ** 2.34.3
 
-All tests passing.
+Unit tests passing.
 
 Regression tests passing.
 
