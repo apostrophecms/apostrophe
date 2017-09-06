@@ -287,7 +287,9 @@ apos.widgetPlayers.video = function($el)
       // This hack won't work for everything but it's correct
       // for a typical iframe embed.
 
-      $e.attr('src', apos.sslIfNeeded($e.attr('src')));
+      if ($e.attr('src')) {
+        $e.attr('src', apos.sslIfNeeded($e.attr('src')));
+      }
 
       if ($thumbnail.length) {
         $el.find('.apos-video-thumbnail').replaceWith($e);
