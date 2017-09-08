@@ -1,5 +1,13 @@
 # Changelog
 
+** 2.35.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Intermittent "not blessed" errors when editing joins in widget schemas have been corrected by blessing all widget schemas at page serve time, just as we already bless all doc type schemas at page serve time. Blessing them when the individual routes fire is problematic because of probable race conditions with sessions.
+
 ** 2.35.0
 
 Unit tests passing.
