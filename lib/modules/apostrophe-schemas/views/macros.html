@@ -36,7 +36,7 @@
 {# Output a fieldset for the given field, and call the given #}
 {# macro to populate it. Usually not called directly #}
 
-{%- macro fieldset(field, bodyMacro, options) %}
+{%- macro fieldset(field, bodyMacro) %}
   {# WARNING: if you remove apos-field as a class you will have problems with nested schemas reusing #}
   {# field names. We use this class with our $.findSafe plugin. #}
   {% set options = { 'id': apos.utils.generateId() } %}
