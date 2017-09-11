@@ -64,9 +64,9 @@
 
 {%- macro stringBody(field, options) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly, options.id) }}
+    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly, options) }}
   {%- else -%}
-    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly, options.id) }}
+    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly, options) }}
   {%- endif -%}
 {%- endmacro -%}
 
