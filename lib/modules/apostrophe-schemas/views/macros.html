@@ -40,7 +40,7 @@
   {# WARNING: if you remove apos-field as a class you will have problems with nested schemas reusing #}
   {# field names. We use this class with our $.findSafe plugin. #}
   <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label for="{{ field.name }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
+    <label for="{{ field.id }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
     {%- if field.help -%}
       <div class="apos-field-help">{{ __(field.help) }}</div>
     {%- endif -%}
@@ -63,9 +63,9 @@
 
 {%- macro stringBody(field) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly) }}
+    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly, field.id) }}
   {%- else -%}
-    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly) }}
+    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly, field.id) }}
   {%- endif -%}
 {%- endmacro -%}
 
