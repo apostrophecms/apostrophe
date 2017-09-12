@@ -1,5 +1,14 @@
 # Changelog
 
+** 2.36.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* You may now set the `skipInitialModal` option for any widget module to `true` in order to avoid displaying the editing dialog box when the widget is first added. This makes sense if the widget has a useful default behavior, or consists of a contextually editable rich text sub-widget with a "style" select element you might or might not need to set every time.
+* Fields in Apostrophe's schema-driven forms now receive globally unique `id` attributes, and the `for` attributes of `label` elements now reference them properly.
+
 ** 2.35.1
 
 Unit tests passing.
