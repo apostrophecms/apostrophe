@@ -1,9 +1,9 @@
-{% macro string(name, placeholder, value, readOnly) -%}
-  <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text" type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+{% macro string(name, placeholder, value, readOnly, options) -%}
+  <input id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text" type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
 {%- endmacro %}
 
-{% macro textarea(name, placeholder, readOnly) -%}
-  <textarea name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea" {% if readOnly %}disabled{% endif %}></textarea>
+{% macro textarea(name, placeholder, readOnly, options) -%}
+  <textarea id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea" {% if readOnly %}disabled{% endif %}></textarea>
 {%- endmacro %}
 
 {% macro checkbox(name, placeholder, readOnly) -%}
