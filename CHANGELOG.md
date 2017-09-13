@@ -1,5 +1,16 @@
 # Changelog
 
+** 2.36.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Spurious conflict resolution warnings for pieces fixed.
+* Notifications are spaced properly, and in the upper right corner as intended, on all screens.
+* Reorganize feature: upgraded to jqtree 1.4.2. Regression testing found no bc breaks.
+* A debugging convience: the `log(true)` cursor filter logs MongoDB criteria objects resulting from the cursor in question to the console.
+
 ** 2.36.0
 
 Unit tests passing.
