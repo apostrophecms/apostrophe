@@ -7,12 +7,15 @@
 
   @media @apos-breakpoint-desktop-xl
   {
-    top: @apos-padding-4;
-    left: @apos-padding-4;
+    bottom: @apos-padding-4;
+    right: @apos-padding-4;
   }
 }
 
-.apos-notification {
+// With and without scoping so these styles
+// beat out the defaults inside modals too. -Tom
+
+.apos-notification, .apos-ui .apos-notification {
   background-color: @apos-white;
   color: @apos-dark;
   .apos-button-border(@apos-dark);
