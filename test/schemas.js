@@ -1,7 +1,7 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var t = require('./testUtils');
 
 var apos;
 
@@ -202,8 +202,12 @@ var hasArea = {
 };
 
 describe('Schemas', function() {
-
+  
   this.timeout(5000);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   //////
   // EXISTENCE
@@ -217,7 +221,7 @@ describe('Schemas', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7951
+          port: 7900
         }
       },
       afterInit: function(callback) {
@@ -300,7 +304,7 @@ describe('Schemas', function() {
       irrelevant: 'Irrelevant',
       slug: 'This Is Cool'
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
@@ -325,7 +329,7 @@ describe('Schemas', function() {
     var input = {
       tags: [ 4, 5, 'Seven' ]
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
@@ -355,7 +359,7 @@ describe('Schemas', function() {
     var input = {
       password: 'silly'
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
@@ -381,7 +385,7 @@ describe('Schemas', function() {
     var input = {
       password: ''
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
@@ -421,7 +425,7 @@ describe('Schemas', function() {
         }
       ]
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
@@ -446,7 +450,7 @@ describe('Schemas', function() {
       // Should get escaped, not be treated as HTML
       body: 'This is the greatest <h1>thing</h1>'
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
@@ -471,7 +475,7 @@ describe('Schemas', function() {
       // Should get escaped, not be treated as HTML
       body: undefined
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
@@ -494,7 +498,7 @@ describe('Schemas', function() {
       // Should get escaped, not be treated as HTML
       body: 'This is the greatest <h1>thing</h1>'
     };
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
@@ -512,7 +516,7 @@ describe('Schemas', function() {
   });
 
   it('should clean up extra slashes in page slugs', function(done) {
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var schema = apos.schemas.compose({ addFields: pageSlug });
     assert(schema.length === 1);
     var input = {
@@ -527,7 +531,7 @@ describe('Schemas', function() {
   });
 
   it('retains trailing / on the home page', function(done) {
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var schema = apos.schemas.compose({ addFields: pageSlug });
     assert(schema.length === 1);
     var input = {
@@ -542,7 +546,7 @@ describe('Schemas', function() {
   });
 
   it('does not keep slashes when page: true not present for slug', function(done) {
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var schema = apos.schemas.compose({ addFields: regularSlug });
     assert(schema.length === 1);
     var input = {

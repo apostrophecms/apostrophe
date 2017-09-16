@@ -9,12 +9,21 @@
     {% include data.choiceTemplate %}
     {% if not item.readOnly %}
       <div class="apos-button apos-button--in-context apos-button--group apos-chooser-controls">
+<<<<<<< HEAD
         {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id, tooltip: 'Move Up'}) }}
         {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id, tooltip: 'Move Down' }) }}
         {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id, tooltip: 'Trash' }) }}
+=======
+        {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}
+        {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id }) }}
+>>>>>>> 0d26a18d097857b78b41b0dc36d5d1c3e6b9fe4e
         {%- if data.relationship and (apos.utils.filterEmpty(data.relationship, 'inline').length) -%}
           {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id, tooltip: 'Related Fields'}) }}
         {%- endif -%}
+        {%- if item._edit or item.item._edit -%}
+          {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', value: choice._id}) }}
+        {%- endif -%}
+        {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
       </div>
     {% endif %}
   </div>

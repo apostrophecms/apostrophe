@@ -37,12 +37,15 @@
 {# macro to populate it. Usually not called directly #}
 
 {%- macro fieldset(field, bodyMacro) %}
+  {# WARNING: if you remove apos-field as a class you will have problems with nested schemas reusing #}
+  {# field names. We use this class with our $.findSafe plugin. #}
+  {% set options = { 'id': apos.utils.generateId() } %}
   <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label for="{{ name }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
+    <label for="{{ options.id }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
     {%- if field.help -%}
       <div class="apos-field-help">{{ __(field.help) }}</div>
     {%- endif -%}
-    {{ bodyMacro(field) }}
+    {{ bodyMacro(field, options) }}
   </fieldset>
   {# <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
     <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
@@ -59,11 +62,11 @@
 {# Usually passed to fieldset() by text(), this can also be called #}
 {# directly if you don't want the fieldset #}
 
-{%- macro stringBody(field) -%}
+{%- macro stringBody(field, options) -%}
   {%- if field.textarea -%}
-    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly) }}
+    {{ commonFields.textarea(field.name, field.placeholder, field.readOnly, options) }}
   {%- else -%}
-    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly) }}
+    {{ commonFields.string(field.name, field.placeholder, '', field.readOnly, options) }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -83,15 +86,15 @@
   {{ fieldset(field, passwordBody) }}
 {%- endmacro -%}
 
-{%- macro passwordBody(field) -%}
-  <input class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
+{%- macro passwordBody(field, options) -%}
+  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
   {{ fieldset(field, tagsBody) }}
 {%- endmacro -%}
 
-{%- macro tagsBody(field) -%}
+{%- macro tagsBody(field, options) -%}
   {# Always using this wrapper div makes it easy to use this with #}
   {# selective, and in both standalone and fieldset situations. -Tom #}
   <div class="apos-tags" data-name="{{ field.name }}" data-selective>
@@ -104,7 +107,7 @@
       </li>
     </ul>
     {% if not field.readOnly %}
-      <input type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
+      <input id="{{ options.id }}" type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
       <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
       <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
     {% endif %}

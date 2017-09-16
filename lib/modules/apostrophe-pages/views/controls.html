@@ -1,0 +1,13 @@
+{# Emit the controls (save button etc.) for a page's edit or create modal #}
+{% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
+{% import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
+
+{% for control in data.controls %}
+  {% if control.type == 'dropdown' %}
+  {{ dropdowns.base(control, control.dropdownType or 'button', control.dropdownOptions or {}) }}
+  {% elif control.type == 'minor' %}
+    {{ buttons.minor(control.label, control) }}
+  {% elif control.type == 'major' %}
+    {{ buttons.major(control.label, control) }}
+  {% endif %}
+{% endfor %}

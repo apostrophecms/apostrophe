@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
@@ -10,8 +10,8 @@ describe('Pieces Pages', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Pieces Pages', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7943
+          port: 7900
         },
         'events': {
           extend: 'apostrophe-pieces',
@@ -92,7 +92,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should populate the ._url property of pieces in any docs query', function(done) {
-    return apos.docs.find(t.req.anon(apos), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
       assert(!err);
       assert(piece);
       assert(piece._url);
@@ -103,7 +103,7 @@ describe('Pieces Pages', function() {
 
   it('should be able to access index page with first event on it, but not eleventh event', function(done) {
 
-    return request('http://localhost:7943/events', function(err, response, body) {
+    return request('http://localhost:7900/events', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -116,7 +116,7 @@ describe('Pieces Pages', function() {
 
   it('should be able to access second page', function(done) {
 
-    return request('http://localhost:7943/events?page=2', function(err, response, body) {
+    return request('http://localhost:7900/events?page=2', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -128,7 +128,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should be able to access "show" page for first event, should not also contain second event', function(done) {
-    return request('http://localhost:7943/events/event-001', function(err, response, body) {
+    return request('http://localhost:7900/events/event-001', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);

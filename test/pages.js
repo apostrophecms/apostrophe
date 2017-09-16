@@ -1,8 +1,8 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
@@ -10,8 +10,8 @@ describe('Pages', function() {
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Pages', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7940
+          port: 7900
         },
         'apostrophe-pages': {
           park: [],
@@ -80,7 +80,7 @@ describe('Pages', function() {
   });
 
   it('parked homepage exists', function(done) {
-    return apos.pages.find(t.req.anon(apos), { slug: '/' }).toObject(function(err, home) {
+    return apos.pages.find(apos.tasks.getAnonReq(), { level: 0 }).toObject(function(err, home) {
       assert(!err);
       assert(home);
       assert(home.slug === '/');
@@ -93,7 +93,7 @@ describe('Pages', function() {
   });
 
   it('parked trash can exists', function(done) {
-    return apos.pages.find(t.req.admin(apos), { slug: '/trash' }).published(null).trash(null).toObject(function(err, trash) {
+    return apos.pages.find(apos.tasks.getReq(), { slug: '/trash' }).published(null).trash(null).toObject(function(err, trash) {
       assert(!err);
       assert(trash);
       assert(trash.slug === '/trash');
@@ -180,12 +180,12 @@ describe('Pages', function() {
   //////
 
   it('should have a find method on pages that returns a cursor', function(){
-    var cursor = apos.pages.find(t.req.anon(apos));
+    var cursor = apos.pages.find(apos.tasks.getAnonReq());
     assert(cursor);
   });
 
   it('should be able to find the parked homepage', function(done){
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/' });
 
     cursor.toObject(function(err, page){
       assert(!err);
@@ -200,7 +200,7 @@ describe('Pages', function() {
 
 
   it('should be able to find just a single page', function(done){
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/child' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
 
     cursor.toObject(function(err, page){
       assert(!err);
@@ -213,7 +213,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the ancestors of a page', function(done){
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/child' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
 
     cursor.ancestors(true).toObject(function(err, page){
       assert(!err);
@@ -230,7 +230,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include just one ancestor of a page, i.e. the parent', function(done) {
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/child' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
 
     cursor.ancestors({ depth: 1 }).toObject(function(err, page){
       assert(!err);
@@ -245,7 +245,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the children of the ancestors of a page', function(done){
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/child' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
 
     cursor.ancestors({children: 1}).toObject(function(err, page){
       assert(!err);
@@ -276,7 +276,7 @@ describe('Pages', function() {
       type: 'testPage',
       title: 'New Page'
     };
-    apos.pages.insert(t.req.admin(apos), parentId, newPage, function(err, page) {
+    apos.pages.insert(apos.tasks.getReq(), parentId, newPage, function(err, page) {
       // did it return an error?
       assert(!err);
       //Is the path generally correct?
@@ -286,7 +286,7 @@ describe('Pages', function() {
   });
 
   it('is able to insert a new page in the correct order', function(done) {
-    var cursor = apos.pages.find(t.req.anon(apos), { slug: '/new-page' });
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/new-page' });
 
     cursor.toObject(function(err, page){
       assert.equal(page.rank, 2);
@@ -301,12 +301,12 @@ describe('Pages', function() {
   it('is able to move root/parent/sibling/cousin after root/parent', function(done) {
     // 'Cousin' _id === 4312
     // 'Parent' _id === 1234
-    apos.pages.move(t.req.admin(apos), '4312', '1234', 'after', function(err) {
+    apos.pages.move(apos.tasks.getReq(), '4312', '1234', 'after', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
-      var cursor = apos.pages.find(t.req.anon(apos), {_id: '4312'});
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '4312'});
       cursor.toObject(function(err, page){
         if (err) {
           console.log(err);
@@ -325,12 +325,12 @@ describe('Pages', function() {
   it('is able to move root/cousin before root/parent/child', function(done) {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    apos.pages.move(t.req.admin(apos), '4312', '2341', 'before', function(err) {
+    apos.pages.move(apos.tasks.getReq(), '4312', '2341', 'before', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
-      var cursor = apos.pages.find(t.req.anon(apos), {_id: '4312'});
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '4312'});
       cursor.toObject(function(err, page){
         if (err) {
           console.log(err);
@@ -349,12 +349,12 @@ describe('Pages', function() {
   it('is able to move root/parent/cousin inside root/parent/sibling', function(done) {
     // 'Cousin' _id === 4312
     // 'Sibling' _id === 4321
-    apos.pages.move(t.req.admin(apos), '4312', '4321', 'inside', function(err) {
+    apos.pages.move(apos.tasks.getReq(), '4312', '4321', 'inside', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
-      var cursor = apos.pages.find(t.req.anon(apos), {_id: '4312'});
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '4312'});
       cursor.toObject(function(err, page){
         if (err) {
           console.log(err);
@@ -371,12 +371,12 @@ describe('Pages', function() {
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', function(done) {
-    apos.pages.move(t.req.admin(apos), '1234', '4333', 'inside', function(err) {
+    apos.pages.move(apos.tasks.getReq(), '1234', '4333', 'inside', function(err) {
       if (err) {
         console.log(err);
       }
       assert(!err);
-      var cursor = apos.pages.find(t.req.anon(apos), {_id: '4321'});
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '4321'});
       cursor.toObject(function(err, page){
         if (err) {
           console.log(err);
@@ -392,7 +392,7 @@ describe('Pages', function() {
 
 
   it('should be able to serve a page', function(done){
-    return request('http://localhost:7940/child', function(err, response, body){
+    return request('http://localhost:7900/child', function(err, response, body){
       assert(!err);
       //Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -408,7 +408,7 @@ describe('Pages', function() {
   });
 
   it('should not be able to serve a nonexistent page', function(done){
-    return request('http://localhost:7940/nobodyschild', function(err, response, body){
+    return request('http://localhost:7900/nobodyschild', function(err, response, body){
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);
@@ -471,19 +471,19 @@ describe('Pages', function() {
   });
 
   it('is able to move parent to the trash', function(done) {
-    apos.pages.moveToTrash(t.req.admin(apos), '1234', function(err) {
+    apos.pages.moveToTrash(apos.tasks.getReq(), '1234', function(err) {
       if (err) {
-        console.log(err);
+        console.error(err);
       }
       assert(!err);
-      var cursor = apos.pages.find(t.req.anon(apos), {_id: '1234'});
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: '1234'});
       cursor.toObject(function(err, page){
         if (err) {
           console.log(err);
         }
         assert(!err);
         assert(!page);
-        var cursor2 = apos.pages.find(t.req.anon(apos), { _id: '1234' }).
+        var cursor2 = apos.pages.find(apos.tasks.getAnonReq(), { _id: '1234' }).
           permission(false).trash(null).toObject(function(err, page) {
             assert.equal(page.path, '/trash/parent');
             assert(page.trash);

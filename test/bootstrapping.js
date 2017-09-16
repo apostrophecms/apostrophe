@@ -1,12 +1,13 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert'),
-    _ = require('lodash');
+_ = require('lodash');
 
 describe('Apostrophe', function() {
 
   this.timeout(5000);
 
   it('should exist', function(done) {
-    var apos = require('../index.js');
+    apos = require('../index.js');
     assert(apos);
     return done();
   });

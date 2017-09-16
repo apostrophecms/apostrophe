@@ -1,13 +1,17 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var t = require('./testUtils');
 
 var apos;
 
 describe('Locks', function() {
 
   this.timeout(5000);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   it('should be a property of the apos object', function(done) {
     this.timeout(5000);
@@ -19,7 +23,7 @@ describe('Locks', function() {
       
       modules: {
         'apostrophe-express': {
-          port: 7956
+          port: 7900
         },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
         // we're doing it to deliberately force them to contend with each other,

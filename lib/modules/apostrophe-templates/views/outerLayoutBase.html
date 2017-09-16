@@ -9,19 +9,27 @@
     {% block extraHead %}
     {% endblock %}
   </head>
-  <body class="{% block bodyClass %}{% endblock %}">
+  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}">
     {% block apostropheMenu %}
       {{ apos.adminBar.output() }}
     {% endblock %}
 
     {% if data.user %}
+<<<<<<< HEAD
     <div class="apos-ui">
       {{ apos.modules['apostrophe-ui'].tooltip() }}
       <div class="apos-context-menu-container">
         {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
         {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+=======
+      <div class="apos-ui">
+        <div class="apos-context-menu-container">
+          {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
+          {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+          {{ apos.pages.afterContextMenu() }}
+        </div>
+>>>>>>> 0d26a18d097857b78b41b0dc36d5d1c3e6b9fe4e
       </div>
-    </div>
     {% endif %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
@@ -31,10 +39,12 @@
     </div>
     {{ apos.assets.templates(data.when) }}
     {{ apos.assets.scripts(data.when) }}
-    <script type="text/javascript">
-      {{ data.js.globalCalls }}
-      {{ data.js.reqCalls }}
-    </script>
+    {% block jsCalls %}
+      <script type="text/javascript">
+        {{ data.js.globalCalls }}
+        {{ data.js.reqCalls }}
+      </script>
+    {% endblock %}
     {% block extraBody %}
     {% endblock %}
   </body>

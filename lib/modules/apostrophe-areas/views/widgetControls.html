@@ -1,4 +1,5 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+<<<<<<< HEAD
 <div class="apos-ui" data-apos-widget-controls>
   <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context">
     <div class="apos-button-group">
@@ -14,6 +15,26 @@
     {%- endif -%}
     <div class="apos-button-group">
       {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item', tooltip: 'Trash' }) }}
+=======
+{% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
+{% if groups.length %}
+  <div class="apos-ui" data-apos-widget-controls>
+    <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context
+    {% if data.options.controls.position %}
+      apos-area-widget-controls--{{ data.options.controls.position | css }}
+    {% endif %} ">
+      {% for group in groups %}
+        <div class="apos-button-group {{ group.classes }}">
+          {% for button in group.controls %}
+            {% set label = button.label or '' %}
+            {% if button.label == '$editLabel' %}
+              {% set label = data.options.editLabel or 'Edit ' + data.manager.label %}
+            {% endif %}
+            {{ buttons.inGroup(label, button) }}
+          {% endfor %}
+        </div>
+      {% endfor %}
+>>>>>>> 0d26a18d097857b78b41b0dc36d5d1c3e6b9fe4e
     </div>
   </div>
-</div>
+{% endif %}

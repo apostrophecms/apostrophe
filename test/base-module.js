@@ -1,10 +1,15 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 
 describe('Base Module', function(){
 
-  this.timeout(5000);
-
   var apos;
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
+
+  this.timeout(5000);
 
   it('should be subclassable', function(done){
     apos = require('../index.js')({
