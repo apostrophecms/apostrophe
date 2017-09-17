@@ -1,21 +1,4 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
-<<<<<<< HEAD
-<div class="apos-ui" data-apos-widget-controls>
-  <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context">
-    <div class="apos-button-group">
-      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item', tooltip: 'Drag' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up', tooltip: 'Move Up' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down', tooltip: 'Move Down' }) }}
-    </div>
-    {%- if not data.manager.removeEditButton -%}
-      {%- set label = data.options.editLabel or 'Edit ' + data.manager.label -%}
-      <div class="apos-button-group apos-button-group--data">
-        {{ buttons.inGroup(label, { action: 'edit-item' }) }}
-      </div>
-    {%- endif -%}
-    <div class="apos-button-group">
-      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item', tooltip: 'Trash' }) }}
-=======
 {% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
 {% if groups.length %}
   <div class="apos-ui" data-apos-widget-controls>
@@ -34,7 +17,6 @@
           {% endfor %}
         </div>
       {% endfor %}
->>>>>>> 0d26a18d097857b78b41b0dc36d5d1c3e6b9fe4e
     </div>
   </div>
 {% endif %}
