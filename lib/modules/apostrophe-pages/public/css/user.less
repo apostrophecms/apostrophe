@@ -1,14 +1,21 @@
+.apos-modal.apos-reorganize-modal
+{
+  overflow: hidden;
+}
+
 .apos-modal .apos-reorganize-tree
 {
   height: 100%;
-  max-width: 740px;
   margin-left: 220px;
   padding-top: @apos-padding-2;
   background-color: @apos-white;
+  overflow-y: scroll;
+  .apos-scrollbar;
 }
 
 .apos-reorganize-tree .jqtree-tree
 {
+  max-width: 740px;
   .jqtree-element
   {
     padding: 5px 0;
