@@ -1,5 +1,18 @@
 # Changelog
 
+** 2.36.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Dragging and dropping will now automatically scroll the "reorganize" dialog box.
+* Attempts to drag a page above or below the "Home" page in "reorganize" no longer cause a restart. Also, the interface rejects them gracefully.
+* Attempts to drag a page below the trashcan are rejected gracefully.
+* When `trashInSchema` is active, the "traditional" trash can sorts below "in-context" trash, and the traditional trash can receives the special label "Legacy Trash" to reduce confusion.
+* When on page two (or higher) in the "manage" view of pieces, performing a text search now correctly resets to page one.
+* Throw an error at startup if a forbidden schema field name is used in `addFields` configuration. For instance, `type` is forbidden for widget schemas, while `docPermissions` is forbidden for doc type schemas, and `_id` is forbidden for both. Note that field names like `title` that are already in the schema are *not* forbidden because re-adding a schema field replaces it, which is often done to change the label, etc. So we'll be adding more documentation about these to help developers avoid surprises if their intention was an entirely new field.
+
 ** 2.36.1
 
 Unit tests passing.
