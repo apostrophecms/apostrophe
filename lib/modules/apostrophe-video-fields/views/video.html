@@ -5,6 +5,7 @@
 {% macro video(field) %}
   {% if not field.readOnly %}<input type="text" class="apos-field-input apos-field-input-text" name="{{ field.name }}" />{% endif %}
   <div class="apos-video-player" data-apos-video-player></div>
+  <div class="apos-video-error" data-apos-video-error="401">Embedding is not allowed for this video.</div>
 {% endmacro %}
 
 {{ schemas.fieldset(data, video) }}
