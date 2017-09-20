@@ -1,5 +1,14 @@
 # Changelog
 
+** 2.36.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If an oembed provider responds with an HTTP error and a response that is not parseable as XML or JSON, Apostrophe no longer crashes (this fix is actually in the oembetter npm module). This fixes crashes on non-embeddable YouTube videos.
+* If the oembed provider issues a 401 or 404 error, a relevant error message is given. Otherwise the generic error icon is still given.
+
 ** 2.36.2
 
 Unit tests passing.
