@@ -4,6 +4,8 @@
 
 Unit tests passing.
 
+Regression tests passing.
+
 * New feature: you may now use the `.njk` file extension in addition to `.html` for your Nunjucks templates. In order to maximize the usefulness of this feature in the context of existing Apostrophe code, `.njk` is still checked for even if `.html` was specified when calling the `render` method. `.njk` is a convention adopted by the Nunjucks community and is supported by some syntax highlighters.
 * Bug fix: drag-and-drop reordering and movement of widgets is once again functional. (The arrows worked all along.)
 * Bug fix: drag-and-drop targets for widgets residing in areas nested in other widgets now appear and function properly.
