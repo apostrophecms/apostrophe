@@ -1,5 +1,14 @@
 # Changelog
 
+** 2.37.1
+
+Unit tests passing.
+
+Piece- and schema-related regression tests passing.
+
+* Filters are now available for schema fields of type `integer`. You can configure these for the manage view, or for pieces-pages, exactly as you would for other field types. Previously this feature existed but did not function properly, so this is a patchlevel release rather than a minor version bump.
+* Previously, when viewing pieces in the trash, the batch operation button initially read "Trash Items" rather than "Rescue Items." It did not match the selected operation in the select element, and did not perform the needed operation of rescuing items unless you switched operations and switched back again. This has been fixed.
+
 ** 2.37.0
 
 Unit tests passing.
