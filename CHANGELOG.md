@@ -1,5 +1,15 @@
 # Changelog
 
+** 2.37.2
+
+Unit tests passing.
+
+Conflict resolution and template extension-related regression tests passing.
+
+* The conflict resolution feature, which helps users avoid conflicts in which neither is successfully able to save content reliably by explaining that two users are editing the same doc and offering the option of taking control, can now be disabled by setting the `conflictResolution` option of the `apostrophe-docs` module explicitly to `false`. **We do not recommend** the use of this option in normal practice, however it has valid applications in automated testing.
+
+* Recently a bug was introduced in which extensions other than `.html` or `.njk` did not work in `include` statements, etc. in Nunjucks templates unless the file in question existed in the project-level version of the module including it. The full cascade of template folder paths is now supported for these explicit extensions, including searching `viewsFolderFallback`.
+
 ** 2.37.1
 
 Unit tests passing.
