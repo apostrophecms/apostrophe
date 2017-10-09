@@ -1,26 +1,26 @@
-# [Apostrophe](http://apostrophecms.org/)
+# [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](http://apostrophecms.org/)
 
-Apostrophe is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with Apostrophe.
+ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
 
-Please see the [Apostrophe documentation](http://apostrophecms.org/docs) for detailed information about building sites with Apostrophe.
+Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
 
 ## Getting Started
 
-The [Apostrophe documentation](http://apostrophecms.org/docs/tutorials/getting-started/index.html) will walk you through some simple steps to get your [local environment setup](http://apostrophecms.org/docs/tutorials/getting-started/setting-up-your-environment.html) with the technology stack that runs Apostrophe (Node.js, NPM, MongoDB, ImageMagick) along with installing Apostrophe itself.
+The [ApostropheCMS documentation](http://apostrophecms.org/docs/tutorials/getting-started/index.html) will walk you through some simple steps to get your [local environment setup](http://apostrophecms.org/docs/tutorials/getting-started/setting-up-your-environment.html) with the technology stack that runs ApostropheCMS (Node.js, NPM, MongoDB, ImageMagick) along with installing ApostropheCMS itself.
 
 Then [create a new project](http://apostrophecms.org/docs/tutorials/getting-started/creating-your-first-project.html) on your computer and work on building your beautiful website.
 
-The Apostrophe documentation will walk you through [editing page templates](http://apostrophecms.org/docs/tutorials/getting-started/editing-page-templates.html), and [global content](http://apostrophecms.org/docs/tutorials/getting-started/global.html), [creating custom widgets](http://apostrophecms.org/docs/tutorials/getting-started/custom-widgets.html) and [navigation](http://apostrophecms.org/docs/tutorials/getting-started/building-navigation.html), along with [configuring reusable "pieces"](http://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html) and [global settings](http://apostrophecms.org/docs/tutorials/getting-started/settings.html). Plus, a whole lot more!
+The ApostropheCMS documentation will walk you through [editing page templates](http://apostrophecms.org/docs/tutorials/getting-started/editing-page-templates.html), and [global content](http://apostrophecms.org/docs/tutorials/getting-started/global.html), [creating custom widgets](http://apostrophecms.org/docs/tutorials/getting-started/custom-widgets.html) and [navigation](http://apostrophecms.org/docs/tutorials/getting-started/building-navigation.html), along with [configuring reusable "pieces"](http://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html) and [global settings](http://apostrophecms.org/docs/tutorials/getting-started/settings.html). Plus, a whole lot more!
 
 ## Taking it Further
 
-Our documentation also covers advanced topics such as, [managing permissions](http://apostrophecms.org/docs/tutorials/intermediate/permissions.html), [working with Apostrophe data](http://apostrophecms.org/docs/tutorials/intermediate/model-layer.html), [building forms](http://apostrophecms.org/docs/tutorials/intermediate/forms.html), and [hosting an Apostrophe site in production](http://apostrophecms.org/docs/tutorials/intermediate/deployment.html).
+Our documentation also covers advanced topics such as, [managing permissions](http://apostrophecms.org/docs/tutorials/intermediate/permissions.html), [working with ApostropheCMS data](http://apostrophecms.org/docs/tutorials/intermediate/model-layer.html), [building forms](http://apostrophecms.org/docs/tutorials/intermediate/forms.html), and [hosting an ApostropheCMS site in production](http://apostrophecms.org/docs/tutorials/intermediate/deployment.html).
 
 Moreover, there's tons of great info in the ["How To"](http://apostrophecms.org/docs/tutorials/howtos/index.html) section of docs, and it's always growing!
 
 ## Extending the Core with Modules
 
-Apostrophe is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
+ApostropheCMS is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
 
 * [apostrophe-blog](https://github.com/punkave/apostrophe-blog) - Everything you need to put a blog on your site.
 * [apostrophe-events](https://github.com/punkave/apostrophe-events) - Manage upcoming events.
@@ -40,6 +40,6 @@ If you have an idea for a new or improved feature please [open an issue](https:/
 If you'd like to implement that idea or fix that bug, please fork the repository and make the update. Pull requests are warmly welcome.
 
 ## License
-Apostrophe is released under the [MIT License](https://github.com/punkave/apostrophe/blob/master/LICENSE.md).
+ApostropheCMS is released under the [MIT License](https://github.com/punkave/apostrophe/blob/master/LICENSE.md).
 
 [![Build Status](https://travis-ci.org/punkave/apostrophe.svg?branch=master)](https://travis-ci.org/punkave/apostrophe)
