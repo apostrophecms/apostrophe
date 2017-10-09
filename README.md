@@ -39,5 +39,3 @@ If you'd like to implement that idea or fix that bug, please fork the repository
 
 ## License
 ApostropheCMS is released under the [MIT License](https://github.com/punkave/apostrophe/blob/master/LICENSE.md).
-
-[![Build Status](https://travis-ci.org/punkave/apostrophe.svg?branch=master)](https://travis-ci.org/punkave/apostrophe)
