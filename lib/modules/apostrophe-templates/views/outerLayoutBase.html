@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% block locale %}{% endblock %}" xml:lang="{% block locale %}{% endblock %}">
   <head>
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
