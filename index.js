@@ -374,6 +374,7 @@ module.exports = function(options) {
 
   function instantiateModules(callback) {
     self.modules = {};
+    var moduleTimes = [];
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
       var improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
@@ -383,7 +384,10 @@ module.exports = function(options) {
         // is how we got here)
         return setImmediate(callback);
       }
+      var start = Date.now();
       return self.synth.create(item, { apos: self }, function(err, obj) {
+        var end = Date.now();
+        moduleTimes.push({ name: item, time: end - start });
         if (err) {
           console.error('Error while constructing the ' + item + ' module');
           return callback(err);
@@ -391,6 +395,25 @@ module.exports = function(options) {
         return callback(null);
       });
     }, function(err) {
+      moduleTimes.sort(function(a, b) {
+        if (a.time < b.time) {
+          return 1;
+        } else if (a.time > b.time) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+      var running = 0;
+      var total = _.sum(_.pluck(moduleTimes, 'time'));
+      _.each(moduleTimes, function(module) {
+        running += module.time;
+        console.log(module.name + ': ' + module.time + ' ' + percent(module.time) + ' (running total: ' + percent(running) + ')');
+      });
+      function percent(n) {
+        return (Math.ceil(n / total * 100 * 100) / 100) + '%';
+      }
+
       return setImmediate(function() {
         return callback(err);
       });
