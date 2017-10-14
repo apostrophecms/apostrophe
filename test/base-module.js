@@ -9,7 +9,7 @@ describe('Base Module', function(){
     return t.destroy(apos, done);
   });
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   it('should be subclassable', function(done){
     apos = require('../index.js')({

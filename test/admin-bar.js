@@ -5,7 +5,7 @@ var apos;
 
 describe('Admin bar', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   //////
   // EXISTENCE

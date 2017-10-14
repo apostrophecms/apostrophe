@@ -8,7 +8,7 @@ var apos;
 
 describe('Pages', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -48,6 +48,7 @@ describe('Pages', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });
