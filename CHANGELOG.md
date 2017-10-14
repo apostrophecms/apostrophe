@@ -1,5 +1,35 @@
 # Changelog
 
+** 2.37.2
+
+Unit tests passing.
+
+Conflict resolution and template extension-related regression tests passing.
+
+* The conflict resolution feature, which helps users avoid conflicts in which neither is successfully able to save content reliably by explaining that two users are editing the same doc and offering the option of taking control, can now be disabled by setting the `conflictResolution` option of the `apostrophe-docs` module explicitly to `false`. **We do not recommend** the use of this option in normal practice, however it has valid applications in automated testing.
+
+* Recently a bug was introduced in which extensions other than `.html` or `.njk` did not work in `include` statements, etc. in Nunjucks templates unless the file in question existed in the project-level version of the module including it. The full cascade of template folder paths is now supported for these explicit extensions, including searching `viewsFolderFallback`.
+
+** 2.37.1
+
+Unit tests passing.
+
+Piece- and schema-related regression tests passing.
+
+* Filters are now available for schema fields of type `integer`. You can configure these for the manage view, or for pieces-pages, exactly as you would for other field types. Previously this feature existed but did not function properly, so this is a patchlevel release rather than a minor version bump.
+* Previously, when viewing pieces in the trash, the batch operation button initially read "Trash Items" rather than "Rescue Items." It did not match the selected operation in the select element, and did not perform the needed operation of rescuing items unless you switched operations and switched back again. This has been fixed.
+
+** 2.37.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New feature: you may now use the `.njk` file extension in addition to `.html` for your Nunjucks templates. In order to maximize the usefulness of this feature in the context of existing Apostrophe code, `.njk` is still checked for even if `.html` was specified when calling the `render` method. `.njk` is a convention adopted by the Nunjucks community and is supported by some syntax highlighters.
+* Bug fix: drag-and-drop reordering and movement of widgets is once again functional. (The arrows worked all along.)
+* Bug fix: drag-and-drop targets for widgets residing in areas nested in other widgets now appear and function properly.
+
+
 ** 2.36.3
 
 Unit tests passing.

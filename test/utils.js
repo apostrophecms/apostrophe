@@ -190,5 +190,24 @@ describe('Utils', function(){
       var clone = apos.utils.clonePermanent(input);
       assert(clone.attachment._id === "a205filea1media97");
     });
+
+    it('gives sensible results for insensitiveSort', function() {
+      var req = apos.tasks.getReq();
+      var input = [
+        'Fred',
+        'dog',
+        5,
+        10,
+        'jane'
+      ];
+      apos.utils.insensitiveSort(input);
+      assert(input.length === 5);
+      assert(input[0] === 5);
+      assert(input[1] === 10);
+      assert(input[2] === 'dog');
+      assert(input[3] === 'Fred');
+      assert(input[4] === 'jane');
+    });
+    
   });
 });
