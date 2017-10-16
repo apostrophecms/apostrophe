@@ -4,7 +4,7 @@ _ = require('lodash');
 
 describe('Apostrophe', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   it('should exist', function(done) {
     apos = require('../index.js');
