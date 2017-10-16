@@ -25,7 +25,20 @@ function destroy(apos, done) {
     return done();
   });
   function drop(callback) {
-    return apos.db.dropDatabase(callback);
+    return apos.db.collections(function(err, _collections) {
+      if (err) {
+        return callback(err);
+      }
+      collections = _collections;
+
+      //drop the collections
+      return async.eachSeries(collections, function(collection, callback) {
+        if(!collection.collectionName.match(/^system\./)){
+          return collection.drop(callback);
+        }
+        return setImmediate(callback);
+      }, callback );
+    });
   }
   function destroy(callback) {
     return apos.destroy(callback);
@@ -33,5 +46,6 @@ function destroy(apos, done) {
 };
 
 module.exports = {
-  destroy: destroy
+  destroy: destroy,
+  timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 5000
 };

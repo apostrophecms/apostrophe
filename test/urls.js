@@ -4,7 +4,7 @@ var _ = require('lodash');
 
 describe('Urls', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   var apos;
   var start;
