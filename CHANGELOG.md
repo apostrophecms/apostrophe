@@ -1,5 +1,17 @@
 # Changelog
 
+** 2.38.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Various schema field validators for required fields no longer crash on the browser side if a property is nonexistent, as opposed to being the expected empty string.
+* Buttons for editing pieces widgets now use less confusing language.
+* Accommodations for the `apostrophe-headless` module (arriving later today), including factoring out certain login-related and piece-related functionality to separate methods in order to make it easier to introduce RESTful APIs for the same features.
+* Unit tests no longer drop the entire test database between suites; instead they drop the collections. Also the unit test timeout can be set via an environment variable. This accommodates testing against various cloud databases with security that precludes dropping entire databases.
+* Lots of new content in the README to get folks who haven't been to the documentation site yet a little more excited.
+
 ** 2.37.2
 
 Unit tests passing.
