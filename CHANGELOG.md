@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.39.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Easier access to options. Introduced the `getOption` method to all modules. Calling `self.getOption(req, 'sizes.large')` from your module's server-side JavaScript code, or just `module.getOption('sizes.large')` from Nunjucks, will return the value of `self.options.sizes.large` for that module. You may also pass an array of keys, i.e. `module.getOption([ 'sizes', 'large' ])`. This method is tolerant, it returns undefined if any part of the path does not exist. See also the new [apostrophe-override-options](https://npmjs.org/package/apostrophe-override-options) which extends this feature to support customizing the returned value for any option based on the current page type, page settings, piece settings and locale. * Helpful warning when maximum area/widget loader recursion level is reached. Always use projections when adding joins to your schema to avoid a performance hit due to runaway recursion.
+* New `disabledTypes` option to `apostrophe-pages`, primarily for use with `apostrophe-override-options`.
+* Fixed UI bug relating to area menus at the bottom of the page.
+* Fixed bug that caused a crash when invalid usernames attempted to log in. Thanks to Arthur.
+
+** 2.38.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Various schema field validators for required fields no longer crash on the browser side if a property is nonexistent, as opposed to being the expected empty string.
+* Buttons for editing pieces widgets now use less confusing language.
+* Accommodations for the `apostrophe-headless` module (arriving later today), including factoring out certain login-related and piece-related functionality to separate methods in order to make it easier to introduce RESTful APIs for the same features.
+* Unit tests no longer drop the entire test database between suites; instead they drop the collections. Also the unit test timeout can be set via an environment variable. This accommodates testing against various cloud databases with security that precludes dropping entire databases.
+* Lots of new content in the README to get folks who haven't been to the documentation site yet a little more excited.
+
 ** 2.37.2
 
 Unit tests passing.

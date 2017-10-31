@@ -38,14 +38,14 @@ var mockImages = [
 
 describe('Images', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
   it('should be a property of the apos object', function(done) {
-    this.timeout(5000);
+    this.timeout(t.timeout);
     this.slow(2000);
 
     apos = require('../index.js')({

@@ -11,7 +11,7 @@ describe('Attachment', function() {
     return t.destroy(apos, done);
   });
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   var uploadSource = __dirname + "/data/upload_tests/";
   var uploadTarget = __dirname + "/public/uploads/attachments/";
@@ -47,7 +47,7 @@ describe('Attachment', function() {
   // after(wipeIt);
 
   it('should be a property of the apos object', function(done) {
-    this.timeout(5000);
+    this.timeout(t.timeout);
     this.slow(2000);
 
     apos = require('../index.js')({

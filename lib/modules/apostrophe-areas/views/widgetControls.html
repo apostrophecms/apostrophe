@@ -11,7 +11,7 @@
           {% for button in group.controls %}
             {% set label = button.label or '' %}
             {% if button.label == '$editLabel' %}
-              {% set label = data.options.editLabel or 'Edit ' + data.manager.label %}
+              {% set label = data.options.editLabel or data.manager.editLabel or 'Edit ' + data.manager.label %}
             {% endif %}
             {{ buttons.inGroup(label, button) }}
           {% endfor %}

@@ -3,7 +3,7 @@ var assert = require('assert');
 
 describe('Launder', function(){
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
