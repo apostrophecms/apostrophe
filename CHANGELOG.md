@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.39.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Factored out a `getBaseUrl` method for `apostrophe-pages`, allowing
+overrides of this that pay attention to `req`.
+* Report `pageBeforeSend` errors and failures to load the global doc properly, don't silently tolerate them.
+* Documentation corrections. Thanks to Frederik Ekelund.
+ 
+
 ## 2.39.0
 
 Unit tests passing.
