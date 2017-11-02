@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.39.2
+
+Unit tests passing.
+
+Startup-related regression tests passing.
+
+* The `APOS_MONGODB_LOG_LEVEL` environment variable can now be set to `debug`, `info` or anything else supported by the MongoDB driver's `Logger.setLevel` method. This is helpful for debugging database issues at the lowest level.
+
 ## 2.39.1
 
 Unit tests passing.
