@@ -22,6 +22,7 @@ Moreover, there's tons of great info in the ["How To"](http://apostrophecms.org/
 
 ApostropheCMS is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
 
+* [apostrophe-headless](https://github.com/punkave/apostrophe-headless) - Add REST APIs and power your React / Vue / Native / etc. apps with a headless CMS.
 * [apostrophe-blog](https://github.com/punkave/apostrophe-blog) - Everything you need to put a blog on your site.
 * [apostrophe-events](https://github.com/punkave/apostrophe-events) - Manage upcoming events.
 * [apostrophe-workflow](https://github.com/punkave/apostrophe-workflow) - Add powerful localization capabilities to your project.

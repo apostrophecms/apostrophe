@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.39.2
+
+Unit tests passing.
+
+Startup-related regression tests passing.
+
+* The `APOS_MONGODB_LOG_LEVEL` environment variable can now be set to `debug`, `info` or anything else supported by the MongoDB driver's `Logger.setLevel` method. This is helpful for debugging database issues at the lowest level.
+
+## 2.39.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Factored out a `getBaseUrl` method for `apostrophe-pages`, allowing
+overrides of this that pay attention to `req`.
+* Report `pageBeforeSend` errors and failures to load the global doc properly, don't silently tolerate them.
+* Documentation corrections. Thanks to Frederik Ekelund.
+ 
+
 ## 2.39.0
 
 Unit tests passing.
