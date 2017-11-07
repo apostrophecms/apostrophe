@@ -73,10 +73,13 @@
 
 
 {%- macro filters(filters) -%}
-{#
-  Normal cursor-driven filters
-
-  #}<div class="apos-modal-filters-toggles">
+  {#
+    Normal cursor-driven filters
+  #}
+  <div class="apos-modal-filters-toggles">
+    <span class="apos-modal-filter">
+      {{ fields.checkbox('select-all') }}
+    </span>
     {%- for filter in filters.options -%}
       <span class="apos-modal-filter">
         {%- if not apos.utils.isFalse(filter.label) -%}
@@ -92,12 +95,11 @@
           {{ fields.select(filter.name, apos.utils.concat([ { label: filter.anyLabel or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }}
         {%- endif -%}
       </span>
-    {%- endfor -%}{#
-
-  Search
-
-  #}<div class="apos-modal-filters-search">
-    {# we need data.options.label & pluralLabel #}
-    {{ fields.string('search-' + data.options.name, 'Search ' + data.options.pluralLabel + '...', filters.q or '' ) }}
+    {%- endfor -%}
+    {# Search #}
+    <div class="apos-modal-filters-search">
+      {# we need data.options.label & pluralLabel #}
+      {{ fields.string('search-' + data.options.name, 'Search ' + data.options.pluralLabel + '...', filters.q or '' ) }}
+    </div>
   </div>
 {%- endmacro -%}
