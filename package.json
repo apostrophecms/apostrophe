@@ -48,7 +48,7 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.18.1",
     "mongodb": "^2.2.31",
-    "moog-require": "^0.4.1",
+    "moog-require": "^0.4.2",
     "nunjucks": "^2.5.2",
     "oembetter": "^0.1.16",
     "passport": "^0.3.2",
