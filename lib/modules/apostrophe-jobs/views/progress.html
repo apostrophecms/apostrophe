@@ -1,0 +1,24 @@
+{% if data.notfound %}
+  {# Unlikely in production, but likely in development where dbs get reset #}
+  <h3 class="apos-job-failed">{{ __('The job no longer exists') }}</h3>
+{% elif data.job.status == 'failed' %}
+  <h3 class="apos-job-failed">{{ __(data.job.labels.failed or 'Failed') }}</h3>
+{% elif data.job.status == 'completed' %}
+  <h3>{{ __(data.job.labels.completed or 'Completed') }}</h3>
+  <table class="apos-job-results">
+    <tr>
+      <th>{{ __(data.job.labels.good or 'Successful') }}</th><td>{{ data.job.good }}</td>
+    </tr>
+    <tr class="{{ 'apos-job-errors' if data.job.errors }}">
+      <th>{{ __(data.job.labels.bad or 'Errors') }}</th><td>{{ data.job.bad }}</td>
+    </tr>
+  </table>
+{% else %}
+  <h3>{{ __(data.job.labels.running or 'In Progress...') }}</h3>
+  <div class="apos-job-progress" data-apos-progress>
+    <div class="apos-job-progress-percentage">{{ data.job.percentage }}%</div>
+    <div class="apos-job-progress-indicator"
+      data-apos-progress-indicator
+      style="width: {{ data.job.percentage }}%"></div>
+  </div>
+{% endif %}
