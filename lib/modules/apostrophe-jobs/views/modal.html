@@ -7,11 +7,12 @@
 
 {%- block controls -%}
   {% if data.job.canCancel %}
-    {{ buttons.base('Cancel', { action: 'cancel' }, 'apos-button--minor apos-job-cancel') }}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+    {{ buttons.minor('Cancel', { action: 'cancel', attributes: 'data-apos-job-cancel' }) }}
   {% elif data.job.canStop %}
-  {{ buttons.base('Stop', { action: 'cancel' }, 'apos-button--minor apos-job-stop') }}
+  {{ buttons.minor('Stop', { action: 'cancel', attributes: 'data-apos-job-stop' }) }}
   {% endif %}
-  {{ buttons.major('Done', { action: 'cancel' }, 'apos-button--major apos-job-done') }}
+  {{ buttons.major('Done', { action: 'cancel', attributes: 'data-apos-job-done' }) }}
 {%- endblock -%}
 
 {%- block label -%}
