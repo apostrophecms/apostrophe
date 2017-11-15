@@ -7,10 +7,10 @@
 
 {%- block controls -%}
   {% if data.job.canCancel %}
-  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
-    {{ buttons.minor('Cancel', { action: 'cancel', attributes: 'data-apos-job-cancel' }) }}
+    {{ buttons.minor('Cancel', { action: 'job-cancel', attributes: 'data-apos-job-cancel' }) }}
   {% elif data.job.canStop %}
-  {{ buttons.minor('Stop', { action: 'cancel', attributes: 'data-apos-job-stop' }) }}
+    {# It is correct to say job-cancel here, the backend will know which #}
+    {{ buttons.minor('Stop', { action: 'job-cancel', attributes: 'data-apos-job-stop' }) }}
   {% endif %}
   {{ buttons.major('Done', { action: 'cancel', attributes: 'data-apos-job-done' }) }}
 {%- endblock -%}
@@ -30,5 +30,5 @@
 
 {%- block instructions -%}
   {# Often none needed #}
-  {{ data.options.instructions }}
+  {{ data.job.labels.instructions }}
 {%- endblock -%}

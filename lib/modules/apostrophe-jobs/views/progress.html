@@ -1,8 +1,18 @@
 {% if data.job.notfound %}
   {# Unlikely in production, but likely in development where dbs get reset #}
   <h3 class="apos-job-failed">{{ __('The job no longer exists') }}</h3>
+{% elif data.job.canceling %}
+  {% if data.job.canCancel %}
+    <h3 class="apos-job-failed">{{ __(data.job.labels.canceling or 'Canceling...') }}</h3>
+  {% else %}
+    <h3 class="apos-job-failed">{{ __(data.job.labels.stopping or 'Stopping...') }}</h3>
+  {% endif %}
 {% elif data.job.status == 'failed' %}
   <h3 class="apos-job-failed">{{ __(data.job.labels.failed or 'Failed') }}</h3>
+{% elif data.job.status == 'canceled' %}
+  <h3 class="apos-job-failed">{{ __(data.job.labels.canceled or 'Canceled') }}</h3>
+{% elif data.job.status == 'stopped' %}
+  <h3 class="apos-job-failed">{{ __(data.job.labels.stopped or 'Stopped') }}</h3>
 {% elif data.job.status == 'completed' %}
   <h3>{{ __(data.job.labels.completed or 'Completed') }}</h3>
 {% else %}
