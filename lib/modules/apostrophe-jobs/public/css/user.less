@@ -1,0 +1,30 @@
+.apos-ui .apos-job-progress-container {
+  width: 50%;
+  margin: auto;
+  h3 {
+    font-size: 24px;
+    margin: 1em 0;
+  }
+  td, th {
+    padding: 0 1em 0.5em 0;
+    text-align: left;
+  }
+  .apos-job-progress {
+    text-align: center;
+    position: relative;
+    height: 2em;
+  }
+  .apos-job-progress-indicator {
+    height: 1.5em;
+    position: absolute;
+    background-color: @apos-red;
+    z-index: 0;
+  }
+  .apos-job-progress-percentage {
+    position: absolute;
+    z-index: 2;
+    color: @apos-blue;
+    text-align: center;
+    width: 100%;
+  }
+}
