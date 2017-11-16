@@ -9,9 +9,8 @@
     padding-bottom: 50px;
     background-color: @apos-light;
     // If tab number exceeds viewport allow scroll
-    overflow: scroll;
+    overflow: auto;
     border-right: 2px solid @apos-mid;
-
     p {
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -48,7 +47,7 @@
     width: 75%;
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
-    overflow-y: scroll;
+    overflow: auto;
     .apos-scrollbar;
   }
 
