@@ -9,9 +9,9 @@ module.exports = {
     'apostrophe-caches': {},
     'apostrophe-migrations': {},
     'apostrophe-express': {},
-    'apostrophe-push': {},
     'apostrophe-urls': {},
     'apostrophe-templates': {},
+    'apostrophe-push': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
     'apostrophe-admin-bar': {},
@@ -21,6 +21,7 @@ module.exports = {
     'apostrophe-ui': {},
     'apostrophe-schemas': {},
     'apostrophe-docs': {},
+    'apostrophe-jobs': {},
     'apostrophe-versions': {},
     'apostrophe-tags': {},
     'apostrophe-modal': {},
@@ -44,6 +45,7 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
+    // ALWAYS LAST FOREVER
     'apostrophe-service-bridge': {}
   }
 };
