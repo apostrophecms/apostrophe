@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.41.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The new `apostrophe-jobs` module, part of the core of Apostrophe, provides a progress meter mechanism and the ability to stop long-running user-initiated operations, such as batch operations on pieces. See the [jobs module documentation](http://apostrophecms.org/docs/modules/apostrophe-jobs/index.html). You can also refer to the pieces module for examples if you wish to use this for your own long-running user-initiated operations.
+* Batch operations now have more robust support for "select everything." A number of bugs related to multiple selection of pieces have been fixed in a refactoring that made this code much more maintainable and predictable.
+* The option of pushing an asset of type `template`, which never worked in 2.x and was never used by Apostrophe, has been removed for clarity. Our preference is for rendering assets on the server side dynamically when needed, rather than pushing many templates into the DOM on every page load.
+* An `.editorconfig` file has been added. Thanks to Fredrik Ekelund.
+* Parking a page only pushes permanent properties. `_defaults` and `_children` should never have been in the database; they are of course still interpreted to decide what should happen, but the properties *themselves* did not belong in the database. (You may need to write a migration if they are already there and this is causing issues for you.)
+* Scrolling UI behavior of pieces improved; various other UI touch-ups. Thanks to Fredrik Ekelund.
+* `newBrowserCalls` helper for `push` module can be used when you want JavaScript calls queued up with `req.browserCall` to be executed in an AJAX update of just part of a page.
+* Fixed bugs affecting access to the published/unpublished batch operations and similar.
+
 ## 2.40.0
 
 Unit tests passing.
