@@ -75,6 +75,12 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  var testThing2 = {
+    _id: 'testThing2',
+    title: 'hello2',
+    foo: 'bar2'
+  };
+
   var additionalThings = [
     {
       _id: 'thing1',
@@ -121,6 +127,18 @@ describe('Pieces', function() {
     });
   });
 
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].insert);
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
+    .then(function(piece2) {
+      assert(testThing2 === piece2);
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
   // Test pieces.requirePiece()
   it('should be able to retrieve a piece by id from the database', function(done) {
     assert(apos.modules['things'].requirePiece);
@@ -153,6 +171,28 @@ describe('Pieces', function() {
         assert(req.piece.foo === 'moo');
         done();
       });
+    });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].update);
+    testThing.foo = 'goo';
+    apos.modules['things'].update(apos.tasks.getReq(), testThing)
+    .then(function(piece) {
+      assert(testThing === piece);
+      // Now let's get the piece and check if it was updated
+      var req = apos.tasks.getReq();
+      req.body = {};
+      req.body._id = "testThing";
+      apos.modules['things'].requirePiece(req, req.res, function() {
+        assert(req.piece);
+        assert(req.piece._id === 'testThing');
+        assert(req.piece.foo === 'goo');
+        done();
+      });
+    })
+    .catch(function(err) {
+      assert(!err);
     });
   });
 
@@ -226,10 +266,10 @@ describe('Pieces', function() {
     };
     apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
-      assert(results.total == 4);
+      assert(results.total == 5);
       assert(results.limit == 10);
       assert(results.skip == 0);
-      assert(results.pieces.length == 4);
+      assert(results.pieces.length == 5);
       done();
     });
   });
@@ -380,10 +420,10 @@ describe('Pieces', function() {
     res.send = function(result) {
       assert(result);
       assert(result.status === 'ok');
-      assert(result.data.total == 5);
+      assert(result.data.total == 6);
       assert(result.data.skip == 0);
       assert(result.data.limit == 10);
-      assert(result.data.pieces.length == 5);
+      assert(result.data.pieces.length == 6);
       done();
     }
 

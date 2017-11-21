@@ -295,6 +295,41 @@ describe('Pages', function() {
     });
   });
 
+    //////
+  // INSERTING
+  //////
+  it('is able to insert a new page with promises', function(done) {
+    var parentId = '1234';
+
+    var newPage = {
+      slug: '/new-page-2',
+      published: true,
+      type: 'testPage',
+      title: 'New Page 2'
+    };
+    apos.pages.insert(apos.tasks.getReq(), parentId, newPage)
+    .then(function(page) {
+      assert.equal(page.path, '/parent/new-page-2');
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
+  it('is able to insert a new page in the correct order with promises', function(done) {
+    var cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/new-page-2' });
+
+    cursor.toObject()
+    .then(function(page) {
+      assert.equal(page.rank, 3);
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
   //////
   // MOVING
   //////
