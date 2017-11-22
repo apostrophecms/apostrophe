@@ -37,6 +37,15 @@ describe('Pieces', function() {
             label: 'Foo',
             type: 'string'
           }
+        },
+        'people': {
+          extend: 'apostrophe-pieces',
+          name: 'person',
+          label: 'Person',
+          addFields: {
+            name: '_things',
+            type: 'joinByArray'
+          }
         }
       },
       afterInit: function(callback) {
@@ -88,11 +97,23 @@ describe('Pieces', function() {
     },
     {
       _id: 'thing2',
-      title: 'Blue'
+      title: 'Blue',
+      published: true
     },
     {
       _id: 'thing3',
-      title: 'Green'
+      title: 'Green',
+      published: true
+    }
+  ];
+
+  var testPeople = [
+    {
+      _id: 'person1',
+      title: 'Bob',
+      type: 'person',
+      thingsIds: [ 'thing2', 'thing3' ],
+      published: true
     }
   ];
 
@@ -507,4 +528,40 @@ describe('Pieces', function() {
     });
 
   });
+
+  it('people can find things via a join', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.db.insert(testPeople)
+    .then(function() {
+      return apos.docs.getManager('person').find(req, {}).toObject();
+    })
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
+  it('people cannot find things via a join with an inadequate projection', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert((!person._things) || (person._things.length === 0));
+    });
+  });
+
+  it('people can find things via a join with a "projection" of the join name', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
 });
