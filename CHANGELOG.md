@@ -14,6 +14,12 @@ Note that **the `await` keyword can now be used with these methods**, as long as
 
 * Apostrophe's custom `Split` CKEditor toolbar control now works correctly in 2.x. You can give your users the `Split` control to allow them to break up a large rich text widget in order to insert other types of widget "in the middle." Note that the control name is now capitalized to match the way other CKEditor toolbar buttons are named.
 
+* You may now specify `_url: 1` or `_nameOfJoin: 1` in a projection when using Apostrophe's `find()` methods. Native MongoDB projections naturally can't see these "computed properties" because they don't live in the database — they are computed "on the fly" after documents are fetched. However, Apostrophe now automatically adds the right underlying fields to the projection.
+
+Only `_url` and the names of `joinByOne` or `joinByArray` fields are supported. It does not make sense to use a projection on `people` to locate IDs that are actually attached to `products` via `joinByOneReverse` or `joinByArrayReverse`.
+
+*This feature does not conflict with legitimate uses of MongoDB projections because Apostrophe discards all properties beginning with `_` when writing to the database, except for `_id`.*
+
 * The `length` property of an Apostrophe `attachment` object is now correctly populated with the original file size. Thanks to David Keita. Note that images are also made available in many scaled sizes. Also the original may be replaced with a correctly rotated version, in which case `length` will not match. So the most useful scenario for this property is likely to be in working with office formats, especially PDF which can sometimes be very large.
 
 * Fixed bug in the `isEmpty` methods for areas and singletons. Thanks to David Keita.
