@@ -1,6 +1,16 @@
 # Changelog
 
+## 2.42.1
+
+Unit tests passing.
+
+* Use of a capitalized filename that should have been lowercase in a `require` briefly broke Apostrophe's initialization on Linux. We are correcting this by reinstating CI in a Linux environment.
+
 ## 2.42.0
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Promises have landed in Apostrophe. Calling `toArray`, `toObject`, `toDistinct` or `toMongo` on an Apostrophe cursor *without a callback* will return a promise. That promise will resolve to the expected result.
 
