@@ -182,7 +182,7 @@ module.exports = function(options) {
   self.instanceOf = function(object, name) {
     return self.synth.instanceOf(object, name);
   };
-  
+    
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
   return self;
