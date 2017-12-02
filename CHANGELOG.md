@@ -1,5 +1,66 @@
 # Changelog
 
+## 2.42.1
+
+Unit tests passing.
+
+* Use of a capitalized filename that should have been lowercase in a `require` briefly broke Apostrophe's initialization on Linux. We are correcting this by reinstating CI in a Linux environment.
+
+## 2.42.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Promises have landed in Apostrophe. Calling `toArray`, `toObject`, `toDistinct` or `toMongo` on an Apostrophe cursor *without a callback* will return a promise. That promise will resolve to the expected result.
+
+In addition, `docs.insert`, `docs.update`, `pieces.insert`, `pieces.update`, and `pages.insert` will all return a promise if invoked without a callback.
+
+These are the most frequently invoked functions in Apostrophe that formerly required callbacks.
+
+**As always with promises, be sure to catch errors with `.catch()`** at some level.
+
+Note that **the `await` keyword can now be used with these methods**, as long as you're running Node.js 8.x or newer or using Babel to provide that language feature.
+
+* Apostrophe's custom `Split` CKEditor toolbar control now works correctly in 2.x. You can give your users the `Split` control to allow them to break up a large rich text widget in order to insert other types of widget "in the middle." Note that the control name is now capitalized to match the way other CKEditor toolbar buttons are named.
+
+* You may now specify `_url: 1` or `_nameOfJoin: 1` in a projection when using Apostrophe's `find()` methods. Native MongoDB projections naturally can't see these "computed properties" because they don't live in the database — they are computed "on the fly" after documents are fetched. However, Apostrophe now automatically adds the right underlying fields to the projection.
+
+Only `_url` and the names of `joinByOne` or `joinByArray` fields are supported. It does not make sense to use a projection on `people` to locate IDs that are actually attached to `products` via `joinByOneReverse` or `joinByArrayReverse`.
+
+*This feature does not conflict with legitimate uses of MongoDB projections because Apostrophe discards all properties beginning with `_` when writing to the database, except for `_id`.*
+
+* The `length` property of an Apostrophe `attachment` object is now correctly populated with the original file size. Thanks to David Keita. Note that images are also made available in many scaled sizes. Also the original may be replaced with a correctly rotated version, in which case `length` will not match. So the most useful scenario for this property is likely to be in working with office formats, especially PDF which can sometimes be very large.
+
+* Fixed bug in the `isEmpty` methods for areas and singletons. Thanks to David Keita.
+
+## 2.41.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The new `apostrophe-jobs` module, part of the core of Apostrophe, provides a progress meter mechanism and the ability to stop long-running user-initiated operations, such as batch operations on pieces. See the [jobs module documentation](http://apostrophecms.org/docs/modules/apostrophe-jobs/index.html). You can also refer to the pieces module for examples if you wish to use this for your own long-running user-initiated operations.
+* Batch operations now have more robust support for "select everything." A number of bugs related to multiple selection of pieces have been fixed in a refactoring that made this code much more maintainable and predictable.
+* The option of pushing an asset of type `template`, which never worked in 2.x and was never used by Apostrophe, has been removed for clarity. Our preference is for rendering assets on the server side dynamically when needed, rather than pushing many templates into the DOM on every page load.
+* An `.editorconfig` file has been added. Thanks to Fredrik Ekelund.
+* Parking a page only pushes permanent properties. `_defaults` and `_children` should never have been in the database; they are of course still interpreted to decide what should happen, but the properties *themselves* did not belong in the database. (You may need to write a migration if they are already there and this is causing issues for you.)
+* Scrolling UI behavior of pieces improved; various other UI touch-ups. Thanks to Fredrik Ekelund.
+* `newBrowserCalls` helper for `push` module can be used when you want JavaScript calls queued up with `req.browserCall` to be executed in an AJAX update of just part of a page.
+* Fixed bugs affecting access to the published/unpublished batch operations and similar.
+
+## 2.40.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Support for "select everything" when managing pieces. Once you check the box to select everything on the current page, you are given a secondary option to select everything that matches your current criteria. This works both when choosing pieces for widgets and when working with batch operations like "trash" or "rescue."
+* Fixed various bugs affecting combinations of "select all on page", the chooser and working with images.
+* Improvements to batch operations on pieces. The `requiredField` property is checked correctly, and the new `onlyIf` property allows for passing a function that accepts the doc type name and decides whether the button should appear. Multiword action names are properly camelcased. New "success" and "dataSource" options to `batchSimple` allow for carrying out additional operations afterward as well as gathering input independently at the start. And batch operations are composed late so that other modules can add them.
+* The `self.api` and `self.html` methods of `apostrophe-context` and `apostrophe-modal` now support a syntax for making cross-module API calls, just like templates.
+* Addressed moog versioning issue with latest npm that caused errors about "synth.instanceOf" not being found depending on the state of your npm cache.
+
 ## 2.39.2
 
 Unit tests passing.

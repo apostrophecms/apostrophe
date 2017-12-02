@@ -205,6 +205,20 @@ describe('Docs', function() {
     });
   });
 
+  it('same thing, but with promises', function(done){
+    var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).toArray()
+    .then(function(docs) {
+      // There should be only 3 results.
+      assert(docs.length === 3);
+      // They should all have a type of test-person
+      assert(docs[0].type === 'test-person');
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
 
   //////
   // PROJECTIONS
@@ -402,6 +416,56 @@ describe('Docs', function() {
     });
   });
 
+  it('same thing, but with promises', function(done) {
+
+    // We need to insert another, we used 'one' up
+    var object = {
+      slug: 'two',
+      published: true,
+      type: 'test-person',
+      firstName: 'Twofy',
+      lastName: 'Twofer',
+      age: 15,
+      alive: true
+    };
+
+    apos.docs.insert(apos.tasks.getReq(), object)
+    .then(function(doc) {
+      var cursor;
+      assert(doc);
+      assert(doc._id);
+      cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'two' });
+      return cursor.toObject();
+    })
+    .then(function(doc) {
+      assert(doc);
+      doc.slug = 'peter';
+      return apos.docs.update(apos.tasks.getReq(), doc)
+    })
+    .then(function(doc) {
+      assert(doc);
+      // has the updated slug been appended?
+      assert(doc.slug.match(/^peter\d+$/));
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
+  it('should be able to fetch all unique firstNames with toDistinct', function(done) {
+    apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName')
+    .then(function(firstNames) {
+      assert(Array.isArray(firstNames));
+      assert(firstNames.length === 6);
+      assert(_.contains(firstNames, 'Larry'));
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+    
   it('should not allow you to call the update method if you are not an admin', function(done){
     var cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
     cursor.toObject(function(err, doc) {

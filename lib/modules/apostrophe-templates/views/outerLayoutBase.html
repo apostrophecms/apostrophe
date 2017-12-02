@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    {% block startHead %}
+    {% endblock %}
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
     {% block standardHead %}
@@ -29,7 +31,6 @@
       {% block main %}{% endblock %}
       {% block afterMain %}{% endblock %}
     </div>
-    {{ apos.assets.templates(data.when) }}
     {{ apos.assets.scripts(data.when) }}
     {% block jsCalls %}
       <script type="text/javascript">
