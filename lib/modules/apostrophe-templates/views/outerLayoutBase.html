@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% block locale %}en{% endblock %}">
   <head>
     {% block startHead %}
     {% endblock %}
@@ -38,7 +38,6 @@
         {{ data.js.reqCalls }}
       </script>
     {% endblock %}
-    {% block extraBody %}
-    {% endblock %}
+    {% block extraBody %}{% endblock %}
   </body>
 </html>
