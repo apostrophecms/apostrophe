@@ -31,6 +31,15 @@
       display: block;
       top: 50%;
       transform: translateY(-50%);
+      .apos-button:after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: -41px;
+        top: -22px;      
+        height: 60px;
+        width: 100px;
+      }
       .apos-area-divider { display: none; }
     }
     >.apos-ui .apos-area-controls--singleton
@@ -155,7 +164,15 @@
     border: 2px solid @apos-white;
     .apos-rounded(@apos-padding-3);
     .apos-drop-shadow();
-
+    &:after {
+      content: "";
+      display: block;
+      position: absolute;
+      left: -41px;
+      top: -3px;
+      height: 20px;
+      width: 100px;
+    }
   }
   >.apos-dropdown-items
   {
