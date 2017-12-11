@@ -8,7 +8,7 @@ var apos;
 
 describe('Pieces Widgets', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -78,6 +78,13 @@ describe('Pieces Widgets', function() {
             }
           ]
         }
+      },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
       },
       afterListen: function(err) {
         assert(apos.modules['events-widgets']);

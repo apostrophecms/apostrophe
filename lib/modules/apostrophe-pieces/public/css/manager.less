@@ -79,3 +79,24 @@
   &.fa { .fa; }
   color: @apos-primary;
 }
+
+.apos-ui .apos-manage-select-everything {
+  .apos-transition();
+  max-height: 0; 
+  overflow: hidden;
+  padding: 0 @apos-padding-1;
+  background-color: @apos-light;
+  font-size: 14px;
+
+  .apos-manage-select-everything-label {
+    display: inline-block;
+    margin-top: 4px;
+    margin-left: 10px;
+  }
+}
+
+.apos-ui .apos-manage-select-everything.apos-active {
+  margin-top: @apos-margin-2;
+  padding: @apos-padding-2 @apos-padding-1;
+  max-height: 200px
+}

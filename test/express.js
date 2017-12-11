@@ -5,7 +5,7 @@ var apos;
 
 describe('Express', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   it('express should exist on the apos object', function(done){
     apos = require('../index.js')({

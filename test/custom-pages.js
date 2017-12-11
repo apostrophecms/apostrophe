@@ -8,7 +8,7 @@ var apos;
 
 describe('custom-pages', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -31,6 +31,13 @@ describe('custom-pages', function() {
         'nifty-pages': {
           extend: 'apostrophe-custom-pages'
         }
+      },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
       },
       afterListen: function(err) {
         done();

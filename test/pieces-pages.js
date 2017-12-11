@@ -8,7 +8,7 @@ var apos;
 
 describe('Pieces Pages', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -53,10 +53,17 @@ describe('Pieces Pages', function() {
           ]
         }
       },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
       afterListen: function(err) {
         assert(apos.modules['events-pages']);
         done();
-      }
+      },
     });
   });
 
@@ -93,6 +100,25 @@ describe('Pieces Pages', function() {
 
   it('should populate the ._url property of pieces in any docs query', function(done) {
     return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
+      assert(!err);
+      assert(piece);
+      assert(piece._url);
+      assert(piece._url === '/events/event-001');
+      done();
+    });
+  });
+
+  it('should not correctly populate the ._url property of pieces in a docs query with an inadequate projection', function(done) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { type: 1 }).toObject(function(err, piece) {
+      assert(!err);
+      assert(piece);
+      assert((!piece._url) || (piece._url.match(/undefined/)));
+      done();
+    });
+  });
+
+  it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', function(done) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { _url: 1 }).toObject(function(err, piece) {
       assert(!err);
       assert(piece);
       assert(piece._url);

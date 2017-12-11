@@ -8,7 +8,7 @@ var apos;
 
 describe('Pieces', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -36,6 +36,15 @@ describe('Pieces', function() {
             name: 'foo',
             label: 'Foo',
             type: 'string'
+          }
+        },
+        'people': {
+          extend: 'apostrophe-pieces',
+          name: 'person',
+          label: 'Person',
+          addFields: {
+            name: '_things',
+            type: 'joinByArray'
           }
         }
       },
@@ -75,6 +84,12 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  var testThing2 = {
+    _id: 'testThing2',
+    title: 'hello2',
+    foo: 'bar2'
+  };
+
   var additionalThings = [
     {
       _id: 'thing1',
@@ -82,11 +97,23 @@ describe('Pieces', function() {
     },
     {
       _id: 'thing2',
-      title: 'Blue'
+      title: 'Blue',
+      published: true
     },
     {
       _id: 'thing3',
-      title: 'Green'
+      title: 'Green',
+      published: true
+    }
+  ];
+
+  var testPeople = [
+    {
+      _id: 'person1',
+      title: 'Bob',
+      type: 'person',
+      thingsIds: [ 'thing2', 'thing3' ],
+      published: true
     }
   ];
 
@@ -118,6 +145,18 @@ describe('Pieces', function() {
       assert(!err);
       assert(testThing === piece);
       done();
+    });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].insert);
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
+    .then(function(piece2) {
+      assert(testThing2 === piece2);
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
     });
   });
 
@@ -153,6 +192,28 @@ describe('Pieces', function() {
         assert(req.piece.foo === 'moo');
         done();
       });
+    });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].update);
+    testThing.foo = 'goo';
+    apos.modules['things'].update(apos.tasks.getReq(), testThing)
+    .then(function(piece) {
+      assert(testThing === piece);
+      // Now let's get the piece and check if it was updated
+      var req = apos.tasks.getReq();
+      req.body = {};
+      req.body._id = "testThing";
+      apos.modules['things'].requirePiece(req, req.res, function() {
+        assert(req.piece);
+        assert(req.piece._id === 'testThing');
+        assert(req.piece.foo === 'goo');
+        done();
+      });
+    })
+    .catch(function(err) {
+      assert(!err);
     });
   });
 
@@ -226,10 +287,10 @@ describe('Pieces', function() {
     };
     apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
-      assert(results.total == 4);
+      assert(results.total == 5);
       assert(results.limit == 10);
       assert(results.skip == 0);
-      assert(results.pieces.length == 4);
+      assert(results.pieces.length == 5);
       done();
     });
   });
@@ -380,10 +441,10 @@ describe('Pieces', function() {
     res.send = function(result) {
       assert(result);
       assert(result.status === 'ok');
-      assert(result.data.total == 5);
+      assert(result.data.total == 6);
       assert(result.data.skip == 0);
       assert(result.data.limit == 10);
-      assert(result.data.pieces.length == 5);
+      assert(result.data.pieces.length == 6);
       done();
     }
 
@@ -467,4 +528,40 @@ describe('Pieces', function() {
     });
 
   });
+
+  it('people can find things via a join', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.db.insert(testPeople)
+    .then(function() {
+      return apos.docs.getManager('person').find(req, {}).toObject();
+    })
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
+  it('people cannot find things via a join with an inadequate projection', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert((!person._things) || (person._things.length === 0));
+    });
+  });
+
+  it('people can find things via a join with a "projection" of the join name', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
 });
