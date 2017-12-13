@@ -1,6 +1,46 @@
 # Changelog
 
+## 2.43.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When a "file" or "image" is moved to the trash, the attachment in question now becomes inaccessible. This is particularly important to stop access to obsolete PDFs, which Google loves to access. If the file or image is removed from the trash, the attachment becomes available again. In the case of images, the 1/6th size remains available by default to provide preview when viewing the trash. If the same attachment is referenced by more than one doc, which can happen due to "Copy" operations or `apostrophe-workflow`, it remains available until all such docs are in the trash.
+
+* Parked properties are no longer editable in page settings. Since every site restart always wiped them out anyway, this is a bug fix, not a truly new behavior. With this change, you can finally set `type: 'home'` when `park`ing the home page, and remove `home` from your page types dropdown.
+
+* The `apostrophe-jobs` module now offers a `runNonBatch` method, which is useful for long-running operations that don't involve iterating over many instances of the same type of object.
+
+* Improvements to background image positioning for images widgets.
+
+* A block has been added to override the `lang` attribute easily. Thanks to Ayho.
+
+* The `imgAlt` block can now be used to conveniently override the `alt` attribute of images when overriding `widget.html` for `apostrophe-images-widgets`. Thanks to Raphaël DiRago.
+
+* The `required` option now works properly for fields of type `array` (there must be at least one item in the array).
+
+* Improved error messages for unblessed widget schemas. These are usually related to a widget that is no longer in the page template but appears in the database.
+
+* A UI bug that caused tabs to become invisible when returning from nested dialog boxes has been fixed.
+
+* Filters for "select" fields now default to "no opinion," rather than the default choice. This is the normal behavior for other field types.
+
+* Even more promise support! `apos.attachments.insert`, `pieces.trash` and `pieces.rescue` all return promises if no callback is given.
+
+* A YouTube embed unit test was removed to ensure consistent results in Travis CI, which is once again in routine use.
+
+## 2.42.1
+
+Unit tests passing.
+
+* Use of a capitalized filename that should have been lowercase in a `require` briefly broke Apostrophe's initialization on Linux. We are correcting this by reinstating CI in a Linux environment.
+
 ## 2.42.0
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Promises have landed in Apostrophe. Calling `toArray`, `toObject`, `toDistinct` or `toMongo` on an Apostrophe cursor *without a callback* will return a promise. That promise will resolve to the expected result.
 
