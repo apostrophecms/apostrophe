@@ -2,6 +2,10 @@
 
 ## 2.44.0
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Apostrophe's AJAX filter features for `apostrophe-pieces-pages` now support "Load More" buttons and infinite scroll.
 
 To add a "Load More" button:
