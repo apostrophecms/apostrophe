@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.44.0
+
+* Apostrophe's AJAX filter features for `apostrophe-pieces-pages` now support "Load More" buttons and infinite scroll.
+
+To add a "Load More" button:
+
+1. Wrap a new element inside your data-apos-ajax-context element around the content that makes up the current "page" of results. This should not wrap around filter links or the "Load More" button itself.
+2. Give that new element the `data-apos-ajax-append` attribute.
+3. Add `append=1` to the query string of your Load More button. Example:
+
+```
+{% if data.currentPage < data.totalPages %}
+  <a href="{{ data.url }} | build({ page: data.currentPage + 1, append: 1 })">Load More...</a>
+{% endif %}
+```
+
+To progressively enhance this for infinite scroll, add a `data-apos-ajax-infinite-scroll` attribute to the button.
+
+Note that we do this via progressive enhancement of a "Load More" button so that Google can still reach and index all of the pages (SEO).
+
+* Attachment schema fields now respect the new `fileGroup` and `fileGroups` properties. If `fileGroup` is set to `images`, then only image types (GIF, JPEG, PNG) are accepted; if it is set to `office` only typical business file types are accepted. Note that we have always rejected files that didn't appear on the list for either type. You can also specify `fileGroups` as an array.
+* `fileGroup: 'image'` is now configured by default for `apostrophe-images`, as was always intended but incorrectly implemented in the past.
+* Attachment schema fields now respect the new `extension` and `extensions` properties. The former is handy if you only want to allow one extension, the latter if you want to allow more than one. The extensions must be those specified for `fileGroups` in the default configuration of `apostrophe-attachments` or your override of it (all lower case; JPEG is `jpg`; no period).
+* The `addDocReferences` migration has been parallelized, as this one-time migration can be time-consuming on a large site.
+* Broken `less` calculation fixed, thanks to Antoine COMBES.
+
 ## 2.43.0
 
 Unit tests passing.
