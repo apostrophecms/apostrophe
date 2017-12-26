@@ -1,12 +1,8 @@
 
 @apos-translucent-opacity: 0.4;
 
-.apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
-.apos-peek
-{
-  pointer-events: none;
-}
+.apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
 .apos-area
 {
@@ -24,7 +20,7 @@
   {
     // When there aren't any widgets in an area, it should have a height
     // and a background color set by default.
-    height: 80px;
+    height: 100px;
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
@@ -35,6 +31,15 @@
       display: block;
       top: 50%;
       transform: translateY(-50%);
+      .apos-button:after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: -41px;
+        top: -22px;      
+        height: 60px;
+        width: 100px;
+      }
       .apos-area-divider { display: none; }
     }
     >.apos-ui .apos-area-controls--singleton
@@ -75,7 +80,7 @@
   .apos-transition;
   &:hover { z-index: @apos-z-index-6; }
 }
-.apos-area-widget-controls--context
+.apos-area-widget-controls--context, .apos-area-widget-controls--top-left,
 {
   top: @apos-padding-1;
   left: @apos-padding-1;
@@ -86,7 +91,27 @@
   left: @apos-padding-1;
 }
 
-.apos-area-widget--contextual>.apos-ui .apos-area-widget-controls--data { display: none; }
+.apos-area-widget-controls--top-right
+{
+  right: @apos-padding-1;
+  left: initial;
+}
+
+.apos-area-widget-controls--bottom-left
+{
+  top: initial;
+  bottom: @apos-padding-1;
+}
+
+.apos-area-widget-controls--bottom-right
+{
+  top: initial;
+  right: @apos-padding-1;
+  bottom: @apos-padding-1;
+  left: initial;
+}
+
+.apos-area-widget--contextual>.apos-ui .apos-button-group--data { display: none; }
 
 // Styles for the drag-target separator between widgets.
 .apos-area-item-separator
@@ -139,7 +164,15 @@
     border: 2px solid @apos-white;
     .apos-rounded(@apos-padding-3);
     .apos-drop-shadow();
-
+    &:after {
+      content: "";
+      display: block;
+      position: absolute;
+      left: -41px;
+      top: -3px;
+      height: 20px;
+      width: 100px;
+    }
   }
   >.apos-dropdown-items
   {
@@ -226,7 +259,7 @@
 // Special consideration for 'block-like' areas
 .apos-area--block-level-controls
 {
-  & > .apos-ui
+  &:not(.apos-empty) > .apos-ui
   {
     display: block;
     position: relative;
@@ -247,9 +280,11 @@
   }
 
   // color contextual controls as well
-  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-button--in-context
+  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-buttons
   {
     .apos-glow(@apos-secondary);
     border: 2px solid @apos-secondary;
+    .apos-button:hover { color: @apos-secondary; }
+    .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
   }
 }

@@ -1,40 +1,76 @@
+.apos-ui .apos-modal-filter--padded {
+	background-color: @apos-light;
+	padding: 10px;
+	.apos-rounded;
+}
+
 .apos-ui.apos-modal .apos-modal-header .apos-modal-filters,
 .apos-ui.apos-modal .apos-modal-body .apos-modal-filters
 {
-
+	margin-top: @apos-margin-2;
 	.apos-pill
 	{
-		margin-top: @apos-margin-2;
+    margin-top: @apos-margin-2;
 	}
+
+  .apos-modal-filter {
+  font-size: 14px;
+  margin-right: 40px;
+  
+    .apos-field-input-select-wrapper
+    {
+      display: inline-block;
+      border-radius: 4px;
+      
+      select
+      {
+        margin-left: 10px;
+        padding: 10px 30px 10px 15px;
+        .apos-rounded;
+      }
+      &::after
+      {
+        right: 7px;
+        top: 14px;
+      }
+    }
+    label.apos-modal-filter-selection
+    {
+      margin-left: 4px;
+    }
+  }
 
 	.apos-modal-filters-toggles
 	{
-		float: left;
-		width: 70%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 		
 		.apos-pill
 		{
 			margin-right: @apos-margin-2;
 			margin-bottom: @apos-margin-1;
 		}
-		margin-bottom: -@apos-margin-1;
+	}
+
+	.apos-modal-filters-wrapper {
+		display: flex;
+	}
+
+	.apos-modal-filters-wrapper--right {
+		width: 30%;
+		justify-content: flex-end;
 	}
 
 	.apos-modal-filters-search
 	{
-		width: 30%;
-		float: right;
+		width: 100%;
+		max-width: 314px;
 		input
 		{
 			position: relative;
-			margin-top: @apos-padding-2;
-			//max-width: 50%; px value is actually working better here -sam
-			max-width: 314px;
 			.apos-rounded;
-
-			padding: (@apos-padding-1 - 1.5px) @apos-padding-2;
-			float: right;
-
+			padding: (@apos-padding-1 + 1.5px) @apos-padding-2;
 			font-size: 13px;
 			line-height: 13px;
 			@media @apos-breakpoint-desktop-xl

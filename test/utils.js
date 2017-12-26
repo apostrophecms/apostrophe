@@ -1,11 +1,16 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 
 describe('Utils', function(){
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   var apos;
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   it('should exist on the apos object', function(done){
     apos = require('../index.js')({
@@ -163,14 +168,14 @@ describe('Utils', function(){
       var input = {
         "attachment" : {
       		"_id" : "a205filea1media97",
-      		"title" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30792414_5081-225x300-jpg",
+      		"title" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg",
       		"width" : 225,
       		"height" : 300,
       		"length" : 22014,
       		"md5" : 22014,
       		"extension" : "jpg",
       		"group" : "images",
-      		"name" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30792414_5081-225x300-jpg",
+      		"name" : "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg",
       		"landscape" : false,
       		"portrait" : true,
       		"a15Export" : true,
@@ -178,12 +183,31 @@ describe('Utils', function(){
       			"p'window",
       			"2009"
       		],
-      		"searchText" : "http window punkave com wp content uploads 2009 01 n56601994 30792414 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30792414 5081 225x300 jpg jpg",
+      		"searchText" : "http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg jpg",
       		"type" : "attachment"
       	}
       };
       var clone = apos.utils.clonePermanent(input);
       assert(clone.attachment._id === "a205filea1media97");
     });
+
+    it('gives sensible results for insensitiveSort', function() {
+      var req = apos.tasks.getReq();
+      var input = [
+        'Fred',
+        'dog',
+        5,
+        10,
+        'jane'
+      ];
+      apos.utils.insensitiveSort(input);
+      assert(input.length === 5);
+      assert(input[0] === 5);
+      assert(input[1] === 10);
+      assert(input[2] === 'dog');
+      assert(input[3] === 'Fred');
+      assert(input[4] === 'jane');
+    });
+    
   });
 });

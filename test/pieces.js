@@ -1,17 +1,17 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
 describe('Pieces', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Pieces', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7942
+          port: 7900
         },
         'things': {
           extend: 'apostrophe-pieces',
@@ -36,6 +36,15 @@ describe('Pieces', function() {
             name: 'foo',
             label: 'Foo',
             type: 'string'
+          }
+        },
+        'people': {
+          extend: 'apostrophe-pieces',
+          name: 'person',
+          label: 'Person',
+          addFields: {
+            name: '_things',
+            type: 'joinByArray'
           }
         }
       },
@@ -75,6 +84,12 @@ describe('Pieces', function() {
     foo: 'bar'
   };
 
+  var testThing2 = {
+    _id: 'testThing2',
+    title: 'hello2',
+    foo: 'bar2'
+  };
+
   var additionalThings = [
     {
       _id: 'thing1',
@@ -82,11 +97,23 @@ describe('Pieces', function() {
     },
     {
       _id: 'thing2',
-      title: 'Blue'
+      title: 'Blue',
+      published: true
     },
     {
       _id: 'thing3',
-      title: 'Green'
+      title: 'Green',
+      published: true
+    }
+  ];
+
+  var testPeople = [
+    {
+      _id: 'person1',
+      title: 'Bob',
+      type: 'person',
+      thingsIds: [ 'thing2', 'thing3' ],
+      published: true
     }
   ];
 
@@ -114,16 +141,29 @@ describe('Pieces', function() {
   // Test pieces.insert()
   it('should be able to insert a piece into the database', function(done) {
     assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(t.req.admin(apos), testThing, function(err) {
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err, piece) {
       assert(!err);
+      assert(testThing === piece);
       done();
+    });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].insert);
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
+    .then(function(piece2) {
+      assert(testThing2 === piece2);
+      done();
+    })
+    .catch(function(err) {
+      assert(!err);
     });
   });
 
   // Test pieces.requirePiece()
   it('should be able to retrieve a piece by id from the database', function(done) {
     assert(apos.modules['things'].requirePiece);
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     req.body = {};
     req.body._id = "testThing";
     apos.modules['things'].requirePiece(req, req.res, function() {
@@ -139,11 +179,11 @@ describe('Pieces', function() {
   it('should be able to update a piece in the database', function(done) {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(t.req.admin(apos), testThing, function(err) {
+    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err, piece) {
       assert(!err);
-
+      assert(testThing === piece);
       // Now let's get the piece and check if it was updated
-      var req = t.req.admin(apos);
+      var req = apos.tasks.getReq();
       req.body = {};
       req.body._id = "testThing";
       apos.modules['things'].requirePiece(req, req.res, function() {
@@ -155,13 +195,35 @@ describe('Pieces', function() {
     });
   });
 
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].update);
+    testThing.foo = 'goo';
+    apos.modules['things'].update(apos.tasks.getReq(), testThing)
+    .then(function(piece) {
+      assert(testThing === piece);
+      // Now let's get the piece and check if it was updated
+      var req = apos.tasks.getReq();
+      req.body = {};
+      req.body._id = "testThing";
+      apos.modules['things'].requirePiece(req, req.res, function() {
+        assert(req.piece);
+        assert(req.piece._id === 'testThing');
+        assert(req.piece.foo === 'goo');
+        done();
+      });
+    })
+    .catch(function(err) {
+      assert(!err);
+    });
+  });
+
   // Test pieces.addListFilters()
   it('should only execute filters that are safe and have a launder method', function() {
     var publicTest = false;
     var manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    var mockCursor = apos.docs.find(t.req.anon(apos));
+    var mockCursor = apos.docs.find(apos.tasks.getAnonReq());
     _.merge(mockCursor, {
       filters: {
         publicTest: {
@@ -207,7 +269,7 @@ describe('Pieces', function() {
   it('should add some more things for testing', function(done) {
     assert(apos.modules['things'].insert);
     async.each(additionalThings, function(thing, callback) {
-      apos.modules['things'].insert(t.req.admin(apos), thing, function(err) {
+      apos.modules['things'].insert(apos.tasks.getReq(), thing, function(err) {
         callback(err);
       });
     }, function(err) {
@@ -218,17 +280,17 @@ describe('Pieces', function() {
 
   it('should list all the pieces if skip and limit are set to large enough values', function(done) {
     assert(apos.modules['things'].list);
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var filters = {
       limit: 10,
       skip: 0
     };
     apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
-      assert(results.total == 4);
+      assert(results.total == 5);
       assert(results.limit == 10);
       assert(results.skip == 0);
-      assert(results.pieces.length == 4);
+      assert(results.pieces.length == 5);
       done();
     });
   });
@@ -237,7 +299,7 @@ describe('Pieces', function() {
   it('should be able to trash a piece', function(done) {
     assert(apos.modules['things'].trash);
     assert(apos.modules['things'].requirePiece);
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var id = 'testThing';
     req.body = {_id: id};
     // let's make sure the piece is not trashed to start
@@ -260,7 +322,7 @@ describe('Pieces', function() {
   // pieces.rescue()
   it('should be able to rescue a trashed piece', function(done) {
     assert(apos.modules['things'].rescue);
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var id = 'testThing';
     req.body = {_id: id};
     // let's make sure the piece is trashed to start
@@ -283,7 +345,7 @@ describe('Pieces', function() {
   // pieces.apiResponse()
   it('should pass through an error message if the error is passed as a string', function(done) {
     assert(apos.modules['things'].apiResponse);
-    var res = t.req.anon(apos).res;
+    var res = apos.tasks.getAnonReq().res;
     var errMsg = "Test Error";
     res.send = function(response) {
       assert(response);
@@ -297,7 +359,7 @@ describe('Pieces', function() {
 
   it('should not pass through an error message if the error is not passed as a string', function(done) {
     assert(apos.modules['things'].apiResponse);
-    var res = t.req.anon(apos).res;
+    var res = apos.tasks.getAnonReq().res;
     var errMsg = true;
     res.send = function(response) {
       assert(response);
@@ -311,7 +373,7 @@ describe('Pieces', function() {
 
   it('should properly pass a result as a json if there is no error', function(done) {
     assert(apos.modules['things'].apiResponse);
-    var res = t.req.anon(apos).res;
+    var res = apos.tasks.getAnonReq().res;
     res.send = function(response) {
       assert(response);
       assert(response.status === 'ok');
@@ -335,7 +397,7 @@ describe('Pieces', function() {
   it('should insert an item from the routes.insert method', function(done) {
     assert(apos.modules['things'].routes.insert);
 
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     req.body = routeThing;
     var res = req.res;
     res.send = function(result) {
@@ -354,7 +416,7 @@ describe('Pieces', function() {
   it('should get an item from the routes.retrieve method', function(done) {
     assert(apos.modules['things'].routes.retrieve);
 
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     // note we set the req.piece here, because the middleware would do the query nd supply the piece
     req.piece = insertedRouteThing;
     var res = req.res;
@@ -372,17 +434,17 @@ describe('Pieces', function() {
   it('should get a list of all the items from routes.list', function(done) {
     assert(apos.modules['things'].routes.list);
 
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     // note we set the req.piece here, because the middleware would do the query nd supply the piece
     req.body = { limit: 10, skip: 0 };
     var res = req.res;
     res.send = function(result) {
       assert(result);
       assert(result.status === 'ok');
-      assert(result.data.total == 5);
+      assert(result.data.total == 6);
       assert(result.data.skip == 0);
       assert(result.data.limit == 10);
-      assert(result.data.pieces.length == 5);
+      assert(result.data.pieces.length == 6);
       done();
     }
 
@@ -395,7 +457,7 @@ describe('Pieces', function() {
 
     // simulate that middleware first
     assert(apos.modules['things'].requirePiece);
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     req.body = insertedRouteThing;
     // make a change to the thing we are inserting
     req.body.title = "blue";
@@ -416,7 +478,7 @@ describe('Pieces', function() {
     assert(apos.modules['things'].routes.trash);
     assert(apos.modules['things'].requirePiece);
 
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var id = insertedRouteThing._id;
     req.body = {_id: id};
     var res = req.res;
@@ -444,7 +506,7 @@ describe('Pieces', function() {
     assert(apos.modules['things'].routes.rescue);
     assert(apos.modules['things'].requirePiece);
 
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     var id = insertedRouteThing._id;
     req.body = {_id: id};
     var res = req.res;
@@ -466,4 +528,40 @@ describe('Pieces', function() {
     });
 
   });
+
+  it('people can find things via a join', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.db.insert(testPeople)
+    .then(function() {
+      return apos.docs.getManager('person').find(req, {}).toObject();
+    })
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
+  it('people cannot find things via a join with an inadequate projection', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert((!person._things) || (person._things.length === 0));
+    });
+  });
+
+  it('people can find things via a join with a "projection" of the join name', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+    .then(function(person) {
+      assert(person);
+      assert(person.title === 'Bob');
+      assert(person._things);
+      assert(person._things.length === 2);
+    });
+  });
+
 });

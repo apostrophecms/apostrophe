@@ -1,6 +1,5 @@
 .apos-ui
 {
-
   .apos-chooser-manage-view-wrapper
   {
     .apos-inline-block;
@@ -9,13 +8,13 @@
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     .apos-table { padding-left: @apos-padding-2; }
   }
-
+  
   .apos-chooser
   {
     position: fixed;
     .apos-inline-block;
     height: 100%;
-    overflow-y: scroll;
+    overflow: auto;
     width: 15%;
     @media @apos-breakpoint-desktop-xl { width: 25%; }
     background-color: @apos-light;
@@ -81,6 +80,7 @@
     .apos-chooser-limit-reached { display: block; }
     .apos-field-input { display: none; }
 
-  }
-  
+  }  
 }
+
+.apos-manage-pager { float: right; }

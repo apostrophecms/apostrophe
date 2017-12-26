@@ -1,16 +1,20 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var t = require('./testUtils');
 
 var apos;
 
 describe('Locks', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   it('should be a property of the apos object', function(done) {
-    this.timeout(5000);
+    this.timeout(t.timeout);
     this.slow(2000);
 
     apos = require('../index.js')({
@@ -19,7 +23,7 @@ describe('Locks', function() {
       
       modules: {
         'apostrophe-express': {
-          port: 7956
+          port: 7900
         },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
         // we're doing it to deliberately force them to contend with each other,
@@ -62,7 +66,7 @@ describe('Locks', function() {
       done();
     });
   });
-
+  
   it('should allow a single lock without contention uneventfully', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return async.series([ lock, unlock ], function(err) {
@@ -76,7 +80,7 @@ describe('Locks', function() {
       return locks.unlock('test', callback);
     }
   });
-
+  
   it('should allow two differently-named locks uneventfully', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return async.series([ lock1, lock2, unlock1, unlock2 ], function(err) {
@@ -96,7 +100,7 @@ describe('Locks', function() {
       return locks.unlock('test2', callback);
     }
   });
-
+  
   it('should flunk a second lock by the same module', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return async.series([ lock, lockAgain, unlock ], function(err) {
@@ -191,53 +195,6 @@ describe('Locks', function() {
             done();
             return;
           }
-        });
-      }
-    }
-  });
-  it('four parallel lock calls via the different modules SHOULD experience concurrency bugs if idleTimeout is short and noRefresh is true', function(done) {
-    // This test is looking to see that things DO break if the refresh mechanism
-    // is shut off and the idleTimeout is short. Breakage = good. -Tom
-    var one = apos.modules['apostrophe-locks'];
-    var two = apos.modules['apostrophe-locks-1'];
-    var three = apos.modules['apostrophe-locks-2'];
-    var four = apos.modules['apostrophe-locks-3'];
-    var active = 0;
-    var successful = 0;
-    var finished = false;
-    attempt(one);
-    attempt(two);
-    attempt(three);
-    attempt(four);
-    function attempt(locks) {
-      return locks.lock('test', { idleTimeout: 50, noRefresh: true }, function(err) {
-        assert(!err);
-        active++;
-        if (active > 1) {
-          if (!finished) {
-            done();
-          }
-          finished = true;
-          return;
-        }
-        setTimeout(release, 200);
-      });
-      function release() {
-        // We have to decrement this before we start the call to
-        // locks.unlock because otherwise the callback for one of our
-        // peers' insert attempts may succeed before the callback for
-        // remove, leading to a false positive for test failure. -Tom
-        active--;
-        return locks.unlock('test', function(err) {
-          if (err) {
-            if (!finished) {
-              done();
-            }
-            finished = true;
-            return;
-          }
-          successful++;
-          assert(successful !== 4);
         });
       }
     }

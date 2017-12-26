@@ -2,6 +2,8 @@
 {% import "apostrophe-modal:macros.html" as modals %}
 {% import 'apostrophe-ui:components/buttons.html' as buttons %}
 
+{% block modalClass %}apos-reorganize-modal{% endblock %}
+
 {% block controls %}
   <div class="apos-modal-controls">
     {{ buttons.major('Finished', { action: 'save' }) }}

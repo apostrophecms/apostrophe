@@ -1,17 +1,17 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
 var request = require('request');
-var t = require('./testUtils');
 
 var apos;
 
 describe('Pieces Widgets', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
 
   //////
@@ -26,7 +26,7 @@ describe('Pieces Widgets', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7944
+          port: 7900
         },
         'events': {
           extend: 'apostrophe-pieces',
@@ -78,6 +78,13 @@ describe('Pieces Widgets', function() {
             }
           ]
         }
+      },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
       },
       afterListen: function(err) {
         assert(apos.modules['events-widgets']);
@@ -144,7 +151,7 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    var req = t.req.admin(apos);
+    var req = apos.tasks.getReq();
     return async.eachSeries(testItems, function(item, callback) {
       return apos.docs.insert(req, item, callback);
     }, function(err) {
@@ -155,7 +162,7 @@ describe('Pieces Widgets', function() {
 
   it('should find appropriate events and not others in a page containing tag and id-based event widgets', function(done) {
 
-    return request('http://localhost:7944/page-with-events', function(err, response, body) {
+    return request('http://localhost:7900/page-with-events', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -192,7 +199,7 @@ describe('Pieces Widgets', function() {
   var jar;
 
   function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7944/'), { key: 'XSRF-TOKEN' });
+    var csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: 'XSRF-TOKEN' });
     if (!csrfCookie) {
       return null;
     }
@@ -207,7 +214,7 @@ describe('Pieces Widgets', function() {
   //   jar = request.jar();
   //   request({
   //     method: 'GET',
-  //     url: 'http://localhost:7944/page-with-events',
+  //     url: 'http://localhost:7900/page-with-events',
   //     jar: jar
   //   }, function(err, response, body) {
   //     assert.equal(response.statusCode, 200);
@@ -215,7 +222,7 @@ describe('Pieces Widgets', function() {
   //     // Now let's get a modal so we can bless the joins
   //     return request({
   //       method: 'POST',
-  //       url: 'http://localhost:7944/modules/events-widgets/modal',
+  //       url: 'http://localhost:7900/modules/events-widgets/modal',
   //       json: {
   //         _id: 'wevent007'
   //       },
@@ -229,7 +236,7 @@ describe('Pieces Widgets', function() {
   //       assert.equal(response.statusCode, 200);
   //       return request({
   //         method: 'POST',
-  //         url: 'http://localhost:7944/modules/apostrophe-docs/autocomplete',
+  //         url: 'http://localhost:7900/modules/apostrophe-docs/autocomplete',
   //         json: {
   //           term: 'wig',
   //           field: {

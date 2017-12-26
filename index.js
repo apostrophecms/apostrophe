@@ -4,7 +4,7 @@ var argv = require('yargs').argv;
 var fs = require('fs');
 var async = require('async');
 var i18n = require('i18n');
-
+var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 
 module.exports = function(options) {
@@ -14,10 +14,50 @@ module.exports = function(options) {
   self.root = options.root || getRoot();
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
+  testModule();
+
   self.options = mergeConfiguration(options, defaults);
+  autodetectBundles();
   acceptGlobalOptions();
 
   self.handlers = {};
+  
+  defineModules();
+
+  // No return statement here because we need to
+  // return "self" after kicking this process off
+
+  async.series([
+    instantiateModules,
+    modulesReady,
+    modulesAfterInit,
+    afterInit
+  ], function(err) {
+    if (err) {
+      if (options.initFailed) {
+        // Report error in an extensible way
+        return options.initFailed(err);
+      } else {
+        // In the absence of a callback to handle initialization failure,
+        // we have to assume there's just one instance of Apostrophe and
+        // we can print the error and end the app.
+        
+        // Currently v8's err.stack property contains both the stack and the error message,
+        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
+        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
+          console.error(err);
+        }
+        console.error(err.stack);
+        process.exit(1);
+      }
+    }
+    if (self.argv._.length) {
+      self.emit('runTask');
+    } else {
+      // The apostrophe-express module adds this method
+      self.listen();
+    }
+  });
 
   // EVENT HANDLING
   //
@@ -84,26 +124,7 @@ module.exports = function(options) {
     var extraArgs = args.slice(1, args.length - 1);
     callback = args[args.length - 1];
     return async.eachSeries(_.keys(self.modules), function(name, callback) {
-      var module = self.modules[name];
-      var invoke = module[method];
-      if (invoke) {
-        if (invoke.length === (1 + extraArgs.length)) {
-          return invoke.apply(module, extraArgs.concat([callback]));
-        } else if (invoke.length === extraArgs.length) {
-          return setImmediate(function() {
-            try {
-              invoke.apply(module, extraArgs);
-            } catch (e) {
-              return callback(e);
-            }
-            return callback(null);
-          });
-        } else {
-          return callback(name + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
-        }
-      } else {
-        return setImmediate(callback);
-      }
+      return invoke(name, method, extraArgs, callback);
     }, function(err) {
       if (err) {
         return callback(err);
@@ -111,50 +132,57 @@ module.exports = function(options) {
       return callback(null);
     });
   };
+  
+  /**
+   * Allow to bind a callAll method for one module.
+   */
+  self.callOne = function(moduleName, method, /* argument, ... */ callback) {
+    var args = Array.prototype.slice.call(arguments);
+    var extraArgs = args.slice(2, args.length - 1);
+    callback = args[args.length - 1];
+    return invoke(moduleName, method, extraArgs, callback);
+  };
+  
+  // Destroys the Apostrophe object, freeing resources such as
+  // HTTP server ports and database connections. Does **not**
+  // delete any data; the persistent database and media files
+  // remain available for the next startup. Invokes
+  // the `apostropheDestroy` methods of all modules that
+  // provide one; use this mechanism to free your own
+  // server-side resources that could prevent garbage
+  // collection by the JavaScript engine, such as timers
+  // and intervals.
+  self.destroy = function(callback) {
+    return self.callAll('apostropheDestroy', callback);
+  };
 
-  // Helper function for other modules to determine whether the application
-  // is running as a server or a task
+  // Returns true if Apostrophe is running as a command line task
+  // rather than as a server
   self.isTask = function() {
     return !!self.argv._.length;
   };
+  
+  // Returns an array of modules that are instances of the given
+  // module name, i.e. they are of that type or they extend it.
+  // For instance, `apos.instancesOf('apostrophe-pieces')` returns
+  // an array of active modules in your project that extend
+  // pieces, such as `apostrophe-users`, `apostrophe-groups` and
+  // your own piece types
 
-  defineModules();
+  self.instancesOf = function(name) {
+    return _.filter(self.modules, function(module) {
+      return self.synth.instanceOf(module, name);
+    });
+  };
 
-  // No return statement here because we need to
-  // return "self" after kicking this process off
+  // Returns true if the object is an instance of the given
+  // moog type name or a subclass thereof. A convenience wrapper
+  // for `apos.synth.instanceOf`
 
-  async.series([
-    instantiateModules,
-    modulesReady,
-    modulesAfterInit,
-    afterInit
-  ], function(err) {
-    if (err) {
-      if (options.initFailed) {
-        // Report error in an extensible way
-        return options.initFailed(err);
-      } else {
-        // In the absence of a callback to handle initialization failure,
-        // we have to assume there's just one instance of Apostrophe and
-        // we can print the error and end the app.
-        
-        // Currently v8's err.stack property contains both the stack and the error message,
-        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
-        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
-          console.error(err);
-        }
-        console.error(err.stack);
-        process.exit(1);
-      }
-    }
-    if (self.argv._.length) {
-      self.emit('runTask');
-    } else {
-      // The apostrophe-express module adds this method
-      self.listen();
-    }
-  });
-
+  self.instanceOf = function(object, name) {
+    return self.synth.instanceOf(object, name);
+  };
+    
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
   return self;
@@ -199,16 +227,62 @@ module.exports = function(options) {
   function getRoot() {
     var m = module;
     while (m.parent) {
+      // The test file is the root as far as we are concerned,
+      // not mocha itself
+      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
+        return m;
+      }
       m = m.parent;
       module = m;
     }
     return module;
   }
+  
+  function autodetectBundles() {
+    var modules = _.keys(self.options.modules);
+    _.each(modules, function(name) {
+      var path = getNpmPath(name);
+      if (!path) {
+        return;
+      }
+      var module = require(path);
+      if (module.moogBundle) {
+        self.options.bundles = (self.options.bundles || []).concat(name);
+        _.each(module.moogBundle.modules, function(name) {
+          if (!_.has(self.options.modules, name)) {
+            var bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            if (bundledModule.improve) {
+              self.options.modules[name] = {};
+            }
+          }
+        });
+      }
+    });
+  }
 
+  function getNpmPath(name) {
+    var parentPath = path.resolve(self.rootDir);
+    try {
+      return npmResolve.sync(name, { basedir: parentPath });
+    } catch (e) {
+      // Not found via npm. This does not mean it doesn't
+      // exist as a project-level thing
+      return null;
+    }
+  }
+  
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
 
-    self.argv = argv;
+    if (options.testModule) {
+      // Test command lines have arguments not
+      // intended as command line task arguments
+      self.argv = {
+        _: []
+      };
+    } else {
+      self.argv = argv;
+    }
 
     self.shortName = self.options.shortName;
     if (!self.shortName) {
@@ -217,6 +291,60 @@ module.exports = function(options) {
     self.title = self.options.title;
     self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
+  }
+  
+  // Tweak the Apostrophe environment suitably for
+  // unit testing a separate npm module that extends
+  // Apostrophe, like apostrophe-workflow. For instance,
+  // a node_modules subdirectory with a symlink to the
+  // module itself is created so that the module can
+  // be found by Apostrophe during testing. Invoked
+  // when options.testModule is true. There must be a
+  // test/ or tests/ subdir of the module containing
+  // a test.js file that runs under mocha via devDependencies.
+
+  function testModule() {
+    if (!options.testModule) {
+      return;
+    }
+    if (!options.shortName) {
+      options.shortName = 'test';
+    }
+    defaults = _.cloneDeep(defaults);
+    _.defaults(defaults, {
+      'apostrophe-express': {}
+    });
+    _.defaults(defaults['apostrophe-express'], {
+      port: 7900,
+      secret: 'irrelevant'
+    });
+    var m = findTestModule();
+    // Allow tests to be in test/ or in tests/
+    var testDir = require('path').dirname(m.filename);
+    var moduleDir = testDir.replace(/\/tests?$/, '');
+    if (testDir === moduleDir) {
+      throw new Error('Test file must be in test/ or tests/ subdirectory of module');
+    }
+    if (!fs.existsSync(testDir + '/node_modules')) {
+      fs.mkdirSync(testDir + '/node_modules');
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+    }
+    
+    // Not quite superfluous: it'll return self.root, but
+    // it also makes sure we encounter mocha along the way
+    // and throws an exception if we don't
+    function findTestModule() {
+      var m = module;
+      while (m) {
+        if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
+          return m;
+        }
+        m = m.parent;
+        if (!m) {
+          throw new Error('mocha does not seem to be running, is this really a test?');
+        }
+      }
+    }    
   }
 
   function defineModules() {
@@ -284,6 +412,30 @@ module.exports = function(options) {
       return setImmediate(callback);
     }
     return self.options.afterInit(callback);
+  }
+
+  // Generic helper for call* methods
+  function invoke(moduleName, method, extraArgs, callback) {
+    var module = self.modules[moduleName];
+    var invoke = module[method];
+    if (invoke) {
+      if (invoke.length === (1 + extraArgs.length)) {
+        return invoke.apply(module, extraArgs.concat([callback]));
+      } else if (invoke.length === extraArgs.length) {
+        return setImmediate(function () {
+          try {
+            invoke.apply(module, extraArgs);
+          } catch (e) {
+            return callback(e);
+          }
+          return callback(null);
+        });
+      } else {
+        return callback(name + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
+      }
+    } else {
+      return setImmediate(callback);
+    }
   }
 
 };

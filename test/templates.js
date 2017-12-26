@@ -1,11 +1,15 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
-var t = require('./testUtils');
 
 var apos;
 
 describe('Templates', function(){
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   it('should have a templates property', function(done) {
   	apos = require('../index.js')({
@@ -15,7 +19,7 @@ describe('Templates', function(){
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7934
+          port: 7900
         },
         'express-test': {},
         'templates-test': {},
@@ -38,43 +42,43 @@ describe('Templates', function(){
   });
 
   it('should be able to render a template relative to a module', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].render(req, 'test', { age: 50 });
     assert(result === '<h1>50</h1>\n');
   });
 
   it('should respect templateData at module level', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].render(req, 'test');
     assert(result === '<h1>30</h1>\n');
   });
 
   it('should respect template overrides', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-subclass-test'].render(req, 'override-test');
     assert(result === '<h1>I am overridden</h1>\n');
   });
 
   it('should inherit in the absence of overrides', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
     assert(result === '<h1>I am inherited</h1>\n');
   });
 
   it('should be able to see the options of the module via module.options', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-options-test'].render(req, 'options-test');
     assert(result.match(/nifty/));
   });
 
   it('should be able to call helpers on the modules object', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-options-test'].render(req, 'options-test');
     assert(result.match(/4/));
   });
 
   it('should render pages successfully with outerLayout', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].renderPage(req, 'page');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h1>I am the title</h1>') !== -1);
@@ -82,7 +86,7 @@ describe('Templates', function(){
   });
 
   it('cross-module-included files should be able to include/extend other files relative to their own module', function() {
-    var req = t.req.anon(apos);
+    var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h1>I am the title</h1>') !== -1);

@@ -1,17 +1,22 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
-<div class="apos-ui" data-apos-widget-controls>
-  <div class="apos-area-widget-controls apos-area-widget-controls--context">
-    <div class="apos-button apos-button--in-context apos-button--group">
-      {{ buttons.inGroup('', { icon: 'arrows', action: 'drag-item' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-up', action: 'move-item', value: 'up' }) }}
-      {{ buttons.inGroup('', { icon: 'arrow-down', action: 'move-item', value: 'down' }) }}
-      {{ buttons.inGroup('', { icon: 'trash', action: 'trash-item' }) }}
+{% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
+{% if groups.length %}
+  <div class="apos-ui" data-apos-widget-controls>
+    <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context
+    {% if data.options.controls.position %}
+      apos-area-widget-controls--{{ data.options.controls.position | css }}
+    {% endif %} ">
+      {% for group in groups %}
+        <div class="apos-button-group {{ group.classes }}">
+          {% for button in group.controls %}
+            {% set label = button.label or '' %}
+            {% if button.label == '$editLabel' %}
+              {% set label = data.options.editLabel or data.manager.editLabel or 'Edit ' + data.manager.label %}
+            {% endif %}
+            {{ buttons.inGroup(label, button) }}
+          {% endfor %}
+        </div>
+      {% endfor %}
     </div>
   </div>
-  {%- if not data.manager.removeEditButton -%}
-    {%- set label = data.options.editLabel or 'Edit ' + data.manager.label -%}
-    <div class="apos-area-widget-controls apos-area-widget-controls--data">
-      {{ buttons.inContext(label, { action: 'edit-item' }) }}
-    </div>
-  {%- endif -%}
-</div>
+{% endif %}

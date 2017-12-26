@@ -1,0 +1,98 @@
+.apos-manage-batch-operations {
+  display: flex;
+  float: left;
+
+  .apos-hidden { display: none; }
+  .apos-inline-block { display: inline-block; }
+
+	.apos-manage-batch-operations-select {
+		display: inline-block;
+		width: auto;
+		margin-right: @apos-margin-2;
+		font-size: 14px;
+		line-height: 21px;
+	}
+
+  .apos-field-input,
+  .apos-field-input--small {
+		max-height: 38px;
+  }
+}
+
+.apos-manage-batch-operations-buttons {
+  display: inline-block;
+}
+
+.apos-ui .apos-manage-batch-operation-forms {
+
+	.apos-field-label {
+		font-size: 12px;
+		float: left;
+		margin-bottom: 0;
+		margin-right: @apos-margin-2;
+		margin-top: 11px;
+	}
+
+	.apos-tags {
+		margin-left: 40px;
+	}
+
+	.apos-field-tags .apos-field-label {
+		position: absolute;
+		margin-top: 10px;
+	}
+
+	.apos-field-tags .apos-tags .apos-tag-add {
+		font-size: 10px;
+		padding: @apos-padding-1/2 @apos-padding-1;
+		letter-spacing: 1px;
+		font-weight: 700;
+		left: 133px;
+		right: auto;
+		white-space: nowrap;
+	}
+
+	.apos-field-tags .apos-field-input {
+		padding: 10px;
+		width: 190px;
+		line-height: 21px;
+	}
+
+	.apos-field-tags {
+		.apos-tag-list {
+			margin-bottom: 2px;
+			max-width: 400px;
+		}
+		.apos-tag-remove {
+			color: @apos-red;
+			font-size: 10px;
+		}
+		.apos-tag-list-item .apos-tag-entry {
+			font-size: 10px;
+			line-height: 15px;
+			padding-bottom: 2px;
+		}
+		.apos-field-input {
+			order: 1;
+		}
+	}
+
+	 .apos-field-input {
+	 	font-size: 12px;
+	 }
+
+	.apos-field {
+		max-width: none;
+		width: auto;
+		margin-bottom: 0;
+	}
+
+  .apos-manage-batch-operation-form {
+    display: none;
+    &.apos-active {
+      display: inline-block;
+  		margin-right: @apos-margin-1;
+  		margin-left: @apos-margin-3;
+    }
+  }
+}

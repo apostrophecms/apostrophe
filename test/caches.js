@@ -1,12 +1,13 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 
 describe('Caches', function() {
 
-  this.timeout(5000);
-
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
+
+  this.timeout(t.timeout);
 
   var apos;
   var cache;

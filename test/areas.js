@@ -1,13 +1,14 @@
+var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var apos;
 
 describe('Areas', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    return t.destroy(apos, done);
   });
 
   //////
@@ -22,8 +23,15 @@ describe('Areas', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7953,
+          port: 7900,
           csrf: false
+        },
+        'monkeys': {
+          extend: 'apostrophe-pieces',
+          name: 'monkey'
+        },
+        'monkeys-widgets': {
+          extend: 'apostrophe-pieces-widgets'
         }
       },
       afterInit: function(callback) {
@@ -132,5 +140,134 @@ describe('Areas', function() {
       ]
     }, { limit: 15 }), 'So cool...');
   });
+  
+  it('area considered empty when it should be', function() {
+    var doc = {
+      type: 'test',
+      _id: 'test',
+      body: {
+        type: 'area',
+        items: []
+      },
+      emptyText: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test2',
+            type: 'apostrophe-rich-text',
+            content: ''
+          }
+        ]
+      },
+      insignificantText: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test2',
+            type: 'apostrophe-rich-text',
+            content: '<h4> </h4>'
+          }
+        ]
+      },
+      insignificantPieces: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test3',
+            type: 'monkeys',
+            _pieces: []
+          }
+        ]
+      }
+    };
+    assert(apos.areas.isEmpty({ area: doc.body }));
+    assert(apos.areas.isEmpty(doc, 'body'));
+    assert(apos.areas.isEmpty(doc, 'nonexistent'));
+    assert(apos.areas.isEmpty(doc, 'emptyText'));
+    assert(apos.areas.isEmpty(doc, 'insignificantText'));
+    assert(apos.areas.isEmpty(doc, 'insignificantPieces'));
+  });
+  
+  it('area not considered empty when it should not be', function() {
+    var doc = {
+      type: 'test',
+      _id: 'test',
+      body: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test2',
+            type: 'apostrophe-video',
+            url: 'http://somewhere.com'
+          }
+        ]
+      },
+      emptyText: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test2',
+            type: 'apostrophe-rich-text',
+            content: ''
+          }
+        ]
+      },
+      fullText: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test2',
+            type: 'apostrophe-rich-text',
+            content: '<h4>Some text</h4>'
+          }
+        ]
+      },
+      significantPieces: {
+        type: 'area',
+        items: [
+          {
+            _id: 'test3',
+            type: 'monkeys',
+            _pieces: [
+              {
+                type: 'monkey'
+              }
+            ]
+          }
+        ]
+      }
+    };
+    assert(!apos.areas.isEmpty({ area: doc.body }));
+    assert(!apos.areas.isEmpty(doc, 'body'));
+    assert(!apos.areas.isEmpty(doc, 'fullText'));
+    assert(!apos.areas.isEmpty({ area: doc.fullText }));
+    assert(!apos.areas.isEmpty(doc, 'significantPieces'));
+  });
 
+  it('both isEmpty and legacy empty methods work on schema fields', function() {
+    assert(
+      !apos.schemas.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, true)
+    );
+    assert(
+      apos.schemas.fieldTypes.boolean.isEmpty({
+        type: 'boolean',
+        name: 'test'
+      }, false)
+    );
+    assert(
+      !apos.schemas.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, true)
+    );
+    assert(
+      apos.schemas.fieldTypes.boolean.empty({
+        type: 'boolean',
+        name: 'test'
+      }, false)
+    );
+  });
 });

@@ -12,15 +12,14 @@
             <div class="apos-dropdown apos-dropdown--admin apos-dropdown--down" data-apos-dropdown="down" data-apos-actionable>
           {% endif %}
           <div class="apos-admin-bar-item-inner"
-            {%- if not item.menu -%}
-              data-apos-admin-bar-item="{{ item.name }}"
+            {%- if not item.menu %} data-apos-admin-bar-item="{{ item.name }}"
             {%- endif -%}
           >
           {%- if item.options.href -%}
             <a href="{{ apos.prefix }}{{ item.options.href }}">
           {%- endif -%}
             {{ __(item.label | d('')) }}
-          {%- if item.href -%}
+          {%- if item.options.href -%}
             </a>
           {%- endif -%}
           </div>

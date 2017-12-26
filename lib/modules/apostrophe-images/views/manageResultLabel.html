@@ -1,0 +1,17 @@
+<div class='apos-manage-result-label'>
+	{%- if data.filters.q -%}
+		{{ __('Showing %s results for ', data.total) }}<span>"{{ data.filters.q }}"</span>
+	{%- elif data.total == 0 -%}
+    {%- if data.minSize -%}
+      {{ __('No results for current filters at least %sx%s pixels in size.', data.minSize[0], data.minSize[1]) }}
+    {%- else -%}
+      {{ __('No results for current filters.') }}
+    {%- endif -%}
+	{%- else -%}
+    {%- if data.minSize -%}
+      {{ __('Showing %s - %s of %s results at least %sx%s pixels in size.', data.skip + 1, data.skip + data.pieces.length, data.total, data.minSize[0], data.minSize[1]) }}
+    {%- else -%}
+      {{ __('Showing %s - %s of %s results.', data.skip + 1, data.skip + data.pieces.length, data.total) }}
+    {%- endif -%}
+	{%- endif -%}
+</div>
