@@ -2,6 +2,10 @@
 
 ## 2.44.0
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Apostrophe's AJAX filter features for `apostrophe-pieces-pages` now support "Load More" buttons and infinite scroll.
 
 To add a "Load More" button:
@@ -148,7 +152,7 @@ Regression tests passing.
 * Fixed UI bug relating to area menus at the bottom of the page.
 * Fixed bug that caused a crash when invalid usernames attempted to log in. Thanks to Arthur.
 
-** 2.38.0
+## 2.38.0
 
 Unit tests passing.
 
@@ -160,7 +164,7 @@ Regression tests passing.
 * Unit tests no longer drop the entire test database between suites; instead they drop the collections. Also the unit test timeout can be set via an environment variable. This accommodates testing against various cloud databases with security that precludes dropping entire databases.
 * Lots of new content in the README to get folks who haven't been to the documentation site yet a little more excited.
 
-** 2.37.2
+## 2.37.2
 
 Unit tests passing.
 
@@ -170,7 +174,7 @@ Conflict resolution and template extension-related regression tests passing.
 
 * Recently a bug was introduced in which extensions other than `.html` or `.njk` did not work in `include` statements, etc. in Nunjucks templates unless the file in question existed in the project-level version of the module including it. The full cascade of template folder paths is now supported for these explicit extensions, including searching `viewsFolderFallback`.
 
-** 2.37.1
+## 2.37.1
 
 Unit tests passing.
 
@@ -179,7 +183,7 @@ Piece- and schema-related regression tests passing.
 * Filters are now available for schema fields of type `integer`. You can configure these for the manage view, or for pieces-pages, exactly as you would for other field types. Previously this feature existed but did not function properly, so this is a patchlevel release rather than a minor version bump.
 * Previously, when viewing pieces in the trash, the batch operation button initially read "Trash Items" rather than "Rescue Items." It did not match the selected operation in the select element, and did not perform the needed operation of rescuing items unless you switched operations and switched back again. This has been fixed.
 
-** 2.37.0
+## 2.37.0
 
 Unit tests passing.
 
@@ -190,7 +194,7 @@ Regression tests passing.
 * Bug fix: drag-and-drop targets for widgets residing in areas nested in other widgets now appear and function properly.
 
 
-** 2.36.3
+## 2.36.3
 
 Unit tests passing.
 
@@ -199,7 +203,7 @@ Regression tests passing.
 * If an oembed provider responds with an HTTP error and a response that is not parseable as XML or JSON, Apostrophe no longer crashes (this fix is actually in the oembetter npm module). This fixes crashes on non-embeddable YouTube videos.
 * If the oembed provider issues a 401 or 404 error, a relevant error message is given. Otherwise the generic error icon is still given.
 
-** 2.36.2
+## 2.36.2
 
 Unit tests passing.
 
@@ -212,7 +216,7 @@ Regression tests passing.
 * When on page two (or higher) in the "manage" view of pieces, performing a text search now correctly resets to page one.
 * Throw an error at startup if a forbidden schema field name is used in `addFields` configuration. For instance, `type` is forbidden for widget schemas, while `docPermissions` is forbidden for doc type schemas, and `_id` is forbidden for both. Note that field names like `title` that are already in the schema are *not* forbidden because re-adding a schema field replaces it, which is often done to change the label, etc. So we'll be adding more documentation about these to help developers avoid surprises if their intention was an entirely new field.
 
-** 2.36.1
+## 2.36.1
 
 Unit tests passing.
 
@@ -223,7 +227,7 @@ Regression tests passing.
 * Reorganize feature: upgraded to jqtree 1.4.2. Regression testing found no bc breaks.
 * A debugging convenience: the `log(true)` cursor filter logs MongoDB criteria objects resulting from the cursor in question to the console.
 
-** 2.36.0
+## 2.36.0
 
 Unit tests passing.
 
@@ -232,7 +236,7 @@ Regression tests passing.
 * You may now set the `skipInitialModal` option for any widget module to `true` in order to avoid displaying the editing dialog box when the widget is first added. This makes sense if the widget has a useful default behavior, or consists of a contextually editable rich text sub-widget with a "style" select element you might or might not need to set every time.
 * Fields in Apostrophe's schema-driven forms now receive globally unique `id` attributes, and the `for` attributes of `label` elements now reference them properly.
 
-** 2.35.1
+## 2.35.1
 
 Unit tests passing.
 
@@ -240,7 +244,7 @@ Regression tests passing.
 
 * Intermittent "not blessed" errors when editing joins in widget schemas have been corrected by blessing all widget schemas at page serve time, just as we already bless all doc type schemas at page serve time. Blessing them when the individual routes fire is problematic because of probable race conditions with sessions.
 
-** 2.35.0
+## 2.35.0
 
 Unit tests passing.
 
@@ -281,7 +285,7 @@ The `removable` and `movable` suboptions are primarily intended for singletons.
 
 * Accommodations for the latest release of the separately published apostrophe-workflow module.
 
-** 2.34.3
+## 2.34.3
 
 Unit tests passing.
 
@@ -291,13 +295,13 @@ A bug was fixed that prevented nested area editing. The bug appeared in version 
 
 Note that editing an area on the page has never been possible when it is part of the schema of an array field. That is not a new issue. It is being tracked and discussed. Today's fix was for a regression that impacted all nested areas.
 
-** 2.34.2
+## 2.34.2
 
 All tests passing.
 
 Fixed a bug that generated an error message regarding conflict resolution when attempting to edit an area inside a piece editor dialog box.
 
-** 2.34.1
+## 2.34.1
 
 All tests passing.
 
@@ -305,7 +309,7 @@ Fixed an issue impacting unit test harness only. It didn't come up initially bec
 
 No code changes outside of tests.
 
-** 2.34.0
+## 2.34.0
 
 All tests passing.
 
@@ -319,13 +323,13 @@ If the same user attempts to edit a document in two tabs or windows, something v
 
 * Apostrophe's unit tests have been restructured so that a single test file can be run conveniently, via `mocha test/docs.js`, for instance, and there is no longer a need for us to update `test/test.js` every time a test is added. Also, the unit tests use the same `apos.tasks.getReq` and `apos.tasks.getAnonReq` methods that are used by real-life command line tasks, which provide a more faithful simulation of an Express request object and one we anticipate extending as needed.
 
-** 2.33.1
+## 2.33.1
 
 All tests passing.
 
 * Fixed potential crash in version pruning mechanism.
 
-** 2.33.0
+## 2.33.0
 
 All tests passing.
 
@@ -335,7 +339,7 @@ All tests passing.
 
 Thanks to Michelin for their support of this work.
 
-** 2.32.0
+## 2.32.0
 
 All tests passing.
 
@@ -343,7 +347,7 @@ All tests passing.
 
 * Also added an `apostrophe-caches:clear` task to aid in testing various functionality. You must specify the cache name since caches may or may not even be known to Apostrophe at task startup time based on whether and when code calls `.get` for each cache name.
 
-** 2.31.0
+## 2.31.0
 
 All tests passing.
 
@@ -357,7 +361,7 @@ All tests passing.
 
 * `trash` is never offered as a schema field of the `global` doc (mainly a concern with `apostrophe-workflow`).
 
-** 2.30.0
+## 2.30.0
 
 All tests passing.
 
@@ -381,20 +385,20 @@ For bc, you can still pass a live instance of a store as the `store` option, but
 
 Thanks to Michelin for their support of this work.
 
-** 2.29.2
+## 2.29.2
 
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
 * The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
 
-** 2.29.1
+## 2.29.1
 
 All tests passing.
 
 * Fixed a short-lived issue with the reorganize feature.
 
-** 2.29.0
+## 2.29.0
 
 All tests passing.
 
@@ -434,7 +438,7 @@ When `trashInSchema` is `true`, users can also change the trash status of a piec
 
 * `insert` method for `apos.attachments`, mirroring the other modules better. Thanks to Arthur Agombart.
 
-** 2.28.0
+## 2.28.0
 
 All tests passing.
 
@@ -445,13 +449,13 @@ All tests passing.
 * Bug fix: added sort index on `level` and `rank`, preventing MongoDB errors on very large page trees.
 * UX: a complete URL is suggested at startup when testing locally. Thanks to Alex Gleason.
 
-** 2.27.1
+## 2.27.1
 
 All tests passing.
 
 * Fixed recently introduced bug preventing page type switching.
 
-** 2.27.0
+## 2.27.0
 
 All tests passing.
 
@@ -465,13 +469,13 @@ Lazy configuration is in place for doc types (like pages and pieces) and widget 
 
 * `apos.areas.fromRichText` can be used to create an area with a single rich text widget from a trusted string of HTML. Not intended for mixed media, just rich text. Related: both `fromRichText` and `fromPlaintext` now correctly give their widgets an `_id` property.
 
-** 2.26.1
+## 2.26.1
 
 All tests passing.
 
 * Fixed short-lived bug introduced in 2.26.0 re: detecting missing widget types.
 
-** 2.26.0
+## 2.26.0
 
 All tests passing.
 
@@ -487,7 +491,7 @@ All tests passing.
 
 Thanks to Michelin for their support of much of the work in this release.
 
-** 2.25.0
+## 2.25.0
 
 All tests passing.
 
@@ -497,13 +501,13 @@ All tests passing.
 
 * In the manage view, the "published" and "trash" filters now always offer both "yes" and "no," regardless of whether anything is available in those categories. This is necessary because these are the respective defaults, and these are also unusual cases in which it is actually interesting to know nothing is available.
 
-** 2.24.0
+## 2.24.0
 
 All tests passing.
 
 There is now an `object` schema field type. It works much like the `array` schema field type, however there is just one object, represented as an object property of the doc in the database. Thanks to Michelin's development team for contributing this feature.
 
-** 2.23.2
+## 2.23.2
 
 All tests passing.
 
@@ -515,7 +519,7 @@ All tests passing.
 
 cleanCss needs to know that the output CSS files are going to live in apos-minified in order to correctly parse `@import` statements that pull in plain .css files. Also, the mechanism for prefixing URLs in CSS code was not applied at the correct stage of the bundling process (the minify stage), which broke the ability to reference fonts, images, etc. via URLs beginning with /modules when using an S3 asset bundle.
 
-** 2.23.0
+## 2.23.0
 
 All tests passing.
 
@@ -539,7 +543,7 @@ Thanks to Michelin for their support of this work.
 
 * `apostrophe.oembed`'s `fetch` method now propagates its `options` object to `oembetter` correctly. Thanks to Fotis Paraskevopoulos.
 
-** 2.22.0
+## 2.22.0
 
 All tests passing.
 
@@ -557,7 +561,7 @@ Thanks to Michelin for their support of this work.
 
 * thanks to Ludovic Bret for fixing a bug in the admin bar markup.
 
-** 2.21.0
+## 2.21.0
 
 All tests passing.
 
@@ -576,7 +580,7 @@ performance improvement.
 
 * Bug fix: if two crops of the same image were present in separate widgets on a page, only one of the crops would be seen in template code. This issue has been resolved.
 
-** 2.20.3
+## 2.20.3
 
 All tests passing.
 
@@ -586,19 +590,19 @@ To avoid incompatibility with existing uses of `self.$filters`, such as in the m
 
 * Moved a warning message from `console.log` to `console.error`. `stdout` should never be used for warnings and errors. Moving toward clean output so that command line tasks can be safely used in pipelines.
 
-** 2.20.2
+## 2.20.2
 
 All tests passing.
 
 Improved UI for editing widgets. The edit button is no longer separate from the area-related controls such as up, down, etc. This reduces clutter and reduces difficulty in accessing widgets while editing.
 
-** 2.20.1
+## 2.20.1
 
 All tests passing.
 
 When autocompleting doc titles to add them to a join, Apostrophe again utilizes search result quality to display the best results first.
 
-** 2.20.0
+## 2.20.0
 
 All tests passing.
 
@@ -632,7 +636,7 @@ All the usual features of schemas can be used, including `groupFields`. Of cours
 
 * When batch file uploads fail, a more useful set of error messages are displayed.
 
-** 2.19.1
+## 2.19.1
 
 All tests passing.
 
@@ -640,7 +644,7 @@ All tests passing.
 
 All of these changes correct bugs in intended behavior. Certain checks were present in the code but not completely functional. If you need to update your configuration to add file extensions, [apostrophe-attachments](http://apostrophecms.org/docs/modules/apostrophe-attachments/).
 
-** 2.19.0
+## 2.19.0
 
 All tests passing.
 
@@ -650,7 +654,7 @@ As for children of the home page, for performance you may now pass `home: { chil
 
 Thanks to Michelin for their support of this work.
 
-** 2.18.2
+## 2.18.2
 
 All tests passing.
 
@@ -660,7 +664,7 @@ All tests passing.
 
 Thanks to Michelin for their support of this work.
 
-** 2.18.0
+## 2.18.0
 
 All tests passing.
 
@@ -672,14 +676,14 @@ In addition there is a clearly documented procedure for creating new batch editi
 
 * Logging out completely destroys the session. While the standard behavior of `req.logout` in the Passport module is only to break the relationship between the `user` object and the session, users expect a clean break.
 
-** 2.17.2
+## 2.17.2
 
 All tests passing.
 
 * Members of a group that has the admin permission for a specific piece type can now move pieces of that type to and from the trash. (This was always intended, so this is a bug fix.)
 * For better out-of-the-box SEO, an `alt` attribute with the title of the image is now part of the `img` markup of `apostrophe-images` widgets.
 
-** 2.17.1
+## 2.17.1
 
 All tests passing.
 
@@ -693,7 +697,7 @@ All tests passing.
 
 * The `oembedReady` Apostrophe event is now emitted correctly after `apostrophe-oembed` renders an oembed-based player, such as a YouTube video player for the `apostrophe-video` widget. This event can be listened for via `apos.on('apostrophe-oembed', fn)` and receives a jQuery object referring to the relevant element.
 
-** 2.17.0
+## 2.17.0
 
 All tests passing.
 
@@ -703,7 +707,7 @@ All tests passing.
 
 * Controls such as the "Finished" button of the reorganize modal were floating off the screen. This has been fixed.
 
-** 2.16.1
+## 2.16.1
 
 All tests passing.
 
@@ -711,7 +715,7 @@ All tests passing.
 
 * In `apostrophe-rich-text-widgets`, initialize CKEditor on `instanceReady`, rather than via a dodgy timeout. Thanks to Frederik Ekelund for finding a better way!
 
-** 2.16.0
+## 2.16.0
 
 All tests passing.
 
@@ -725,13 +729,13 @@ The use of this option can lead to unhappy customers if they do not clearly unde
 
 * The tests for the `apostrophe-locks` module are now deterministic and should always pass.
 
-** 2.15.2
+## 2.15.2
 
 All tests passing.
 
 Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
 
-** 2.15.1
+## 2.15.1
 
 Due to a miscommunication the version number 2.15.0 had been previously used. The description below was originally intended for 2.15.0 and has been published as 2.15.1 purely to address the version numbering conflict.
 
@@ -743,7 +747,7 @@ adding all of the permission names given including any listed in the arrays.
 * Updated the `i18n` module to address a problem where labels that happened to be numbers rather than strings would crash the template if passed to `__()`.
 * Documentation improvements.
 
-** 2.14.3
+## 2.14.3
 
 All tests passing.
 

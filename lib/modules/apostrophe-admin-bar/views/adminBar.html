@@ -12,8 +12,7 @@
             <div class="apos-dropdown apos-dropdown--admin apos-dropdown--down" data-apos-dropdown="down" data-apos-actionable>
           {% endif %}
           <div class="apos-admin-bar-item-inner"
-            {%- if not item.menu -%}
-              data-apos-admin-bar-item="{{ item.name }}"
+            {%- if not item.menu %} data-apos-admin-bar-item="{{ item.name }}"
             {%- endif -%}
           >
           {%- if item.options.href -%}
