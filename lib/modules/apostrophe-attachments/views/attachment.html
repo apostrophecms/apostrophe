@@ -7,12 +7,12 @@
     <div class="apos-attachment-preview"><img data-preview src="" alt=""></div>
     <span class="apos-attachment-name" data-name></span>
     <div class="apos-button-group">
-      <a class="apos-button apos-button--action" href="#" data-link target="_blank">{{ __("View file") }}</a>
+      <button class="apos-button apos-button--action" href="#" data-link target="_blank">{{ __("View file") }}</button>
       {% if field.crop %}
-        <a class="apos-button apos-button--action" href="#" data-apos-crop-attachment>{{ __("Crop image") }}</a>
+        <button class="apos-button apos-button--action" href="#" data-apos-crop-attachment>{{ __("Crop image") }}</button>
       {% endif %}
       {% if field.focalPoint %}
-        <a class="apos-button apos-button--action" href="#" data-apos-focal-point-attachment>{{ __("Focal point") }}</a>
+        <button class="apos-button apos-button--action" href="#" data-apos-focal-point-attachment>{{ __("Focal point") }}</button>
       {% endif %}
       {% if field.trash %}
         {{ buttons.danger('Delete File', { action: 'trash' }) }}
