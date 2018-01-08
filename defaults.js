@@ -11,6 +11,7 @@ module.exports = {
     'apostrophe-express': {},
     'apostrophe-urls': {},
     'apostrophe-templates': {},
+    'apostrophe-email': {},
     'apostrophe-push': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
