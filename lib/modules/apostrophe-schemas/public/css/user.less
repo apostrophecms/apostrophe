@@ -15,7 +15,13 @@
 .apos-error
 {
   input { .apos-glow(@apos-red); }
-  label { color: @apos-red; }
+  label {
+    color: @apos-red;
+    &::after {
+      margin-left: 10px;
+      content: "(" attr(data-apos-error-message) ")";
+    }
+  }
 }
 
 .apos-warning
@@ -33,6 +39,5 @@
   label:after
   {
     color: @apos-red;
-    content: ' (required)';
   }
 }
