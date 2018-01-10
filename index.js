@@ -273,13 +273,13 @@ module.exports = function(options) {
   
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
-
     if (options.testModule) {
       // Test command lines have arguments not
       // intended as command line task arguments
       self.argv = {
         _: []
       };
+      self.options.shortName = self.options.shortName || 'test';
     } else {
       self.argv = argv;
     }
