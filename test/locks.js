@@ -2,6 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
+var Promise = require('bluebird');
 
 var apos;
 
@@ -198,6 +199,30 @@ describe('Locks', function() {
         });
       }
     }
+  });
+
+  it('with promises: should flunk a second lock by the same module', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return Promise.try(function() {
+      return locks.lock('test');
+    })
+    .then(function() {
+      return locks.lock('test')
+      .catch(function(err) {
+        // SHOULD fail
+        assert(err);
+      });
+    })
+    .then(function() {
+      return locks.unlock('test');
+    })
+    .then(function() {
+      return locks.unlock('test')
+      .catch(function(err) {
+        // SHOULD fail
+        assert(err);
+      });
+    });
   });
 });
 
