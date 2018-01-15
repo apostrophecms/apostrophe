@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.45.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `apostrophe-caches` module has better, clearer documentation and it now supports promises.
+* All modules can now conveniently send email using [Nodemailer](https://nodemailer.com/about/). The new `email` method of all modules renders a template in that module's `views` folder, exactly as you would hope it would, and also automatically generates a plaintext version for the occasional user who does not view HTML email. The automatically generated versions include links properly.
+* Extending `apostrophe-images-widgets` and other pieces widgets is easier. If your widget name doesn't correspond to the kind of piece you are displaying, a helpful error appears explaining that you need to set `piecesModuleName`. Adding fields to these widgets now behaves reasonably. Also, if you add fields to `apostrophe-images` or `apostrophe-files` at project level, this now behaves as expected too.
+* A locking mechanism has been added during the movement of pages in the page tree. This prevents rare race conditions that could previously have resulted in duplicate page ranks, although the design of the page tree is such that more serious consequences were always avoided.
+* Text justification options for ckeditor are now standard in our build of ckeditor. Of course you still need to configure `sanitize-html` properly when using them.
+* Any widgets module may now specify a `wrapperTemplate` option. That template is rendered instead of the standard `apostrophe-areas:widget.html` template, and can use `extends` and override blocks found in that template. This is useful if you need to set attributes of the outer wrapper element of the widget.
+* The migration added in 2.43.0 to address file permissions for existing attachments in the trash has been greatly accelerated, helpful on large sites.
+* Better error messages for `min` and `max` options of some schema field types; provisions for expanded error messages in general.
+* For those using the `testModule` option to test their own npm modules in the context of Apostrophe, a default shortname is automatically provided.
+* Fixed missing space in admin bar markup, thanks to arlecchino.
+
 ## 2.44.0
 
 Unit tests passing.
