@@ -1,6 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var async = require('async');
 var Promise = require('bluebird');
 
@@ -21,7 +20,6 @@ describe('Locks', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -47,7 +45,7 @@ describe('Locks', function() {
         assert(apos.modules['apostrophe-locks-1']);
         assert(apos.modules['apostrophe-locks-2']);
         assert(apos.modules['apostrophe-locks-3']);
-        
+
         // In tests this will be the name of the test file,
         // so override that in order to get apostrophe to
         // listen normally and not try to run a task. -Tom
@@ -55,19 +53,19 @@ describe('Locks', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
   });
-  
+
   it('cleanup', function(done) {
     apos.locks.db.remove({}, function(err) {
       assert(!err);
       done();
     });
   });
-  
+
   it('should allow a single lock without contention uneventfully', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return async.series([ lock, unlock ], function(err) {
@@ -81,7 +79,7 @@ describe('Locks', function() {
       return locks.unlock('test', callback);
     }
   });
-  
+
   it('should allow two differently-named locks uneventfully', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return async.series([ lock1, lock2, unlock1, unlock2 ], function(err) {
@@ -101,10 +99,10 @@ describe('Locks', function() {
       return locks.unlock('test2', callback);
     }
   });
-  
+
   it('should flunk a second lock by the same module', function(done) {
     var locks = apos.modules['apostrophe-locks'];
-    return async.series([ lock, lockAgain, unlock ], function(err) {
+    return async.series([ lock, lockAgain, unlock, unlockAgain ], function(err) {
       assert(!err);
       done();
     });
@@ -129,7 +127,7 @@ describe('Locks', function() {
       });
     }
   });
-  
+
   it('four parallel lock calls via the different modules should all succeed but not simultaneously', function(done) {
     var one = apos.modules['apostrophe-locks'];
     var two = apos.modules['apostrophe-locks-1'];
@@ -159,7 +157,6 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
-            return;
           }
         });
       }
@@ -194,7 +191,6 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
-            return;
           }
         });
       }
@@ -205,24 +201,20 @@ describe('Locks', function() {
     var locks = apos.modules['apostrophe-locks'];
     return Promise.try(function() {
       return locks.lock('test');
-    })
-    .then(function() {
+    }).then(function() {
       return locks.lock('test')
-      .catch(function(err) {
-        // SHOULD fail
-        assert(err);
-      });
-    })
-    .then(function() {
+        .catch(function(err) {
+          // SHOULD fail
+          assert(err);
+        });
+    }).then(function() {
       return locks.unlock('test');
-    })
-    .then(function() {
+    }).then(function() {
       return locks.unlock('test')
-      .catch(function(err) {
-        // SHOULD fail
-        assert(err);
-      });
+        .catch(function(err) {
+          // SHOULD fail
+          assert(err);
+        });
     });
   });
 });
-

@@ -3,7 +3,6 @@ var _ = require('lodash');
 var argv = require('yargs').argv;
 var fs = require('fs');
 var async = require('async');
-var i18n = require('i18n');
 var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 
@@ -21,7 +20,7 @@ module.exports = function(options) {
   acceptGlobalOptions();
 
   self.handlers = {};
-  
+
   defineModules();
 
   // No return statement here because we need to
@@ -41,10 +40,9 @@ module.exports = function(options) {
         // In the absence of a callback to handle initialization failure,
         // we have to assume there's just one instance of Apostrophe and
         // we can print the error and end the app.
-        
         // Currently v8's err.stack property contains both the stack and the error message,
         // but that's weird and could be temporary, so if it ever changes, output both. -Tom
-        if ((typeof(err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
+        if (((typeof err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
           console.error(err);
         }
         console.error(err.stack);
@@ -132,7 +130,7 @@ module.exports = function(options) {
       return callback(null);
     });
   };
-  
+
   /**
    * Allow to bind a callAll method for one module.
    */
@@ -142,7 +140,7 @@ module.exports = function(options) {
     callback = args[args.length - 1];
     return invoke(moduleName, method, extraArgs, callback);
   };
-  
+
   // Destroys the Apostrophe object, freeing resources such as
   // HTTP server ports and database connections. Does **not**
   // delete any data; the persistent database and media files
@@ -161,7 +159,7 @@ module.exports = function(options) {
   self.isTask = function() {
     return !!self.argv._.length;
   };
-  
+
   // Returns an array of modules that are instances of the given
   // module name, i.e. they are of that type or they extend it.
   // For instance, `apos.instancesOf('apostrophe-pieces')` returns
@@ -182,7 +180,7 @@ module.exports = function(options) {
   self.instanceOf = function(object, name) {
     return self.synth.instanceOf(object, name);
   };
-    
+
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
   return self;
@@ -203,13 +201,11 @@ module.exports = function(options) {
     // Otherwise making a second apos instance
     // uses the same modified defaults object
 
-    var config = _.cloneDeep(options.__testDefaults || defaults);
-
-    var coreModules = _.cloneDeep(config.modules);
+    config = _.cloneDeep(options.__testDefaults || defaults);
 
     _.merge(config, options);
 
-    if (typeof(local) === 'function') {
+    if (typeof (local) === 'function') {
       if (local.length === 1) {
         _.merge(config, local(self));
       } else if (local.length === 2) {
@@ -218,14 +214,15 @@ module.exports = function(options) {
         throw 'data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config';
       }
     } else {
-       _.merge(config, local || {});
+      _.merge(config, local || {});
     }
 
     return config;
   }
 
   function getRoot() {
-    var m = module;
+    var _module = module;
+    var m = _module;
     while (m.parent) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
@@ -233,11 +230,11 @@ module.exports = function(options) {
         return m;
       }
       m = m.parent;
-      module = m;
+      _module = m;
     }
-    return module;
+    return _module;
   }
-  
+
   function autodetectBundles() {
     var modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
@@ -270,7 +267,7 @@ module.exports = function(options) {
       return null;
     }
   }
-  
+
   function acceptGlobalOptions() {
     // Truly global options not specific to a module
     if (options.testModule) {
@@ -292,7 +289,7 @@ module.exports = function(options) {
     self.baseUrl = self.options.baseUrl;
     self.prefix = self.options.prefix || '';
   }
-  
+
   // Tweak the Apostrophe environment suitably for
   // unit testing a separate npm module that extends
   // Apostrophe, like apostrophe-workflow. For instance,
@@ -329,7 +326,7 @@ module.exports = function(options) {
       fs.mkdirSync(testDir + '/node_modules');
       fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
     }
-    
+
     // Not quite superfluous: it'll return self.root, but
     // it also makes sure we encounter mocha along the way
     // and throws an exception if we don't
@@ -344,7 +341,7 @@ module.exports = function(options) {
           throw new Error('mocha does not seem to be running, is this really a test?');
         }
       }
-    }    
+    }
   }
 
   function defineModules() {
@@ -431,7 +428,7 @@ module.exports = function(options) {
           return callback(null);
         });
       } else {
-        return callback(name + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
+        return callback(moduleName + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
       }
     } else {
       return setImmediate(callback);

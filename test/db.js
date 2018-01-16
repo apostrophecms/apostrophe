@@ -3,7 +3,7 @@ var assert = require('assert');
 
 var apos;
 
-describe('Db', function(){
+describe('Db', function() {
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -15,7 +15,7 @@ describe('Db', function(){
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       afterInit: function(callback) {
         assert(apos.db);
         return done();

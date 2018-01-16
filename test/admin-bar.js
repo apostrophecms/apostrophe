@@ -7,15 +7,15 @@ describe('Admin bar', function() {
 
   this.timeout(t.timeout);
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should allow a group reversing the current order', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -58,7 +58,7 @@ describe('Admin bar', function() {
       afterListen: function(err) {
         assert(!err);
         return t.destroy(apos, done);
-      },
+      }
     });
   });
 
@@ -66,7 +66,7 @@ describe('Admin bar', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -87,7 +87,7 @@ describe('Admin bar', function() {
               items: [
                 'apostrophe-files',
                 'apostrophe-images',
-                'apostrophe-login-logout',
+                'apostrophe-login-logout'
               ]
             }
           ]
@@ -109,7 +109,7 @@ describe('Admin bar', function() {
       afterListen: function(err) {
         assert(!err);
         return t.destroy(apos, done);
-      },
+      }
     });
   });
 

@@ -1,5 +1,5 @@
-module.exports = function(apos){
-	return {
-		overrideTest: 'foo'
-	}
+module.exports = function(apos) {
+  return {
+    overrideTest: 'foo'
+  };
 };

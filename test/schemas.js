@@ -202,22 +202,22 @@ var hasArea = {
 };
 
 describe('Schemas', function() {
-  
+
   this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should be a property of the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -489,7 +489,7 @@ describe('Schemas', function() {
       done();
     });
   });
-  
+
   it('should accept csv as a bc equivalent for string in convert', function(done) {
     var schema = apos.schemas.compose(hasArea);
     assert(schema.length === 1);
@@ -559,5 +559,5 @@ describe('Schemas', function() {
       done();
     });
   });
-  
+
 });

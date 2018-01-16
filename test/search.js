@@ -1,7 +1,6 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
-var async = require('async');
 
 var apos;
 
@@ -13,15 +12,13 @@ describe('Search', function() {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should be a property of the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -39,12 +36,13 @@ describe('Search', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });
   });
 
-  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done){
+  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done) {
     var req = apos.tasks.getReq();
     apos.docs.insert(req, {
       title: 'Testing Search Event',
@@ -52,10 +50,11 @@ describe('Search', function() {
       tags: ['search', 'test', 'pizza'],
       slug: 'search-test-event',
       published: true
-    }, function(err){
+    }, function(err) {
       assert(!err);
 
-      apos.docs.find(req, { slug: 'search-test-event' }).toObject(function(err, doc){
+      apos.docs.find(req, { slug: 'search-test-event' }).toObject(function(err, doc) {
+        assert(!err);
         assert(doc.highSearchText);
         assert(doc.highSearchWords);
         assert(doc.lowSearchText);

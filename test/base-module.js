@@ -1,7 +1,7 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 
-describe('Base Module', function(){
+describe('Base Module', function() {
 
   var apos;
 
@@ -11,11 +11,11 @@ describe('Base Module', function(){
 
   this.timeout(t.timeout);
 
-  it('should be subclassable', function(done){
+  it('should be subclassable', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         // will push an asset for us to look for later
         'apostrophe-test-module-push': {},
@@ -29,10 +29,10 @@ describe('Base Module', function(){
     });
   });
 
-  it('should provide apos.assets with the right context for pushing assets', function(done){
+  it('should provide apos.assets with the right context for pushing assets', function(done) {
     var found = false;
     for (var i = apos.assets.pushed.stylesheets.length - 1; i >= 0; i--) {
-      if (apos.assets.pushed.stylesheets[i].file == __dirname + '/lib/modules/apostrophe-test-module-push/public/css/test.css') {
+      if (apos.assets.pushed.stylesheets[i].file === __dirname + '/lib/modules/apostrophe-test-module-push/public/css/test.css') {
         found = true;
         break;
       }
@@ -40,7 +40,7 @@ describe('Base Module', function(){
     assert(found);
     return done();
   });
-  
+
   it('should produce correct responses via the getOption method', function() {
     var mod = apos.modules['test-get-option'];
     var req = apos.tasks.getReq();

@@ -15,15 +15,15 @@ describe('Oembed', function() {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -43,7 +43,7 @@ describe('Oembed', function() {
       afterListen: function(err) {
         assert(!err);
         done();
-      },
+      }
     });
   });
 

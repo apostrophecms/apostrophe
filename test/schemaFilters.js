@@ -14,15 +14,15 @@ describe('Schema Filters', function() {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('test modules exist', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -208,7 +208,7 @@ describe('Schema Filters', function() {
       done();
     });
   });
-  
+
   it('can obtain choices for _cats', function(done) {
     var req = apos.tasks.getReq();
     var cursor = apos.people.find(req);
@@ -220,7 +220,7 @@ describe('Schema Filters', function() {
       assert(cats[0].label);
       assert(cats[0].slug);
       done();
-    })
+    });
   });
 
   it('filter for cats exists', function() {
@@ -290,7 +290,7 @@ describe('Schema Filters', function() {
       done();
     });
   });
-  
+
   it('can obtain choices for cats (by slug)', function(done) {
     var req = apos.tasks.getReq();
     var cursor = apos.people.find(req);
@@ -371,7 +371,7 @@ describe('Schema Filters', function() {
       assert(cats[0].label);
       assert(cats[0].slug);
       done();
-    })
+    });
   });
 
   it('filter for favorite (by slug) exists', function() {
@@ -511,6 +511,6 @@ describe('Schema Filters', function() {
       assert(flavors[1].value === 'mint');
       assert(flavors[1].label === 'Mint');
       done();
-    })
+    });
   });
 });

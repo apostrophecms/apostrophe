@@ -11,15 +11,15 @@ describe('Areas', function() {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -46,7 +46,7 @@ describe('Areas', function() {
       afterListen: function(err) {
         assert(!err);
         done();
-      },
+      }
     });
   });
 
@@ -140,7 +140,7 @@ describe('Areas', function() {
       ]
     }, { limit: 15 }), 'So cool...');
   });
-  
+
   it('area considered empty when it should be', function() {
     var doc = {
       type: 'test',
@@ -187,7 +187,7 @@ describe('Areas', function() {
     assert(apos.areas.isEmpty(doc, 'insignificantText'));
     assert(apos.areas.isEmpty(doc, 'insignificantPieces'));
   });
-  
+
   it('area not considered empty when it should not be', function() {
     var doc = {
       type: 'test',
