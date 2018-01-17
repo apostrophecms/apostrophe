@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var Promise = require('bluebird');
 
 var apos;
 
@@ -68,7 +66,7 @@ describe('Attachment', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
@@ -80,7 +78,6 @@ describe('Attachment', function() {
     });
   });
 
-  var request = require('request');
   var fs = require('fs');
 
   describe('accept', function() {
@@ -268,7 +265,7 @@ describe('Attachment', function() {
           assert(attachment.docIds.length === 0);
           assert(attachment.trashDocIds.length === 1);
           try {
-            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
             throw new Error('should not have been accessible');
           } catch (e) {
             return true;

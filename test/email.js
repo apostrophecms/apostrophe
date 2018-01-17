@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var apos;
 
 describe('Email', function() {
@@ -42,7 +40,7 @@ describe('Email', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
@@ -65,9 +63,9 @@ describe('Email', function() {
         var message = info.message.toString();
         assert(message.match(/Fred Astaire/));
         assert(message.match(/Subject: Welcome Aboard/));
-        assert(message.match(/From: test\@example\.com/));
-        assert(message.match(/To: recipient\@example\.com/));
-        assert(message.match(/\[http\:\/\/example\.com\/\]/));
+        assert(message.match(/From: test@example\.com/));
+        assert(message.match(/To: recipient@example\.com/));
+        assert(message.match(/\[http:\/\/example\.com\/\]/));
         done();
       }
     );
@@ -88,9 +86,9 @@ describe('Email', function() {
       var message = info.message.toString();
       assert(message.match(/Fred Astaire/));
       assert(message.match(/Subject: Welcome Aboard/));
-      assert(message.match(/From: test\@example\.com/));
-      assert(message.match(/To: recipient\@example\.com/));
-      assert(message.match(/\[http\:\/\/example\.com\/\]/));
+      assert(message.match(/From: test@example\.com/));
+      assert(message.match(/To: recipient@example\.com/));
+      assert(message.match(/\[http:\/\/example\.com\/\]/));
       return true;
     });
   });

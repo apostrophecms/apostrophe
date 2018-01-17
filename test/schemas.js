@@ -1,7 +1,6 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
-var async = require('async');
 
 var apos;
 
@@ -230,6 +229,7 @@ describe('Schemas', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });

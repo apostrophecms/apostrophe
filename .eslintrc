@@ -25,7 +25,10 @@
         "CKEDITOR": true,
         "alert": true,
         "jQuery": true,
-        "sluggo": true
+        "sluggo": true,
+        "moog": true,
+        "Pikaday": true,
+        "moment": true
       }
     },
     {

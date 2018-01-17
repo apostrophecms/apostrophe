@@ -39,14 +39,6 @@ describe('Permissions', function() {
     });
   });
 
-  function find(a, b) {
-    for (var i in a) {
-      if (b(a[i])) {
-        return a[i];
-      }
-    }
-  }
-
   // mock up a request
   function req(d) {
     var o = {

@@ -2,7 +2,6 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
 var async = require('async');
-var request = require('request');
 
 var apos;
 
@@ -55,6 +54,7 @@ describe('Pieces', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });
@@ -124,6 +124,7 @@ describe('Pieces', function() {
       assert(!err);
       // Make sure it went away
       apos.docs.db.find({ _id: 'testThing' }).toArray(function(err, docs) {
+        assert(!err);
         assert(docs.length === 0);
         done();
       });
@@ -287,10 +288,10 @@ describe('Pieces', function() {
     };
     apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
-      assert(results.total == 5);
-      assert(results.limit == 10);
-      assert(results.skip == 0);
-      assert(results.pieces.length == 5);
+      assert(results.total === 5);
+      assert(results.limit === 10);
+      assert(results.skip === 0);
+      assert(results.pieces.length === 5);
       done();
     });
   });
@@ -441,10 +442,10 @@ describe('Pieces', function() {
     res.send = function(result) {
       assert(result);
       assert(result.status === 'ok');
-      assert(result.data.total == 6);
-      assert(result.data.skip == 0);
-      assert(result.data.limit == 10);
-      assert(result.data.pieces.length == 6);
+      assert(result.data.total === 6);
+      assert(result.data.skip === 0);
+      assert(result.data.limit === 10);
+      assert(result.data.pieces.length === 6);
       done();
     };
 

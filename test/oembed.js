@@ -1,10 +1,6 @@
 
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
-var request = require('request');
-var qs = require('qs');
 var apos;
 
 describe('Oembed', function() {

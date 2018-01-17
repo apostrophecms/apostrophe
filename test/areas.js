@@ -1,6 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var apos;
 
 describe('Areas', function() {
@@ -84,7 +83,7 @@ describe('Areas', function() {
           content: '<h2>Something else cool</h2>'
         }
       ]
-    }, { delimiter: ''}) === '<h2>So cool</h2><h2>Something else cool</h2>');
+    }, { delimiter: '' }) === '<h2>So cool</h2><h2>Something else cool</h2>');
     assert(apos.areas.richText({
       type: 'area',
       items: [
@@ -101,7 +100,7 @@ describe('Areas', function() {
           content: '<h2>Something else cool</h2>'
         }
       ]
-    }, { wrapper: 'div'}) === '<div><h2>So cool</h2></div><div><h2>Something else cool</h2></div>');
+    }, { wrapper: 'div' }) === '<div><h2>So cool</h2></div><div><h2>Something else cool</h2></div>');
   });
 
   it('returns the plaintext of an area via the plaintext method', function() {

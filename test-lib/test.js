@@ -25,11 +25,10 @@ function destroy(apos, done) {
     return done();
   });
   function drop(callback) {
-    return apos.db.collections(function(err, _collections) {
+    return apos.db.collections(function(err, collections) {
       if (err) {
         return callback(err);
       }
-      collections = _collections;
 
       // drop the collections
       return async.eachSeries(collections, function(collection, callback) {

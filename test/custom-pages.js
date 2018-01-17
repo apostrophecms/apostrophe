@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var request = require('request');
 
 var apos;
@@ -40,6 +38,7 @@ describe('custom-pages', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });
@@ -210,7 +209,7 @@ describe('custom-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/niftyPages\-index/));
+      assert(body.match(/niftyPages-index/));
       return done();
     });
   });
@@ -221,7 +220,7 @@ describe('custom-pages', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/niftyPages\-foo/));
+      assert(body.match(/niftyPages-foo/));
       return done();
     });
   });

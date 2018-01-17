@@ -4,7 +4,8 @@ var _ = require('lodash');
 var async = require('async');
 
 var apos;
-var cats = [], people = [];
+var cats = [];
+var people = [];
 
 describe('Schema Filters', function() {
 
@@ -136,6 +137,7 @@ describe('Schema Filters', function() {
         }
       },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });

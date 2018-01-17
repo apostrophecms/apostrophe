@@ -27,6 +27,10 @@ describe('Tags', function() {
             // We're not here to test CSRF, so make the test simpler
             exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
           }
+        },
+        'events': {
+          extend: 'apostrophe-pieces',
+          name: 'event'
         }
       },
       afterInit: function(callback) {
