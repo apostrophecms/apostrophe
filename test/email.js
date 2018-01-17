@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var apos;
 
 describe('Email', function() {
@@ -19,7 +17,7 @@ describe('Email', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -42,19 +40,19 @@ describe('Email', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
   });
-  
+
   it('can send email on behalf of a module', function(done) {
     apos.modules['email-test'].email(apos.tasks.getReq(),
-      'welcome', 
-      { 
+      'welcome',
+      {
         name: 'Fred Astaire'
       },
-      { 
+      {
         from: 'test@example.com',
         to: 'recipient@example.com',
         subject: 'Welcome Aboard'
@@ -65,20 +63,20 @@ describe('Email', function() {
         var message = info.message.toString();
         assert(message.match(/Fred Astaire/));
         assert(message.match(/Subject: Welcome Aboard/));
-        assert(message.match(/From: test\@example\.com/));
-        assert(message.match(/To: recipient\@example\.com/));
-        assert(message.match(/\[http\:\/\/example\.com\/\]/)); 
+        assert(message.match(/From: test@example\.com/));
+        assert(message.match(/To: recipient@example\.com/));
+        assert(message.match(/\[http:\/\/example\.com\/\]/));
         done();
       }
-    )
+    );
   });
   it('can do it with promises', function() {
     return apos.modules['email-test'].email(apos.tasks.getReq(),
-      'welcome', 
-      { 
+      'welcome',
+      {
         name: 'Fred Astaire'
       },
-      { 
+      {
         from: 'test@example.com',
         to: 'recipient@example.com',
         subject: 'Welcome Aboard'
@@ -88,11 +86,10 @@ describe('Email', function() {
       var message = info.message.toString();
       assert(message.match(/Fred Astaire/));
       assert(message.match(/Subject: Welcome Aboard/));
-      assert(message.match(/From: test\@example\.com/));
-      assert(message.match(/To: recipient\@example\.com/));
-      assert(message.match(/\[http\:\/\/example\.com\/\]/)); 
+      assert(message.match(/From: test@example\.com/));
+      assert(message.match(/To: recipient@example\.com/));
+      assert(message.match(/\[http:\/\/example\.com\/\]/));
       return true;
     });
   });
 });
-

@@ -3,7 +3,7 @@ var async = require('async');
 
 if (!fs.existsSync(__dirname + '/../test/node_modules')) {
   fs.mkdirSync(__dirname + '/../test/node_modules');
-  fs.symlinkSync(__dirname + '/..', __dirname +'/../test/node_modules/apostrophe', 'dir');
+  fs.symlinkSync(__dirname + '/..', __dirname + '/../test/node_modules/apostrophe', 'dir');
 }
 
 // Global function to properly clean up an apostrophe instance and drop its
@@ -25,19 +25,18 @@ function destroy(apos, done) {
     return done();
   });
   function drop(callback) {
-    return apos.db.collections(function(err, _collections) {
+    return apos.db.collections(function(err, collections) {
       if (err) {
         return callback(err);
       }
-      collections = _collections;
 
-      //drop the collections
+      // drop the collections
       return async.eachSeries(collections, function(collection, callback) {
-        if(!collection.collectionName.match(/^system\./)){
+        if (!collection.collectionName.match(/^system\./)) {
           return collection.drop(callback);
         }
         return setImmediate(callback);
-      }, callback );
+      }, callback);
     });
   }
   function destroy(callback) {

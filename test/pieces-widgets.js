@@ -1,6 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var async = require('async');
 var request = require('request');
 
@@ -14,15 +13,13 @@ describe('Pieces Widgets', function() {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -87,13 +84,14 @@ describe('Pieces Widgets', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         assert(apos.modules['events-widgets']);
         done();
       }
     });
   });
 
-  it('should be able to use db to insert test pieces', function(done){
+  it('should be able to use db to insert test pieces', function(done) {
     var testItems = [];
     var total = 100;
     for (var i = 1; (i <= total); i++) {
@@ -195,79 +193,4 @@ describe('Pieces Widgets', function() {
     });
   });
 
-  // This code is pulled from express tests in order to properly test POST route
-  var jar;
-
-  function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: 'XSRF-TOKEN' });
-    if (!csrfCookie) {
-      return null;
-    }
-    var csrfToken = csrfCookie.value;
-    return csrfToken;
-  }
-
-  // TODO Removing this test for now, we need a more reliable way of making a request
-  // with a proper csrf token in our test suite.
-  // it('should be able to autocomplete docs', function(done) {
-  //   // otherwise request does not track cookies
-  //   jar = request.jar();
-  //   request({
-  //     method: 'GET',
-  //     url: 'http://localhost:7900/page-with-events',
-  //     jar: jar
-  //   }, function(err, response, body) {
-  //     assert.equal(response.statusCode, 200);
-  //     var csrfToken = getCsrfToken(jar);
-  //     // Now let's get a modal so we can bless the joins
-  //     return request({
-  //       method: 'POST',
-  //       url: 'http://localhost:7900/modules/events-widgets/modal',
-  //       json: {
-  //         _id: 'wevent007'
-  //       },
-  //       jar: jar,
-  //       headers: {
-  //         'X-XSRF-TOKEN': csrfToken
-  //       }
-  //     }, function(err, response, body) {
-  //       assert(!err);
-  //       // Is our status code good?
-  //       assert.equal(response.statusCode, 200);
-  //       return request({
-  //         method: 'POST',
-  //         url: 'http://localhost:7900/modules/apostrophe-docs/autocomplete',
-  //         json: {
-  //           term: 'wig',
-  //           field: {
-  //             type: 'joinByArray',
-  //             name: '_pieces',
-  //             label: 'Individually',
-  //             idsField: 'pieceIds',
-  //             withType: 'event'
-  //           }
-  //         },
-  //         jar: jar,
-  //         headers: {
-  //           'X-XSRF-TOKEN': csrfToken
-  //         }
-  //       }, function(err, response, body) {
-  //         assert(!err);
-  //         // Is our status code good?
-  //         assert.equal(response.statusCode, 200);
-  //         var events;
-  //         if (typeof body === 'string') {
-  //           events = JSON.parse(body);
-  //         } else {
-  //           events = body;
-  //         }
-  //         assert(events);
-  //         assert(Array.isArray(events));
-  //         assert(events[0].label === 'Event Wiggly');
-  //         assert(events.length === 1);
-  //         done();
-  //       });
-  //     });
-  //   });
-  // });
 });

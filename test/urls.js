@@ -13,11 +13,10 @@ describe('Urls', function() {
     return t.destroy(apos, done);
   });
 
-  it('should exist on the apos object', function(done){
+  it('should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       afterInit: function(callback) {
         assert(apos.urls);
         return done();
@@ -67,7 +66,7 @@ describe('Urls', function() {
         assert(apos.urls.build('/events', [ 'year', 'month' ], { year: '2013!@#@', month: '05', tag: 'red' }) === '/events?year=2013%21%40%23%40&month=05&tag=red');
       });
       it('does the right thing for a case that crashed once', function() {
-        assert(apos.urls.build("/events", ["year","month"], {}, {}) === '/events');
+        assert(apos.urls.build("/events", ["year", "month"], {}, {}) === '/events');
       });
       it('correctly allows the last data object to win for a path property', function() {
         assert(apos.urls.build("/events", ["year", "month"], { year: '2013', month: '01', tag: 'dance' }, { year: 2012, month: '12' }) === '/events/2012/12?tag=dance');
