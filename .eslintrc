@@ -24,7 +24,8 @@
         "CKEDITOR_BASEPATH": true,
         "CKEDITOR": true,
         "alert": true,
-        "jQuery": true
+        "jQuery": true,
+        "sluggo": true
       }
     },
     {
