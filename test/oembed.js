@@ -1,10 +1,6 @@
 
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
-var request = require('request');
-var qs = require('qs');
 var apos;
 
 describe('Oembed', function() {
@@ -15,15 +11,15 @@ describe('Oembed', function() {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -43,7 +39,7 @@ describe('Oembed', function() {
       afterListen: function(err) {
         assert(!err);
         done();
-      },
+      }
     });
   });
 

@@ -1,7 +1,6 @@
 
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var async = require('async');
 
 var apos;
@@ -33,7 +32,7 @@ var mockImages = [
       width: 150,
       height: 150
     }
-  },
+  }
 ];
 
 describe('Images', function() {
@@ -51,7 +50,6 @@ describe('Images', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -66,7 +64,7 @@ describe('Images', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
@@ -102,7 +100,7 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter in toCount, which uses a cloned cursor', function(done) {
-    var req = apos.tasks.getAnonReq()
+    var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toCount(function(err, count) {
       assert(!err);
       assert(count === 2);
@@ -110,4 +108,4 @@ describe('Images', function() {
     });
   });
 
-})
+});

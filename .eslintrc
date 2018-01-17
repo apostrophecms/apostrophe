@@ -1,0 +1,44 @@
+{
+  "extends": "punkave",
+  "rules": {
+    "space-before-function-paren": 0,
+    "padded-blocks": 0,
+    "quotes": 0,
+    "standard/no-callback-literal": 0,
+    "no-path-concat": 0,
+    "no-throw-literal": 0
+  },
+  "overrides": [
+    {
+      "files": [ "**/public/**/*.js" ],
+      "excludedFiles": [ "**/public/vendor/**/*.js" ],
+      "globals": {
+        "window": true,
+        "document": true,
+        "location": true,
+        "apos": true,
+        "_": true,
+        "async": true,
+        "confirm": true,
+        "$": true,
+        "CKEDITOR_BASEPATH": true,
+        "CKEDITOR": true,
+        "alert": true,
+        "jQuery": true,
+        "sluggo": true,
+        "moog": true,
+        "Pikaday": true,
+        "moment": true
+      }
+    },
+    {
+      "files": [ "test/**/*.js" ],
+      "globals": {
+        "describe": true,
+        "it": true,
+        "after": true,
+        "before": true
+      }
+    }
+  ]
+}

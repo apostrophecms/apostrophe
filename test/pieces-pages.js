@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var request = require('request');
 
 var apos;
@@ -14,15 +12,13 @@ describe('Pieces Pages', function() {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -61,13 +57,14 @@ describe('Pieces Pages', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         assert(apos.modules['events-pages']);
         done();
-      },
+      }
     });
   });
 
-  it('should be able to use db to insert test pieces', function(done){
+  it('should be able to use db to insert test pieces', function(done) {
     var testItems = [];
     var total = 100;
     for (var i = 1; (i <= total); i++) {
@@ -92,7 +89,7 @@ describe('Pieces Pages', function() {
       });
     }
 
-    apos.docs.db.insert(testItems, function(err){
+    apos.docs.db.insert(testItems, function(err) {
       assert(!err);
       done();
     });

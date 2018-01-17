@@ -1,8 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var Promise = require('bluebird');
-
 
 var apos;
 
@@ -23,11 +20,11 @@ describe('Attachment', function() {
 
     function deleteFolderRecursive (path) {
       var files = [];
-      if( fs.existsSync(path) ) {
+      if (fs.existsSync(path)) {
         files = fs.readdirSync(path);
-        files.forEach(function(file,index){
+        files.forEach(function(file, index) {
           var curPath = path + "/" + file;
-          if(fs.lstatSync(curPath).isDirectory()) { // recurse
+          if (fs.lstatSync(curPath).isDirectory()) { // recurse
             deleteFolderRecursive(curPath);
           } else { // delete file
             fs.unlinkSync(curPath);
@@ -54,7 +51,7 @@ describe('Attachment', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -69,19 +66,18 @@ describe('Attachment', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
   });
-  
+
   describe('wipe', function() {
     it('should clear previous material if any', function(done) {
       wipeIt(done);
     });
   });
 
-  var request = require('request');
   var fs = require('fs');
 
   describe('accept', function() {
@@ -235,66 +231,66 @@ describe('Attachment', function() {
         name: 'upload_image.png',
         path: uploadSource + 'upload_image.png'
       })
-      .then(function(attachment) {
-        assert(attachment);
-        image.title = 'Test Image';
-        image.attachment = attachment;
-        return apos.images.insert(req, image)
-      })
-      .then(function(image) {
-        assert(image);
-        return apos.attachments.db.findOne({ _id: image.attachment._id });
-      })
-      .then(function(attachment) {
-        assert(attachment.trash === false);
-        assert(attachment.docIds);
-        assert(attachment.docIds.length === 1);
-        assert(attachment.docIds[0] === image._id);
-        assert(attachment.trashDocIds);
-        assert(attachment.trashDocIds.length === 0);
-        try {
-          var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-          assert(fd);
-          fs.closeSync(fd);
-        } catch (e) {
-          assert(false);
-        }
-        return apos.images.trash(req, image._id);
-      })
-      .then(function() {
-        return apos.attachments.db.findOne({ _id: image.attachment._id });
-      })
-      .then(function(attachment) {
-        assert(attachment.trash);
-        assert(attachment.docIds.length === 0);
-        assert(attachment.trashDocIds.length === 1);
-        try {
-          var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-          throw new Error('should not have been accessible');
-        } catch (e) {
-          return true;
-        }
-      })
-      .then(function() {
-        return apos.images.rescue(req, image._id);
-      })
-      .then(function() {
-        return apos.attachments.db.findOne({ _id: image.attachment._id });
-      })
-      .then(function(attachment) {
-        assert(!attachment.trash);
-        assert(attachment.docIds.length === 1);
-        assert(attachment.trashDocIds.length === 0);
-        try {
-          var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-          assert(fd);
-          fs.closeSync(fd);
-        } catch (e) {
-          assert(false);
-        }
-      });
+        .then(function(attachment) {
+          assert(attachment);
+          image.title = 'Test Image';
+          image.attachment = attachment;
+          return apos.images.insert(req, image);
+        })
+        .then(function(image) {
+          assert(image);
+          return apos.attachments.db.findOne({ _id: image.attachment._id });
+        })
+        .then(function(attachment) {
+          assert(attachment.trash === false);
+          assert(attachment.docIds);
+          assert(attachment.docIds.length === 1);
+          assert(attachment.docIds[0] === image._id);
+          assert(attachment.trashDocIds);
+          assert(attachment.trashDocIds.length === 0);
+          try {
+            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            assert(fd);
+            fs.closeSync(fd);
+          } catch (e) {
+            assert(false);
+          }
+          return apos.images.trash(req, image._id);
+        })
+        .then(function() {
+          return apos.attachments.db.findOne({ _id: image.attachment._id });
+        })
+        .then(function(attachment) {
+          assert(attachment.trash);
+          assert(attachment.docIds.length === 0);
+          assert(attachment.trashDocIds.length === 1);
+          try {
+            fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            throw new Error('should not have been accessible');
+          } catch (e) {
+            return true;
+          }
+        })
+        .then(function() {
+          return apos.images.rescue(req, image._id);
+        })
+        .then(function() {
+          return apos.attachments.db.findOne({ _id: image.attachment._id });
+        })
+        .then(function(attachment) {
+          assert(!attachment.trash);
+          assert(attachment.docIds.length === 1);
+          assert(attachment.trashDocIds.length === 0);
+          try {
+            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            assert(fd);
+            fs.closeSync(fd);
+          } catch (e) {
+            assert(false);
+          }
+        });
     });
 
   });
 
-})
+});
