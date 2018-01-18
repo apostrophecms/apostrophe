@@ -29,7 +29,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 700;
-  
+
 }
 
 .apos-modal .apos-reorganize-tree
@@ -41,8 +41,14 @@
   .apos-scrollbar;
   input[type="checkbox"] {
     display: inline-block;
-    margin-left: 16px;
+    margin-right: 16px;
   }
+}
+
+.apos-modal .apos-reorganize-tree--chooser {
+  width: 85%;
+  float: right;
+  @media @apos-breakpoint-desktop-xl { width: 75%; }
 }
 
 ul.jqtree-tree ul.jqtree_common { margin-left: 0;}
