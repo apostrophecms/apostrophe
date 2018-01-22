@@ -51,6 +51,16 @@
   @media @apos-breakpoint-desktop-xl { width: 75%; }
 }
 
+
+.apos-reorganize-generate-depth-indicators(50);
+
+.apos-reorganize-generate-depth-indicators(@n, @i: 1) when (@i =< @n) {
+  [data-apos-reorganize-depth="@{i}"] .jqtree-ghost {
+    margin-left: (@i * 15px);
+  }
+  .apos-reorganize-generate-depth-indicators(@n, (@i + 1));
+}
+
 ul.jqtree-tree ul.jqtree_common { margin-left: 0;}
 ul.jqtree-tree .jqtree-title { margin-left: 0; }
 
