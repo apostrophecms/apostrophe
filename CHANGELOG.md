@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.46.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The "Copy" button of pieces now copies areas that do not explicitly appear in the schema, and works correctly when an `apostrophe-pieces` module is set `contextual: true`. Overrideable methods are provided for those who need to copy more than schema fields and top-level areas. We do not copy every property by default because this could have unforeseen consequences; we copy only what is in the schema, plus top-level areas because these have always been supported without an explicit schema in templates.
+
+* It is now possible to secure widget properties so that they are not visible to end users if you do not choose to output them in the markup. To do that, set the `playerData` option of your widget module to `false`, or to an array of properties that **should** be visible in the `data` JSON attribute so that they are passed to the `play()` method. Normally widget properties are public information, intended for display, but this technique is useful if you have a `username` and `password` for use in fetching an external feed in a server-side `load` method, for instance. **Note that to allow widget editing to function, everything is still passed in `data` if the user has editing privileges for the widget.** So if you seek to verify this feature, be sure to check as a logged-out user, or a user without editing permissions for that content.
+
+* It is now easy to override the `fieldset` markup for Apostrophe schemas. Just copy `lib/modules/apostrophe-schemas/views/fieldset.html` to your project-level version of that path and edit it. However, please note that you must continue to have an outer wrapper element with the given attributes.
+
+* Apostrophe's codebase now passes `eslint`. In the process many cases of callback errors being ignored were fixed, as well as global variable leaks.
+
+* Apostrophe's `apos.locks.lock` and `apos.locks.unlock` methods now support promises.
+
 ## 2.45.0
 
 Unit tests passing.
