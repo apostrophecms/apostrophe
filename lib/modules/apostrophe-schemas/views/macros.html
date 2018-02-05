@@ -58,6 +58,10 @@
   {%- endif -%}
 {%- endmacro -%}
 
+{%- macro colorpickerBody(field, options) -%}
+    {{ commonFields.colorpicker(field.name, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
 {%- macro integer(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
@@ -111,6 +115,10 @@
 {# Typically we enhance this with jquery ui datepicker later #}
 {%- macro date(field) -%}
   {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro colorpicker(field) -%}
+  {{ fieldset(field, colorpickerBody) }}
 {%- endmacro -%}
 
 {%- macro time(field) -%}
