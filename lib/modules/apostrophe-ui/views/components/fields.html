@@ -30,7 +30,7 @@
 
 {% macro colorpicker(name, placeholder, value, readOnly, options) -%}
   <label>
-    <input id="{{ options.id }}" name="{{ name }}" class="apos-field-input apos-field-input-color" type="color" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
-    <span class="apos-field-input-colorpicker-value" data-apos-color-value></span>
+    <div class="apos-field-input-colorpicker-preview" data-apos-colorpicker-preview></div>
+    <input id="{{ options.id }}" name="{{ name }}" class="apos-field-input apos-field-input-color" data-apos-colorpicker type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
   </label>
 {%- endmacro %}
