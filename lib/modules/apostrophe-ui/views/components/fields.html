@@ -34,3 +34,10 @@
     <input id="{{ options.id }}" name="{{ name }}" class="apos-field-input apos-field-input-color" data-apos-colorpicker type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
   </label>
 {%- endmacro %}
+
+{% macro range(name, min, max, step, placeholder, value, readOnly, options) -%}
+{{ apos.log(value) }}
+  <label>
+    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range" type="range" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+  </label>
+{%- endmacro %}

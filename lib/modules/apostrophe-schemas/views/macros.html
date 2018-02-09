@@ -62,6 +62,10 @@
     {{ commonFields.colorpicker(field.name, field.placeholder, '', field.readOnly, options) }}
 {%- endmacro -%}
 
+{%- macro rangeBody(field, options) -%}
+    {{ commonFields.range(field.name, field.min, field.max, field.step, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
 {%- macro integer(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
@@ -119,6 +123,10 @@
 
 {%- macro colorpicker(field) -%}
   {{ fieldset(field, colorpickerBody) }}
+{%- endmacro -%}
+
+{%- macro range(field) -%}
+  {{ fieldset(field, rangeBody) }}
 {%- endmacro -%}
 
 {%- macro time(field) -%}
