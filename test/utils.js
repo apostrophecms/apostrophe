@@ -80,6 +80,16 @@ describe('Utils', function() {
       return done();
     });
 
+    it('cssName: should preserve double dash', function() {
+      var s = apos.utils.cssName('this-is--doubled');
+      assert(s === 'this-is--doubled');
+    });
+
+    it('cssName: should not preserve triple dash', function() {
+      var s = apos.utils.cssName('this-is---tripled');
+      assert(s === 'this-is--tripled');
+    });
+
     it('camelName: should convert non digits or ASII characters to a capitalized version of the next character', function(done) {
       var s = apos.utils.camelName('hello apostrophe');
 
