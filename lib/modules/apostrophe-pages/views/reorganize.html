@@ -21,8 +21,15 @@
 {% endblock %}
 
 {% block body %}
+  <div class="apos-reorganize-tree-header">
+    <span class="apos-reorganize-title">Page Title</span>
+    <span class="apos-reorganize-controls">Published</span>
+    <span class="apos-reorganize-controls">Edit</span>
+    <span class="apos-reorganize-controls">Link</span>
+    <span class="apos-reorganize-controls">Trash</span>
+  </div> 
   {# This gets fired up by jstree #}
-  <div class="apos-reorganize-tree" data-tree>
+  <div class="apos-table apos-reorganize-tree" data-tree>
   </div>
 {% endblock %}
 
