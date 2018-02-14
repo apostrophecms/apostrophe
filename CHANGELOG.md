@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.46.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Attachment fields now save properly when directly part of the schema of a widget. A bug was introduced in version 2.42.0 when the `length` property was added to attachments. A fix made long ago to `apos.utils.clonePermanent` on the server side was also needed on the browser side.
+
 ## 2.46.0
 
 Unit tests passing.
