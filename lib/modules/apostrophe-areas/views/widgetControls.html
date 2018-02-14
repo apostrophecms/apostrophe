@@ -10,7 +10,7 @@
         <div class="apos-button-group {{ group.classes }}">
           {% for control in group.controls %}
             {% if control.type == 'select' %}
-              <select name="{{ control.name }}">
+              <select class="apos-button apos-button--in-group apos-select" name="{{ control.name }}">
                 {% for choice in control.choices %}
                   <option value="{{ choice.value }}" {% if data.widget[control.name] == choice.value %}selected{% endif %}>{{ choice.label }}</option>
                 {% endfor %}
