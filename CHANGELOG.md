@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.47.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Developers now have the option to use jQuery 3. To enable jQuery 3, set the `jQuery` option of the `apostrophe-assets` module to the number `3`. We have packaged specific versions of jQuery 3 and jQuery UI which are known to be compatible with and tested with Apostrophe's UI, and we plan to use these in our own projects going forward. We will be making this change in the apostrophe boilerplate project. Of course Apostrophe's UI remains compatible with the older version of jQuery that loads by default. There is no bc break.
+
+* When you join with pages, by using the virtual doc type `apostrophe-page`, the user is now invited to choose a page via a version of the reorganize dialog box, which has been made more user-friendly for this purpose. Autocomplete is still supported too.
+
+* The reorganize dialog box is more pleasant to use. This dialog will continue to evolve to offer more of the functionality found in the "manage" dialog boxes for piece types.
+
+* The page parking mechanism has been overhauled and improved. From now on, it is our recommendation that you set a unique `parkedId` for each parked page you configure for `apostrophe-pages`. This ensures that even if you change the slug in the configuration of the parked page, Apostrophe will still be able to understand that the page already exists and a new one should not be inserted. This is especially critical if using `apostrophe-workflow`, since you might decide to add or change locale prefixes at some point.
+
+* The database connection keepalive mechanism now uses a query against an empty collection, rather than a server status call that the database user might not have permission to make.
+
+* The `apos.utils.cssName` helper now preserves double dashes, as they are a common feature in modern CSS frameworks.
+
+* There is now an `apostrophe-areas:widgetBase.html` file which can be extended block by block in a project-level `lib/modules/apostrophe-areas/views/widget.html` file. New overrideable methods have also been added to simplify adding custom classes programmatically to the wrapper and the widget itself without overriding any templates.
+
+* It is now possible to configure select elements (we do not recommend more than one) to be displayed inline with the other widget controls, i.e. up, down, delete, etc. The back end of this is left to the developer, however you can check out the still-evolving [apostrophe-personas](https://github.com/apostrophecms/apostrophe-personas) module for an example. This feature is primarily meant for modules like `apostrophe-personas` that impact all widgets in a general way.
+
 ## 2.46.1
 
 Unit tests passing.
