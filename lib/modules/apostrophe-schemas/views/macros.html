@@ -58,8 +58,8 @@
   {%- endif -%}
 {%- endmacro -%}
 
-{%- macro colorpickerBody(field, options) -%}
-    {{ commonFields.colorpicker(field.name, field.placeholder, '', field.readOnly, options) }}
+{%- macro colorBody(field, options) -%}
+    {{ commonFields.color(field.name, field.placeholder, '', field.readOnly, options) }}
 {%- endmacro -%}
 
 {%- macro rangeBody(field, options) -%}
@@ -121,8 +121,8 @@
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
-{%- macro colorpicker(field) -%}
-  {{ fieldset(field, colorpickerBody) }}
+{%- macro color(field) -%}
+  {{ fieldset(field, colorBody) }}
 {%- endmacro -%}
 
 {%- macro range(field) -%}
