@@ -6,7 +6,8 @@
     "quotes": 0,
     "standard/no-callback-literal": 0,
     "no-path-concat": 0,
-    "no-throw-literal": 0
+    "no-throw-literal": 0,
+    "no-console": 1
   },
   "overrides": [
     {
@@ -38,6 +39,9 @@
         "it": true,
         "after": true,
         "before": true
+      },
+      "rules": {
+        "no-console": 0
       }
     }
   ]
