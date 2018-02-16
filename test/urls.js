@@ -171,7 +171,6 @@ describe('Urls', function() {
       });
       it('Takes less than 250 msec to run these tests', function() {
         var end = (new Date()).getTime();
-        // console.log(end - start);
         assert((end - start) < 250);
       });
     });

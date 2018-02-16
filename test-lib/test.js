@@ -19,6 +19,7 @@ function destroy(apos, done) {
     destroy
   ], function(err) {
     if (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
       process.exit(1);
     }
