@@ -13,6 +13,8 @@ module.exports = function(options) {
   self.root = options.root || getRoot();
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
+  // Install logger extremely early, before we might log anything
+  self.logger = options.logger(self) || require('./lib/logger.js')(self);
   testModule();
 
   self.options = mergeConfiguration(options, defaults);
@@ -43,9 +45,9 @@ module.exports = function(options) {
         // Currently v8's err.stack property contains both the stack and the error message,
         // but that's weird and could be temporary, so if it ever changes, output both. -Tom
         if (((typeof err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
-          console.error(err);
+          self.error(err);
         }
-        console.error(err.stack);
+        self.error(err.stack);
         process.exit(1);
       }
     }
@@ -110,13 +112,83 @@ module.exports = function(options) {
     });
   };
 
-  /**
-   * For every module, if the method `method` exists,
-   * invoke it. The method may optionally take a callback.
-   * The method must take exactly as many additional
-   * arguments as are passed here between `method`
-   * and the final `callback`.
-   */
+  // Log a message message. The default
+  // implementation wraps `console.log` and passes on
+  // all arguments, so substitution strings may be used.
+  //
+  // Overrides should be written with support for
+  // substitution strings in mind. See the
+  // `console.log` documentation.
+  //
+  // If the logger has no `log` method, the `info` method
+  // is used. This allows an instance of `bole` or similar
+  // to be used directly.
+
+  self.log = function(msg) {
+    if (!self.logger.log) {
+      return self.logger.info.apply(self.logger.info, arguments);
+    }
+    self.logger.log.apply(self.logger, arguments);
+  };
+
+  // Log an informational message. The default
+  // implementation wraps `console.info` and passes on
+  // all arguments, so substitution strings may be used.
+  //
+  // Overrides should be written with support for
+  // substitution strings in mind. See the
+  // `console.log` documentation.
+
+  self.info = function(msg) {
+    self.logger.info.apply(self.logger, arguments);
+  };
+
+  // Log a debug message. The default implementation wraps
+  // `console.debug` if available, otherwise `console.log`,
+  // and passes on all arguments, so substitution strings may be used.
+  //
+  // Overrides should be written with support for
+  // substitution strings in mind. See the
+  // `console.warn` documentation.
+
+  self.debug = function(msg) {
+    self.logger.debug.apply(self.logger, arguments);
+  };
+
+  // Log a warning. The default implementation wraps
+  // `console.warn` and passes on all arguments,
+  // so substitution strings may be used.
+  //
+  // Overrides should be written with support for
+  // substitution strings in mind. See the
+  // `console.warn` documentation.
+  //
+  // The intention is that `apos.warn` should be
+  // called for situations less dire than
+  // `apos.error`.
+
+  self.warn = function(msg) {
+    self.logger.warn.apply(self.logger, arguments);
+  };
+
+  // Log an error message. The default implementation
+  // wraps `console.error` and passes on all arguments,
+  // so substitution strings may be used.
+  //
+  // Overrides should be written with support for
+  // substitution strings in mind. See the
+  // `console.error` documentation.
+
+  self.error = function(msg) {
+    self.logger.error.apply(self.logger, arguments);
+  };
+
+  // For every module, if the method `method` exists,
+  // invoke it. The method may optionally take a callback.
+  // The method must take exactly as many additional
+  // arguments as are passed here between `method`
+  // and the final `callback`.
+
   self.callAll = function(method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
     var extraArgs = args.slice(1, args.length - 1);
@@ -382,7 +454,7 @@ module.exports = function(options) {
       }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
-          console.error('Error while constructing the ' + item + ' module');
+          self.error('Error while constructing the ' + item + ' module');
           return callback(err);
         }
         return callback(null);

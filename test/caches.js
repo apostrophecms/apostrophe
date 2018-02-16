@@ -24,13 +24,11 @@ describe('Caches', function() {
 
       afterListen: function(err) {
         assert(!err);
-        console.log('DONE');
         return done();
       }
     });
   });
   it('should give us a cache object', function() {
-    console.log('GETTING');
     cache = apos.caches.get('testMonkeys');
   });
   it('should not crash on clear', function(done) {

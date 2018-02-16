@@ -674,7 +674,6 @@ describe('Docs', function() {
   it('should be able to re-lock an unlocked document', function(done) {
     var req = apos.tasks.getReq();
     apos.docs.lock(req, 'i27', 'def', function(err) {
-      console.log(err);
       assert(!err);
       done();
     });
