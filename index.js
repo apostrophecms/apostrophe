@@ -14,7 +14,7 @@ module.exports = function(options) {
   self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
   // Install logger extremely early, before we might log anything
-  self.logger = options.logger(self) || require('./lib/logger.js')(self);
+  self.logger = options.logger ? options.logger(self) : require('./lib/logger.js')(self);
   testModule();
 
   self.options = mergeConfiguration(options, defaults);
