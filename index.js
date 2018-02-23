@@ -9,19 +9,28 @@ var defaults = require('./defaults.js');
 module.exports = function(options) {
   var self = {};
 
-  // Determine root module and root directory
-  self.root = options.root || getRoot();
-  self.rootDir = options.rootDir || path.dirname(self.root.filename);
+  try {
+    // Determine root module and root directory
+    self.root = options.root || getRoot();
+    self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
-  testModule();
+    testModule();
 
-  self.options = mergeConfiguration(options, defaults);
-  autodetectBundles();
-  acceptGlobalOptions();
+    self.options = mergeConfiguration(options, defaults);
+    autodetectBundles();
+    acceptGlobalOptions();
 
-  self.handlers = {};
+    self.handlers = {};
 
-  defineModules();
+    defineModules();
+  } catch (err) {
+    if (options.initFailed) {
+      // Report error in an extensible way
+      return options.initFailed(err);
+    } else {
+      throw err;
+    }
+  }
 
   // No return statement here because we need to
   // return "self" after kicking this process off
@@ -37,16 +46,7 @@ module.exports = function(options) {
         // Report error in an extensible way
         return options.initFailed(err);
       } else {
-        // In the absence of a callback to handle initialization failure,
-        // we have to assume there's just one instance of Apostrophe and
-        // we can print the error and end the app.
-        // Currently v8's err.stack property contains both the stack and the error message,
-        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
-        if (((typeof err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
-          console.error(err);
-        }
-        console.error(err.stack);
-        process.exit(1);
+        throw err;
       }
     }
     if (self.argv._.length) {
@@ -110,13 +110,12 @@ module.exports = function(options) {
     });
   };
 
-  /**
-   * For every module, if the method `method` exists,
-   * invoke it. The method may optionally take a callback.
-   * The method must take exactly as many additional
-   * arguments as are passed here between `method`
-   * and the final `callback`.
-   */
+  // For every module, if the method `method` exists,
+  // invoke it. The method may optionally take a callback.
+  // The method must take exactly as many additional
+  // arguments as are passed here between `method`
+  // and the final `callback`.
+
   self.callAll = function(method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
     var extraArgs = args.slice(1, args.length - 1);
@@ -211,7 +210,7 @@ module.exports = function(options) {
       } else if (local.length === 2) {
         local(self, config);
       } else {
-        throw 'data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config';
+        throw new Error('data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config');
       }
     } else {
       _.merge(config, local || {});
@@ -382,7 +381,6 @@ module.exports = function(options) {
       }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
-          console.error('Error while constructing the ' + item + ' module');
           return callback(err);
         }
         return callback(null);
