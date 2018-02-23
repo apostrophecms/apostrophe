@@ -349,7 +349,7 @@ module.exports = function(options) {
     var synth = require('moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
-      localModules: self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
+      localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
       defaultBaseClass: 'apostrophe-module'
     });
 
