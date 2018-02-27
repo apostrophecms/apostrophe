@@ -9,21 +9,28 @@ var defaults = require('./defaults.js');
 module.exports = function(options) {
   var self = {};
 
-  // Determine root module and root directory
-  self.root = options.root || getRoot();
-  self.rootDir = options.rootDir || path.dirname(self.root.filename);
+  try {
+    // Determine root module and root directory
+    self.root = options.root || getRoot();
+    self.rootDir = options.rootDir || path.dirname(self.root.filename);
 
-  // Install logger extremely early, before we might log anything
-  self.logger = options.logger ? options.logger(self) : require('./lib/logger.js')(self);
-  testModule();
+    testModule();
 
-  self.options = mergeConfiguration(options, defaults);
-  autodetectBundles();
-  acceptGlobalOptions();
+    self.options = mergeConfiguration(options, defaults);
+    autodetectBundles();
+    acceptGlobalOptions();
 
-  self.handlers = {};
+    self.handlers = {};
 
-  defineModules();
+    defineModules();
+  } catch (err) {
+    if (options.initFailed) {
+      // Report error in an extensible way
+      return options.initFailed(err);
+    } else {
+      throw err;
+    }
+  }
 
   // No return statement here because we need to
   // return "self" after kicking this process off
@@ -39,16 +46,7 @@ module.exports = function(options) {
         // Report error in an extensible way
         return options.initFailed(err);
       } else {
-        // In the absence of a callback to handle initialization failure,
-        // we have to assume there's just one instance of Apostrophe and
-        // we can print the error and end the app.
-        // Currently v8's err.stack property contains both the stack and the error message,
-        // but that's weird and could be temporary, so if it ever changes, output both. -Tom
-        if (((typeof err.stack) !== 'string') || (err.stack.indexOf(err.toString()) === -1)) {
-          self.error(err);
-        }
-        self.error(err.stack);
-        process.exit(1);
+        throw err;
       }
     }
     if (self.argv._.length) {
@@ -110,77 +108,6 @@ module.exports = function(options) {
     self.handlers[eventName] = _.filter(self.handlers[eventName], function(_fn) {
       return fn !== _fn;
     });
-  };
-
-  // Log a message message. The default
-  // implementation wraps `console.log` and passes on
-  // all arguments, so substitution strings may be used.
-  //
-  // Overrides should be written with support for
-  // substitution strings in mind. See the
-  // `console.log` documentation.
-  //
-  // If the logger has no `log` method, the `info` method
-  // is used. This allows an instance of `bole` or similar
-  // to be used directly.
-
-  self.log = function(msg) {
-    if (!self.logger.log) {
-      return self.logger.info.apply(self.logger.info, arguments);
-    }
-    self.logger.log.apply(self.logger, arguments);
-  };
-
-  // Log an informational message. The default
-  // implementation wraps `console.info` and passes on
-  // all arguments, so substitution strings may be used.
-  //
-  // Overrides should be written with support for
-  // substitution strings in mind. See the
-  // `console.log` documentation.
-
-  self.info = function(msg) {
-    self.logger.info.apply(self.logger, arguments);
-  };
-
-  // Log a debug message. The default implementation wraps
-  // `console.debug` if available, otherwise `console.log`,
-  // and passes on all arguments, so substitution strings may be used.
-  //
-  // Overrides should be written with support for
-  // substitution strings in mind. See the
-  // `console.warn` documentation.
-
-  self.debug = function(msg) {
-    self.logger.debug.apply(self.logger, arguments);
-  };
-
-  // Log a warning. The default implementation wraps
-  // `console.warn` and passes on all arguments,
-  // so substitution strings may be used.
-  //
-  // Overrides should be written with support for
-  // substitution strings in mind. See the
-  // `console.warn` documentation.
-  //
-  // The intention is that `apos.warn` should be
-  // called for situations less dire than
-  // `apos.error`.
-
-  self.warn = function(msg) {
-    self.logger.warn.apply(self.logger, arguments);
-  };
-
-  // Log an error message. The default implementation
-  // wraps `console.error` and passes on all arguments,
-  // so substitution strings may be used.
-  //
-  // Overrides should be written with support for
-  // substitution strings in mind. See the
-  // `console.error` documentation.
-
-  self.error = function(msg) {
-    self.logger.error.apply(self.logger, arguments);
   };
 
   // For every module, if the method `method` exists,
@@ -283,7 +210,7 @@ module.exports = function(options) {
       } else if (local.length === 2) {
         local(self, config);
       } else {
-        throw 'data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config';
+        throw new Error('data/local.js may export an object, a function that takes apos as an argument and returns an object, OR a function that takes apos and config as objects and directly modifies config');
       }
     } else {
       _.merge(config, local || {});
@@ -454,7 +381,6 @@ module.exports = function(options) {
       }
       return self.synth.create(item, { apos: self }, function(err, obj) {
         if (err) {
-          self.error('Error while constructing the ' + item + ' module');
           return callback(err);
         }
         return callback(null);
