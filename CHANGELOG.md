@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.48.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New `color` and `range` schema field types. `color` provides a color picker field allowing values compatible with CSS, etc. `range` provides an `<input type="range">` element and respects `min` and `max` options.
+* New `apos.utils.log`, `apos.utils.info`, `apos.utils.debug`, `apos.utils.warn` and `apos.utils.error` methods. These are now used consistently throughout Apostrophe core, both in the server and in the browser. On the server, these methods wrap the corresponding methods of a `logger` object and you can inject your own via the `logger` option of the `apostrophe-utils` module. By default a logger object that wraps the `console` object is created. For convenience, if your logger has no `log` method, `apos.utils.log` will call `logger.info`. This allows many popular loggers like `winston` to be used without modification "out of the box."
+* `modulesSubdir` option to specify subdir where local modules come from, overriding `lib/modules`. Useful when more than one `apos` object exists in a project.
+* Major speedup to parked pages. Also eliminates spurious warnings about inefficient joins at startup.
+* Refactored autocollapse behavior of admin bar into its own method for easier overrides.
+* CSS fixes for improved usability.
+
 ## 2.47.0
 
 Unit tests passing.

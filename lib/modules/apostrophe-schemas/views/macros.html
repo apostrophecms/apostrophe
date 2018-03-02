@@ -58,6 +58,14 @@
   {%- endif -%}
 {%- endmacro -%}
 
+{%- macro colorBody(field, options) -%}
+    {{ commonFields.color(field.name, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
+{%- macro rangeBody(field, options) -%}
+    {{ commonFields.range(field.name, field.min, field.max, field.step, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
 {%- macro integer(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
@@ -103,14 +111,17 @@
   </div>
 {%- endmacro -%}
 
-{# Maybe fancier later #}
-{%- macro email(field) -%}
-  {{ fieldset(field, stringBody) }}
-{%- endmacro -%}
-
 {# Typically we enhance this with jquery ui datepicker later #}
 {%- macro date(field) -%}
   {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro color(field) -%}
+  {{ fieldset(field, colorBody) }}
+{%- endmacro -%}
+
+{%- macro range(field) -%}
+  {{ fieldset(field, rangeBody) }}
 {%- endmacro -%}
 
 {%- macro time(field) -%}
