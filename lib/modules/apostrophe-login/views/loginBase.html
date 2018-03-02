@@ -25,10 +25,10 @@
             <div class="apos-login-submit">
               <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __('Log In') }}{% endblock %}" />
             </div>
-            {% block forgot %}
-              {% if resetAvailable %}
+            {% block passwordReset %}
+              {% if data.passwordReset %}
               <br />
-                <a class="apos-login-reset" href="{{ apos.prefix }}/apos-people/reset-request">{{ __('Reset My Password') }}</a>
+                <a class="apos-login-reset" href="{{ apos.prefix }}/password-reset-request">{{ __('Reset My Password') }}</a>
               {% endif %}
             {% endblock %}
           </form>
