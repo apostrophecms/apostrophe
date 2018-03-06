@@ -276,6 +276,10 @@ module.exports = function(options) {
         _: []
       };
       self.options.shortName = self.options.shortName || 'test';
+    } else if (options.argv) {
+      // Allow injection of any set of command line arguments.
+      // Useful with multiple instances
+      self.argv = options.argv;
     } else {
       self.argv = argv;
     }
