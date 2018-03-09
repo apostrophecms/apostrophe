@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.49.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New password reset feature. You will need to configure `apostrophe-email` and opt into this feature. See the new [Apostrophe password reset HOWTO](https://apostrophecms.org/docs/tutorials/howtos/password-reset.html).
+* Significant performance boost to the "reorganize" modal in situations where numerous pages are in the trash when using the `apostrophe-workflow` module.
+* If widget ids are not provided when inserting new documents they are automatically generated. This makes [apostrophe-headless](https://npmjs.org/package/apostrophe-headless) easier to use.
+
 ## 2.48.0
 
 Unit tests passing.
