@@ -8,7 +8,7 @@
           <i class="fa fa-arrow-up" data-apos-move-array-item="up"></i>	
         </div>
       {% endif %}
-      <p>{{ item._title or "Untitled" }}</p>
+      {% include data.field.listItemTemplate or "arrayListItem.html" %}
     </div>
   {% endfor %}
 </div>
