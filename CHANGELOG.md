@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.50.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New features for displaying the titles of array items when editing fields of type `array`. `titleField` may now use dot notation. In addition, if that isn't enough, you may use `listItemTemplate` to point to an alternative to the standard `arrayListItem.html` template, which you may use as a reference. In addition, both `titleField` dot notation and the custom `listItemTemplate` have full access to joins. Be sure to use cross-module include syntax if you don't want to put the template in `lib/modules/apostrophe-schemas/views`. For instance, you may write `listItemTemplate: 'my-module-name:listItemTemplate.html'`.
+* Bug fix: modals are the right height when jQuery 3 is in use.
+* CSS class added to the `h4` that displays the title in an `apostrophe-images` widget, for your CSS styling convenience. Thanks to Gareth Cooper.
+
 ## 2.49.0
 
 Unit tests passing.
