@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:punkave/apostrophe.git"
+    "url": "git@github.com:apostrophecms/apostrophe.git"
   },
   "keywords": [
     "apostrophe",
