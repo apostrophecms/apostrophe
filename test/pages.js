@@ -4,6 +4,7 @@ var _ = require('lodash');
 var request = require('request');
 
 var apos;
+var homeId;
 
 describe('Pages', function() {
 
@@ -78,6 +79,7 @@ describe('Pages', function() {
     return apos.pages.find(apos.tasks.getAnonReq(), { level: 0 }).toObject(function(err, home) {
       assert(!err);
       assert(home);
+      homeId = home._id;
       assert(home.slug === '/');
       assert(home.path === '/');
       assert(home.type === 'home');
@@ -507,4 +509,23 @@ describe('Pages', function() {
       });
     });
   });
+
+  it('is able to insert a new page with the path attempting to follow the slug rather than the title', function(done) {
+    var parentId = homeId;
+
+    var newPage = {
+      slug: '/newish-page',
+      published: true,
+      type: 'testPage',
+      title: 'New Page'
+    };
+    apos.pages.insert(apos.tasks.getReq(), parentId, newPage, function(err, page) {
+      // did it return an error?
+      assert(!err);
+      // Is the path based on the slug rather than the title?
+      assert.equal(page.path, '/newish-page');
+      done();
+    });
+  });
+
 });
