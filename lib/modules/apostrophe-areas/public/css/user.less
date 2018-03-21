@@ -72,6 +72,15 @@
   >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
 }
 
+// Don't fight with the add content menu. -Tom
+.apos-area.apos-context-content-menu-active {
+  .apos-area-widget {
+    >.apos-ui .apos-area-widget-controls {
+      display: none;
+    }
+  }
+}
+
 // Widget controls positioning
 .apos-area-widget-controls
 {
