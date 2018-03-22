@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.51.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Widget fields may now have a `permission` property. If present, the user must have the named permission (such as `admin`), or they will not see that particular field in the editing dialog box. This is useful when a widget should be authorable by most users but has a sensitive field that should be restricted to a smaller group of users. Note that this feature already existed for schema fields of pieces and pages.
+* Apostrophe again allows a named pipe to be specified via the `PORT` environment variable, for compatibility with Windows. Thanks to Jørgen M. Skogås for this fix.
+* Apostrophe's default settings for the `bodyParser` option are now generous enough, in the case of JSON request bodies, to cover all reasonable editing scenarios in Apostrophe. This change also benefits the `apostrophe-headless` module.
+* When Apostrophe must generate a `path` for a new page, it will look at the provided `slug` before it looks at the provided `title`. This is useful when titles in an import are of poor quality but slugs are unique. Prevents unnecessary numbered suffixes after both slugs and paths.
+* The dropdown menu to add a widget no longer has a conflict with the hover menu offering widget controls such as "up," "down," etc. The hover menu does not appear while the dropdown menu is open.
+
 ## 2.50.0
 
 Unit tests passing.
