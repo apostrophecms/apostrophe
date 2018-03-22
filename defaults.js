@@ -46,9 +46,6 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
-    'apostrophe-optimizer': {
-      optimize: true
-    },
     // ALWAYS LAST FOREVER
     'apostrophe-service-bridge': {}
   }
