@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.51.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Do not crash when updating a doc if widgets exist but `_originalWidget` does not. This can happen in workflow scenarios where Apostrophe's `find` is bypassed.
+* Accommodations for the forthcoming `apostrophe-optimizer` module.
+
 ## 2.51.0
 
 Unit tests passing.
