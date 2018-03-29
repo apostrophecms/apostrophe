@@ -91,6 +91,7 @@ describe('Login', function() {
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get our page back?
+      console.log(body);
       assert(body.match(/logout/));
       return done();
     });
