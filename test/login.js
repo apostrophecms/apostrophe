@@ -21,7 +21,7 @@ describe('Login', function() {
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7900,
+          port: 7901,
           csrf: false
         }
       },
@@ -65,7 +65,7 @@ describe('Login', function() {
   it('should not see logout link yet', function(done) {
     // otherwise logins are not remembered in a session
     request.jar();
-    return request('http://localhost:7900/', function(err, response, body) {
+    return request('http://localhost:7901/', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
@@ -82,7 +82,7 @@ describe('Login', function() {
 
   it('should be able to login a user', function(done) {
     // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7900/login', {
+    return request.post('http://localhost:7901/login', {
       form: { username: 'HarryPutter', password: 'crookshanks' },
       followAllRedirects: true,
       jar: loginLogoutJar
@@ -98,7 +98,7 @@ describe('Login', function() {
 
   it('should be able to login a user with their email', function(done) {
     // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7900/login', {
+    return request.post('http://localhost:7901/login', {
       form: { username: 'hputter@aol.com', password: 'crookshanks' },
       followAllRedirects: true,
       jar: loginEmailLogoutJar
@@ -114,7 +114,7 @@ describe('Login', function() {
 
   it('should be able to log out', function(done) {
     // otherwise logins are not remembered in a session
-    return request('http://localhost:7900/logout', {
+    return request('http://localhost:7901/logout', {
       followAllRedirects: true,
       jar: loginLogoutJar
     }, function(err, response, body) {
@@ -129,7 +129,7 @@ describe('Login', function() {
 
   it('should be able to log out after having logged in with email', function(done) {
     // otherwise logins are not remembered in a session
-    return request('http://localhost:7900/logout', {
+    return request('http://localhost:7901/logout', {
       followAllRedirects: true,
       jar: loginEmailLogoutJar
     }, function(err, response, body) {
