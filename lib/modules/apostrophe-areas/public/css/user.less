@@ -142,16 +142,26 @@
   opacity: 1;
   padding: @apos-padding-1;
   margin: @apos-margin-1/2 0;
+  // height: 100px;
 }
 
 .apos-dragging .apos-empty .apos-area-widgets
 {
+  
   display: block;
   height: 100%;
 }
 
-.apos-dragging .apos-empty .apos-area-item-separator
+.apos-dragging.apos-empty .apos-area-item-separator
 {
+  display: block;
+  height: 100px;
+  width: 100%;
+  margin: 0;
+}
+
+.apos-dragging.apos-empty .apos-area-widgets {
+  width: 100%;
   height: 100%;
 }
 
