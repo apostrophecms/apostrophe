@@ -27,7 +27,7 @@
     {% endif %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
-      <a name="main"></a>
+      {% block mainAnchor %}<a name="main"></a>{% endblock %}
       {% block main %}{% endblock %}
       {% block afterMain %}{% endblock %}
     </div>
