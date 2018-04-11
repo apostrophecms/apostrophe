@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.52.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* No more 404's when slugs change for pages and pieces. Apostrophe now automatically implements "soft redirects" to the new URL of a page or piece. This is a major SEO improvement, with good support for any page or piece with a `._url` property. Note that this feature "learns" URLs over time as the pages and pieces are actually accessed, so if you decide to test it, remember that you must access the old URL at least once before you change it for the test. This feature can be disabled, if you really want to, by setting the `enable` option of the `apostrophe-soft-redirects` module to `false`.
+* Indexed queries on the `parkedId` and `advisoryLock._id` properties. The lack of indexes for these properties could lead to full collection scans, so this is a significant performance boost on large databases.
+* Apostrophe's anti-CSRF forgery X-XSRF-TOKEN header is no longer sent as part of an OPTIONS request, or as part of a cross-domain request. In the first case, cookies cannot be set by the server anyway, and in the second, we are communicating with a server that cannot see our session to verify it. In both cases, sending the headers was causing configuration headaches for developers. Thanks to Priyansh Gupta.
+* A UI bug fix: the recently added "clone" button for widgets is no longer displayed for singletons, or for areas whose `limit` has been reached. Also, the `cloneable: false` option can be used to disable this feature for a particular area.
+* UI bug fix: no more conflicts between the "Add Content" menu and the up/down/remove/etc. buttons for widgets.
+* Clearer warnings and error messages.
+
 ## 2.51.1
 
 Unit tests passing.
