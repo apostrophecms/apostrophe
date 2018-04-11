@@ -13,6 +13,7 @@ module.exports = function(options) {
     // Determine root module and root directory
     self.root = options.root || getRoot();
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
+    self.npmRootDir = options.npmRootDir || self.rootDir;
 
     testModule();
 
@@ -257,7 +258,7 @@ module.exports = function(options) {
   }
 
   function getNpmPath(name) {
-    var parentPath = path.resolve(self.rootDir);
+    var parentPath = path.resolve(self.npmRootDir);
     try {
       return npmResolve.sync(name, { basedir: parentPath });
     } catch (e) {
