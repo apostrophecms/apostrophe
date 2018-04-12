@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.53.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Do not send X-XSRF-TOKEN headers in an OPTIONS request. This change was mistakenly left out of the 2.52.0 release.
+* The named anchor `main` can now be overridden via the `mainAnchor` nunjucks block.
+* The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `lib/modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
+* Raw HTML widgets now offer help text out of the box.
+* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware. 
+* Your own module-level `expressMiddleware` object can specify `{ when: 'beforeRequired', middleware: function(req, res, next) { ... })` to run before the required middleware as well. Note that this means no sessions, no users and no body parser. Most of the time you'll want those things.
+* CSS adjustment to tabs in modals so they don't scroll in Firefox.
+* Dropzones for empty areas are easier to drop onto.
+
 ## 2.52.0
 
 Unit tests passing.
