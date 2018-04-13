@@ -1,0 +1,40 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+{%- block modalClass -%}
+  apostrophe-polymorphic-chooser-modal apos-ui-modal-no-sidebar apos-manager
+{%- endblock -%}
+
+{%- block controls -%}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Save Choices', { action: 'save' }) }}
+{%- endblock -%}
+
+{%- block instructions -%}
+  {{ __('Select the appropriate tab to choose each type of content.') }}
+{%- endblock -%}
+
+{%- block filters -%}
+  {# Currently not used here #}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Choose Documents') }}
+{%- endblock -%}
+
+{%- block body -%}
+  <div class="tab-bar">
+    {% for type in data.types %}
+      <div data-tab-button="{{ type.name }}">{{ type.pluralLabel }}</div>
+    {% endfor %}
+  </div>
+  <div class="tabs">
+    {% for type in data.types %}
+      <div data-tab="{{ type.name }}"></div>
+    {% endfor %}
+  </div>
+{%- endblock -%}
+
+{%- block footer -%}
+{%- endblock -%}
+
