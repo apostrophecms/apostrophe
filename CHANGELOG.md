@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.54.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Several performance improvements. In situations where Apostrophe formerly made expensive "matching nothing" queries, Apostrophe now either skips the entire query or uses an efficient query for a nonexistent `_id`, depending on whether the method in question has the right to cancel the entire operation.
+* Resources released more completely by `apos.destroy`, which can now satisfy the expectations of `mocha` 5.x (no timeouts left active, etc). This was done by adding a `destroy` method to `uploadfs`.
+* `range` schema fields behave better when there is no existing value.
+* Save operation of a modal now triggers the global busy state to prevent race conditions and other unwanted behavior.
+* Global busy state can now be pushed and popped, and modals utilize this, so that a modal can be used to gather information during the `saveContent` method of another modal.
+
 ## 2.53.0
 
 Unit tests passing.
