@@ -23,17 +23,23 @@
 {%- endblock -%}
 
 {%- block body -%}
-  <div class="tab-bar">
-    {% for type in data.types %}
-      <div data-tab-button="{{ type.name }}">{{ type.pluralLabel }}</div>
-    {% endfor %}
-  </div>
-  <div class="tabs">
-    {% for type in data.types %}
-      <div data-tab="{{ type.name }}"></div>
-    {% endfor %}
+  {{ apos.log('HERE IS DATA') }}
+  {{ apos.log(data) }}
+  <div class="apos-chooser" data-chooser></div>
+  <div class="apos-chooser-tabs-wrapper">
+    <div class="apos-chooser-tab-bar">
+      {% for type in data.types %}
+        <a data-tab-button="{{ type.name }}">{{ type.options.pluralLabel }}</a>
+      {% endfor %}
+    </div>
+    <div class="apos-chooser-tabs">
+      {% for type in data.types %}
+        <div data-tab="{{ type.name }}"></div>
+      {% endfor %}
+    </div>
   </div>
 {%- endblock -%}
+
 
 {%- block footer -%}
 {%- endblock -%}
