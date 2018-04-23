@@ -32,9 +32,7 @@ module.exports = {
     // global comes first so it can register a doc type manager and clean things up before
     // pages claims any orphan page types
     'apostrophe-global': {},
-    // Late enough that some piece types have been defined, so doc-type-manager browser side
-    // base classes for modals are available
-    'apostrophe-polymorphic-choosers': {},
+    'apostrophe-polymorphic-manager': {},
     'apostrophe-pages': {},
     'apostrophe-search': {},
     'apostrophe-any-page-manager': {},
