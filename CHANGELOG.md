@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.54.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* A bug in Chrome 66 causes problems when selecting images in Apostrophe's media library. This bug did not appear before Chrome 66 and does not appear in other browsers. We resolved it by migrating to the use of the CSS grid feature in compatible browsers.
+
 ## 2.54.0
 
 Unit tests passing.
