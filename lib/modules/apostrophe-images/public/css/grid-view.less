@@ -34,9 +34,14 @@
       column-gap: unset;
 
       display: grid;
+
       grid-gap: 1%;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr) ) ;
       grid-auto-flow: row;
+
+      @media @apos-breakpoint-desktop-xl {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr) );
+      }
     }
 
 
