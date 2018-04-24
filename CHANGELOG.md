@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.54.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* A bug in the recently introduced `apostrophe-soft-redirects` module caused crashes in cases where the context page or piece had no `_url` property... which is an unusual situation (how did you get there exactly? Overrides are clearly involved), but it can happen in customized projects. Fixed.
+
 ## 2.54.1
 
 Unit tests passing.
