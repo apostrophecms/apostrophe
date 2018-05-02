@@ -53,6 +53,27 @@
   } 
 }
 
+// A modal nested as a view should be less aggressive about sizing and positioning
+.apos-ui.apos-modal .apos-modal
+{
+  // Problem: this is a guesstimate, 100% is too wide
+  width: 85%;
+  height: 85%;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  overflow: auto;
+  .apos-modal-breadcrumb {
+    // redundant in a view
+    display: none;
+  }
+  .apos-modal-header .apos-modal-controls {
+    // inappropriate in a view, it saves with its parent
+    display: none;
+  }
+}
+
 .apos-modal--pushed
 {
   .apos-modal-body
