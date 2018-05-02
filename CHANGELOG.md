@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.54.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Contextual editing of pieces found in a `widget.html` template saves properly, as does contextual editing of a nested area added to the page for the first time.
+
+* Previously executed migrations are remembered in a collection that persists, not just in a cache, avoiding extra work which could be extensive in a large database. Migrations are still required to be idempotent (they should detect whether they have any work to do, and do no harm if they are not needed again for a particular document).
+
+* `apos.migrations.eachWidget` now delivers an accurate `dotPath`, which is crucial for the use of `apos.docs.db.update` with `$set`. No standard migrations in Apostrophe were using the feature until now.
+
 ## 2.54.2
 
 Unit tests passing.

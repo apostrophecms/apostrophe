@@ -71,7 +71,7 @@
     "tinycolor2": "^1.4.1",
     "uglify-js": "^2.8.29",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.6.2",
+    "uploadfs": "^1.8.0",
     "xregexp": "^2.0.0",
     "yargs": "^3.32.0"
   },
