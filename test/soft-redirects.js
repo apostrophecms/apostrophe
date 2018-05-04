@@ -73,7 +73,14 @@ describe('Soft Redirects', function() {
   });
 
   it('should be able to serve the page at its old URL too, via redirect', function(done) {
-    return request('http://localhost:7900/child', function(err, response, body) {
+    return request({
+      url: 'http://localhost:7900/child',
+      followRedirect: response => {
+        assert.equal(response.statusCode, 301);
+
+        return true;
+      }
+    }, function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
