@@ -88,7 +88,7 @@ describe('Soft Redirects', function() {
 
 });
 
-describe('Soft Redirects - with `redirectHttpStatusCode` option', function() {
+describe('Soft Redirects - with `statusCode` option', function() {
 
   this.timeout(t.timeout);
 
@@ -118,12 +118,12 @@ describe('Soft Redirects - with `redirectHttpStatusCode` option', function() {
           ]
         },
         'apostrophe-soft-redirects': {
-          redirectHttpStatusCode: 301
+          statusCode: 301
         }
       },
       afterInit: function(callback) {
         assert(apos.modules['apostrophe-soft-redirects']);
-        assert.equal(apos.modules['apostrophe-soft-redirects'].options.redirectHttpStatusCode, 301);
+        assert.equal(apos.modules['apostrophe-soft-redirects'].options.statusCode, 301);
         apos.argv._ = [];
         return callback(null);
       },
