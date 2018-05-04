@@ -47,6 +47,9 @@
 
 {%- endmacro -%}
 
+{# Maintained for bc. Newer templates call the module's managerControls or #}
+{# chooserControls helper, as appropriate. #}
+
 {%- macro manageControls() -%}
   {% if data.chooser %}
     {{ buttons.minor('Cancel', { action: 'cancel' }) }}
