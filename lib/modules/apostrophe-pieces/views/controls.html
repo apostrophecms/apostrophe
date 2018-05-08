@@ -14,25 +14,3 @@
     {{ buttons.major(control.label, control) }}
   {% endif %}
 {% endfor %}
-
-{% if data.chooser %}
-{{ buttons.minor('Cancel', { action: 'cancel' }) }}
-{# "New" is less ambiguous than "Add" when you're already *choosing* things. -Tom #}
-{% if data.options.insertViaUpload %}
-  <input type="file" multiple name="files" style="display:none" data-apos-uploader-{{ data.options.name }} />
-  {{ buttons.major('New ' + data.options.label, { action: 'upload-' + data.options.name }) }}
-{% else %}
-  {{ buttons.major('New ' + data.options.label, { action: 'create-' + data.options.name }) }}
-{% endif %}
-{{ buttons.major('Save Choices', { action: 'save' }) }}
-{% else %}
-{# Technically it's "just" a cancel button but it's actually the most frequent action #}
-{# when you're just managing stuff. There is no risk of losing work. -Tom #}
-{{ buttons.minor('Finished', { action: 'cancel' }) }}
-{% if data.options.insertViaUpload %}
-  <input type="file" multiple name="files" style="display:none" data-apos-uploader-{{ data.options.name }} />
-  {{ buttons.major('Add ' + data.options.label, { action: 'upload-' + data.options.name }) }}
-{% else %}
-  {{ buttons.major('Add ' + data.options.label, { action: 'create-' + data.options.name }) }}
-{% endif %}
-{% endif %}
