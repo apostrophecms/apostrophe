@@ -33,7 +33,8 @@
 .apos-ui.apos-modal
 {
 	position: fixed;
-
+  display: flex;
+  flex-direction: column;
 	top: 20px;
 	right: 20px;
 	bottom: 20px;
@@ -41,7 +42,7 @@
 
   z-index: @apos-z-index-modal;
 
-  overflow: hidden;
+  overflow: auto;
   opacity: 1;
 
   .apos-transform(translate3d(0,0,0) scale3d(1,1,1));
@@ -51,6 +52,12 @@
     height: 100%;
     overflow: auto;
   } 
+}
+
+.apos-modal-contents {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 // A modal nested as a view should be less aggressive about sizing and positioning
@@ -88,22 +95,29 @@
   position: absolute;
 
 	// this is replaced dynamically with js
-  height: ~'calc(100vh - 100px - 189px - 82px)';     // 100vh - 100 (position) - 189 (header + breadcrumb) - 82px (footer bar)
+  // height: ~'calc(100vh - 100px - 189px - 82px)';     // 100vh - 100 (position) - 189 (header + breadcrumb) - 82px (footer bar)
   width: 100%;
-
-  // background-color: @apos-white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 	background-color: lighten(@apos-light, 5%);
 }
 
-.apos-modal-body
+.apos-ui .apos-modal-body
 {
 	height: 100%;
-	overflow: auto;
+  // overflow: auto;
+  flex-grow: 1;
   .apos-scrollbar;
   background-color: lighten(@apos-light, 5%);
 	li a {
 		&:hover { color: @apos-primary; }
 	}
+}
+
+.apos-ui .apos-manage-view {
+  // margin-bottom: 70px; // magic number, account for footer which is position: fixed
 }
 
 // Stack Push Transition ===================================

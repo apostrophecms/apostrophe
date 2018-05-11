@@ -2,7 +2,14 @@
 .apos-ui.apos-modal
 .apos-modal-header
 {
-  position: relative;
+  position: -webkit-sticky;
+  position: -moz-sticky;
+  position: -ms-sticky;
+  position: -o-sticky;
+  position: sticky;
+  z-index: 1;
+  left: 0;
+  top: 0;
   width: 100%;
   padding: @apos-padding-2 @apos-padding-3 @apos-padding-2;
   background-color: @apos-white;
