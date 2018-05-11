@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.55.0
+
+* Security fix: uploaded images "in the trash" were still accessible at the same URL in most sizes. This has been corrected. As documented, the only size that now remains accessible is the `one-sixth` size, and this choice can be changed or eliminated entirely. **This bug did not affect other file attachments, such as PDFs.**
+
+As always, be sure to run the `apostrophe-migrations:migrate` task. This will make sure the permissions of your files are correct. Harmless warnings may appear for those that were already correct.
+
+* The `apostrophe-attachments:migrate-to-disabled-file-key` and `apostrophe-attachments:migrate-from-disabled-file-key` have been added for the convenience of those using the `disabledFileKey` option to `uploadfs` to rename disabled files in a cryptographically sound way rather than changing their permissions. These are relevant only with the `local` storage option of `uploadfs`, since since the option is neither available nor necessary for S3, and is mandatory for Azure from the beginning.
+
+* Although technically part of UploadFS 1.9.0, we'd like to note that the `azure` storage backend is now available and can be part of your `uploadfs` configuration for the `apostrophe-attachments` module.
+
+* Server-side modules can now extend the buttons available in the "manage" modal of pieces without overriding templates, similar to the way they are extensible in the "edit" modal.
+
+* UX fixes.
+
+* Cropping an image through Apostrophe now works when attachments are stored in S3, Azure, etc.
+
+* Date parsing does not generate `momentjs` warnings.
+
+* Overrideable block in the outerLayout for the context menu.
+
+* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer. 
+
 ## 2.54.3
 
 Unit tests passing.
