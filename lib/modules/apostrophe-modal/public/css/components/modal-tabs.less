@@ -2,10 +2,16 @@
 {
   .apos-schema-tabs
   {
-    position: fixed;
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: -ms-sticky;
+    position: -o-sticky;
+    position: sticky;
+    align-self: flex-start;
+    height: auto;
     top: 0;
-    float: left;
-    height: 100%;
+    // float: left;
+    // height: 100%;
     width: 25%;
     padding-bottom: 50px;
     background-color: @apos-light;
@@ -20,7 +26,13 @@
     @media @apos-breakpoint-desktop-xl { width: 25%; }
   }
 
-  .apos-schema--with-tabs .apos-schema-tabs {}
+  .apos-schema--with-tabs {
+    display: flex;
+
+    .apos-schema-groups {
+      flex-grow: 1;
+    }
+  }
 
   .apos-schema-tab
   {
@@ -44,8 +56,8 @@
   .apos-schema-group
   {
     display: none;
-    float: right;
-    width: 75%;
+    // float: right;
+    // width: 75%;
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
     overflow: auto;
