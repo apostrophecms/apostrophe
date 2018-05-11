@@ -2,6 +2,10 @@
 
 ## 2.55.0
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Security fix: uploaded images "in the trash" were still accessible at the same URL in most sizes. This has been corrected. As documented, the only size that now remains accessible is the `one-sixth` size, and this choice can be changed or eliminated entirely. **This bug did not affect other file attachments, such as PDFs.**
 
 As always, be sure to run the `apostrophe-migrations:migrate` task. This will make sure the permissions of your files are correct. Harmless warnings may appear for those that were already correct.
