@@ -3,7 +3,7 @@
   <div class="apos-browse-and-autocomplete">
 {% endif %}
 {% if data.autocomplete %}
-  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" data-autocomplete />
+  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" placeholder="{{ __('Search...') }}" data-autocomplete />
 {% endif %}
 {% if data.browse %}
   {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
