@@ -3,6 +3,9 @@
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
 
 {% for control in data.controls %}
+  {% if control.uploadable %}
+    <input type="file" multiple name="files" style="display:none" data-apos-uploader-{{ data.options.name }} />
+  {% endif %}
   {% if control.type == 'dropdown' %}
     {{ dropdowns.base(control, control.dropdownType or 'button', control.dropdownOptions or {}) }}
   {% elif control.type == 'minor' %}

@@ -266,10 +266,10 @@ describe('Attachment', function() {
           assert(attachment.trashDocIds.length === 1);
           try {
             fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
-            throw new Error('should not have been accessible');
           } catch (e) {
             return true;
           }
+          throw new Error('should not have been accessible');
         })
         .then(function() {
           return apos.images.rescue(req, image._id);
