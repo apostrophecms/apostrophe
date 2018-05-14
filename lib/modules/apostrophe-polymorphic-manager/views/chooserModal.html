@@ -26,15 +26,15 @@
   {{ apos.log('HERE IS DATA') }}
   {{ apos.log(data) }}
   <div class="apos-chooser" data-chooser></div>
-  <div class="apos-chooser-tabs-wrapper">
+  <div class="apos-chooser-tabs-wrapper apos-polymorphic-manager">
     <div class="apos-chooser-tab-bar">
       {% for type in data.types %}
-        <a data-tab-button="{{ type.name }}">{{ type.options.pluralLabel }}</a>
+        <button class="apos-chooser-tab-button{% if loop.index0 === 0 %} apos-chooser-tab-button--active{% endif %}" data-tab-button="{{ type.name }}">{{ type.options.pluralLabel }}</button>
       {% endfor %}
     </div>
     <div class="apos-chooser-tabs">
       {% for type in data.types %}
-        <div data-tab="{{ type.name }}"></div>
+        <div class="apos-chooser-tab{% if loop.index0 === 0 %} apos-chooser-tab--active{% endif %}" data-tab="{{ type.name }}"></div>
       {% endfor %}
     </div>
   </div>
