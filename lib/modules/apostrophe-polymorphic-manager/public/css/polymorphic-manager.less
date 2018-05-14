@@ -8,6 +8,10 @@
     padding: 0;
   }
 
+  .apos-reorganize-tree--chooser {
+    overflow: hidden;
+  }
+
   .apos-chooser-manage-view-wrapper,
   .apos-reorganize-tree--chooser {
     width: 100%;
@@ -17,6 +21,14 @@
   .apos-modal-header,
   .apos-modal-footer {
     background-color: transparent;
+  }
+
+  .apos-modal-footer {
+    position: relative;
+    display: flex;
+    padding: @apos-padding-1 0;
+    align-items: center;
+    justify-content: flex-end;
   }
 
   .apos-chooser-tabs {
