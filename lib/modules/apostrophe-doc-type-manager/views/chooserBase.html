@@ -1,6 +1,15 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
+{% if data.browse and data.autocomplete %}
+  <div class="apos-autocomplete-and-browse">
+{% endif %}
+{% if data.autocomplete %}
+  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" data-autocomplete placeholder="Search..." />
+{% endif %}
 {% if data.browse %}
   {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
+{% endif %}
+{% if data.browse and data.autocomplete %}
+  </div>
 {% endif %}
 {# Existing selections #}
 <div data-choices>
@@ -8,6 +17,3 @@
 </div>
 {# Initially hidden #}
 <div class="apos-chooser-limit-reached">{{ __("Limit Reached") }}</div>
-{% if data.autocomplete %}
-  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" data-autocomplete />
-{% endif %}

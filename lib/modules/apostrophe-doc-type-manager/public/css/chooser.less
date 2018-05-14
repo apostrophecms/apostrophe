@@ -4,8 +4,8 @@
   {
     .apos-inline-block;
     float: right;
-    width: 85%;
-    @media @apos-breakpoint-desktop-xl { width: 75%; }
+    width: 80%;
+    // @media @apos-breakpoint-desktop-xl { width: 75%; }
     .apos-table { padding-left: @apos-padding-2; }
   }
   
@@ -14,9 +14,9 @@
     // position: fixed;
     .apos-inline-block;
     height: 100%;
-    overflow: auto;
-    width: 15%;
-    @media @apos-breakpoint-desktop-xl { width: 25%; }
+    overflow: visible;
+    width: 20%;
+    // @media @apos-breakpoint-desktop-xl { width: 25%; }
     background-color: @apos-light;
   }
 
@@ -24,22 +24,18 @@
   {
     position: fixed;
     .apos-inline-block;
-    width: 85%;
-    @media @apos-breakpoint-desktop-xl { width: 75%; }
+    width: 80%;
+    // @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
-  }
-
-  .apos-chooser-choices
-  {
-
   }
 
   .apos-chooser-choice
   {
     position: relative;
-    display: block;
-    margin: @apos-margin-1;
-    padding: (@apos-padding-1 * 1.5) @apos-padding-1;
+    display: flex;
+    align-items: center;
+    // margin: @apos-margin-1;
+    padding: @apos-padding-1;
     @media @apos-breakpoint-desktop-xl { padding: @apos-padding-2; }
     background-color: @apos-mid;
     &:hover
@@ -51,7 +47,20 @@
     {
       text-decoration: line-through;
     }
+
     img { width: 100%; }
+  }
+
+  .apos-chooser-choice--stacked {
+    flex-direction: column;
+
+    .apos-chooser-controls { 
+      margin-right: 0;
+      margin-bottom: 10px;
+    }
+    .fa {
+      font-size: 13px;
+    }
   }
   
   .apos-chooser-limit-reached
@@ -69,19 +78,21 @@
 
   .apos-chooser-controls
   {
-    display: none;
-    position: absolute;
-    top: -@apos-padding-1;
-    right: -@apos-padding-1;
+    margin-right: 15px; 
     .apos-button
     {
       z-index: 1;
+      padding: 5px;
+      &:hover { color: @apos-white; }
+    }
+    .fa {
+      font-size: 11px;
     }
   }
 
   .apos-chooser-choice:hover .apos-chooser-controls
   {
-    display: block;
+    opacity: 1;
   }
 
   .apos-chooser-full

@@ -167,6 +167,11 @@
   color: @apos-dark;
   padding: @apos-padding-1 @apos-padding-2;
   .apos-button-border(@apos-green);
+  .fa-caret-right {
+    position: relative;
+    top: 0.5px;
+    margin-left: 10px;
+   }
 }
 
 .apos-button--danger
@@ -199,6 +204,17 @@
       color: darken(@apos-red, 20%);
     }
   }
+}
+
+.apos-button--inline {
+  padding: 0;
+  background-color: transparent;
+  opacity: 1;
+  display: block;
+  top: auto;
+  left: auto;
+  border: none;
+  box-shadow: none;
 }
 
 .apos-button--circular
