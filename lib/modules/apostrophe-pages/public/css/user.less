@@ -152,3 +152,10 @@ ul.jqtree-tree .jqtree-title { margin-left: 0; }
   // Don't let the LESS compiler mis-compile it, let the browser see it
   width: calc(~'100% - 20px');
 }
+
+.jqtree-folder.apos-trash {
+  background-color: fade(@apos-delete, 20%);
+  .jqtree-element:hover {
+    background-color: fade(@apos-delete, 30%);
+  }
+}
