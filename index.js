@@ -1,5 +1,5 @@
 var path = require('path');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var argv = require('yargs').argv;
 var fs = require('fs');
 var async = require('async');
