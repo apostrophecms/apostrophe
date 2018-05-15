@@ -1,16 +1,15 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('lodash');
-var apos;
 
 describe('Apostrophe', function() {
 
   this.timeout(t.timeout);
 
   it('should exist', function(done) {
-    apos = require('../index.js');
+    var apos = require('../index.js');
     assert(apos);
-    return done();
+    return t.destroy(apos, done);
   });
 
   // BOOTSTRAP FUNCTIONS ------------------------------------------- //
@@ -26,7 +25,7 @@ describe('Apostrophe', function() {
       },
       afterInit: function(callback) {
         assert(apos.options.overrideTest === 'foo');
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
@@ -43,7 +42,7 @@ describe('Apostrophe', function() {
       },
       afterInit: function(callback) {
         assert(apos.options.overrideTest === 'foo');
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
@@ -60,7 +59,7 @@ describe('Apostrophe', function() {
       },
       afterInit: function(callback) {
         assert(apos.options.overrideTest === 'test-foo');
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
@@ -77,7 +76,7 @@ describe('Apostrophe', function() {
       },
       afterInit: function(callback) {
         assert(apos.modules['apostrophe-test-module']);
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
@@ -93,7 +92,7 @@ describe('Apostrophe', function() {
       },
       afterInit: function(callback) {
         assert(apos.test && apos.test.color === 'red');
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
@@ -110,7 +109,7 @@ describe('Apostrophe', function() {
         assert(apos.assets && apos.assets.color === 'blue');
         // make sure that our modules match what is specifed in defaults.js
         assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);
-        return done();
+        return t.destroy(apos, done);
       }
     });
   });
