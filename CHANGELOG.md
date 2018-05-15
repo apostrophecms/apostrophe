@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.55.1
+
+Unit tests passing.
+
+Relevant functional tests passing.
+
+* `apos.migrations.eachArea` no longer crashes the stack when iterating over a large number of documents without areas.
+
 ## 2.55.0
 
 Unit tests passing.
