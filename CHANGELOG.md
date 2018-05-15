@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.55.2
+
+Unit tests passing.
+
+Relevant functional tests passing.
+
+* Reverted change to date formatting. `moment` will produce warnings again, but dates will not be a day old in some time zones, which is more important. We are working on a better fix for this problem.
+
 ## 2.55.1
 
 Unit tests passing.
