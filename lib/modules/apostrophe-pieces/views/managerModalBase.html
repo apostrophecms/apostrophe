@@ -32,8 +32,8 @@
 {%- endblock -%}
 
 {%- block footer -%}
-  {%- block batch -%}
-    <div class="apos-modal-footer-inner">
+  <div class="apos-modal-footer-inner">
+    {%- block batch -%}
       <div data-batch class="apos-manage-batch-operations">
         <select name="batch-operation" class="apos-field-input apos-field-input--small apos-field-input-select apos-manage-batch-operations-select">
           {% for operation in data.options.batchOperations %}
