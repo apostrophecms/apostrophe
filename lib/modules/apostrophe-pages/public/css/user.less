@@ -10,15 +10,15 @@
   margin-right: 2%;
 }
 
-.apos-reogranize-published {
+.apos-reorganize-published {
   display: inline-block;
   border-radius: 50%;
   height: 10px;
   width: 10px;
 }
 
-.apos-reogranize-published--true { background-color: @apos-green; }
-.apos-reogranize-published--false { background-color: @apos-red; }
+.apos-reorganize-published--true { background-color: @apos-green; }
+.apos-reorganize-published--false { background-color: @apos-red; }
 
 
 
@@ -151,4 +151,12 @@ ul.jqtree-tree .jqtree-title { margin-left: 0; }
   margin-top: -10px;
   // Don't let the LESS compiler mis-compile it, let the browser see it
   width: calc(~'100% - 20px');
+}
+
+.jqtree-folder.apos-trash,
+.jqtree-element.apos-trash {
+  background-color: fade(@apos-delete, 20%);
+  .jqtree-element:hover {
+    background-color: fade(@apos-delete, 30%);
+  }
 }

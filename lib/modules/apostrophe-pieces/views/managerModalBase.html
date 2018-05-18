@@ -34,14 +34,16 @@
 {%- block footer -%}
   <div class="apos-modal-footer-inner">
     {%- block batch -%}
-      <div data-batch class="apos-manage-batch-operations">
-        <select name="batch-operation" class="apos-field-input apos-field-input--small apos-field-input-select apos-manage-batch-operations-select">
-          {% for operation in data.options.batchOperations %}
-            <option value="{{ operation.name }}">
-              {{ __('%s Selected', operation.label) }} (0)
-            </option>
-          {% endfor %}
-        </select>
+      <div data-batch class="apos-manage-batch-operations ">
+        <div class="apos-field-input-select-wrapper apos-field-input-select-wrapper--small">
+          <select name="batch-operation" class="apos-field-input apos-field-input--small apos-field-input-select apos-manage-batch-operations-select">
+            {% for operation in data.options.batchOperations %}
+              <option value="{{ operation.name }}">
+                {{ __('%s Selected', operation.label) }} (0)
+              </option>
+            {% endfor %}
+          </select>
+        </div>
         <div class="apos-manage-batch-operations-buttons">
           {% for operation in data.options.batchOperations %}
             {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}

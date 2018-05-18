@@ -23,6 +23,9 @@ function destroy(apos, done) {
     return done();
   });
   function drop(callback) {
+    if (!(apos.db && apos.db.collections)) {
+      return callback(null);
+    }
     return apos.db.collections(function(err, collections) {
       if (err) {
         return callback(err);
@@ -38,6 +41,9 @@ function destroy(apos, done) {
     });
   }
   function destroy(callback) {
+    if (!apos.destroy) {
+      return callback(null);
+    }
     return apos.destroy(callback);
   }
 };

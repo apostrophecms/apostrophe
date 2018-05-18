@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.56.0
+
+Unit tests passing.
+
+Functional tests passing.
+
+* **Security:** numerous issues formerly flagged by the new `npm audit` command have been addressed. We are now using a [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) to keep bc while addressing security (many thanks to the Sails team). We are also using LESS 3.x, which has caused no issues in our testing and corrects security concerns with LESS 2.x. Numerous `npm audit` security reports regarding `imagemin` modules were addressed by removing `imagemin` from `uploadfs` itself, however you may opt into it via the new [`postprocessors` option of `uploadfs`](https://github.com/punkave/uploadfs). As of this writing, one `npm audit` complaint remains: the `azure-storage` module needs to update a dependency to address a possible vulnerability. You may mitigate this issue by not using the `azure` backend of `uploadfs` with Apostrophe until it is resolved upstream.
+* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before. 
+* Deeply nested areas now save properly. Formerly in certain situations the same widget might be duplicated.
+* `apos.tasks.getReq` now supplies an empty `req.data` object for easier use with code expecting an Express request, Apostrophe-style.
+* Bedeviled by case-sensitive sorting? The `sortify: true` property for `string` schema fields is now documented and automatically creates a database migration to ensure it is available for your existing data as well. When used, this flag ensures that any `sort('fieldname')` call for that field in Apostrophe is case-insensitive, ignores punctuation and otherwise behaves as end users expect.
+
+## 2.55.2
+
+Unit tests passing.
+
+Relevant functional tests passing.
+
+* Reverted change to date formatting. `moment` will produce warnings again, but dates will not be a day old in some time zones, which is more important. We are working on a better fix for this problem.
+
+## 2.55.1
+
+Unit tests passing.
+
+Relevant functional tests passing.
+
+* `apos.migrations.eachArea` no longer crashes the stack when iterating over a large number of documents without areas.
+
 ## 2.55.0
 
 Unit tests passing.

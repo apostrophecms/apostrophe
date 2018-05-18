@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.55.0",
+  "version": "2.56.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -21,10 +21,11 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
+    "@sailshq/lodash": "^3.10.3",
     "async": "^1.5.2",
     "bless": "^3.0.3",
     "body-parser": "^1.18.2",
-    "broadband": "^0.1.1",
+    "broadband": "^1.0.0",
     "cheerio": "^0.22.0",
     "clean-css": "^3.4.28",
     "connect-flash": "^0.1.1",
@@ -42,16 +43,15 @@
     "html-to-plaintext": "^0.1.1",
     "html-to-text": "^3.3.0",
     "i18n": "^0.8.3",
-    "joinr": "^1.0.1",
-    "launder": "^0.1.4",
-    "less": "^2.7.3",
-    "less-middleware": "^2.2.1",
-    "lodash": "^3.10.1",
+    "joinr": "^1.0.2",
+    "launder": "^1.0.0",
+    "less": "^3.0.0",
+    "less-middleware": "^3.0.0",
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.1",
     "moment": "^2.21.0",
     "mongodb": "^2.2.35",
-    "moog-require": "^0.4.2",
+    "moog-require": "^1.0.0",
     "nodemailer": "^4.6.3",
     "nunjucks": "^2.5.2",
     "oembetter": "^0.1.19",
@@ -71,7 +71,7 @@
     "tinycolor2": "^1.4.1",
     "uglify-js": "^2.8.29",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.8.0",
+    "uploadfs": "^1.9.2",
     "xregexp": "^2.0.0",
     "yargs": "^3.32.0"
   },
@@ -83,6 +83,6 @@
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.7.0",
     "eslint-plugin-standard": "^3.0.1",
-    "mocha": "^3.5.3"
+    "mocha": "^5.1.1"
   }
 }
