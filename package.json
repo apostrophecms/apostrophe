@@ -33,7 +33,7 @@
     "connect-multiparty": "^2.1.0",
     "cookie-parser": "^1.4.3",
     "credential": "^2.0.0",
-    "cuid": "^1.3.8",
+    "cuid": "^2.0.0",
     "deep-get-set": "^0.1.1",
     "diff": "^2.2.3",
     "express": "^4.16.3",
@@ -52,7 +52,7 @@
     "moment": "^2.21.0",
     "mongodb": "^2.2.35",
     "moog-require": "^1.0.0",
-    "nodemailer": "^4.6.3",
+    "nodemailer": "^4.6.5",
     "nunjucks": "^2.5.2",
     "oembetter": "^0.1.19",
     "passport": "^0.3.2",
@@ -61,7 +61,7 @@
     "prompt": "^0.2.14",
     "qs": "^5.2.1",
     "regexp-quote": "0.0.0",
-    "request": "^2.85.0",
+    "request": "^2.87.0",
     "resolve": "^1.6.0",
     "rimraf": "^2.6.2",
     "sanitize-html": "^1.16.3",
@@ -71,7 +71,7 @@
     "tinycolor2": "^1.4.1",
     "uglify-js": "^2.8.29",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.9.2",
+    "uploadfs": "^1.10.1",
     "xregexp": "^2.0.0",
     "yargs": "^3.32.0"
   },
@@ -79,10 +79,10 @@
     "eslint": "^4.19.1",
     "eslint-config-punkave": "^1.0.10",
     "eslint-config-standard": "^11.0.0-beta.0",
-    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-import": "^2.12.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.7.0",
     "eslint-plugin-standard": "^3.0.1",
-    "mocha": "^5.1.1"
+    "mocha": "^5.2.0"
   }
 }
