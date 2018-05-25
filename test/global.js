@@ -40,7 +40,7 @@ describe('Global', function() {
     req.res.status = function(n) {
       assert(n <= 400);
       return req.res;
-    }
+    };
     req.res.send = function(m) {};
     return apos.global.addGlobalToData(req, req.res, function() {
       assert(req.data.global);
