@@ -1,11 +1,14 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var Promise = require('bluebird');
 var apos;
 
 describe('Global', function() {
 
   this.timeout(t.timeout);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
 
   it('global should exist on the apos object', function(done) {
     apos = require('../index.js')({
