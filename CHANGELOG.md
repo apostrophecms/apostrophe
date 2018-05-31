@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.57.0
+
+Unit tests passing.
+
+Functional tests passing.
+
+* Displaying and saving schema-driven forms is much, much faster.
+This becomes very noticeable with 100 or more fields. With about
+250 fields, this formerly took about 4.5 seconds to load or to 
+save such a form on a fast Mac. It now takes about 250 milliseconds.
+* Users may re-order the items they have selected via drag and drop
+when using "Browse" to select pieces, images, etc.
+* Prior to this release, asset generation ids were surprisingly short and
+made up only of digits due to an accidental holdover from an old version.
+Conflicts were rare, but possible. Asset generation ids are now proper cuids,
+no conflicts should occur.
+* IDs may be added to notifications as a simple way to give other
+code access to them.
+* The `apos.global.addGlobalToData` method may now be called
+with just `req` (returns a promise), with `req, callback` (invokes
+the callback), or as middleware (which Apostrophe does by default).
+This method is handy in command line tasks and other places
+where middleware does not run and `req.data.global` is not populated
+by default.
+
 ## 2.56.0
 
 Unit tests passing.
