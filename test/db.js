@@ -33,7 +33,7 @@ describe('Db', function() {
   it('should be able to launch a second instance reusing the connection', function(done) {
     var apos2 = require('../index.js')({
       root: module,
-      shortName: 'test',
+      shortName: 'test2',
       modules: {
         'apostrophe-express': {
           port: 7777
