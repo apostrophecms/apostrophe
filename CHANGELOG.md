@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.57.1
+
+Unit tests passing.
+
+* Hotfix for bug in 2.57.0 that broke saving tags. We have reverted the "fast forms" change until the cause is understood.
+
 ## 2.57.0
 
 Unit tests passing.
