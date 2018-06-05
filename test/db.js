@@ -5,10 +5,6 @@ var apos;
 
 describe('Db', function() {
 
-  after(function(done) {
-    return t.destroy(apos, done);
-  });
-
   this.timeout(t.timeout);
 
   it('should exist on the apos object', function(done) {
@@ -46,7 +42,9 @@ describe('Db', function() {
       afterInit: function(callback) {
         return apos.docs.db.findOne().then(function(doc) {
           assert(doc);
-          done();
+          return t.destroy(apos2, function() {
+            return t.destroy(apos, done);
+          });
         }).catch(function(err) {
           console.error(err);
           assert(false);
