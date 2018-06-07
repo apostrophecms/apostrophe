@@ -1,6 +1,10 @@
 {
   "name": "apostrophe",
+<<<<<<< HEAD
   "version": "2.57.0",
+=======
+  "version": "2.57.2",
+>>>>>>> d9a2183c... extraHtml block in outerLayoutBase
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
