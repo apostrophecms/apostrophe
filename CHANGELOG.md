@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.57.2
+
+Unit tests passing.
+
+Relevant regression tests passing.
+
+* New `extraHtml` block in `outerLayoutBase.html` allows your `outerLayout.html` to add attributes to the outer `html` element without the need to completely override the layout. It is a best practice to avoid completely overriding the layout because this maximizes your compatibility with future updates to our admin markup, etc.
+
 ## 2.57.1
 
 Unit tests passing.
