@@ -49,6 +49,11 @@
   }
 }
 
+.apos-field-input-select-wrapper--small:after {
+  top: 12px;
+  right: 36px;
+}
+
 .apos-field-input-select
 {
   -webkit-appearance: none;
@@ -230,5 +235,72 @@
     text-transform: capitalize;
     padding-bottom: 6px;
     border-bottom: 1px dashed @apos-primary;
+  }
+}
+
+// Colorpicker ===================================
+.apos-field-color {
+  position: relative;
+  max-width: 229px;
+
+  .sp-replacer {
+    position: absolute;
+    background-color: transparent;
+    padding: 16px 10px 18px 60px;
+    left: 0;
+    z-index: 2;
+  }
+}
+
+.apos-field-input-color-value {
+  float: left;
+  margin: 20px 0px 0 20px 
+}
+
+.apos-field-input-color-preview {
+  float: left;
+  width: 50px;
+  height: 50px;
+  border: 1px solid black;
+}
+
+.apos-field-input-color-preview--empty {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAHCAYAAADEUlfTAAAAG0lEQVQYV2NMKL/ty4ADMIIkF3SqbsYmP+gkAayXGgfe8HOVAAAAAElFTkSuQmCC);
+}
+
+.apos-field-input-color {
+  width: 70px;
+  padding: 15px;
+  height: 60px;
+  float: left;
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+// Range ===================================
+
+.apos-field-input-range {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.apos-field-input-range-value {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.apos-field-range .apos-field-label {
+  display: inline-block;
+}
+
+// Browse and autocomplete combo
+.apos-browse-and-autocomplete {
+  display: flex;
+  position: relative;
+  align-items: center;
+  .apos-button {
+    position: absolute;
+    right: 10px;
   }
 }

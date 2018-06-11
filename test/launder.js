@@ -1,7 +1,7 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 
-describe('Launder', function(){
+describe('Launder', function() {
 
   this.timeout(t.timeout);
 
@@ -11,11 +11,10 @@ describe('Launder', function(){
 
   var apos;
 
-  it('should exist on the apos object', function(done){
+  it('should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       afterInit: function(callback) {
         assert(apos.launder);
         return done();

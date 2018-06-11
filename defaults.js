@@ -11,6 +11,7 @@ module.exports = {
     'apostrophe-express': {},
     'apostrophe-urls': {},
     'apostrophe-templates': {},
+    'apostrophe-email': {},
     'apostrophe-push': {},
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
@@ -45,6 +46,7 @@ module.exports = {
     'apostrophe-images-widgets': {},
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
+    'apostrophe-soft-redirects': {},
     // ALWAYS LAST FOREVER
     'apostrophe-service-bridge': {}
   }

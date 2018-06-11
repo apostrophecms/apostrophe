@@ -1,5 +1,7 @@
 # [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](http://apostrophecms.org/)
 
+[![Join the chat at https://gitter.im/apostrophecms/apostrophe](https://badges.gitter.im/apostrophecms/apostrophe.svg)](https://gitter.im/apostrophecms/apostrophe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
 
 Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
@@ -32,11 +34,6 @@ ApostropheCMS is Node.js all the way through, which means it can be [extended](h
 
 ## Additional Resources
 We've got some great [open-source projects](http://apostrophecms.org/docs/tutorials/intermediate/deployment.html) that can help you out deploying, managing and maintaining ApostropheCMS sites.
-
-## Contributing
-If you have an idea for a new or improved feature please [open an issue](https://github.com/punkave/apostrophe/issues). If you come across and edge-case bug, please [add an issue](https://github.com/punkave/apostrophe/issues) for that, as well.
-
-If you'd like to implement that idea or fix that bug, please fork the repository and make the update. Pull requests are warmly welcome.
 
 ## License
 ApostropheCMS is released under the [MIT License](https://github.com/punkave/apostrophe/blob/master/LICENSE.md).

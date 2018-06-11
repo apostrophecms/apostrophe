@@ -27,3 +27,17 @@
     </select>
   </div>
 {%- endmacro %}
+
+{% macro color(name, placeholder, value, readOnly, options) -%}
+  <label>
+    <div class="apos-field-input-color-preview" data-apos-color-preview></div>
+    <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __("None selected") }}" class="apos-field-input apos-field-input-color" data-apos-color type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+  </label>
+{%- endmacro %}
+
+{% macro range(name, min, max, step, placeholder, value, readOnly, options) -%}
+  <label>
+    <span class="apos-field-input-range-value" data-apos-range-value></span>
+    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range" type="range" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+  </label>
+{%- endmacro %}

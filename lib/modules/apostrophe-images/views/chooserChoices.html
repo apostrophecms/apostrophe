@@ -2,9 +2,9 @@
 {% for item in data.choices %}
   {% set choice = item.item or item %}
   {% set relationship = item.relationship %}
-  <div class="apos-chooser-choice">
-    {% include data.choiceTemplate %}
-    <div class="apos-button apos-button--in-context apos-button--group apos-chooser-controls">
+  <div class="apos-chooser-choice apos-chooser-choice--stacked" data-chooser-choice='{{ choice._id }}'>
+    <div class="apos-button apos-button--in-context apos-button--group apos-button--small apos-chooser-controls">
+      {{ buttons.inGroup('', { icon: 'arrows', action: 'sort-item', value: choice._id}) }}
       {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}
       {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id }) }}
       {%- if data.relationship -%}
@@ -17,6 +17,9 @@
         {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', value: choice._id}) }}
       {%- endif -%}
       {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
+    </div>
+    <div class="apos-choose-choice-content">
+      {% include data.choiceTemplate %}
     </div>
   </div>
 {% endfor %}

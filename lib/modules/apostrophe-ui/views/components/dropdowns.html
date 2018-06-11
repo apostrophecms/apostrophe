@@ -13,14 +13,15 @@
     {%- set direction = 'up' -%}
   {%- endif -%}
 
-  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}"{%- if options.action -%} data-apos-{{ options.action }}{%- endif %} data-apos-dropdown={{ direction }} data-apos-actionable>
+  <div class="apos-dropdown apos-dropdown--{{ type }} apos-dropdown--{{ direction }}{% if options.class %} apos-dropdown--{{ options.class}}{% endif %}"{%- if options.action -%} data-apos-{{ options.action }}{%- endif %} data-apos-dropdown="{{ direction }}" data-apos-dropdown-name="{{ menu.name }}" data-apos-actionable>
     {%- if type == 'button' -%}
       {%- if options.buttonType -%}
         {{ buttons[options.buttonType](menu.label, apos.utils.merge({ action: 'dropdown-button-label' }, options) ) }}
       {%- else -%}
-        {{ buttons.normal(menu.label, { action: 'dropdown-button-label' }) }}
+        {{ buttons.normal(menu.label, apos.utils.merge({ action: 'dropdown-button-label' }, options)) }}
       {%- endif -%}
     {%- elif type == 'admin' -%}
+      {# TODO: is this dead code? adminBar.html appears to output its own #}
       <div class="apos-admin-bar-item-inner">
         {{ __(menu.label | d('')) }}
       </div>
