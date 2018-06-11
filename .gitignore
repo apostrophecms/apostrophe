@@ -24,3 +24,6 @@ test/public/css/master-*.less
 
 # Dont commit test uploads
 test/public/uploads
+
+# vim swp files
+.*.sw*
