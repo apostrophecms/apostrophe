@@ -24,7 +24,7 @@ Polymorphic joins work for both `joinByOne` and `joinByArray`. Currently they ar
 
 * `apos.images.srcset` helper function added. You can use this function to generate a `srcset` attribute for responsive display of an image. Just pass an attachment to the helper:
 
-`<img {{ apos.images.srcset(apos.images.first(data.piece.thumbnail)) }} />`
+`<img srcset="{{ apos.images.srcset(apos.images.first(data.piece.thumbnail)) }}" />`
 
 A `src` attribute for backwards compatibility is always advisable too.
 
