@@ -1,5 +1,49 @@
 # Changelog
 
+## 2.58.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Polymorphic joins have arrived! You may now create joins like this:
+
+```javascript
+{
+  name: '_items',
+  type: 'joinByArray',
+  withType: [ 'apostrophe-blog', 'product', 'apostrophe-page' ]
+}
+```
+
+When you join with more than one type, Apostrophe presents a chooser that allows you to pick between tabs for each type. Note that `apostrophe-page` can be included, so you can pick a mix of pages and pieces for the same join.
+
+This feature is useful for creating navigation that may point to a variety of document types, without the need for an array of items with several different joins and a `select` element to choose between them.
+
+Polymorphic joins work for both `joinByOne` and `joinByArray`. Currently they are **not** available for `joinByOneReverse`, `joinByArrayReverse`, or pieces filters. Their primary use case is creating navigation widgets.
+
+* `apos.images.srcset` helper function added. You can use this function to generate a `srcset` attribute for responsive display of an image. Just pass an attachment to the helper:
+
+`<img {{ apos.images.srcset(apos.images.first(data.piece.thumbnail)) }} />`
+
+A `src` attribute for backwards compatibility is always advisable too.
+
+Thanks to Fredrik Ekelund for this contribution.
+
+* Fast forms for big schemas are back! The issue with tags has been resolved.
+
+* A single MongoDB connection may be reused by several `apos` objects for separate sites, a feature which is exploited by the [apostrophe-multisite](https://github.com/apostrophecms/apostrophe-multisite) module. Note that this only reuses the connection, it does not share a single MongoDB database. It *does* allow you to keep potentially hundreds of sites on a single MongoDB server or replica set, as the overhead of multiple logical "databases" is small in MongoDB's modern WiredTiger storage engine. To reuse a connection, pass it to the `apostrophe-db` module as the `db` option.
+
+* Fixed a MongoDB 3.6 incompatibility in the "Apply to Subpages" feature for permissions. Also made this feature available again when *removing* someone's permissions. We plan further UX work here to make this feature easier to understand and use.
+
+* UX fix to the "manage tags" dialog box: don't attempt to add an empty tag. Thanks to Anthony Tarlao.
+
+* Warn developers if they use bad area names.
+
+* For those deploying asset bundles to S3: the command line task that builds an asset bundle no longer requires access to your production database, although it still needs to start up normally with access to a database in the pre-production environment where you are building the bundle.
+
+* Refactoring of the trash field deduplication features, in preparation to extend them to pages as well in an upcoming release.
+
 ## 2.57.2
 
 Unit tests passing.
