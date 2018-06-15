@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.59.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fixed nested widget editing for existing widgets whose modal dialog boxes have been accessed (#1428).
+* A clear warning message with instructions has been added for those who are seeing "unblessed" messages due to widget schemas and in-template `apos.area` calls that do not match (#1429). The easiest way to avoid this is to just mark the area `contextual: true` in your widget schema so it is edited *only* on the page. But if you really want to do both, the widget options must match.
+* The mechanism that automatically makes slugs, paths and other keys unique now gives up eventually and reports the original duplicate key error. This makes it easier to debug your code if you are violating your own custom indexes that feature unique keys. It is possible to make the deduplicator aware of your own own properties that need to be made more unique on inserts if you wish, by implementing a `docFixUniqueError` method. *Please note:* this change is not a regression. Code that formerly never completed its task in this situation will simply report an error promptly rather than retrying inserts forever while degrading your database performance.
+* A new profiling API has been added: the `apos.utils.profile` method. This method can be called to report how long code takes to run for later analysis. It does nothing in the default implementation; modules like our forthcoming profiler override it to give feedback on the speed of your code.
+
 ## 2.58.0
 
 Unit tests passing.
