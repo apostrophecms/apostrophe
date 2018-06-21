@@ -32,6 +32,7 @@ module.exports = {
     // global comes first so it can register a doc type manager and clean things up before
     // pages claims any orphan page types
     'apostrophe-global': {},
+    'apostrophe-polymorphic-manager': {},
     'apostrophe-pages': {},
     'apostrophe-search': {},
     'apostrophe-any-page-manager': {},

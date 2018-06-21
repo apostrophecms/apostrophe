@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.57.2",
+  "version": "2.59.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,8 @@
   },
   "keywords": [
     "apostrophe",
+    "apostrophe-cms",
+    "apostrophecms",
     "cms",
     "content management",
     "content management system",
@@ -58,6 +60,7 @@
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "path-to-regexp": "^1.7.0",
+    "performance-now": "^2.1.0",
     "prompt": "^0.2.14",
     "qs": "^5.2.1",
     "regexp-quote": "0.0.0",
