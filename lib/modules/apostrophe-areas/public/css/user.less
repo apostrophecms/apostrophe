@@ -73,7 +73,11 @@
 
   // When an area has a limit of one, its children widgets shouldn't
   // display the arrow organization controls.
-  >.apos-ui.apos-limit-one [data-apos-move-item] { display: none; }
+  >.apos-ui.apos-limit-one [data-apos-move-item],
+  >.apos-ui.apos-limit-one [data-apos-drag-item]
+  {
+    display: none;
+  }
 }
 
 // Don't fight with the add content menu. -Tom
