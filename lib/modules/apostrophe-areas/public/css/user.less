@@ -274,7 +274,10 @@
   z-index: 0;
 }
 // TODO figure out how to select these specifically enough that !important isn't necessary
-.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-7; }
+//
+// z-index-8 puts this above the apostrophe-workflow controls so widgets can always be added at the
+// bottom of the window, please consider when changing
+.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-8; }
 .apos-dragging .apos-area-controls { opacity: 0 !important; }
 .apos-rich-text-active .apos-area-controls { display: none !important; }
 
