@@ -6,6 +6,8 @@
 
   .ui-menu-item
   {
+    color: @apos-white;
+    background-color: @apos-primary;
     border: none;
     padding: @apos-padding-1;
     font-family: "Roboto", "Helvetica", sans-serif;
@@ -13,12 +15,21 @@
     font-weight: 500;
   }
 
-  .ui-menu-item:hover,
-  .ui-menu-item.ui-state-focus
+  .ui-menu-item-wrapper {
+    border: none;
+  }
+
+  .ui-state-active,
+  .ui-state-active:hover,
+  .ui-widget-content .ui-state-active,
+  .ui-widget-content .ui-state-active:hover
   {
     border: none;
-    background: none;
     color: @apos-white;
-    background-color: @apos-primary;
+    background: none;
+    background-color: transparent;
+    font-weight: 600;
+    margin: 0;
   }
+
 }
