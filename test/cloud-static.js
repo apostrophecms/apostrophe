@@ -20,6 +20,7 @@ describe('cloud-static', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
+      baseUrl: 'http://localhost:7901',
 
       modules: {
         'apostrophe-express': {
@@ -51,7 +52,7 @@ describe('cloud-static', function() {
   });
 
   it('should have the expected files after sync up', function() {
-    baseUrl = 'http://localhost:7901/uploads/cloud-static-test-' + apos.pid;
+    var baseUrl = apos.cloudStatic.getUrl('/cloud-static-test-' + apos.pid);
     return request(baseUrl + '/hello.txt').then(function(data) {
       assert(data === 'hello');
     }).then(function() {
@@ -73,7 +74,7 @@ describe('cloud-static', function() {
   });
 
   it('should have the expected files, and only those, after update', function() {
-    baseUrl = 'http://localhost:7901/uploads/cloud-static-test-' + apos.pid;
+    var baseUrl = apos.cloudStatic.getUrl('/cloud-static-test-' + apos.pid);
     return request(baseUrl + '/hello.txt').then(function(data) {
       assert(data === 'hello2');
     }).then(function() {
@@ -89,30 +90,31 @@ describe('cloud-static', function() {
     });
   });
 
-  // it('should remove the folder contents without error', function() {
-  //   return apos.cloudStatic.removeFolder('/cloud-static-test-' + apos.pid);
-  // });
+  it('should remove the folder contents without error', function() {
+    return apos.cloudStatic.removeFolder('/cloud-static-test-' + apos.pid);
+  });
 
-  // it('folder contents should be gone now', function() {
-  //   return Promise.try(function() {
-  //     request(baseUrl + '/hello.txt').then(function(data) {
-  //       assert(false);
-  //     }).catch(function() {
-  //       assert(true);
-  //     });
-  //   }).then(function() {
-  //     request(baseUrl + '/goodbye.txt').then(function(data) {
-  //       assert(false);
-  //     }).catch(function() {
-  //       assert(true);
-  //     });
-  //   }).then(function() {
-  //     request(baseUrl + '/subdir/nested.txt').then(function(data) {
-  //       assert(false);
-  //     }).catch(function() {
-  //       assert(true);
-  //     });
-  //   });
-  // });
+  it('folder contents should be gone now', function() {
+    var baseUrl = apos.cloudStatic.getUrl('/cloud-static-test-' + apos.pid);
+    return Promise.try(function() {
+      request(baseUrl + '/hello.txt').then(function(data) {
+        assert(false);
+      }).catch(function() {
+        assert(true);
+      });
+    }).then(function() {
+      request(baseUrl + '/goodbye.txt').then(function(data) {
+        assert(false);
+      }).catch(function() {
+        assert(true);
+      });
+    }).then(function() {
+      request(baseUrl + '/subdir/nested.txt').then(function(data) {
+        assert(false);
+      }).catch(function() {
+        assert(true);
+      });
+    });
+  });
 
 });
