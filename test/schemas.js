@@ -357,7 +357,6 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
@@ -384,7 +383,6 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
@@ -434,12 +432,9 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(result.price === 0);
       done();
     });
@@ -461,12 +456,9 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(result.price === 0);
       done();
     });
@@ -490,12 +482,9 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(result.price === 5);
       done();
     });
@@ -519,12 +508,9 @@ describe('Schemas', function() {
     };
     var req = apos.tasks.getReq();
     var result = {};
-    // var result = { password: 'serious' };
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(result.price === 5.1);
       done();
     });
@@ -819,8 +805,6 @@ describe('Schemas', function() {
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(Array.isArray(result.addresses));
       assert(result.addresses.length === 2);
       assert(result.addresses[0].id);
