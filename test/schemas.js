@@ -339,7 +339,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should keep an empty submitted field value null when there is a min / max configuration for a integer field type', function(done) {
+  it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
         {
@@ -418,7 +418,61 @@ describe('Schemas', function() {
     });
   });
 
-  it('should override the saved value if min and max value has been set and the submitted value is out of range for a integer field type', function(done) {
+  it('should allow saving of a 0 value if there is no min value set for an integer type field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    // var result = { password: 'serious' };
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      // hashing is not the business of schemas, see the
+      // apostrophe-users module
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving of a 0 value if there is no min value set for a float type field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    // var result = { password: 'serious' };
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      // hashing is not the business of schemas, see the
+      // apostrophe-users module
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should override the saved value if min and max value has been set and the submitted value is out of range for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
         {
@@ -476,7 +530,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should ensure a min value is being set to the configured min value if a lower value is submitted for a integer field type', function(done) {
+  it('should ensure a min value is being set to the configured min value if a lower value is submitted for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
         {
@@ -526,7 +580,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should ensure a max value is being set to the max if a higher value is submitted for a integer field type', function(done) {
+  it('should ensure a max value is being set to the max if a higher value is submitted for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
         {
@@ -576,7 +630,7 @@ describe('Schemas', function() {
     });
   });
 
-  it('should not modify a value if the submitted value is within min and max for a integer field type', function(done) {
+  it('should not modify a value if the submitted value is within min and max for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
         {
