@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.59.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Widget schemas now support the `def` property for fields. This always worked for pieces and pages.
+* Accommodations for functional testing in nightwatch. The currently active Apostrophe modal, and all of its proxies such as its controls that are in a separate div for presentation reasons, now has the attribute `data-apos-modal-current` which is set to the class name of the modal. This powers the new [apostrophe-nightwatch-tools](https://npmjs.org/package/apostrophe-nightwatch-tools) module, which provides reusable commands and steps that can be used to create test projects similar to our [apostrophe-enterprise-testbed](https://github.com/apostrophecms/apostrophe-enterprise-testbed). Testing with the enterprise testbed project is a standard part of our release process.
+* Previously if workflow was in use slugs could not be reused by new pages when the original page was in the trash. This has been addressed; the slug is now deduplicated in the same way that email addresses and usernames of users are when in the trash.
+* The infinite scroll feature of `apostrophe-pieces-pages` now works as documented with the styles provided. The code is also more efficient and scroll events are throttled for performance. Thanks to Lars Houmark.
+* Various UX fixes, thanks to Lars Houmark and various members of the Apostrophe team.
+
 ## 2.59.0
 
 Unit tests passing.
