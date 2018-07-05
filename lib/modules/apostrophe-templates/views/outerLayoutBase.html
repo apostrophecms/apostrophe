@@ -20,8 +20,8 @@
       {% if data.user %}
         <div class="apos-ui">
           <div class="apos-context-menu-container">
-            {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
             {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
+            {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
             {{ apos.pages.afterContextMenu() }}
           </div>
         </div>
