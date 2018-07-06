@@ -38,12 +38,12 @@
 .apos-field-input-select-wrapper
 {
   position: relative;
+  display: flex;
+  align-items: center;
   &:after
   {
     content: "\f0d7";
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
     right: @apos-padding-3;
     .fa;
     pointer-events: none;
@@ -61,7 +61,7 @@
   -moz-appearance: none;
   appearance: none;
   border-radius: 0;
-  
+
   &:hover { cursor: pointer; }
 }
 
@@ -119,40 +119,40 @@
   }
 }
 
-.apos-form-checkbox 
+.apos-form-checkbox
 {
   position: relative;
   padding: @apos-padding-2 0 @apos-padding-2 @apos-padding-2;
-    
+
   &:nth-child(even)
   {
     background-color: @apos-lighter;
   }
-  
+
   &-label
   {
     color: @apos-dark;
-    
-    &:hover 
+
+    &:hover
     {
       cursor: pointer;
     }
   }
-  
-  &-input 
+
+  &-input
   {
     margin-right: @apos-margin-2;
     opacity: 0;
     z-index: -1;
-    
-    &:checked ~ .apos-form-checkbox-indicator 
+
+    &:checked ~ .apos-form-checkbox-indicator
     {
       background: @apos-primary;
       border-color: @apos-primary;
-      border-width: 6px; 
+      border-width: 6px;
     }
   }
-  
+
   &-indicator
   {
     position: absolute;
@@ -167,7 +167,7 @@
     .apos-no-select;
 
     &:hover { cursor: pointer; }
-  }  
+  }
 }
 
 // Tags ========================================
@@ -255,7 +255,7 @@
 
 .apos-field-input-color-value {
   float: left;
-  margin: 20px 0px 0 20px 
+  margin: 20px 0px 0 20px
 }
 
 .apos-field-input-color-preview {
