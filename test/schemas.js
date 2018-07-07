@@ -293,6 +293,727 @@ describe('Schemas', function() {
     assert(_newPage.group.name === 'info');
   });
 
+  it('should error if a field is required and an empty value is submitted for a string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'name',
+          label: 'Name',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      name: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err === 'required');
+      done();
+    });
+  });
+
+  it('should error if the value submitted is less than min length for a string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'name',
+          label: 'Name',
+          min: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      name: 'Cow'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err === 'min');
+      done();
+    });
+  });
+
+  it('should convert and keep the correct value for a field which is required for a string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'name',
+          label: 'Name',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      name: 'Apostrophe^CMS'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(result.name === 'Apostrophe^CMS');
+      done();
+    });
+  });
+
+  it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          min: 1,
+          max: 10
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === null);
+      done();
+    });
+  });
+
+  it('should keep an empty submitted field value null when there is a min / max configuration for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          min: 1,
+          max: 10
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === null);
+      done();
+    });
+  });
+
+  it('should ensure a max value is being trimmed to the max length for a string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'name',
+          label: 'Name',
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      name: 'Apostrophe'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.name === 'Apost');
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a number if a field is required for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 0
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a float if a field is required for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 0.00
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0.00);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a number if a field is required for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 0
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a number if a field is required for an string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 0
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === '0');
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a string if a field is required for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a string if a field is required for an string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === '0');
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a string if a field is required for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a string if there is no min value set for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a 0 value provided as a string if there is no min value set for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '0'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a number for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: -1
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === -1);
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a float for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: -1.3
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === -1.3);
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a float for an string field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'string',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: -1.3
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === '-1.3');
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a number if a field is required for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: -1
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === -1);
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a number if a field is required for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: -1.3
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === -1.3);
+      done();
+    });
+  });
+
+  it('should allow saving a negative value provided as a string if a field is required for an float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '-1.3'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === -1.3);
+      done();
+    });
+  });
+
+  it('should override the saved value if min and max value has been set and the submitted value is out of range for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          min: 5,
+          max: 6
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '3'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5);
+      done();
+    });
+  });
+
+  it('should override the saved value if min and max value has been set and the submitted value is out of range for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          min: 5.1,
+          max: 6
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '3.2'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5.1);
+      done();
+    });
+  });
+
+  it('should ensure a min value is being set to the configured min value if a lower value is submitted for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          min: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '1'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5);
+      done();
+    });
+  });
+
+  it('should ensure a min value is being set to the configured min value if a lower value is submitted for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          min: 5.3
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '1.2'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5.3);
+      done();
+    });
+  });
+
+  it('should ensure a max value is being set to the max if a higher value is submitted for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '8'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5);
+      done();
+    });
+  });
+
+  it('should ensure a max value is being set to the max if a higher value is submitted for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          max: 5.9
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '8'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5.9);
+      done();
+    });
+  });
+
+  it('should not modify a value if the submitted value is within min and max for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          min: 4,
+          max: 6
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '5'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 5);
+      done();
+    });
+  });
+
+  it('should not modify a value if the submitted value is within min and max for a float field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          min: 4,
+          max: 5
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '4.3'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.price === 4.3);
+      done();
+    });
+  });
+
   it('should convert simple data correctly', function(done) {
     var schema = apos.schemas.compose({
       addFields: simpleFields
@@ -430,8 +1151,6 @@ describe('Schemas', function() {
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
       assert(!err);
       assert(_.keys(result).length === 1);
-      // hashing is not the business of schemas, see the
-      // apostrophe-users module
       assert(Array.isArray(result.addresses));
       assert(result.addresses.length === 2);
       assert(result.addresses[0].id);

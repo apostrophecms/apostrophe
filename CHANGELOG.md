@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.60.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New feature: you can now display counts for each tag, joined item, etc. when using the `piecesFilters` option of `apostrophe-pieces-pages`. Just add `counts: true` to the configuration for that filter. The count is then available in a `.count` property for each value in the array. See [creating filter UI with apostrophe-pieces-pages](https://apostrophecms.org/docs/tutorials/intermediate/cursors.html#creating-filter-u-i-with-code-apostrophe-pieces-pages-code) for more information.
+* New feature: command line tasks such as `apostrophe-blog:generate` may now be run programmatically, for example: `apos.tasks.invoke('apostrophe-blog:generate', { total: 50 })`. A promise is returned if a callback is not passed. Note that not all tasks are written to behave politely and invoke their callback normally, however most do. This feature is most useful when writing tasks that logically should incorporate other tasks.
+* Many UX and UI improvements that make the experience more pleasant in subtle and not-so-subtle ways. Thanks to Carsten, Marco Arnone and the prolific Lars Houmark for their contributions. This was an excellent week for Apostrophe PRs.
+* The full set of controls for joined items are again available in the chooser, as well as in the browse modal.
+* The automatic opening of the admin bar menu on page load can now be configured with the `openOnLoad`, `openOnHomepageLoad`, and `closeDelay` options.
+* `autocomplete="off"` for date fields prevents chrome autocomplete suggestions from wrecking calendar UI.
+* Always remove .apos-global-busy on unlock, even if the transition event never fires. Yes, that is sadly a thing. Prevents the UI from becoming unusable in rare situations (less rare inside functional tests).
+* Use `one` to reduce the overhead of .apos-global-busy's transition event handler. We could do more here to reduce overhead, i.e. unhooking it entirely.
+* Much-improved validation of `min`, `max` and `required` for strings, integers and floats on both the server and the browser side. Thanks to Lars Houmark.
+
 ## 2.59.1
 
 Unit tests passing.
