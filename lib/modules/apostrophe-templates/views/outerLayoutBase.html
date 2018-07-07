@@ -11,7 +11,7 @@
     {% block extraHead %}
     {% endblock %}
   </head>
-  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}">
+  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     {% block apostropheMenu %}
       {{ apos.adminBar.output() }}
     {% endblock %}
