@@ -1014,6 +1014,236 @@ describe('Schemas', function() {
     });
   });
 
+  it('should not allow a text value to be submitted for a required integer field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a required float field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required integer field with min and max', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          min: 1,
+          max: 10
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required float field with min and max', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          min: 1,
+          max: 10
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required integer field with a default value set', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          def: 2
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required float field with a default value set', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price',
+          def: 2.10
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required integer field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should not allow a text value to be submitted for a non required float field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: 'A'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      done();
+    });
+  });
+
+  it('should allow a parsable string/integer value to be submitted for a non required integer field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '22a'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(result.price === 22);
+      done();
+    });
+  });
+
+  it('should allow a parsable string/float value to be submitted for a non required float field', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'float',
+          name: 'price',
+          label: 'Price'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: '11.4b'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(result.price === 11.4);
+      done();
+    });
+  });
+
   it('should convert simple data correctly', function(done) {
     var schema = apos.schemas.compose({
       addFields: simpleFields
