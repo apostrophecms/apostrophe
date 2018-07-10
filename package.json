@@ -79,13 +79,13 @@
     "yargs": "^3.32.0"
   },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-punkave": "^1.0.10",
-    "eslint-config-standard": "^11.0.0-beta.0",
-    "eslint-plugin-import": "^2.8.0",
-    "eslint-plugin-node": "^5.2.1",
-    "eslint-plugin-promise": "^3.7.0",
-    "eslint-plugin-standard": "^3.0.1",
-    "mocha": "^5.1.1"
+    "mocha": "^5.1.1",
+    "eslint": "^4.0.0",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "eslint-config-apostrophe": "^2.0.0"
   }
 }
