@@ -6,7 +6,8 @@
 
 {% block controls %}
   <div class="apos-modal-controls">
-    {{ buttons.major('Finished', { action: 'save' }) }}
+    {{ buttons.minor('Finished', { action: 'save' }) }}
+    {{ buttons.major('New Page', { action: 'insert-page' }) }}
   </div>
 {% endblock %}
 
@@ -27,7 +28,7 @@
     <span class="apos-reorganize-controls">Edit</span>
     <span class="apos-reorganize-controls">Link</span>
     <span class="apos-reorganize-controls">Trash</span>
-  </div> 
+  </div>
   {# This gets fired up by jstree #}
   <div class="apos-table apos-reorganize-tree" data-tree>
   </div>
