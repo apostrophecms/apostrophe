@@ -1,14 +1,14 @@
 {% macro string(name, placeholder, value, readOnly, options) -%}
-  <input id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text" type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+  <input id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="text" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
 {%- endmacro %}
 
 {% macro textarea(name, placeholder, readOnly, options) -%}
-  <textarea id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea" {% if readOnly %}disabled{% endif %}></textarea>
+  <textarea id="{{ options.id }}" name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-textarea{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}></textarea>
 {%- endmacro %}
 
 {% macro checkbox(name, placeholder, readOnly) -%}
   <label>
-    <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox" type="checkbox" {% if readOnly %}disabled{% endif %}>
+    <input name="{{ name }}" placeholder="{{__(placeholder | d(''))}}" class="apos-field-input apos-field-input-checkbox{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="checkbox"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
     <span class="apos-field-input-checkbox-indicator"></span>
   </label>
 {%- endmacro %}
@@ -20,7 +20,7 @@
 
 {% macro select(name, options, selected, readOnly) -%}
   <div class="apos-field-input-select-wrapper">
-    <select name="{{ name }}" class="apos-field-input apos-field-input-select" {% if readOnly %}disabled{% endif %}>
+    <select name="{{ name }}" class="apos-field-input apos-field-input-select{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
       {%- for option in options -%}
         <option {{ "selected" if option.value == selected }} value="{{ option.value }}">{{ __(option.label | d('')) }}</option>
       {%- endfor -%}
@@ -31,13 +31,13 @@
 {% macro color(name, placeholder, value, readOnly, options) -%}
   <label>
     <div class="apos-field-input-color-preview" data-apos-color-preview></div>
-    <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __("None selected") }}" class="apos-field-input apos-field-input-color" data-apos-color type="text" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+    <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __("None selected") }}" class="apos-field-input apos-field-input-color{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" data-apos-color type="text" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
   </label>
 {%- endmacro %}
 
 {% macro range(name, min, max, step, placeholder, value, readOnly, options) -%}
   <label>
     <span class="apos-field-input-range-value" data-apos-range-value></span>
-    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range" type="range" value="{{__(value | d(''))}}" {% if readOnly %}disabled{% endif %}>
+    <input id="{{ options.id }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step or 'any' }}" class="apos-field-input apos-field-input-range{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" type="range" value="{{__(value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
   </label>
 {%- endmacro %}
