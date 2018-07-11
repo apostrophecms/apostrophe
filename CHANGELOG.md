@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.60.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fields of type `checkboxes` now play nicely with the `live/draft` toggle of `apostrophe-workflow`.
+* Improved validation of integers and floats. Thanks to Lars Houmark.
+* The "Global" dialog box now follows the same pattern as that for other piece types, which means that the workflow dropdown menu is available if workflow is present.
+* Options may be passed to the `express.static` middleware that serves the `public` folder, via the `static` option of the `apostrophe-express` module. Thanks to Leonhard Melzer.
+* `apostrophe` now depends on `bluebird` properly and there are no lingering references to the wrong version fo `lodash`. Formerly we got away with this because some of our dependencies did depend on these, and npm flattens dependencies. Thanks to Leonhard Melzer.
+* The new `eslint-config-punkave` ruleset is in place, and includes a check for "unofficial dependencies" in `require` calls that could go away suddenly.
+* `fieldClasses` and `fieldAttributes` may be set on form fields themselves, similar to the existing `classes` and `attributes` properties that are applied to the `fieldset`. Thanks to Lars Houmark.
+* The "Pages" admin UI now includes a "New Page" button, in addition to the usual "reorganize" functionality. Thanks to Lars Houmark.
+* Fixed a crash when an `apostrophe-pieces-widget` is configured to always show all pieces via `by: 'all'`. Thanks to Aurélien Wolz.
+* General UI styling improvements and fixes.
+
 ## 2.60.0
 
 Unit tests passing.
