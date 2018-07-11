@@ -83,7 +83,7 @@
 {%- endmacro -%}
 
 {%- macro passwordBody(field, options) -%}
-  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
+  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" name="{{ field.name }}" type="password"{% if field.readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
