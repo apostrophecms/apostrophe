@@ -1511,7 +1511,7 @@ describe('Schemas', function() {
 
   it('enforces required property for ordinary field', function(done) {
     var req = apos.tasks.getReq();
-    var schema = apos.schemas.compose({ 
+    var schema = apos.schemas.compose({
       addFields: [
         {
           name: 'age',
@@ -1531,7 +1531,7 @@ describe('Schemas', function() {
 
   it('ignores required property for hidden field', function(done) {
     var req = apos.tasks.getReq();
-    var schema = apos.schemas.compose({ 
+    var schema = apos.schemas.compose({
       addFields: [
         {
           name: 'age',
@@ -1571,7 +1571,7 @@ describe('Schemas', function() {
 
   it('enforces required property for shown field', function(done) {
     var req = apos.tasks.getReq();
-    var schema = apos.schemas.compose({ 
+    var schema = apos.schemas.compose({
       addFields: [
         {
           name: 'age',
@@ -1611,7 +1611,7 @@ describe('Schemas', function() {
 
   it('ignores required property for recursively hidden field', function(done) {
     var req = apos.tasks.getReq();
-    var schema = apos.schemas.compose({ 
+    var schema = apos.schemas.compose({
       addFields: [
         {
           name: 'age',
@@ -1667,7 +1667,7 @@ describe('Schemas', function() {
 
   it('enforces required property for recursively shown field', function(done) {
     var req = apos.tasks.getReq();
-    var schema = apos.schemas.compose({ 
+    var schema = apos.schemas.compose({
       addFields: [
         {
           name: 'age',
@@ -1720,6 +1720,5 @@ describe('Schemas', function() {
       done();
     });
   });
-
 
 });
