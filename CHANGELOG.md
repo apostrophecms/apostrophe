@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.60.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Version 2.60.1 broke validation of schema fields which were
+`required`, but blank because they were hidden by `showFields`.
+This is of course permitted, `required` applies only if the field
+is active according to `showFields` or not addressed by any
+`showFields` possibilities at all. Comprehensive unit testing was
+added for this issue to prevent a recurrence.
+* Version 2.60.1 also introduced a more subtle issue: if constraints
+like `required` or `min`, or general improvements to validation such
+as NaN detection for integers and floats, were added to a widget schema later
+after content already existed then it became impossible to open a widget
+editor and correct the issues. Validation tolerance was added for this
+situation.
+* When a user edits an area "in context" on the page, the server now
+reports errors using a path that can be used to identify the widget
+responsible and open its editing dialog box. A more relevant notification
+is also displayed. This remains a secondary mechanism. Server-side
+validation is mostly about preventing intentional abuse. Browser-side
+validation is still the best way to provide feedback during data entry.
+
 ## 2.60.1
 
 Unit tests passing.
