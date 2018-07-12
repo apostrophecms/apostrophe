@@ -311,7 +311,7 @@ describe('Schemas', function() {
     var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      assert(err === 'required');
+      assert(err === 'name.required');
       done();
     });
   });
@@ -334,7 +334,7 @@ describe('Schemas', function() {
     var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      assert(err === 'min');
+      assert(err === 'name.min');
       done();
     });
   });
@@ -1505,6 +1505,218 @@ describe('Schemas', function() {
     return apos.schemas.convert(req, schema, 'string', input, result, function(err) {
       assert(!err);
       assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
+      done();
+    });
+  });
+
+  it('enforces required property for ordinary field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          label: 'Age',
+          type: 'integer',
+          required: true
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { age: '' }, output, function(err) {
+      assert(err);
+      assert(err === 'age.required');
+      done();
+    });
+  });
+
+  it('ignores required property for hidden field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'shoeSize', age: '' }, output, function(err) {
+      assert(!err);
+      assert(output.ageOrShoeSize === 'shoeSize');
+      done();
+    });
+  });
+
+  it('enforces required property for shown field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'age', age: '' }, output, function(err) {
+      assert(err);
+      assert(err === 'age.required');
+      done();
+    });
+  });
+
+  it('ignores required property for recursively hidden field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'select',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'age', doWeCare: '0', age: '' }, output, function(err) {
+      assert(!err);
+      assert(output.ageOrShoeSize === 'age');
+      done();
+    });
+  });
+
+  it('enforces required property for recursively shown field', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'select',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'age', doWeCare: '1', age: '' }, output, function(err) {
+      assert(err);
+      assert(err === 'age.required');
       done();
     });
   });
