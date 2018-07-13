@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.60.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Improved support for nested areas and widgets. Apostrophe now pushes the correct doc id and dot path all the way to the page in various situations where this could previously have led to errors at save time.
+* The new `apos.locks.withLock(lockName, fn)` method can be used to execute a function while the process has the named lock. This ensures that other processes cannot run that function simultaneously. You may optionally pass a callback, otherwise a promise is returned. Similarly `fn` may take a callback, or no arguments at all, in which case it is expected to return a promise.
+* Cleanup: don't call `server.close` unless we've succeeded in listening for connections.
+
 ## 2.60.2
 
 Unit tests passing.
