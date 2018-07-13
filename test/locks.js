@@ -253,18 +253,16 @@ describe('Locks', function() {
     });
   });
 
-  it('callbacks: withLock method should run a function inside a lock', function() {
+  it('callbacks: withLock method should run a function inside a lock', function(done) {
     var locks = apos.modules['apostrophe-locks'];
     return locks.withLock('test-lock', function(callback) {
       return setTimeout(function() {
         return callback(null, 'result');
       }, 50);
     }, function(err, result) {
-      if (err) {
-        console.error(err);
-      }
       assert(!err);
       assert(result === 'result');
+      done();
     });
   });
 
