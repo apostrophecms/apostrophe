@@ -260,6 +260,9 @@ describe('Locks', function() {
         return callback(null, 'result');
       }, 50);
     }, function(err, result) {
+      if (err) {
+        console.error(err);
+      }
       assert(!err);
       assert(result === 'result');
     });
