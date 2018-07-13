@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.60.4
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Shallowly clone the required definition in defineRelatedType to prevent yet more crosstalk between instances of apos when `apostrophe-multisite` is used. No other changes.
+
 ## 2.60.3
 
 Unit tests passing.
