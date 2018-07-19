@@ -1,10 +1,12 @@
 # [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](http://apostrophecms.org/)
 
-[![Join the chat at https://gitter.im/apostrophecms/apostrophe](https://badges.gitter.im/apostrophecms/apostrophe.svg)](https://gitter.im/apostrophecms/apostrophe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
 
 Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
+
+[![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
+[![Build Status](https://saucelabs.com/buildstatus/boutell)](https://saucelabs.com/beta/builds/1681358095414ff5b2b0ce51a6def56e)
+[![Join the chat at https://gitter.im/apostrophecms/apostrophe](https://badges.gitter.im/apostrophecms/apostrophe.svg)](https://gitter.im/apostrophecms/apostrophe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Getting Started
 
