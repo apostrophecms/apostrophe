@@ -4,7 +4,7 @@
 Wow! So, you are interested in contributing to ApostropheCMS! That’s fantastic! We really appreciate your interest and value your time. Because of that fact, we’ve drafted some guidelines to make the most of your contributions, and help maintain ApostropheCMS as the best Node CMS in the universe!
 
 ## Community
-There is a growing community of users on our Gitter channel (link), and you can post and find answers to support questions about ApostropheCMS in StackOverflow (link) where fellow ApostropheCMS users are happy to help you out.
+There is a growing community of users on [Gitter](https://gitter.im/apostrophecms/apostrophe), and you can post and find answers to support questions about ApostropheCMS in [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms) where fellow ApostropheCMS users are happy to help you out.
 
 We hold regular meetups at our office in Philadelphia which are broadcasted on our Twitch channel. This is a great opportunity to check-in with the Apostrophe team, say “Hi” and hear about what we are working on.
 
@@ -13,7 +13,7 @@ One way to contribute to ApostropheCMS is by expanding the existing documentatio
 
 Along those lines, the creation of blog posts about your experiences using ApostropheCMS or tweets expressing your interest help spread the word. When you launch a site on ApostropheCMS, ping us in Gitter or on Twitter. We love a good success story.
 
-Of course, we welcome the more traditional open source contributions via pull requests and new open issues to our GitHub repository. If you’d like to dig-in right away see issues with the “contributions welcome” label [https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22contributions+welcome%22]
+Of course, we welcome the more traditional open source contributions via pull requests and new open issues to our GitHub repository. If you’d like to dig-in right away see issues with the [“contributions welcome” label](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22contributions+welcome%22).
 
 Some information about submitting new issues to our GitHub repository, whether they are bugs or enhancements are documented in more detail below.
 
