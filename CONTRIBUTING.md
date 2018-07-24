@@ -7,7 +7,7 @@ There is a growing community of users on [Gitter](https://gitter.im/apostrophecm
 We hold regular meetups at our office in Philadelphia which are broadcasted on our [Twitch channel](https://www.twitch.tv/apostrophecms). This is a great opportunity to check-in with the Apostrophe team, say “Hi” and hear about what we are working on.
 
 # Contributions Made Easy
-One way to contribute to ApostropheCMS is by expanding the existing documentation. The docs repo is here: https://github.com/apostrophecms/apostrophe-documentation. Pull requests that update and refine this information is super useful.
+One way to contribute to ApostropheCMS is by expanding the existing documentation. The docs repo is here: https://github.com/apostrophecms/apostrophe-documentation. Pull requests that update and refine this information are super useful.
 
 Along those lines, the authoring of blog posts about your experiences using ApostropheCMS or tweets expressing your interest help spread the word. When you launch a site on ApostropheCMS, ping us in Gitter or on Twitter. We love a good success story.
 
