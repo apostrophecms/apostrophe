@@ -4,7 +4,7 @@ Wow! So, you are interested in contributing to ApostropheCMS! That’s fantastic
 # Community
 There is a growing community of users on [Gitter](https://gitter.im/apostrophecms/apostrophe), and you can post and find answers to support questions about ApostropheCMS in [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms) where fellow ApostropheCMS users are happy to help you out.
 
-We hold regular meetups at our office in Philadelphia which are broadcasted on our Twitch channel. This is a great opportunity to check-in with the Apostrophe team, say “Hi” and hear about what we are working on.
+We hold regular meetups at our office in Philadelphia which are broadcasted on our [Twitch channel](https://www.twitch.tv/apostrophecms). This is a great opportunity to check-in with the Apostrophe team, say “Hi” and hear about what we are working on.
 
 # Contributions Made Easy
 One way to contribute to ApostropheCMS is by expanding the existing documentation. The docs repo is here: https://github.com/apostrophecms/apostrophe-documentation and PRs that update and refine this information is super useful.
