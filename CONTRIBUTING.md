@@ -11,7 +11,7 @@ One way to contribute to ApostropheCMS is by expanding the existing documentatio
 
 Along those lines, the authoring of blog posts about your experiences using ApostropheCMS or tweets expressing your interest help spread the word. When you launch a site on ApostropheCMS, ping us in Gitter or on Twitter. We love a good success story.
 
-Of course, we welcome traditional open source contributions via pull requests and new open issues to our GitHub repository. If you’d like to dig-in right away see issues with the [“contributions welcome” label](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22contributions+welcome%22).
+Of course, we welcome traditional open source contributions via pull requests and new open issues to our GitHub repository. If you’d like to dig in right away see issues with the [“contributions welcome” label](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aopen+is%3Aissue+label%3A%22contributions+welcome%22).
 
 Detailed information about submitting code contributions and new issues to our GitHub repository are documented below.
 
