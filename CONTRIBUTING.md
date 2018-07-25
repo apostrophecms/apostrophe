@@ -37,5 +37,11 @@ If you’ve perused our open issues labeled “Bug” and decide to work to reso
 
 1. Make sure your pull request includes tests. [For examples of back-end unit tests, look here](
 https://github.com/apostrophecms/apostrophe/tree/master/test) at the test folder of the apostrophe module. This level of coverage is expected for backend features that aren't already covered by a test. [For examples of front-end, browser-based regression tests, checkout the apostrophe-enterprise-testbed module](https://github.com/apostrophecms/apostrophe-enterprise-testbed). We don't expect that every contributor is ready to write Nightwatch tests like these, but it is surely appreciated. If it’s a bug fix you should have a test that reproduces the issue (if you can’t write a test for the bug you are addressing, please note the reason why).
-2. Run ESLint to be sure your update adheres to our coding standards.
+2. Run ESLint to be sure your update adheres to our coding standards. The `apostrophe` module already has a `.eslintrc` file, so the simplest way is to run: `npx eslint .` Your editor may automatically point out eslint-detected concerns as well.
 3. Enhancements should include documentation and include implementation details were applicable.
+
+# Should you make a new npm module?
+
+Great question. If it's not a bug fix or an improvement to the core UI, it often doesn't belong in the core `apostrophe` npm module. For instance, our blogging functionality is in the separate `apostrophe-blog` npm module.
+
+See [publishing your own npm modules for Apostrophe](https://apostrophecms.org/docs/more-modules.html#publishing-your-own-npm-modules-for-apostrophe) for more information.
