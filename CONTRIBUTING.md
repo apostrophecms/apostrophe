@@ -33,7 +33,7 @@ We also track feature requests and larger scale enhancements within the GitHub r
 Adding the label of “enhancement” along with categorizing your issue with an existing label such as UI, UX, Accessibility, Security, etc. will help the team stay organized and is greatly appreciated.
 
 # Fixing Bugs or Submitting Enhancements
-If you’ve perused our open issues labelled “Bug” and decide to work to resolve one, or you’ve got a new feature that you’d like to commit to the core project, please keep these things in mind:
+If you’ve perused our open issues labeled “Bug” and decide to work to resolve one, or you’ve got a new feature that you’d like to commit to the core project, please keep these things in mind:
 
 1. Make sure your pull request includes tests. If it’s a bug fix you should have a test that reproduces the issue (if you can’t write a test for the bug you are addressing, please note the reason why).
 2. Run ESLint to be sure your update adheres to our coding standards.
