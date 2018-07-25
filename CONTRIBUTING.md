@@ -1,5 +1,5 @@
 # Introduction
-Wow! So, you are interested in contributing to ApostropheCMS! That’s fantastic! We really appreciate your interest and value your time. Because of that fact, we’ve drafted some guidelines to make the most of your contributions, and helps maintain ApostropheCMS as the best Node CMS in the universe!
+Interested in contributing to ApostropheCMS? That’s fantastic! We really appreciate your interest and value your time. Because of that fact, we’ve drafted some guidelines to make the most of your contributions, and helps maintain ApostropheCMS as the best Node CMS in the universe.
 
 # Community
 There is a growing community of users on [Gitter](https://gitter.im/apostrophecms/apostrophe), and you can post and find answers to support questions about ApostropheCMS in [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms) where fellow ApostropheCMS users are happy to help you out.
