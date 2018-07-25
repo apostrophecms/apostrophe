@@ -35,6 +35,7 @@ Adding the label of “enhancement” along with categorizing your issue with an
 # Fixing Bugs or Submitting Enhancements
 If you’ve perused our open issues labeled “Bug” and decide to work to resolve one, or you’ve got a new feature that you’d like to commit to the core project, please keep these things in mind:
 
-1. Make sure your pull request includes tests. If it’s a bug fix you should have a test that reproduces the issue (if you can’t write a test for the bug you are addressing, please note the reason why).
+1. Make sure your pull request includes tests. [For examples of back-end unit tests, look here](
+https://github.com/apostrophecms/apostrophe/tree/master/test) at the test folder of the apostrophe module. This level of coverage is expected for backend features that aren't already covered by a test. [For examples of front-end, browser-based regression tests, checkout the apostrophe-enterprise-testbed module](https://github.com/apostrophecms/apostrophe-enterprise-testbed). We don't expect that every contributor is ready to write Nightwatch tests like these, but it is surely appreciated. If it’s a bug fix you should have a test that reproduces the issue (if you can’t write a test for the bug you are addressing, please note the reason why).
 2. Run ESLint to be sure your update adheres to our coding standards.
 3. Enhancements should include documentation and include implementation details were applicable.
