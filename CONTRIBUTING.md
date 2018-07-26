@@ -6,6 +6,15 @@ There is a growing community of users on [Gitter](https://gitter.im/apostrophecm
 
 We hold regular meetups at our office in Philadelphia which are broadcasted on our [Twitch channel](https://www.twitch.tv/apostrophecms). This is a great opportunity to check-in with the Apostrophe team, say “Hi” and hear about what we are working on.
 
+# Code of Conduct
+
+In the interest of fostering an open and welcoming environment, we as
+contributors and maintainers pledge to making participation in our project and
+our community a harassment-free experience for everyone, regardless of age, body
+size, disability, ethnicity, sex characteristics, gender identity and expression,
+level of experience, education, socio-economic status, nationality, personal
+appearance, race, religion, or sexual identity and orientation. All contributors are expected to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 # Contributions Made Easy
 One way to contribute to ApostropheCMS is by expanding the existing documentation. The docs repo is here: https://github.com/apostrophecms/apostrophe-documentation. Pull requests that update and refine this information are super useful.
 
@@ -45,3 +54,4 @@ https://github.com/apostrophecms/apostrophe/tree/master/test) at the test folder
 Great question. If it's not a bug fix or an improvement to the core UI, it often doesn't belong in the core `apostrophe` npm module. For instance, our blogging functionality is in the separate `apostrophe-blog` npm module.
 
 See [publishing your own npm modules for Apostrophe](https://apostrophecms.org/docs/more-modules.html#publishing-your-own-npm-modules-for-apostrophe) for more information.
+
