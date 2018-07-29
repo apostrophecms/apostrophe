@@ -217,4 +217,53 @@ describe('Locks', function() {
         });
     });
   });
+
+  it('withLock method should run a function inside a lock', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return 'result';
+      });
+    }).then(function(result) {
+      assert(result === 'result');
+    });
+  });
+
+  it('withLock method should be able to run again (lock released)', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return 'result';
+      });
+    }).then(function(result) {
+      assert(result === 'result');
+    });
+  });
+
+  it('withLock method should hold the lock (cannot relock within fn)', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return locks.lock('test-lock').then(function() {
+          assert(false);
+        }).catch(function(e) {
+          assert(e);
+        });
+      });
+    });
+  });
+
+  it('callbacks: withLock method should run a function inside a lock', function(done) {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function(callback) {
+      return setTimeout(function() {
+        return callback(null, 'result');
+      }, 50);
+    }, function(err, result) {
+      assert(!err);
+      assert(result === 'result');
+      done();
+    });
+  });
+
 });

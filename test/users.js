@@ -6,7 +6,8 @@ var apos;
 
 describe('Users', function() {
 
-  this.timeout(t.timeout);
+  // Password hashing can be slow
+  this.timeout(20000);
 
   after(function(done) {
     return t.destroy(apos, done);

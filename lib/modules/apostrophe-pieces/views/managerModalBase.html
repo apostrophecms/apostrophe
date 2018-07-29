@@ -12,7 +12,7 @@
 {%- endblock -%}
 
 {%- block instructions -%}
-  {{ __('You can select content to display by searching for the titles of individual %s, or tags.', __(data.options.pluralLabel |  d(''))) }}
+  {{ __('Here you can add new %s or click on existing ones to edit them.', __(data.options.pluralLabel |  d(''))) }}
 {%- endblock -%}
 
 {%- block filters -%}
@@ -44,11 +44,6 @@
             {% endfor %}
           </select>
         </div>
-        <div class="apos-manage-batch-operations-buttons">
-          {% for operation in data.options.batchOperations %}
-            {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}
-          {% endfor %}
-        </div>
         {% if apos.utils.filterNonempty(data.options.batchOperations, 'schema') %}
           <div class="apos-manage-batch-operation-forms">
         {% endif %}
@@ -64,6 +59,11 @@
         {% if apos.utils.filterNonempty(data.options.batchOperations, 'schema') %}
           </div>
         {% endif %}
+        <div class="apos-manage-batch-operations-buttons">
+          {% for operation in data.options.batchOperations %}
+            {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}
+          {% endfor %}
+        </div>
       </div>
     {%- endblock -%}
     <div class="apos-manage-pager" data-pager></div>

@@ -1,5 +1,148 @@
 # Changelog
 
+## 2.60.4
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Shallowly clone the required definition in defineRelatedType to prevent yet more crosstalk between instances of apos when `apostrophe-multisite` is used. No other changes.
+
+## 2.60.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Improved support for nested areas and widgets. Apostrophe now pushes the correct doc id and dot path all the way to the page in various situations where this could previously have led to errors at save time.
+* The new `apos.locks.withLock(lockName, fn)` method can be used to execute a function while the process has the named lock. This ensures that other processes cannot run that function simultaneously. You may optionally pass a callback, otherwise a promise is returned. Similarly `fn` may take a callback, or no arguments at all, in which case it is expected to return a promise.
+* Cleanup: don't call `server.close` unless we've succeeded in listening for connections.
+
+## 2.60.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Version 2.60.1 broke validation of schema fields which were
+`required`, but blank because they were hidden by `showFields`.
+This is of course permitted, `required` applies only if the field
+is active according to `showFields` or not addressed by any
+`showFields` possibilities at all. Comprehensive unit testing was
+added for this issue to prevent a recurrence.
+* Version 2.60.1 also introduced a more subtle issue: if constraints
+like `required` or `min`, or general improvements to validation such
+as NaN detection for integers and floats, were added to a widget schema later
+after content already existed then it became impossible to open a widget
+editor and correct the issues. Validation tolerance was added for this
+situation.
+* When a user edits an area "in context" on the page, the server now
+reports errors using a path that can be used to identify the widget
+responsible and open its editing dialog box. A more relevant notification
+is also displayed. This remains a secondary mechanism. Server-side
+validation is mostly about preventing intentional abuse. Browser-side
+validation is still the best way to provide feedback during data entry.
+
+## 2.60.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fields of type `checkboxes` now play nicely with the `live/draft` toggle of `apostrophe-workflow`.
+* Improved validation of integers and floats. Thanks to Lars Houmark.
+* The "Global" dialog box now follows the same pattern as that for other piece types, which means that the workflow dropdown menu is available if workflow is present.
+* Options may be passed to the `express.static` middleware that serves the `public` folder, via the `static` option of the `apostrophe-express` module. Thanks to Leonhard Melzer.
+* `apostrophe` now depends on `bluebird` properly and there are no lingering references to the wrong version fo `lodash`. Formerly we got away with this because some of our dependencies did depend on these, and npm flattens dependencies. Thanks to Leonhard Melzer.
+* The new `eslint-config-punkave` ruleset is in place, and includes a check for "unofficial dependencies" in `require` calls that could go away suddenly.
+* `fieldClasses` and `fieldAttributes` may be set on form fields themselves, similar to the existing `classes` and `attributes` properties that are applied to the `fieldset`. Thanks to Lars Houmark.
+* The "Pages" admin UI now includes a "New Page" button, in addition to the usual "reorganize" functionality. Thanks to Lars Houmark.
+* Fixed a crash when an `apostrophe-pieces-widget` is configured to always show all pieces via `by: 'all'`. Thanks to Aurélien Wolz.
+* General UI styling improvements and fixes.
+
+## 2.60.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New feature: you can now display counts for each tag, joined item, etc. when using the `piecesFilters` option of `apostrophe-pieces-pages`. Just add `counts: true` to the configuration for that filter. The count is then available in a `.count` property for each value in the array. See [creating filter UI with apostrophe-pieces-pages](https://apostrophecms.org/docs/tutorials/intermediate/cursors.html#creating-filter-u-i-with-code-apostrophe-pieces-pages-code) for more information.
+* New feature: command line tasks such as `apostrophe-blog:generate` may now be run programmatically, for example: `apos.tasks.invoke('apostrophe-blog:generate', { total: 50 })`. A promise is returned if a callback is not passed. Note that not all tasks are written to behave politely and invoke their callback normally, however most do. This feature is most useful when writing tasks that logically should incorporate other tasks.
+* Many UX and UI improvements that make the experience more pleasant in subtle and not-so-subtle ways. Thanks to Carsten, Marco Arnone and the prolific Lars Houmark for their contributions. This was an excellent week for Apostrophe PRs.
+* The full set of controls for joined items are again available in the chooser, as well as in the browse modal.
+* The automatic opening of the admin bar menu on page load can now be configured with the `openOnLoad`, `openOnHomepageLoad`, and `closeDelay` options.
+* `autocomplete="off"` for date fields prevents chrome autocomplete suggestions from wrecking calendar UI.
+* Always remove .apos-global-busy on unlock, even if the transition event never fires. Yes, that is sadly a thing. Prevents the UI from becoming unusable in rare situations (less rare inside functional tests).
+* Use `one` to reduce the overhead of .apos-global-busy's transition event handler. We could do more here to reduce overhead, i.e. unhooking it entirely.
+* Much-improved validation of `min`, `max` and `required` for strings, integers and floats on both the server and the browser side. Thanks to Lars Houmark.
+
+## 2.59.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Widget schemas now support the `def` property for fields. This always worked for pieces and pages.
+* Accommodations for functional testing in nightwatch. The currently active Apostrophe modal, and all of its proxies such as its controls that are in a separate div for presentation reasons, now has the attribute `data-apos-modal-current` which is set to the class name of the modal. This powers the new [apostrophe-nightwatch-tools](https://npmjs.org/package/apostrophe-nightwatch-tools) module, which provides reusable commands and steps that can be used to create test projects similar to our [apostrophe-enterprise-testbed](https://github.com/apostrophecms/apostrophe-enterprise-testbed). Testing with the enterprise testbed project is a standard part of our release process.
+* Previously if workflow was in use slugs could not be reused by new pages when the original page was in the trash. This has been addressed; the slug is now deduplicated in the same way that email addresses and usernames of users are when in the trash.
+* The infinite scroll feature of `apostrophe-pieces-pages` now works as documented with the styles provided. The code is also more efficient and scroll events are throttled for performance. Thanks to Lars Houmark.
+* Various UX fixes, thanks to Lars Houmark and various members of the Apostrophe team.
+
+## 2.59.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fixed nested widget editing for existing widgets whose modal dialog boxes have been accessed (#1428).
+* A clear warning message with instructions has been added for those who are seeing "unblessed" messages due to widget schemas and in-template `apos.area` calls that do not match (#1429). The easiest way to avoid this is to just mark the area `contextual: true` in your widget schema so it is edited *only* on the page. But if you really want to do both, the widget options must match.
+* The mechanism that automatically makes slugs, paths and other keys unique now gives up eventually and reports the original duplicate key error. This makes it easier to debug your code if you are violating your own custom indexes that feature unique keys. It is possible to make the deduplicator aware of your own own properties that need to be made more unique on inserts if you wish, by implementing a `docFixUniqueError` method. *Please note:* this change is not a regression. Code that formerly never completed its task in this situation will simply report an error promptly rather than retrying inserts forever while degrading your database performance.
+* A new profiling API has been added: the `apos.utils.profile` method. This method can be called to report how long code takes to run for later analysis. It does nothing in the default implementation; modules like our forthcoming profiler override it to give feedback on the speed of your code.
+
+## 2.58.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Polymorphic joins have arrived! You may now create joins like this:
+
+```javascript
+{
+  name: '_items',
+  type: 'joinByArray',
+  withType: [ 'apostrophe-blog', 'product', 'apostrophe-page' ]
+}
+```
+
+When you join with more than one type, Apostrophe presents a chooser that allows you to pick between tabs for each type. Note that `apostrophe-page` can be included, so you can pick a mix of pages and pieces for the same join.
+
+This feature is useful for creating navigation that may point to a variety of document types, without the need for an array of items with several different joins and a `select` element to choose between them.
+
+Polymorphic joins work for both `joinByOne` and `joinByArray`. Currently they are **not** available for `joinByOneReverse`, `joinByArrayReverse`, or pieces filters. Their primary use case is creating navigation widgets.
+
+* `apos.images.srcset` helper function added. You can use this function to generate a `srcset` attribute for responsive display of an image. Just pass an attachment to the helper:
+
+`<img srcset="{{ apos.images.srcset(apos.images.first(data.piece.thumbnail)) }}" />`
+
+A `src` attribute for backwards compatibility is always advisable too.
+
+Thanks to Fredrik Ekelund for this contribution.
+
+* Fast forms for big schemas are back! The issue with tags has been resolved.
+
+* A single MongoDB connection may be reused by several `apos` objects for separate sites, a feature which is exploited by the [apostrophe-multisite](https://github.com/apostrophecms/apostrophe-multisite) module. Note that this only reuses the connection, it does not share a single MongoDB database. It *does* allow you to keep potentially hundreds of sites on a single MongoDB server or replica set, as the overhead of multiple logical "databases" is small in MongoDB's modern WiredTiger storage engine. To reuse a connection, pass it to the `apostrophe-db` module as the `db` option.
+
+* Fixed a MongoDB 3.6 incompatibility in the "Apply to Subpages" feature for permissions. Also made this feature available again when *removing* someone's permissions. We plan further UX work here to make this feature easier to understand and use.
+
+* UX fix to the "manage tags" dialog box: don't attempt to add an empty tag. Thanks to Anthony Tarlao.
+
+* Warn developers if they use bad area names.
+
+* For those deploying asset bundles to S3: the command line task that builds an asset bundle no longer requires access to your production database, although it still needs to start up normally with access to a database in the pre-production environment where you are building the bundle.
+
+* Refactoring of the trash field deduplication features, in preparation to extend them to pages as well in an upcoming release.
+
 ## 2.57.2
 
 Unit tests passing.
