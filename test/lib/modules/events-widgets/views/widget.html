@@ -1,0 +1,15 @@
+{% for piece in data.widget._featured %}
+  <h4>
+    {% if piece._url %}<a href="{{ piece._url }}">{% endif %}
+    {{ piece.title }}
+    {% if piece._url %}</a>{% endif %}
+  </h4>
+{% endfor %}
+
+{% for piece in data.widget._pieces %}
+  <h4>
+    {% if piece._url %}<a href="{{ piece._url }}">{% endif %}
+    {{ piece.title }}
+    {% if piece._url %}</a>{% endif %}
+  </h4>
+{% endfor %}
