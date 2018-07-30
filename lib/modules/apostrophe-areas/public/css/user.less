@@ -2,7 +2,7 @@
 @apos-translucent-opacity: 0.4;
 
 
-.apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
+.apos-area, .apos-area-widget { position: relative; }
 
 .apos-area
 {
@@ -12,8 +12,8 @@
   &.apos-limit-reached
   {
     >.apos-ui .apos-area-controls,
-    >[data-apos-widgets]>[data-apos-widget-wrapper]>.apos-ui .apos-area-controls { display: none !important; }
-    >[data-apos-widgets]>[data-apos-widget-wrapper]>[data-apos-widget]>.apos-ui [data-apos-clone-item] { display: none !important; }
+    >[data-apos-widget-wrapper]>.apos-ui .apos-area-controls { display: none !important; }
+    >[data-apos-widget-wrapper]>[data-apos-widget]>.apos-ui [data-apos-clone-item] { display: none !important; }
   }
   // When we are dragging a widget, we want it to be at the forefront.
   .apos-area-widget.ui-draggable-dragging { z-index: @apos-z-index-9; }
@@ -37,7 +37,7 @@
         display: block;
         position: absolute;
         left: -41px;
-        top: -22px;      
+        top: -22px;
         height: 60px;
         width: 100px;
       }
@@ -255,7 +255,7 @@
 .apos-area.apos-hover
 {
   >[data-apos-area-controls-original]>.apos-area-controls,
-  >.apos-area-widgets>.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
+  >.apos-area-widget-wrapper:hover>.apos-ui>.apos-area-controls
   {
     display: block;
     opacity: @apos-translucent-opacity;
@@ -290,7 +290,7 @@
     position: relative;
   }
   & > .apos-ui .apos-area-controls,
-  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-ui .apos-area-controls
+  & > .apos-area-widget-wrapper > .apos-ui .apos-area-controls
   {
     top: auto;
     padding: 10px 0;
@@ -305,7 +305,7 @@
   }
 
   // color contextual controls as well
-  & > .apos-area-widgets > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-buttons
+  & > .apos-area-widget-wrapper > .apos-area-widget > .apos-ui .apos-buttons
   {
     .apos-glow(@apos-secondary);
     border: 2px solid @apos-secondary;
