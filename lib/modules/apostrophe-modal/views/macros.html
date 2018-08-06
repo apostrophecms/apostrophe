@@ -1,6 +1,6 @@
 {%- macro button(options) -%}
-  <a href="{% if options.url %}{{options.url }}{% else %}#{% endif %}" {% if options.dataAttrs %}{{ options.dataAttrs }} {% endif %}{#
-    #}class="apos-progress-btn{#
+  <a href="{% if options.url %}{{options.url }}{% else %}#{% endif %}"{% if options.dataAttrs %} {{ options.dataAttrs }}{% endif %}{#
+    #} class="apos-progress-btn{#
     #}{% if options.float %} apos-progress-btn--float-{{options.float}}{% endif %}{#
     #}{% if options.color %} apos-progress-btn--{{options.color}}{% endif %}{#
     #}{% if options.arrow %} apos-progress-btn--arrow-{{options.arrow}}{% endif %}{#
