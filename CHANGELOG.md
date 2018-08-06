@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.61.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New "secrets" feature in `apostrophe-users` makes it easy to hash other "secrets" similar in spirit to passwords.
+* This feature is now used for password reset tokens, making them more secure.
+* Additional joins can now be added to the schema of a widget that extends `apostrophe-pieces-widgets`.
+* Brute force password attacks against an Apostrophe server are now more difficult. Thanks to Lars Houmark.
+* Tolerant sanitization of array items while they are still in the editor. This avoids confusion caused by `required` fields in the array editor.
+* Error messages now behave sensibly when multiple label elements appear in a field. Thanks to Lars Houmark.
+* Fix background color on notification on uploads when file extension is not accepted. Thanks to Lars Houmark.
+* If you can't move a widget out of an area, you can no longer move widgets into that area either (movable: false is fully enforced). Thanks to Fredrik Ekelund.
+* New browser-side events are emitted during the attachment upload process, and the built-in facility that delays the saving of a form until attachment uploads are complete has been fixed. Thanks to Lars Houmark.
+* Fixes to the active state display of array items. Thanks to Lars Houmark.
+* [Contributor Guide](https://github.com/apostrophecms/apostrophe/blob/master/CONTRIBUTING.md) expanded with lots of new information about practical ways to contribute to Apostrophe.
+* [Contributor Covenant Code of Conduct](https://github.com/apostrophecms/apostrophe/blob/master/CODE_OF_CONDUCT.md) added to the project. The Apostrophe community is a welcoming place, and now is a great time to lock that in for the future.
+
 ## 2.60.4
 
 Unit tests passing.
