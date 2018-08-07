@@ -5,3 +5,8 @@
     {% if piece._url %}</a>{% endif %}
   </h4>
 {% endfor %}
+{% if data.widget._pieces.length === 0 and data.widget._edit %}
+  <p class="apos-pieces-widget-placeholder">
+    <strong>Editor note:</strong> This widget is currently configured but empty. Only editors will see this message.
+  </p>
+{% endif %}
