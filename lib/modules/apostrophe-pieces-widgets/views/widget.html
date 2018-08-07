@@ -6,7 +6,10 @@
   </h4>
 {% endfor %}
 {% if data.widget._pieces.length === 0 and data.widget._edit %}
-  <p class="apos-pieces-widget-placeholder">
-    <strong>Editor note:</strong> This widget is currently configured but empty. Only editors will see this message.
-  </p>
+  <div class="apos-ui apos-pieces-widget-placeholder">
+    <h3 class="apos-ui apos-text-instruction">Editor note:</h3>
+    <p class="">
+      This widget is currently configured but empty. Only editors will see this message.
+    </p>
+  </div>
 {% endif %}
