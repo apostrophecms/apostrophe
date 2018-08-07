@@ -1,6 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('@sailshq/lodash');
 var Promise = require('bluebird');
 
 describe('Promisified Events', function() {
@@ -44,7 +43,7 @@ describe('Promisified Events', function() {
             self.on('ready3', 'ready3HeyNice');
             self.ready3HeyNice = function() {
               return Promise.delay(100).then(function() {
-                niceFinished = true;  
+                niceFinished = true;
               });
             };
             self.on('ready2', 'ready2AddC', function(context) {
@@ -74,7 +73,7 @@ describe('Promisified Events', function() {
                 assert(true);
                 done();
               });
-            }
+            };
           }
         },
         'test2': {
@@ -82,7 +81,7 @@ describe('Promisified Events', function() {
           construct: function(self, options) {
             self.on('test1:ready1', 'ready1SetD', function(context) {
               context.d = true;
-            }); 
+            });
           }
         },
         'test3': {
