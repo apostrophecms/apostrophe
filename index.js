@@ -21,7 +21,11 @@ module.exports = function(options) {
     autodetectBundles();
     acceptGlobalOptions();
 
+    // Legacy events
     self.handlers = {};
+
+    // Module-based, promisified events (self.on and self.emit of each module)
+    self.eventHandlers = {};
 
     defineModules();
   } catch (err) {
@@ -58,26 +62,17 @@ module.exports = function(options) {
     }
   });
 
-  // EVENT HANDLING
+  // EVENT HANDLING (legacy events)
   //
   // apos.emit(eventName, /* arg1, arg2, arg3... */)
   //
-  // Emit an Apostrophe event. All handlers that have been set
+  // Emit an Apostrophe legacy event. All handlers that have been set
   // with apos.on for the same eventName will be invoked. Any additional
   // arguments are received by the handler functions as arguments.
   //
-  // For bc, Apostrophe events are also triggered on the
-  // body element via jQuery. The event name "ready" becomes
-  // "aposReady" in jQuery. This feature will be removed in 0.6.
-  //
-  // CURRENT EVENTS
-  //
-  // 'enhance' is triggered to request progressive enhancement
-  // of form elements newly loaded into the DOM.
-  // It is most often listened for in admin modals.
-  //
-  // 'ready' is triggered when the main content area of the page
-  // has been refreshed.
+  // See the `self.on` and `self.emit` methods of all modules
+  // (via the `apostrophe-module`) base class for a better,
+  // promisified event system.
 
   self.emit = function(eventName /* ,arg1, arg2, arg3... */) {
     var handlers = self.handlers[eventName];
@@ -91,9 +86,13 @@ module.exports = function(options) {
     }
   };
 
-  // Install an Apostrophe event handler. The handler will be called
+  // Install an Apostrophe legacy event handler. The handler will be called
   // when apos.emit is invoked with the same eventName. The handler
   // will receive any additional arguments passed to apos.emit.
+  //
+  // See the `self.on` and `self.emit` methods of all modules
+  // (via the `apostrophe-module`) base class for a better,
+  // promisified event system.
 
   self.on = function(eventName, fn) {
     self.handlers[eventName] = (self.handlers[eventName] || []).concat([ fn ]);
