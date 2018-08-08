@@ -16,7 +16,7 @@
 {% endblock %}
 
 {% block body %}
-<div class="apos-versions">
+<div class="apos-versions" data-no-changes="{{ __('No changes to display.') }}">
   {# Loop over all versions and render changes in each one #}
   {% for version in data.versions %}
     <div class="apos-version" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
