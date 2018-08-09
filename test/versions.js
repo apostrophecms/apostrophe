@@ -135,7 +135,7 @@ describe('Versions', function() {
       assert(object._id);
       var docId = object._id;
       // did the versions module kick-in?
-      apos.versions.db.find({ docId: docId }).toArray(function(err, versions) {
+      apos.versions.db.findWithProjection({ docId: docId }).toArray(function(err, versions) {
         assert(!err);
         // we should have a document
         assert(versions);
@@ -168,7 +168,7 @@ describe('Versions', function() {
         assert(object.alive === false);
 
         // did the versions module kick-in?
-        apos.versions.db.find({ docId: object._id }).sort({createdAt: -1}).toArray(function(err, versions) {
+        apos.versions.db.findWithProjection({ docId: object._id }).sort({createdAt: -1}).toArray(function(err, versions) {
           assert(!err);
           // we should have a document
           assert(versions);
