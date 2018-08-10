@@ -123,7 +123,7 @@ describe('Pieces', function() {
     apos.docs.db.remove({}, function(err) {
       assert(!err);
       // Make sure it went away
-      apos.docs.db.find({ _id: 'testThing' }).toArray(function(err, docs) {
+      apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
         assert(!err);
         assert(docs.length === 0);
         done();

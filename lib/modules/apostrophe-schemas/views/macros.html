@@ -136,7 +136,7 @@
   {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">
-        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}" {% if field.readOnly %}disabled{% endif %}>
+        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}"{% if field.readOnly %} disabled{% endif %}>
         <span class="apos-form-checkbox-indicator"></span>
         {{ __(choice.label | d('')) }}
       </label>

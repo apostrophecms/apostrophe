@@ -86,7 +86,7 @@ describe('Docs', function() {
     apos.docs.db.remove({}, function(err) {
       assert(!err);
       // Make sure it went away
-      apos.docs.db.find({ slug: 'larry' }).toArray(function(err, docs) {
+      apos.docs.db.findWithProjection({ slug: 'larry' }).toArray(function(err, docs) {
         assert(!err);
         assert(docs.length === 0);
         done();
