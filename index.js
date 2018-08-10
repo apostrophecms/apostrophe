@@ -7,7 +7,20 @@ var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
 
 module.exports = function(options) {
-  var self = {};
+
+  // The core is not a true moog object but it must look enough like one
+  // to participate as a promise event emitter
+  var self = {
+    __meta: {
+      name: 'apostrophe'
+    }
+  };
+
+  // The core must have a reference to itself in order to use the
+  // promise event emitter code
+  self.apos = self;
+
+  require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
 
   try {
     // Determine root module and root directory
@@ -110,6 +123,10 @@ module.exports = function(options) {
     });
   };
 
+  // Legacy feature only. New code should call the `emit` method of the
+  // relevant module to implement a promise event instead. Will be removed
+  // in 3.x.
+  //
   // For every module, if the method `method` exists,
   // invoke it. The method may optionally take a callback.
   // The method must take exactly as many additional
@@ -131,7 +148,8 @@ module.exports = function(options) {
   };
 
   /**
-   * Allow to bind a callAll method for one module.
+   * Allow to bind a callAll method for one module. Legacy feature.
+   * Use promise events instead.
    */
   self.callOne = function(moduleName, method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
@@ -145,12 +163,13 @@ module.exports = function(options) {
   // delete any data; the persistent database and media files
   // remain available for the next startup. Invokes
   // the `apostropheDestroy` methods of all modules that
-  // provide one; use this mechanism to free your own
+  // provide one, and also emits the `destroy` promise event on
+  // the `apostrophe` module; use this mechanism to free your own
   // server-side resources that could prevent garbage
   // collection by the JavaScript engine, such as timers
   // and intervals.
   self.destroy = function(callback) {
-    return self.callAll('apostropheDestroy', callback);
+    return self.callAllAndEmit('apostropheDestroy', 'destroy', callback);
   };
 
   // Returns true if Apostrophe is running as a command line task
@@ -397,11 +416,11 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
-    return self.callAll('modulesReady', callback);
+    return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
-    return self.callAll('afterInit', callback);
+    return self.callAllAndEmit('afterInit', 'afterInit', callback);
   }
 
   function afterInit(callback) {

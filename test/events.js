@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var Promise = require('bluebird');
 
-describe('Promisified Events', function() {
+describe('Promisified Events Core', function() {
 
   this.timeout(50000);
 
@@ -12,7 +12,7 @@ describe('Promisified Events', function() {
     return t.destroy(apos, done);
   });
 
-  it('should execute handlers for a several events in the proper order', function(done) {
+  it('should execute handlers for several events in the proper order', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
@@ -82,6 +82,13 @@ describe('Promisified Events', function() {
             self.on('test1:ready1', 'ready1SetD', function(context) {
               context.d = true;
             });
+            try {
+              self.on('test1:ready1', 'ready1', function(context) {
+                context.d = true;
+              });
+            } catch (e) {
+              // event name and method name being the same should fail, even for cross-module events
+            }
           }
         },
         'test3': {
