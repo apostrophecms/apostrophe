@@ -30,9 +30,13 @@
           {%- if version._previous -%}
             <h5 data-open-changes>See Changes</h5>
           {%- endif -%}
-      </div>{#
-      #}{{ buttons.major('Revert', { action: 'revert', value: version._id })}}{#
-      #}<div class="apos-changes">
+      </div>
+        {%- if loop.first -%}
+          {{ buttons.disabled('Current', { action: 'none', value: version._id }) }}
+        {%- else -%}
+          {{ buttons.major('Revert', { action: 'revert', value: version._id })}}
+        {%- endif -%}
+        <div class="apos-changes">
         {% if version._previous -%}
           {# JS populates me #}
           <div data-changes></div>
