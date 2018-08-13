@@ -11,6 +11,7 @@ var mockImages = [
     slug: 'image-1',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -20,6 +21,7 @@ var mockImages = [
     slug: 'image-2',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -29,6 +31,7 @@ var mockImages = [
     slug: 'image-3',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 150,
       height: 150
     }
