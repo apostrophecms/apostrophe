@@ -7,7 +7,7 @@
         {%- set image = entry.item or entry -%}
         {%- set relationship = entry.relationship -%}
         <div data-slideshow-item
-          class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %}"
+          class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %} apos-slideshow-item--{{ image.attachment.exntesion }}"
           style="background-image:
             url({{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }})
             {%- if apos.attachments.hasFocalPoint(relationship) -%}
