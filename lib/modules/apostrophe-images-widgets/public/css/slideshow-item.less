@@ -23,4 +23,32 @@
       height: auto;
     }
   }
+  &.apos-slideshow--aspect-ratio
+  {
+    .apos-slideshow-item.apos-slideshow-item--svg
+    {
+      background-position: center;
+      img
+      {
+        // Per https://allyjs.io/tutorials/hiding-elements.html#how-to-hide-elements-visually
+        // We need to stop taking up space here, but we'll take it up in inline styles
+        // on the container.
+
+        visibility: visible;
+        position: absolute;
+
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        border: 0;
+        padding: 0;
+
+        white-space: nowrap;
+
+        clip-path: inset(100%);
+        clip: rect(0 0 0 0);
+        overflow: hidden;    
+      }
+    }
+  }
 }
