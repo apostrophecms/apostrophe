@@ -11,6 +11,7 @@ var mockImages = [
     slug: 'image-1',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -20,6 +21,7 @@ var mockImages = [
     slug: 'image-2',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -29,8 +31,17 @@ var mockImages = [
     slug: 'image-3',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 150,
       height: 150
+    }
+  },
+  {
+    type: 'apostrophe-image',
+    slug: 'image-4',
+    published: true,
+    attachment: {
+      extension: 'svg'
     }
   }
 ];
@@ -90,11 +101,11 @@ describe('Images', function() {
     });
   });
 
-  it('should respect minSize filter', function(done) {
+  it('should respect minSize filter (svg is always OK)', function(done) {
     var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toArray(function(err, images) {
       assert(!err);
-      assert(images.length === 2);
+      assert(images.length === 3);
       return done();
     });
   });
@@ -103,7 +114,7 @@ describe('Images', function() {
     var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toCount(function(err, count) {
       assert(!err);
-      assert(count === 2);
+      assert(count === 3);
       return done();
     });
   });
