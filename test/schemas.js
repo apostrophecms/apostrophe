@@ -200,7 +200,7 @@ var hasArea = {
   ]
 };
 
-describe('Schemas', function() {
+describe.only('Schemas', function() {
 
   this.timeout(t.timeout);
 
@@ -1715,6 +1715,226 @@ describe('Schemas', function() {
     });
     var output = {};
     apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'age', doWeCare: '1', age: '' }, output, function(err) {
+      assert(err);
+      assert(err === 'age.required');
+      done();
+    });
+  });
+
+  it('ignores required property for recursively hidden field with checkboxes', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: ['age'], doWeCare: ['0'], age: '' }, output, function(err) {
+      assert(!err);
+      assert.deepEqual(output.ageOrShoeSize, ['age']);
+      done();
+    });
+  });
+
+  it('enforces required property for recursively shown field with checkboxes', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: ['age', 'shoeSize'], doWeCare: ['1'], age: '' }, output, function(err) {
+      assert(err);
+      assert(err === 'age.required');
+      done();
+    });
+  });
+
+  it('ignores required property for recursively hidden field with boolean', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'boolean',
+          choices: [
+            {
+              value: true,
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              value: false,
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: 'age', doWeCare: false, age: '' }, output, function(err) {
+      assert(!err);
+      assert(output.ageOrShoeSize === 'age');
+      done();
+    });
+  });
+
+  it('enforces required property for recursively shown field with boolean', function(done) {
+    var req = apos.tasks.getReq();
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'boolean',
+          choices: [
+            {
+              value: true,
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              value: false,
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    var output = {};
+    apos.schemas.convert(req, schema, 'form', { ageOrShoeSize: ['age', 'shoeSize'], doWeCare: true, age: '' }, output, function(err) {
       assert(err);
       assert(err === 'age.required');
       done();
