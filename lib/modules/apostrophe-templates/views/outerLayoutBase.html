@@ -14,8 +14,8 @@
     {% endblock %}
   </head>
   <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
-      {{ apos.templates.prepended('body') }}
-      {% block apostropheMenu %}
+    {{ apos.templates.prepended('body') }}
+    {% block apostropheMenu %}
       {{ apos.adminBar.output() }}
     {% endblock %}
 
