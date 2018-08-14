@@ -1,0 +1,6 @@
+{% block main %}
+  <h3>{{ __('Maybe you were looking for one of these...') }}</h3>
+  {% for doc in data.docs %}
+    <h4>{% if doc._url %}<a href="{{ doc._url }}">{% endif %}{{ doc.title }}{% if doc._url %}</a>{% endif %}</h4>
+  {% endfor %}
+{% endblock %}
