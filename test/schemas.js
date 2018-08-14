@@ -200,7 +200,7 @@ var hasArea = {
   ]
 };
 
-describe.only('Schemas', function() {
+describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
