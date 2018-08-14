@@ -19,7 +19,7 @@
 <div class="apos-versions" data-no-changes="{{ __('No changes to display.') }}">
   {# Loop over all versions and render changes in each one #}
   {% for version in data.versions %}
-    <div class="apos-version" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
+    <div class="apos-version{% if loop.first %} apos-version-current{% endif %}" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
       <div class="apos-author">
         <div class="apos-avatar-wrapper">
         </div>
@@ -30,9 +30,13 @@
           {%- if version._previous -%}
             <h5 data-open-changes>See Changes</h5>
           {%- endif -%}
-      </div>{#
-      #}{{ buttons.major('Revert', { action: 'revert', value: version._id })}}{#
-      #}<div class="apos-changes">
+      </div>
+        {%- if loop.first -%}
+          {{ buttons.disabled('Current', { action: 'none', value: version._id }) }}
+        {%- else -%}
+          {{ buttons.major('Revert', { action: 'revert', value: version._id })}}
+        {%- endif -%}
+        <div class="apos-changes">
         {% if version._previous -%}
           {# JS populates me #}
           <div data-changes></div>

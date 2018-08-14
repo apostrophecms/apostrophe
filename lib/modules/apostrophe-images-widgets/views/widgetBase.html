@@ -1,4 +1,4 @@
-<div class="apos-slideshow{% block outerClass %}{% endblock %}" data-slideshow>
+<div class="apos-slideshow{% if data.options.aspectRatio %} apos-slideshow--aspect-ratio{% endif %}{% block outerClass %}{% endblock %}" data-slideshow>
   <div data-slideshow-items>
     {%- block items -%}
       {%- for entry in data.widget._pieces -%}
@@ -7,11 +7,14 @@
         {%- set image = entry.item or entry -%}
         {%- set relationship = entry.relationship -%}
         <div data-slideshow-item
-          class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %}"
+          class="apos-slideshow-item{% if loop.first %} apos-current{% endif %}{% block itemClass %}{% endblock %} apos-slideshow-item--{{ image.attachment.extension }}"
           style="background-image:
             url({{ apos.attachments.url(image.attachment, { size: data.options.size, crop: relationship }) }})
             {%- if apos.attachments.hasFocalPoint(relationship) -%}
               ; background-position: {{ apos.attachments.focalPointToBackgroundPosition(relationship) }}
+            {%- endif -%}
+            {%- if data.options.aspectRatio and (image.attachment.extension == 'svg') -%}
+              ; width: 100%; padding-bottom: {{ 100 * data.options.aspectRatio[1] / data.options.aspectRatio[0] }}%; background-size: contain
             {%- endif -%}
           ">
           {%- block title -%}<h4 class="apos-image-widget-image-title">{{ image.title }}</h4>{%- endblock -%}
