@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.62.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Introduced a `findWithProjection()` method that is added to all MongoDB collection objects. All Apostrophe core modules are migrating towards using this method rather than `find()` when working **directly with MongoDB collections**. If you are using the standard MongoDB 2.x driver that is included with Apostrophe, this just calls regular `find()`. When using the forthcoming `apostrophe-db-mongo-3-driver` module to replace that with a newer driver that supports the full features of MongoDB 3.6, 4.0 and beyond, this method will provide backwards compatibility by accepting a projection as the second argument like `find()` did until the 3.x driver was released. Developers wishing to be compatible with both drivers will want to start using this method. Again, this **only concerns you if you are querying MongoDB directly and passing a projection to find() as the second argument**. And if you don't care about using the 3.x driver, you **do not have to change anything**.
+* Various UX improvements and bug fixes to the page versions dialog box. Thanks to Lars Houmark.
+* The widget wrapper is updated on the fly with new classes if they change due to edits. Thanks to Fredrik Ekelund.
+* When configuring a `date` field, you may pass a `pikadayOptions` property. This object is passed on to the `pikaday` library. Thanks to Lars Houmark.
+* The `counts: true` option for `piecesFilters` now works properly with joins.
+
 ## 2.61.0
 
 Unit tests passing.
