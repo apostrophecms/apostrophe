@@ -121,16 +121,28 @@ describe('Images', function() {
 
   it('should generate a srcset string for an image', function() {
     var srcset = apos.images.srcset({
-      group: 'images',
       name: 'test',
+      _id: 'test',
       extension: 'jpg',
-      _id: 'test'
+      width: 1200,
+      height: 800
     });
-    assert(srcset === ['/uploads/attachments/test-test.max.jpg 1600w',
-      '/uploads/attachments/test-test.full.jpg 1140w',
+    assert.equal(srcset, ['/uploads/attachments/test-test.full.jpg 1140w',
       '/uploads/attachments/test-test.two-thirds.jpg 760w',
       '/uploads/attachments/test-test.one-half.jpg 570w',
       '/uploads/attachments/test-test.one-third.jpg 380w',
-      '/uploads/attachments/test-test.one-sixth.jpg 190w'].join(', '));
+      '/uploads/attachments/test-test.one-sixth.jpg 190w',
+      '/uploads/attachments/test-test.jpg 1200w'].join(', '));
+  });
+
+  it('should not generate a srcset string for an SVG image', function() {
+    var srcset = apos.images.srcset({
+      name: 'test',
+      _id: 'test',
+      extension: 'svg',
+      width: 1200,
+      height: 800
+    });
+    assert.equal(srcset, '');
   });
 });
