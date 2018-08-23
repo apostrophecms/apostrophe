@@ -35,12 +35,12 @@ complete description of the feature and the reasoning behind it.
 ready to move to 3.x in the future... and because returning promises is just a heck of
 a lot nicer. You will have fewer problems.
 
-* Optional SVG support for `apostrophe-images`. To enable it, set the `svgImages` option to
-`true` when configuring the `apostrophe-images` module. SVG files can be uploaded just like
+* Optional SVG support for `apostrophe-attachments`. To enable it, set the `svgImages` option to
+`true` when configuring the `apostrophe-attachments` module. SVG files can be uploaded just like
 other image types. Manual cropping is not available. However, since most SVG files play very well
 with backgrounds, the SVG file is displayed in its entirety without distortion at the largest size
 that fits within the aspect ratio of the widget in question, if any (`background-size: contain`
-is used). if you have overridden `widget.html` for `apostrophe-images-widgets`, you will want
+is used). If you have overridden `widget.html` for `apostrophe-images-widgets`, you will want
 to refer to the latest version of `widgetBase.html` for the technique we used here to ensure
 SVG files do not break the slideshow’s overall height.
 * New `apos.templates.prepend` and `apos.templates.append` methods. Call
