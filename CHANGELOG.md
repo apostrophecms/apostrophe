@@ -1,5 +1,68 @@
 # Changelog
 
+## 2.63.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* “Promise events” have arrived. This is a major feature. Promise events will completely
+replace `callAll` in Apostrophe 3.x. For 2.x, all existing invocations of `callAll` in the
+core Apostrophe module now also emit a promise event. For instance, when the `docBeforeInsert`
+callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the 
+apostrophe-docs` module.
+
+Other modules may listen for this event by writing code like this:
+
+```javascript
+`self.on('apostrophe-docs:beforeInsert', 'chooseASpecialist', function(req, doc, options) {
+  // Modify `doc` here. You may return a promise, and it will resolve before
+  // any more handlers run. Then the doc is inserted
+});
+```
+
+The above code adds a new `chooseASpecialist` method to your module. This way, the method can be overridden by assigning a new function to `self.chooseASpecialist` in a module that
+extends it, or its behavior can be extended in the usual way following the `super` pattern.
+
+But, since it does not have the same name as
+the event (attempting to register a method of the same name will throw an error), it is unlikely
+that parent class modules and subclass modules will have unintentional conflicts.
+
+See the [original github issue](https://github.com/apostrophecms/apostrophe/issues/1415) for a more
+complete description of the feature and the reasoning behind it.
+
+**Your existing callAll methods will still work.** But, we recommend you start migrating to be
+ready to move to 3.x in the future... and because returning promises is just a heck of
+a lot nicer. You will have fewer problems.
+
+* Optional SVG support for `apostrophe-attachments`. To enable it, set the `svgImages` option to
+`true` when configuring the `apostrophe-attachments` module. SVG files can be uploaded just like
+other image types. Manual cropping is not available. However, since most SVG files play very well
+with backgrounds, the SVG file is displayed in its entirety without distortion at the largest size
+that fits within the aspect ratio of the widget in question, if any (`background-size: contain`
+is used). If you have overridden `widget.html` for `apostrophe-images-widgets`, you will want
+to refer to the latest version of `widgetBase.html` for the technique we used here to ensure
+SVG files do not break the slideshow’s overall height.
+* New `apos.templates.prepend` and `apos.templates.append` methods. Call
+`apos.templates.prepend('head', function(req) { ... })` to register a function to be called just after
+the head tag is opened each time a page is rendered. The output of your function is inserted into
+the markup. The standard named locations are `head`, `body`, `contextMenu` and `main`. This is
+convenient when writing modules that add new features to Apostrophe. For project level work also see the
+named Nunjucks blocks already provided in `outerLayoutBase.html`.
+* `apos.singleton` now accepts an `areaOptions` option, which can receive any option that can be
+passed to `apos.area`. Thanks to Manoj Krishnan.
+* Apostrophe’s “projector” jQuery plugin now respects the `outerHeight` of the tallest slideshow item,
+not just the inner height.
+* `apos.area` now accepts an `addLabel` option for each widget type in the area. Thanks to
+Fredrik Ekelund.
+* UI improvements to versioning. Thanks to Lars Houmark.
+* Button to revert to the current version has been replaced with a label indicating it is current,
+since reverting to the current version has no effect.
+* “Page settings” can now be accessed for any page in the trash via “reorganize.” When
+working with `apostrophe-workflow`, this is
+often required to commit the fact that a page is in the trash.
+* The `uploadfs` module now has a `prefix` option. If present, the prefix is prepended to all uploadfs paths before they reach the storage layer, and is also prepended to URLs. In practice, this means that a single S3 bucket can be used to host multiple sites without all of the uploaded media jumbling together in `/attachments`. The `apostrophe-multisite` module now leverages this.
+
 ## 2.62.0
 
 Unit tests passing.

@@ -24,7 +24,16 @@ describe('Templates', function() {
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {},
-        'templates-options-test': {}
+        'templates-options-test': {},
+        'apostrophe-pages': {
+          park: [
+            {
+              title: 'With Layout',
+              slug: '/with-layout',
+              type: 'withLayout'
+            }
+          ]
+        }
       },
       afterInit: function(callback) {
         assert(apos.templates);
@@ -81,7 +90,6 @@ describe('Templates', function() {
     var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].renderPage(req, 'page');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
-    assert(result.indexOf('<h1>I am the title</h1>') !== -1);
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
   });
 
@@ -89,9 +97,39 @@ describe('Templates', function() {
     var req = apos.tasks.getAnonReq();
     var result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
-    assert(result.indexOf('<h1>I am the title</h1>') !== -1);
     assert(result.indexOf('<h2>I am the inner content</h2>') !== -1);
     assert(result.indexOf('<h3>I am in the layout</h3>') !== -1);
     assert(result.indexOf('<p>I am included</p>') !== -1);
   });
+
+  it('should render pages successfully with prepend and append to locations', function() {
+    var req = apos.tasks.getReq();
+    apos.templates.prepend('head', function(req) {
+      assert(req.res);
+      return '<meta name="before-test" />';
+    });
+    apos.templates.append('head', function(req) {
+      assert(req.res);
+      return '<meta name="after-test" />';
+    });
+    apos.pages.addAfterContextMenu(function(req) {
+      assert(req.res);
+      return '<h4>After the Context Menu</h4>';
+    });
+    var result = apos.pages.renderPage(req, 'pages/withLayout');
+    var titleIndex = result.indexOf('<title>');
+    var beforeTestIndex = result.indexOf('<meta name="before-test" />');
+    var afterTestIndex = result.indexOf('<meta name="after-test" />');
+    var bodyIndex = result.indexOf('<body');
+    var afterContextMenu = result.indexOf('<h4>After the Context Menu</h4>');
+    assert(titleIndex !== -1);
+    assert(beforeTestIndex !== -1);
+    assert(afterTestIndex !== -1);
+    assert(bodyIndex !== -1);
+    assert(afterContextMenu !== -1);
+    assert(beforeTestIndex < titleIndex);
+    assert(afterTestIndex > titleIndex);
+    assert(afterTestIndex < bodyIndex);
+  });
+
 });
