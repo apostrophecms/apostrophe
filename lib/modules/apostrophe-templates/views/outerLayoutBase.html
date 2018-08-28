@@ -2,6 +2,7 @@
 <html lang="{% block locale %}en{% endblock %}" {% block extraHtml %}{% endblock %}>
   <head>
     {% block startHead %}
+      {{ apos.pages.startHead() }}
     {% endblock %}
     {{ apos.templates.prepended('head') }}
     <title>{% block title %}{% endblock %}</title>
