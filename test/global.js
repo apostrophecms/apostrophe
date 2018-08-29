@@ -1,6 +1,9 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 var apos;
+var request = require('request-promise');
+var _ = require('lodash');
+var Promise = require('bluebird');
 
 describe('Global', function() {
 
@@ -18,6 +21,9 @@ describe('Global', function() {
         'apostrophe-express': {
           secret: 'xxx',
           port: 7900
+        },
+        'apostrophe-global': {
+          whileBusyDelay: 0.5
         }
       },
       afterInit: function(callback) {
@@ -66,5 +72,60 @@ describe('Global', function() {
       assert(req.data.global.type === 'apostrophe-global');
     });
   });
+
+  it('busy mechanism', function() {
+    this.timeout(50000);
+    var retrieved = false;
+    console.log('invoking whileBusy');
+    return apos.global.whileBusy(function() {
+      console.log('sending request');
+      // Intentional parallelism: start a request while
+      // we're busy, so we can verify it waits
+      request('http://localhost:7900/').then(function(content) {
+        console.log(content);
+        // fn should complete before this is retrieved
+        assert(content.indexOf('counts: 10') !== -1);
+        retrieved = true;
+      });
+      return apos.docs.db.findOne({
+        type: 'apostrophe-global'
+      }).then(function(global) {
+        assert(global.globalBusy);
+      }).then(function() {
+        return Promise.mapSeries(_.range(0, 10), function() {
+          return apos.docs.db.update({
+            type: 'apostrophe-global'
+          }, {
+            $inc: {
+              counts: 1
+            }
+          }).then(function() {
+            return Promise.delay(50);
+          });
+        });
+      }).then(function() {
+        assert(!retrieved);
+      });
+    }).then(function() {
+      // Wait up to 1 second more for the delayed request to succeed
+      var start = Date.now();
+      return check();
+      function check() {
+        if (retrieved) {
+          return;
+        }
+        if (Date.now() - start > 1000) {
+          assert(false);
+        }
+        return Promise.delay(50).then(check);
+      }
+    }).then(function() {
+      // Now that we are no longer busy a new request should take less than a second
+      return request('http://localhost:7900/').then(function(content) {
+        assert(Date.now() - start < 1000);
+        assert(content.indexOf('counts: 10') !== -1);
+      });
+    });
+  })
 
 });
