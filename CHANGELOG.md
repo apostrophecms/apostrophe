@@ -1,5 +1,53 @@
 # Changelog
 
+## 2.64.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Apostrophe's "search suggestions" feature for `notFound.html` templates is now fully baked. It only takes two steps:
+
+1. Include an element like this in your `notFound.html` template:
+
+```
+<div data-apos-notfound-search-results></div>
+```
+
+2. Set the `suggestions` option to `true` for the `apostrophe-search` module.
+
+With `suggestions: true`, this feature no longer requires that you have a `/search` page, it uses a dedicated route. See the documentation of the `apostrophe-search` module for more information.
+
+* The `showFields` option is now available for checkboxes. The syntax is as follows:
+
+```
+{
+  "name": "awesomeBoolean",
+  "label": "Awesome Boolean",
+  "type": "boolean",
+  "choices": [
+    {
+      "value": true,
+      "showFields": ["otherField1"]
+    },
+    {
+      "value": false,
+      "showFields": ["otherField2"]
+    }
+  ]
+}
+```
+
+Thanks to falkodev.
+
+* A useful error message appears if you try to use a `mongodb+srv` URL. These are meant for newer versions of the MongoDB driver. You **can** use them, but you must install the [apostrophe-db-mongo-3-driver](https://npmjs.com/package/apostrophe-db-mongo-3-driver) module first. The error message now explains this, addressing a common question on stackoverflow.
+* Basic styles added for the most common rich text markup tags when within the bounds of an Apostrophe modal. Thanks to Lars Houmark.
+* Fixed UI overlap issue when joining with `apostrophe-page`.
+* `apos.images.all`, `apos.images.first`, etc. now include `_description`, `_credit` and `_creditUrl` when they can be inferred from an `apostrophe-image` containing the attachment.
+* `apos.images.srcset` helper improved. It is now smart enough to limit the image sizes it offers based on what it knows about the size of the original. Thanks to Fredrik Ekelund.
+* Fixes to CSS asset URL generation to pass validation.
+* Performance: eliminated use of `$or` MongoDB queries with regard to pages in the trash. MongoDB tests demonstrate that `$ne: true` is faster than `$or` for our purposes.
+
 ## 2.63.0
 
 Unit tests passing.
