@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var apos;
 var request = require('request-promise');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var Promise = require('bluebird');
 
 describe('Global', function() {
