@@ -66,6 +66,7 @@
     "qs": "^5.2.1",
     "regexp-quote": "0.0.0",
     "request": "^2.85.0",
+    "request-promise": "^4.2.2",
     "resolve": "^1.8.1",
     "rimraf": "^2.6.2",
     "sanitize-html": "^1.18.3",
