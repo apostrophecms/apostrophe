@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.64.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Improved Apostrophe's ability to redisplay the appropriate widget, array element, and field and call the user's attention to it when a schema field error is not detected until server-side validation takes place. This addresses problems that come up when fields become `required` at a later time, and/or data was originally created with an earlier release of Apostrophe that did not enforce `required` in all situations. Browser-side validation is still preferred for ease of use but server-side validation no longer creates situations the user cannot easily resolve.
+
 ## 2.64.0
 
 Unit tests passing.
