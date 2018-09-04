@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.65.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* **Important fix for MongoDB replica sets:** previously we used the `autoReconnect` option of the MongoDB driver by default. From now on, we use it only if the MongoDB URI does not refer to a replica set. The use of `autoReconnect` is [inappropriate with a replica set](https://github.com/apostrophecms/apostrophe/issues/1508) because it will keep trying to connect to the node that went down. Leaving this option out results in automatic use of nodes that are up. Also see the [apostrophe-db-mongo-3-driver](https://npmjs.org/package/apostrophe-db-mongo-3-driver) module for a way to use the newer `mongodb+srv` URIs. Thanks to Matt Broadstone of MongoDB for his advice.
+
+* An `apostrophe-file` now has a default URL. The default `_url` property of an `apostrophe-file` piece is simply the URL of the file itself. This allows `apostrophe-file` to be included in your configuration for [apostrophe-permalinks](https://npmjs.org/package/apostrophe-permalinks); picking a PDF in this way generates a direct link to the PDF, which is what the user expects. Note that if the developer elects to set up an `apostrophe-files-pages` module that extends `apostrophe-pieces-pages`, that will still take precedence, so there is no bc break.
+
+* Clicking directly from one rich text widget into another did not work properly; the toolbar did not appear in this situation. This bug has been fixed. The bug only occurred when clicking in a second rich text widget without any intervening clicks outside of all rich text widgets.
+
+* Also see expanded notes on version `2.64.1`, below, which contained several features missed in the original changelog.
+
 ## 2.64.1
 
 Unit tests passing.
@@ -7,6 +21,12 @@ Unit tests passing.
 Regression tests passing.
 
 * Improved Apostrophe's ability to redisplay the appropriate widget, array element, and field and call the user's attention to it when a schema field error is not detected until server-side validation takes place. This addresses problems that come up when fields become `required` at a later time, and/or data was originally created with an earlier release of Apostrophe that did not enforce `required` in all situations. Browser-side validation is still preferred for ease of use but server-side validation no longer creates situations the user cannot easily resolve.
+
+* Introduced the `apos.global.whileBusy` method. This method accepts a function to be run *while no one is permitted to access the site.* The provided function may return a promise, and that promise resolves before the site becomes accessible again. In the presence of `apostrophe-workflow` it is possible to mark only one locale as busy.
+
+* By default, the `apos.locks.lock` method waits until the lock is available before proceeding. However there is now a `wait` option which can be set to `false` to avoid waiting at all, or to any number of milliseconds. If the method fails because of `wait`, the error is the string `locked`.
+
+* The `apos.locks.lock` method also now accepts a `waitForSelf` option. By default, if the same process invokes `apos.locks.lock` for the same lock in two requests simultaneously, one of the two will receive an error. With `waitForSelf`, the second invocation will wait for the first to resolve and then obtain the lock.
 
 ## 2.64.0
 
