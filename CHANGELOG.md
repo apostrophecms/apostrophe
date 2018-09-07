@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.66.0
+
+* Updated to CKEditor version 4.10.0. The CKEditor build now includes the CKEditor "widgets" feature (not to be confused with Apostrophe widgets). These are essential for modules like the forthcoming `apostrophe-rich-text-merge-tags`.
+* `apos.areas.richText` and `apos.areas.plaintext` no longer produce duplicate text. To achieve this, the `apos.docs.walk` method no longer walks through the `_originalWidgets` property. This property is only used to preserve the previous versions of widgets that the user lacks permission to edit due to schema field permissions. Exploration of this property by `apos.docs.walk` led to the observed bug.
+* The browser-side implementation of `apos.utils.escapeHtml` now works properly.
+
 ## 2.65.0
 
 Unit tests passing.
