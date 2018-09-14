@@ -7,7 +7,7 @@
 
 {% block controls %}
   <div class="apos-modal-controls">
-    {{ buttons.minor('Finished', { action: 'cancel' }) }}
+    {{ buttons.minor(__('Finished'), { action: 'cancel' }) }}
   </div>
 {% endblock %}
 
@@ -25,16 +25,16 @@
         </div>
       </div>{#
       #}<div class="apos-changes-meta">
-          <cite>{{ version.author }}</cite><span>made changes on </span>
+          <cite>{{ version.author }}</cite><span>{{ __('made changes on') }}</span>
           <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4><br>
           {%- if version._previous -%}
-            <h5 data-open-changes>See Changes</h5>
+            <h5 data-open-changes>{{ __('See Changes') }}</h5>
           {%- endif -%}
       </div>
         {%- if loop.first -%}
-          {{ buttons.disabled('Current', { action: 'none', value: version._id }) }}
+          {{ buttons.disabled(__('Current'), { action: 'none', value: version._id }) }}
         {%- else -%}
-          {{ buttons.major('Revert', { action: 'revert', value: version._id })}}
+          {{ buttons.major(__('Revert to'), { action: 'revert', value: version._id })}}
         {%- endif -%}
         <div class="apos-changes">
         {% if version._previous -%}
