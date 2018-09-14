@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.67.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Pages can now be locked down with the `allowedHomepageTypes` and `allowedSubpageTypes` options, like this:
+
+```javascript
+// Only one type allowed for the home page
+allowedHomepageTypes: [ 'home' ],
+
+allowedSubpageTypes: {
+  // Two subpage types allowed for the home page
+  'home': [ 'default', 'apostrophe-blog-page' ],
+  // No subpages for the blog page ("show pages" don't count)
+  'apostrophe-blog-page': [],
+  // default page type can only have another default page as a subpage
+  'default': [ 'default' ]
+}
+```
+
+These options make it easy to prevent users from creating unintended scenarios, like nesting pages too deeply for your navigation design.
+
+* Pages now support batch operations, just like pieces do. The initial set includes trash, rescue, publish, unpublish, tag and untag. You can only rescue pages in this way if you are using the `trashInSchema` option of the docs module, which is always the case with `apostrophe-workflow`. With the conventional trash can, it is unclear what should happen because you have not indicated where you want each page to be restored. New batch operations for pages can be added in the same way that they are added for pieces.
+
+* Important performance fix needed for those using the `apostrophe-pieces-orderings-bundle` module to create custom sort orders for pieces. Without this fix it is also possible to get a loader error and stop fetching content prematurely.
+
+* The "revert" button for versions is now labeled "Revert to" to emphasize that it reverts to what you had at the end of that operation, not its beginning. Thanks to Fredrik Ekelund.
+
 ## 2.66.0
 
 * Updated to CKEditor version 4.10.0. The CKEditor build now includes the CKEditor "widgets" feature (not to be confused with Apostrophe widgets). These are essential for modules like the forthcoming `apostrophe-rich-text-merge-tags`.
