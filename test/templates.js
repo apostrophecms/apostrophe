@@ -3,7 +3,7 @@ var assert = require('assert');
 
 var apos;
 
-describe('Templates', function() {
+describe.only('Templates', function() {
 
   this.timeout(t.timeout);
 
@@ -130,6 +130,12 @@ describe('Templates', function() {
     assert(beforeTestIndex < titleIndex);
     assert(afterTestIndex > titleIndex);
     assert(afterTestIndex < bodyIndex);
+  });
+
+  it('should not escape <br />', function() {
+    var req = apos.tasks.getAnonReq();
+    var result = apos.modules['templates-test'].render(req, 'testWithNlbrFilter');
+    assert.equal(result, '<p>first line<br />\nsecond line</p>\n');
   });
 
 });
