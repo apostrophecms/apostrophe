@@ -16,20 +16,10 @@
   <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     {{ apos.templates.prepended('body') }}
     {% block apostropheMenu %}
-      {{ apos.adminBar.output() }}
+      <div id="apos-admin-bar"></div>
     {% endblock %}
-
     {% block apostropheContextMenu %}
-      {% if data.user %}
-        <div class="apos-ui">
-          <div class="apos-context-menu-container">
-            {{ apos.templates.prepended('contextMenu') }}
-            {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
-            {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
-            {{ apos.templates.appended('contextMenu') }}
-          </div>
-        </div>
-      {% endif %}
+      <div id="apos-context-menu"></div>
     {% endblock %}
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
@@ -48,5 +38,6 @@
     {% endblock %}
     {{ apos.templates.appended('body') }}
     {% block extraBody %}{% endblock %}
+    <div id="apos-modals"></div>
   </body>
 </html>
