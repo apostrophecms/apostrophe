@@ -297,3 +297,132 @@ describe('Global', function() {
     });
   });
 });
+
+describe('Global with separateWhileBusyMiddleware', function() {
+
+  this.timeout(t.timeout);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
+
+  it('global should exist on the apos object', function(done) {
+    apos = require('../index.js')({
+      root: module,
+      shortName: 'test',
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7900
+        },
+        'apostrophe-global': {
+          separateWhileBusyMiddleware: true,
+          whileBusyDelay: 0.5,
+          construct: function(self, options) {
+            var superAddGlobalToData = self.addGlobalToData;
+            // For test purposes, use a simplified global middleware
+            // that does not implement the locking, to verify that
+            // the separateWhileBusyMiddleware successfully takes over
+            // this role
+            self.addGlobalToData = function(req, res, next) {
+              if (arguments.length === 3) {
+                return self.findGlobal(req, function(err, _global) {
+                  assert(!err);
+                  req.data.global = _global;
+                  return next();
+                });
+              }
+              return superAddGlobalToData.apply(self, arguments);
+            };
+          }
+        }
+      },
+      afterInit: function(callback) {
+        assert(apos.global);
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        done();
+      }
+    });
+  });
+
+  it('give global doc a workflowLocale property to simulate use with workflow', function() {
+    return apos.docs.db.update({
+      type: 'apostrophe-global'
+    }, {
+      $set: {
+        workflowLocale: 'en'
+      }
+    });
+  });
+
+  it('busy mechanism (global)', function() {
+    this.timeout(50000);
+    var retrieved = false;
+    return apos.global.whileBusy(function() {
+      // Intentional parallelism: start a request while
+      // we're busy, so we can verify it waits
+      request('http://localhost:7900/').then(function(content) {
+        // fn should complete before this is retrieved
+        assert(content.indexOf('counts: 10') !== -1);
+        retrieved = true;
+      });
+      return apos.docs.db.findOne({
+        type: 'apostrophe-global'
+      }).then(function(global) {
+        assert(global.globalBusy);
+      }).then(function() {
+        return Promise.mapSeries(_.range(0, 10), function(i) {
+          return apos.docs.db.update({
+            type: 'apostrophe-global'
+          }, {
+            $inc: {
+              counts: 1
+            }
+          }).then(function() {
+            return Promise.delay(50);
+          });
+        }).then(function() {
+          return apos.docs.db.findOne({
+            type: 'apostrophe-global'
+          });
+        }).then(function(doc) {
+          assert(doc.counts === 10);
+        });
+      }).then(function() {
+        assert(!retrieved);
+      });
+    }).then(function() {
+      // Wait up to 1 second more for the delayed request to succeed
+      var start = Date.now();
+      return check();
+      function check() {
+        if (retrieved) {
+          return;
+        }
+        if (Date.now() - start > 1000) {
+          assert(false);
+        }
+        return Promise.delay(50).then(check);
+      }
+    }).then(function() {
+      // Now that we are no longer busy a new request should take less than a second
+      return request('http://localhost:7900/').then(function(content) {
+        assert(content.indexOf('counts: 10') !== -1);
+      });
+    }).then(function() {
+      return apos.docs.db.findOne({
+        type: 'apostrophe-global'
+      });
+    }).then(function(global) {
+      assert(!global.globalBusy);
+    });
+  });
+
+});
