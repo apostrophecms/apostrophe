@@ -31,10 +31,10 @@
     </div>
     {{ apos.assets.scripts(data.when) }}
     {% block jsCalls %}
-      <!-- <script type="text/javascript">
+      <script type="text/javascript">
         {{ data.js.globalCalls }}
         {{ data.js.reqCalls }}
-      </script> -->
+      </script>
     {% endblock %}
     {{ apos.templates.appended('body') }}
     {% block extraBody %}{% endblock %}
