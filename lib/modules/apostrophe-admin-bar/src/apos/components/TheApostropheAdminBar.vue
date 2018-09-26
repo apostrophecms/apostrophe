@@ -33,7 +33,7 @@ export default {
   },
   methods: {
     emitEvent: function (name) {
-      this.$emit('adminBarItem', name);
+      apos.bus.$emit('adminBarItem', name);
     }
   }
 }
