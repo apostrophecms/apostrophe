@@ -3,7 +3,7 @@ var assert = require('assert');
 
 var apos;
 
-describe.only('Templates', function() {
+describe('Templates', function() {
 
   this.timeout(t.timeout);
 
