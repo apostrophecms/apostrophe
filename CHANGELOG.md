@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.68.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `lateCriteria` cursor filter now works properly, allowing special mongodb criteria that are not allowed inside `$and` to be merged into the criteria object at the last minute.
+* A noisy warning produced on every page send by the latest version of Bluebird has been silenced.
+* Performance: explicitly shut off `sort()` for certain cases where we know only one document will be returned. This allows MongoDB to select a more efficient index more often.
+* `nlbr` Nunjucks filter no longer results in double-escaped markup. Thanks to Ulf Seltmann.
+* The `apostrophe-global` module now supports the `separateWhileBusyMiddleware` option. Iby separate middleware that checks for the lock flag in apostrophe-global even if the regular middleware of this method has been disabled and/or overridden to cache in such a way as to make it unsuitable for this purpose. For normal use this option is not necessary.
+* Fixes made to further reduce conflicts between sites with `apostrophe-multisite`. For instance, the `apostrophe-workflow` module no longer breaks the dashboard.
+* The home page can now be copied. If you copy the home page, you get a new child of the home page with the same content. Thanks to Tim Otlik.
+
 ## 2.67.0
 
 Unit tests passing.
