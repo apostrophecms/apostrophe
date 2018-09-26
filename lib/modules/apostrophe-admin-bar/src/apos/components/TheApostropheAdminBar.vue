@@ -1,3 +1,4 @@
+import bus from 'apostrophe-assets:bus';
 <template>
   <div id="apos-admin-bar">
 
