@@ -1,4 +1,3 @@
-import bus from 'apostrophe-assets:bus';
 <template>
   <div class="apos-ui">
     <div class="apos-admin-bar apos-text-meta" data-apos-admin-bar>

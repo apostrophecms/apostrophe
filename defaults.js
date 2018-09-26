@@ -25,7 +25,7 @@ module.exports = {
     'apostrophe-jobs': {},
     'apostrophe-versions': {},
     'apostrophe-tags': {},
-    'apostrophe-modal': {},
+    'apostrophe-modals': {},
     'apostrophe-attachments': {},
     'apostrophe-oembed': {},
     'apostrophe-pager': {},
