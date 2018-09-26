@@ -1,9 +1,7 @@
 <template>
   <div id="apos-modals">
-    <div v-for="modal in modals">
-      <component :is="modal" v-if="active[modal]" @close="setIsActive(modal, false)">
-      </component>
-    </div>
+    <component v-for="modal in modals" :is="modal.componentName" :options="modal.options" v-if="active[modal.itemName]" @close="setIsActive(modal.itemName, false)">
+    </component>
   </div>
 </template>
 
@@ -16,17 +14,17 @@ export default {
     }
   },
   methods: {
-    setIsActive(modal, state) {
+    setIsActive(itemName, state) {
       // https://vuejs.org/v2/guide/reactivity.html#Change-Detection-Caveats
-      this.$set(this.active, modal, state);
+      this.$set(this.active, itemName, state);
     }
   },
   props: {
     modals: Array
   },
   mounted() {
-    apos.bus.$on('adminBarItem', (modal) => {
-      this.setIsActive(modal, true);
+    apos.bus.$on('adminBarItem', (itemName) => {
+      this.setIsActive(itemName, true);
     });
   }
 };
