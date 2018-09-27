@@ -5,9 +5,12 @@
       Manage {{ label }}
     </template>
     <template slot="body">
-      <p>Render the list view and filters and pagination here</p>
+      <component :is="components.Filters" :filters="options.filters" :filterChoices="filterChoices" v-model="filterValues" />
+      <component :is="components.List" :pieces="pieces" />
     </template>
-    <!-- Could do footer too -->
+    <template slot="footer">
+      <component :is="components.Pager" :totalPages="totalPages" v-model="currentPage" v-on/>
+    </template>
   </ApostropheModal>
 </template>
 
@@ -19,8 +22,27 @@ export default {
   },
   computed: {
     label() {
-      console.log(apos.modules[this.options.moduleName]);
       return apos.modules[this.options.moduleName].pluralLabel;
+    }
+  },
+  data: {
+    pieces: [],
+    totalPages: 1,
+    currentPage: 1,
+    filterChoices: {},
+    filterValues: {}
+  },
+  watch: {
+    filterValues: function(val, oldVal) {
+      update();
+    },
+    currentPage: function(val, oldVal) {
+      update();
+    }
+  },
+  methods: {
+    update: function() {
+      // Go get things, in a debounced way
     }
   }
 };
