@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.68.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When we introduced allowedSubpageTypes and allowedHomepageTypes in 2.67.0, we  broke support for different schemas in different page types. Those regressions are fixed here.
+* The default page type choice offered for a new page is the first type permitted by its parent page.
+
 ## 2.68.0
 
 Unit tests passing.
