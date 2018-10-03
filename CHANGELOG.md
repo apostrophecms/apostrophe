@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.69.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Promisified all of the apis for migrations, including the option of iterators that return promises, and implemented migrations for old piece and page slugs that have not been deduplicated and thus can block new pages or pieces from taking a slug even though we have logic for this for new pages and pieces.
+* In-context editing support for areas and singletons that are schema fields of arrays. Leaves other, noncontextual data alone. Creating and editing entire array items contextually is outside the scope of this change; use an area rather than an array for that. Directly nested arrays are not supported, but you may use an area in an array in a widget in an array, etc.
+* `.jpeg` files were slipping through with that extension. All new uploads will be correctly converted to `.jpg` and go through the proper sizing process.
+* The `enableShowFields` option was missing some of its logic for fields of type `checkboxes`. Thanks to Anthony Tarlao.
+* A `_title` property is now included in attachments returned by `apos.images.all` and `apos.images.first`.
+* When apostrophe cannot fix a unique key error, it is helpful to be able to see the last error, as well as the original one. This helps you figure it out if both a unique slug error and an unrelated unique key error are part of the puzzle. We still throw the original error, but we also attach the last error as a property of it, so you can see both.
+* The `apos.areas.fromPlaintext` method now takes an `options` parameter. You may set the `el` property to an element name, in which case the markup is wrapped in that HTML element. `options` may be omitted.
+
 ## 2.68.1
 
 Unit tests passing.
