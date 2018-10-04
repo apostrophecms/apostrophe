@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.69.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* In-context editing of areas nested in arrays now works correctly when the widget containing the array has just been added to the page for the first time.
+
 ## 2.69.0
 
 Unit tests passing.
