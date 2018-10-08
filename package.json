@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "0.5.390",
+  "version": "0.5.391",
   "description": "Apostrophe is a user-friendly content management system. You'll need more than this core module. See apostrophenow.org to get started.",
   "main": "./lib/apostrophe.js",
   "dependencies": {
