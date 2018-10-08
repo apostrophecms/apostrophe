@@ -268,7 +268,7 @@ function AposSlideshowWidgetEditor(options)
 
       var title = $(item).find('.apos-value[data-name="title"]');
       $(title).text(info.title);
-      
+
       var date = $(item).find('.apos-value[data-name="date"]');
       $(date).text(info.createdAt );
 
@@ -457,9 +457,9 @@ function AposSlideshowWidgetEditor(options)
                 if (dropping){
                   dropping = false;
                 }
-                else{
+                else {
                   addItem(file);
-                  event.stopPropagation();
+                  e.stopPropagation();
                   self.autocropIfNeeded();
                 }
               });

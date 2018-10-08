@@ -5,9 +5,11 @@
 {% if options.title and (options.title != 'after') and item.title %}
   <h4 class="apos-video-title">{{ item.title | e }}</h4>
 {% endif %}
-<img class="apos-video-thumbnail"
-  src="{{ item.thumbnail }}"
-  alt="{{ item.title }}" />
+{% if item.thumbnail %}
+  <img class="apos-video-thumbnail"
+    src="{{ item.thumbnail }}"
+    alt="{{ item.title }}" />
+{% endif %}
 {% if options.title and (options.title == 'after') and item.title %}
   <h4 class="apos-video-title">{{ item.title | e }}</h4>
 {% endif %}

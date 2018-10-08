@@ -90,7 +90,7 @@ apos.jsonAttribute = function(value) {
 
 apos.areaIsEmpty = function(area) {
   return !_.find(area, function(item) {
-    if ((area.type === 'richText') && (!area.content)) {
+    if ((item.type === 'slideshow') && (!(item.ids && item.ids.length))) {
       return false;
     }
     return true;
@@ -383,4 +383,3 @@ $(function() {
     apos.enableSingletons();
   });
 });
-

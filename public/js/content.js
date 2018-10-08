@@ -262,19 +262,21 @@ apos.widgetPlayers.video = function($el)
     $el.imagesReady(function() {
       // We want to replace the thumbnail with the video while preserving
       // other content such as the title
-      var e = $(data.html);
-      e.removeAttr('width');
-      e.removeAttr('height');
+      var $e = $(data.html);
+      $e.removeAttr('width');
+      $e.removeAttr('height');
       var $thumbnail = $el.find('.apos-video-thumbnail');
-      e.width($thumbnail.width());
+      if ($thumbnail.length) {
+        $e.width($thumbnail.width());
+      }
       // If oembed results include width and height we can get the
       // video aspect ratio right
       if (data.width && data.height) {
-        e.height((data.height / data.width) * $thumbnail.width());
+        $e.height((data.height / data.width) * $e.width());
       } else {
         // No, so assume the oembed HTML code is responsive.
         // Jamming the height to the thumbnail height is a mistake
-        // e.height($thumbnail.height());
+        // $e.height($thumbnail.height());
       }
 
       // Hack: if our site is secure, fetch the embedded
@@ -285,9 +287,15 @@ apos.widgetPlayers.video = function($el)
       // This hack won't work for everything but it's correct
       // for a typical iframe embed.
 
-      e.attr('src', apos.sslIfNeeded(e.attr('src')));
+      if ($e.attr('src')) {
+        $e.attr('src', apos.sslIfNeeded($e.attr('src')));
+      }
 
-      $el.find('.apos-video-thumbnail').replaceWith(e);
+      if ($thumbnail.length) {
+        $el.find('.apos-video-thumbnail').replaceWith($e);
+      } else {
+        $el.append($e);
+      }
       apos.emit('videoReady', $el);
     });
   });

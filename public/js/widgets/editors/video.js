@@ -109,7 +109,7 @@ function AposVideoWidgetEditor(options)
         page++;
         self.refreshChooser();
       }
-      return false;a
+      return false;
     });
     $chooser.on('click', '[name="search-submit"]', function() {
       search();
@@ -287,4 +287,3 @@ function AposVideoWidgetEditor(options)
 }
 
 AposVideoWidgetEditor.label = 'Video';
-
