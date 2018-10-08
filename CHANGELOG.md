@@ -1,5 +1,86 @@
 # Changelog
 
+## 2.70.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+Apostrophe now allows direct import of unparsed CSS files via import flags of LESS. The best use of this option is to push a CSS file created by a SASS compiler or other LESS alternative.
+
+To push a CSS asset *without* compiling it as LESS, you may write:
+
+```
+self.pushAsset('stylesheet', { 
+  name: 'bundle',
+  import: {
+    inline: true
+  }
+});
+```
+
+Or, if you are pushing assets via the `stylesheets` option of the `apostrophe-assets` module, you may write:
+
+```
+'apostrophe-assets': {
+  stylesheets: [
+    {
+      name: 'bundle',
+      import: {
+        inline: true
+      }
+    }
+  ]
+}
+```
+
+The extension of the file may be either `.css` or `.less`; either way it is imported with no LESS compilation. Apostrophe will still modify URLs to accommodate the global `prefix` option, if present.
+
+## 2.69.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* In-context editing of areas nested in arrays now works correctly when the widget containing the array has just been added to the page for the first time.
+
+## 2.69.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Promisified all of the apis for migrations, including the option of iterators that return promises, and implemented migrations for old piece and page slugs that have not been deduplicated and thus can block new pages or pieces from taking a slug even though we have logic for this for new pages and pieces.
+* In-context editing support for areas and singletons that are schema fields of arrays. Leaves other, noncontextual data alone. Creating and editing entire array items contextually is outside the scope of this change; use an area rather than an array for that. Directly nested arrays are not supported, but you may use an area in an array in a widget in an array, etc.
+* `.jpeg` files were slipping through with that extension. All new uploads will be correctly converted to `.jpg` and go through the proper sizing process.
+* The `enableShowFields` option was missing some of its logic for fields of type `checkboxes`. Thanks to Anthony Tarlao.
+* A `_title` property is now included in attachments returned by `apos.images.all` and `apos.images.first`.
+* When apostrophe cannot fix a unique key error, it is helpful to be able to see the last error, as well as the original one. This helps you figure it out if both a unique slug error and an unrelated unique key error are part of the puzzle. We still throw the original error, but we also attach the last error as a property of it, so you can see both.
+* The `apos.areas.fromPlaintext` method now takes an `options` parameter. You may set the `el` property to an element name, in which case the markup is wrapped in that HTML element. `options` may be omitted.
+
+## 2.68.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When we introduced allowedSubpageTypes and allowedHomepageTypes in 2.67.0, we  broke support for different schemas in different page types. Those regressions are fixed here.
+* The default page type choice offered for a new page is the first type permitted by its parent page.
+
+## 2.68.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `lateCriteria` cursor filter now works properly, allowing special mongodb criteria that are not allowed inside `$and` to be merged into the criteria object at the last minute.
+* A noisy warning produced on every page send by the latest version of Bluebird has been silenced.
+* Performance: explicitly shut off `sort()` for certain cases where we know only one document will be returned. This allows MongoDB to select a more efficient index more often.
+* `nlbr` Nunjucks filter no longer results in double-escaped markup. Thanks to Ulf Seltmann.
+* The `apostrophe-global` module now supports the `separateWhileBusyMiddleware` option. Iby separate middleware that checks for the lock flag in apostrophe-global even if the regular middleware of this method has been disabled and/or overridden to cache in such a way as to make it unsuitable for this purpose. For normal use this option is not necessary.
+* Fixes made to further reduce conflicts between sites with `apostrophe-multisite`. For instance, the `apostrophe-workflow` module no longer breaks the dashboard.
+* The home page can now be copied. If you copy the home page, you get a new child of the home page with the same content. Thanks to Tim Otlik.
+
 ## 2.67.0
 
 Unit tests passing.

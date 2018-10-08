@@ -132,4 +132,10 @@ describe('Templates', function() {
     assert(afterTestIndex < bodyIndex);
   });
 
+  it('should not escape <br />', function() {
+    var req = apos.tasks.getAnonReq();
+    var result = apos.modules['templates-test'].render(req, 'testWithNlbrFilter');
+    assert.equal(result, '<p>first line<br />\nsecond line</p>\n');
+  });
+
 });
