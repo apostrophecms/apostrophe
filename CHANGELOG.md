@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.70.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+Apostrophe now allows direct import of unparsed CSS files via import flags of LESS. The best use of this option is to push a CSS file created by a SASS compiler or other LESS alternative.
+
+To push a CSS asset *without* compiling it as LESS, you may write:
+
+```
+self.pushAsset('stylesheet', { 
+  name: 'bundle',
+  import: {
+    inline: true
+  }
+});
+```
+
+Or, if you are pushing assets via the `stylesheets` option of the `apostrophe-assets` module, you may write:
+
+```
+'apostrophe-assets': {
+  stylesheets: [
+    {
+      name: 'bundle',
+      import: {
+        inline: true
+      }
+    }
+  ]
+}
+```
+
+The extension of the file may be either `.css` or `.less`; either way it is imported with no LESS compilation. Apostrophe will still modify URLs to accommodate the global `prefix` option, if present.
+
 ## 2.69.1
 
 Unit tests passing.
