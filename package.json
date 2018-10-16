@@ -23,8 +23,7 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
-    "@sailshq/lodash": "^3.10.3",
-    "async": "^1.5.2",
+    "lodash": "^4.0.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^8.0.2",
     "babel-preset-env": "^1.7.0",
