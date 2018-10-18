@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.70.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: when you attempt to edit a piece that someone else has open in the edit dialog box, you should receive a warning, and the option to take over or leave it alone. This worked, however the "advisory lock" was not released when *closing* the dialog box. So users saw superfluous warnings. The bug was related to calling `$.jsonCall` with the wrong order of arguments.
+* Bug fix: a user without permissions to lock a particular document could cause a process restart by attempting to lock it. No inappropriate access was granted.
+* When configuring the `csrf` option of `apostrophe-express`, you may now pass the `cookie` subproperty in order to pass configuration options to `res.cookie`, such as `secure: true`.
+* The jQuery `onSafe` plugin now respects the return value of the event handler, allowing the use of `return false;` in such handlers. Thanks to Fredrik Ekelund.
+* The Apostrophe `button` macro now renders a `button` rather than an anchor tag, except when the `url` option is present. Thanks to Fredrik Ekelund.
+
 ## 2.70.0
 
 Unit tests passing.
