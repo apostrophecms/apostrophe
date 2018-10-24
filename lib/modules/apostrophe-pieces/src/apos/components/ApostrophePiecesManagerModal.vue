@@ -48,7 +48,7 @@ export default {
   async mounted() {
     apos.bus.$emit('busy', true);
     try {
-      this.pieces = await axios.create({
+      this.pieces = (await axios.create({
         headers: {
           'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
         }
@@ -60,7 +60,8 @@ export default {
             page: this.currentPage
           }
         }
-      ).pieces;
+      )).data.pieces;
+      console.log(this.pieces);
     } finally {
       apos.bus.$emit('busy', false);
     }
