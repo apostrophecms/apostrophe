@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.71.0
+
+Unit tests passing.
+
+* When two pieces or pages would have the same slug as the result of an insert or update, Apostrophe automatically appends a unique string. This makes sense for data integrity but as a user experience it leaves something to be desired.
+
+Beginning with this release, if you are editing the title in the piece or page settings editor and apostrophe is making automatic slug suggestions, these suggestions will *now include the suffix* needed to avoid a conflict. This gives you a chance to see what will happen, and decide to change the title or the slug in a better way. However, you can disable this by setting the `deconflictSlugs` option of the `apostrophe-docs` module explicitly to `false`. If you do, then from now on you will *receive a straightforward error message if the suggested slug is in conflict with another slug on the site.*
+
+* If you edit the slug directly and try to save it with a conflict, Apostrophe will always report a straightforward error in the editor, requiring you to fix it manually. This makes sense when you are editing the slug yourself, because it means you care about the exact value.
+
+For backwards compatibility and to resolve race conditions, the server will still automatically modify the slug to be unique in the rare event that a conflict arises during the save operation itself.
+
+* A simpler yet even better slug prevention feature, in many ways: all `apostrophe-pieces` modules now accept a `slugPrefix` option. For instance, if you set this option to `people-` for your `people` module and to `image-` for the `apostrophe-images` module, the slugs for your people and the photos of them you are uploading will never be in conflict.
+
+We appreciate our enterprise customers and their support of this work.
+
 ## 2.70.1
 
 Unit tests passing.
