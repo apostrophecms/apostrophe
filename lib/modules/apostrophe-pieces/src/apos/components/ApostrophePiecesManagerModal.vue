@@ -5,7 +5,7 @@
       Manage {{ options.pluralLabel }}
     </template>
     <template slot="body">
-      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" :filterChoices="filterChoices" v-model="filterValues" @input="updateFilterValues" />
+      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" :filterChoices="filterChoices" @input="updateFilterValues" />
       <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" />
     </template>
     <template slot="footer">
@@ -39,39 +39,41 @@ export default {
   },
   watch: {
     filterValues(val, oldVal) {
-      update();
+      this.update();
     },
     currentPage(val, oldVal) {
-      update();
+      this.update();
     }
   },
-  async mounted() {
-    apos.bus.$emit('busy', true);
-    try {
-      this.pieces = (await axios.create({
-        headers: {
-          'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-        }
-      }).post(
-        this.options.action + '/list',
-        {
-          filters: {
-            ...this.filterValues,
-            page: this.currentPage
-          }
-        }
-      )).data.pieces;
-      console.log(this.pieces);
-    } finally {
-      apos.bus.$emit('busy', false);
-    }
+  mounted() {
+    this.update();
   },
   methods: {
-    update() {
-      // Go get things, in a debounced way
+    async update() {
+      console.log(this.filterValues);
+      apos.bus.$emit('busy', true);
+      try {
+        this.pieces = (await axios.create({
+          headers: {
+            'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
+          }
+        }).post(
+          this.options.action + '/list',
+          {
+            filters: {
+              ...this.filterValues,
+              page: this.currentPage
+            }
+          }
+        )).data.pieces;
+        console.log(this.pieces);
+      } finally {
+        apos.bus.$emit('busy', false);
+      }
     },
     updateFilterValues(values) {
-      filterValues = values;
+      console.log('ufv', values);
+      this.filterValues = values;
     }
   }
 };

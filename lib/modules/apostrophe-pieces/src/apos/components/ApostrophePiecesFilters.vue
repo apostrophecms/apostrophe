@@ -3,7 +3,7 @@
     <h4>Filters</h4>
     <fieldset v-for="filter in filters">
       <label>{{ filter.label }}</label>
-      <select :ref="filter.name" @input="update()">
+      <select v-model="values[filter.name]">
         <option v-for="choice in filter.choices" :value="choice.value">{{ choice.label }}</option>
       </select>
     </fieldset>
@@ -17,6 +17,20 @@ export default {
     moduleName: String,
     filters: Array
   },
+  data() {
+    const values = {};
+    this.filters.forEach(filter => {
+      values[filter.name] = filter.choices[0].value;
+    });
+    console.log({ values });
+    return { values };
+  },
+  watch: {
+    values(val, oldVal) {
+      console.log(oldVal, val);
+      this.update();
+    }
+  },
   computed: {
     options() {
       return window.apos.modules[this.moduleName];
@@ -24,11 +38,9 @@ export default {
   },
   methods: {
     update() {
-      const value = {};
-      this.filters.forEach(filter => {
-        value[filter.name] = this.$refs[filter.name].value
-      });
-      this.$emit('input', value);
+      console.log(this.values.published);
+      console.log(this.values.trash);
+      this.$emit('input', this.values);
     }
   }
 };
