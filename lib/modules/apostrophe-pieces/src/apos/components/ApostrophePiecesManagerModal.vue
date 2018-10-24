@@ -5,7 +5,7 @@
       Manage {{ options.pluralLabel }}
     </template>
     <template slot="body">
-      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" :filterChoices="filterChoices" @input="updateFilterValues" />
+      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" v-model="filterValues" />
       <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" />
     </template>
     <template slot="footer">
@@ -15,6 +15,7 @@
 </template>
 
 <script>
+
 import axios from 'axios';
 import cookies from 'js-cookie';
 
@@ -33,9 +34,13 @@ export default {
       pieces: [],
       totalPages: 1,
       currentPage: 1,
-      filterChoices: {},
       filterValues: {}
-    }
+    };
+  },
+  created() {
+    this.options.filters.forEach(filter => {
+      this.filterValues[filter.name] = filter.choices[0].value;
+    });
   },
   watch: {
     filterValues: {
@@ -71,9 +76,6 @@ export default {
       } finally {
         apos.bus.$emit('busy', false);
       }
-    },
-    updateFilterValues(values) {
-      this.filterValues = values;
     }
   }
 };
