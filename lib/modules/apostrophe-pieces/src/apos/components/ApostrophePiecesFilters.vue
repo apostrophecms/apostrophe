@@ -22,13 +22,16 @@ export default {
     this.filters.forEach(filter => {
       values[filter.name] = filter.choices[0].value;
     });
-    console.log({ values });
     return { values };
   },
   watch: {
-    values(val, oldVal) {
-      console.log(oldVal, val);
-      this.update();
+    // Per rideron89 we must use a "deep" watcher because
+    // we are interested in subproperties
+    values: {
+      deep: true,
+      handler(val, oldVal) {
+        this.update();
+      }
     }
   },
   computed: {
@@ -38,8 +41,6 @@ export default {
   },
   methods: {
     update() {
-      console.log(this.values.published);
-      console.log(this.values.trash);
       this.$emit('input', this.values);
     }
   }

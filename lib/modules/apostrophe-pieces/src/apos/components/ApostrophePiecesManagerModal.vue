@@ -38,10 +38,13 @@ export default {
     }
   },
   watch: {
-    filterValues(val, oldVal) {
-      this.update();
+    filterValues: {
+      deep: true,
+      handler() {
+        this.update();
+      }
     },
-    currentPage(val, oldVal) {
+    currentPage() {
       this.update();
     }
   },
@@ -50,7 +53,6 @@ export default {
   },
   methods: {
     async update() {
-      console.log(this.filterValues);
       apos.bus.$emit('busy', true);
       try {
         this.pieces = (await axios.create({
@@ -66,13 +68,11 @@ export default {
             }
           }
         )).data.pieces;
-        console.log(this.pieces);
       } finally {
         apos.bus.$emit('busy', false);
       }
     },
     updateFilterValues(values) {
-      console.log('ufv', values);
       this.filterValues = values;
     }
   }
