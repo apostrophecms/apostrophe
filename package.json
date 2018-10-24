@@ -25,6 +25,7 @@
   "dependencies": {
     "@sailshq/lodash": "^3.10.3",
     "async": "^1.5.2",
+    "axios": "^0.18.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^8.0.2",
     "babel-preset-env": "^1.7.0",
@@ -52,6 +53,7 @@
     "html-to-text": "^3.3.0",
     "i18n": "^0.8.3",
     "joinr": "^1.0.2",
+    "js-cookie": "^2.2.0",
     "launder": "^1.0.1",
     "less": "^3.8.0",
     "less-middleware": "^3.0.1",

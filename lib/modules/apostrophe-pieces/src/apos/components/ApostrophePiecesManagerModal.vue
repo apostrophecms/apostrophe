@@ -6,7 +6,7 @@
     </template>
     <template slot="body">
       <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" :filterChoices="filterChoices" v-model="filterValues" @input="updateFilterValues" />
-      <!-- <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" /> -->
+      <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" />
     </template>
     <template slot="footer">
       <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
@@ -15,6 +15,9 @@
 </template>
 
 <script>
+import axios from 'axios';
+import cookies from 'js-cookie';
+
 export default {
   name: 'ApostrophePiecesManagerModal',
   props: {
@@ -40,6 +43,26 @@ export default {
     },
     currentPage(val, oldVal) {
       update();
+    }
+  },
+  async mounted() {
+    apos.bus.$emit('busy', true);
+    try {
+      this.pieces = await axios.create({
+        headers: {
+          'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
+        }
+      }).post(
+        this.options.action + '/list',
+        {
+          filters: {
+            ...this.filterValues,
+            page: this.currentPage
+          }
+        }
+      ).pieces;
+    } finally {
+      apos.bus.$emit('busy', false);
     }
   },
   methods: {
