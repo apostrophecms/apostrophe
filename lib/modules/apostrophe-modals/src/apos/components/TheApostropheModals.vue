@@ -1,6 +1,6 @@
 <template>
   <div id="apos-modals">
-    <component v-for="modal in modals" :is="modal.componentName" :options="modal.options" v-if="active[modal.itemName]" @close="setIsActive(modal.itemName, false)">
+    <component v-for="modal in modals" :is="modal.componentName" v-if="active[modal.itemName]" @close="setIsActive(modal.itemName, false)" :moduleName="modal.itemName">
     </component>
   </div>
 </template>

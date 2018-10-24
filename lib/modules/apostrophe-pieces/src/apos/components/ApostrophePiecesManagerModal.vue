@@ -2,14 +2,14 @@
   <ApostropheModal @close="$emit('close')">
     <template slot="header">
       <!-- TODO i18n -->
-      Manage {{ label }}
+      Manage {{ options.pluralLabel }}
     </template>
     <template slot="body">
-      <component :is="components.Filters" :filters="options.filters" :filterChoices="filterChoices" v-model="filterValues" />
-      <component :is="components.List" :pieces="pieces" />
+      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" :filterChoices="filterChoices" v-model="filterValues" @input="updateFilterValues" />
+      <!-- <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" /> -->
     </template>
     <template slot="footer">
-      <component :is="components.Pager" :totalPages="totalPages" v-model="currentPage" v-on/>
+      <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
     </template>
   </ApostropheModal>
 </template>
@@ -18,31 +18,36 @@
 export default {
   name: 'ApostrophePiecesManagerModal',
   props: {
-    options: Object
+    moduleName: String
   },
   computed: {
-    label() {
-      return apos.modules[this.options.moduleName].pluralLabel;
+    options() {
+      return window.apos.modules[this.moduleName];
     }
   },
-  data: {
-    pieces: [],
-    totalPages: 1,
-    currentPage: 1,
-    filterChoices: {},
-    filterValues: {}
+  data() {
+    return {
+      pieces: [],
+      totalPages: 1,
+      currentPage: 1,
+      filterChoices: {},
+      filterValues: {}
+    }
   },
   watch: {
-    filterValues: function(val, oldVal) {
+    filterValues(val, oldVal) {
       update();
     },
-    currentPage: function(val, oldVal) {
+    currentPage(val, oldVal) {
       update();
     }
   },
   methods: {
-    update: function() {
+    update() {
       // Go get things, in a debounced way
+    },
+    updateFilterValues(values) {
+      filterValues = values;
     }
   }
 };

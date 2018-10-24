@@ -4,7 +4,7 @@
     <fieldset v-for="filter in filters">
       <label>{{ filter.label }}</label>
       <select :ref="filter.name" @input="update()">
-        <option v-for="choice in filter.choices" value="{{ choice.value }}">{{ choice.label }}</option>
+        <option v-for="choice in filter.choices" :value="choice.value">{{ choice.label }}</option>
       </select>
     </fieldset>
   </div>
@@ -14,7 +14,13 @@
 export default {
   name: 'ApostrophePiecesFilters',
   props: {
+    moduleName: String,
     filters: Array
+  },
+  computed: {
+    options() {
+      return window.apos.modules[this.moduleName];
+    }
   },
   methods: {
     update() {
