@@ -1,8 +1,18 @@
 # Changelog
 
+## 2.71.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+Recent changes to the markup for buttons broke drag and drop for widgets. This has been fixed.
+
 ## 2.71.0
 
 Unit tests passing.
+
+Regression tests passing.
 
 * When two pieces or pages would have the same slug as the result of an insert or update, Apostrophe automatically appends a unique string. This makes sense for data integrity but as a user experience it leaves something to be desired.
 
