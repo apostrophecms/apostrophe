@@ -2,7 +2,8 @@
   <ApostropheModal @close="$emit('close')">
     <template slot="header">
       <!-- TODO i18n -->
-      Manage {{ options.pluralLabel }}
+      <p>Manage {{ options.pluralLabel }}</p>
+      <button @click="inserting = true">New {{ options.label }}</button>
     </template>
     <template slot="body">
       <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" v-model="filterValues" />
@@ -11,6 +12,7 @@
     <template slot="footer">
       <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
     </template>
+     <component v-if="inserting" :moduleName="moduleName" :is="options.components.insertModal" @close="inserting = false" @saved="update(); inserting = false" />
   </ApostropheModal>
 </template>
 
@@ -34,7 +36,8 @@ export default {
       pieces: [],
       totalPages: 1,
       currentPage: 1,
-      filterValues: {}
+      filterValues: {},
+      inserting: false
     };
   },
   created() {
@@ -76,6 +79,9 @@ export default {
       } finally {
         apos.bus.$emit('busy', false);
       }
+    },
+    insert() {
+
     }
   }
 };

@@ -55,11 +55,6 @@ export default {
     options() {
       return window.apos.modules[this.moduleName];
     }
-  },
-  methods: {
-    update() {
-      this.$emit('input', this.next);
-    }
   }
 };
 </script>
