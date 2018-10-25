@@ -14,7 +14,7 @@ export default {
   mixins: [ ApostropheFieldMixin ],
   name: 'ApostropheStringField',
   methods: {
-    validate() {
+    validate(value) {
       if (this.field.required) {
         if (!value.length) {
           return 'required';
