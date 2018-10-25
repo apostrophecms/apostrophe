@@ -8,7 +8,7 @@
 
 <script>
 
-import ApostropheFieldMixin from './ApostropheFieldMixin.js';
+import ApostropheFieldMixin from '../mixins/ApostropheFieldMixin.js';
 
 export default {
   mixins: [ ApostropheFieldMixin ],
@@ -32,6 +32,8 @@ export default {
           this.error = 'max';
         }
       }
+
+      return this.error;
     }
   }
 };
