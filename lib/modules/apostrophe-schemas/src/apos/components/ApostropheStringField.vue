@@ -14,7 +14,7 @@ export default {
   mixins: [ ApostropheFieldMixin ],
   name: 'ApostropheStringField',
   methods: {
-    updateErrorAndEmit() {
+    validate() {
       this.error = false;
       const value = this.next;
       if (this.field.required) {
@@ -32,11 +32,7 @@ export default {
           this.error = 'max';
         }
       }
-      this.$emit('input', {
-        data: value,
-        error: this.error
-      });
     }
-  },
+  }
 };
 </script>
