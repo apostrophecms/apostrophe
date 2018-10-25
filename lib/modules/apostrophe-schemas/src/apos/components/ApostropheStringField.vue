@@ -15,25 +15,23 @@ export default {
   name: 'ApostropheStringField',
   methods: {
     validate() {
-      this.error = false;
-      const value = this.next;
       if (this.field.required) {
         if (!value.length) {
-          this.error = 'required';
+          return 'required';
         }
       }
       if (this.field.min) {
         if (value.length && (value.length < this.field.min)) {
-          this.error = 'min';
+          return 'min';
         }
       }
       if (this.field.max) {
         if (value.length && (value.length > this.field.max)) {
-          this.error = 'max';
+          return 'max';
         }
       }
 
-      return this.error;
+      return false;
     }
   }
 };
