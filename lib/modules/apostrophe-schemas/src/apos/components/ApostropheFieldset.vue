@@ -1,8 +1,12 @@
-<fieldset :class="cssClass" :data-name="name">
-  <label class="apos-field-label">{{ field.label }}</label>
-  <div v-if="field.help" class="apos-field-help">{{ field.help }}</div>
-  <template slot="body"></template>
-</fieldset>
+<template>
+  <fieldset :class="cssClass">
+    <!-- TODO i18n -->
+    <label class="apos-field-label">{{ field.label }}</label>
+    <!-- TODO i18n -->
+    <div v-if="field.help" class="apos-field-help">{{ field.help }}</div>
+    <slot name="body"></slot>
+  </fieldset>
+</template>
 
 <script>
 // A component designed to be used as a scaffold for
@@ -11,11 +15,18 @@
 export default {
   name: 'ApostropheFieldset',
   props: {
-    field: Object
+    field: Object,
+    error: [ String, Boolean ]
   },
   computed: {
     cssClass() {
-      return `apos-field apos-field-${this.field.type} apos-field-${this.field.name} ${this.field.classes}`;
+      return `apos-field apos-field-${this.field.type} apos-field-${this.field.name} ${this.field.classes} ${this.errorClasses}`;
+    },
+    errorClasses() {
+      if (!this.error) {
+        return '';
+      }
+      return `apos-field-error apos-${this.error}-error`; 
     }
   }
 };

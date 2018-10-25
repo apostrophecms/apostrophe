@@ -5,14 +5,14 @@
       <p>New {{ options.label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="options.schema" v-model="piece" />
+      <ApostropheSchemaEditor :fields="options.schema" v-model="pieceInfo" />
     </template>
     <template slot="footer">
       <slot name="footer">
         <button class="modal-default-button" @click="$emit('close')">
           Cancel
         </button>
-        <button class="modal-default-button" @click="save()">
+        <button v-if="!pieceInfo.hasErrors" class="modal-default-button" @click="save()">
           Save
         </button>
       </slot>
@@ -24,6 +24,7 @@
 
 import axios from 'axios';
 import cookies from 'js-cookie';
+import _ from 'lodash';
 
 export default {
   name: 'ApostrophePiecesInsertModal',
@@ -32,16 +33,45 @@ export default {
   },
   computed: {
     options() {
-      return window.apos.modules[this.moduleName];
+      return {
+        label: 'Products',
+        schema: [
+          {
+            type: 'string',
+            name: 'name',
+            label: 'Name',
+            required: true
+          },
+          {
+            type: 'string',
+            name: 'address',
+            label: 'Address'
+          },
+          {
+            type: 'string',
+            name: 'message',
+            label: 'Message',
+            required: true,
+            min: 10,
+            max: 20
+          }
+        ]
+      };
+      // return window.apos.modules[this.moduleName];
     }
   },
   data() {
     return {
-      piece: {}
+      pieceInfo: {
+        data: {},
+        hasErrors: false
+      }
     };
   },
   methods: {
     async save() {
+      console.log(this.pieceInfo.data);
+      return;
       apos.bus.$emit('busy', true);
       try {
         await axios.create({
@@ -50,7 +80,7 @@ export default {
           }
         }).post(
           this.options.action + '/insert',
-          this.piece
+          this.pieceInfo.data
         );
         $this.$emit('saved');
       } finally {

@@ -11,8 +11,8 @@
     </template>
     <template slot="footer">
       <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
-    </template>
      <component v-if="inserting" :moduleName="moduleName" :is="options.components.insertModal" @close="inserting = false" @saved="update(); inserting = false" />
+    </template>
   </ApostropheModal>
 </template>
 

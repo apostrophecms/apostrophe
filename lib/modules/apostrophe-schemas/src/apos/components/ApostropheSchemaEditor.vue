@@ -1,8 +1,6 @@
 <template>
   <div class="apos-schema">
-    <fieldset v-for="field in fields">
-      <component :is="options.components.fields[field.type]" v-model="next[field.name]" :context="piece" :field="field" />
-    </fieldset>
+    <component v-for="field in fields" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" />
   </div>
 </template>
 
@@ -23,25 +21,51 @@ export default {
     fields: Array
   },
   data() {
-    const next = {};
+    const next = {
+      hasErrors: false,
+      data: {}
+    };
+    const fieldState = {};
     this.fields.forEach(field => {
-      next[field.name] = value[field.name];
+      fieldState[field.name] = {
+        error: false,
+        data: this.value.data[field.name]
+      };
+      next.data[field.name] = fieldState[field.name].data;
     });
-    return next;
+    return {
+      next,
+      fieldState
+    };
+  },
+  mounted() {
+    this.updateNextAndEmit();
   },
   watch: {
     // Per rideron89 we must use a "deep" watcher because
     // we are interested in subproperties
-    next: {
+    fieldState: {
       deep: true,
-      handler(val, oldVal) {
-        this.$emit('input', this.next);
+      handler() {
+        this.updateNextAndEmit();
       }
+    }    
+  },
+  methods: {
+    updateNextAndEmit() {
+      this.next.hasErrors = false;
+      this.fields.forEach(field => {
+        if (this.fieldState[field.name].error) {
+          this.next.hasErrors = true;
+        }
+        this.next.data[field.name] = this.fieldState[field.name].data;
+      });
+      this.$emit('input', this.next);
     }
   },
   computed: {
     options() {
-      return window.apos.modules.schemas;
+      return window.apos.schemas;
     }
   }
 };
