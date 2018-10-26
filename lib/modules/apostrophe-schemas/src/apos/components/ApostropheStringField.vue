@@ -24,6 +24,12 @@ export default {
     this.updateErrorAndEmit();
   },
   watch: {
+    value: {
+      deep: true,
+      handler(value) {
+        this.next = value.data;
+      }
+    },
     next(value) {
       this.updateErrorAndEmit();
     }

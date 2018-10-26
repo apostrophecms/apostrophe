@@ -38,8 +38,15 @@ export default {
         schema: [
           {
             type: 'string',
-            name: 'name',
-            label: 'Name',
+            name: 'title',
+            label: 'Title',
+            required: true
+          },
+          {
+            type: 'slug',
+            name: 'slug',
+            label: 'Slug',
+            slugifies: 'title',
             required: true
           },
           {
@@ -70,8 +77,6 @@ export default {
   },
   methods: {
     async save() {
-      console.log(this.pieceInfo.data);
-      return;
       apos.bus.$emit('busy', true);
       try {
         await axios.create({
