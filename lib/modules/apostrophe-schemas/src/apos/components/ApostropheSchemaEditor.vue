@@ -1,6 +1,6 @@
 <template>
   <div class="apos-schema">
-    <component v-for="field in fields" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" />
+    <component v-for="field in fields" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" :context="next.data" />
   </div>
 </template>
 
@@ -9,7 +9,9 @@
 // A component that accepts a `fields` prop containing an array
 // of Apostrophe schema field definitions, allows those fields
 // to be edited, and provides two-way data binding with an
-// Apostrophe doc object (use `v-model`).
+// Apostrophe doc object (use `v-model`). The bound object
+// should have two properties, `hasErrors` ( a simple boolean)
+// and `data` (the actual apostrophe doc).
 //
 // This will soon be extended to render and manage groups
 // (tabs) while maintaining the same simple interface.
@@ -61,7 +63,7 @@ export default {
         this.next.data[field.name] = this.fieldState[field.name].data;
       });
       this.$emit('input', this.next);
-    }
+    },
   },
   computed: {
     options() {
@@ -69,4 +71,5 @@ export default {
     }
   }
 };
+
 </script>

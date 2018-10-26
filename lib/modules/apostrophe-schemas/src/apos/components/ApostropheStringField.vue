@@ -30,7 +30,6 @@ export default {
           return 'max';
         }
       }
-
       return false;
     }
   }
