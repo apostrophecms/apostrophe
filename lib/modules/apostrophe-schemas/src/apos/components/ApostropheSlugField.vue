@@ -8,19 +8,14 @@
 
 <script>
 
+import ApostropheFieldMixin from '../mixins/ApostropheFieldMixin.js';
 import slugify from 'sluggo';
 
 export default {
+  mixins: [ ApostropheFieldMixin ],
   name: 'ApostropheSlugField',
-  props: {
-    value: Object,
-    field: Object,
-    context: Object
-  },
   data() {
     const data = {
-      next: (this.value.data !== undefined) ? this.value.data : (this.field.def || 'none'),
-      error: false,
       focus: false
     };
     if (this.field.slugifies) {
@@ -36,25 +31,16 @@ export default {
       });
     }
   },
-  mounted() {
-    this.updateErrorAndEmit();
-  },
   computed: {
     slugifies() {
       return this.context[this.field.slugifies];
     }
   },
   watch: {
-    value: {
-      deep: true,
-      handler(value) {
-        this.next = value.data;
-      }
-    },
     next(value) {
       if (!this.enforce()) {
         this.compatible = slugCompatible(this.next, this.slugifies);
-        this.updateErrorAndEmit();
+        this.watchNext();
       }
     },
     focus(value) {
@@ -95,18 +81,14 @@ export default {
         return true;
       }
     },
-    updateErrorAndEmit() {
-      this.error = false;
+    validate() {
       const value = this.next;
       if (this.field.required) {
         if (!value.length) {
-          this.error = 'required';
+          return 'required';
         }
       }
-      this.$emit('input', {
-        data: value,
-        error: this.error
-      });
+      return false;
     }
   }
 };
