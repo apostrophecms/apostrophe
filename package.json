@@ -43,6 +43,7 @@
     "credential": "^2.0.0",
     "css-loader": "^1.0.0",
     "cuid": "^1.3.8",
+    "debounce-async": "0.0.2",
     "deep-get-set": "^0.1.1",
     "diff": "^2.2.3",
     "express": "^4.16.3",

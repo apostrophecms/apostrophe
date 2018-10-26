@@ -35,6 +35,9 @@ export default {
       };
       next.data[field.name] = fieldState[field.name].data;
     });
+    if (this.value.data._id) {
+      next.data._id = this.value.data._id;
+    }
     return {
       next,
       fieldState
