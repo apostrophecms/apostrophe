@@ -4,6 +4,8 @@
 
 Unit tests passing.
 
+Regression tests passing.
+
 * Support for subdirectories of `lib/modules`. You must set the `nestedModuleSubdirs` option to `true` in `app.js`. You can then place your modules in nested subdirectories of `lib/modules`. **The names of the parent folders do not matter,** and **the name of the actual module folder must still match the name of the module.**
 
 In addition, when using this feature you may optionally move part of your `modules` configuration into a `modules.js` file in each directory. Here is an example:
