@@ -5,6 +5,7 @@ var fs = require('fs');
 var async = require('async');
 var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
+var glob = require('glob');
 
 module.exports = function(options) {
 
@@ -253,6 +254,21 @@ module.exports = function(options) {
     return _module;
   }
 
+  function nestedModuleSubdirs() {
+    if (!options.nestedModuleSubdirs) {
+      return;
+    }
+    var configs = glob.sync(self.moogOptions.localModules + '/**/modules.js');
+    _.each(configs, function(config) {
+      try {
+        _.merge(self.options.modules, require(config));
+      } catch (e) {
+        console.error('When nestedModuleSubdirs is active, any modules.js file beneath ' + self.moogOptions.localModules + '\nmust export an object containing configuration for Apostrophe modules.\nThe file ' + config + ' did not parse.');
+        throw e;
+      }
+    });
+  }
+
   function autodetectBundles() {
     var modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
@@ -369,12 +385,14 @@ module.exports = function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    var synth = require('moog-require')({
+    self.moogOptions = {
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
-      defaultBaseClass: 'apostrophe-module'
-    });
+      defaultBaseClass: 'apostrophe-module',
+      nestedModuleSubdirs: self.options.nestedModuleSubdirs
+    };
+    var synth = require('moog-require')(self.moogOptions);
 
     self.synth = synth;
 
@@ -383,6 +401,8 @@ module.exports = function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
+
+    nestedModuleSubdirs();
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
