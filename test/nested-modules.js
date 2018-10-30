@@ -46,4 +46,3 @@ describe('Nested Modules', function() {
   });
 
 });
-

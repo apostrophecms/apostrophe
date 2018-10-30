@@ -1,3 +1,8 @@
+// Use of console permitted here because we sometimes need to
+// print something before the utils module exists. -Tom
+
+/* eslint no-console: 0 */
+
 var path = require('path');
 var _ = require('@sailshq/lodash');
 var argv = require('yargs').argv;
