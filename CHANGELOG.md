@@ -4,7 +4,9 @@
 
 Unit tests passing.
 
-Support for subdirectories of `lib/modules`. You must set the `nestedModuleSubdirs` option to `true` in `app.js`. You can then place your modules in nested subdirectories of `lib/modules`. **The names of the parent folders do not matter,** and **the name of the actual module folder must still match the name of the module.**
+Regression tests passing.
+
+* Support for subdirectories of `lib/modules`. You must set the `nestedModuleSubdirs` option to `true` in `app.js`. You can then place your modules in nested subdirectories of `lib/modules`. **The names of the parent folders do not matter,** and **the name of the actual module folder must still match the name of the module.**
 
 In addition, when using this feature you may optionally move part of your `modules` configuration into a `modules.js` file in each directory. Here is an example:
 
@@ -16,6 +18,10 @@ module.exports = {
 ```
 
 By following through with this approach you can make `app.js` much shorter. Configuration of Apostrophe modules installed via `npm` must still be done in `app.js`.
+
+* The `apostrophe-html-widgets` module now properly concatenates fields to the standard HTML field when `addFields` is used with it.
+
+* Fixed a crashing bug when an API was used in an atypical way. Thanks to Max Schlueter.
 
 ## 2.71.1
 
