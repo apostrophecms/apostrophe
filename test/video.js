@@ -32,7 +32,6 @@ describe('Video Field', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        console.log('so done');
         done();
       }
     });
