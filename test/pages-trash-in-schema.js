@@ -1,10 +1,7 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('@sailshq/lodash');
-var request = require('request');
 
 var apos;
-var homeId;
 
 describe('Pages', function() {
 
@@ -59,7 +56,6 @@ describe('Pages', function() {
     return apos.pages.find(apos.tasks.getAnonReq(), { level: 0 }).toObject(function(err, home) {
       assert(!err);
       assert(home);
-      homeId = home._id;
       assert(home.slug === '/');
       assert(home.path === '/');
       assert(home.type === 'home');
