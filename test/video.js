@@ -47,7 +47,7 @@ describe('Video Field', function() {
     var schema = [
       {
         name: 'video',
-        type: 'video'        
+        type: 'video'
       }
     ];
     var output = {};
@@ -72,7 +72,7 @@ describe('Video Field', function() {
     var schema = [
       {
         name: 'video',
-        type: 'video'        
+        type: 'video'
       }
     ];
     var output = {};
@@ -96,7 +96,7 @@ describe('Video Field', function() {
       {
         name: 'video',
         type: 'video',
-        required: true      
+        required: true
       }
     ];
     var output = {};
@@ -114,6 +114,5 @@ describe('Video Field', function() {
       }
     );
   });
-
 
 });
