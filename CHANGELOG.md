@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.72.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Moving a page beneath a parent that happens to be considered "not trash" should not automatically cause the child to be considered "not trash" when workflow is in effect, or when the `trashInSchema` flag has been opted into for `apostrophe-docs`. In these cases the trash flag is just another schema property. This bug led to pages inadvertently becoming live across all locales when moved in the page tree.
+* The server-side video schema field converter no longer crashes the process if given a `null` property, and correctly flags the field as in error if it is `required` and not present.
+* Any missing values for join relationships relating to permissions are now handled in a proper migration in apostrophe core, rather than a hack in apostrophe-workflow that adds significant startup time in certain situations.
+* Migration completion is now logged.
+* UX fix: UI/area controls no longer compete with "Add Content."
+
+Thanks to our enterprise support customers for their support of this work.
+
 ## 2.72.0
 
 Unit tests passing.
