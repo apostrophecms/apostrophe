@@ -266,4 +266,12 @@ describe('Locks', function() {
     });
   });
 
+  it('all locks should be gone from the database', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.db.find({}).toArray().then(function(locks) {
+      assert(!locks.length);
+    });
+    assert(!_.keys(locks.intervals).length);
+  });
+
 });
