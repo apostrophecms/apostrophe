@@ -11,7 +11,7 @@
       <!-- v-model cannot reference the "widget" iteration variable but it -->
       <!-- does not mind if we reference next[i] directly -->
       <component v-if="editing[widget._id]" @close="editing[widget._id] = false" :is="widgetEditorComponent(widget.type)" v-model="next[i]" :options="options.widgets[widget.type]" :type="widget.type" />
-      <component :is="widgetComponent(widget.type)" v-model="next[i]" :options="options.widgets[widget.type]" />
+      <component :is="widgetComponent(widget.type)" v-model="next[i]" :options="options.widgets[widget.type]" :type="widget.type" />
       <ApostropheAddWidgetMenu @save="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
     </div>
   </div>

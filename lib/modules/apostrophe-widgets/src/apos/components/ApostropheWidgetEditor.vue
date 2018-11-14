@@ -22,6 +22,8 @@
 
 <script>
 
+import cuid from 'cuid';
+
 export default {
   name: 'ApostropheWidgetEditor',
   props: {
@@ -50,6 +52,13 @@ export default {
   },
   methods: {
     save() {
+      const widget = this.widgetInfo.data;
+      if (!widget._id) {
+        widget._id = cuid();
+      }
+      if (!widget.type) {
+        widget.type = this.type;
+      }
       this.$emit('input', this.widgetInfo.data);
       this.$emit('save');
     }
