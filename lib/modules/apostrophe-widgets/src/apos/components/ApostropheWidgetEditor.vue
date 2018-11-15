@@ -45,7 +45,7 @@ export default {
   data() {
     return {
       widgetInfo: {
-        data: {},
+        data: this.value || {},
         hasErrors: false
       }
     };

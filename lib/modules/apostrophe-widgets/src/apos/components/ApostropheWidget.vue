@@ -14,24 +14,39 @@ export default {
     options: Object,
     value: Object
   },
+  watch: {
+    value: {
+      deep: true,
+      handler() {
+        this.renderContent();
+      }
+    }
+  },
   data() {
+    console.log('value in widget: ', this.value);
     return {
       rendered: '...'
     }
   },
-  mounted: async function() {
-    this.rendered = await axios.create({
-      headers: {
-        'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-      }
-    }).post(
-      apos.areas.action + '/render-widget',
-      {
-        widget: this.value,
-        options: this.options,
-        type: this.type
-      }
-    );
+  mounted: function() {
+    this.renderContent();
+  },
+  methods: {
+    async renderContent() {
+      const response = await axios.create({
+        headers: {
+          'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
+        }
+      }).post(
+        apos.areas.action + '/render-widget',
+        {
+          widget: this.value,
+          options: this.options,
+          type: this.type
+        }
+      );
+      this.rendered = response.data;
+    }
   }
 }
 
