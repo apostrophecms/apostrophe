@@ -2,8 +2,8 @@
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" />
     <vddl-list class="apos-areas-widgets-list" :list="next" :horizontal="false">
-      <vddl-draggable class="panel__body--item" v-for="(item, i) in next" :key="item.id"
-          :draggable="item"
+      <vddl-draggable class="panel__body--item" v-for="(wrapped, i) in next" :key="wrapped.widget._id"
+          :draggable="wrapped"
           :index="i"
           :wrapper="next"
           effect-allowed="move"
@@ -14,8 +14,8 @@
           <button @click="remove(i)">Remove</button>
           <button @click="edit(i)">Edit</button>
         </div>
-        <component v-if="editing[item.id]" @save="editing[item.id] = false" @close="editing[item.id] = false" :is="widgetEditorComponent(widgets[item.id].type)" v-model="widgets[item.id]" :options="options.widgets[widgets[item.id].type]" :type="widgets[item.id].type" />
-        <component :is="widgetComponent(widgets[item.id].type)" v-model="widgets[item.id]" :options="options.widgets[widgets[item.id].type]" :type="widgets[item.id].type" :docId="widgets[item.id].__docId" />
+        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" />
+        <component :is="widgetComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="wrapped.widget.__docId" />
         <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
       </vddl-draggable>
     </vddl-list>
@@ -36,14 +36,9 @@ export default {
     choices: Array
   },
   data() {
-    const widgets = {};
-    this.items.forEach(
-      item => widgets[item._id] = item
-    );
     return {
-      next: this.items.map((item) => ({ id: item._id })),
-      editing: {},
-      widgets: widgets
+      next: this.items.map(widget => ({ widget })),
+      editing: {}
     };
   },
   watch: {
@@ -55,12 +50,6 @@ export default {
         this.$emit('input', this.nextItems());
       }
     },
-    widgets: {
-      deep: true,
-      handler() {
-        this.$emit('input', this.nextItems());
-      }
-    }
   },
   methods: {
     up(i) {
@@ -74,15 +63,13 @@ export default {
       Vue.set(this.next, i, temp);
     },
     remove(i) {
-      Vue.delete(this.widgets, this.next[i]);
       this.next = this.next.slice(0, i).concat(this.next.slice(i + 1));
     },
     edit(i) {
-      Vue.set(this.editing, this.next[i], !this.editing[this.next[i]]);
+      Vue.set(this.editing, this.next[i].widget._id, !this.editing[this.next[i].widget._id]);
     },
     insert($event) {
-      this.next.splice($event.index, 0, $event.widget._id);
-      this.widgets[$event.widget._id] = $event.widget;
+      this.next.splice($event.index, 0, { widget: $event.widget });
     },
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
@@ -91,7 +78,7 @@ export default {
       return this.moduleOptions.components.widgetEditors[type];
     },
     nextItems() {
-      return this.next.map(item => Object.assign({}, this.widgets[item.id]));
+      return this.next.map(wrapped => Object.assign({}, wrapped.widget));
     }
   },
   computed: {
