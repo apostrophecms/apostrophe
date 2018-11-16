@@ -45,13 +45,13 @@ export default {
     next: {
       deep: true,
       handler() {
-        apos.bus.$emit('areaChanged', this.nextItems());
+        this.$emit('input', this.nextItems());
       }
     },
     widgets: {
       deep: true,
       handler() {
-        apos.bus.$emit('areaChanged', this.nextItems());
+        this.$emit('input', this.nextItems());
       }
     }
   },
