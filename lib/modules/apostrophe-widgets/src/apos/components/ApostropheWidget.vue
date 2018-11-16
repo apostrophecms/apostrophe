@@ -12,7 +12,8 @@ export default {
   props: {
     type: String,
     options: Object,
-    value: Object
+    value: Object,
+    docId: String
   },
   watch: {
     value: {
@@ -23,8 +24,7 @@ export default {
     }
   },
   data() {
-    console.log('value in widget: ', this.value);
-    return {
+   return {
       rendered: '...'
     }
   },
@@ -42,10 +42,16 @@ export default {
         {
           widget: this.value,
           options: this.options,
-          type: this.type
+          type: this.type,
+          docId: this.docId
         }
       );
       this.rendered = response.data;
+      // Wait for reactivity to populate v-html so the
+      // ApostropheAreas manager can spot any new area divs
+      setImmediate(function() {
+        apos.bus.$emit('widgetChanged');
+      });
     }
   }
 }

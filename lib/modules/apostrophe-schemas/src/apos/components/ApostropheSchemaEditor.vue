@@ -1,6 +1,6 @@
 <template>
   <div class="apos-schema">
-    <component v-for="field in fields" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" :context="next.data" />
+    <component v-for="field in fields" v-if="!field.contextual" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" :context="next.data" />
   </div>
 </template>
 

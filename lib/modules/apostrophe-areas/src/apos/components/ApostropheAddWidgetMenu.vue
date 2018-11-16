@@ -1,6 +1,6 @@
 <template>
   <div class="apos-area-add-widget-menu">
-    <button @click="dropdown = !dropdown">+</button>
+    <button @click="dropdown = !dropdown">+ Add Widget</button>
     <div v-if="dropdown" class="apos-area-add-widget-menu-dropdown">
       <button v-for="choice in choices" @click="add(choice.name)">{{ choice.label }}</button>
     </div>
@@ -60,3 +60,9 @@ export default {
 };
 
 </script>
+<style>
+.apos-area-add-widget-menu {
+  width: 100px;
+  border: 2px solid lightblue;
+}
+</style>

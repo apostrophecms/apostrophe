@@ -11,7 +11,7 @@
       <!-- v-model cannot reference the "widget" iteration variable but it -->
       <!-- does not mind if we reference next[i] directly -->
       <component v-if="editing[id]" @save="editing[id] = false" @close="editing[id] = false" :is="widgetEditorComponent(widgets[id].type)" v-model="widgets[id]" :options="options.widgets[widgets[id].type]" :type="widgets[id].type" />
-      <component :is="widgetComponent(widgets[id].type)" v-model="widgets[id]" :options="options.widgets[widgets[id].type]" :type="widgets[id].type" />
+      <component :is="widgetComponent(widgets[id].type)" v-model="widgets[id]" :options="options.widgets[widgets[id].type]" :type="widgets[id].type" :docId="widgets[id].__docId" />
       <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
     </div>
   </div>
@@ -84,7 +84,7 @@ export default {
       return this.moduleOptions.components.widgetEditors[type];
     },
     nextItems() {
-      return this.next.map(id => this.widgets[id]);
+      return this.next.map(id => Object.assign({}, this.widgets[id]));
     }
   },
   computed: {
@@ -95,3 +95,12 @@ export default {
 };
 
 </script>
+
+
+<style>
+  .apos-area {
+    border: 2px solid green;
+    margin: 5px;
+    padding: 5px;
+  }
+</style>
