@@ -1,25 +1,32 @@
 <template>
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" />
-    <div v-for="(id, i) in next" :key="id">
-      <div class="apos-area-controls">
-        <button v-if="i > 0" @click="up(i)">Up</button>
-        <button v-if="i < next.length - 1" @click="down(i)">Down</button>
-        <button @click="remove(i)">Remove</button>
-        <button @click="edit(i)">Edit</button>
-      </div>
-      <!-- v-model cannot reference the "widget" iteration variable but it -->
-      <!-- does not mind if we reference next[i] directly -->
-      <component v-if="editing[id]" @save="editing[id] = false" @close="editing[id] = false" :is="widgetEditorComponent(widgets[id].type)" v-model="widgets[id]" :options="options.widgets[widgets[id].type]" :type="widgets[id].type" />
-      <component :is="widgetComponent(widgets[id].type)" v-model="widgets[id]" :options="options.widgets[widgets[id].type]" :type="widgets[id].type" :docId="widgets[id].__docId" />
-      <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
-    </div>
+    <vddl-list class="apos-areas-widgets-list" :list="next" :horizontal="false">
+      <vddl-draggable class="panel__body--item" v-for="(item, i) in next" :key="item.id"
+          :draggable="item"
+          :index="i"
+          :wrapper="next"
+          effect-allowed="move"
+      >
+        <div class="apos-area-controls">
+          <button v-if="i > 0" @click="up(i)">Up</button>
+          <button v-if="i < next.length - 1" @click="down(i)">Down</button>
+          <button @click="remove(i)">Remove</button>
+          <button @click="edit(i)">Edit</button>
+        </div>
+        <component v-if="editing[item.id]" @save="editing[item.id] = false" @close="editing[item.id] = false" :is="widgetEditorComponent(widgets[item.id].type)" v-model="widgets[item.id]" :options="options.widgets[widgets[item.id].type]" :type="widgets[item.id].type" />
+        <component :is="widgetComponent(widgets[item.id].type)" v-model="widgets[item.id]" :options="options.widgets[widgets[item.id].type]" :type="widgets[item.id].type" :docId="widgets[item.id].__docId" />
+        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
+      </vddl-draggable>
+    </vddl-list>
   </div>
 </template>
 
 <script>
 
 import Vue from 'apostrophe/vue';
+import Vddl from 'vddl';
+Vue.use(Vddl);
 
 export default {
   name: 'ApostropheAreaEditor',
@@ -34,7 +41,7 @@ export default {
       item => widgets[item._id] = item
     );
     return {
-      next: this.items.map((item) => item._id),
+      next: this.items.map((item) => ({ id: item._id })),
       editing: {},
       widgets: widgets
     };
@@ -84,7 +91,7 @@ export default {
       return this.moduleOptions.components.widgetEditors[type];
     },
     nextItems() {
-      return this.next.map(id => Object.assign({}, this.widgets[id]));
+      return this.next.map(item => Object.assign({}, this.widgets[item.id]));
     }
   },
   computed: {
