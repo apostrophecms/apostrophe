@@ -4,7 +4,7 @@
     <div v-for="(id, i) in next" :key="id">
       <div class="apos-area-controls">
         <button v-if="i > 0" @click="up(i)">Up</button>
-        <button v-if="i < items.length + 1" @click="down(i)">Down</button>
+        <button v-if="i < next.length - 1" @click="down(i)">Down</button>
         <button @click="remove(i)">Remove</button>
         <button @click="edit(i)">Edit</button>
       </div>

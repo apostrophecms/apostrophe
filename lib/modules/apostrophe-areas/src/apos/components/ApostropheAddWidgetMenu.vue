@@ -44,6 +44,7 @@ export default {
         index: this.index,
         widget: this.widget
       });
+      this.widget = null;
       this.close();
     },
     close() {
