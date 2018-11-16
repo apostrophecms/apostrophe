@@ -1,8 +1,9 @@
 <template>
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" />
-    <vddl-list class="apos-areas-widgets-list" :list="next" :horizontal="false">
+    <vddl-list :allowed-types="types" class="apos-areas-widgets-list" :list="next" :horizontal="false">
       <vddl-draggable class="panel__body--item" v-for="(wrapped, i) in next" :key="wrapped.widget._id"
+          :type="wrapped.widget.type"
           :draggable="wrapped"
           :index="i"
           :wrapper="next"
@@ -84,6 +85,9 @@ export default {
   computed: {
     moduleOptions() {
       return window.apos.areas;
+    },
+    types() {
+      return Object.keys(this.options.widgets);
     }
   }
 };
@@ -96,5 +100,8 @@ export default {
     border: 2px solid green;
     margin: 5px;
     padding: 5px;
+  }
+  .apos-areas-widgets-list {
+    min-height: 64px;
   }
 </style>
