@@ -158,28 +158,6 @@ describe('Attachment', function() {
       });
     });
 
-    it('should clone an attachment', function(done) {
-      return accept('clone.txt', function(result) {
-
-        return apos.attachments.clone(apos.tasks.getReq(), result, function(err, targetInfo) {
-          assert(!err);
-          assert(targetInfo._id !== result._id);
-
-          // make sure it exists in mongo
-          apos.db.collection(collectionName).findOne({
-            _id: result._id
-          }, function(err, result) {
-            assert(!err);
-            assert(result);
-            var t = uploadTarget + result._id + '-' + result.name + '.' + result.extension;
-            assert(fs.existsSync(t));
-
-            done();
-          });
-        });
-      });
-    });
-
     it('should generate the "full" URL when no size specified for image', function() {
       var url = apos.attachments.url({
         group: 'images',
