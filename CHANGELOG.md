@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.72.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `apostrophe-jobs` `runNonBatch` method no longer crashes if the job-runner function provided does not return an object (for instance, because it takes a callback so its return value does not matter).
+* `apostrophe-attachments:list` task lists the URLs of all valid attachments, including all crops in all sizes.
+* `array` fields may be used in the `relationship` of a join. Thanks to Anthony Tarlao.
+* Added missing callback to asset bundle cleanup for cloud deployments, ensuring that the lock is eventually released and the old bundles are eventually removed.
+* Fixed documentation for `apos.jobs` methods re: the `labels` option.
+
 ## 2.72.1
 
 Unit tests passing.
