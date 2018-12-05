@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.72.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The "apply to subpages" feature for page permissions has been greatly simplified and made easier to understand. There is now just one shared "copy these permissions to subpages now?" dropdown, which applies to ALL current permissions for the current page: "who can view this page," "these users can view," "these groups can edit," etc. 
+
+As the help text now properly explains, if you pick "yes" and save page settings as usual, the permissions of all subpages are updated to match **on a one-time basis.** After that, you can edit them normally for the subpages. This is an action that takes place at "save" time, it is not a setting that is remembered.
+
+This is good for laying down a baseline and then making fine-tuned adjustments per page, which is typical practice.
+
+Previously this choice appeared in several places, including as a highly confusing and visually cluttered dropdown within the list of permissions per user and group. While theoretically this allowed for propagating fine-tuned adjustments to subpages one at a time, in practice users did not understand it, including many enterprise customers who invest significant time in Apostrophe. Therefore a simpler solution is of greater overall value.
+
+* Regression fix: support for in-context, on-page editing of areas in array fields has been restored.
+
+* Attempts to save a field of type `object` with a missing `required` field now behave sensibly, you no longer see a spinner forever on a grayed-out page. Note that the use of `required` for the object itself has no meaning because there is always an object; you should make its fields required, or not, as you see fit.
+
+* "Move" and "Trash" operations on widgets now emit the Apostrophe events `widgetMoved` and `widgetTrashed`. The widget's container div is emitted as the argument to the event.
+
+## 2.72.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `apostrophe-jobs` `runNonBatch` method no longer crashes if the job-runner function provided does not return an object (for instance, because it takes a callback so its return value does not matter).
+* `apostrophe-attachments:list` task lists the URLs of all valid attachments, including all crops in all sizes.
+* `array` fields may be used in the `relationship` of a join. Thanks to Anthony Tarlao.
+* Added missing callback to asset bundle cleanup for cloud deployments, ensuring that the lock is eventually released and the old bundles are eventually removed.
+* Fixed documentation for `apos.jobs` methods re: the `labels` option.
+
 ## 2.72.1
 
 Unit tests passing.
