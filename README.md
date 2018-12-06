@@ -6,7 +6,7 @@ Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for 
 
 [![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
 [![Build Status](https://saucelabs.com/buildstatus/boutell)](https://saucelabs.com/beta/builds/1681358095414ff5b2b0ce51a6def56e)
-[![Join the chat at https://gitter.im/apostrophecms/apostrophe](https://badges.gitter.im/apostrophecms/apostrophe.svg)](https://gitter.im/apostrophecms/apostrophe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Discord](https://img.shields.io/discord/517772094482677790.svg)](http://chat.apostrophecms.org)
 
 ## Getting Started
 
