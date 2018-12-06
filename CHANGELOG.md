@@ -6,7 +6,7 @@ Unit tests passing.
 
 Regression tests passing.
 
-* Added in-context editing support, support for the `contextual` flag, and `skipInitialModal` support for areas and singletons nested in fields of type `object`.
+* Added in-context editing support, support for the `contextual` flag, and `skipInitialModal` support for areas and singletons nested in fields of type `object`. Many thanks to Michelin for making this feature possible through their participation in [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 * The `date` Nunjucks filter now accepts `locale` as a second argument. If `locale` is not present and `req.locale` is set, that locale is used, rather than the default system locale. Thanks to Tim Otlik.
 * Removed nuisance warnings about tolerant sanitization.
 * When using the `passwordReset: true` feature of `apostrophe-login`, you may also set the `passwordResetSubject` option to a custom subject line for the password reset email message.
