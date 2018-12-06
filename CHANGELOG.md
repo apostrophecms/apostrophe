@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.73.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Added in-context editing support, support for the `contextual` flag, and `skipInitialModal` support for areas and singletons nested in fields of type `object`.
+* The `date` Nunjucks filter now accepts `locale` as a second argument. If `locale` is not present and `req.locale` is set, that locale is used, rather than the default system locale. Thanks to Tim Otlik.
+* Removed nuisance warnings about tolerant sanitization.
+* When using the `passwordReset: true` feature of `apostrophe-login`, you may also set the `passwordResetSubject` option to a custom subject line for the password reset email message.
+* The mechanism that sends the password reset request confirmation email has been factored out to the `apos.login.sendPasswordResetEmail(req, user)` method, so you can trigger it for your own reasons. This method returns a promise; when that promise resolves the password reset email has been successfully handed off for delivery. Note that the promise will be rejected if the user object has no `email` property.
+
 ## 2.72.3
 
 Unit tests passing.
