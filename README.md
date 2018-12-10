@@ -40,8 +40,11 @@ We've got some great [open-source tools and how-to articles](http://apostrophecm
 ## Community
 
 **Report bugs** via [github](https://github.com/apostrophecms/apostrophe).
+
 **Ask how-to questions** via [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms). Be sure to tag them `apostrophe-cms`.
+
 **Stay up to date with announcements** on our [forum](https://forum.apostrophecms.org).
+
 **Chat with the community** on our [Discord server](http://chat.apostrophecms.org).
 
 ## License
