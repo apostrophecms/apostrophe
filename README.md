@@ -39,7 +39,7 @@ We've got some great [open-source tools and how-to articles](http://apostrophecm
 
 ## Community
 
-**Report bugs** via [github](https://github.com/apostrophecms/apostrophe).
+**Report bugs and submit pull requests** via [github](https://github.com/apostrophecms/apostrophe/issues).
 
 **Ask how-to questions** via [StackOverflow](https://stackoverflow.com/questions/tagged/apostrophe-cms). Be sure to tag them `apostrophe-cms`.
 
