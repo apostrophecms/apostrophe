@@ -5,7 +5,6 @@ ApostropheCMS is a content management system (CMS) for Node.js. It supports in-c
 Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
 
 [![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
-[![Build Status](https://saucelabs.com/buildstatus/boutell)](https://saucelabs.com/beta/builds/1681358095414ff5b2b0ce51a6def56e)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](http://chat.apostrophecms.org)
 
 ## Getting Started
