@@ -144,6 +144,7 @@ module.exports = function(options) {
     var extraArgs = args.slice(1, args.length - 1);
     callback = args[args.length - 1];
     return async.eachSeries(_.keys(self.modules), function(name, callback) {
+      console.log('m ' + name);
       return invoke(name, method, extraArgs, callback);
     }, function(err) {
       if (err) {
@@ -417,6 +418,7 @@ module.exports = function(options) {
   }
 
   function instantiateModules(callback) {
+    console.log('im');
     self.modules = {};
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
       var improvement = self.synth.isImprovement(item);
@@ -441,14 +443,17 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
+    console.log('mr');
     return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
+    console.log('mai');
     return self.callAllAndEmit('afterInit', 'afterInit', callback);
   }
 
   function afterInit(callback) {
+    console.log('ai');
     // Give project-level code a chance to run before we
     // listen or run a task
     if (!self.options.afterInit) {
