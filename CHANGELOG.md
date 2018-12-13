@@ -16,6 +16,14 @@ The API is identical to that for `apos.notify` on the browser side, except that 
 
 * In `2.73.0`, an optional second argument, `locale`, was added to the `date` Nunjucks filter. As it turns out this was done in a way that could have a knock-on effect on later uses of `date` that did not specify a locale. This has been fixed and unit tests have been added. Thanks to Fredrik Ekelund.
 
+* The values of fields hidden via `showFields` are now saved to the database, as long as they contain no errors. This allows you to return to an old setting and discover all of its sub-settings intact.
+
+* By default, Apostrophe deletes old asset bundles from uploadfs (S3, azure, etc.) five minutes after the launch of the site. The assumption is that the deployment of static assets has reached all peer servers and there is no need to keep old assets around. The `uploadfsBundleCleanup` option to `apostrophe-assets` may now be set explicitly to `false` to prevent this, as may be needed if asset bundles are shared between sub-deployments that are made at greatly varying times.
+
+* When `apostrophe-workflow` is present, "Batch Commit" and other inappropriate options are no longer offered for groups, which are not subject to workflow.
+
+Thanks to Michelin for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.73.0
 
 Unit tests passing.
