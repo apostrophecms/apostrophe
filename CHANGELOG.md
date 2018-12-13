@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.74.0
+
+Unit tests passing.
+
+* Server-side code may now call `apos.notify(req, 'This is a message')` to send a message to the logged-in user associated with `req`. That message will pop up on the browser and will remain visible until they dismiss it. If the user is not logged in right now, they will see it when they do log in.
+
+You may use `%s` to interpolate additional string arguments, and you may pass an `options` object with `dismiss: true` for a self-dismissing notification. You may also set the `type` option to `error`, `warn` or `success` for different visual treatments. For example:
+
+```
+apos.notify(req, 'Sorry, you did not win a shiny new %s!', req.piece.title, { type: 'error' });
+```
+
+The API is identical to that for `apos.notify` on the browser side, except that `req` must be passed as the first argument. Also the method returns a promise, which resolves when the notification has reached the database. You may also optionally pass a final callback for the same purpose. This is useful when sending a notification just before a task exits the process. The rest of the time you won't need to worry about it.
+
+* In `2.73.0`, an optional second argument, `locale`, was added to the `date` Nunjucks filter. As it turns out this was done in a way that could have a knock-on effect on later uses of `date` that did not specify a locale. This has been fixed and unit tests have been added. Thanks to Fredrik Ekelund.
+
 ## 2.73.0
 
 Unit tests passing.
