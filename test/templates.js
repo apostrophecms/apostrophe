@@ -138,4 +138,23 @@ describe('Templates', function() {
     assert.equal(result, '<p>first line<br />\nsecond line</p>\n');
   });
 
+  it('should format dates', function() {
+    var req = apos.tasks.getAnonReq();
+    // default locale
+    var result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\') }}', {
+      now: new Date(2018, 11, 01)
+    });
+    assert.equal(result, 'Saturday, December 1, 2018 12:00 AM');
+    // locale parameter is respected
+    result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\', \'en-gb\') }}', {
+      now: new Date(2018, 11, 01)
+    });
+    assert.equal(result, 'Saturday, 1 December 2018 00:00');
+    // Use of a locale does not persistently alter behavior for next call with no locale
+    result = apos.modules['templates-test'].renderString(req, '{{ data.now | date(\'LLLL\') }}', {
+      now: new Date(2018, 11, 01)
+    });
+    assert.equal(result, 'Saturday, December 1, 2018 12:00 AM');
+  });
+
 });
