@@ -1,7 +1,6 @@
 
 @apos-translucent-opacity: 0.4;
 
-
 .apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
 .apos-area
@@ -316,6 +315,23 @@
     border: 2px solid @apos-secondary;
     .apos-button:hover { color: @apos-secondary; }
     .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
+  }
+}
+
+.apos-area-inline-undo {
+  padding: @apos-padding-1;
+  background-color: @apos-purple;
+  color: @apos-white;
+  button {
+    // Like a link
+    border: 0;
+    background-color: inherit;
+    color: inherit;
+    display: inline;
+    font-size: inherit;
+    font-family: inherit;
+    text-decoration: underline;
+    cursor: pointer;
   }
 }
 
