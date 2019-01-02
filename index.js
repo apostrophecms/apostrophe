@@ -63,7 +63,8 @@ module.exports = function(options) {
     instantiateModules,
     modulesReady,
     modulesAfterInit,
-    afterInit
+    afterInit,
+    lintModules
   ], function(err) {
     if (err) {
       if (options.initFailed) {
@@ -446,6 +447,43 @@ module.exports = function(options) {
 
   function modulesAfterInit(callback) {
     return self.callAllAndEmit('afterInit', 'afterInit', callback);
+  }
+
+  function lintModules(callback) {
+    _.each(self.modules, function(module, name) {
+      if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.fromScratch)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA widgets module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the `fromScratch` option\nto `true` for this module.');
+      } else if (name.match(/-pages$/) && (name !== 'apostrophe-pages') && (!extending(module)) && (!module.options.fromScratch)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA -pages module usually extends `apostrophe-custom-pages` or\n`apostrophe-pieces-pages`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the `fromScratch` option\nto `true` for this module.');
+      } else if ((!extending(module)) && (!hasConstruct(name)) && (module.options.hasCode !== false)) {
+        lint('The module ' + name + ' does not extend anything and does not have a\n`construct` function. This usually means that you:\n\n1. Forgot `extend`\n2. Configured a module that comes from npm without npm installing it\n3. Just haven\'t written your \'index.js\` yet\n\nIf you really want a module with no code, set the `hasCode` option\nexplicitly to `false` for this module.');
+      }
+    });
+    function hasConstruct(name) {
+      var d = self.synth.definitions[name];
+      if (d.construct) {
+        // Module definition at project level has construct
+        return true;
+      }
+      if (d.__meta.name.match(/^my-/)) {
+        // None at project level, but maybe at npm level, look there
+        d = d.extend;
+      }
+      // If we got to the base class of all modules, the module
+      // has no construct of its own
+      if (d.__meta.name.match(/apostrophe-module$/)) {
+        return false;
+      }
+      return d.construct;
+    }
+    function extending(module) {
+      return module.__meta.chain.length > 4;
+    }
+    return callback(null);
+  }
+
+  function lint(s) {
+    self.utils.warn('\n**** It looks like you may have made a mistake in your code:\n\n' + s + '\n');
   }
 
   function afterInit(callback) {
