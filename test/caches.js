@@ -23,6 +23,7 @@ describe('Caches', function() {
       },
 
       afterListen: function(err) {
+        console.error(err);
         assert(!err);
         return done();
       }

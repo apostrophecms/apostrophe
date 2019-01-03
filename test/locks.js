@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var async = require('async');
 var Promise = require('bluebird');
-
+var _ = require('@sailshq/lodash');
 var apos;
 
 describe('Locks', function() {
@@ -263,6 +263,14 @@ describe('Locks', function() {
       assert(!err);
       assert(result === 'result');
       done();
+    });
+  });
+
+  it('all locks should be gone from the database', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.db.find({}).toArray().then(function(locks) {
+      assert(!locks.length);
+      assert(!_.keys(locks.intervals).length);
     });
   });
 

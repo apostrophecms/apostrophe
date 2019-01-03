@@ -1,3 +1,8 @@
+// Use of console permitted here because we sometimes need to
+// print something before the utils module exists. -Tom
+
+/* eslint no-console: 0 */
+
 var path = require('path');
 var _ = require('@sailshq/lodash');
 var argv = require('yargs').argv;
@@ -5,9 +10,23 @@ var fs = require('fs');
 var async = require('async');
 var npmResolve = require('resolve');
 var defaults = require('./defaults.js');
+var glob = require('glob');
 
 module.exports = function(options) {
-  var self = {};
+
+  // The core is not a true moog object but it must look enough like one
+  // to participate as a promise event emitter
+  var self = {
+    __meta: {
+      name: 'apostrophe'
+    }
+  };
+
+  // The core must have a reference to itself in order to use the
+  // promise event emitter code
+  self.apos = self;
+
+  require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
 
   try {
     // Determine root module and root directory
@@ -21,7 +40,11 @@ module.exports = function(options) {
     autodetectBundles();
     acceptGlobalOptions();
 
+    // Legacy events
     self.handlers = {};
+
+    // Module-based, promisified events (self.on and self.emit of each module)
+    self.eventHandlers = {};
 
     defineModules();
   } catch (err) {
@@ -58,26 +81,17 @@ module.exports = function(options) {
     }
   });
 
-  // EVENT HANDLING
+  // EVENT HANDLING (legacy events)
   //
   // apos.emit(eventName, /* arg1, arg2, arg3... */)
   //
-  // Emit an Apostrophe event. All handlers that have been set
+  // Emit an Apostrophe legacy event. All handlers that have been set
   // with apos.on for the same eventName will be invoked. Any additional
   // arguments are received by the handler functions as arguments.
   //
-  // For bc, Apostrophe events are also triggered on the
-  // body element via jQuery. The event name "ready" becomes
-  // "aposReady" in jQuery. This feature will be removed in 0.6.
-  //
-  // CURRENT EVENTS
-  //
-  // 'enhance' is triggered to request progressive enhancement
-  // of form elements newly loaded into the DOM.
-  // It is most often listened for in admin modals.
-  //
-  // 'ready' is triggered when the main content area of the page
-  // has been refreshed.
+  // See the `self.on` and `self.emit` methods of all modules
+  // (via the `apostrophe-module`) base class for a better,
+  // promisified event system.
 
   self.emit = function(eventName /* ,arg1, arg2, arg3... */) {
     var handlers = self.handlers[eventName];
@@ -91,9 +105,13 @@ module.exports = function(options) {
     }
   };
 
-  // Install an Apostrophe event handler. The handler will be called
+  // Install an Apostrophe legacy event handler. The handler will be called
   // when apos.emit is invoked with the same eventName. The handler
   // will receive any additional arguments passed to apos.emit.
+  //
+  // See the `self.on` and `self.emit` methods of all modules
+  // (via the `apostrophe-module`) base class for a better,
+  // promisified event system.
 
   self.on = function(eventName, fn) {
     self.handlers[eventName] = (self.handlers[eventName] || []).concat([ fn ]);
@@ -111,6 +129,10 @@ module.exports = function(options) {
     });
   };
 
+  // Legacy feature only. New code should call the `emit` method of the
+  // relevant module to implement a promise event instead. Will be removed
+  // in 3.x.
+  //
   // For every module, if the method `method` exists,
   // invoke it. The method may optionally take a callback.
   // The method must take exactly as many additional
@@ -132,7 +154,8 @@ module.exports = function(options) {
   };
 
   /**
-   * Allow to bind a callAll method for one module.
+   * Allow to bind a callAll method for one module. Legacy feature.
+   * Use promise events instead.
    */
   self.callOne = function(moduleName, method, /* argument, ... */ callback) {
     var args = Array.prototype.slice.call(arguments);
@@ -146,12 +169,13 @@ module.exports = function(options) {
   // delete any data; the persistent database and media files
   // remain available for the next startup. Invokes
   // the `apostropheDestroy` methods of all modules that
-  // provide one; use this mechanism to free your own
+  // provide one, and also emits the `destroy` promise event on
+  // the `apostrophe` module; use this mechanism to free your own
   // server-side resources that could prevent garbage
   // collection by the JavaScript engine, such as timers
   // and intervals.
   self.destroy = function(callback) {
-    return self.callAll('apostropheDestroy', callback);
+    return self.callAllAndEmit('apostropheDestroy', 'destroy', callback);
   };
 
   // Returns true if Apostrophe is running as a command line task
@@ -233,6 +257,21 @@ module.exports = function(options) {
       _module = m;
     }
     return _module;
+  }
+
+  function nestedModuleSubdirs() {
+    if (!options.nestedModuleSubdirs) {
+      return;
+    }
+    var configs = glob.sync(self.moogOptions.localModules + '/**/modules.js');
+    _.each(configs, function(config) {
+      try {
+        _.merge(self.options.modules, require(config));
+      } catch (e) {
+        console.error('When nestedModuleSubdirs is active, any modules.js file beneath ' + self.moogOptions.localModules + '\nmust export an object containing configuration for Apostrophe modules.\nThe file ' + config + ' did not parse.');
+        throw e;
+      }
+    });
   }
 
   function autodetectBundles() {
@@ -351,12 +390,14 @@ module.exports = function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    var synth = require('moog-require')({
+    self.moogOptions = {
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
-      defaultBaseClass: 'apostrophe-module'
-    });
+      defaultBaseClass: 'apostrophe-module',
+      nestedModuleSubdirs: self.options.nestedModuleSubdirs
+    };
+    var synth = require('moog-require')(self.moogOptions);
 
     self.synth = synth;
 
@@ -365,6 +406,8 @@ module.exports = function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
+
+    nestedModuleSubdirs();
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
@@ -398,11 +441,11 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
-    return self.callAll('modulesReady', callback);
+    return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
-    return self.callAll('afterInit', callback);
+    return self.callAllAndEmit('afterInit', 'afterInit', callback);
   }
 
   function afterInit(callback) {

@@ -21,7 +21,7 @@
   {
     // When there aren't any widgets in an area, it should have a height
     // and a background color set by default.
-    height: 100px;
+    height: 130px;
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
@@ -37,7 +37,7 @@
         display: block;
         position: absolute;
         left: -41px;
-        top: -22px;      
+        top: -22px;
         height: 60px;
         width: 100px;
       }
@@ -55,6 +55,11 @@
       &:hover { opacity: 1; }
     }
   }
+}
+
+// disable menu interactions while some windows are open
+.apos-area-widget-controls--disabled {
+  pointer-events: none;
 }
 
 .apos-area-widget-controls

@@ -1,5 +1,416 @@
 # Changelog
 
+## 2.74.0
+
+Unit tests passing.
+
+* Server-side code may now call `apos.notify(req, 'This is a message')` to send a message to the logged-in user associated with `req`. That message will pop up on the browser and will remain visible until they dismiss it. If the user is not logged in right now, they will see it when they do log in.
+
+You may use `%s` to interpolate additional string arguments, and you may pass an `options` object with `dismiss: true` for a self-dismissing notification. You may also set the `type` option to `error`, `warn` or `success` for different visual treatments. For example:
+
+```
+apos.notify(req, 'Sorry, you did not win a shiny new %s!', req.piece.title, { type: 'error' });
+```
+
+The API is identical to that for `apos.notify` on the browser side, except that `req` must be passed as the first argument. Also the method returns a promise, which resolves when the notification has reached the database. You may also optionally pass a final callback for the same purpose. This is useful when sending a notification just before a task exits the process. The rest of the time you won't need to worry about it.
+
+* In `2.73.0`, an optional second argument, `locale`, was added to the `date` Nunjucks filter. As it turns out this was done in a way that could have a knock-on effect on later uses of `date` that did not specify a locale. This has been fixed and unit tests have been added. Thanks to Fredrik Ekelund.
+
+* The values of fields hidden via `showFields` are now saved to the database, as long as they contain no errors. This allows you to return to an old setting and discover all of its sub-settings intact.
+
+* By default, Apostrophe deletes old asset bundles from uploadfs (S3, azure, etc.) five minutes after the launch of the site. The assumption is that the deployment of static assets has reached all peer servers and there is no need to keep old assets around. The `uploadfsBundleCleanup` option to `apostrophe-assets` may now be set explicitly to `false` to prevent this, as may be needed if asset bundles are shared between sub-deployments that are made at greatly varying times.
+
+* When `apostrophe-workflow` is present, "Batch Commit" and other inappropriate options are no longer offered for groups, which are not subject to workflow.
+
+Thanks to Michelin for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.73.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Added in-context editing support, support for the `contextual` flag, and `skipInitialModal` support for areas and singletons nested in fields of type `object`. Many thanks to Michelin for making this feature possible through their participation in [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* The `date` Nunjucks filter now accepts `locale` as a second argument. If `locale` is not present and `req.locale` is set, that locale is used, rather than the default system locale. Thanks to Tim Otlik.
+* Removed nuisance warnings about tolerant sanitization.
+* When using the `passwordReset: true` feature of `apostrophe-login`, you may also set the `passwordResetSubject` option to a custom subject line for the password reset email message.
+* The mechanism that sends the password reset request confirmation email has been factored out to the `apos.login.sendPasswordResetEmail(req, user)` method, so you can trigger it for your own reasons. This method returns a promise; when that promise resolves the password reset email has been successfully handed off for delivery. Note that the promise will be rejected if the user object has no `email` property.
+
+## 2.72.3
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The "apply to subpages" feature for page permissions has been greatly simplified and made easier to understand. There is now just one shared "copy these permissions to subpages now?" dropdown, which applies to ALL current permissions for the current page: "who can view this page," "these users can view," "these groups can edit," etc. 
+
+As the help text now properly explains, if you pick "yes" and save page settings as usual, the permissions of all subpages are updated to match **on a one-time basis.** After that, you can edit them normally for the subpages. This is an action that takes place at "save" time, it is not a setting that is remembered.
+
+This is good for laying down a baseline and then making fine-tuned adjustments per page, which is typical practice.
+
+Previously this choice appeared in several places, including as a highly confusing and visually cluttered dropdown within the list of permissions per user and group. While theoretically this allowed for propagating fine-tuned adjustments to subpages one at a time, in practice users did not understand it, including many enterprise customers who invest significant time in Apostrophe. Therefore a simpler solution is of greater overall value.
+
+* Regression fix: support for in-context, on-page editing of areas in array fields has been restored.
+
+* Attempts to save a field of type `object` with a missing `required` field now behave sensibly, you no longer see a spinner forever on a grayed-out page. Note that the use of `required` for the object itself has no meaning because there is always an object; you should make its fields required, or not, as you see fit.
+
+* "Move" and "Trash" operations on widgets now emit the Apostrophe events `widgetMoved` and `widgetTrashed`. The widget's container div is emitted as the argument to the event.
+
+## 2.72.2
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `apostrophe-jobs` `runNonBatch` method no longer crashes if the job-runner function provided does not return an object (for instance, because it takes a callback so its return value does not matter).
+* `apostrophe-attachments:list` task lists the URLs of all valid attachments, including all crops in all sizes.
+* `array` fields may be used in the `relationship` of a join. Thanks to Anthony Tarlao.
+* Added missing callback to asset bundle cleanup for cloud deployments, ensuring that the lock is eventually released and the old bundles are eventually removed.
+* Fixed documentation for `apos.jobs` methods re: the `labels` option.
+
+## 2.72.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Moving a page beneath a parent that happens to be considered "not trash" should not automatically cause the child to be considered "not trash" when workflow is in effect, or when the `trashInSchema` flag has been opted into for `apostrophe-docs`. In these cases the trash flag is just another schema property. This bug led to pages inadvertently becoming live across all locales when moved in the page tree.
+* The server-side video schema field converter no longer crashes the process if given a `null` property, and correctly flags the field as in error if it is `required` and not present.
+* Any missing values for join relationships relating to permissions are now handled in a proper migration in apostrophe core, rather than a hack in apostrophe-workflow that adds significant startup time in certain situations.
+* Migration completion is now logged.
+* UX fix: UI/area controls no longer compete with "Add Content."
+
+Thanks to our enterprise support customers for their support of this work.
+
+## 2.72.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Support for subdirectories of `lib/modules`. You must set the `nestedModuleSubdirs` option to `true` in `app.js`. You can then place your modules in nested subdirectories of `lib/modules`. **The names of the parent folders do not matter,** and **the name of the actual module folder must still match the name of the module.**
+
+In addition, when using this feature you may optionally move part of your `modules` configuration into a `modules.js` file in each directory. Here is an example:
+
+```javascript
+module.exports = {
+  'module-name': {},
+  'other-module-name': {}
+};
+```
+
+By following through with this approach you can make `app.js` much shorter. Configuration of Apostrophe modules installed via `npm` must still be done in `app.js`.
+
+* The `apostrophe-html-widgets` module now properly concatenates fields to the standard HTML field when `addFields` is used with it.
+
+* Fixed a crashing bug when an API was used in an atypical way. Thanks to Max Schlueter.
+
+## 2.71.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+Recent changes to the markup for buttons broke drag and drop for widgets. This has been fixed.
+
+## 2.71.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When two pieces or pages would have the same slug as the result of an insert or update, Apostrophe automatically appends a unique string. This makes sense for data integrity but as a user experience it leaves something to be desired.
+
+Beginning with this release, if you are editing the title in the piece or page settings editor and apostrophe is making automatic slug suggestions, these suggestions will *now include the suffix* needed to avoid a conflict. This gives you a chance to see what will happen, and decide to change the title or the slug in a better way. However, you can disable this by setting the `deconflictSlugs` option of the `apostrophe-docs` module explicitly to `false`. If you do, then from now on you will *receive a straightforward error message if the suggested slug is in conflict with another slug on the site.*
+
+* If you edit the slug directly and try to save it with a conflict, Apostrophe will always report a straightforward error in the editor, requiring you to fix it manually. This makes sense when you are editing the slug yourself, because it means you care about the exact value.
+
+For backwards compatibility and to resolve race conditions, the server will still automatically modify the slug to be unique in the rare event that a conflict arises during the save operation itself.
+
+* A simpler yet even better slug prevention feature, in many ways: all `apostrophe-pieces` modules now accept a `slugPrefix` option. For instance, if you set this option to `people-` for your `people` module and to `image-` for the `apostrophe-images` module, the slugs for your people and the photos of them you are uploading will never be in conflict.
+
+We appreciate our enterprise customers and their support of this work.
+
+## 2.70.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: when you attempt to edit a piece that someone else has open in the edit dialog box, you should receive a warning, and the option to take over or leave it alone. This worked, however the "advisory lock" was not released when *closing* the dialog box. So users saw superfluous warnings. The bug was related to calling `$.jsonCall` with the wrong order of arguments.
+* Bug fix: a user without permissions to lock a particular document could cause a process restart by attempting to lock it. No inappropriate access was granted.
+* When configuring the `csrf` option of `apostrophe-express`, you may now pass the `cookie` subproperty in order to pass configuration options to `res.cookie`, such as `secure: true`.
+* The jQuery `onSafe` plugin now respects the return value of the event handler, allowing the use of `return false;` in such handlers. Thanks to Fredrik Ekelund.
+* The Apostrophe `button` macro now renders a `button` rather than an anchor tag, except when the `url` option is present. Thanks to Fredrik Ekelund.
+
+## 2.70.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+Apostrophe now allows direct import of unparsed CSS files via import flags of LESS. The best use of this option is to push a CSS file created by a SASS compiler or other LESS alternative.
+
+To push a CSS asset *without* compiling it as LESS, you may write:
+
+```
+self.pushAsset('stylesheet', { 
+  name: 'bundle',
+  import: {
+    inline: true
+  }
+});
+```
+
+Or, if you are pushing assets via the `stylesheets` option of the `apostrophe-assets` module, you may write:
+
+```
+'apostrophe-assets': {
+  stylesheets: [
+    {
+      name: 'bundle',
+      import: {
+        inline: true
+      }
+    }
+  ]
+}
+```
+
+The extension of the file may be either `.css` or `.less`; either way it is imported with no LESS compilation. Apostrophe will still modify URLs to accommodate the global `prefix` option, if present.
+
+## 2.69.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* In-context editing of areas nested in arrays now works correctly when the widget containing the array has just been added to the page for the first time.
+
+## 2.69.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Promisified all of the apis for migrations, including the option of iterators that return promises, and implemented migrations for old piece and page slugs that have not been deduplicated and thus can block new pages or pieces from taking a slug even though we have logic for this for new pages and pieces.
+* In-context editing support for areas and singletons that are schema fields of arrays. Leaves other, noncontextual data alone. Creating and editing entire array items contextually is outside the scope of this change; use an area rather than an array for that. Directly nested arrays are not supported, but you may use an area in an array in a widget in an array, etc.
+* `.jpeg` files were slipping through with that extension. All new uploads will be correctly converted to `.jpg` and go through the proper sizing process.
+* The `enableShowFields` option was missing some of its logic for fields of type `checkboxes`. Thanks to Anthony Tarlao.
+* A `_title` property is now included in attachments returned by `apos.images.all` and `apos.images.first`.
+* When apostrophe cannot fix a unique key error, it is helpful to be able to see the last error, as well as the original one. This helps you figure it out if both a unique slug error and an unrelated unique key error are part of the puzzle. We still throw the original error, but we also attach the last error as a property of it, so you can see both.
+* The `apos.areas.fromPlaintext` method now takes an `options` parameter. You may set the `el` property to an element name, in which case the markup is wrapped in that HTML element. `options` may be omitted.
+
+## 2.68.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When we introduced allowedSubpageTypes and allowedHomepageTypes in 2.67.0, we  broke support for different schemas in different page types. Those regressions are fixed here.
+* The default page type choice offered for a new page is the first type permitted by its parent page.
+
+## 2.68.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* The `lateCriteria` cursor filter now works properly, allowing special mongodb criteria that are not allowed inside `$and` to be merged into the criteria object at the last minute.
+* A noisy warning produced on every page send by the latest version of Bluebird has been silenced.
+* Performance: explicitly shut off `sort()` for certain cases where we know only one document will be returned. This allows MongoDB to select a more efficient index more often.
+* `nlbr` Nunjucks filter no longer results in double-escaped markup. Thanks to Ulf Seltmann.
+* The `apostrophe-global` module now supports the `separateWhileBusyMiddleware` option. Iby separate middleware that checks for the lock flag in apostrophe-global even if the regular middleware of this method has been disabled and/or overridden to cache in such a way as to make it unsuitable for this purpose. For normal use this option is not necessary.
+* Fixes made to further reduce conflicts between sites with `apostrophe-multisite`. For instance, the `apostrophe-workflow` module no longer breaks the dashboard.
+* The home page can now be copied. If you copy the home page, you get a new child of the home page with the same content. Thanks to Tim Otlik.
+
+## 2.67.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Pages can now be locked down with the `allowedHomepageTypes` and `allowedSubpageTypes` options, like this:
+
+```javascript
+// Only one type allowed for the home page
+allowedHomepageTypes: [ 'home' ],
+
+allowedSubpageTypes: {
+  // Two subpage types allowed for the home page
+  'home': [ 'default', 'apostrophe-blog-page' ],
+  // No subpages for the blog page ("show pages" don't count)
+  'apostrophe-blog-page': [],
+  // default page type can only have another default page as a subpage
+  'default': [ 'default' ]
+}
+```
+
+These options make it easy to prevent users from creating unintended scenarios, like nesting pages too deeply for your navigation design.
+
+* Pages now support batch operations, just like pieces do. The initial set includes trash, rescue, publish, unpublish, tag and untag. You can only rescue pages in this way if you are using the `trashInSchema` option of the docs module, which is always the case with `apostrophe-workflow`. With the conventional trash can, it is unclear what should happen because you have not indicated where you want each page to be restored. New batch operations for pages can be added in the same way that they are added for pieces.
+
+* Important performance fix needed for those using the `apostrophe-pieces-orderings-bundle` module to create custom sort orders for pieces. Without this fix it is also possible to get a loader error and stop fetching content prematurely.
+
+* The "revert" button for versions is now labeled "Revert to" to emphasize that it reverts to what you had at the end of that operation, not its beginning. Thanks to Fredrik Ekelund.
+
+## 2.66.0
+
+* Updated to CKEditor version 4.10.0. The CKEditor build now includes the CKEditor "widgets" feature (not to be confused with Apostrophe widgets). These are essential for modules like the forthcoming `apostrophe-rich-text-merge-tags`.
+* `apos.areas.richText` and `apos.areas.plaintext` no longer produce duplicate text. To achieve this, the `apos.docs.walk` method no longer walks through the `_originalWidgets` property. This property is only used to preserve the previous versions of widgets that the user lacks permission to edit due to schema field permissions. Exploration of this property by `apos.docs.walk` led to the observed bug.
+* The browser-side implementation of `apos.utils.escapeHtml` now works properly.
+
+## 2.65.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* **Important fix for MongoDB replica sets:** previously we used the `autoReconnect` option of the MongoDB driver by default. From now on, we use it only if the MongoDB URI does not refer to a replica set. The use of `autoReconnect` is [inappropriate with a replica set](https://github.com/apostrophecms/apostrophe/issues/1508) because it will keep trying to connect to the node that went down. Leaving this option out results in automatic use of nodes that are up. Also see the [apostrophe-db-mongo-3-driver](https://npmjs.org/package/apostrophe-db-mongo-3-driver) module for a way to use the newer `mongodb+srv` URIs. Thanks to Matt Broadstone of MongoDB for his advice.
+
+* An `apostrophe-file` now has a default URL. The default `_url` property of an `apostrophe-file` piece is simply the URL of the file itself. This allows `apostrophe-file` to be included in your configuration for [apostrophe-permalinks](https://npmjs.org/package/apostrophe-permalinks); picking a PDF in this way generates a direct link to the PDF, which is what the user expects. Note that if the developer elects to set up an `apostrophe-files-pages` module that extends `apostrophe-pieces-pages`, that will still take precedence, so there is no bc break.
+
+* Clicking directly from one rich text widget into another did not work properly; the toolbar did not appear in this situation. This bug has been fixed. The bug only occurred when clicking in a second rich text widget without any intervening clicks outside of all rich text widgets.
+
+* Also see expanded notes on version `2.64.1`, below, which contained several features missed in the original changelog.
+
+## 2.64.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Improved Apostrophe's ability to redisplay the appropriate widget, array element, and field and call the user's attention to it when a schema field error is not detected until server-side validation takes place. This addresses problems that come up when fields become `required` at a later time, and/or data was originally created with an earlier release of Apostrophe that did not enforce `required` in all situations. Browser-side validation is still preferred for ease of use but server-side validation no longer creates situations the user cannot easily resolve.
+
+* Introduced the `apos.global.whileBusy` method. This method accepts a function to be run *while no one is permitted to access the site.* The provided function may return a promise, and that promise resolves before the site becomes accessible again. In the presence of `apostrophe-workflow` it is possible to mark only one locale as busy.
+
+* By default, the `apos.locks.lock` method waits until the lock is available before proceeding. However there is now a `wait` option which can be set to `false` to avoid waiting at all, or to any number of milliseconds. If the method fails because of `wait`, the error is the string `locked`.
+
+* The `apos.locks.lock` method also now accepts a `waitForSelf` option. By default, if the same process invokes `apos.locks.lock` for the same lock in two requests simultaneously, one of the two will receive an error. With `waitForSelf`, the second invocation will wait for the first to resolve and then obtain the lock.
+
+## 2.64.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Apostrophe's "search suggestions" feature for `notFound.html` templates is now fully baked. It only takes two steps:
+
+1. Include an element like this in your `notFound.html` template:
+
+```
+<div data-apos-notfound-search-results></div>
+```
+
+2. Set the `suggestions` option to `true` for the `apostrophe-search` module.
+
+With `suggestions: true`, this feature no longer requires that you have a `/search` page, it uses a dedicated route. See the documentation of the `apostrophe-search` module for more information.
+
+* The `showFields` option is now available for checkboxes. The syntax is as follows:
+
+```
+{
+  "name": "awesomeBoolean",
+  "label": "Awesome Boolean",
+  "type": "boolean",
+  "choices": [
+    {
+      "value": true,
+      "showFields": ["otherField1"]
+    },
+    {
+      "value": false,
+      "showFields": ["otherField2"]
+    }
+  ]
+}
+```
+
+Thanks to falkodev.
+
+* A useful error message appears if you try to use a `mongodb+srv` URL. These are meant for newer versions of the MongoDB driver. You **can** use them, but you must install the [apostrophe-db-mongo-3-driver](https://npmjs.com/package/apostrophe-db-mongo-3-driver) module first. The error message now explains this, addressing a common question on stackoverflow.
+* Basic styles added for the most common rich text markup tags when within the bounds of an Apostrophe modal. Thanks to Lars Houmark.
+* Fixed UI overlap issue when joining with `apostrophe-page`.
+* `apos.images.all`, `apos.images.first`, etc. now include `_description`, `_credit` and `_creditUrl` when they can be inferred from an `apostrophe-image` containing the attachment.
+* `apos.images.srcset` helper improved. It is now smart enough to limit the image sizes it offers based on what it knows about the size of the original. Thanks to Fredrik Ekelund.
+* Fixes to CSS asset URL generation to pass validation.
+* Performance: eliminated use of `$or` MongoDB queries with regard to pages in the trash. MongoDB tests demonstrate that `$ne: true` is faster than `$or` for our purposes.
+
+## 2.63.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* “Promise events” have arrived. This is a major feature. Promise events will completely
+replace `callAll` in Apostrophe 3.x. For 2.x, all existing invocations of `callAll` in the
+core Apostrophe module now also emit a promise event. For instance, when the `docBeforeInsert`
+callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the 
+apostrophe-docs` module.
+
+Other modules may listen for this event by writing code like this:
+
+```javascript
+`self.on('apostrophe-docs:beforeInsert', 'chooseASpecialist', function(req, doc, options) {
+  // Modify `doc` here. You may return a promise, and it will resolve before
+  // any more handlers run. Then the doc is inserted
+});
+```
+
+The above code adds a new `chooseASpecialist` method to your module. This way, the method can be overridden by assigning a new function to `self.chooseASpecialist` in a module that
+extends it, or its behavior can be extended in the usual way following the `super` pattern.
+
+But, since it does not have the same name as
+the event (attempting to register a method of the same name will throw an error), it is unlikely
+that parent class modules and subclass modules will have unintentional conflicts.
+
+See the [original github issue](https://github.com/apostrophecms/apostrophe/issues/1415) for a more
+complete description of the feature and the reasoning behind it.
+
+**Your existing callAll methods will still work.** But, we recommend you start migrating to be
+ready to move to 3.x in the future... and because returning promises is just a heck of
+a lot nicer. You will have fewer problems.
+
+* Optional SVG support for `apostrophe-attachments`. To enable it, set the `svgImages` option to
+`true` when configuring the `apostrophe-attachments` module. SVG files can be uploaded just like
+other image types. Manual cropping is not available. However, since most SVG files play very well
+with backgrounds, the SVG file is displayed in its entirety without distortion at the largest size
+that fits within the aspect ratio of the widget in question, if any (`background-size: contain`
+is used). If you have overridden `widget.html` for `apostrophe-images-widgets`, you will want
+to refer to the latest version of `widgetBase.html` for the technique we used here to ensure
+SVG files do not break the slideshow’s overall height.
+* New `apos.templates.prepend` and `apos.templates.append` methods. Call
+`apos.templates.prepend('head', function(req) { ... })` to register a function to be called just after
+the head tag is opened each time a page is rendered. The output of your function is inserted into
+the markup. The standard named locations are `head`, `body`, `contextMenu` and `main`. This is
+convenient when writing modules that add new features to Apostrophe. For project level work also see the
+named Nunjucks blocks already provided in `outerLayoutBase.html`.
+* `apos.singleton` now accepts an `areaOptions` option, which can receive any option that can be
+passed to `apos.area`. Thanks to Manoj Krishnan.
+* Apostrophe’s “projector” jQuery plugin now respects the `outerHeight` of the tallest slideshow item,
+not just the inner height.
+* `apos.area` now accepts an `addLabel` option for each widget type in the area. Thanks to
+Fredrik Ekelund.
+* UI improvements to versioning. Thanks to Lars Houmark.
+* Button to revert to the current version has been replaced with a label indicating it is current,
+since reverting to the current version has no effect.
+* “Page settings” can now be accessed for any page in the trash via “reorganize.” When
+working with `apostrophe-workflow`, this is
+often required to commit the fact that a page is in the trash.
+* The `uploadfs` module now has a `prefix` option. If present, the prefix is prepended to all uploadfs paths before they reach the storage layer, and is also prepended to URLs. In practice, this means that a single S3 bucket can be used to host multiple sites without all of the uploaded media jumbling together in `/attachments`. The `apostrophe-multisite` module now leverages this.
+
+## 2.62.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Introduced a `findWithProjection()` method that is added to all MongoDB collection objects. All Apostrophe core modules are migrating towards using this method rather than `find()` when working **directly with MongoDB collections**. If you are using the standard MongoDB 2.x driver that is included with Apostrophe, this just calls regular `find()`. When using the forthcoming `apostrophe-db-mongo-3-driver` module to replace that with a newer driver that supports the full features of MongoDB 3.6, 4.0 and beyond, this method will provide backwards compatibility by accepting a projection as the second argument like `find()` did until the 3.x driver was released. Developers wishing to be compatible with both drivers will want to start using this method. Again, this **only concerns you if you are querying MongoDB directly and passing a projection to find() as the second argument**. And if you don't care about using the 3.x driver, you **do not have to change anything**.
+* Various UX improvements and bug fixes to the page versions dialog box. Thanks to Lars Houmark.
+* The widget wrapper is updated on the fly with new classes if they change due to edits. Thanks to Fredrik Ekelund.
+* When configuring a `date` field, you may pass a `pikadayOptions` property. This object is passed on to the `pikaday` library. Thanks to Lars Houmark.
+* The `counts: true` option for `piecesFilters` now works properly with joins.
+
 ## 2.61.0
 
 Unit tests passing.

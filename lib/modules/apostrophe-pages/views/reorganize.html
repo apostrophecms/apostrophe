@@ -1,8 +1,8 @@
 {% extends "apostrophe-modal:base.html" %}
-{% import "apostrophe-modal:macros.html" as modals %}
+{% import "apostrophe-modal:batch.html" as batch %}
 {% import 'apostrophe-ui:components/buttons.html' as buttons %}
 
-{% block modalClass %}apos-reorganize-modal{% endblock %}
+{% block modalClass %}apos-reorganize-modal{% if not data.trashInSchema %}{{ ' apos-separate-trash' }}{% endif %}{% endblock %}
 
 {% block controls %}
   <div class="apos-modal-controls">
@@ -23,6 +23,7 @@
 
 {% block body %}
   <div class="apos-reorganize-tree-header">
+    <input class="apos-reorganize-select-all" type="checkbox" name="select-all" value="1" />
     <span class="apos-reorganize-title">Page Title</span>
     <span class="apos-reorganize-controls">Published</span>
     <span class="apos-reorganize-controls">Edit</span>
@@ -34,4 +35,10 @@
   </div>
 {% endblock %}
 
-{% block footerContainer %}{% endblock %}
+{% block footer %}
+  <div class="apos-modal-footer-inner">
+    {%- block batch -%}
+      {{ batch.operations(data.batchOperations) }}
+    {%- endblock -%}
+  </div>
+{%- endblock -%}

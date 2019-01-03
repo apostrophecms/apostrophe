@@ -25,7 +25,7 @@
     }
     .apos-changes-meta
     {
-      width: ~'calc(100% - 220px)';
+      width: ~'calc(100% - 225px)';
       .apos-inline-block(top);
     }
 
@@ -63,6 +63,17 @@
     }
 
   }
+
+  // Current revision disabled button
+  .apos-version-current .apos-button.apos-button--disabled {
+    color: @apos-primary;
+    cursor: default;
+    font-size: 16px;
+    padding: 1em 3em;
+    opacity: 1;
+    background: transparent;
+  }
+
 }
 
 // Changes Diff Container
