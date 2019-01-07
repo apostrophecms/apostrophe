@@ -10,6 +10,8 @@
 
 <script>
 
+import cuid from 'cuid';
+
 export default {
   name: 'ApostropheAddWidgetMenu',
   props: {
@@ -29,15 +31,30 @@ export default {
   },
   methods: {
     add(name) {
-      this.adding = !this.adding;
-      if (this.adding) {
-        this.addWidgetEditor = this.widgetEditorComponent(name);
-        this.addWidgetOptions = this.widgetOptions[name];
-        this.addWidgetType = name;
+      if (this.widgetIsContextual(name)) {
+        this.widget = {
+          _id: cuid(),
+          type: name,
+          ...this.contextualWidgetDefaults(name)
+        };
+        return this.insert();
+      } else {
+        this.adding = !this.adding;
+        if (this.adding) {
+          this.addWidgetEditor = this.widgetEditorComponent(name);
+          this.addWidgetOptions = this.widgetOptions[name];
+          this.addWidgetType = name;
+        }
       }
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetIsContextual(type) {
+      return this.moduleOptions.widgetIsContextual[type];
+    },
+    contextualWidgetDefaults(type) {
+      return this.moduleOptions.contextualWidgetDefaults[type];
     },
     insert() {
       this.$emit('widgetAdded', {
