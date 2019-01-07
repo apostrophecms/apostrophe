@@ -1,8 +1,13 @@
 <template>
-  <div contenteditable="true" @input="update" v-html="initialRichText"></div>
+  <ckeditor :editor="editor" v-model="editorData" @input="update"></ckeditor>
 </template>
 
 <script>
+import CKEditor from '@ckeditor/ckeditor5-vue';
+import InlineEditor from '@ckeditor/ckeditor5-build-inline';
+import Vue from 'apostrophe/vue';
+
+Vue.use(CKEditor);
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
@@ -18,7 +23,8 @@ export default {
   },
   data() {
     return {
-      initialRichText: this.value.content,
+      editor: InlineEditor,
+      editorData: this.value.content,
       widgetInfo: {
         data: this.value,
         hasErrors: false,
@@ -26,8 +32,8 @@ export default {
     }
   },
   methods: {
-    update(event) {
-      const content = event.target.innerHTML;
+    update() {
+      const content = this.editorData;
       const widget = this.widgetInfo.data;
       widget.content = content;
       this.$emit('input', this.widgetInfo.data);

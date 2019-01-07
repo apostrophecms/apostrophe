@@ -23,6 +23,8 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
+    "@ckeditor/ckeditor5-build-inline": "^11.2.0",
+    "@ckeditor/ckeditor5-vue": "^1.0.0-beta.1",
     "@sailshq/lodash": "^3.10.3",
     "async": "^1.5.2",
     "axios": "^0.18.0",
