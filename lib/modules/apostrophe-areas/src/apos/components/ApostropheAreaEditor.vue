@@ -27,6 +27,8 @@
 
 import Vue from 'apostrophe/vue';
 import Vddl from 'vddl';
+// TODO this would be better globally added somewhere global,
+// or figure out how not to globally add it
 Vue.use(Vddl);
 
 export default {
@@ -101,7 +103,7 @@ export default {
     margin: 5px;
     padding: 5px;
   }
-  .apos-areas-widgets-list {
+.apos-areas-widgets-list {
     min-height: 64px;
   }
 </style>
