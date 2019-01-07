@@ -73,6 +73,9 @@ export default {
     },
     insert($event) {
       this.next.splice($event.index, 0, { widget: $event.widget });
+      if (this.widgetIsContextual($event.widget.type)) {
+        this.edit($event.index);
+      }
     },
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
