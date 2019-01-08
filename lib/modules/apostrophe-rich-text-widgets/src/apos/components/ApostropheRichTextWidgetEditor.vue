@@ -1,5 +1,7 @@
 <template>
-  <ckeditor :editor="editor" v-model="editorData" @input="update"></ckeditor>
+  <vddl-nodrag class="nodrag">
+    <ckeditor :editor="editor" v-model="editorData" @input="update"></ckeditor>
+  </vddl-nodrag>
 </template>
 
 <script>
