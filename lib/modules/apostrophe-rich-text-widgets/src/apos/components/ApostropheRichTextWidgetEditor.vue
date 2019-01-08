@@ -1,6 +1,6 @@
 <template>
   <vddl-nodrag class="nodrag">
-    <ckeditor :editor="editor" v-model="editorData" @input="update" :config="options"></ckeditor>
+    <ckeditor :editor="editor" v-model="editorData" @input="update" :config="options" @ready="onEditorReady" ref="editor"></ckeditor>
   </vddl-nodrag>
 </template>
 
@@ -39,6 +39,11 @@ export default {
     }
   },
   methods: {
+    onEditorReady() {
+      // Does not get mounted until a user clicks to edit,
+      // therefore should focus on mount
+      this.$refs.editor.$el.focus();
+    },
     update() {
       const content = this.editorData;
       const widget = this.widgetInfo.data;

@@ -8,10 +8,8 @@
 
 <script>
 
-import ApostropheFieldMixin from '../mixins/ApostropheFieldMixin.js';
-
 export default {
-  mixins: [ ApostropheFieldMixin ],
+  mixins: [ apos.mixins.ApostropheFieldMixin ],
   name: 'ApostropheStringField',
   methods: {
     validate(value) {
