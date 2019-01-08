@@ -317,21 +317,31 @@
     .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
   }
 }
-
+.apos-area-inline-undo__label {
+  margin-right: 5px;
+}
 .apos-area-inline-undo {
+  display: flex;
+  border: 0;
+  cursor: pointer;
+  background-color: inherit;
+  color: inherit;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  .apos-rounded;
   padding: @apos-padding-1;
-  background-color: @apos-purple;
+  background-color: @apos-blue;
   color: @apos-white;
-  button {
-    // Like a link
-    border: 0;
-    background-color: inherit;
-    color: inherit;
-    display: inline;
-    font-size: inherit;
-    font-family: inherit;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  &:hover {
+    background-color: darken(@apos-blue, 10%)
+  }
+  .apos-area-inline-undo__undo {
     text-decoration: underline;
-    cursor: pointer;
+    margin-left: 5px;
   }
 }
 
