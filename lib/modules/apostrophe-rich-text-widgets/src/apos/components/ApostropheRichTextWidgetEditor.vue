@@ -24,6 +24,11 @@ export default {
     }
   },
   data() {
+    // Print names of the available toolbar items, yes this
+    // is the official way :eyeroll:
+    // InlineEditor.create(document.querySelector('.apos-admin-bar')).then(function(editor) {
+    //   console.log(Array.from(editor.ui.componentFactory.names()));
+    // });
     return {
       editor: InlineEditor,
       editorData: this.value.content,

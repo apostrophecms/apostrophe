@@ -35,7 +35,7 @@ export default {
         this.widget = {
           _id: cuid(),
           type: name,
-          ...this.contextualWidgetDefaults(name)
+          ...this.contextualWidgetDefaultData(name)
         };
         return this.insert();
       } else {
@@ -53,8 +53,8 @@ export default {
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
     },
-    contextualWidgetDefaults(type) {
-      return this.moduleOptions.contextualWidgetDefaults[type];
+    contextualWidgetDefaultData(type) {
+      return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     insert() {
       this.$emit('widgetAdded', {
