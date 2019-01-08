@@ -1,6 +1,6 @@
 <template>
   <vddl-nodrag class="nodrag">
-    <ckeditor :editor="editor" v-model="editorData" @input="update"></ckeditor>
+    <ckeditor :editor="editor" v-model="editorData" @input="update" :config="options"></ckeditor>
   </vddl-nodrag>
 </template>
 
