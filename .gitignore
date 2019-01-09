@@ -1,3 +1,5 @@
+# Ignore MacOS X metadata forks (fusefs)
+._*
 package-lock.json
 test/public/modules/*
 test/public/css/master-*

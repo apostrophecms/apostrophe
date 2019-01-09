@@ -16,7 +16,7 @@
           <button @click="edit(i)">Edit</button>
         </div>
         <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" />
-        <component :is="widgetComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="wrapped.widget.__docId" />
+        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="wrapped.widget.__docId" :value="wrapped.widget" @edit="edit(i)" />
         <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
       </vddl-draggable>
     </vddl-list>
@@ -73,12 +73,18 @@ export default {
     },
     insert($event) {
       this.next.splice($event.index, 0, { widget: $event.widget });
+      if (this.widgetIsContextual($event.widget.type)) {
+        this.edit($event.index);
+      }
     },
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetIsContextual(type) {
+      return this.moduleOptions.widgetIsContextual[type];
     },
     nextItems() {
       return this.next.map(wrapped => Object.assign({}, wrapped.widget));
