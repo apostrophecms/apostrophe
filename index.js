@@ -451,12 +451,12 @@ module.exports = function(options) {
 
   function lintModules(callback) {
     _.each(self.modules, function(module, name) {
-      if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.fromScratch)) {
-        lint('The module ' + name + ' does not extend anything.\n\nA widgets module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the `fromScratch` option\nto `true` for this module.');
-      } else if (name.match(/-pages$/) && (name !== 'apostrophe-pages') && (!extending(module)) && (!module.options.fromScratch)) {
-        lint('The module ' + name + ' does not extend anything.\n\nA -pages module usually extends `apostrophe-custom-pages` or\n`apostrophe-pieces-pages`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the `fromScratch` option\nto `true` for this module.');
-      } else if ((!extending(module)) && (!hasConstruct(name)) && (module.options.hasCode !== false)) {
-        lint('The module ' + name + ' does not extend anything and does not have a\n`construct` function. This usually means that you:\n\n1. Forgot `extend`\n2. Configured a module that comes from npm without npm installing it\n3. Just haven\'t written your \'index.js\` yet\n\nIf you really want a module with no code, set the `hasCode` option\nexplicitly to `false` for this module.');
+      if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA `-widgets` module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\n`ignoreNoExtendWarning` option to `true` for this module.');
+      } else if (name.match(/-pages$/) && (name !== 'apostrophe-pages') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+        lint('The module ' + name + ' does not extend anything.\n\nA `-pages` module usually extends `apostrophe-custom-pages` or\n`apostrophe-pieces-pages`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\n`ignoreNoExtendWarning` option to `true` for this module.');
+      } else if ((!extending(module)) && (!hasConstruct(name)) && (!isMoogBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
+        lint('The module ' + name + ' does not extend anything and does not have a\n`beforeConstruct`, `construct` or `afterConstruct` function. This usually means that you:\n\n1. Forgot to `extend` another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven\'t written your `index.js` yet\n\nIf you really want a module with no code, set the `ignoreNoCodeWarning` option\nto `true` for this module.');
       }
     });
     function hasConstruct(name) {
@@ -474,16 +474,24 @@ module.exports = function(options) {
       if (d.__meta.name.match(/apostrophe-module$/)) {
         return false;
       }
-      return d.construct;
+      return d.beforeConstruct || d.construct || d.afterConstruct;
+    }
+    function isMoogBundle(name) {
+      var d = self.synth.definitions[name];
+      return d.moogBundle || (d.extend && d.extend.moogBundle);
     }
     function extending(module) {
+      // If the module extends no other module, then it will
+      // have up to four entries in its inheritance chain:
+      // project level self, npm level self, `apostrophe-modules`
+      // project-level and `apostrophe-modules` npm level.
       return module.__meta.chain.length > 4;
     }
     return callback(null);
   }
 
   function lint(s) {
-    self.utils.warn('\n**** It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+    self.utils.warn('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
   }
 
   function afterInit(callback) {
