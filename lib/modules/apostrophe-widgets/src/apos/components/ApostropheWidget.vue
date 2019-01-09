@@ -4,9 +4,11 @@
 
 <script>
 
+import ApostropheWidgetMixin from 'apostrophe/apostrophe-widgets/mixins/ApostropheWidgetMixin';
+
 export default {
   name: 'ApostropheWidget',
-  mixins: [ apos.mixins.ApostropheWidget ]
+  mixins: [ ApostropheWidgetMixin ]
 }
 
 </script>

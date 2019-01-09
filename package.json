@@ -52,6 +52,7 @@
     "diff": "^2.2.3",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
+    "fs-extra": "^7.0.1",
     "glob": "^5.0.15",
     "he": "^0.5.0",
     "html-to-plaintext": "^0.1.1",
