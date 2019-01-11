@@ -1,18 +1,38 @@
 <template>
   <vddl-nodrag class="nodrag">
-    <ckeditor :editor="editor" v-model="editorData" @input="update" :config="options" @ready="onEditorReady" ref="editor"></ckeditor>
+    <div class="apos-richtext-editor">
+      <editor-menu-bar :editor="editor">
+        <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
+          <component v-for="item in toolbar" :is="item === '|' ? 'span' : 'button'" @click="commands[item]">
+            {{ item }}
+          </component>
+        </div>
+      </editor-menu-bar>
+      <editor-content :editor="editor" />
+    </div>
   </vddl-nodrag>
 </template>
 
 <script>
-import CKEditor from '@ckeditor/ckeditor5-vue';
-import InlineEditor from '@ckeditor/ckeditor5-build-inline';
-import Vue from 'apostrophe/vue';
-
-Vue.use(CKEditor);
+import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
+import {
+  HardBreak,
+  Heading,
+  ListItem,
+  OrderedList,
+  BulletList,
+  Bold,
+  Italic,
+  Link,
+  History,
+} from 'tiptap-extensions';
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
+  components: {
+    EditorMenuBar,
+    EditorContent
+  },
   props: {
     type: String,
     options: Object,
@@ -24,28 +44,37 @@ export default {
     }
   },
   data() {
-    // Print names of the available toolbar items, yes this
-    // is the official way :eyeroll:
-    // InlineEditor.create(document.querySelector('.apos-admin-bar')).then(function(editor) {
-    //   console.log(Array.from(editor.ui.componentFactory.names()));
-    // });
     return {
-      editor: InlineEditor,
-      editorData: this.value.content,
+      toolbar: this.options.toolbar,
+      heading: this.options.heading,
+      editor: new Editor({
+        extensions: [
+          new BulletList(),
+          new HardBreak(),
+          new Heading({ levels: [1, 2, 3] }),
+          new ListItem(),
+          new OrderedList(),
+          new Bold(),
+          new Italic(),
+          new Link(),
+          new History(),
+        ],
+        autoFocus: true,
+        onUpdate: this.update,
+        content: this.value.content
+      }),
       widgetInfo: {
         data: this.value,
         hasErrors: false,
       }
     }
   },
+  beforeDestroy() {
+    this.editor.destroy()
+  },
   methods: {
-    onEditorReady() {
-      // Does not get mounted until a user clicks to edit,
-      // therefore should focus on mount
-      this.$refs.editor.$el.focus();
-    },
     update() {
-      const content = this.editorData;
+      const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
       this.$emit('input', this.widgetInfo.data);
