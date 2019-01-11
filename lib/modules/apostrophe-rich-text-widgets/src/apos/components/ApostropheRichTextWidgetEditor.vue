@@ -3,7 +3,9 @@
     <div class="apos-richtext-editor">
       <editor-menu-bar :editor="editor">
         <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
-          <component v-for="item in toolbar" :is="item === '|' ? 'span' : 'button'" @click="commands[item]">
+          <component v-for="item in toolbar"
+            :is="item === '|' ? 'span' : 'button'"
+            @click="handleClick(item)">
             {{ item }}
           </component>
         </div>
@@ -77,7 +79,13 @@ export default {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
+      console.log(content);
       this.$emit('input', this.widgetInfo.data);
+    },
+    handleClick(item) {
+      if (item in this.editor.commands) {
+        this.editor.commands[item]
+      }
     }
   }
 };
