@@ -529,3 +529,134 @@ describe('Pages', function() {
   });
 
 });
+
+describe('Pages with trashInSchema', function() {
+
+  this.timeout(t.timeout);
+
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
+
+  // EXISTENCE
+
+  it('should be a property of the apos object', function(done) {
+    apos = require('../index.js')({
+      root: module,
+      shortName: 'test2',
+
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7901
+        },
+        'apostrophe-docs': {
+          trashInSchema: true
+        },
+        'apostrophe-pages': {
+          park: [],
+          types: [
+            {
+              name: 'home',
+              label: 'Home'
+            },
+            {
+              name: 'testPage',
+              label: 'Test Page'
+            }
+          ]
+        }
+      },
+      afterInit: function(callback) {
+        assert(apos.pages);
+        apos.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        done();
+      }
+    });
+  });
+
+  it('should be able to use db to insert documents', function(done) {
+    var testItems = [
+      { _id: 'p1',
+        type: 'testPage',
+        slug: '/parent1',
+        path: '/parent1',
+        published: true,
+        level: 1,
+        rank: 0
+      },
+      {
+        _id: 'p1c1',
+        type: 'testPage',
+        slug: '/parent1/child1',
+        path: '/parent1/child1',
+        published: true,
+        level: 2,
+        rank: 0
+      },
+      { _id: 'p2',
+        type: 'testPage',
+        slug: '/parent2',
+        path: '/parent2',
+        published: true,
+        level: 1,
+        rank: 0
+      },
+      {
+        _id: 'p2c2',
+        type: 'testPage',
+        slug: '/parent2/child2',
+        path: '/parent2/child2',
+        published: true,
+        level: 2,
+        rank: 0,
+        trash: true
+      }
+    ];
+
+    apos.docs.db.insert(testItems, function(err) {
+      assert(!err);
+      done();
+    });
+
+  });
+
+  // MOVING
+
+  it('is able to move p2 inside p1', function(done) {
+    // 'Cousin' _id === 4312
+    // 'Parent' _id === 1234
+    apos.pages.move(apos.tasks.getReq(), 'p2', 'p1', 'inside', function(err) {
+      if (err) {
+        console.log(err);
+      }
+      assert(!err);
+      var cursor = apos.pages.find(apos.tasks.getAnonReq(), {_id: 'p2'});
+      cursor.toObject(function(err, page) {
+        if (err) {
+          console.log(err);
+        }
+        assert(!err);
+        // Is the new path correct?
+        assert.equal(page.path, '/parent1/parent2');
+        // Is the new level correct?
+        assert.equal(page.level, 2);
+        return done();
+      });
+    });
+
+  });
+
+  it('p2c2 is now grandchild of p1, but still in trash', async function() {
+    const p2c2 = await apos.docs.db.findOne({ _id: 'p2c2' });
+    assert(p2c2.level === 3);
+    assert(p2c2.path === '/parent1/parent2/child2');
+    assert(p2c2.trash);
+  });
+
+});
+
