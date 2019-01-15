@@ -1,8 +1,26 @@
 # Changelog
 
+## 2.75.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* An "Undo" button has been added for the "Remove Widget" feature. Although such changes can be undone via "Page Versions," that feature is advanced and somewhat hard to find, whereas this simple "Undo" button is immediately helpful to most users.
+* Apostrophe now displays warnings for several common developer errors. Previously it was difficult to understand why a module didn't work if `extend` was missing for certain common cases, like a `-widgets` or `-pieces-pages` subclass module. We will expand these warnings over time; options are provided to disable them if they do not apply to your situation.
+* `limitByAll`, `limitByTag` and `limitById` options for `apostrophe-pieces-widgets`. When set the user is not prompted to choose their own maximum.
+* Fixed conditions in which editing the first or last name of a new `apostrophe-user` did not affect their `slug` in the expected way.
+* Fixed bug: if trashInSchema is in effect, subpages should not have their trash status overridden to match the new parent when their ancestor is moved. This is important when using "Reorganize" with workflow. Additional improvements to better integrate "Reorganize" ointo the workflow module are separately forthcoming.
+* Fixed a bug that prevented `view` permissions from being given out programmatically in certain edge cases.
+* The `slug` cursor filter now has a `launder` method, for use when marking it safe for `req.query`. Thanks to Anthony Tarlao.
+
+Thanks to our customers at Michelin and NPM for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.74.0
 
 Unit tests passing.
+
+Manual regression tests passing.
 
 * Server-side code may now call `apos.notify(req, 'This is a message')` to send a message to the logged-in user associated with `req`. That message will pop up on the browser and will remain visible until they dismiss it. If the user is not logged in right now, they will see it when they do log in.
 
