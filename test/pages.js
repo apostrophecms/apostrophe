@@ -659,4 +659,3 @@ describe('Pages with trashInSchema', function() {
   });
 
 });
-
