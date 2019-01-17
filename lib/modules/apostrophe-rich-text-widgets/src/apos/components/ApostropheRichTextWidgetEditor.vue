@@ -4,9 +4,9 @@
       <editor-menu-bar :editor="editor">
         <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
           <component v-for="item in toolbar"
-            :is="item === '|' ? 'span' : `${item}Button`"
-            :commands="commands"
-            :isActive="isActive">
+            :is="item === '|' ? 'span' : 'button'"
+            @click="handleClick(item)">
+            {{ item }}
           </component>
         </div>
       </editor-menu-bar>
@@ -16,15 +16,6 @@
 </template>
 
 <script>
-import BoldButton from './buttons/Bold';
-import HeadingButton from './buttons/Heading';
-import ItalicButton from './buttons/Italic';
-import LinkButton from './buttons/Link';
-import OrderedListButton from './buttons/OrderedList';
-import RedoButton from './buttons/Redo';
-import UndoButton from './buttons/Undo';
-import UnorderedListButton from './buttons/UnorderedList';
-
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
 import {
   HardBreak,
@@ -42,15 +33,7 @@ export default {
   name: 'ApostropheRichTextWidgetEditor',
   components: {
     EditorMenuBar,
-    EditorContent,
-    BoldButton,
-    HeadingButton,
-    ItalicButton,
-    LinkButton,
-    OrderedListButton,
-    RedoButton,
-    UndoButton,
-    UnorderedListButton
+    EditorContent
   },
   props: {
     type: String,
@@ -98,6 +81,11 @@ export default {
       widget.content = content;
       console.log(content);
       this.$emit('input', this.widgetInfo.data);
+    },
+    handleClick(item) {
+      if (item in this.editor.commands) {
+        this.editor.commands[item]
+      }
     }
   }
 };
