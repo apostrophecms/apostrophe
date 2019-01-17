@@ -1,6 +1,7 @@
 module.exports = {
   modules: {
     'apostrophe-utils': {},
+    'apostrophe-http': {},
     'apostrophe-tasks': {},
     'apostrophe-launder': {},
     'apostrophe-i18n': {},
