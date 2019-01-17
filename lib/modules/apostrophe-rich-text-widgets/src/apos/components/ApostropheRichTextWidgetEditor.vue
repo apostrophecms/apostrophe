@@ -5,7 +5,7 @@
         <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
           <component v-for="item in toolbar"
             :is="item === '|' ? 'span' : 'button'"
-            @click="handleClick(item)">
+            @click="commands[item]()">
             {{ item }}
           </component>
         </div>
@@ -81,11 +81,6 @@ export default {
       widget.content = content;
       console.log(content);
       this.$emit('input', this.widgetInfo.data);
-    },
-    handleClick(item) {
-      if (item in this.editor.commands) {
-        this.editor.commands[item]
-      }
     }
   }
 };
