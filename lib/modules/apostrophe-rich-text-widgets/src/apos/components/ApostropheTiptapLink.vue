@@ -76,6 +76,7 @@ export default {
         name: this.nameAttr,
         target: this.target
       });
+      console.log(this.name);
       this.editor.commands[this.name]({
         href: this.href,
         name: this.nameAttr,

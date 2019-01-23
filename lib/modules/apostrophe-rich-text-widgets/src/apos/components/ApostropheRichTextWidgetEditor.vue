@@ -26,9 +26,10 @@ import {
   BulletList,
   Bold,
   Italic,
-  Link,
   History,
 } from 'tiptap-extensions';
+
+import Link from '../tiptap-commands/Link.js';
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
@@ -65,7 +66,7 @@ export default {
           component: 'ApostropheTiptapButton',
           label: 'Italic'
         },
-        'link': {
+        'apostrophe-link': {
           component: 'ApostropheTiptapLink',
           label: 'Link'
         },
