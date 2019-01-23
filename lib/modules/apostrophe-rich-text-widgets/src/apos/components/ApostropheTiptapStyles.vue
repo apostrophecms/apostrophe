@@ -1,6 +1,6 @@
 <template>
-  <select v-model="style">
-    <option v-for="style in options.styles" :value="style">{{ style.label }}</option>
+  <select :value="active()" @change="style">
+    <option v-for="style, i in options.styles" :value="i">{{ style.label }}</option>
   </select>
 </template>
 
@@ -14,14 +14,27 @@ export default {
     tool: Object,
     options: Object
   },
-  data() {
-    return {
-      style: this.options.styles[0]
-    }
-  },
-  watch: {
-    style() {
-      this.editor.commands.styles(this.style);
+  methods: {
+    active() {
+      for (let i = 0; (i < this.options.styles.length); i++) {
+        const style = this.options.styles[i];
+        const attrs = {
+          tag: style.tag,
+          class: style.class || null
+        };
+        if (this.editor.isActive.styles(attrs)) {
+          console.log(' --> ' + i);
+          return i;
+        }
+      }
+      console.log('fallback');
+      return 0;
+    },
+    style($event) {
+      const style = this.options.styles[$event.target.value];
+      console.log('style is:');
+      console.log(style);
+      this.editor.commands.styles(style);
     }
   }
 };
