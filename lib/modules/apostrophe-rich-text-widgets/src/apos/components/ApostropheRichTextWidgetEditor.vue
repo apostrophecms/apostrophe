@@ -4,10 +4,11 @@
       <editor-menu-bar :editor="editor">
         <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
           <component v-for="item in toolbar"
-            :is="item === '|' ? 'span' : 'button'"
-            @click="commands[item]()">
-            {{ item }}
-          </component>
+            :is="tools[item].component"
+            :name="item"
+            :options="tools[item]"
+            :editor="editor"
+          />
         </div>
       </editor-menu-bar>
       <editor-content :editor="editor" />
@@ -47,6 +48,44 @@ export default {
   },
   data() {
     return {
+      tools: {
+        'heading': {
+          component: 'ApostropheTiptapHeading',
+          label: 'Heading'
+        },
+        '|': {
+          component: 'span',
+          label: '|'
+        },
+        'bold': {
+          component: 'ApostropheTiptapButton',
+          label: 'Bold'
+        },
+        'italic': {
+          component: 'ApostropheTiptapButton',
+          label: 'Italic'
+        },
+        'link': {
+          component: 'ApostropheTiptapLink',
+          label: 'Link'
+        },
+        'bullet_list': {
+          component: 'ApostropheTiptapButton',
+          label: 'Bullets'
+        },
+        'ordered_list': {
+          component: 'ApostropheTiptapButton',
+          label: 'Ordered'
+        },
+        'undo': {
+          component: 'ApostropheTiptapButton',
+          label: 'Undo'
+        },
+        'redo': {
+          component: 'ApostropheTiptapButton',
+          label: 'Redo'
+        }
+      },
       toolbar: this.options.toolbar,
       heading: this.options.heading,
       editor: new Editor({
@@ -81,7 +120,12 @@ export default {
       widget.content = content;
       console.log(content);
       this.$emit('input', this.widgetInfo.data);
+    },
+    command(name, options) {
+      this.commands[name](options);
     }
   }
 };
 </script>
+
+
