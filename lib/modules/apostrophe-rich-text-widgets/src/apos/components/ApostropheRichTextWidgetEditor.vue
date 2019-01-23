@@ -6,7 +6,8 @@
           <component v-for="item in toolbar"
             :is="tools[item].component"
             :name="item"
-            :options="tools[item]"
+            :tool="tools[item]"
+            :options="options"
             :editor="editor"
           />
         </div>
@@ -20,7 +21,6 @@
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
 import {
   HardBreak,
-  Heading,
   ListItem,
   OrderedList,
   BulletList,
@@ -30,6 +30,7 @@ import {
 } from 'tiptap-extensions';
 
 import Link from '../tiptap-commands/Link.js';
+import Styles from '../tiptap-commands/Styles.js';
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
@@ -50,9 +51,9 @@ export default {
   data() {
     return {
       tools: {
-        'heading': {
-          component: 'ApostropheTiptapHeading',
-          label: 'Heading'
+        'styles': {
+          component: 'ApostropheTiptapStyles',
+          label: 'Styles'
         },
         '|': {
           component: 'span',
@@ -66,7 +67,7 @@ export default {
           component: 'ApostropheTiptapButton',
           label: 'Italic'
         },
-        'apostrophe-link': {
+        'link': {
           component: 'ApostropheTiptapLink',
           label: 'Link'
         },
@@ -88,12 +89,11 @@ export default {
         }
       },
       toolbar: this.options.toolbar,
-      heading: this.options.heading,
       editor: new Editor({
         extensions: [
           new BulletList(),
           new HardBreak(),
-          new Heading({ levels: [1, 2, 3] }),
+          new Styles({ styles: this.options.styles }),
           new ListItem(),
           new OrderedList(),
           new Bold(),

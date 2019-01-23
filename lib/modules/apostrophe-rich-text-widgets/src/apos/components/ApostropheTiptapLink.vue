@@ -1,9 +1,9 @@
 <template>
   <div>
     <button @click="click()">
-      {{ options.label }}
+      {{ tool.label }}
     </button>
-    <ApostropheModal v-if="active" @close="$emit('close')">
+    <ApostropheModal v-if="active">
       <template slot="header">
         <!-- TODO i18n -->
         <p>Link</p>
@@ -14,7 +14,7 @@
             <label for="href">URL</label><input v-model="href" />
           </fieldset>
           <fieldset>
-            <label for="name">Anchor Name</label><input v-model="nameAttr" />
+            <label for="id">Anchor Name</label><input v-model="id" />
           </fieldset>
           <fieldset>
             <label for="target">Target</label><input v-model="target" />
@@ -23,7 +23,7 @@
       </template>
       <template slot="footer">
         <slot name="footer">
-          <button class="modal-default-button" @click="$emit('close')">
+          <button class="modal-default-button" @click="close">
             Cancel
           </button>
           <button class="modal-default-button" @click="save()">
@@ -45,13 +45,13 @@ export default {
   name: 'ApostropheTiptapLink',
   props: {
     name: String,
-    options: Object,
+    tool: Object,
     editor: Object
   },
   data () {
     return {
       href: '',
-      nameAttr: '',
+      id: '',
       target: '',
       active: false
     };
@@ -61,25 +61,19 @@ export default {
       this.active = !this.active;
       if (this.active) {
         const values = this.editor.getMarkAttrs('link');
-        console.log('values:', values);
         this.href = values.href;
-        this.nameAttr = values.name;
+        this.id = values.id;
         this.target = values.target;
       }
     },
     close() {
       this.active = false;
+      this.editor.focus();
     },
     save() {
-      console.log({
-        href: this.href,
-        name: this.nameAttr,
-        target: this.target
-      });
-      console.log(this.name);
       this.editor.commands[this.name]({
         href: this.href,
-        name: this.nameAttr,
+        id: this.id,
         target: this.target
       });
       this.active = false;
