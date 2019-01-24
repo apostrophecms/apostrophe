@@ -23,17 +23,14 @@ export default {
           class: style.class || null
         };
         if (this.editor.isActive.styles(attrs)) {
-          console.log(' --> ' + i);
           return i;
         }
       }
-      console.log('fallback');
       return 0;
     },
     style($event) {
       const style = this.options.styles[$event.target.value];
-      console.log('style is:');
-      console.log(style);
+
       this.editor.commands.styles(style);
     }
   }

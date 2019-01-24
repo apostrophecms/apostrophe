@@ -119,7 +119,7 @@ export default {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
-      console.log(content);
+
       this.$emit('input', this.widgetInfo.data);
     },
     command(name, options) {
@@ -128,5 +128,3 @@ export default {
   }
 };
 </script>
-
-
