@@ -33,8 +33,11 @@ import {
   HorizontalRule
 } from 'tiptap-extensions';
 
-import Link from '../tiptap-commands/Link.js';
-import Styles from '../tiptap-commands/Styles.js';
+// Here because we cannot access computed inside data
+
+function moduleOptionsBody(type) {
+  return apos.modules[apos.areas.widgetManagers[type]];  
+}
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
@@ -49,82 +52,27 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return apos.modules[apos.areas.widgetManagers[this.type]];
+      return moduleOptionsBody(this.type);
     }
   },
   data() {
     return {
-      tools: {
-        'styles': {
-          component: 'ApostropheTiptapStyles',
-          label: 'Styles'
-        },
-        '|': {
-          component: 'span',
-          label: '|'
-        },
-        'bold': {
-          component: 'ApostropheTiptapButton',
-          label: 'Bold'
-        },
-        'italic': {
-          component: 'ApostropheTiptapButton',
-          label: 'Italic'
-        },
-        'horizontal_rule': {
-          component: 'ApostropheTiptapButton',
-          label: 'Horizontal Rule'
-        },
-        'link': {
-          component: 'ApostropheTiptapLink',
-          label: 'Link'
-        },
-        'bullet_list': {
-          component: 'ApostropheTiptapButton',
-          label: 'Bullets'
-        },
-        'ordered_list': {
-          component: 'ApostropheTiptapButton',
-          label: 'Ordered'
-        },
-        'strike': {
-          component: 'ApostropheTiptapButton',
-          label: 'Strike'
-        },
-        'blockquote': {
-          component: 'ApostropheTiptapButton',
-          label: 'Blockquote'
-        },
-        'code_block': {
-          component: 'ApostropheTiptapButton',
-          label: 'Code Block'
-        },
-        'undo': {
-          component: 'ApostropheTiptapButton',
-          label: 'Undo'
-        },
-        'redo': {
-          component: 'ApostropheTiptapButton',
-          label: 'Redo'
-        }
-      },
+      tools: moduleOptionsBody(this.type).tools,
       toolbar: this.options.toolbar,
       editor: new Editor({
         extensions: [
           new BulletList(),
           new HardBreak(),
-          new Styles({ styles: this.options.styles }),
           new ListItem(),
           new OrderedList(),
           new Bold(),
           new Italic(),
-          new Link(),
           new History(),
           new Strike(),
           new Blockquote(),
           new CodeBlock(),
           new HorizontalRule()
-        ],
+        ].concat((apos.tiptapExtensions || []).map(C => new C(this.options))),
         autoFocus: true,
         onUpdate: this.update,
         content: this.value.content
@@ -152,3 +100,9 @@ export default {
   }
 };
 </script>
+
+<style type="text/css">
+  .apos-richtext-menubar {
+    margin: 12px 0;
+  }
+</style>

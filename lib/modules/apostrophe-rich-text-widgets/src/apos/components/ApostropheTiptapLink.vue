@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="apostrophe-tiptap-link-control">
     <button @click="click()">
       {{ tool.label }}
     </button>
@@ -81,3 +81,9 @@ export default {
   }
 };
 </script>
+
+<style type="text/css">
+  .apostrophe-tiptap-link-control {
+    display: inline-block;
+  }
+</style>
