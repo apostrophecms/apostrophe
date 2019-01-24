@@ -1,12 +1,17 @@
 <template>
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" />
-    <vddl-list :allowed-types="types" class="apos-areas-widgets-list" :list="next" :horizontal="false">
+    <vddl-list :allowed-types="types" class="apos-areas-widgets-list"
+      :list="next"
+      :horizontal="false"
+      :drop="handleDrop"
+    >
       <vddl-draggable class="panel__body--item" v-for="(wrapped, i) in next" :key="wrapped.widget._id"
           :type="wrapped.widget.type"
           :draggable="wrapped"
           :index="i"
           :wrapper="next"
+          :moved="handleMoved"
           effect-allowed="move"
       >
         <div class="apos-area-controls">
@@ -41,7 +46,8 @@ export default {
   data() {
     return {
       next: this.items.map(widget => ({ widget })),
-      editing: {}
+      editing: {},
+      droppedItem : {}
     };
   },
   watch: {
@@ -88,6 +94,21 @@ export default {
     },
     nextItems() {
       return this.next.map(wrapped => Object.assign({}, wrapped.widget));
+    },
+    handleDrop(data) {
+      const { index, list, item } = data;
+      item.widget._id = `${item.widget._id}_dropped`;
+      this.droppedItem = item;
+
+      list.splice(index, 0, item);
+    },
+    handleMoved(data) {
+      const { index, list, draggable } = data;
+      const id = draggable.widget._id;
+      draggable.widget._id = `${draggable.widget._id}_moved`;
+      this.droppedItem.widget._id = id;
+
+      list.splice(index, 1);
     }
   },
   computed: {
