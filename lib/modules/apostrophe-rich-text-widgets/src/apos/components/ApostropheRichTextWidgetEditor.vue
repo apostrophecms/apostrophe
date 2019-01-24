@@ -4,7 +4,7 @@
       <editor-menu-bar :editor="editor">
         <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
           <component v-for="item in toolbar"
-            :is="tools[item].component"
+            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
             :name="item"
             :tool="tools[item]"
             :options="options"
@@ -27,6 +27,10 @@ import {
   Bold,
   Italic,
   History,
+  Strike,
+  Blockquote,
+  CodeBlock,
+  HorizontalRule
 } from 'tiptap-extensions';
 
 import Link from '../tiptap-commands/Link.js';
@@ -67,6 +71,10 @@ export default {
           component: 'ApostropheTiptapButton',
           label: 'Italic'
         },
+        'horizontal_rule': {
+          component: 'ApostropheTiptapButton',
+          label: 'Horizontal Rule'
+        },
         'link': {
           component: 'ApostropheTiptapLink',
           label: 'Link'
@@ -78,6 +86,18 @@ export default {
         'ordered_list': {
           component: 'ApostropheTiptapButton',
           label: 'Ordered'
+        },
+        'strike': {
+          component: 'ApostropheTiptapButton',
+          label: 'Strike'
+        },
+        'blockquote': {
+          component: 'ApostropheTiptapButton',
+          label: 'Blockquote'
+        },
+        'code_block': {
+          component: 'ApostropheTiptapButton',
+          label: 'Code Block'
         },
         'undo': {
           component: 'ApostropheTiptapButton',
@@ -100,6 +120,10 @@ export default {
           new Italic(),
           new Link(),
           new History(),
+          new Strike(),
+          new Blockquote(),
+          new CodeBlock(),
+          new HorizontalRule()
         ],
         autoFocus: true,
         onUpdate: this.update,
