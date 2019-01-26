@@ -1,18 +1,50 @@
 <template>
   <vddl-nodrag class="nodrag">
-    <ckeditor :editor="editor" v-model="editorData" @input="update" :config="options" @ready="onEditorReady" ref="editor"></ckeditor>
+    <div class="apos-richtext-editor">
+      <editor-menu-bar :editor="editor">
+        <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
+          <component v-for="item in toolbar"
+            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
+            :name="item"
+            :tool="tools[item]"
+            :options="options"
+            :editor="editor"
+          />
+        </div>
+      </editor-menu-bar>
+      <editor-content :editor="editor" />
+    </div>
   </vddl-nodrag>
 </template>
 
 <script>
-import CKEditor from '@ckeditor/ckeditor5-vue';
-import InlineEditor from '@ckeditor/ckeditor5-build-inline';
-import Vue from 'apostrophe/vue';
+import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
+import {
+  HardBreak,
+  ListItem,
+  OrderedList,
+  BulletList,
+  Bold,
+  Italic,
+  History,
+  Strike,
+  Blockquote,
+  CodeBlock,
+  HorizontalRule
+} from 'tiptap-extensions';
 
-Vue.use(CKEditor);
+// Here because we cannot access computed inside data
+
+function moduleOptionsBody(type) {
+  return apos.modules[apos.areas.widgetManagers[type]];  
+}
 
 export default {
   name: 'ApostropheRichTextWidgetEditor',
+  components: {
+    EditorMenuBar,
+    EditorContent
+  },
   props: {
     type: String,
     options: Object,
@@ -20,36 +52,57 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return apos.modules[apos.areas.widgetManagers[this.type]];
+      return moduleOptionsBody(this.type);
     }
   },
   data() {
-    // Print names of the available toolbar items, yes this
-    // is the official way :eyeroll:
-    // InlineEditor.create(document.querySelector('.apos-admin-bar')).then(function(editor) {
-    //   console.log(Array.from(editor.ui.componentFactory.names()));
-    // });
     return {
-      editor: InlineEditor,
-      editorData: this.value.content,
+      tools: moduleOptionsBody(this.type).tools,
+      toolbar: this.options.toolbar,
+      editor: new Editor({
+        extensions: [
+          new BulletList(),
+          new HardBreak(),
+          new ListItem(),
+          new OrderedList(),
+          new Bold(),
+          new Italic(),
+          new History(),
+          new Strike(),
+          new Blockquote(),
+          new CodeBlock(),
+          new HorizontalRule()
+        ].concat((apos.tiptapExtensions || []).map(C => new C(this.options))),
+        autoFocus: true,
+        onUpdate: this.update,
+        content: this.value.content
+      }),
       widgetInfo: {
         data: this.value,
         hasErrors: false,
       }
     }
   },
+  beforeDestroy() {
+    this.editor.destroy()
+  },
   methods: {
-    onEditorReady() {
-      // Does not get mounted until a user clicks to edit,
-      // therefore should focus on mount
-      this.$refs.editor.$el.focus();
-    },
     update() {
-      const content = this.editorData;
+      const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
+
       this.$emit('input', this.widgetInfo.data);
+    },
+    command(name, options) {
+      this.commands[name](options);
     }
   }
 };
 </script>
+
+<style type="text/css">
+  .apos-richtext-menubar {
+    margin: 12px 0;
+  }
+</style>
