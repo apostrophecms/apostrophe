@@ -1,7 +1,6 @@
 
 @apos-translucent-opacity: 0.4;
 
-
 .apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
 .apos-area
@@ -264,7 +263,7 @@
   {
     display: block;
     opacity: @apos-translucent-opacity;
-    z-index: @apos-z-index-4;
+    z-index: @apos-z-index-2;
     &:hover { opacity: 1; }
   }
 }
@@ -316,6 +315,33 @@
     border: 2px solid @apos-secondary;
     .apos-button:hover { color: @apos-secondary; }
     .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
+  }
+}
+.apos-area-inline-undo__label {
+  margin-right: 5px;
+}
+.apos-area-inline-undo {
+  display: flex;
+  border: 0;
+  cursor: pointer;
+  background-color: inherit;
+  color: inherit;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  .apos-rounded;
+  padding: @apos-padding-1;
+  background-color: @apos-blue;
+  color: @apos-white;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  &:hover {
+    background-color: darken(@apos-blue, 10%)
+  }
+  .apos-area-inline-undo__undo {
+    text-decoration: underline;
+    margin-left: 5px;
   }
 }
 

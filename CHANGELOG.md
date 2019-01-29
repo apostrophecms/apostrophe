@@ -1,8 +1,37 @@
 # Changelog
 
+## 2.75.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If a user has the type-specific `admin-product` permission, they should always be able to view a `product`, no matter whether it is published or not. This logic was correct for editing but not for viewing. Fixed a bug that led to crashes with the workflow module in this scenario.
+
+Thanks to Michelin for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.75.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* An "Undo" button has been added for the "Remove Widget" feature. Although such changes can be undone via "Page Versions," that feature is advanced and somewhat hard to find, whereas this simple "Undo" button is immediately helpful to most users.
+* Apostrophe now displays warnings for several common developer errors. Previously it was difficult to understand why a module didn't work if `extend` was missing for certain common cases, like a `-widgets` or `-pieces-pages` subclass module. We will expand these warnings over time; options are provided to disable them if they do not apply to your situation.
+* The server side notification persistence feature introduced in version 2.74.0 led to an intermittent bug: the "long polling" used to deliver notifications quickly interacted badly with the "resave" behavior of Express sessions, resulting in frequent loss of other session changes, such as draft/live mode switching. This has been fixed. Since we cannot disable `resave` with the standard session store in Apostrophe 2.x, an `apos.utils.readOnlySession(req)` method was added, and the route that "long polls" for new notifications now uses it to disable any modification to the session for the duration of the request.
+* `limitByAll`, `limitByTag` and `limitById` options for `apostrophe-pieces-widgets`. When set the user is not prompted to choose their own maximum.
+* Fixed conditions in which editing the first or last name of a new `apostrophe-user` did not affect their `slug` in the expected way.
+* Fixed bug: if trashInSchema is in effect, subpages should not have their trash status overridden to match the new parent when their ancestor is moved. This is important when using "Reorganize" with workflow. Additional improvements to better integrate "Reorganize" into the workflow module are separately forthcoming.
+* Fixed a bug that prevented `view` permissions from being given out programmatically in certain edge cases.
+* The `slug` cursor filter now has a `launder` method, for use when marking it safe for `req.query`. Thanks to Anthony Tarlao.
+
+Thanks to our customers at Michelin and NPM for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.74.0
 
 Unit tests passing.
+
+Manual regression tests passing.
 
 * Server-side code may now call `apos.notify(req, 'This is a message')` to send a message to the logged-in user associated with `req`. That message will pop up on the browser and will remain visible until they dismiss it. If the user is not logged in right now, they will see it when they do log in.
 
