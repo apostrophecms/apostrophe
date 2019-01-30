@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.75.1
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If a user has the type-specific `admin-product` permission, they should always be able to view a `product`, no matter whether it is published or not. This logic was correct for editing but not for viewing. Fixed a bug that led to crashes with the workflow module in this scenario.
+
+Thanks to Michelin for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.75.0
 
 Unit tests passing.
