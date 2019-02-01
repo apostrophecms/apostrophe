@@ -19,6 +19,8 @@ Regression tests passing.
 * `showFields` support for fields of type `checkboxes` has been restored.
 * The "recursion warning" that appears when the same doc is loaded more than 5 times in a single request can now be suppressed on a per-request basis by setting `req.suppressAreaLoaderRecursionWarnings` to `true`. However the runaway loading process is still prevented. This is mainly of use for workflow API routes that examine many documents but are OK with stopping in this situation without generating extra log messages.
 
+Thanks to Michelin for sponsoring much of this work through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.75.1
 
 Unit tests passing.
