@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.76.0
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Email schema field type added. Thanks to Andrea Di Mario.
+* Developer warnings for bad `showFields` configuration now apply to all field types that support `showFields`.
+* Schemas are now validated for nested `array` and `object` schemas, giving developers more information to help them fix their code.
+* The `poll-notifications` API now runs as middleware that is scheduled as early as `req.user` becomes available, avoiding the overhead of loading `req.data.global` in this frequently polled API.
+* The `poll-notifications` API does not crash if the `apos` object has been destroyed. This is not an issue for typical sites. However, this fix removes scary error messages displayed by the very useful [apostrophe-monitor](https://github.com/apostrophecms/apostrophe-monitor) module, which is similar to `nodemon` but specialized to Apostrophe for much faster restarts.
+* Although technically released in the `moog-require` module, not here, a recent fix in that module bears mentioning because it prevents both `apostrophe-monitor` and `apostrophe-multisite` from misbehaving when the options objects of modules are modified. Specifically, the modifications are now reliably distinct for each `apos` object.
+* 
+* The logic that removes certain typically unwanted buttons from CKEditor is now conditional and does not remove them when they are explicitly requested in the toolbar. Thanks to Fredrik Ekelund.
+* Placeholder markup when a pieces widget is empty. Although not often used directly, this template is often copied as a starting point.
+* An open "add widget" area menu now appears above any hovered widget controls rather than being lost behind them.
+* `showFields` support for fields of type `checkboxes` has been restored.
+* The "recursion warning" that appears when the same doc is loaded more than 5 times in a single request can now be suppressed on a per-request basis by setting `req.suppressAreaLoaderRecursionWarnings` to `true`. However the runaway loading process is still prevented. This is mainly of use for workflow API routes that examine many documents but are OK with stopping in this situation without generating extra log messages.
+
 ## 2.75.1
 
 Unit tests passing.
