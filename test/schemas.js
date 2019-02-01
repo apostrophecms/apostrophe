@@ -363,6 +363,97 @@ describe('Schemas', function() {
     });
   });
 
+  it('should error if an email address is improperly formed', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'email',
+          name: 'email',
+          label: 'Email'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      email: 'testguy1%oopsbad'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err === 'email.invalid');
+      done();
+    });
+  });
+
+  it('should tolerate no email value if field not required', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'email',
+          name: 'email',
+          label: 'Email'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      email: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      done();
+    });
+  });
+
+  it('should reject no email value if field required', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'email',
+          name: 'email',
+          label: 'Email',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      email: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      assert(err === 'email.required');
+      done();
+    });
+  });
+
+  it('should accept a well formed email address with a + sign', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'email',
+          name: 'email',
+          label: 'Email'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      email: 'testguy1+cool@yaygreat.com'
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      console.log(err);
+      assert(!err);
+      done();
+    });
+  });
+
   it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
