@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('@sailshq/lodash');
 var request = require('request');
-
+var Promise = require('bluebird');
 var apos;
 var homeId;
 
@@ -651,11 +651,54 @@ describe('Pages with trashInSchema', function() {
 
   });
 
-  it('p2c2 is now grandchild of p1, but still in trash', async function() {
-    const p2c2 = await apos.docs.db.findOne({ _id: 'p2c2' });
-    assert(p2c2.level === 3);
-    assert(p2c2.path === '/parent1/parent2/child2');
-    assert(p2c2.trash);
+  it('p2c2 is now grandchild of p1, but still in trash', function() {
+    return Promise.try(function() {
+      return apos.docs.db.findOne({ _id: 'p2c2' });
+    }).then(function(p2c2) {
+      assert(p2c2.level === 3);
+      assert(p2c2.path === '/parent1/parent2/child2');
+      assert(p2c2.trash);
+    });
   });
 
+  it('add permissions for a new group to the home page', function() {
+    const req = apos.tasks.getReq();
+    let group;
+    return Promise.try(function() {
+      return apos.groups.insert(req, {
+        title: 'test',
+        permissions: [ 'edit-page' ]
+      });
+    }).then(function(_group) {
+      group = _group;
+      return apos.docs.db.findOne({ slug: '/' });
+    }).then(function(home) {
+      home.editGroupsIds = [ group._id ];
+      const update = Promise.promisify(apos.pages.update);
+      return update(req, home, {});
+    }).then(function() {
+      return apos.docs.db.findOne({ slug: '/' });
+    }).then(function(home) {
+      assert(_.includes(home.docPermissions, 'edit-' + group._id));
+    });
+  });
+
+  it('"apply to subpages": propagate group id to child pages', function() {
+    const req = apos.tasks.getReq();
+    let home;
+    return Promise.try(function() {
+      return apos.docs.db.findOne({ slug: '/' });
+    }).then(function(_home) {
+      home = _home;
+      home.applyToSubpages = true;
+      const update = Promise.promisify(apos.pages.update);
+      return update(req, home, {});
+    }).then(function() {
+      return apos.docs.db.find({ slug: /^\//, trash: { $ne: true } }).toArray();
+    }).then(function(pages) {
+      assert(!_.find(pages, function(page) {
+        return (!_.includes(page.docPermissions, 'edit-' + home.editGroupsIds[0]));
+      }));
+    });
+  });
 });
