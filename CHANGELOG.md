@@ -1,6 +1,18 @@
 # Changelog
 
-## 2.76.0
+## 2.76.1 (2019-02-06)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Removed unneeded call to `self.apos.utils.readOnlySession` in `apos.notify`, preventing crashes when this is invoked from a command line task. This fixes `apostrophe-favicons`.
+* Also updated `self.apos.utils.readOnlySession` so it will gracefully ignore calls made with no session in `req` (typically command line tasks).
+* Eliminated uses of `async/await` in core unit tests. This module still supports Node 6.x, so we use promises directly, not via async/await, in core code; of course you can still `await` most of our APIs in your own projects, because `await` works with anything that returns a promise.
+* Fixed a bug that prevented page permissions from propagating properly when "Apply to Subpages" is checked in "Page Settings." Thanks to Mayank Bansal. Unit tests were also added to prevent a regression in the future.
+* A bug that prevented the home page type from being changed via the UI in certain situations has been fixed.
+
+## 2.76.0 (2019-02-01)
 
 Unit tests passing.
 
@@ -21,7 +33,7 @@ Regression tests passing.
 
 Thanks to Michelin for sponsoring much of this work through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 
-## 2.75.1
+## 2.75.1 (2019-01-24)
 
 Unit tests passing.
 
@@ -31,7 +43,7 @@ Regression tests passing.
 
 Thanks to Michelin for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 
-## 2.75.0
+## 2.75.0 (2019-01-15)
 
 Unit tests passing.
 
@@ -48,7 +60,7 @@ Regression tests passing.
 
 Thanks to our customers at Michelin and NPM for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 
-## 2.74.0
+## 2.74.0 (2018-12-13)
 
 Unit tests passing.
 
@@ -74,7 +86,7 @@ The API is identical to that for `apos.notify` on the browser side, except that 
 
 Thanks to Michelin for making much of the above work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 
-## 2.73.0
+## 2.73.0 (2018-12-06)
 
 Unit tests passing.
 
@@ -86,7 +98,7 @@ Regression tests passing.
 * When using the `passwordReset: true` feature of `apostrophe-login`, you may also set the `passwordResetSubject` option to a custom subject line for the password reset email message.
 * The mechanism that sends the password reset request confirmation email has been factored out to the `apos.login.sendPasswordResetEmail(req, user)` method, so you can trigger it for your own reasons. This method returns a promise; when that promise resolves the password reset email has been successfully handed off for delivery. Note that the promise will be rejected if the user object has no `email` property.
 
-## 2.72.3
+## 2.72.3 (2018-12-03)
 
 Unit tests passing.
 
@@ -106,7 +118,7 @@ Previously this choice appeared in several places, including as a highly confusi
 
 * "Move" and "Trash" operations on widgets now emit the Apostrophe events `widgetMoved` and `widgetTrashed`. The widget's container div is emitted as the argument to the event.
 
-## 2.72.2
+## 2.72.2 (2018-11-28)
 
 Unit tests passing.
 
@@ -118,7 +130,7 @@ Regression tests passing.
 * Added missing callback to asset bundle cleanup for cloud deployments, ensuring that the lock is eventually released and the old bundles are eventually removed.
 * Fixed documentation for `apos.jobs` methods re: the `labels` option.
 
-## 2.72.1
+## 2.72.1 (2018-11-07)
 
 Unit tests passing.
 
@@ -132,7 +144,7 @@ Regression tests passing.
 
 Thanks to our enterprise support customers for their support of this work.
 
-## 2.72.0
+## 2.72.0 (2018-10-30)
 
 Unit tests passing.
 
@@ -155,7 +167,7 @@ By following through with this approach you can make `app.js` much shorter. Conf
 
 * Fixed a crashing bug when an API was used in an atypical way. Thanks to Max Schlueter.
 
-## 2.71.1
+## 2.71.1 (2018-10-24)
 
 Unit tests passing.
 
@@ -163,7 +175,7 @@ Regression tests passing.
 
 Recent changes to the markup for buttons broke drag and drop for widgets. This has been fixed.
 
-## 2.71.0
+## 2.71.0 (2018-10-23)
 
 Unit tests passing.
 
@@ -181,7 +193,7 @@ For backwards compatibility and to resolve race conditions, the server will stil
 
 We appreciate our enterprise customers and their support of this work.
 
-## 2.70.1
+## 2.70.1 (2018-10-18)
 
 Unit tests passing.
 
@@ -193,7 +205,7 @@ Regression tests passing.
 * The jQuery `onSafe` plugin now respects the return value of the event handler, allowing the use of `return false;` in such handlers. Thanks to Fredrik Ekelund.
 * The Apostrophe `button` macro now renders a `button` rather than an anchor tag, except when the `url` option is present. Thanks to Fredrik Ekelund.
 
-## 2.70.0
+## 2.70.0 (2018-10-08)
 
 Unit tests passing.
 
@@ -229,7 +241,7 @@ Or, if you are pushing assets via the `stylesheets` option of the `apostrophe-as
 
 The extension of the file may be either `.css` or `.less`; either way it is imported with no LESS compilation. Apostrophe will still modify URLs to accommodate the global `prefix` option, if present.
 
-## 2.69.1
+## 2.69.1 (2018-10-04)
 
 Unit tests passing.
 
@@ -237,7 +249,7 @@ Regression tests passing.
 
 * In-context editing of areas nested in arrays now works correctly when the widget containing the array has just been added to the page for the first time.
 
-## 2.69.0
+## 2.69.0 (2018-10-03)
 
 Unit tests passing.
 
@@ -251,7 +263,7 @@ Regression tests passing.
 * When apostrophe cannot fix a unique key error, it is helpful to be able to see the last error, as well as the original one. This helps you figure it out if both a unique slug error and an unrelated unique key error are part of the puzzle. We still throw the original error, but we also attach the last error as a property of it, so you can see both.
 * The `apos.areas.fromPlaintext` method now takes an `options` parameter. You may set the `el` property to an element name, in which case the markup is wrapped in that HTML element. `options` may be omitted.
 
-## 2.68.1
+## 2.68.1 (2018-09-27)
 
 Unit tests passing.
 
@@ -260,7 +272,7 @@ Regression tests passing.
 * When we introduced allowedSubpageTypes and allowedHomepageTypes in 2.67.0, we  broke support for different schemas in different page types. Those regressions are fixed here.
 * The default page type choice offered for a new page is the first type permitted by its parent page.
 
-## 2.68.0
+## 2.68.0 (2018-09-26)
 
 Unit tests passing.
 
@@ -274,7 +286,7 @@ Regression tests passing.
 * Fixes made to further reduce conflicts between sites with `apostrophe-multisite`. For instance, the `apostrophe-workflow` module no longer breaks the dashboard.
 * The home page can now be copied. If you copy the home page, you get a new child of the home page with the same content. Thanks to Tim Otlik.
 
-## 2.67.0
+## 2.67.0 (2018-09-14)
 
 Unit tests passing.
 
@@ -304,13 +316,13 @@ These options make it easy to prevent users from creating unintended scenarios, 
 
 * The "revert" button for versions is now labeled "Revert to" to emphasize that it reverts to what you had at the end of that operation, not its beginning. Thanks to Fredrik Ekelund.
 
-## 2.66.0
+## 2.66.0 (2018-09-07)
 
 * Updated to CKEditor version 4.10.0. The CKEditor build now includes the CKEditor "widgets" feature (not to be confused with Apostrophe widgets). These are essential for modules like the forthcoming `apostrophe-rich-text-merge-tags`.
 * `apos.areas.richText` and `apos.areas.plaintext` no longer produce duplicate text. To achieve this, the `apos.docs.walk` method no longer walks through the `_originalWidgets` property. This property is only used to preserve the previous versions of widgets that the user lacks permission to edit due to schema field permissions. Exploration of this property by `apos.docs.walk` led to the observed bug.
 * The browser-side implementation of `apos.utils.escapeHtml` now works properly.
 
-## 2.65.0
+## 2.65.0 (2018-09-04)
 
 Unit tests passing.
 
@@ -324,7 +336,7 @@ Regression tests passing.
 
 * Also see expanded notes on version `2.64.1`, below, which contained several features missed in the original changelog.
 
-## 2.64.1
+## 2.64.1 (2018-08-31)
 
 Unit tests passing.
 
@@ -338,7 +350,7 @@ Regression tests passing.
 
 * The `apos.locks.lock` method also now accepts a `waitForSelf` option. By default, if the same process invokes `apos.locks.lock` for the same lock in two requests simultaneously, one of the two will receive an error. With `waitForSelf`, the second invocation will wait for the first to resolve and then obtain the lock.
 
-## 2.64.0
+## 2.64.0 (2018-08-29)
 
 Unit tests passing.
 
@@ -386,7 +398,7 @@ Thanks to falkodev.
 * Fixes to CSS asset URL generation to pass validation.
 * Performance: eliminated use of `$or` MongoDB queries with regard to pages in the trash. MongoDB tests demonstrate that `$ne: true` is faster than `$or` for our purposes.
 
-## 2.63.0
+## 2.63.0 (2018-08-15)
 
 Unit tests passing.
 
@@ -449,7 +461,7 @@ working with `apostrophe-workflow`, this is
 often required to commit the fact that a page is in the trash.
 * The `uploadfs` module now has a `prefix` option. If present, the prefix is prepended to all uploadfs paths before they reach the storage layer, and is also prepended to URLs. In practice, this means that a single S3 bucket can be used to host multiple sites without all of the uploaded media jumbling together in `/attachments`. The `apostrophe-multisite` module now leverages this.
 
-## 2.62.0
+## 2.62.0 (2018-08-09)
 
 Unit tests passing.
 
@@ -461,7 +473,7 @@ Regression tests passing.
 * When configuring a `date` field, you may pass a `pikadayOptions` property. This object is passed on to the `pikaday` library. Thanks to Lars Houmark.
 * The `counts: true` option for `piecesFilters` now works properly with joins.
 
-## 2.61.0
+## 2.61.0 (2018-08-01)
 
 Unit tests passing.
 
@@ -480,7 +492,7 @@ Regression tests passing.
 * [Contributor Guide](https://github.com/apostrophecms/apostrophe/blob/master/CONTRIBUTING.md) expanded with lots of new information about practical ways to contribute to Apostrophe.
 * [Contributor Covenant Code of Conduct](https://github.com/apostrophecms/apostrophe/blob/master/CODE_OF_CONDUCT.md) added to the project. The Apostrophe community is a welcoming place, and now is a great time to lock that in for the future.
 
-## 2.60.4
+## 2.60.4 (2018-07-13)
 
 Unit tests passing.
 
@@ -488,7 +500,7 @@ Regression tests passing.
 
 * Shallowly clone the required definition in defineRelatedType to prevent yet more crosstalk between instances of apos when `apostrophe-multisite` is used. No other changes.
 
-## 2.60.3
+## 2.60.3 (2018-07-13)
 
 Unit tests passing.
 
@@ -498,7 +510,7 @@ Regression tests passing.
 * The new `apos.locks.withLock(lockName, fn)` method can be used to execute a function while the process has the named lock. This ensures that other processes cannot run that function simultaneously. You may optionally pass a callback, otherwise a promise is returned. Similarly `fn` may take a callback, or no arguments at all, in which case it is expected to return a promise.
 * Cleanup: don't call `server.close` unless we've succeeded in listening for connections.
 
-## 2.60.2
+## 2.60.2 (2018-07-12)
 
 Unit tests passing.
 
@@ -523,7 +535,7 @@ is also displayed. This remains a secondary mechanism. Server-side
 validation is mostly about preventing intentional abuse. Browser-side
 validation is still the best way to provide feedback during data entry.
 
-## 2.60.1
+## 2.60.1 (2018-07-11)
 
 Unit tests passing.
 
@@ -540,7 +552,7 @@ Regression tests passing.
 * Fixed a crash when an `apostrophe-pieces-widget` is configured to always show all pieces via `by: 'all'`. Thanks to Aurélien Wolz.
 * General UI styling improvements and fixes.
 
-## 2.60.0
+## 2.60.0 (2018-07-06)
 
 Unit tests passing.
 
@@ -556,7 +568,7 @@ Regression tests passing.
 * Use `one` to reduce the overhead of .apos-global-busy's transition event handler. We could do more here to reduce overhead, i.e. unhooking it entirely.
 * Much-improved validation of `min`, `max` and `required` for strings, integers and floats on both the server and the browser side. Thanks to Lars Houmark.
 
-## 2.59.1
+## 2.59.1 (2018-07-02)
 
 Unit tests passing.
 
@@ -568,7 +580,7 @@ Regression tests passing.
 * The infinite scroll feature of `apostrophe-pieces-pages` now works as documented with the styles provided. The code is also more efficient and scroll events are throttled for performance. Thanks to Lars Houmark.
 * Various UX fixes, thanks to Lars Houmark and various members of the Apostrophe team.
 
-## 2.59.0
+## 2.59.0 (2018-06-15)
 
 Unit tests passing.
 
@@ -579,7 +591,7 @@ Regression tests passing.
 * The mechanism that automatically makes slugs, paths and other keys unique now gives up eventually and reports the original duplicate key error. This makes it easier to debug your code if you are violating your own custom indexes that feature unique keys. It is possible to make the deduplicator aware of your own own properties that need to be made more unique on inserts if you wish, by implementing a `docFixUniqueError` method. *Please note:* this change is not a regression. Code that formerly never completed its task in this situation will simply report an error promptly rather than retrying inserts forever while degrading your database performance.
 * A new profiling API has been added: the `apos.utils.profile` method. This method can be called to report how long code takes to run for later analysis. It does nothing in the default implementation; modules like our forthcoming profiler override it to give feedback on the speed of your code.
 
-## 2.58.0
+## 2.58.0 (2018-06-13)
 
 Unit tests passing.
 
@@ -623,7 +635,7 @@ Thanks to Fredrik Ekelund for this contribution.
 
 * Refactoring of the trash field deduplication features, in preparation to extend them to pages as well in an upcoming release.
 
-## 2.57.2
+## 2.57.2 (2018-06-07)
 
 Unit tests passing.
 
@@ -631,13 +643,13 @@ Relevant regression tests passing.
 
 * New `extraHtml` block in `outerLayoutBase.html` allows your `outerLayout.html` to add attributes to the outer `html` element without the need to completely override the layout. It is a best practice to avoid completely overriding the layout because this maximizes your compatibility with future updates to our admin markup, etc.
 
-## 2.57.1
+## 2.57.1 (2018-06-05)
 
 Unit tests passing.
 
 * Hotfix for bug in 2.57.0 that broke saving tags. We have reverted the "fast forms" change until the cause is understood.
 
-## 2.57.0
+## 2.57.0 (2018-05-31)
 
 Unit tests passing.
 
@@ -662,7 +674,7 @@ This method is handy in command line tasks and other places
 where middleware does not run and `req.data.global` is not populated
 by default.
 
-## 2.56.0
+## 2.56.0 (2018-05-17)
 
 Unit tests passing.
 
@@ -674,7 +686,7 @@ Functional tests passing.
 * `apos.tasks.getReq` now supplies an empty `req.data` object for easier use with code expecting an Express request, Apostrophe-style.
 * Bedeviled by case-sensitive sorting? The `sortify: true` property for `string` schema fields is now documented and automatically creates a database migration to ensure it is available for your existing data as well. When used, this flag ensures that any `sort('fieldname')` call for that field in Apostrophe is case-insensitive, ignores punctuation and otherwise behaves as end users expect.
 
-## 2.55.2
+## 2.55.2 (2018-05-15)
 
 Unit tests passing.
 
@@ -682,7 +694,7 @@ Relevant functional tests passing.
 
 * Reverted change to date formatting. `moment` will produce warnings again, but dates will not be a day old in some time zones, which is more important. We are working on a better fix for this problem.
 
-## 2.55.1
+## 2.55.1 (2018-05-15)
 
 Unit tests passing.
 
@@ -690,7 +702,7 @@ Relevant functional tests passing.
 
 * `apos.migrations.eachArea` no longer crashes the stack when iterating over a large number of documents without areas.
 
-## 2.55.0
+## 2.55.0 (2018-05-11)
 
 Unit tests passing.
 
@@ -716,7 +728,7 @@ As always, be sure to run the `apostrophe-migrations:migrate` task. This will ma
 
 * The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer. 
 
-## 2.54.3
+## 2.54.3 (2018-05-02)
 
 Unit tests passing.
 
@@ -728,7 +740,7 @@ Regression tests passing.
 
 * `apos.migrations.eachWidget` now delivers an accurate `dotPath`, which is crucial for the use of `apos.docs.db.update` with `$set`. No standard migrations in Apostrophe were using the feature until now.
 
-## 2.54.2
+## 2.54.2 (2018-04-24)
 
 Unit tests passing.
 
@@ -736,7 +748,7 @@ Regression tests passing.
 
 * A bug in the recently introduced `apostrophe-soft-redirects` module caused crashes in cases where the context page or piece had no `_url` property... which is an unusual situation (how did you get there exactly? Overrides are clearly involved), but it can happen in customized projects. Fixed.
 
-## 2.54.1
+## 2.54.1 (2018-04-24)
 
 Unit tests passing.
 
@@ -744,7 +756,7 @@ Regression tests passing.
 
 * A bug in Chrome 66 causes problems when selecting images in Apostrophe's media library. This bug did not appear before Chrome 66 and does not appear in other browsers. We resolved it by migrating to the use of the CSS grid feature in compatible browsers.
 
-## 2.54.0
+## 2.54.0 (2018-04-18)
 
 Unit tests passing.
 
@@ -756,7 +768,7 @@ Regression tests passing.
 * Save operation of a modal now triggers the global busy state to prevent race conditions and other unwanted behavior.
 * Global busy state can now be pushed and popped, and modals utilize this, so that a modal can be used to gather information during the `saveContent` method of another modal.
 
-## 2.53.0
+## 2.53.0 (2018-04-11)
 
 Unit tests passing.
 
@@ -771,7 +783,7 @@ Regression tests passing.
 * CSS adjustment to tabs in modals so they don't scroll in Firefox.
 * Dropzones for empty areas are easier to drop onto.
 
-## 2.52.0
+## 2.52.0 (2018-03-30)
 
 Unit tests passing.
 
@@ -784,7 +796,7 @@ Regression tests passing.
 * UI bug fix: no more conflicts between the "Add Content" menu and the up/down/remove/etc. buttons for widgets.
 * Clearer warnings and error messages.
 
-## 2.51.1
+## 2.51.1 (2018-03-27)
 
 Unit tests passing.
 
@@ -793,7 +805,7 @@ Regression tests passing.
 * Do not crash when updating a doc if widgets exist but `_originalWidget` does not. This can happen in workflow scenarios where Apostrophe's `find` is bypassed.
 * Accommodations for the forthcoming `apostrophe-optimizer` module.
 
-## 2.51.0
+## 2.51.0 (2018-03-21)
 
 Unit tests passing.
 
@@ -805,7 +817,7 @@ Regression tests passing.
 * When Apostrophe must generate a `path` for a new page, it will look at the provided `slug` before it looks at the provided `title`. This is useful when titles in an import are of poor quality but slugs are unique. Prevents unnecessary numbered suffixes after both slugs and paths.
 * The dropdown menu to add a widget no longer has a conflict with the hover menu offering widget controls such as "up," "down," etc. The hover menu does not appear while the dropdown menu is open.
 
-## 2.50.0
+## 2.50.0 (2018-03-14)
 
 Unit tests passing.
 
@@ -816,7 +828,7 @@ Regression tests passing.
 * Bug fix: modals are the right height when jQuery 3 is in use.
 * CSS class added to the `h4` that displays the title in an `apostrophe-images` widget, for your CSS styling convenience. Thanks to Gareth Cooper.
 
-## 2.49.0
+## 2.49.0 (2018-03-09)
 
 Unit tests passing.
 
@@ -826,7 +838,7 @@ Regression tests passing.
 * Significant performance boost to the "reorganize" modal in situations where numerous pages are in the trash when using the `apostrophe-workflow` module.
 * If widget ids are not provided when inserting new documents they are automatically generated. This makes [apostrophe-headless](https://npmjs.org/package/apostrophe-headless) easier to use.
 
-## 2.48.0
+## 2.48.0 (2018-03-01)
 
 Unit tests passing.
 
@@ -839,7 +851,7 @@ Regression tests passing.
 * Refactored autocollapse behavior of admin bar into its own method for easier overrides.
 * CSS fixes for improved usability.
 
-## 2.47.0
+## 2.47.0 (2018-02-14)
 
 Unit tests passing.
 
@@ -861,7 +873,7 @@ Regression tests passing.
 
 * It is now possible to configure select elements (we do not recommend more than one) to be displayed inline with the other widget controls, i.e. up, down, delete, etc. The back end of this is left to the developer, however you can check out the still-evolving [apostrophe-personas](https://github.com/apostrophecms/apostrophe-personas) module for an example. This feature is primarily meant for modules like `apostrophe-personas` that impact all widgets in a general way.
 
-## 2.46.1
+## 2.46.1 (2018-01-30)
 
 Unit tests passing.
 
@@ -869,7 +881,7 @@ Regression tests passing.
 
 * Attachment fields now save properly when directly part of the schema of a widget. A bug was introduced in version 2.42.0 when the `length` property was added to attachments. A fix made long ago to `apos.utils.clonePermanent` on the server side was also needed on the browser side.
 
-## 2.46.0
+## 2.46.0 (2018-01-25)
 
 Unit tests passing.
 
@@ -885,7 +897,7 @@ Regression tests passing.
 
 * Apostrophe's `apos.locks.lock` and `apos.locks.unlock` methods now support promises.
 
-## 2.45.0
+## 2.45.0 (2018-01-11)
 
 Unit tests passing.
 
@@ -902,7 +914,7 @@ Regression tests passing.
 * For those using the `testModule` option to test their own npm modules in the context of Apostrophe, a default shortname is automatically provided.
 * Fixed missing space in admin bar markup, thanks to arlecchino.
 
-## 2.44.0
+## 2.44.0 (2017-12-15)
 
 Unit tests passing.
 
@@ -932,7 +944,7 @@ Note that we do this via progressive enhancement of a "Load More" button so that
 * The `addDocReferences` migration has been parallelized, as this one-time migration can be time-consuming on a large site.
 * Broken `less` calculation fixed, thanks to Antoine COMBES.
 
-## 2.43.0
+## 2.43.0 (2017-12-12)
 
 Unit tests passing.
 
@@ -962,13 +974,13 @@ Regression tests passing.
 
 * A YouTube embed unit test was removed to ensure consistent results in Travis CI, which is once again in routine use.
 
-## 2.42.1
+## 2.42.1 (2017-11-24)
 
 Unit tests passing.
 
 * Use of a capitalized filename that should have been lowercase in a `require` briefly broke Apostrophe's initialization on Linux. We are correcting this by reinstating CI in a Linux environment.
 
-## 2.42.0
+## 2.42.0 (2017-11-22)
 
 Unit tests passing.
 
@@ -996,7 +1008,7 @@ Only `_url` and the names of `joinByOne` or `joinByArray` fields are supported. 
 
 * Fixed bug in the `isEmpty` methods for areas and singletons. Thanks to David Keita.
 
-## 2.41.0
+## 2.41.0 (2017-11-17)
 
 Unit tests passing.
 
@@ -1011,7 +1023,7 @@ Regression tests passing.
 * `newBrowserCalls` helper for `push` module can be used when you want JavaScript calls queued up with `req.browserCall` to be executed in an AJAX update of just part of a page.
 * Fixed bugs affecting access to the published/unpublished batch operations and similar.
 
-## 2.40.0
+## 2.40.0 (2017-11-10)
 
 Unit tests passing.
 
@@ -1023,7 +1035,7 @@ Regression tests passing.
 * The `self.api` and `self.html` methods of `apostrophe-context` and `apostrophe-modal` now support a syntax for making cross-module API calls, just like templates.
 * Addressed moog versioning issue with latest npm that caused errors about "synth.instanceOf" not being found depending on the state of your npm cache.
 
-## 2.39.2
+## 2.39.2 (2017-11-02)
 
 Unit tests passing.
 
@@ -1031,7 +1043,7 @@ Startup-related regression tests passing.
 
 * The `APOS_MONGODB_LOG_LEVEL` environment variable can now be set to `debug`, `info` or anything else supported by the MongoDB driver's `Logger.setLevel` method. This is helpful for debugging database issues at the lowest level.
 
-## 2.39.1
+## 2.39.1 (2017-11-01)
 
 Unit tests passing.
 
@@ -1043,7 +1055,7 @@ overrides of this that pay attention to `req`.
 * Documentation corrections. Thanks to Frederik Ekelund.
  
 
-## 2.39.0
+## 2.39.0 (2017-10-24)
 
 Unit tests passing.
 
@@ -1054,7 +1066,7 @@ Regression tests passing.
 * Fixed UI bug relating to area menus at the bottom of the page.
 * Fixed bug that caused a crash when invalid usernames attempted to log in. Thanks to Arthur.
 
-## 2.38.0
+## 2.38.0 (2017-10-16)
 
 Unit tests passing.
 
@@ -1066,7 +1078,7 @@ Regression tests passing.
 * Unit tests no longer drop the entire test database between suites; instead they drop the collections. Also the unit test timeout can be set via an environment variable. This accommodates testing against various cloud databases with security that precludes dropping entire databases.
 * Lots of new content in the README to get folks who haven't been to the documentation site yet a little more excited.
 
-## 2.37.2
+## 2.37.2 (2017-10-04)
 
 Unit tests passing.
 
@@ -1076,7 +1088,7 @@ Conflict resolution and template extension-related regression tests passing.
 
 * Recently a bug was introduced in which extensions other than `.html` or `.njk` did not work in `include` statements, etc. in Nunjucks templates unless the file in question existed in the project-level version of the module including it. The full cascade of template folder paths is now supported for these explicit extensions, including searching `viewsFolderFallback`.
 
-## 2.37.1
+## 2.37.1 (2017-09-27)
 
 Unit tests passing.
 
@@ -1085,7 +1097,7 @@ Piece- and schema-related regression tests passing.
 * Filters are now available for schema fields of type `integer`. You can configure these for the manage view, or for pieces-pages, exactly as you would for other field types. Previously this feature existed but did not function properly, so this is a patchlevel release rather than a minor version bump.
 * Previously, when viewing pieces in the trash, the batch operation button initially read "Trash Items" rather than "Rescue Items." It did not match the selected operation in the select element, and did not perform the needed operation of rescuing items unless you switched operations and switched back again. This has been fixed.
 
-## 2.37.0
+## 2.37.0 (2017-09-25)
 
 Unit tests passing.
 
@@ -1096,7 +1108,7 @@ Regression tests passing.
 * Bug fix: drag-and-drop targets for widgets residing in areas nested in other widgets now appear and function properly.
 
 
-## 2.36.3
+## 2.36.3 (2017-09-20)
 
 Unit tests passing.
 
@@ -1105,7 +1117,7 @@ Regression tests passing.
 * If an oembed provider responds with an HTTP error and a response that is not parseable as XML or JSON, Apostrophe no longer crashes (this fix is actually in the oembetter npm module). This fixes crashes on non-embeddable YouTube videos.
 * If the oembed provider issues a 401 or 404 error, a relevant error message is given. Otherwise the generic error icon is still given.
 
-## 2.36.2
+## 2.36.2 (2017-09-19)
 
 Unit tests passing.
 
@@ -1118,7 +1130,7 @@ Regression tests passing.
 * When on page two (or higher) in the "manage" view of pieces, performing a text search now correctly resets to page one.
 * Throw an error at startup if a forbidden schema field name is used in `addFields` configuration. For instance, `type` is forbidden for widget schemas, while `docPermissions` is forbidden for doc type schemas, and `_id` is forbidden for both. Note that field names like `title` that are already in the schema are *not* forbidden because re-adding a schema field replaces it, which is often done to change the label, etc. So we'll be adding more documentation about these to help developers avoid surprises if their intention was an entirely new field.
 
-## 2.36.1
+## 2.36.1 (2017-09-13)
 
 Unit tests passing.
 
@@ -1129,7 +1141,7 @@ Regression tests passing.
 * Reorganize feature: upgraded to jqtree 1.4.2. Regression testing found no bc breaks.
 * A debugging convenience: the `log(true)` cursor filter logs MongoDB criteria objects resulting from the cursor in question to the console.
 
-## 2.36.0
+## 2.36.0 (2017-09-12)
 
 Unit tests passing.
 
@@ -1138,7 +1150,7 @@ Regression tests passing.
 * You may now set the `skipInitialModal` option for any widget module to `true` in order to avoid displaying the editing dialog box when the widget is first added. This makes sense if the widget has a useful default behavior, or consists of a contextually editable rich text sub-widget with a "style" select element you might or might not need to set every time.
 * Fields in Apostrophe's schema-driven forms now receive globally unique `id` attributes, and the `for` attributes of `label` elements now reference them properly.
 
-## 2.35.1
+## 2.35.1 (2017-09-08)
 
 Unit tests passing.
 
@@ -1146,7 +1158,7 @@ Regression tests passing.
 
 * Intermittent "not blessed" errors when editing joins in widget schemas have been corrected by blessing all widget schemas at page serve time, just as we already bless all doc type schemas at page serve time. Blessing them when the individual routes fire is problematic because of probable race conditions with sessions.
 
-## 2.35.0
+## 2.35.0 (2017-09-06)
 
 Unit tests passing.
 
@@ -1187,7 +1199,7 @@ The `removable` and `movable` suboptions are primarily intended for singletons.
 
 * Accommodations for the latest release of the separately published apostrophe-workflow module.
 
-## 2.34.3
+## 2.34.3 (2017-08-31)
 
 Unit tests passing.
 
@@ -1197,13 +1209,13 @@ A bug was fixed that prevented nested area editing. The bug appeared in version 
 
 Note that editing an area on the page has never been possible when it is part of the schema of an array field. That is not a new issue. It is being tracked and discussed. Today's fix was for a regression that impacted all nested areas.
 
-## 2.34.2
+## 2.34.2 (2017-08-29)
 
 All tests passing.
 
 Fixed a bug that generated an error message regarding conflict resolution when attempting to edit an area inside a piece editor dialog box.
 
-## 2.34.1
+## 2.34.1 (2017-08-28)
 
 All tests passing.
 
@@ -1211,7 +1223,7 @@ Fixed an issue impacting unit test harness only. It didn't come up initially bec
 
 No code changes outside of tests.
 
-## 2.34.0
+## 2.34.0 (2017-08-28)
 
 All tests passing.
 
@@ -1225,13 +1237,13 @@ If the same user attempts to edit a document in two tabs or windows, something v
 
 * Apostrophe's unit tests have been restructured so that a single test file can be run conveniently, via `mocha test/docs.js`, for instance, and there is no longer a need for us to update `test/test.js` every time a test is added. Also, the unit tests use the same `apos.tasks.getReq` and `apos.tasks.getAnonReq` methods that are used by real-life command line tasks, which provide a more faithful simulation of an Express request object and one we anticipate extending as needed.
 
-## 2.33.1
+## 2.33.1 (2017-08-16)
 
 All tests passing.
 
 * Fixed potential crash in version pruning mechanism.
 
-## 2.33.0
+## 2.33.0 (2017-08-10)
 
 All tests passing.
 
@@ -1241,7 +1253,7 @@ All tests passing.
 
 Thanks to Michelin for their support of this work.
 
-## 2.32.0
+## 2.32.0 (2017-08-08)
 
 All tests passing.
 
@@ -1249,7 +1261,7 @@ All tests passing.
 
 * Also added an `apostrophe-caches:clear` task to aid in testing various functionality. You must specify the cache name since caches may or may not even be known to Apostrophe at task startup time based on whether and when code calls `.get` for each cache name.
 
-## 2.31.0
+## 2.31.0 (2017-08-07)
 
 All tests passing.
 
@@ -1263,7 +1275,7 @@ All tests passing.
 
 * `trash` is never offered as a schema field of the `global` doc (mainly a concern with `apostrophe-workflow`).
 
-## 2.30.0
+## 2.30.0 (2017-08-02)
 
 All tests passing.
 
@@ -1287,20 +1299,20 @@ For bc, you can still pass a live instance of a store as the `store` option, but
 
 Thanks to Michelin for their support of this work.
 
-## 2.29.2
+## 2.29.2 (2017-08-02)
 
 All tests passing.
 
 * Overrideable widgetControlGroups method takes (req, widget, options) allowing for better control when customizing these buttons.
 * The `createControls` option of the `apostrophe-pages` module is now respewcted properly.
 
-## 2.29.1
+## 2.29.1 (2017-07-31)
 
 All tests passing.
 
 * Fixed a short-lived issue with the reorganize feature.
 
-## 2.29.0
+## 2.29.0 (2017-07-31)
 
 All tests passing.
 
@@ -1340,7 +1352,7 @@ When `trashInSchema` is `true`, users can also change the trash status of a piec
 
 * `insert` method for `apos.attachments`, mirroring the other modules better. Thanks to Arthur Agombart.
 
-## 2.28.0
+## 2.28.0 (2017-07-17)
 
 All tests passing.
 
@@ -1351,13 +1363,13 @@ All tests passing.
 * Bug fix: added sort index on `level` and `rank`, preventing MongoDB errors on very large page trees.
 * UX: a complete URL is suggested at startup when testing locally. Thanks to Alex Gleason.
 
-## 2.27.1
+## 2.27.1 (2017-06-28)
 
 All tests passing.
 
 * Fixed recently introduced bug preventing page type switching.
 
-## 2.27.0
+## 2.27.0 (2017-06-26)
 
 All tests passing.
 
@@ -1371,13 +1383,13 @@ Lazy configuration is in place for doc types (like pages and pieces) and widget 
 
 * `apos.areas.fromRichText` can be used to create an area with a single rich text widget from a trusted string of HTML. Not intended for mixed media, just rich text. Related: both `fromRichText` and `fromPlaintext` now correctly give their widgets an `_id` property.
 
-## 2.26.1
+## 2.26.1 (2017-06-12)
 
 All tests passing.
 
 * Fixed short-lived bug introduced in 2.26.0 re: detecting missing widget types.
 
-## 2.26.0
+## 2.26.0 (2017-06-12)
 
 All tests passing.
 
@@ -1393,7 +1405,7 @@ All tests passing.
 
 Thanks to Michelin for their support of much of the work in this release.
 
-## 2.25.0
+## 2.25.0 (2017-05-26)
 
 All tests passing.
 
@@ -1403,13 +1415,13 @@ All tests passing.
 
 * In the manage view, the "published" and "trash" filters now always offer both "yes" and "no," regardless of whether anything is available in those categories. This is necessary because these are the respective defaults, and these are also unusual cases in which it is actually interesting to know nothing is available.
 
-## 2.24.0
+## 2.24.0 (2017-05-05)
 
 All tests passing.
 
 There is now an `object` schema field type. It works much like the `array` schema field type, however there is just one object, represented as an object property of the doc in the database. Thanks to Michelin's development team for contributing this feature.
 
-## 2.23.2
+## 2.23.2 (2017-04-30)
 
 All tests passing.
 
@@ -1421,7 +1433,7 @@ All tests passing.
 
 cleanCss needs to know that the output CSS files are going to live in apos-minified in order to correctly parse `@import` statements that pull in plain .css files. Also, the mechanism for prefixing URLs in CSS code was not applied at the correct stage of the bundling process (the minify stage), which broke the ability to reference fonts, images, etc. via URLs beginning with /modules when using an S3 asset bundle.
 
-## 2.23.0
+## 2.23.0 (2017-04-24)
 
 All tests passing.
 
@@ -1445,7 +1457,7 @@ Thanks to Michelin for their support of this work.
 
 * `apostrophe.oembed`'s `fetch` method now propagates its `options` object to `oembetter` correctly. Thanks to Fotis Paraskevopoulos.
 
-## 2.22.0
+## 2.22.0 (2017-04-11)
 
 All tests passing.
 
@@ -1463,7 +1475,7 @@ Thanks to Michelin for their support of this work.
 
 * thanks to Ludovic Bret for fixing a bug in the admin bar markup.
 
-## 2.21.0
+## 2.21.0 (2017-04-11)
 
 All tests passing.
 
@@ -1482,7 +1494,7 @@ performance improvement.
 
 * Bug fix: if two crops of the same image were present in separate widgets on a page, only one of the crops would be seen in template code. This issue has been resolved.
 
-## 2.20.3
+## 2.20.3 (2017-04-05)
 
 All tests passing.
 
@@ -1492,19 +1504,19 @@ To avoid incompatibility with existing uses of `self.$filters`, such as in the m
 
 * Moved a warning message from `console.log` to `console.error`. `stdout` should never be used for warnings and errors. Moving toward clean output so that command line tasks can be safely used in pipelines.
 
-## 2.20.2
+## 2.20.2 (2017-03-31)
 
 All tests passing.
 
 Improved UI for editing widgets. The edit button is no longer separate from the area-related controls such as up, down, etc. This reduces clutter and reduces difficulty in accessing widgets while editing.
 
-## 2.20.1
+## 2.20.1 (2017-03-27)
 
 All tests passing.
 
 When autocompleting doc titles to add them to a join, Apostrophe again utilizes search result quality to display the best results first.
 
-## 2.20.0
+## 2.20.0 (2017-03-20)
 
 All tests passing.
 
@@ -1538,7 +1550,7 @@ All the usual features of schemas can be used, including `groupFields`. Of cours
 
 * When batch file uploads fail, a more useful set of error messages are displayed.
 
-## 2.19.1
+## 2.19.1 (2017-03-15)
 
 All tests passing.
 
@@ -1546,7 +1558,7 @@ All tests passing.
 
 All of these changes correct bugs in intended behavior. Certain checks were present in the code but not completely functional. If you need to update your configuration to add file extensions, [apostrophe-attachments](http://apostrophecms.org/docs/modules/apostrophe-attachments/).
 
-## 2.19.0
+## 2.19.0 (2017-03-15)
 
 All tests passing.
 
@@ -1556,7 +1568,7 @@ As for children of the home page, for performance you may now pass `home: { chil
 
 Thanks to Michelin for their support of this work.
 
-## 2.18.2
+## 2.18.2 (2017-03-10)
 
 All tests passing.
 
@@ -1566,7 +1578,7 @@ All tests passing.
 
 Thanks to Michelin for their support of this work.
 
-## 2.18.0
+## 2.18.0 (2017-03-04)
 
 All tests passing.
 
@@ -1578,14 +1590,14 @@ In addition there is a clearly documented procedure for creating new batch editi
 
 * Logging out completely destroys the session. While the standard behavior of `req.logout` in the Passport module is only to break the relationship between the `user` object and the session, users expect a clean break.
 
-## 2.17.2
+## 2.17.2 (2017-02-28)
 
 All tests passing.
 
 * Members of a group that has the admin permission for a specific piece type can now move pieces of that type to and from the trash. (This was always intended, so this is a bug fix.)
 * For better out-of-the-box SEO, an `alt` attribute with the title of the image is now part of the `img` markup of `apostrophe-images` widgets.
 
-## 2.17.1
+## 2.17.1 (2017-02-21)
 
 All tests passing.
 
@@ -1599,7 +1611,7 @@ All tests passing.
 
 * The `oembedReady` Apostrophe event is now emitted correctly after `apostrophe-oembed` renders an oembed-based player, such as a YouTube video player for the `apostrophe-video` widget. This event can be listened for via `apos.on('apostrophe-oembed', fn)` and receives a jQuery object referring to the relevant element.
 
-## 2.17.0
+## 2.17.0 (2017-02-14)
 
 All tests passing.
 
@@ -1609,7 +1621,7 @@ All tests passing.
 
 * Controls such as the "Finished" button of the reorganize modal were floating off the screen. This has been fixed.
 
-## 2.16.1
+## 2.16.1 (2017-02-07)
 
 All tests passing.
 
@@ -1617,7 +1629,7 @@ All tests passing.
 
 * In `apostrophe-rich-text-widgets`, initialize CKEditor on `instanceReady`, rather than via a dodgy timeout. Thanks to Frederik Ekelund for finding a better way!
 
-## 2.16.0
+## 2.16.0 (2017-02-03)
 
 All tests passing.
 
@@ -1631,13 +1643,13 @@ The use of this option can lead to unhappy customers if they do not clearly unde
 
 * The tests for the `apostrophe-locks` module are now deterministic and should always pass.
 
-## 2.15.2
+## 2.15.2 (2017-01-30)
 
 All tests passing.
 
 Fixed a bug which could cause a crash if the `sort` filter was explicitly set to `search` and no search was actually present. Conditions existed in which this could happen with the autocomplete route.
 
-## 2.15.1
+## 2.15.1 (2017-01-23)
 
 Due to a miscommunication the version number 2.15.0 had been previously used. The description below was originally intended for 2.15.0 and has been published as 2.15.1 purely to address the version numbering conflict.
 
@@ -1657,11 +1669,11 @@ The mechanism that preserves text fields when performing AJAX refreshes was pres
 other types of `input` elements. Checkboxes, radio buttons and `type="submit"` are now
 properly excluded from this mechanism.
 
-## 2.14.2
+## 2.14.2 (2017-01-18)
 
 Fixed [#385](https://github.com/punkave/apostrophe/issues/385): if a page is moved to the trash, its slug must always change, even if it has been edited so that it no longer has its parent's slug as a prefix. In addition, if the resulting slug of a descendant of the page moving to the trash conflicts with an existing page in the trash, steps are taken to ensure uniqueness.
 
-## 2.14.1
+## 2.14.1 (2017-01-11)
 
 All tests passing.
 
@@ -1669,7 +1681,7 @@ All tests passing.
 
 * When a user is logged in there is an `apos.user` object on the browser side. Due to a bug this was an empty object. It now contains `title`, `_id` and `username` properties as intended.
 
-## 2.14.0
+## 2.14.0 (2017-01-06)
 
 All tests passing.
 
@@ -1677,70 +1689,70 @@ All tests passing.
 * An error message is correctly displayed when login fails.
 * Many UI messages are now passed through the `__()` internationalization helper correctly. Thanks to `timaebi`.
 
-## 2.13.2
+## 2.13.2 (2016-12-22)
 
 All tests passing.
 
 The `data-apos-ajax-context` feature had a bug which prevented ordinary anchor links from performing AJAX refreshes correctly.
 
-## 2.13.1
+## 2.13.1 (2016-12-22)
 
 All tests passing.
 
 The `apostrophe-attachments` module now calls `apos.ui.busy` correctly on the fieldset so that the busy and completed indicators are correctly shown and hidden. Previously the string `0` was passed, which is not falsy.
 
-## 2.12.0
+## 2.12.0 (2016-12-15)
 
 All tests passing.
 
 * Developers are no longer required to set `instantiate: false` in `app.js` when configuring an npm module that uses the `improve` property to implicitly subclass and enhance a different module. In addition, bugs were fixed in the underlying `moog-require` module to ensure that assets can be loaded from the `public` and `views` folders of modules that use `improve`.
 * `string` has replaced `csv` as the property name of the schema field converters that handle plaintext. Backwards compatibility has been implemented so that existing `csv` converters will work transparently and calls to `convert` with `csv` as the `from` argument still work as well. In all new custom field types you should say `string` rather than `csv`. There is no change in the functionality or implementation other than the name.
 
-## 2.11.0
+## 2.11.0 (2016-12-09)
 
 All tests passing.
 
 You can now add middleware to your Apostrophe site via any module in your project. Just add an `self.expressMiddleware` method to your module, which takes the usual `req, res, next` arguments. Or, if it's more convenient, set `self.expressMiddleware` to an array of such functions. "Module middleware" is added immediately after the minimum required Apostrophe middleware (bodyParser, `req.data`, etc), and before any routes.
 
-## 2.10.3
+## 2.10.3 (2016-12-08)
 
 All tests passing.
 
 Fixed bug in `autoPreserveText` feature of our `data-apos-ajax-context` mechanism; also, restricted it to text inputs and textareas that actually have the focus so that you can replace their values normally at other times
 
-## 2.10.2
+## 2.10.2 (2016-12-06)
 
 All tests passing.
 
 A very minor fix, but 2.10.1 had a very noisy console.log statement left in.
 
-## 2.10.1
+## 2.10.1 (2016-12-06)
 
 All tests passing.
 
 * The built-in cursor filters for `float` and `integer` no longer incorrectly default to filtering for docs with the value `0` if the value being filtered for is undefined or null. They default to not filtering at all, which is correct.
 
-## 2.10.0
+## 2.10.0 (2016-12-06)
 
 All tests passing.
 
 * Apostrophe now automatically recompiles modified Nunjucks templates. This means you can hit refresh in your browser after hitting save in your editor when working on `.html` files. Also note that this has always worked for `.less` files.
 * Fixed a longstanding bug in `joinByArrayReverse`, which now works properly.
 
-## 2.9.2
+## 2.9.2 (2016-12-02)
 
 All tests passing.
 
 * Starting with MongoDB 3.3.x (?), it is an error to pass `safe: true` when calling `ensureIndex`, and it has never done anything in any version. In our defense, cargo-cult practice was probably adopted back in the days when MongoDB would invoke your write callback without actually confirming anything unless you passed `safe: true`, but apparently this was never a thing for indexes. Removed all the `safe: true` arguments from `ensureIndex` calls.
 * Added a `beforeAjax` Apostrophe event to facilitate progress display and animations when using the new `data-apos-ajax-content` feature.
 
-## 2.9.1
+## 2.9.1 (2016-12-02)
 
 All tests passing.
 
 * Fixed an omission that prevented the use of the back button to undo the very first click when using the new `data-apos-ajax-context`. Later clicks worked just fine, but for the first one to work we need a call to `replaceState` to make it possible to restore the original query.
 
-## 2.9.0
+## 2.9.0 (2016-12-01)
 
 All tests passing.
 
@@ -1752,7 +1764,7 @@ All tests passing.
 
 In addition, we merged a contribution from Fotis Paraskevopoulos that allows a `bodyParser` option with `json` and `urlencoded` properties to be passed to the `apostrophe-express` module. Those properties are passed on to configure those two body parser middleware functions.
 
-## 2.8.0
+## 2.8.0 (2016-11-28)
 
 All tests passing.
 
@@ -1763,13 +1775,13 @@ All tests passing.
 * `apostrophe-pieces-pages` index pages are about 2x faster; discovered we were inefficiently deep-cloning `req` when cloning a cursor.
 * Helpful error message if you forget to set the `name` property of one of your `types` when configuring `apostrophe-pages`.
 
-## 2.7.0
+## 2.7.0 (2016-11-16)
 
 * We do a better job of defaulting to a sort by search match quality if full-text search is present in a query. Under the hood this is powered by the new `defaultSort` filter, which just stores a default value for the `sort` filter to be used only if `search` (and anything else with an implicit preferred sort order) is not present. No more lame search results for blog posts. You can explicitly set the `sort()` filter in a cursor override if you really want to, but trust us, when `search` is present sorting by anything but search quality produces poor results.
 * Fixed bugs in the sanitizer for page slugs. It is now impossible to save a slug with trailing or consecutive slashes (except the home page slug which is allowed to consist of a single "trailing" slash). Added unit tests.
 * Apostrophe's dropdown menus, etc. will more robustly maintain their font size in the presence of project-level CSS. There is an explicit default font size for `.apos-ui`.
 
-## 2.6.2
+## 2.6.2 (2016-11-12)
 
 All tests passing.
 
@@ -1779,7 +1791,7 @@ All tests passing.
 * Use the permission name `edit-attachment` consistently, so that calling `addPublic('edit-attachment')` has the intended effect.
 * Manage view of pieces does not crash if `updatedAt` is missing from a piece.
 
-## 2.6.1
+## 2.6.1 (2016-11-08)
 
 All tests passing.
 
@@ -1791,7 +1803,7 @@ All tests passing.
 * The `type()` cursor filter now has a finalizer and merges its criteria there at the very end, so that you can override a previous call to it at any time prior to invoking `toArray` or similar.
 * Area controls no longer interfere with visibility of widget type selection menu.
 
-## 2.6.0
+## 2.6.0 (2016-11-04)
 
 All tests passing.
 
@@ -1804,7 +1816,7 @@ All tests passing.
 * Syntax errors in "related types" such as cursors now produce an improved error message with filename and line number.
 * Showstopper errors during startup are reported in a less redundant way.
 
-## 2.5.2
+## 2.5.2 (2016-11-01)
 
 All tests passing.
 
@@ -1815,7 +1827,7 @@ All tests passing.
 * Checkboxes for the `checkboxes` schema field type are now styled.
 * "View file" links in the file library are now styled as buttons.
 
-## 2.5.1
+## 2.5.1 (2016-10-28)
 
 All tests passing.
 
@@ -1825,7 +1837,7 @@ All tests passing.
 * Textarea focus state receives the same "glow" as a regular text input field.
 * Small documentation updates.
 
-## 2.5.0
+## 2.5.0 (2016-10-21)
 
 All tests passing.
 
@@ -1834,7 +1846,7 @@ All tests passing.
 * Bug fix: emit the `enhance` Apostrophe event only once on page load. This event is emitted only when there is new content that has been added to the page, e.g. once at page load, and also when a new widget is added or updated, etc. The first argument to your event handler will be a jQuery element which will contain only new elements.
 * Legacy support for `data/port` and `data/address` files has been restored. (Note that `PORT` and `ADDRESS` environment variables supersede these. In modern Stagecoach deployments `data/port` is often a space-separated list of ports, and the `deployment/start` script parses these out and launches multiple processes with different PORT variables.)
 
-## 2.4.0
+## 2.4.0 (2016-10-19)
 
 All tests passing.
 
@@ -1855,14 +1867,14 @@ by distance.
 
 Since these are new features a minor version level bump is appropriate. However neither of these is a feature that a typical site developer will need to call directly.
 
-## 2.3.2
+## 2.3.2 (2016-10-17)
 
 All tests passing.
 
 * The quality of the autocomplete search results shown when selecting pages or pieces via a join was low. This has been corrected by calling the `.sort('search')` filter to sort by search result quality rather than the default sort order for the doc type manager in question.
 * All of the autocomplete suggestions fit on the screen on reasonably sized displays. With the recent addition of the "flip" feature to push the suggestions up rather than down if the bottom of the screen would otherwise be reached, this is critical to show the first and best suggestion. Further discussion for future UX improvement in [issue 704](https://github.com/punkave/apostrophe/issues/704).
 
-## 2.3.1
+## 2.3.1 (2016-10-13)
 
 All tests passing.
 
@@ -1871,7 +1883,7 @@ All tests passing.
 * The `login` module now has an alias, `apos.login`, like other core modules.
 * Updated the jquery projector plugin to the latest version.
 
-## 2.3.0
+## 2.3.0 (2016-10-06)
 
 All tests passing.
 
@@ -1879,7 +1891,7 @@ All tests passing.
 * `baseUrl` project-wide option added, yielding the same benefit as in 0.5: you get absolute URLs for all pages everywhere. (If you don't want absolute URLs, just don't set it.) This is very beneficial when generating `og:meta` tags for Facebook, or generating emails.
 * A direct link to the original file has been added to the file manager's editor modal.
 
-## 2.2.2
+## 2.2.2 (2016-10-05)
 
 All tests passing.
 
@@ -1887,13 +1899,13 @@ All tests passing.
 * Addition of slugs to projection for autocomplete works for joins with a specific page type, too.
 * Fixed a chicken-and-egg problem in the global module that kicked in if the "global" doc contains widgets powered by modules not yet initialized at the time the global module checks for the existence of the doc.
 
-## 2.2.1
+## 2.2.1 (2016-10-04)
 
 All tests passing.
 
 Fixed an oversight: the new `pageBeforeCopy` global method now takes `req` as its first parameter. Since `2.2.0` was first published 5 minutes ago and this method has not yet been documented this is not regarded as a bc break.
 
-## 2.2.0
+## 2.2.0 (2016-10-04)
 
 All tests passing.
 
@@ -1903,7 +1915,7 @@ All tests passing.
 * Include page slugs in the autocomplete dropdown for joins with pages.
 * `chooserChoiceBase.html` restored; some projects were depending on extending it, which is a useful technique.
 
-## 2.1.5
+## 2.1.5 (2016-10-01)
 
 All tests passing.
 
@@ -1911,7 +1923,7 @@ All tests passing.
 * Files widget displays upload button in the same user-friendly position as the images widget
 * Font size for tabs and help labels is explicit to avoid side effects from project-level CSS
 
-## 2.1.4
+## 2.1.4 (2016-09-23)
 
 All tests passing.
 
@@ -1920,7 +1932,7 @@ All tests passing.
 * A field appears properly when two diferent choices list it for `showFields`
 * As in 0.5, a required field hidden by `showFields` is not required (but will be if you elect the choice that shows it)
 
-## 2.1.3
+## 2.1.3 (2016-09-20)
 
 All tests passing.
 
@@ -1928,27 +1940,27 @@ All tests passing.
 * The recent addition of the HTML5 doctype caused the login page to be invisible in the sandbox project (not the boilerplate project). This has been fixed.
 * The recent addition of the HTML5 doctype caused the admin bar to appear with a slight visual defect. This has been fixed.
 
-## 2.1.2
+## 2.1.2 (2016-09-19)
 
 Fix for [#668](https://github.com/punkave/apostrophe/issues/668), crash occurring when admin bar group leader starts out too close to the end of the admin bar items array.
 
-## 2.1.1
+## 2.1.1 (2016-09-18)
 
 Full Windows compatibility restored. The "recursively copy asset folders if on Windows" behavior from 0.5 was reimplemented. This is necessary to allow Apostrophe to run as a non-administrator on Windows. Running as administrator is the moral equivalent of running as root on Linux, which we would never recommend.
 
 Since Apostrophe did not function previously on Windows and there is no behavior change on Mac/Linux this is effectively a bug fix rather than a new feature, thus 2.1.1.
 
-## 2.1.0
+## 2.1.0 (2016-09-16)
 
 * Introduced the new `apos.areas.richText` and `apos.areas.plaintext` methods, which are also available in templates by the same names.
 
 * Added and documented the `addImageSizes` option of the `apostrophe-attachments` module.
 
-## 2.0.4
+## 2.0.4 (2016-09-14)
 
 * The `apostrophe-login` module now invokes `loginAfterLogin(req, callback)` on all modules that have such a method, via `apos.callAll`. Modules that do not need a callback can supply this method with only one argument. Afterwards, `apostrophe-login` redirects to `req.redirect`, as is supported elsewhere in Apostrophe. So you can assign to `req.redirect` in your callback to change the user's destination after a successful login. If `req.redirect` is not set, the user is redirected to the home page.
 
-## 2.0.3
+## 2.0.3 (2016-09-13)
 
 The `ancestors` and `children` filters defaulted to `areas(false)`, but `joins(false)` was omitted, contrary to documentation which has always indicated the information returned is limited for performance. This was fixed. You can still override freely with the `filters` option to `apostrophe-pages`.
 
@@ -1956,14 +1968,14 @@ The HTML5 doctype was added to `outerLayoutBase`. HTML5 was always assumed, and 
 
 Warning message instructions for configuring the session secret were fixed (the actual location has not changed).
 
-## 2.0.2
+## 2.0.2 (2016-09-08)
 
 Previously the `contextual` flag of a pieces module was not considered before deciding to redirect to the "show page" for the piece, which might not exist. This has been fixed. It should only happen when the module has `contextual: true`, creating a reasonable expectation that such a page must exist.
 
-## 2.0.1
+## 2.0.1 (2016-09-05)
 
 Packaging and documentation issues only.
 
-## 2.0.0
+## 2.0.0 (2016-09-03)
 
 Inaugural npm release of Apostrophe 2.x, which was used prior to that in many projects via git dependencies.
