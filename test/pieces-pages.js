@@ -50,15 +50,6 @@ describe('Pieces Pages', function() {
         }
       },
       afterInit: function(callback) {
-        console.log('>> afterInit');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        console.log('>> afterListen');
         // In tests this will be the name of the test file,
         // so override that in order to get apostrophe to
         // listen normally and not try to run a task. -Tom
