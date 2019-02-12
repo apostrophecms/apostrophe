@@ -1,5 +1,69 @@
 # Changelog
 
+## 2.77.0 (2019-02-12)
+
+* **The home page now works correctly when it is a pieces-page** powered by
+`apostrophe-pieces-pages`. Specifically, the URLs of pieces are generated
+correctly in this situation. This allows the home page to be a blog page,
+for example. Regression tests have been added to ensure this does
+not break in the future.
+
+* **Attachments (files) now become inaccessible properly** when the
+last file or image piece that directly contains them moves to the trash.
+Formerly, attachments were incorrectly marked as "part of" pages that
+merely loaded them as part of a join or similar relationship. **A migration
+has been added** to correctly reset the `docIds` and `trashDocIds` arrays
+of all attachments on a one-time basis after which they will be tracked
+properly going forward.
+
+* **Migrations now have a progress display when iterating over all
+documents.** This progress display automatically goes away if the
+migrations task is not running with access to a TTY (for instance,
+it is running in a deployment pipeline). You may note that not all
+migrations use this feature; generally the most time-consuming will however.
+
+* **You can now specify a projection for a reverse join without the need to explicitly include the `idsField`, or even know what it is.** This was one of several reasons why developers often gave up on projections for reverse joins, or went back to the old approach of specifying `idsField` rather than using `reverseOf`.
+
+Here is an example from the [apostrophe-samples](https://github.com/apostrophecms/apostrophe-samples) project:
+
+```javascript
+// Forward join: in schema of products
+{
+  name: '_specialists',
+  type: 'joinByArray',
+  withType: 'specialist',
+  label: 'Specialists',
+  help: 'The right people to ask about this product.'
+}
+```
+
+```javascript
+// Reverse join: in schema of specialists
+{
+  name: '_products',
+  type: 'joinByArrayReverse',
+  withType: 'product',
+  reverseOf: '_specialists',
+  projection: {
+    _url: 1,
+    title: 1
+  }
+}
+```
+
+> Note that we can also project `_url: 1` to get all the fields necessary
+to populate `_url` when the product is fetched, even though it is not
+a real property in the database.
+
+* Unnecessary schema validation errors are no longer thrown when using
+`joinByOneReverse` with `reverseOf`.
+
+* Schema fields named `format` are now allowed for pieces. There was a
+conflict with the UI code and backend routes of the "Manage Pieces" dialog box.
+
+* "Drag and drop" now works properly for widgets that have just been
+added to the page. There is no need to refresh the page first.
+
 ## 2.76.1 (2019-02-06)
 
 Unit tests passing.
