@@ -2,6 +2,10 @@
 
 ## 2.77.2 (2019-02-12)
 
+Unit tests passing.
+
+Regression tests passing (including new migrations test).
+
 * Most migrations were failing when run in a non-interactive session.
 This was due to a stray piece of code that tried to interact with the
 progress meter when it was not available. This has been fixed. This
@@ -13,16 +17,23 @@ all attachment permissions are properly restored. This resolves the issue
 that began with version 2.77.0.
 * The migration was also updated to avoid any chance of needlessly
 disabling permissions on a temporary basis during the migration run.
-* **If you temporarily lost access to your media, you can restore access**
-with the following sequence of command line tasks:
+* **If you temporarily lost access to your media due to running migrations
+with 2.77.0, which was available for a few hours today, you can restore access**
+with the following command line task:
 
 ```
 node app apostrophe-attachments:recompute-all-doc-references
+```
+
+**If you manually set your permissions globally as a workaround**, you should run
+this task to reset them appropriately:
+
+```
 node app apostrophe-attachments:reset-uploadfs-permissions
 ```
 
 Although there is no reason to expect a recurrence of this issue, these
-tasks will continue to be available going forward, just in case.
+command line tasks will continue to be available going forward, just in case.
 
 ### Regression test updates
 
