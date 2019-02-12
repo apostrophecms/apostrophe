@@ -1,6 +1,40 @@
 # Changelog
 
+## 2.77.2 (2019-02-12)
+
+* Most migrations were failing when run in a non-interactive session.
+This was due to a stray piece of code that tried to interact with the
+progress meter when it was not available. This has been fixed. This
+was the underlying major issue in version 2.77.0.
+* The recent migration to set the `docIds` and `trashDocIds` properties of
+attachments correctly, allowing them to become inaccessible at the
+proper time, now runs and completes correctly, at the end of which
+all attachment permissions are properly restored. This resolves the issue
+that began with version 2.77.0.
+* The migration was also updated to avoid any chance of needlessly
+disabling permissions on a temporary basis during the migration run.
+* **If you temporarily lost access to your media, you can restore access**
+with the following sequence of command line tasks:
+
+```
+node app apostrophe-attachments:recompute-all-doc-references
+node app apostrophe-attachments:reset-uploadfs-permissions
+```
+
+Although there is no reason to expect a recurrence of this issue, these
+tasks will continue to be available going forward, just in case.
+
+### Regression test updates
+
+Our regression tests are being updated to prevent a recurrence by
+noninteractively invoking `apostrophe-migrations:migrate`
+and checking for a clean exit code.
+
 ## 2.77.1 (2019-02-12)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Unfortunately the new migration in 2.77.0 appears to have caused
 all permissions to revert to 000 on uploaded media on at least one site.
