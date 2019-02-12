@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.77.1 (2019-02-12)
+
+* Unfortunately the new migration in 2.77.0 appears to have caused
+all permissions to revert to 000 on uploaded media on at least one site.
+In an abundance of caution we have pushed out 2.77.1 which does not
+carry out that migration. We are working on 2.77.2 which will carry it out
+properly. You may restore your permissions with
+`chmod 644 public/uploads/attachments/*`, if you are using S3 you
+can do this by restoring public access to each file, for Azure the
+suffix added to the name to disable each file would need to be removed.
+Fortunately this issue was caught quickly so there are probably no
+instances of the latter two in the wild.
+
+We apologize for this serious issue and will provide a complete postmortem
+with 2.77.2.
+
 ## 2.77.0 (2019-02-12)
 
 * **The home page now works correctly when it is a pieces-page** powered by
