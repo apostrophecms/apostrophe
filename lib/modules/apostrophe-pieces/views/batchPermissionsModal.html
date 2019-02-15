@@ -24,7 +24,7 @@
 
 {%- block body -%}
   <form class="apos-form" data-apos-form>
-    {{ schemas.fields(data.schema) }}
+    {{ schemas.fields(data.schema, { tabs: false }) }}
   </form>
 {%- endblock -%}
 
