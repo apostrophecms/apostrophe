@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.78.0 (2019-02-15)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* You can now set permissions for many pieces at once via the new "set permissions for..."
+batch operation in the "manage pieces" dialog box. Batch operations are accessible via a
+dropdown at the bottom of the dialog box after you check the boxes to select various pieces.
+Note that if you check the box to select all the pieces on this page, you will be asked
+if you want to select *all* pieces. So it is possible to set the permissions of all of the
+pieces at once.
+
+Note that **permissions have no effect on file attachment URLs unless you use 
+the optional [apostrophe-secure-attachments](https://github.com/apostrophecms/apostrophe-secure-attachments) module.** Once you add that module, the new batch operation becomes a powerful
+way to lock down all of your PDFs at once.
+
+* The "Select Everything" checkbox for pieces, which becomes accessible after you "Select All"
+pieces on the current page, now operates much faster on large databases and does not block
+the main thread of browser execution for an extended time.
+
+Thanks to our [enterprise clients](https://apostrophecms.org/support/enterprise-support),
+including Michelin, for their support of our work on these items.
+
 ## 2.77.2 (2019-02-12)
 
 Unit tests passing.
