@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.79.0 (2019-02-21)
+
+* Built-in migration progress meter is much improved. The new implementation:
+  * Does not display anything if the task completes within 1 second;
+  * Allows work to begin even before the total number of items is known;
+  * Has a much more stable ETA;
+  * Does not crop the total off the far end;
+  * Displays steps/sec (very useful metric for development); and
+  * Has highly stable formatting (not distracting to the eye).
+* Eliminates unnecessary warnings about unconsumed promises in migrations.
+
 ## 2.78.0 (2019-02-15)
 
 Unit tests passing.
