@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.79.0 (2019-02-21)
+## 2.79.0 (2019-02-22)
 
 * Built-in migration progress meter is much improved. The new implementation:
   * Does not display anything if the task completes within 1 second;
