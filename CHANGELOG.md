@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.80.0 (2019-02-28)
+
+* A recently introduced change broke the filtering that prevented users from selecting too-small images when `minSize` is in effect. This has been corrected. Note that site visitors never actually saw too-small images because filtering did take effect later in the process.
+* Numbers (in addition to strings) are now permissible choices for select elements. If the choice selected is a number, a number will be stored in the field. Most of this fix is in the `launder` module but there is a small fix in apostrophe core as well.
+* If a doc is in the trash already, the edit dialog box should have a "Rescue" button rather than a "Trash" button on the "More" dropdown menu.
+* `boolean` fields can now be made `mandatory`. If a boolean field is mandatory, the form will not validate unless the user selects "Yes." This is useful for simple "terms and conditions" forms. You must specify a message to be shown to the user if they do not select "Yes," like this:
+
+```
+{
+  name: 'toc',
+  label: 'Accept the Terms and Conditions',
+  type: 'boolean',
+  // Displayed if you try to save without picking Yes
+  mandatory: 'You must accept the Terms and Conditions to continue.',
+  // Always displayed
+  help: 'I have read and accept the Terms and Conditions.'
+}
+```
+
+Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility. 
+
 ## 2.79.0 (2019-02-22)
 
 * Built-in migration progress meter is much improved. The new implementation:
