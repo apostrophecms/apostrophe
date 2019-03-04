@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('@sailshq/lodash');
-var async = require('async');
 var apos;
 
 describe('Docs Advisory Lock Timeout', function() {
