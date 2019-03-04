@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.81.0 (2019-03-04)
+
+* The conflict resolution mechanism for simultaneous edits has been improved. Previously, Apostrophe tracked how long it had been since the "last edit" by the previous person. But if the browser window closed without sending an "unlock" message, that "last edit" might be a very long time ago. This led to nuisance confirmation prompts and a tendency to ignore their message.
+
+Beginning with this release, the browser instead actively refreshes the lock periodically. And if the browser does not do so for 5 minutes, the lock is automatically discarded.
+
+This greatly reduces the chance that you will see a "someone else is editing that document" message when this is not actually the case.
+
+However, do note that you will no longer see an indication of the "last edit" time. This is because this time was never really meaningful for the "Edit Piece" dialog box, and often misleading for on-page editing as well. Instead, you may assume that the other person is still at the very least on the page in question if you see this message at all.
+
+* Although it was released separately as part of the `launder` module, and an `npm update` should fetch it for you automatically, it should be mentioned that `launder` version 1.1.1 has been released and prevents crashes if the `value` of some of your select element choices is null or undefined. Such choices do not work and cannot be selected reliably (only strings and numbers are supported, including the empty string), but since versions prior to 1.1.0 did not crash on such choices, we have patched 1.1.1 to also tolerate their presence.
+
+Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support) clients for making these enhancements possible.
+
+* The case-insensitive sort for filter choices no longer crashes if a choice cannot be converted to a string. Thanks to Fawzi Fakhro.
+
 ## 2.80.0 (2019-02-28)
 
 * A recently introduced change broke the filtering that prevented users from selecting too-small images when `minSize` is in effect. This has been corrected. Note that site visitors never actually saw too-small images because filtering did take effect later in the process.
