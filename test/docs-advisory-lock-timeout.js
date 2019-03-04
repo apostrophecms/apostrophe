@@ -116,7 +116,6 @@ describe('Docs Advisory Lock Timeout', function() {
     setTimeout(attempt, 3000);
     function attempt() {
       apos.docs.lock(req, 'lori', 'def', function(err) {
-        console.log(err);
         assert(!err);
         done();
       });
