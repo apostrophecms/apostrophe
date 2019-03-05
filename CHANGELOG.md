@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.81.1 (2019-03-05)
+
+* Default values are now respected by the global doc. Specifically, if your field has a `def` property when the global doc is first created, it will be set accordingly. In addition, if a field is added to the schema and your site is restarted, it will also be added with the correct default at this time. Tests coverage has been added for this scenario.
+
 ## 2.81.0 (2019-03-04)
 
 * The conflict resolution mechanism for simultaneous edits has been improved. Previously, Apostrophe tracked how long it had been since the "last edit" by the previous person. But if the browser window closed without sending an "unlock" message, that "last edit" might be a very long time ago. This led to nuisance confirmation prompts and a tendency to ignore their message.
