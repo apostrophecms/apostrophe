@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.81.2 (2019-03-06)
+
+* Stability improvement: search index method of the `tags` type will not crash if the `tags` type is somehow truthy without being an array.
+
 ## 2.81.1 (2019-03-05)
 
 * Default values are now respected by the global doc. Specifically, if your field has a `def` property when the global doc is first created, it will be set accordingly. In addition, if a field is added to the schema and your site is restarted, it will also be added with the correct default at this time. Tests coverage has been added for this scenario.
