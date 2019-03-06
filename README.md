@@ -25,14 +25,14 @@ Moreover, there's tons of great info in the ["How To"](http://apostrophecms.org/
 
 ApostropheCMS is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
 
-* [apostrophe-headless](https://github.com/punkave/apostrophe-headless) - Add REST APIs and power your React / Vue / Native / etc. apps with a headless CMS.
-* [apostrophe-blog](https://github.com/punkave/apostrophe-blog) - Everything you need to put a blog on your site.
-* [apostrophe-events](https://github.com/punkave/apostrophe-events) - Manage upcoming events.
-* [apostrophe-workflow](https://github.com/punkave/apostrophe-workflow) - Add powerful localization capabilities to your project.
-* [apostrophe-passport](https://github.com/punkave/apostrophe-passport) - Authenticate via Twitter, Facebook, Github and more.
-* [apostrophe-saml](https://github.com/punkave/apostrophe-saml) - Authenticate via Shibboleth, as well as corporate SAML environments like Salesforce.
-* [apostrophe-places](https://github.com/punkave/apostrophe-places) - Manage geotagged content and display it on a map.
-* [apostrophe-redirects](https://github.com/punkave/apostrophe-redirects) - An easy redirects module.
+* [apostrophe-headless](https://github.com/apostrophecms/apostrophe-headless) - Add REST APIs and power your React / Vue / Native / etc. apps with a headless CMS.
+* [apostrophe-blog](https://github.com/apostrophecms/apostrophe-blog) - Everything you need to put a blog on your site.
+* [apostrophe-events](https://github.com/apostrophecms/apostrophe-events) - Manage upcoming events.
+* [apostrophe-workflow](https://github.com/apostrophecms/apostrophe-workflow) - Add powerful localization capabilities to your project.
+* [apostrophe-passport](https://github.com/apostrophecms/apostrophe-passport) - Authenticate via Twitter, Facebook, Github and more.
+* [apostrophe-saml](https://github.com/apostrophecms/apostrophe-saml) - Authenticate via Shibboleth, as well as corporate SAML environments like Salesforce.
+* [apostrophe-places](https://github.com/apostrophecms/apostrophe-places) - Manage geotagged content and display it on a map.
+* [apostrophe-redirects](https://github.com/apostrophecms/apostrophe-redirects) - An easy redirects module.
 
 ## Additional Resources
 We've got some great [open-source tools and how-to articles](http://apostrophecms.org/docs/tutorials/intermediate/deployment.html) that can help you out deploying, managing and maintaining ApostropheCMS sites.
@@ -48,4 +48,4 @@ We've got some great [open-source tools and how-to articles](http://apostrophecm
 **Chat with the community** on our [Discord server](http://chat.apostrophecms.org).
 
 ## License
-ApostropheCMS is released under the [MIT License](https://github.com/punkave/apostrophe/blob/master/LICENSE.md).
+ApostropheCMS is released under the [MIT License](https://github.com/apostrophecms/apostrophe/blob/master/LICENSE.md).

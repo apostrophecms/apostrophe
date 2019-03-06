@@ -1,6 +1,6 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var apos;
+var apos, apos2;
 var request = require('request-promise');
 var _ = require('@sailshq/lodash');
 var Promise = require('bluebird');
@@ -10,7 +10,9 @@ describe('Global', function() {
   this.timeout(t.timeout);
 
   after(function(done) {
-    return t.destroy(apos, done);
+    return t.destroy(apos, function() {
+      return t.destroy(apos2, done);
+    });
   });
 
   it('global should exist on the apos object', function(done) {
@@ -23,7 +25,14 @@ describe('Global', function() {
           port: 7900
         },
         'apostrophe-global': {
-          whileBusyDelay: 0.5
+          whileBusyDelay: 0.5,
+          addFields: [
+            {
+              name: 'testString',
+              type: 'string',
+              def: 'populated def'
+            }
+          ]
         }
       },
       afterInit: function(callback) {
@@ -70,6 +79,15 @@ describe('Global', function() {
     return apos.global.addGlobalToData(req).then(function() {
       assert(req.data.global);
       assert(req.data.global.type === 'apostrophe-global');
+    });
+  });
+
+  it('should populate def values of schema properties at insert time', function(done) {
+    var req = apos.tasks.getAnonReq();
+    return apos.global.addGlobalToData(req, function(err) {
+      assert(!err);
+      assert(req.data.global.testString === 'populated def');
+      done();
     });
   });
 
@@ -294,6 +312,52 @@ describe('Global', function() {
       });
     }).then(function(global) {
       assert(!global.globalBusyfr);
+    });
+  });
+  it('global should exist on the second apos object', function(done) {
+    apos2 = require('../index.js')({
+      root: module,
+      shortName: 'test',
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7901
+        },
+        'apostrophe-global': {
+          whileBusyDelay: 0.5,
+          addFields: [
+            {
+              name: 'anotherString',
+              type: 'string',
+              def: 'populated anotherString def'
+            }
+          ]
+        }
+      },
+      afterInit: function(callback) {
+        assert(apos2.global);
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos2.argv._ = [];
+        return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        done();
+      }
+    });
+  });
+
+  it('should populate def values of schema properties at update time', function(done) {
+    var req = apos.tasks.getAnonReq();
+    return apos.global.addGlobalToData(req, function(err) {
+      assert(!err);
+      // First verify it's an update not an insert - apos2 schema doesn't contain this but it should
+      // still be hanging around in the db
+      assert(req.data.global.testString === 'populated def');
+      assert(req.data.global.anotherString === 'populated anotherString def');
+      done();
     });
   });
 });

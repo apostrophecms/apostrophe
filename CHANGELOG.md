@@ -1,5 +1,50 @@
 # Changelog
 
+## 2.81.2 (2019-03-06)
+
+* Stability improvement: search index method of the `tags` type will not crash if the `tags` type is somehow truthy without being an array.
+
+## 2.81.1 (2019-03-05)
+
+* Default values are now respected by the global doc. Specifically, if your field has a `def` property when the global doc is first created, it will be set accordingly. In addition, if a field is added to the schema and your site is restarted, it will also be added with the correct default at this time. Tests coverage has been added for this scenario.
+
+## 2.81.0 (2019-03-04)
+
+* The conflict resolution mechanism for simultaneous edits has been improved. Previously, Apostrophe tracked how long it had been since the "last edit" by the previous person. But if the browser window closed without sending an "unlock" message, that "last edit" might be a very long time ago. This led to nuisance confirmation prompts and a tendency to ignore their message.
+
+Beginning with this release, the browser instead actively refreshes the lock periodically. And if the browser does not do so for 5 minutes, the lock is automatically discarded.
+
+This greatly reduces the chance that you will see a "someone else is editing that document" message when this is not actually the case.
+
+However, do note that you will no longer see an indication of the "last edit" time. This is because this time was never really meaningful for the "Edit Piece" dialog box, and often misleading for on-page editing as well. Instead, you may assume that the other person is still at the very least on the page in question if you see this message at all.
+
+* Although it was released separately as part of the `launder` module, and an `npm update` should fetch it for you automatically, it should be mentioned that `launder` version 1.1.1 has been released and prevents crashes if the `value` of some of your select element choices is null or undefined. Such choices do not work and cannot be selected reliably (only strings and numbers are supported, including the empty string), but since versions prior to 1.1.0 did not crash on such choices, we have patched 1.1.1 to also tolerate their presence.
+
+Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support) clients for making these enhancements possible.
+
+* The case-insensitive sort for filter choices no longer crashes if a choice cannot be converted to a string. Thanks to Fawzi Fakhro.
+
+## 2.80.0 (2019-02-28)
+
+* A recently introduced change broke the filtering that prevented users from selecting too-small images when `minSize` is in effect. This has been corrected. Note that site visitors never actually saw too-small images because filtering did take effect later in the process.
+* Numbers (in addition to strings) are now permissible choices for select elements. If the choice selected is a number, a number will be stored in the field. Most of this fix is in the `launder` module but there is a small fix in apostrophe core as well.
+* If a doc is in the trash already, the edit dialog box should have a "Rescue" button rather than a "Trash" button on the "More" dropdown menu.
+* `boolean` fields can now be made `mandatory`. If a boolean field is mandatory, the form will not validate unless the user selects "Yes." This is useful for simple "terms and conditions" forms. You must specify a message to be shown to the user if they do not select "Yes," like this:
+
+```
+{
+  name: 'toc',
+  label: 'Accept the Terms and Conditions',
+  type: 'boolean',
+  // Displayed if you try to save without picking Yes
+  mandatory: 'You must accept the Terms and Conditions to continue.',
+  // Always displayed
+  help: 'I have read and accept the Terms and Conditions.'
+}
+```
+
+Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility. 
+
 ## 2.79.0 (2019-02-22)
 
 * Built-in migration progress meter is much improved. The new implementation:
