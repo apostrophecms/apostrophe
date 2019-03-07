@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('@sailshq/lodash');
 
-describe('Permissions', function() {
+describe('Extended Permissions', function() {
 
   this.timeout(t.timeout);
 
