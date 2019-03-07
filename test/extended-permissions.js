@@ -232,6 +232,9 @@ describe('Permissions', function() {
     it('forbids trash-doc for individual with update permission for the doc but no trash permission for turkeys', function() {
       return criteriaTest(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'trash-doc', 'edit1002', false);
     });
+    it('includes tests for adminOnly types', function() {
+      assert(false);
+    });
     
     function criteriaTest(req, permission, _id, present) {
       return apos.docs.find(req, { _id: _id }).permission(permission).toObject().then(function(doc) {
