@@ -1,50 +1,28 @@
-var async = require('async');
-
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
 // Drops the collections, not the entire database, to avoid problems
 // when testing something like a mongodb hosting environment with
 // credentials per database.
+//
+// If `apos` is null, no work is done.
 
-function destroy(apos, done) {
+async function destroy(apos) {
   if (!apos) {
-    done();
     return;
   }
-  return async.series([
-    drop,
-    destroy
-  ], function(err) {
-    if (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      process.exit(1);
-    }
-    return done();
-  });
-  function drop(callback) {
+  await drop();
+  await apos.destroy();
+  async function drop() {
     if (!(apos.db && apos.db.collections)) {
-      return callback(null);
+      return;
     }
-    return apos.db.collections(function(err, collections) {
-      if (err) {
-        return callback(err);
+    const collections = await apos.db.collections();
+    for (const collection of collections) {
+      // Avoid collections that are internal to mongodb bookkeeping
+      if (!collection.collectionName.match(/^system\./)) {
+        await collection.drop();
       }
-
-      // drop the collections
-      return async.eachSeries(collections, function(collection, callback) {
-        if (!collection.collectionName.match(/^system\./)) {
-          return collection.drop(callback);
-        }
-        return setImmediate(callback);
-      }, callback);
-    });
-  }
-  function destroy(callback) {
-    if (!apos.destroy) {
-      return callback(null);
     }
-    return apos.destroy(callback);
   }
 };
 

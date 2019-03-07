@@ -9,8 +9,8 @@ describe('Versions', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(function() {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
@@ -70,10 +70,9 @@ describe('Versions', function() {
           extend: 'apostrophe-custom-pages'
         }
       },
-      afterInit: function(callback) {
+      afterInit: async function() {
         assert(apos.versions);
         apos.argv._ = [];
-        return callback(null);
       },
       afterListen: function(err) {
         assert(!err);
