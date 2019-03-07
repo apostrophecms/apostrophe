@@ -25,6 +25,10 @@ describe('Permissions', function() {
         },
         'apostrophe-permissions': {
           extended: true
+        },
+        'turkeys': {
+          extend: 'apostrophe-pieces',
+          name: 'turkey'
         }
       },
       afterInit: function(callback) {
@@ -191,7 +195,7 @@ describe('Permissions', function() {
       return criteriaTest(req(), 'view-doc', 'loginrequired', false);
     });
     it('permits view-doc for guest user with loginRequired', function() {
-      return criteriaTest(req({ user: { _permissions: { guest: 1 } } }), 'view-doc', 'loginrequired', true);
+      return criteriaTest(req({ user: { _id: 1, _permissions: { guest: true } } }), 'view-doc', 'loginrequired', true);
     });
     it('permits view-doc for individual with proper id', function() {
       return criteriaTest(req({ user: { _id: 1 } }), 'view-doc', 'certainusers', true);
@@ -237,7 +241,10 @@ describe('Permissions', function() {
     });
     
     function criteriaTest(req, permission, _id, present) {
-      return apos.docs.find(req, { _id: _id }).permission(permission).toObject().then(function(doc) {
+      // In order to test whether this user can access documents even if they are
+      // unpublished or in the trash in certain circumstances, we must make sure we're
+      // not using the default filters that would choose not to return those things anyway
+      return apos.docs.find(req, { _id: _id }).permission(permission).published(null).trash(null).toObject().then(function(doc) {
         if (present) {
           assert(doc);
         } else {
