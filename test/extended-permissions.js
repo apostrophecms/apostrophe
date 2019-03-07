@@ -179,11 +179,6 @@ describe('Permissions', function() {
         throw e;
       });
     });
-    it('show ids', function() {
-      return apos.docs.db.find().toArray().then(function(docs) {
-        console.log(_.pluck(docs, '_id'));
-      });
-    });
 
     it('permits view-doc for public without loginRequired', function() {
       return criteriaTest(req(), 'view-doc', 'published', true);
@@ -216,7 +211,7 @@ describe('Permissions', function() {
       return criteriaTest(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'view-doc', 'edit1002', true);
     });
     it('permits view-doc for unpublished doc for individual with the updateany permission for the type', function() {
-      return criteriaTest(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'edit1002', true);
+      return criteriaTest(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'view-doc', 'edit1002', true);
     });
     it('permits update-doc for individual with the updateany permission', function() {
       return criteriaTest(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'update-doc', 'edit1002', true);
@@ -236,8 +231,15 @@ describe('Permissions', function() {
     it('forbids trash-doc for individual with update permission for the doc but no trash permission for turkeys', function() {
       return criteriaTest(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'trash-doc', 'edit1002', false);
     });
-    it('includes tests for adminOnly types', function() {
-      assert(false);
+    it('permits update-doc for an admin', function() {
+      return criteriaTest(req({ user: { _id: 1, _permissions: { 'admin': true } } }), 'update-doc', 'edit1002', true);
+    });
+    it('forbids update-doc for individual with group id for edit- and the update-turkey permission if turkeys are adminOnly', function() {
+      apos.modules.turkeys.options.adminOnly = true;
+      return criteriaTest(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'update-doc', 'edit1002', false);
+    });
+    it('still permits update-doc for an admin when turkeys are adminOnly', function() {
+      return criteriaTest(req({ user: { _id: 1, _permissions: { 'admin': true } } }), 'update-doc', 'edit1002', true);
     });
     
     function criteriaTest(req, permission, _id, present) {
