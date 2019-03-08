@@ -1,14 +1,34 @@
 # Changelog
 
+## 2.82.0 (2019-03-08)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If the `APOS_ALWAYS_COPY_ASSETS` environment variable is set, always copy assets rather than symlinking them. This is useful when running under Docker. Thanks to hexitex for this contribution. See also [building Docker images for Apostrophe projects](https://apostrophecms.org/docs/tutorials/howtos/docker.html).
+
 ## 2.81.2 (2019-03-06)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Stability improvement: search index method of the `tags` type will not crash if the `tags` type is somehow truthy without being an array.
 
 ## 2.81.1 (2019-03-05)
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Default values are now respected by the global doc. Specifically, if your field has a `def` property when the global doc is first created, it will be set accordingly. In addition, if a field is added to the schema and your site is restarted, it will also be added with the correct default at this time. Tests coverage has been added for this scenario.
 
 ## 2.81.0 (2019-03-04)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * The conflict resolution mechanism for simultaneous edits has been improved. Previously, Apostrophe tracked how long it had been since the "last edit" by the previous person. But if the browser window closed without sending an "unlock" message, that "last edit" might be a very long time ago. This led to nuisance confirmation prompts and a tendency to ignore their message.
 
@@ -25,6 +45,10 @@ Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/
 * The case-insensitive sort for filter choices no longer crashes if a choice cannot be converted to a string. Thanks to Fawzi Fakhro.
 
 ## 2.80.0 (2019-02-28)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * A recently introduced change broke the filtering that prevented users from selecting too-small images when `minSize` is in effect. This has been corrected. Note that site visitors never actually saw too-small images because filtering did take effect later in the process.
 * Numbers (in addition to strings) are now permissible choices for select elements. If the choice selected is a number, a number will be stored in the field. Most of this fix is in the `launder` module but there is a small fix in apostrophe core as well.
@@ -46,6 +70,10 @@ Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/
 Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility. 
 
 ## 2.79.0 (2019-02-22)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Built-in migration progress meter is much improved. The new implementation:
   * Does not display anything if the task completes within 1 second;
