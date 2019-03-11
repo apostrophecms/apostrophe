@@ -23,6 +23,7 @@ export default {
     fields: Array
   },
   data() {
+    console.log(this.fields);
     const next = {
       hasErrors: false,
       data: {}
