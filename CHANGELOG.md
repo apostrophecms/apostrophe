@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.83.0 (2019-03-12)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When using the `apostrophe-pieces-import` module, you may now set the `importAsRichText: true` option on an `area` or `singleton` field to import markup rather than treating it as plaintext. With this setting in place the behavior matches `apostrophe-pieces-export`. Also note that both `apostrophe-pieces-import` and `apostrophe-pieces-export` have been updated to be more compatible with one another.
+
 ## 2.82.0 (2019-03-08)
 
 Unit tests passing.
