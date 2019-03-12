@@ -1,6 +1,6 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
 
 describe('Admin bar', function() {
 
@@ -10,8 +10,8 @@ describe('Admin bar', function() {
   // EXISTENCE
   /// ///
 
-  it('should allow a group reversing the current order', function(done) {
-    apos = require('../index.js')({
+  it('should allow a group reversing the current order', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
 
@@ -40,29 +40,19 @@ describe('Admin bar', function() {
             }
           ]
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-admin-bar']);
-        assert(apos.adminBar);
-        assert(apos.adminBar.items.length === 8);
-        assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
-        assert(apos.adminBar.items[6].name === 'apostrophe-files');
-        assert(apos.adminBar.items[7].name === 'apostrophe-images');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        return t.destroy(apos, done);
       }
     });
+    assert(apos.modules['apostrophe-admin-bar']);
+    assert(apos.adminBar);
+    assert(apos.adminBar.items.length === 8);
+    assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
+    assert(apos.adminBar.items[6].name === 'apostrophe-files');
+    assert(apos.adminBar.items[7].name === 'apostrophe-images');
+    await t.destroy(apos);
   });
 
-  it('should allow a group obeying the current order', function(done) {
-    apos = require('../index.js')({
+  it('should allow a group obeying the current order', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
 
@@ -92,24 +82,14 @@ describe('Admin bar', function() {
           ]
         }
       },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-admin-bar']);
-        assert(apos.adminBar);
-        assert(apos.adminBar.items.length === 8);
-        assert(apos.adminBar.items[5].name === 'apostrophe-files');
-        assert(apos.adminBar.items[6].name === 'apostrophe-images');
-        assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        return t.destroy(apos, done);
-      }
     });
+    assert(apos.modules['apostrophe-admin-bar']);
+    assert(apos.adminBar);
+    assert(apos.adminBar.items.length === 8);
+    assert(apos.adminBar.items[5].name === 'apostrophe-files');
+    assert(apos.adminBar.items[6].name === 'apostrophe-images');
+    assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
+    await t.destroy(apos);
   });
 
 });
