@@ -2,10 +2,10 @@
   <ApostropheModal @close="$emit('close')">
     <template slot="header">
       <!-- TODO i18n -->
-      <p>New {{ options.label }}</p>
+      <p>New {{ moduleOptions.label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="options.schema" v-model="pieceInfo" />
+      <ApostropheSchemaEditor :fields="moduleOptions.schema" v-model="pieceInfo" />
     </template>
     <template slot="footer">
       <slot name="footer">
@@ -32,39 +32,9 @@ export default {
     moduleName: String
   },
   computed: {
-    options() {
-      return {
-        label: 'Products',
-        schema: [
-          {
-            type: 'string',
-            name: 'title',
-            label: 'Title',
-            required: true
-          },
-          {
-            type: 'slug',
-            name: 'slug',
-            label: 'Slug',
-            slugifies: 'title',
-            required: true
-          },
-          {
-            type: 'string',
-            name: 'address',
-            label: 'Address'
-          },
-          {
-            type: 'string',
-            name: 'message',
-            label: 'Message',
-            required: true,
-            min: 10,
-            max: 20
-          }
-        ]
-      };
-      // return window.apos.modules[this.moduleName];
+    moduleOptions() {
+      console.log('I am in here');
+      return window.apos.modules[this.moduleName];
     }
   },
   data() {
@@ -84,7 +54,7 @@ export default {
             'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
           }
         }).post(
-          this.options.action + '/insert',
+          this.moduleOptions.action + '/insert',
           this.pieceInfo.data
         );
         $this.$emit('saved');
