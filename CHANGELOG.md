@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.83.1 (2019-03-13)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: a crash in the lock refresh route was possible if an advisory lock was taken away by another tab or user. Thanks to `hexitex` for the report and the solution.
+
 ## 2.83.0 (2019-03-12)
 
 Unit tests passing.
