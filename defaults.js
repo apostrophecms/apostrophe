@@ -21,6 +21,7 @@ module.exports = {
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
     'apostrophe-schemas': {},
+    'apostrophe-permissions-schema-field': {},
     'apostrophe-docs': {},
     'apostrophe-jobs': {},
     'apostrophe-versions': {},

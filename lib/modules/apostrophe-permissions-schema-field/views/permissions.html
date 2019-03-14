@@ -1,3 +1,4 @@
+{{ apos.log('hello') }}
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
 
 {% macro permissions(field) %}
@@ -22,25 +23,25 @@
     {# JavaScript will hide all but one of these h5's per the combination
        of permissions given #}
     <h5 data-permissions-summary="">Users do not have permission to edit or create a {{ data.label }}.</h5>
-    <h5 data-permissions-summary="updateany-{{ type.name }}">
+    <h5 data-permissions-summary="updateany">
       Allows users to edit any {{ data.label }}, <span class="apos-permissions-no">but not create a new one or move one to the trash.</span>
     </h5>
-    <h5 data-permissions-summary="updateany-{{ type.name }} insert-{{ type.name }}">
+    <h5 data-permissions-summary="updateany insert">
       Allows users to edit any {{ data.label }} and to create a new {{ data.label }}, <span class="apos-permissions-no">but not move one to the trash.</span>
     </h5>
-    <h5 data-permissions-summary="updateany-{{ type.name }} trash-{{ type.name }}">
+    <h5 data-permissions-summary="updateany trash">
       Allows users to edit any {{ data.label }} and move them to the trash, <span class="apos-permissions-no">but not create a new {{ type.label }}.</span>
     </h5>
-    <h5 data-permissions-summary="updateany-{{ type.name }} insert-{{ type.name }} trash-{{ type.name }}">
+    <h5 data-permissions-summary="updateany insert trash">
       Allows users to create a new {{ data.label }}, edit an existing {{ data.label }}, and move a {{ data.label }} to the trash.
     </h5>
-    <h5 data-permissions-summary="insert-{{ type.name }}">
+    <h5 data-permissions-summary="insert">
       Allows users to create a new {{ data.label }}. <span class="apos-permissions-no">They cannot edit any existing {{ data.label }} or move one to the trash.</span>
     </h5>
-    <h5 data-permissions-summary="insert-{{ type.name }} update-{{ type.name }}">
+    <h5 data-permissions-summary="update insert">
       Allows users to create a new {{ data.label }}. They can also edit a {{ data.label }} that they created, or edit a {{ data.label }} for which they have been explicitly given permission. <span class="apos-permissions-no">They cannot move a {{ data.label }} to the trash.</span>
     </h5>
-    <h5 data-permissions-summary="insert-{{ type.name }} update-{{ type.name }} trash-{{ type.name }}">
+    <h5 data-permissions-summary="update insert trash">
       Allows users to create a new {{ data.label }}. They can also edit a {{ data.label }} that they created, move a {{ data.label }} that they created to the trash, and do the same things with a {{ data.label }} for which they have been explicitly granted permission.
     </h5>
 </div>
@@ -55,5 +56,7 @@
 </div>
 {% endmacro %}
 
+
+<h4>test</h4>
 {{ schemas.fieldset(data, permissions) }}
 
