@@ -62,7 +62,7 @@ describe('Search', function() {
 
         assert(doc.lowSearchText.match(/pizza/));
         assert(doc.highSearchText.match(/testing/));
-        assert(_.contains(doc.highSearchWords, 'test', 'pizza', 'testing'));
+        assert(_.includes(doc.highSearchWords, 'test', 'pizza', 'testing'));
         done();
       });
 

@@ -68,7 +68,7 @@ describe('Pages', function() {
 
       // Now make sure everything in expectedIndexes is in actualIndexes
       _.each(expectedIndexes, function(index) {
-        assert(_.contains(actualIndexes, index));
+        assert(_.includes(actualIndexes, index));
       });
 
       done();

@@ -90,8 +90,8 @@ describe('Tags', function() {
   it('should have a prefix option on the get method that filters the tags', function(done) {
     return apos.tags.listTags(apos.tasks.getReq(), { prefix: 'tag' }, function(err, tags) {
       assert(!err);
-      assert(_.contains(tags, 'tag1', 'tag2', 'tag3', 'tag4'));
-      assert(!_.contains(tags, 'agressive'));
+      assert(_.includes(tags, 'tag1', 'tag2', 'tag3', 'tag4'));
+      assert(!_.includes(tags, 'agressive'));
       done();
     });
   });
@@ -99,7 +99,7 @@ describe('Tags', function() {
   it('should have a contains option on the get method that filters the tags', function(done) {
     return apos.tags.listTags(apos.tasks.getReq(), { contains: 'ag' }, function(err, tags) {
       assert(!err);
-      assert(_.contains(tags, 'agressive', 'tag1', 'tag2', 'tag3', 'tag4'));
+      assert(_.includes(tags, 'agressive', 'tag1', 'tag2', 'tag3', 'tag4'));
       done();
     });
   });

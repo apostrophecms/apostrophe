@@ -48,7 +48,7 @@ describe('Urls', function() {
           '/events?tag=blue&page=5',
           '/events?page=5&tag=blue'
         ];
-        assert(_.contains(options, apos.urls.build('/events?page=5', { tag: 'blue' })));
+        assert(_.includes(options, apos.urls.build('/events?page=5', { tag: 'blue' })));
       });
       it('replaces parameters in the URL', function() {
         assert(apos.urls.build('/events?tag=blue', { tag: 'red' }) === '/events?tag=red');

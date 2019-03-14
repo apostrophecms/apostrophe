@@ -72,7 +72,7 @@ describe('Docs', function() {
 
       // Now make sure everything in expectedIndexes is in actualIndexes
       _.each(expectedIndexes, function(index) {
-        assert(_.contains(actualIndexes, index));
+        assert(_.includes(actualIndexes, index));
       });
 
       // Lastly, make sure there is a text index present
@@ -455,7 +455,7 @@ describe('Docs', function() {
       .then(function(firstNames) {
         assert(Array.isArray(firstNames));
         assert(firstNames.length === 5);
-        assert(_.contains(firstNames, 'Larry'));
+        assert(_.includes(firstNames, 'Larry'));
       });
   });
 
@@ -465,7 +465,7 @@ describe('Docs', function() {
       .then(function(firstNames) {
         assert(Array.isArray(firstNames));
         assert(firstNames.length === 5);
-        assert(_.contains(firstNames, 'Larry'));
+        assert(_.includes(firstNames, 'Larry'));
         var counts = cursor.get('distinctCounts');
         assert(counts['Larry'] === 1);
         assert(counts['Lori'] === 2);

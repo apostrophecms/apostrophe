@@ -195,8 +195,8 @@ describe('Schema Filters', function() {
       // Persons 0 and 10 have no cats
       assert(_people.length === 2);
       var ids = _.pluck(_people, '_id');
-      assert(_.contains(ids, people[0]._id));
-      assert(_.contains(ids, people[10]._id));
+      assert(_.includes(ids, people[0]._id));
+      assert(_.includes(ids, people[10]._id));
       done();
     });
   });
@@ -277,8 +277,8 @@ describe('Schema Filters', function() {
       // Persons 0 and 10 have no cats
       assert(_people.length === 2);
       var ids = _.pluck(_people, '_id');
-      assert(_.contains(ids, people[0]._id));
-      assert(_.contains(ids, people[10]._id));
+      assert(_.includes(ids, people[0]._id));
+      assert(_.includes(ids, people[10]._id));
       done();
     });
   });
