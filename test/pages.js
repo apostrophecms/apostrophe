@@ -1,6 +1,6 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('@sailshq/lodash');
+var _ = require('lodash');
 var request = require('request');
 
 var apos;
