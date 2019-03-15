@@ -491,7 +491,7 @@ module.exports = function(options) {
   }
 
   function lint(s) {
-    self.utils.warn('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+    self.utils.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
   }
 
   function afterInit(callback) {
