@@ -81,7 +81,7 @@ describe('Admin bar', function() {
             }
           ]
         }
-      },
+      }
     });
     assert(apos.modules['apostrophe-admin-bar']);
     assert(apos.adminBar);

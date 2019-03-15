@@ -1,9 +1,9 @@
 const path = require('path');
-const _ = require('@sailshq/lodash');
+const _ = require('lodash');
 const argv = require('yargs').argv;
 const fs = require('fs');
 const npmResolve = require('resolve');
-const defaults = require('./defaults.js');
+let defaults = require('./defaults.js');
 
 // **Awaiting the Apostrophe function is optional**
 
