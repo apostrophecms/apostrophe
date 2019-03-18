@@ -1,0 +1,39 @@
+.apos-field-permissions {
+  .apos-field-label {
+    font-size: 24px;
+  }
+  h4 {
+    font-weight: bold;
+    font-size: 18px;
+    margin: 2.0em 0 1em;
+  }
+  input[type="checkbox"] {
+    display: inline-block;
+    margin-left: 1em;
+  }
+  input[type="checkbox"].apos-first {
+    // Needed because some of them have clause wrappers ruling out first-child css
+    margin-left: 0; 
+  }
+  .apos-permissions-help {
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+    font-style: italic;
+  }
+  p {
+    margin-bottom: 0.25em;
+  }
+  .apos-permissions-disabled {
+    color: gray;
+  }
+  h5 {
+    font-weight: bold;
+    .apos-permissions-summary {
+      font-weight: normal;
+    }
+    .apos-permissions-no {
+      color: red;
+    }
+    margin-top: 1em;
+  }
+}
