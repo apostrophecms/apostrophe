@@ -14,6 +14,8 @@
   </div>
 </div>
 
+{% include "after-overall.html" %}
+
 {% for type in apos.modules['apostrophe-permissions-schema-field'].types() %}
   <div data-permissions="{{ type.name }}" class="apos-permissions-type">
     <h4>{{ type.pluralLabel }}</h4>
