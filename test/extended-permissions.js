@@ -99,6 +99,9 @@ describe('Extended Permissions', function() {
     it('permits view-doc for unpublished doc for individual with the updateany permission for the type', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'view-doc', { type: 'turkey', docPermissions: [ 'edit-1002' ] }));
     });
+    it('permits view-doc for unpublished doc for individual with the admin permission for the type', function() {
+      assert(apos.permissions.can(req({ user: { _id: 1, _permissions: { 'admin-turkey': true } } }), 'view-doc', { type: 'turkey', docPermissions: [ 'edit-1002' ] }));
+    });
     it('permits insert-doc for individual with the insert permission', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, _permissions: { 'insert-turkey': true } } }), 'insert-turkey'));
     });
@@ -107,6 +110,9 @@ describe('Extended Permissions', function() {
     });
     it('permits update-doc for individual with the updateany permission', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'update-doc', { type: 'turkey', docPermissions: [ 'edit-1002' ] }));
+    });
+    it('permits update-doc for individual with the admin permission for the type', function() {
+      assert(apos.permissions.can(req({ user: { _id: 1, _permissions: { 'admin-turkey': true } } }), 'update-doc', { type: 'turkey', docPermissions: [ 'edit-1002' ] }));
     });
     it('permits update-doc for individual with group id for edit- and the update-turkey permission', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'update-doc', { type: 'turkey', docPermissions: [ 'edit-1002' ] }));
@@ -213,8 +219,14 @@ describe('Extended Permissions', function() {
     it('permits view-doc for unpublished doc for individual with the updateany permission for the type', function() {
       return criteriaTest(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'view-doc', 'edit1002', true);
     });
+    it('permits view-doc for unpublished doc for individual with the admin permission for the type', function() {
+      return criteriaTest(req({ user: { _id: 1, _permissions: { 'admin-turkey': true } } }), 'view-doc', 'edit1002', true);
+    });
     it('permits update-doc for individual with the updateany permission', function() {
       return criteriaTest(req({ user: { _id: 1, _permissions: { 'updateany-turkey': true } } }), 'update-doc', 'edit1002', true);
+    });
+    it('permits update-doc for individual with the admin permission for the type', function() {
+      return criteriaTest(req({ user: { _id: 1, _permissions: { 'admin-turkey': true } } }), 'update-doc', 'edit1002', true);
     });
     it('permits update-doc for individual with group id for edit- and the update-turkey permission', function() {
       return criteriaTest(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { 'update-turkey': true } } }), 'update-doc', 'edit1002', true);
