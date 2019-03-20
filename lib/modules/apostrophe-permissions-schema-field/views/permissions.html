@@ -1,22 +1,27 @@
 {%- import "apostrophe-schemas:macros.html" as schemas -%}
 
+{# Used for standalone permissions like admin or private-locales #}
+{% macro permission(p) %}
+  <label for="{{ p.value }}"><input type="checkbox" name="{{ p.value }}" /> {{ __(p.label) }}</label>
+  {% if p.description %}
+    <p class="apos-permissions-help">{{ __(p.description) }}</p>
+  {% endif %}
+{% endmacro %}
+
 {% macro permissions(field) %}
 
 <div data-permissions-overall class="apos-permissions-type">
   <h4>Overall</h4>
   <div class="apos-permissions-type-checkboxes">
-    <label for="admin"><input type="checkbox" name="admin" /> Admin: Total Control of Everything</label>
-    <p class="apos-permissions-help">Allows users to do anything, including creating more users and groups.</p>
-    <label for="updateany-global"><input type="checkbox" name="updateany-global" /> Edit Global Preferences and Content</label>
-    <p class="apos-permissions-help"> Allows users to edit the global preferences of the site, as well as editing shared headers, shared footers, etc.</p>
-    <label for="guest"><input type="checkbox" name="guest" /> View content marked "Login Required"</label>
-    <p class="apos-permissions-help">Allows users to view content of various types when it is marked "Login Required." You can also use the "Certain People" setting for fine-tuned privacy.</p>
+    {% for p in module.overall() %}
+      {{ permission(p) }}
+    {% endfor %}
   </div>
 </div>
 
 {% include "after-overall.html" %}
 
-{% for type in apos.modules['apostrophe-permissions-schema-field'].types() %}
+{% for type in module.types() %}
   <div data-permissions="{{ type.name }}" class="apos-permissions-type">
     <h4>{{ type.pluralLabel }}</h4>
     <p data-admin>
