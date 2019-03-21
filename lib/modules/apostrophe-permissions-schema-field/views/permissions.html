@@ -3,16 +3,18 @@
 {# Used for standalone permissions like admin or private-locales that are not bound to a doc type #}
 
 {% macro independent(p) %}
-  <label for="{{ p.value }}"><input type="checkbox" name="{{ p.value }}" /> {{ __(p.label) }}</label>
-  {% if p.description %}
-    <p class="apos-permissions-help">{{ __(p.description) }}</p>
-  {% endif %}
+  <div data-independent-permission="{{ p.value }}">
+    <label for="{{ p.value }}"><input type="checkbox" name="{{ p.value }}" /> {{ __(p.label) }}</label>
+    {% if p.description %}
+      <p class="apos-permissions-help">{{ __(p.description) }}</p>
+    {% endif %}
+  </div>
 {% endmacro %}
 
 {# Output a group of permissions that don't follow the doc type permissions pattern #}
 
 {% macro independentGroup(field, group) %}
-  <div data-permissions-overall class="apos-permissions-type">
+  <div data-independent-group="{{ group.name }}" class="apos-permissions-type">
     {% if group.label %}
       <h3>{{ __(group.label) }}</h3>
     {% endif %}
@@ -27,132 +29,134 @@
 {# Output permissions for all of the doc types in a given typeGroup #}
 
 {% macro typeGroup(field, typeGroup) %}
-  {% if typeGroup.label %}
-    <h3>{{ typeGroup.label }}</h3>
-  {% endif %}
-  {# Extensibility via custom helper, used by workflow #}
-  {{ module.typeGroupPrologue(field, typeGroup) }}
-  {% for type in module.typeGroup(field, typeGroup) %}
-    <div data-permissions="{{ type.name }}" class="apos-permissions-type">
-      <h4>{{ type.pluralLabel }}</h4>
-      <p data-admin>
-        <input type="checkbox" data-verb="admin" name="admin-{{ type.name }}" class="apos-first" /> Admin: Total Control of {{ type.pluralLabel }}
-          {%- if type.permissionsFields -%}
-          , including granting edit access to individual {{ type.pluralLabel }} to others
-          {%- endif -%}
-      </p>
-      <p data-nuanced>
-        <input type="checkbox" data-verb="insert" name="insert-{{ type.name }}" class="apos-first" /> Create New
-        <input type="checkbox" data-verb="updateany" name="updateany-{{ type.name }}" /> Edit Any 
+<div data-type-group="{{ typeGroup.name }}">
+    {% if typeGroup.label %}
+      <h3>{{ typeGroup.label }}</h3>
+    {% endif %}
+    {# Extensibility via custom helper, used by workflow #}
+    {{ module.typeGroupPrologue(field, typeGroup) }}
+    {% for type in module.typeGroup(field, typeGroup) %}
+      <div data-permissions="{{ type.name }}" class="apos-permissions-type">
+        <h4>{{ type.pluralLabel }}</h4>
+        <p data-admin>
+          <input type="checkbox" data-verb="admin" name="admin-{{ type.name }}" class="apos-first" /> Admin: Total Control of {{ type.pluralLabel }}
+            {%- if type.permissionsFields -%}
+            , including granting edit access to individual {{ type.pluralLabel }} to others
+            {%- endif -%}
+        </p>
+        <p data-nuanced>
+          <input type="checkbox" data-verb="insert" name="insert-{{ type.name }}" class="apos-first" /> Create New
+          <input type="checkbox" data-verb="updateany" name="updateany-{{ type.name }}" /> Edit Any 
+          {% if type.name == 'apostrophe-page' %}
+            <span data-move-clause><input type="checkbox" data-verb="move" name="move-{{ type.name }}" /> ... And Move {{ type.pluralLabel }}</span>
+          {% endif %}
+          <span data-trash-clause><input type="checkbox" data-verb="trash" name="trash-{{ type.name }}" /> ... And Trash {{ type.pluralLabel }}</span>
+        </p>
+        <p data-nuanced data-update-clause class="apos-permissions-update-clause">
+          {% if type.permissionsFields or (type.name == 'apostrophe-page') %}
+            <input type="checkbox" data-verb="update" name="update-{{ type.name }}" class="apos-first" /> Users may also be explicitly
+            granted permission to edit specific {{ type.pluralLabel | lower }}, including those they created
+          {% else %}
+            <input type="checkbox" data-verb="update" name="update-{{ type.name }}" class="apos-first" /> Users may also edit the {{ type.pluralLabel | lower }} that they created
+          {% endif %}
+        </p>
+        {# JavaScript will hide all but one of these h5's per the combination
+           of permissions given #}
         {% if type.name == 'apostrophe-page' %}
-          <span data-move-clause><input type="checkbox" data-verb="move" name="move-{{ type.name }}" /> ... And Move {{ type.pluralLabel }}</span>
-        {% endif %}
-        <span data-trash-clause><input type="checkbox" data-verb="trash" name="trash-{{ type.name }}" /> ... And Trash {{ type.pluralLabel }}</span>
-      </p>
-      <p data-nuanced data-update-clause class="apos-permissions-update-clause">
-        {% if type.permissionsFields or (type.name == 'apostrophe-page') %}
-          <input type="checkbox" data-verb="update" name="update-{{ type.name }}" class="apos-first" /> Users may also be explicitly
-          granted permission to edit specific {{ type.pluralLabel | lower }}, including those they created
-        {% else %}
-          <input type="checkbox" data-verb="update" name="update-{{ type.name }}" class="apos-first" /> Users may also edit the {{ type.pluralLabel | lower }} that they created
-        {% endif %}
-      </p>
-      {# JavaScript will hide all but one of these h5's per the combination
-         of permissions given #}
-      {% if type.name == 'apostrophe-page' %}
-        <h5>Summary: 
-          <span class="apos-permissions-summary" data-permissions-summary="">User have no privileges at all with regard to pages.</span>
-          <span class="apos-permissions-summary" data-permissions-summary="admin">Users have complete control of pages, including the ability to grant editing privileges for individual pages to others.</span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany">Allows users to edit all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create them, move them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert">
-            Allows users to edit all {{ type.pluralLabel | lower }} and to create new ones, <span class="apos-permissions-no">but not move them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany trash">
-            Allows users to edit all {{ type.pluralLabel | lower }} and trash them, <span class="apos-permissions-no">but not move them or insert new ones.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash">
-            Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, and trash them, <span class="apos-permissions-no">but not move them.</span>
+          <h5>Summary: 
+            <span class="apos-permissions-summary" data-permissions-summary="">User have no privileges at all with regard to pages.</span>
+            <span class="apos-permissions-summary" data-permissions-summary="admin">Users have complete control of pages, including the ability to grant editing privileges for individual pages to others.</span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany">Allows users to edit all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create them, move them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert">
+              Allows users to edit all {{ type.pluralLabel | lower }} and to create new ones, <span class="apos-permissions-no">but not move them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany trash">
+              Allows users to edit all {{ type.pluralLabel | lower }} and trash them, <span class="apos-permissions-no">but not move them or insert new ones.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash">
+              Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, and trash them, <span class="apos-permissions-no">but not move them.</span>
 
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="insert">
-            Allows users to create new {{ type.pluralLabel | lower }}. <span class="apos-permissions-no">They cannot edit them, move them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one. <span class="apos-permissions-no">They cannot edit any others, create new ones, move them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update trash">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and trash those those specific {{ type.pluralLabel | lower }}.<span class="apos-permissions-no">They cannot edit any others, create new ones, or move them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, and those for which they have been explicitly given permission. <span class="apos-permissions-no">They cannot move them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert trash">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, move those they created to to the trash, and do the same things to {{ type.pluralLabel | lower }} for which they have been explicitly granted permission. <span class="apos-permissions-no">They cannot move them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany move">Allows users to edit and move all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create them or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert move">
-            Allows users to edit all {{ type.pluralLabel | lower }}, create new ones and move them, <span class="apos-permissions-no">but not trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany trash move">
-            Allows users to edit all {{ type.pluralLabel | lower }}, move them and trash them, <span class="apos-permissions-no">but not insert new ones.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash move">
-            Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, move them and trash them.
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update move">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and also move them. <span class="apos-permissions-no">They cannot edit any others, create new ones, or trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update trash move">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and also move or trash those those specific {{ type.pluralLabel | lower }}.<span class="apos-permissions-no">They cannot edit any others, or create new ones.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert move">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit and move those they created, and those for which they have been explicitly given permission. <span class="apos-permissions-no">They cannot trash them.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert trash move">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, move or trash those they have created, and do the same things to {{ type.pluralLabel | lower }} for which they have been explicitly granted permission.
-          </span>
-        </h5>
-      {% else %}
-        {% if type.permissionsFields %}
-          {% set createdOr = 'created or have individually been given access to' %}
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="insert">
+              Allows users to create new {{ type.pluralLabel | lower }}. <span class="apos-permissions-no">They cannot edit them, move them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one. <span class="apos-permissions-no">They cannot edit any others, create new ones, move them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update trash">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and trash those those specific {{ type.pluralLabel | lower }}.<span class="apos-permissions-no">They cannot edit any others, create new ones, or move them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, and those for which they have been explicitly given permission. <span class="apos-permissions-no">They cannot move them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert trash">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, move those they created to to the trash, and do the same things to {{ type.pluralLabel | lower }} for which they have been explicitly granted permission. <span class="apos-permissions-no">They cannot move them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany move">Allows users to edit and move all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create them or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert move">
+              Allows users to edit all {{ type.pluralLabel | lower }}, create new ones and move them, <span class="apos-permissions-no">but not trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany trash move">
+              Allows users to edit all {{ type.pluralLabel | lower }}, move them and trash them, <span class="apos-permissions-no">but not insert new ones.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash move">
+              Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, move them and trash them.
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update move">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and also move them. <span class="apos-permissions-no">They cannot edit any others, create new ones, or trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update trash move">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and also move or trash those those specific {{ type.pluralLabel | lower }}.<span class="apos-permissions-no">They cannot edit any others, or create new ones.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert move">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit and move those they created, and those for which they have been explicitly given permission. <span class="apos-permissions-no">They cannot trash them.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert trash move">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they created, move or trash those they have created, and do the same things to {{ type.pluralLabel | lower }} for which they have been explicitly granted permission.
+            </span>
+          </h5>
         {% else %}
-          {% set createdOr = 'created' %}
+          {% if type.permissionsFields %}
+            {% set createdOr = 'created or have individually been given access to' %}
+          {% else %}
+            {% set createdOr = 'created' %}
+          {% endif %}
+          <h5>Summary: 
+            <span class="apos-permissions-summary" data-permissions-summary="">User have no privileges at all with regard to {{ type.pluralLabel | lower }}.</span>
+            <span class="apos-permissions-summary" data-permissions-summary="admin">Users have complete control of {{ type.pluralLabel | lower }}{% if type.permissionsFields %}, including the ability to grant editing privileges for individual {{ type.pluralLabel | lower }} to others{% endif %}.</span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany">Allows users to edit all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create a new one or move one to the trash.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert">
+              Allows users to edit all {{ type.pluralLabel | lower }} and to create new ones, <span class="apos-permissions-no">but not move one to the trash.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany trash">
+              Allows users to edit all {{ type.pluralLabel | lower }} and move them to the trash, <span class="apos-permissions-no">but not create new ones.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash">
+              Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, and move them to the trash.
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="insert">
+              Allows users to create new {{ type.pluralLabel | lower }}. <span class="apos-permissions-no">They cannot edit them or move them to the trash.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one. <span class="apos-permissions-no">They cannot edit any others, create new ones, or move them to the trash.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update trash">
+              Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and move those specific {{ type.pluralLabel | lower }} to the trash.<span class="apos-permissions-no">They cannot edit any others, or create new ones.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they {{ createdOr }}. <span class="apos-permissions-no">They cannot move them to the trash.</span>
+            </span>
+            <span class="apos-permissions-summary" data-permissions-summary="update insert trash">
+              Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they {{ createdOr }}, and move those to the trash.
+            </span>
+          </h5>
         {% endif %}
-        <h5>Summary: 
-          <span class="apos-permissions-summary" data-permissions-summary="">User have no privileges at all with regard to {{ type.pluralLabel | lower }}.</span>
-          <span class="apos-permissions-summary" data-permissions-summary="admin">Users have complete control of {{ type.pluralLabel | lower }}{% if type.permissionsFields %}, including the ability to grant editing privileges for individual {{ type.pluralLabel | lower }} to others{% endif %}.</span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany">Allows users to edit all {{ type.pluralLabel | lower }}, <span class="apos-permissions-no">but not create a new one or move one to the trash.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert">
-            Allows users to edit all {{ type.pluralLabel | lower }} and to create new ones, <span class="apos-permissions-no">but not move one to the trash.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany trash">
-            Allows users to edit all {{ type.pluralLabel | lower }} and move them to the trash, <span class="apos-permissions-no">but not create new ones.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="updateany insert trash">
-            Allows users to create {{ type.pluralLabel | lower }}, edit existing ones, and move them to the trash.
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="insert">
-            Allows users to create new {{ type.pluralLabel | lower }}. <span class="apos-permissions-no">They cannot edit them or move them to the trash.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one. <span class="apos-permissions-no">They cannot edit any others, create new ones, or move them to the trash.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update trash">
-            Allows users to edit {{ type.pluralLabel | lower }} for which they have been explicitly given permission, one by one, and move those specific {{ type.pluralLabel | lower }} to the trash.<span class="apos-permissions-no">They cannot edit any others, or create new ones.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they {{ createdOr }}. <span class="apos-permissions-no">They cannot move them to the trash.</span>
-          </span>
-          <span class="apos-permissions-summary" data-permissions-summary="update insert trash">
-            Allows users to create new {{ type.pluralLabel | lower }}. They can also edit those they {{ createdOr }}, and move those to the trash.
-          </span>
-        </h5>
-      {% endif %}
-    </div>
-  {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
 {% endmacro %}
 
 {# Output everything in the manner described by the `presentation` array #}
