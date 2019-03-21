@@ -11,13 +11,13 @@
 
 {# Output a group of permissions that don't follow the doc type permissions pattern #}
 
-{% macro independentGroup(group) %}
+{% macro independentGroup(field, group) %}
   <div data-permissions-overall class="apos-permissions-type">
     {% if group.label %}
       <h3>{{ __(group.label) }}</h3>
     {% endif %}
     <div class="apos-permissions-type-checkboxes">
-      {% for p in module.independentGroup(group.name) %}
+      {% for p in module.independentGroup(field, group.name) %}
         {{ independent(p) }}
       {% endfor %}
     </div>
@@ -26,15 +26,13 @@
 
 {# Output permissions for all of the doc types in a given typeGroup #}
 
-{% macro typeGroup(typeGroup) %}
+{% macro typeGroup(field, typeGroup) %}
   {% if typeGroup.label %}
     <h3>{{ typeGroup.label }}</h3>
   {% endif %}
-  {% if typeGroup.prologue %}
-    {# Extensibility via custom helper, used by workflow #}
-    {{ typeGroup.prologue() }}
-  {% endif %}
-  {% for type in module.typeGroup(name) %}
+  {# Extensibility via custom helper, used by workflow #}
+  {{ module.typeGroupPrologue(field, typeGroup) }}
+  {% for type in module.typeGroup(field, typeGroup) %}
     <div data-permissions="{{ type.name }}" class="apos-permissions-type">
       <h4>{{ type.pluralLabel }}</h4>
       <p data-admin>
@@ -163,9 +161,9 @@
   
   {% for group in module.presentation() %}
     {% if group.type == 'independent' %}
-      {{ independentGroup(group) }}
+      {{ independentGroup(field, group) }}
     {% elif group.type == 'typed' %}
-      {{ typeGroup(group) }}
+      {{ typeGroup(field, group) }}
     {% endif %}
   {% endfor %}
 
