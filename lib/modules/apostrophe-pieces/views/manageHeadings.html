@@ -4,7 +4,7 @@
   {# markup for sorting when appropriate. -Tom #}
   <td>{{fields.checkbox('select-all')}}</td>
   {%- for column in data.columns -%}
-    <th class="apos-manage-column apos-manage-{{ data.options.name | css }}-{{ column.name | css }}" data-name="{{ column.name }}">{#
+  <th class="apos-manage-column apos-manage-{{ data.options.name | css }}-{{ column.name | css }}{% if column.sort %} apos-manage-column--sortable{% endif %}" {% if column.sort %}data-sort {% endif %}data-column-name="{{ column.name }}">{#
       #}{{ __(column.label) }}{#
       #}</th>
   {%- endfor -%}

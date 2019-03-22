@@ -1,60 +1,5 @@
 .apos-manage-field {
   font-weight: normal;
-  .apos-manage-sort-up, .apos-manage-sort-down {
-    &::before {
-      content: ' ';
-    }
-    text-decoration: none;
-  }
-  &.apos-manage-sort-current {
-    font-weight: bold;
-    background-color: gray;
-    a {
-      color: white;
-    }
-  }
-
-  // These rules are written this way so that the priority works
-  // the way we want it to.
-
-  // We show the arrow for the sort you WOULD GET if you clicked.
-  // The -sorts- classes indicate the default sort for this column
-  // and are useful if it is not the currently sorted column. The
-  // -sorting- classes indicate that this column is the active
-  // sort right now. Rules are ordered so that -sorting- wins. -Tom
-
-  &.apos-manage-sorts-up {
-    .apos-manage-sort-down {
-      display: none;
-    }
-    .apos-manage-sort-up {
-      display: inline;
-    }
-  }
-  &.apos-manage-sorts-down {
-    .apos-manage-sort-up {
-      display: none;
-    }
-    .apos-manage-sort-down {
-      display: inline;
-    }
-  }
-  &.apos-manage-sorting-up {
-    .apos-manage-sort-down {
-      display: inline;
-    }
-    .apos-manage-sort-up {
-      display: none;
-    }
-  }
-  &.apos-manage-sorting-down {
-    .apos-manage-sort-up {
-      display: inline;
-    }
-    .apos-manage-sort-down {
-      display: none;
-    }
-  }
 }
 
 .apos-ui .apos-choose-manage-views {
@@ -82,7 +27,7 @@
 
 .apos-ui .apos-manage-select-everything {
   .apos-transition();
-  max-height: 0; 
+  max-height: 0;
   overflow: hidden;
   padding: 0 @apos-padding-1;
   background-color: @apos-light;
@@ -100,3 +45,40 @@
   padding: @apos-padding-2 @apos-padding-1;
   max-height: 200px
 }
+
+.apos-ui .apos-manage-column--sortable:hover {
+  color: @apos-primary;
+  cursor: pointer;
+}
+
+.apos-manage-column--sortable:after {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 16px;
+  top: 2px;
+  position: relative;
+}
+
+.apos-manage-column--sortable:after {
+  content: '↕'
+}
+
+.apos-manage-column--sortable:not(.apos-manage-column--forward):not(.apos-manage-column--backward):hover:after {
+  content: '↓';
+}
+
+.apos-ui .apos-table {
+  .apos-manage-column--forward,
+  .apos-manage-column--backward {
+    color: @apos-primary;
+  }
+}
+
+.apos-manage-column--forward:after {
+  content: '↓';
+}
+
+.apos-manage-column--backward:after {
+  content: '↑';
+}
+
