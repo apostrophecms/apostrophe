@@ -27,7 +27,7 @@
 
 .apos-ui .apos-manage-select-everything {
   .apos-transition();
-  max-height: 0; 
+  max-height: 0;
   overflow: hidden;
   padding: 0 @apos-padding-1;
   background-color: @apos-light;
@@ -46,15 +46,36 @@
   max-height: 200px
 }
 
-.apos-manage-column&.apos-manage-column--sortable::after {
-  content: ' ●'; 
+.apos-ui .apos-manage-column--sortable:hover {
+  color: @apos-primary;
+  cursor: pointer;
 }
 
-.apos-manage-column&.apos-manage-column--sortable&.apos-manage-column--forward::after {
-  content: ' 🡇'; 
+.apos-manage-column--sortable:after {
+  display: inline-block;
+  margin-left: 5px;
 }
 
-.apos-manage-column&.apos-manage-column--sortable&.apos-manage-column--backward::after {
-  content: ' 🡅'; 
+.apos-manage-column--sortable:after {
+  content: '↕'
+}
+
+.apos-manage-column--sortable:not(.apos-manage-column--forward):not(.apos-manage-column--backward):hover:after {
+  content: '↓';
+}
+
+.apos-ui .apos-table {
+  .apos-manage-column--forward,
+  .apos-manage-column--backward {
+    color: @apos-primary;
+  }
+}
+
+.apos-manage-column--forward:after {
+  content: '↓';
+}
+
+.apos-manage-column--backward:after {
+  content: '↑';
 }
 
