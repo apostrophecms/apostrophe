@@ -1,10 +1,10 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
-var request = require('request');
-var async = require('async');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
+let request = require('request');
+let async = require('async');
 
-var apos;
+let apos;
 
 describe('Tags', function() {
 
@@ -46,7 +46,7 @@ describe('Tags', function() {
   });
 
   it('should insert some docs to test itself', function(done) {
-    var testDocs = [
+    let testDocs = [
       {
         title: 'Tag Test Doc 1',
         slug: '/tag-test-doc-1',

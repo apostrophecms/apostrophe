@@ -111,10 +111,10 @@ module.exports = async function(options) {
 
   // Merge configuration from defaults, data/local.js and app.js
   function mergeConfiguration(options, defaults) {
-    var config = {};
-    var local = {};
-    var localPath = options.__localPath || '/data/local.js';
-    var reallyLocalPath = self.rootDir + localPath;
+    let config = {};
+    let local = {};
+    let localPath = options.__localPath || '/data/local.js';
+    let reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
       local = require(reallyLocalPath);
@@ -143,8 +143,8 @@ module.exports = async function(options) {
   }
 
   function getRoot() {
-    var _module = module;
-    var m = _module;
+    let _module = module;
+    let m = _module;
     while (m.parent) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
@@ -158,18 +158,18 @@ module.exports = async function(options) {
   }
 
   function autodetectBundles() {
-    var modules = _.keys(self.options.modules);
+    let modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
-      var path = getNpmPath(name);
+      let path = getNpmPath(name);
       if (!path) {
         return;
       }
-      var module = require(path);
+      let module = require(path);
       if (module.moogBundle) {
         self.options.bundles = (self.options.bundles || []).concat(name);
         _.each(module.moogBundle.modules, function(name) {
           if (!_.has(self.options.modules, name)) {
-            var bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            let bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
             if (bundledModule.improve) {
               self.options.modules[name] = {};
             }
@@ -180,7 +180,7 @@ module.exports = async function(options) {
   }
 
   function getNpmPath(name) {
-    var parentPath = path.resolve(self.npmRootDir);
+    let parentPath = path.resolve(self.npmRootDir);
     try {
       return npmResolve.sync(name, { basedir: parentPath });
     } catch (e) {
@@ -241,10 +241,10 @@ module.exports = async function(options) {
       port: 7900,
       secret: 'irrelevant'
     });
-    var m = findTestModule();
+    let m = findTestModule();
     // Allow tests to be in test/ or in tests/
-    var testDir = require('path').dirname(m.filename);
-    var moduleDir = testDir.replace(/\/tests?$/, '');
+    let testDir = require('path').dirname(m.filename);
+    let moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
@@ -257,7 +257,7 @@ module.exports = async function(options) {
     // it also makes sure we encounter mocha along the way
     // and throws an exception if we don't
     function findTestModule() {
-      var m = module;
+      let m = module;
       while (m) {
         if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
           return m;
@@ -273,7 +273,7 @@ module.exports = async function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    var synth = require('moog-require')({
+    let synth = require('moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),

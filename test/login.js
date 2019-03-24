@@ -1,8 +1,8 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var request = require('request');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let request = require('request');
 
-var apos;
+let apos;
 
 describe('Login', function() {
 
@@ -44,7 +44,7 @@ describe('Login', function() {
 
   it('should be able to insert test user', function(done) {
     assert(apos.users.newInstance);
-    var user = apos.users.newInstance();
+    let user = apos.users.newInstance();
     assert(user);
 
     user.firstName = 'Harry';
@@ -77,8 +77,8 @@ describe('Login', function() {
 
   });
 
-  var loginLogoutJar = request.jar();
-  var loginEmailLogoutJar = request.jar();
+  let loginLogoutJar = request.jar();
+  let loginEmailLogoutJar = request.jar();
 
   it('should be able to login a user', function(done) {
     // otherwise logins are not remembered in a session

@@ -1,6 +1,6 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
 
 describe('Areas', function() {
 
@@ -141,7 +141,7 @@ describe('Areas', function() {
   });
 
   it('area considered empty when it should be', function() {
-    var doc = {
+    let doc = {
       type: 'test',
       _id: 'test',
       body: {
@@ -188,7 +188,7 @@ describe('Areas', function() {
   });
 
   it('area not considered empty when it should not be', function() {
-    var doc = {
+    let doc = {
       type: 'test',
       _id: 'test',
       body: {

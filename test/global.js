@@ -1,9 +1,9 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
-var request = require('request-promise');
-var _ = require('lodash');
-var Promise = require('bluebird');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
+let request = require('request-promise');
+let _ = require('lodash');
+let Promise = require('bluebird');
 
 describe('Global', function() {
 
@@ -42,7 +42,7 @@ describe('Global', function() {
   });
 
   it('should populate when global.addGlobalToData is used as middleware', function(done) {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     req.res.status = function(n) {
       assert(n <= 400);
       return req.res;
@@ -56,7 +56,7 @@ describe('Global', function() {
   });
 
   it('should populate when global.addGlobalToData is used with a callback', function(done) {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     return apos.global.addGlobalToData(req, function(err) {
       assert(!err);
       assert(req.data.global);
@@ -66,7 +66,7 @@ describe('Global', function() {
   });
 
   it('should populate when global.addGlobalToData is used to return a promise', function() {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     return apos.global.addGlobalToData(req).then(function() {
       assert(req.data.global);
       assert(req.data.global.type === 'apostrophe-global');
@@ -85,7 +85,7 @@ describe('Global', function() {
 
   it('busy mechanism (global)', function() {
     this.timeout(50000);
-    var retrieved = false;
+    let retrieved = false;
     return apos.global.whileBusy(function() {
       // Intentional parallelism: start a request while
       // we're busy, so we can verify it waits
@@ -121,7 +121,7 @@ describe('Global', function() {
       });
     }).then(function() {
       // Wait up to 1 second more for the delayed request to succeed
-      var start = Date.now();
+      let start = Date.now();
       return check();
       function check() {
         if (retrieved) {
@@ -158,7 +158,7 @@ describe('Global', function() {
 
   it('busy mechanism (default locale)', function() {
     this.timeout(50000);
-    var retrieved = false;
+    let retrieved = false;
     return apos.global.whileBusy(function() {
       // Intentional parallelism: start a request while
       // we're busy, so we can verify it waits
@@ -194,7 +194,7 @@ describe('Global', function() {
       });
     }, { locale: 'en' }).then(function() {
       // Wait up to 1 second more for the delayed request to succeed
-      var start = Date.now();
+      let start = Date.now();
       return check();
       function check() {
         if (retrieved) {
@@ -231,7 +231,7 @@ describe('Global', function() {
 
   it('busy mechanism (some other locale)', function() {
     this.timeout(50000);
-    var retrieved = false;
+    let retrieved = false;
     return apos.global.whileBusy(function() {
       // Intentional parallelism: start a request while
       // we're busy, so we can verify it doesn't wait
@@ -272,7 +272,7 @@ describe('Global', function() {
       });
     }, { locale: 'fr' }).then(function() {
       // Wait up to 1 second more for the delayed request to succeed
-      var start = Date.now();
+      let start = Date.now();
       return check();
       function check() {
         if (retrieved) {
@@ -319,7 +319,7 @@ describe('Global with separateWhileBusyMiddleware', function() {
           separateWhileBusyMiddleware: true,
           whileBusyDelay: 0.5,
           construct: function(self, options) {
-            var superAddGlobalToData = self.addGlobalToData;
+            let superAddGlobalToData = self.addGlobalToData;
             // For test purposes, use a simplified global middleware
             // that does not implement the locking, to verify that
             // the separateWhileBusyMiddleware successfully takes over
@@ -364,7 +364,7 @@ describe('Global with separateWhileBusyMiddleware', function() {
 
   it('busy mechanism (global)', function() {
     this.timeout(50000);
-    var retrieved = false;
+    let retrieved = false;
     return apos.global.whileBusy(function() {
       // Intentional parallelism: start a request while
       // we're busy, so we can verify it waits
@@ -400,7 +400,7 @@ describe('Global with separateWhileBusyMiddleware', function() {
       });
     }).then(function() {
       // Wait up to 1 second more for the delayed request to succeed
-      var start = Date.now();
+      let start = Date.now();
       return check();
       function check() {
         if (retrieved) {

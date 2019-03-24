@@ -1,8 +1,8 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var request = require('request');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let request = require('request');
 
-var apos;
+let apos;
 
 describe('custom-pages', function() {
 
@@ -45,7 +45,7 @@ describe('custom-pages', function() {
   });
 
   it('should fire a dispatch route for its homepage', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/', function(req, callback) {
       req.handlerInvoked = true;
       req.template = function(req, args) {
@@ -54,7 +54,7 @@ describe('custom-pages', function() {
       return setImmediate(callback);
     });
     // Simulate a page request
-    var req = {
+    let req = {
       data: {
         bestPage: {
           type: 'nifty-page'
@@ -72,13 +72,13 @@ describe('custom-pages', function() {
   });
 
   it('should fire a dispatch route matching a second, longer URL', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/foo', function(req, callback) {
       req.fooInvoked = true;
       return setImmediate(callback);
     });
     // Simulate a page request
-    var req = {
+    let req = {
       data: {
         bestPage: {
           type: 'nifty-page'
@@ -96,13 +96,13 @@ describe('custom-pages', function() {
   });
 
   it('should fire a dispatch route with parameters', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
       req.barInvoked = true;
       return setImmediate(callback);
     });
     // Simulate a page request
-    var req = {
+    let req = {
       data: {
         bestPage: {
           type: 'nifty-page'
@@ -123,7 +123,7 @@ describe('custom-pages', function() {
   });
 
   it('should allow a later call to dispatch to override an earlier dispatch route', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/foo', function(req, callback) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
@@ -132,7 +132,7 @@ describe('custom-pages', function() {
       return setImmediate(callback);
     });
     // Simulate a page request
-    var req = {
+    let req = {
       data: {
         bestPage: {
           type: 'nifty-page'
@@ -151,9 +151,9 @@ describe('custom-pages', function() {
   });
 
   it('should not match when page type is wrong', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
-    var req = {
+    let req = {
       data: {
         bestPage: {
           type: 'wibble-page'
@@ -171,9 +171,9 @@ describe('custom-pages', function() {
   });
 
   it('should not match when there is no bestPage', function(done) {
-    var niftyPages = apos.modules['nifty-pages'];
+    let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
-    var req = {
+    let req = {
       data: {
         bestPage: null
       },
@@ -189,7 +189,7 @@ describe('custom-pages', function() {
   });
 
   it('should be able to insert a test page manually into the db', function(done) {
-    var testItem =
+    let testItem =
       { _id: 'niftyPages1',
         type: 'nifty-page',
         slug: '/niftyPages',

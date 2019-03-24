@@ -1,7 +1,7 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
-var apos;
+let apos;
 
 describe('Db', function() {
 

@@ -1,7 +1,7 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
+let apos;
 
 describe('Express', function() {
 
@@ -47,16 +47,16 @@ describe('Express', function() {
     assert(apos.baseApp === apos.app);
   });
 
-  var request = require('request');
+  let request = require('request');
 
-  var jar;
+  let jar;
 
   function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: apos.csrfCookieName });
+    let csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: apos.csrfCookieName });
     if (!csrfCookie) {
       return null;
     }
-    var csrfToken = csrfCookie.value;
+    let csrfToken = csrfCookie.value;
     return csrfToken;
   }
 
@@ -110,7 +110,7 @@ describe('Express', function() {
   });
 
   it('should flunk a POST request with the wrong CSRF token', function(done) {
-    var csrfToken = 'BOGOSITY';
+    let csrfToken = 'BOGOSITY';
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
@@ -131,7 +131,7 @@ describe('Express', function() {
   });
 
   it('should use the extended bodyParser for submitted forms', function(done) {
-    var csrfToken = getCsrfToken(jar);
+    let csrfToken = getCsrfToken(jar);
     assert(csrfToken);
     request({
       method: 'POST',
@@ -153,7 +153,7 @@ describe('Express', function() {
   });
 
   it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
-    var csrfToken = getCsrfToken(jar);
+    let csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
@@ -174,7 +174,7 @@ describe('Express', function() {
   });
 
   it('should be able to implement a route with apostrophe-module.route', function(done) {
-    var csrfToken = getCsrfToken(jar);
+    let csrfToken = getCsrfToken(jar);
     request({
       method: 'POST',
       url: 'http://localhost:7900/modules/express-test/test2',
@@ -274,7 +274,7 @@ describe('Express', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        var req = apos.tasks.getReq({ url: '/test' });
+        let req = apos.tasks.getReq({ url: '/test' });
         assert(req.baseUrl === 'https://example.com');
         assert(req.absoluteUrl === 'https://example.com/test');
         // Last one before a new apos object
@@ -311,7 +311,7 @@ describe('Express', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        var req = apos.tasks.getReq({ url: '/test' });
+        let req = apos.tasks.getReq({ url: '/test' });
         assert(req.baseUrl === 'https://example.com');
         assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
         assert(req.absoluteUrl === 'https://example.com/subdir/test');

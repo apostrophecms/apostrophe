@@ -1,7 +1,7 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
-var apos;
+let apos;
 
 describe('Templates', function() {
 
@@ -37,9 +37,9 @@ describe('Templates', function() {
   });
 
   it('should be able to push a browser call and get back an HTML-safe JSON string', function() {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     req.browserCall('test(?)', { data: '<script>alert(\'ruh roh\');</script>' });
-    var calls = req.getBrowserCalls();
+    let calls = req.getBrowserCalls();
     assert(calls.indexOf('<\\/script>') !== -1);
     assert(calls.indexOf('</script>') === -1);
   });

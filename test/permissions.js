@@ -1,12 +1,12 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
 
 describe('Permissions', function() {
 
   this.timeout(t.timeout);
 
-  var apos;
+  let apos;
 
   after(function(done) {
     return t.destroy(apos, function() {
@@ -41,7 +41,7 @@ describe('Permissions', function() {
 
   // mock up a request
   function req(d) {
-    var o = {
+    let o = {
       traceIn: function() {},
       traceOut: function() {}
     };

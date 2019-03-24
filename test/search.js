@@ -1,8 +1,8 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
 
-var apos;
+let apos;
 
 describe('Search', function() {
 
@@ -43,7 +43,7 @@ describe('Search', function() {
   });
 
   it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.insert(req, {
       title: 'Testing Search Event',
       type: 'event',

@@ -1,13 +1,13 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
 
 describe('Apostrophe', function() {
 
   this.timeout(t.timeout);
 
   it('should exist', function(done) {
-    var apos = require('../index.js');
+    let apos = require('../index.js');
     assert(apos);
     return t.destroy(apos, done);
   });
@@ -98,7 +98,7 @@ describe('Apostrophe', function() {
   });
 
   it('should load the default modules and implicitly subclass the base module correctly', function(done) {
-    var defaultModules = require('../defaults.js').modules;
+    let defaultModules = require('../defaults.js').modules;
 
     var apos = require('../index.js')({
       root: module,

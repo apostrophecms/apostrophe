@@ -1,6 +1,6 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var Promise = require('bluebird');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let Promise = require('bluebird');
 
 describe('Promisified Events: apostrophe-docs:beforeInses', function() {
 
@@ -10,8 +10,8 @@ describe('Promisified Events: apostrophe-docs:beforeInses', function() {
     return t.destroy(apos, done);
   });
 
-  var apos;
-  var coreEventsWork = false;
+  let apos;
+  let coreEventsWork = false;
 
   it('should implement apostrophe-docs:beforeInsert handlers properly', function(done) {
     apos = require('../index.js')({

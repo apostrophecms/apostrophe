@@ -1,6 +1,6 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
 
 describe('Email', function() {
 
@@ -60,7 +60,7 @@ describe('Email', function() {
       function(err, info) {
         assert(!err);
         assert(info);
-        var message = info.message.toString();
+        let message = info.message.toString();
         assert(message.match(/Fred Astaire/));
         assert(message.match(/Subject: Welcome Aboard/));
         assert(message.match(/From: test@example\.com/));
@@ -83,7 +83,7 @@ describe('Email', function() {
       }
     ).then(function(info) {
       assert(info);
-      var message = info.message.toString();
+      let message = info.message.toString();
       assert(message.match(/Fred Astaire/));
       assert(message.match(/Subject: Welcome Aboard/));
       assert(message.match(/From: test@example\.com/));

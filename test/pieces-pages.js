@@ -1,8 +1,8 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var request = require('request');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let request = require('request');
 
-var apos;
+let apos;
 
 describe('Pieces Pages', function() {
 
@@ -65,10 +65,10 @@ describe('Pieces Pages', function() {
   });
 
   it('should be able to use db to insert test pieces', function(done) {
-    var testItems = [];
-    var total = 100;
-    for (var i = 1; (i <= total); i++) {
-      var paddedInt = apos.launder.padInteger(i, 3);
+    let testItems = [];
+    let total = 100;
+    for (let i = 1; (i <= total); i++) {
+      let paddedInt = apos.launder.padInteger(i, 3);
 
       testItems.push({
         _id: 'event' + paddedInt,

@@ -1,9 +1,9 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var async = require('async');
-var Promise = require('bluebird');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let async = require('async');
+let Promise = require('bluebird');
 
-var apos;
+let apos;
 
 describe('Locks', function() {
 
@@ -67,7 +67,7 @@ describe('Locks', function() {
   });
 
   it('should allow a single lock without contention uneventfully', function(done) {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return async.series([ lock, unlock ], function(err) {
       assert(!err);
       done();
@@ -81,7 +81,7 @@ describe('Locks', function() {
   });
 
   it('should allow two differently-named locks uneventfully', function(done) {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return async.series([ lock1, lock2, unlock1, unlock2 ], function(err) {
       assert(!err);
       done();
@@ -101,7 +101,7 @@ describe('Locks', function() {
   });
 
   it('should flunk a second lock by the same module', function(done) {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return async.series([ lock, lockAgain, unlock, unlockAgain ], function(err) {
       assert(!err);
       done();
@@ -129,12 +129,12 @@ describe('Locks', function() {
   });
 
   it('four parallel lock calls via the different modules should all succeed but not simultaneously', function(done) {
-    var one = apos.modules['apostrophe-locks'];
-    var two = apos.modules['apostrophe-locks-1'];
-    var three = apos.modules['apostrophe-locks-2'];
-    var four = apos.modules['apostrophe-locks-3'];
-    var active = 0;
-    var successful = 0;
+    let one = apos.modules['apostrophe-locks'];
+    let two = apos.modules['apostrophe-locks-1'];
+    let three = apos.modules['apostrophe-locks-2'];
+    let four = apos.modules['apostrophe-locks-3'];
+    let active = 0;
+    let successful = 0;
     attempt(one);
     attempt(two);
     attempt(three);
@@ -163,12 +163,12 @@ describe('Locks', function() {
     }
   });
   it('four parallel lock calls via the different modules should all succeed but not simultaneously, even when the idleTimeout is short', function(done) {
-    var one = apos.modules['apostrophe-locks'];
-    var two = apos.modules['apostrophe-locks-1'];
-    var three = apos.modules['apostrophe-locks-2'];
-    var four = apos.modules['apostrophe-locks-3'];
-    var active = 0;
-    var successful = 0;
+    let one = apos.modules['apostrophe-locks'];
+    let two = apos.modules['apostrophe-locks-1'];
+    let three = apos.modules['apostrophe-locks-2'];
+    let four = apos.modules['apostrophe-locks-3'];
+    let active = 0;
+    let successful = 0;
     attempt(one);
     attempt(two);
     attempt(three);
@@ -198,7 +198,7 @@ describe('Locks', function() {
   });
 
   it('with promises: should flunk a second lock by the same module', function() {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return Promise.try(function() {
       return locks.lock('test');
     }).then(function() {
@@ -219,7 +219,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should run a function inside a lock', function() {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return locks.withLock('test-lock', function() {
       return Promise.delay(50).then(function() {
         return 'result';
@@ -230,7 +230,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should be able to run again (lock released)', function() {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return locks.withLock('test-lock', function() {
       return Promise.delay(50).then(function() {
         return 'result';
@@ -241,7 +241,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should hold the lock (cannot relock within fn)', function() {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return locks.withLock('test-lock', function() {
       return Promise.delay(50).then(function() {
         return locks.lock('test-lock').then(function() {
@@ -254,7 +254,7 @@ describe('Locks', function() {
   });
 
   it('callbacks: withLock method should run a function inside a lock', function(done) {
-    var locks = apos.modules['apostrophe-locks'];
+    let locks = apos.modules['apostrophe-locks'];
     return locks.withLock('test-lock', function(callback) {
       return setTimeout(function() {
         return callback(null, 'result');

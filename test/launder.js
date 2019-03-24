@@ -1,5 +1,5 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
 describe('Launder', function() {
 
@@ -9,7 +9,7 @@ describe('Launder', function() {
     return t.destroy(apos, done);
   });
 
-  var apos;
+  let apos;
 
   it('should exist on the apos object', function(done) {
     apos = require('../index.js')({

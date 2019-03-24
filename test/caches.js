@@ -1,5 +1,5 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
 describe('Caches', function() {
 
@@ -9,8 +9,8 @@ describe('Caches', function() {
 
   this.timeout(t.timeout);
 
-  var apos;
-  var cache;
+  let apos;
+  let cache;
   it('should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,

@@ -1,9 +1,9 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
-var apos;
+let apos;
 
-var initDone = false;
+let initDone = false;
 
 describe('Versions', function() {
 
@@ -118,7 +118,7 @@ describe('Versions', function() {
   /// ///
 
   it('inserting a doc should result in a version', function(done) {
-    var object = {
+    let object = {
       slug: 'one',
       published: true,
       type: 'test-person',
@@ -132,7 +132,7 @@ describe('Versions', function() {
       assert(!err);
       assert(object);
       assert(object._id);
-      var docId = object._id;
+      let docId = object._id;
       // did the versions module kick-in?
       apos.versions.db.findWithProjection({ docId: docId }).toArray(function(err, versions) {
         assert(!err);
@@ -156,7 +156,7 @@ describe('Versions', function() {
       assert(docs.length === 1);
 
       // grab the object
-      var object = docs[0];
+      let object = docs[0];
       // we want update the alive property
       object.alive = false;
 
@@ -203,7 +203,7 @@ describe('Versions', function() {
   });
 
   it('should be able to fetch all versions in proper order', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {}, function(err, versions) {
@@ -217,7 +217,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions and spot a simple field change', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
@@ -238,7 +238,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget addition', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -285,7 +285,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'body');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'add');
         assert(change.current);
         assert(change.current._id === 'woo2');
@@ -295,7 +295,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget removal', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -342,7 +342,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'body');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'remove');
         assert(change.old);
         assert(change.old._id === 'woo2');
@@ -352,7 +352,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget change', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -404,7 +404,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'body');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'change');
         assert(change.old);
         assert(change.old._id === 'woo2');
@@ -418,7 +418,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an addition', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -456,7 +456,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'nicknames');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'add');
         assert(change.current);
         assert(change.current._id === 'a2');
@@ -467,7 +467,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an item removal', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -505,7 +505,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'nicknames');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'remove');
         assert(change.old);
         assert(change.old._id === 'a1');
@@ -515,7 +515,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an item change', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -557,7 +557,7 @@ describe('Versions', function() {
         assert(changes[0].key === 'nicknames');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 1);
-        var change = changes[0].changes[0];
+        let change = changes[0].changes[0];
         assert(change.action === 'change');
         assert(change.old);
         assert(change.old._id === 'a1');
@@ -571,7 +571,7 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', function(done) {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
@@ -595,8 +595,8 @@ describe('Versions', function() {
         assert(changes[0].key === 'poemIds');
         assert(changes[0].changes);
         assert(changes[0].changes.length === 2);
-        var change0 = changes[0].changes[0];
-        var change1 = changes[0].changes[1];
+        let change0 = changes[0].changes[0];
+        let change1 = changes[0].changes[1];
         assert(change0.action === 'remove');
         assert(change0.old);
         assert(change0.old === 'def');

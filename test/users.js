@@ -1,8 +1,8 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('lodash');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
 
-var apos;
+let apos;
 
 describe('Users', function() {
 
@@ -40,12 +40,12 @@ describe('Users', function() {
     });
   });
 
-  var janeOne;
+  let janeOne;
 
   // Test pieces.newInstance()
   it('should be able to insert a new user', function(done) {
     assert(apos.users.newInstance);
-    var user = apos.users.newInstance();
+    let user = apos.users.newInstance();
     assert(user);
 
     user.firstName = 'Jane';
@@ -115,7 +115,7 @@ describe('Users', function() {
 
   it('should not be able to insert a new user if their email already exists', function(done) {
     assert(apos.users.newInstance);
-    var user = apos.users.newInstance();
+    let user = apos.users.newInstance();
     assert(user);
 
     user.firstName = 'Dane';
@@ -145,7 +145,7 @@ describe('Users', function() {
   });
 
   it('should be able to insert a user with a previously used email if the other is in the trash', function(done) {
-    var user = apos.users.newInstance();
+    let user = apos.users.newInstance();
 
     user.firstName = 'Dane';
     user.lastName = 'Joe';
@@ -194,7 +194,7 @@ describe('Users', function() {
   });
 
   it('should be able to insert a user with a previously used username if the other is in the trash', function(done) {
-    var user = apos.users.newInstance();
+    let user = apos.users.newInstance();
 
     user.firstName = 'Jane';
     user.lastName = 'Doe';

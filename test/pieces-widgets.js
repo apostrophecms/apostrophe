@@ -1,11 +1,11 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var async = require('async');
-var request = require('request');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let async = require('async');
+let request = require('request');
 
 describe('Pieces Widgets', function() {
 
-  var apos;
+  let apos;
 
   this.timeout(t.timeout);
 
@@ -92,9 +92,9 @@ describe('Pieces Widgets', function() {
   });
 
   it('should be able to use db to insert test pieces', function(done) {
-    var testItems = [];
-    var total = 100;
-    for (var i = 1; (i <= total); i++) {
+    let testItems = [];
+    let total = 100;
+    for (let i = 1; (i <= total); i++) {
       var paddedInt = apos.launder.padInteger(i, 3);
       var tags;
       if (i > 50) {
@@ -149,7 +149,7 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     return async.eachSeries(testItems, function(item, callback) {
       return apos.docs.insert(req, item, callback);
     }, function(err) {
@@ -171,9 +171,9 @@ describe('Pieces Widgets', function() {
       assert(body.match(/Event 007/));
 
       // Are they in the right order (reversed on purpose)?
-      var i5 = body.indexOf('Event 005');
-      var i6 = body.indexOf('Event 006');
-      var i7 = body.indexOf('Event 007');
+      let i5 = body.indexOf('Event 005');
+      let i6 = body.indexOf('Event 006');
+      let i7 = body.indexOf('Event 007');
       assert((i5 > i6) && (i6 > i7));
 
       // These are by tag
@@ -197,7 +197,7 @@ describe('Pieces Widgets', function() {
 
 describe('Pieces Widget With Extra Join', function() {
 
-  var apos;
+  let apos;
 
   this.timeout(t.timeout);
 
@@ -294,9 +294,9 @@ describe('Pieces Widget With Extra Join', function() {
   });
 
   it('should be able to use db to insert test pieces', function(done) {
-    var testItems = [];
-    var total = 100;
-    for (var i = 1; (i <= total); i++) {
+    let testItems = [];
+    let total = 100;
+    for (let i = 1; (i <= total); i++) {
       var paddedInt = apos.launder.padInteger(i, 3);
       var tags;
       if (i > 50) {
@@ -351,7 +351,7 @@ describe('Pieces Widget With Extra Join', function() {
         ]
       }
     });
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     return async.eachSeries(testItems, function(item, callback) {
       return apos.docs.insert(req, item, callback);
     }, function(err) {
@@ -373,9 +373,9 @@ describe('Pieces Widget With Extra Join', function() {
       assert(body.match(/Event 007/));
 
       // Are they in the right order (reversed on purpose)?
-      var i5 = body.indexOf('Event 005');
-      var i6 = body.indexOf('Event 006');
-      var i7 = body.indexOf('Event 007');
+      let i5 = body.indexOf('Event 005');
+      let i6 = body.indexOf('Event 006');
+      let i7 = body.indexOf('Event 007');
       assert((i5 > i6) && (i6 > i7));
 
       // These are by tag
@@ -395,8 +395,8 @@ describe('Pieces Widget With Extra Join', function() {
       // Does it contain the featured events in the extra join?
       assert(body.match(/Event 003/));
       assert(body.match(/Event 004/));
-      var i3 = body.indexOf('Event 003');
-      var i4 = body.indexOf('Event 004');
+      let i3 = body.indexOf('Event 003');
+      let i4 = body.indexOf('Event 004');
       // Are they in the right order and in the right place (before the regular stuff)?
       assert(i3 < i7);
       assert(i4 < i7);

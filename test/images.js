@@ -1,11 +1,11 @@
 
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var async = require('async');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let async = require('async');
 
-var apos;
+let apos;
 
-var mockImages = [
+let mockImages = [
   {
     type: 'apostrophe-image',
     slug: 'image-1',
@@ -102,7 +102,7 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter (svg is always OK)', function(done) {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toArray(function(err, images) {
       assert(!err);
       assert(images.length === 3);
@@ -111,7 +111,7 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter in toCount, which uses a cloned cursor', function(done) {
-    var req = apos.tasks.getAnonReq();
+    let req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toCount(function(err, count) {
       assert(!err);
       assert(count === 3);
@@ -120,7 +120,7 @@ describe('Images', function() {
   });
 
   it('should generate a srcset string for an image', function() {
-    var srcset = apos.images.srcset({
+    let srcset = apos.images.srcset({
       name: 'test',
       _id: 'test',
       extension: 'jpg',
@@ -136,7 +136,7 @@ describe('Images', function() {
   });
 
   it('should not generate a srcset string for an SVG image', function() {
-    var srcset = apos.images.srcset({
+    let srcset = apos.images.srcset({
       name: 'test',
       _id: 'test',
       extension: 'svg',

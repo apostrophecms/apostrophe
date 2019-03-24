@@ -1,7 +1,7 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
-var apos;
+let apos;
 
 describe('Attachment', function() {
 
@@ -11,19 +11,19 @@ describe('Attachment', function() {
 
   this.timeout(t.timeout);
 
-  var uploadSource = __dirname + "/data/upload_tests/";
-  var uploadTarget = __dirname + "/public/uploads/attachments/";
-  var collectionName = 'aposAttachments';
+  let uploadSource = __dirname + "/data/upload_tests/";
+  let uploadTarget = __dirname + "/public/uploads/attachments/";
+  let collectionName = 'aposAttachments';
 
   function wipeIt(callback) {
     deleteFolderRecursive(__dirname + '/public/uploads');
 
     function deleteFolderRecursive (path) {
-      var files = [];
+      let files = [];
       if (fs.existsSync(path)) {
         files = fs.readdirSync(path);
         files.forEach(function(file, index) {
-          var curPath = path + "/" + file;
+          let curPath = path + "/" + file;
           if (fs.lstatSync(curPath).isDirectory()) { // recurse
             deleteFolderRecursive(curPath);
           } else { // delete file
@@ -88,7 +88,7 @@ describe('Attachment', function() {
         path: uploadSource + filename
       }, function(err, info) {
         assert(!err);
-        var t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
+        let t = uploadTarget + info._id + '-' + info.name + '.' + info.extension;
         // file should be uploaded
         assert(fs.existsSync(t));
 
@@ -117,7 +117,7 @@ describe('Attachment', function() {
     });
 
     it('should not upload an exe file', function(done) {
-      var filename = 'bad_file.exe';
+      let filename = 'bad_file.exe';
 
       return apos.attachments.insert(apos.tasks.getReq(), {
         name: filename,
@@ -131,7 +131,7 @@ describe('Attachment', function() {
 
     it('should crop an image file when user', function(done) {
       return accept('crop_image.png', function(result) {
-        var crop = { top: 10, left: 10, width: 80, height: 80 };
+        let crop = { top: 10, left: 10, width: 80, height: 80 };
 
         return apos.attachments.crop(
           apos.tasks.getReq(),
@@ -147,7 +147,7 @@ describe('Attachment', function() {
               assert(!err);
               assert(result);
               assert(result.crops.length);
-              var t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.' + result.extension;
+              let t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.' + result.extension;
               assert(fs.existsSync(t));
 
               done();
@@ -159,7 +159,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the "full" URL when no size specified for image', function() {
-      var url = apos.attachments.url({
+      let url = apos.attachments.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -169,7 +169,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the "one-half" URL when one-half size specified for image', function() {
-      var url = apos.attachments.url({
+      let url = apos.attachments.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -181,7 +181,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when "original" size specified for image', function() {
-      var url = apos.attachments.url({
+      let url = apos.attachments.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -193,7 +193,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when no size specified for pdf', function() {
-      var url = apos.attachments.url({
+      let url = apos.attachments.url({
         group: 'office',
         name: 'test',
         extension: 'pdf',
@@ -203,8 +203,8 @@ describe('Attachment', function() {
     });
 
     it('should save and track docIds properly as part of an apostrophe-image', function() {
-      var image = apos.images.newInstance();
-      var req = apos.tasks.getReq();
+      let image = apos.images.newInstance();
+      let req = apos.tasks.getReq();
       return apos.attachments.insert(apos.tasks.getReq(), {
         name: 'upload_image.png',
         path: uploadSource + 'upload_image.png'
@@ -227,7 +227,7 @@ describe('Attachment', function() {
           assert(attachment.trashDocIds);
           assert(attachment.trashDocIds.length === 0);
           try {
-            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            let fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
             assert(fd);
             fs.closeSync(fd);
           } catch (e) {
@@ -260,7 +260,7 @@ describe('Attachment', function() {
           assert(attachment.docIds.length === 1);
           assert(attachment.trashDocIds.length === 0);
           try {
-            var fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+            let fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
             assert(fd);
             fs.closeSync(fd);
           } catch (e) {

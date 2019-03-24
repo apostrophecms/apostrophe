@@ -1,12 +1,12 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var Promise = require('bluebird');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let Promise = require('bluebird');
 
 describe('Promisified Events Core', function() {
 
   this.timeout(50000);
 
-  var apos;
+  let apos;
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -20,8 +20,8 @@ describe('Promisified Events Core', function() {
         'test1': {
           alias: 'test1',
           construct: function(self, options) {
-            var sameNameFail = false;
-            var niceFinished = false;
+            let sameNameFail = false;
+            let niceFinished = false;
             try {
               self.on('ready1', 'ready1');
             } catch (e) {
@@ -55,7 +55,7 @@ describe('Promisified Events Core', function() {
             });
             assert(self.ready2AddC);
             self.modulesReady = function(callback) {
-              var context = {};
+              let context = {};
               return self.emit('ready1', context).then(function() {
                 assert(context.a);
                 return self.emit('ready2', context);

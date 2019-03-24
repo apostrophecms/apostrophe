@@ -1,7 +1,7 @@
 
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
 
 describe('Oembed', function() {
 
