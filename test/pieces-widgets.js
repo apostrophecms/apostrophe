@@ -95,14 +95,14 @@ describe('Pieces Widgets', function() {
     let testItems = [];
     let total = 100;
     for (let i = 1; (i <= total); i++) {
-      var paddedInt = apos.launder.padInteger(i, 3);
-      var tags;
+      let paddedInt = apos.launder.padInteger(i, 3);
+      let tags;
       if (i > 50) {
         tags = [ 'tag2' ];
       } else {
         tags = [ 'tag1' ];
       }
-      var title = 'Event ' + paddedInt;
+      let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
@@ -297,14 +297,14 @@ describe('Pieces Widget With Extra Join', function() {
     let testItems = [];
     let total = 100;
     for (let i = 1; (i <= total); i++) {
-      var paddedInt = apos.launder.padInteger(i, 3);
-      var tags;
+      let paddedInt = apos.launder.padInteger(i, 3);
+      let tags;
       if (i > 50) {
         tags = [ 'tag2' ];
       } else {
         tags = [ 'tag1' ];
       }
-      var title = 'Event ' + paddedInt;
+      let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
