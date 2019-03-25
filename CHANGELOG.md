@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.84.0 (2019-03-22)
+## 2.84.0 (2019-03-25)
 
 * `npm audit` issue: `nunjucks`
   * Created maintenance-only fork of `nunjucks` 2.x as `@apostrophecms/nunjucks`
