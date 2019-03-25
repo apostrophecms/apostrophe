@@ -4,7 +4,7 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha && eslint .",
+    "test": "npm audit && mocha && eslint .",
     "lint": "eslint ."
   },
   "repository": {
