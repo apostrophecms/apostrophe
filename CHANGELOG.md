@@ -1,6 +1,14 @@
 # Changelog
 
+## 2.84.1 (2019-03-25)
+
+* Documentation issue only. No code changes.
+
 ## 2.84.0 (2019-03-25)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * `npm audit` issue: `nunjucks`
   * Created maintenance-only fork of `nunjucks` 2.x as `@apostrophecms/nunjucks`
