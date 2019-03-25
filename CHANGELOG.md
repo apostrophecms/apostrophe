@@ -2,6 +2,16 @@
 
 ## 2.84.0 (2019-03-22)
 
+* `npm audit` issue: `nunjucks`
+  * Created maintenance-only fork of `nunjucks` 2.x as `@apostrophecms/nunjucks`
+  * We will use Nunjucks 3.x in Apostrophe 3.x, this is a maintenance fork only
+  * Addressed dependency on old version of `chokidar` in `nunjucks` 2.x
+
+* `npm audit` issue: `clean-css`
+  * Verified this module offers no significant improvement in minification over the `compress` flag of `less
+  * Removed this module from ApostropheCMS
+  * Verified CSS still minifies
+
 * You may now sort the "Manage Pieces" view by clicking on any column that has a `sort`
 property. By default `title` and `updatedAt` are now sortable. When using `addColumns`
 specify a `sort` property like:
