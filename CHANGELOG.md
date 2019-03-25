@@ -8,7 +8,7 @@
   * Addressed dependency on old version of `chokidar` in `nunjucks` 2.x
 
 * `npm audit` issue: `clean-css`
-  * Verified this module offers no significant improvement in minification over the `compress` flag of `less
+  * Verified this module offers no significant improvement in minification over the `compress` flag of `less`
   * Removed this module from ApostropheCMS
   * Verified CSS still minifies
 
