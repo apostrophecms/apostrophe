@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.84.0 (2019-03-22)
+
+* You may now sort the "Manage Pieces" view by clicking on any column that has a `sort`
+property. By default `title` and `updatedAt` are now sortable. When using `addColumns`
+specify a `sort` property like:
+
+```javascript
+sort: {
+  title: 1
+}
+```
+
+For more information see [custom columns and sortable columns for the "manage pieces"
+modal](https://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html#custom-columns-and-sortable-columns-for-the-quot-manage-quot-modal).
+
+* Fixed several situations formerly requiring a page refresh before editing. More
+such fixes to come. Thanks to `hexitex` for the bug reports and insight into the
+causes.
+
+* A recent change broke the display of the minimum image size to the user. This
+has been fixed.
+
+* A new warning has been added for failure to use `arrangeFields` comprehensively for
+all of your fields to make the "manage pieces" modal as clear as possible for the user.
+
+* Fixes were made allowing contextual editing of more types of content nested in `object` fields on the page. Thanks to bharathkumarc.
+
+Many thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.83.1 (2019-03-13)
 
 Unit tests passing.
