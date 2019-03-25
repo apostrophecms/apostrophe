@@ -6,7 +6,7 @@ Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for 
 
 [![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](http://chat.apostrophecms.org)
-[<img src="./badgets/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
+[<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
 
 ## Getting Started
 
