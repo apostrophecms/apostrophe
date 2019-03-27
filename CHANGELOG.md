@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.85.0 (2019-03-27)
+
+* If a JPEG file has EXIF data such as the description, credit, etc. this information is
+now copied into new properties of the attachment field and made available automatically
+on corresponding new schema properties of `apostrophe-images` pieces. 
+* `req.data.global` now becomes available even before its joins and area loaders are
+executed, as `req.aposGlobalCore`. This allows modules such as `apostrophe-pieces-orderings-bundle` to avoid recursive scenarios and performance problems.
+* Sortable columns in the manage view can now indicate whether the first click sorts forwards
+or backwards, simply by specifying the sort direction in the usual MongoDB way with `1` or
+`-1`.
+* Sortable columns can now be toggled from "no sort" to "forward" to "backward" and back to "no sort" again, and the hover state indicates all of these "next" states.
+* The `limitByAll` and `limitByTag` options of the `apostrophe-pieces-widgets` module now correctly remove these fields from the `showFields` of the select element that chooses how the widget will select content to display.
+* To select many consecutive pieces or pages quickly in the "Manage Pieces" and "Reorganize Pages" views, hold down the shift button while clicking a second piece. All pieces between the two pieces selected so far will be chosen. 
+* Fixed a bug where removing an array item other than the last could cause a failure of the array field editor if the last array item were active. Thanks to anwarhussain93.
+
 ## 2.84.1 (2019-03-25)
 
 * Documentation issue only. No code changes.
