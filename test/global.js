@@ -109,7 +109,7 @@ describe('Global', function() {
 
   it('set a product join up in the global doc', function() {
     var req = apos.tasks.getReq();
-    return apos.products.find(req).sort({ sortTitle: 1}).limit(1).toObject().then(function(object) {
+    return apos.products.find(req).sort({ sortTitle: 1 }).limit(1).toObject().then(function(object) {
       assert(object);
       product = object;
     }).then(function() {
