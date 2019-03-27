@@ -24,6 +24,11 @@ describe('Global', function() {
           secret: 'xxx',
           port: 7900
         },
+        'products': {
+          alias: 'products',
+          extend: 'apostrophe-pieces',
+          name: 'product'
+        },
         'apostrophe-global': {
           whileBusyDelay: 0.5,
           addFields: [
@@ -31,6 +36,11 @@ describe('Global', function() {
               name: 'testString',
               type: 'string',
               def: 'populated def'
+            },
+            {
+              name: '_featuredProducts',
+              type: 'joinByArray',
+              withType: 'product'
             }
           ]
         }
@@ -88,6 +98,38 @@ describe('Global', function() {
       assert(!err);
       assert(req.data.global.testString === 'populated def');
       done();
+    });
+  });
+
+  it('insert products via task', function() {
+    return apos.tasks.invoke('products:generate', [], {});
+  });
+
+  var product;
+
+  it('set a product join up in the global doc', function() {
+    var req = apos.tasks.getReq();
+    return apos.products.find(req).sort({ sortTitle: 1}).limit(1).toObject().then(function(object) {
+      assert(object);
+      product = object;
+    }).then(function() {
+      return apos.docs.db.update({
+        slug: 'global'
+      }, {
+        $set: {
+          featuredProductsIds: [ product._id ]
+        }
+      });
+    });
+  });
+
+  it('fetch the global doc, verify join', function() {
+    var req = apos.tasks.getAnonReq();
+    return apos.global.addGlobalToData(req).then(function() {
+      assert(req.data.global);
+      assert(req.data.global._featuredProducts);
+      assert(req.data.global._featuredProducts.length === 1);
+      assert(req.data.global._featuredProducts[0].slug === product.slug);
     });
   });
 
