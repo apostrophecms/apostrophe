@@ -63,8 +63,16 @@
   content: '↕'
 }
 
-.apos-manage-column--sortable:not(.apos-manage-column--forward):not(.apos-manage-column--backward):hover:after {
+.apos-manage-column--sortable.apos-manage-column--next-forward:hover:after {
   content: '↓';
+}
+
+.apos-manage-column--sortable.apos-manage-column--next-backward:hover:after {
+  content: '↑';
+}
+
+.apos-manage-column--sortable.apos-manage-column--next-none:hover:after {
+  content: '↕'
 }
 
 .apos-ui .apos-table {
