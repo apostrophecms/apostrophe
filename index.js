@@ -465,7 +465,7 @@ module.exports = function(options) {
         // Module definition at project level has construct
         return true;
       }
-      if (d.__meta.name.match(/^my-/)) {
+      if (self.synth.isMy(d.__meta.name)) {
         // None at project level, but maybe at npm level, look there
         d = d.extend;
       }
