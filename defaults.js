@@ -19,7 +19,6 @@ module.exports = {
     'apostrophe-admin-bar': {},
     'apostrophe-notifications': {},
     'apostrophe-login': {},
-    'apostrophe-ui': {},
     'apostrophe-schemas': {},
     'apostrophe-docs': {},
     'apostrophe-jobs': {},
