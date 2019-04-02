@@ -492,6 +492,11 @@ module.exports = function(options) {
   }
 
   function migrate(callback) {
+    if (self.argv._[0] === 'apostrophe-migrations:migrate') {
+      // Migration task will do this later with custom arguments to
+      // the event
+      return callback(null);
+    }
     // Allow the migrate-at-startup behavior to be complete shut off, including
     // parked page checks, etc. In this case you are obligated to run the
     // apostrophe-migrations:migrate task during deployment before launching
