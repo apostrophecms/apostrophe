@@ -63,8 +63,9 @@ module.exports = function(options) {
     instantiateModules,
     modulesReady,
     modulesAfterInit,
-    afterInit,
-    lintModules
+    lintModules,
+    migrate,
+    afterInit
   ], function(err) {
     if (err) {
       if (options.initFailed) {
@@ -488,6 +489,25 @@ module.exports = function(options) {
       return module.__meta.chain.length > 4;
     }
     return callback(null);
+  }
+
+  function migrate(callback) {
+    // Allow the migrate-at-startup behavior to be complete shut off, including
+    // parked page checks, etc. In this case you are obligated to run the
+    // apostrophe-migrations:migrate task during deployment before launching
+    // with new versions of the code
+    if (process.env.APOS_NO_MIGRATE || (self.options.migrate === false)) {
+      return callback(null);
+    }
+    // Carry out all migrations and consistency checks of the database that are
+    // still pending before proceeding to listen for connections or run tasks
+    // that assume a sane environment. If `apostrophe-migrations:migrate` has
+    // already been run then this will typically find no work to do, although
+    // the consistency checks can take time on a very large distributed database
+    // (see the options above).
+    return self.promiseEmit('migrate', {}).then(function() {
+      return callback(null);
+    }).catch(callback);
   }
 
   function lint(s) {
