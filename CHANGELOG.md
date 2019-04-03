@@ -2,6 +2,10 @@
 
 ## 2.86.0 (2019-04-03)
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Apostrophe now supports namespaced NPM modules as apostrophe modules. This allows NPM private modules to be used to deliver, for instance, an apostrophe piece type, page type or widget type. Here is an example of valid configuration:
 
 ```javascript
@@ -34,6 +38,10 @@ module.exports = {
 Thanks to Michelin for making many of these features possible through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
 
 ## 2.85.0 (2019-03-27)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * If a JPEG file has EXIF data such as the description, credit, etc. this information is
 now copied into new properties of the attachment field and made available automatically
