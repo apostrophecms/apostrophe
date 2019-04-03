@@ -31,6 +31,8 @@ module.exports = {
 * Bug fix: if your site startup or migration task invokes multiple time-consuming operations you'll now see a progress meter for each one, not just the first.
 * To save space and make sure developers don't just tune out, the warning about fields not properly arranged into tabs now appears at startup just for the first such module, unless you pass `--all-unarranged-fields` to get more information.
 
+Thanks to Michelin for making many of these features possible through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.85.0 (2019-03-27)
 
 * If a JPEG file has EXIF data such as the description, credit, etc. this information is
