@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.86.0 (2019-04-03)
+
+* Apostrophe now supports namespaced NPM modules as apostrophe modules. This allows NPM private modules to be used to deliver, for instance, an apostrophe piece type, page type or widget type. Here is an example of valid configuration:
+
+```javascript
+require('apostrophe', { 
+  modules: {
+    // ordinary npm module
+    'apostrophe-blog': {},
+    // namespaced npm module
+    '@somenamespace/somemodule': {}
+  }
+}
+```
+
+```javascript
+// in lib/modules/@somenamespace/somemodule/index.js
+module.exports = {
+  nifty: true
+};
+```
+ 
+* In addition, modules may be namespaced NPM-style inside a [bundle](https://docs.apostrophecms.org/apostrophe/other/more-modules#packaging-apostrophe-modules-together-creating-bundles). You will need to use a subdirectory structure, as seen above. As a best practice, you should only use this for module names you would have to publish to npm if the bundle feature did not exist. The "lead module" of the bundle should be in the same npm namespace.
+* If you are using the `partial` feature of `addColumn` with your pieces, you can now accept `piece` as a second argument. For bc, the value of that particular column property is still the first argument.
+* All of Apostrophe's "sanity-checking" database operations at startup, plus all Apostrophe migrations, now execute during a new `migrate` startup phase. This phase emits the `apostrophe:migrate` promise event. This phase occurs immediately after `afterInit` is invoked for modules, but before it is invoked for the global `afterInit` hook, if any. This change ensures there is a "sane" database before any interaction with the site takes place, and means that developers no longer have to remember to run `apostrophe-migrations:migrate` when upgrading during development.
+* You can also suppress these database operations at startup completely by setting the `APOS_NO_MIGRATE` environment variable to `1`, or by passing the `migrate: false` top-level option to Apostrophe. In this case, these operations all occur only when the `apostrophe-migrations:migrate` command line task is run. This option saves a great deal of startup time for the enterprise customers with the largest databases. Thus the best practice in production is the same as ever: run `node app apostrophe-migrations:migrate` before launching the new version of the app. In addition, you may set `APOS_NO_MIGRATE=1` in your production environment to save valuable startup time, especially during process restarts, etc.
+* Apostrophe now always instructs `less` to import CSS (not LESS) files `inline`. This is necessary because CleanCSS, which we no longer use, formerly automatically did it and without it import paths are incorrect. Thanks to Fredrik Ekelund for this fix.
+* UX improvement: if you edit a page, then follow a link from that page, and then click the "back" button, you should see your changes intact without the need to click "Refresh" thanks to the use of cachebusting headers. Thanks to Fredrik Ekelund for recommending an approach to the problem.
+* Bug fix: if your site startup or migration task invokes multiple time-consuming operations you'll now see a progress meter for each one, not just the first.
+* To save space and make sure developers don't just tune out, the warning about fields not properly arranged into tabs now appears at startup just for the first such module, unless you pass `--all-unarranged-fields` to get more information.
+
 ## 2.85.0 (2019-03-27)
 
 * If a JPEG file has EXIF data such as the description, credit, etc. this information is
