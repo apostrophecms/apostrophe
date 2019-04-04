@@ -3,13 +3,14 @@
   .apos-schema-tabs
   {
     position: fixed;
+    top: 0;
     float: left;
     height: 100%;
     width: 25%;
-    padding-bottom: 50px;
     background-color: @apos-light;
     // If tab number exceeds viewport allow scroll
-    overflow: scroll;
+    overflow: auto;
+    border-right: 2px solid @apos-mid;
     p {
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -28,7 +29,7 @@
     display: -ms-flexbox;
     display: -webkit-flex;
     padding: @apos-padding-2 @apos-padding-1;
-    border-bottom: 1px solid @apos-dark;
+    border-bottom: 1px solid @apos-mid;
     font-size: 14px;
     cursor: pointer;
     @media @apos-breakpoint-desktop-xl { font-size: 16px; }
@@ -46,7 +47,7 @@
     width: 75%;
     @media @apos-breakpoint-desktop-xl { width: 75%; }
     height: 100%;
-    overflow-y: scroll;
+    overflow: auto;
     .apos-scrollbar;
   }
 

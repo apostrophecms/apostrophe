@@ -1,0 +1,98 @@
+.apos-ui .apos-polymorphic-manager {
+  padding-left: @apos-padding-3;
+  padding-right: @apos-padding-3;
+  position: relative;
+  float: right;
+
+  .apos-table {
+    padding: 0;
+  }
+
+  .apos-reorganize-tree--chooser {
+    overflow: hidden;
+  }
+
+  .apos-chooser-manage-view-wrapper,
+  .apos-reorganize-tree--chooser {
+    width: 100%;
+    float: none;
+  }
+
+  .apos-modal-header,
+  .apos-modal-footer {
+    background-color: transparent;
+  }
+
+  .apos-modal-footer {
+    position: relative;
+    display: flex;
+    padding: @apos-padding-1 0;
+    align-items: center;
+    justify-content: flex-end;
+    bottom: auto !important;
+  }
+
+  .apos-chooser-tabs {
+    position: relative;
+    z-index: 1;
+    margin-top: 67px;
+  }
+
+  .apos-modal-header {
+    padding: 20px 0px;
+  }
+
+  .apos-modal-body {
+    height: auto !important;
+  }
+
+  .apos-modal-content {
+    position: relative;
+    height: auto;
+  }
+
+  .apos-chooser-tab {
+    display: none !important;
+  }
+
+  .apos-modal .apos-modal-header .apos-modal-title,
+  .apos-modal .apos-modal-header .apos-modal-instructions {
+    display: none;
+  }
+
+  .apos-chooser-tab.apos-chooser-tab--active {
+    display: block !important;
+  }
+
+  .apos-chooser-tab-bar {
+    position: fixed;
+    width: 80%;
+    z-index: 2;
+    border-bottom: 1px solid @apos-primary;
+    padding-top: 30px;
+    background-color: #fbfbfc;
+  }
+
+  .apos-chooser-tab-button {
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    border: none;
+    padding: 15px 20px;
+    font-size: 13px;
+    outline: none;
+    background-color: transparent;
+    &:hover {
+      color: @apos-primary;
+      cursor: pointer;
+    }
+  }
+  .apos-chooser-tab-button.apos-active {
+    border-top: 1px solid @apos-primary;
+    border-left: 1px solid @apos-primary;
+    border-right: 1px solid @apos-primary;
+    background-color: #fbfbfb;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+}

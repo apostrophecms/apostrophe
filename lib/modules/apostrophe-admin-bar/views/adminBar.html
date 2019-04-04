@@ -1,7 +1,7 @@
 {% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
 
 <div class="apos-ui">
-  <div class="apos-admin-bar apos-active apos-text-meta" data-apos-admin-bar>
+  <div class="apos-admin-bar apos-text-meta" data-apos-admin-bar>
     <div class="apos-admin-bar-inner">
       <div class="apos-admin-bar-logo" data-apos-admin-bar-logo data-apos-actionable="data-apos-admin-bar">
         {% include 'logo.html' %}
@@ -9,11 +9,11 @@
       {% for item in data.items %}
         <div class="apos-admin-bar-item">
           {% if item.menu %}
-            <div class="apos-dropdown apos-dropdown--admin apos-dropdown--down" data-apos-dropdown="down" data-apos-actionable>
+            {# Please do not remove data-apos-admin-bar-dropdown as nightwatch tests require it. -Tom #}
+            <div class="apos-dropdown apos-dropdown--admin apos-dropdown--down" data-apos-dropdown="down" data-apos-actionable data-apos-dropdown-name="{{ item.items[0].name }}">
           {% endif %}
           <div class="apos-admin-bar-item-inner"
-            {%- if not item.menu -%}
-              data-apos-admin-bar-item="{{ item.name }}"
+            {%- if not item.menu %} data-apos-admin-bar-item="{{ item.name }}"
             {%- endif -%}
           >
           {%- if item.options.href -%}

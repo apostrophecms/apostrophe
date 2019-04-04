@@ -1,17 +1,16 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var apos;
 
 describe('Express', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
-  it('express should exist on the apos object', function(done){
+  it('express should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -69,12 +68,13 @@ describe('Express', function() {
       url: 'http://localhost:7900/tests/welcome',
       jar: jar
     }, function(err, response, body) {
+      assert(!err);
       assert(body.toString() === 'ok');
       done();
     });
   });
 
-  it('should flunk a POST request with no X-XSRF-TOKEN header', function(done){
+  it('should flunk a POST request with no X-XSRF-TOKEN header', function(done) {
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
@@ -86,12 +86,13 @@ describe('Express', function() {
       jar: jar,
       headers: {}
     }, function(err, response, body) {
+      assert(!err);
       assert(response.statusCode === 403);
       done();
     });
   });
 
-  it('should flunk a POST request with no cookies at all', function(done){
+  it('should flunk a POST request with no cookies at all', function(done) {
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
@@ -102,12 +103,13 @@ describe('Express', function() {
       },
       headers: {}
     }, function(err, response, body) {
+      assert(!err);
       assert(response.statusCode === 403);
       done();
     });
   });
 
-  it('should flunk a POST request with the wrong CSRF token', function(done){
+  it('should flunk a POST request with the wrong CSRF token', function(done) {
     var csrfToken = 'BOGOSITY';
     request({
       method: 'POST',
@@ -122,6 +124,7 @@ describe('Express', function() {
         'X-XSRF-TOKEN': csrfToken
       }
     }, function(err, response, body) {
+      assert(!err);
       assert(response.statusCode === 403);
       done();
     });
@@ -130,22 +133,23 @@ describe('Express', function() {
   it('should use the extended bodyParser for submitted forms', function(done) {
     var csrfToken = getCsrfToken(jar);
     assert(csrfToken);
-  	request({
-  		method: 'POST',
-  		url: 'http://localhost:7900/tests/body',
-  		form: {
-  			person: {
-  				age: '30'
-  			}
-  		},
+    request({
+      method: 'POST',
+      url: 'http://localhost:7900/tests/body',
+      form: {
+        person: {
+          age: '30'
+        }
+      },
       jar: jar,
       headers: {
         'X-XSRF-TOKEN': csrfToken
       }
-  	}, function(err, response, body) {
-  		assert(body.toString() === '30');
-  		done();
-  	});
+    }, function(err, response, body) {
+      assert(!err);
+      assert(body.toString() === '30');
+      done();
+    });
   });
 
   it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
@@ -163,6 +167,7 @@ describe('Express', function() {
         'X-XSRF-TOKEN': csrfToken
       }
     }, function(err, response, body) {
+      assert(!err);
       assert(body.toString() === '30');
       done();
     });
@@ -183,6 +188,7 @@ describe('Express', function() {
         'X-XSRF-TOKEN': csrfToken
       }
     }, function(err, response, body) {
+      assert(!err);
       assert(body.toString() === '30');
       // Last one before a new apos object
       return t.destroy(apos, done);
@@ -191,11 +197,10 @@ describe('Express', function() {
 
   // PREFIX STUFF
 
- 	it('should set prefix on the apos object if passed in', function(done){
- 		apos = require('../index.js')({
+  it('should set prefix on the apos object if passed in', function(done) {
+    apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
@@ -220,28 +225,29 @@ describe('Express', function() {
         done();
       }
     });
- 	});
+  });
 
- 	it('should have different baseApp and app properties with a prefix', function(){
- 		assert(apos.app !== apos.baseApp);
- 	});
+  it('should have different baseApp and app properties with a prefix', function() {
+    assert(apos.app !== apos.baseApp);
+  });
 
- 	it('should take same requests at the prefix', function(done){
+  it('should take same requests at the prefix', function(done) {
     request({
-  		method: 'POST',
-  		url: 'http://localhost:7900/prefix/tests/body',
-  		form: {
-  			person: {
-  				age: '30'
-  			}
-  		}
-  	}, function(err, response, body) {
-  		assert(body.toString() === '30');
+      method: 'POST',
+      url: 'http://localhost:7900/prefix/tests/body',
+      form: {
+        person: {
+          age: '30'
+        }
+      }
+    }, function(err, response, body) {
+      assert(!err);
+      assert(body.toString() === '30');
       // Last one before a new apos object
       return t.destroy(apos, done);
-  	});
+    });
   });
-  
+
   it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl option is set on apos object', function(done) {
 
     apos = require('../index.js')({
@@ -274,7 +280,7 @@ describe('Express', function() {
         // Last one before a new apos object
         return t.destroy(apos, done);
       }
-    });    
+    });
   });
 
   it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl and prefix options are set on apos object', function(done) {
@@ -312,6 +318,6 @@ describe('Express', function() {
         // Last use of this apos object
         return t.destroy(apos, done);
       }
-    });    
+    });
   });
 });

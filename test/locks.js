@@ -1,26 +1,25 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var async = require('async');
-
+var Promise = require('bluebird');
+var _ = require('@sailshq/lodash');
 var apos;
 
 describe('Locks', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
   it('should be a property of the apos object', function(done) {
-    this.timeout(5000);
+    this.timeout(t.timeout);
     this.slow(2000);
 
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -46,7 +45,7 @@ describe('Locks', function() {
         assert(apos.modules['apostrophe-locks-1']);
         assert(apos.modules['apostrophe-locks-2']);
         assert(apos.modules['apostrophe-locks-3']);
-        
+
         // In tests this will be the name of the test file,
         // so override that in order to get apostrophe to
         // listen normally and not try to run a task. -Tom
@@ -54,12 +53,12 @@ describe('Locks', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
   });
-  
+
   it('cleanup', function(done) {
     apos.locks.db.remove({}, function(err) {
       assert(!err);
@@ -103,7 +102,7 @@ describe('Locks', function() {
 
   it('should flunk a second lock by the same module', function(done) {
     var locks = apos.modules['apostrophe-locks'];
-    return async.series([ lock, lockAgain, unlock ], function(err) {
+    return async.series([ lock, lockAgain, unlock, unlockAgain ], function(err) {
       assert(!err);
       done();
     });
@@ -128,7 +127,7 @@ describe('Locks', function() {
       });
     }
   });
-  
+
   it('four parallel lock calls via the different modules should all succeed but not simultaneously', function(done) {
     var one = apos.modules['apostrophe-locks'];
     var two = apos.modules['apostrophe-locks-1'];
@@ -158,7 +157,6 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
-            return;
           }
         });
       }
@@ -193,58 +191,87 @@ describe('Locks', function() {
           successful++;
           if (successful === 4) {
             done();
-            return;
           }
         });
       }
     }
   });
-  it('four parallel lock calls via the different modules SHOULD experience concurrency bugs if idleTimeout is short and noRefresh is true', function(done) {
-    // This test is looking to see that things DO break if the refresh mechanism
-    // is shut off and the idleTimeout is short. Breakage = good. -Tom
-    var one = apos.modules['apostrophe-locks'];
-    var two = apos.modules['apostrophe-locks-1'];
-    var three = apos.modules['apostrophe-locks-2'];
-    var four = apos.modules['apostrophe-locks-3'];
-    var active = 0;
-    var successful = 0;
-    var finished = false;
-    attempt(one);
-    attempt(two);
-    attempt(three);
-    attempt(four);
-    function attempt(locks) {
-      return locks.lock('test', { idleTimeout: 50, noRefresh: true }, function(err) {
-        assert(!err);
-        active++;
-        if (active > 1) {
-          if (!finished) {
-            done();
-          }
-          finished = true;
-          return;
-        }
-        setTimeout(release, 200);
-      });
-      function release() {
-        // We have to decrement this before we start the call to
-        // locks.unlock because otherwise the callback for one of our
-        // peers' insert attempts may succeed before the callback for
-        // remove, leading to a false positive for test failure. -Tom
-        active--;
-        return locks.unlock('test', function(err) {
-          if (err) {
-            if (!finished) {
-              done();
-            }
-            finished = true;
-            return;
-          }
-          successful++;
-          assert(successful !== 4);
-        });
-      }
-    }
-  });
-});
 
+  it('with promises: should flunk a second lock by the same module', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return Promise.try(function() {
+      return locks.lock('test');
+    }).then(function() {
+      return locks.lock('test')
+        .catch(function(err) {
+          // SHOULD fail
+          assert(err);
+        });
+    }).then(function() {
+      return locks.unlock('test');
+    }).then(function() {
+      return locks.unlock('test')
+        .catch(function(err) {
+          // SHOULD fail
+          assert(err);
+        });
+    });
+  });
+
+  it('withLock method should run a function inside a lock', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return 'result';
+      });
+    }).then(function(result) {
+      assert(result === 'result');
+    });
+  });
+
+  it('withLock method should be able to run again (lock released)', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return 'result';
+      });
+    }).then(function(result) {
+      assert(result === 'result');
+    });
+  });
+
+  it('withLock method should hold the lock (cannot relock within fn)', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function() {
+      return Promise.delay(50).then(function() {
+        return locks.lock('test-lock').then(function() {
+          assert(false);
+        }).catch(function(e) {
+          assert(e);
+        });
+      });
+    });
+  });
+
+  it('callbacks: withLock method should run a function inside a lock', function(done) {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.withLock('test-lock', function(callback) {
+      return setTimeout(function() {
+        return callback(null, 'result');
+      }, 50);
+    }, function(err, result) {
+      assert(!err);
+      assert(result === 'result');
+      done();
+    });
+  });
+
+  it('all locks should be gone from the database', function() {
+    var locks = apos.modules['apostrophe-locks'];
+    return locks.db.find({}).toArray().then(function(locks) {
+      assert(!locks.length);
+      assert(!_.keys(locks.intervals).length);
+    });
+  });
+
+});

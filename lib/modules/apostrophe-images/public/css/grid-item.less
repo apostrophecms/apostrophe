@@ -10,6 +10,7 @@
   background-color: @apos-light;
   width: 100%;
   box-shadow: 0 2px 8px 0 rgba(21,22,22,0.0);
+  overflow: hidden;
 
   .apos-manage-grid-select
   {
@@ -23,8 +24,24 @@
     width: 100%;
     height: auto;
 
+    @supports(display: grid) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+    }
+
     img{
       width: 100%;
+
+      @supports(display: grid) {
+        width: auto;
+        max-width: 100%;
+        max-height: 120px;
+        @media @apos-breakpoint-desktop-xl {
+          max-height: 200px;
+        }
+      }
     }
 
     .apos-image-screen
@@ -45,12 +62,13 @@
     display: block;
     padding: @apos-padding-2 @apos-padding-2;
     padding-left: 28px;  // room for checkbox
-
     background-color: @apos-light;
     color: @apos-black;
     text-decoration: none;
-    font-size: 13px;
-    @media @apos-breakpoint-desktop-xl { font-size: inherit; }
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     .apos-transition();
   }
@@ -74,8 +92,8 @@
   &::before
   {
     position: absolute;
-    top: -2px;
-    left: -2px;
+    top: 0;
+    left: 0;
     width: ~'calc(100%)';  // add the border width
     height: ~'calc(100%)';
     border: 2px solid transparent;

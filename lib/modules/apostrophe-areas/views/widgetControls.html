@@ -8,12 +8,20 @@
     {% endif %} ">
       {% for group in groups %}
         <div class="apos-button-group {{ group.classes }}">
-          {% for button in group.controls %}
-            {% set label = button.label or '' %}
-            {% if button.label == '$editLabel' %}
-              {% set label = data.options.editLabel or 'Edit ' + data.manager.label %}
+          {% for control in group.controls %}
+            {% if control.type == 'select' %}
+              <select class="apos-button apos-button--in-group apos-select" name="{{ control.name }}">
+                {% for choice in control.choices %}
+                  <option value="{{ choice.value }}"{% if data.widget[control.name] == choice.value %} selected{% endif %}>{{ choice.label }}</option>
+                {% endfor %}
+              </select>
+            {% else %}
+              {% set label = control.label or '' %}
+              {% if control.label == '$editLabel' %}
+                {% set label = data.options.editLabel or data.manager.editLabel or 'Edit ' + data.manager.label %}
+              {% endif %}
+              {{ buttons.inGroup(label, control) }}
             {% endif %}
-            {{ buttons.inGroup(label, button) }}
           {% endfor %}
         </div>
       {% endfor %}

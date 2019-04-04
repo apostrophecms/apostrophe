@@ -38,15 +38,19 @@
 .apos-field-input-select-wrapper
 {
   position: relative;
+  display: flex;
+  align-items: center;
   &:after
   {
     content: "\f0d7";
     position: absolute;
-    top: @apos-padding-3;
     right: @apos-padding-3;
     .fa;
     pointer-events: none;
   }
+}
+
+.apos-field-input-select-wrapper--small:after {
 }
 
 .apos-field-input-select
@@ -55,7 +59,7 @@
   -moz-appearance: none;
   appearance: none;
   border-radius: 0;
-  
+
   &:hover { cursor: pointer; }
 }
 
@@ -113,40 +117,40 @@
   }
 }
 
-.apos-form-checkbox 
+.apos-form-checkbox
 {
   position: relative;
   padding: @apos-padding-2 0 @apos-padding-2 @apos-padding-2;
-    
+
   &:nth-child(even)
   {
     background-color: @apos-lighter;
   }
-  
+
   &-label
   {
     color: @apos-dark;
-    
-    &:hover 
+
+    &:hover
     {
       cursor: pointer;
     }
   }
-  
-  &-input 
+
+  &-input
   {
     margin-right: @apos-margin-2;
     opacity: 0;
     z-index: -1;
-    
-    &:checked ~ .apos-form-checkbox-indicator 
+
+    &:checked ~ .apos-form-checkbox-indicator
     {
       background: @apos-primary;
       border-color: @apos-primary;
-      border-width: 6px; 
+      border-width: 6px;
     }
   }
-  
+
   &-indicator
   {
     position: absolute;
@@ -161,7 +165,7 @@
     .apos-no-select;
 
     &:hover { cursor: pointer; }
-  }  
+  }
 }
 
 // Tags ========================================
@@ -231,4 +235,76 @@
     padding-bottom: 6px;
     border-bottom: 1px dashed @apos-primary;
   }
+}
+
+// Colorpicker ===================================
+.apos-field-color {
+  position: relative;
+  max-width: 229px;
+
+  .sp-replacer {
+    position: absolute;
+    background-color: transparent;
+    padding: 16px 10px 18px 60px;
+    left: 0;
+    z-index: 2;
+  }
+}
+
+.apos-field-input-color-value {
+  float: left;
+  margin: 20px 0px 0 20px
+}
+
+.apos-field-input-color-preview {
+  float: left;
+  width: 50px;
+  height: 50px;
+  border: 1px solid black;
+}
+
+.apos-field-input-color-preview--empty {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAHCAYAAADEUlfTAAAAG0lEQVQYV2NMKL/ty4ADMIIkF3SqbsYmP+gkAayXGgfe8HOVAAAAAElFTkSuQmCC);
+}
+
+.apos-field-input-color {
+  width: 70px;
+  padding: 15px;
+  height: 60px;
+  float: left;
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+// Range ===================================
+
+.apos-field-input-range {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.apos-field-input-range-value {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.apos-field-range .apos-field-label {
+  display: inline-block;
+}
+
+// Browse and autocomplete combo
+.apos-browse-and-autocomplete {
+  display: flex;
+  position: relative;
+  align-items: center;
+  .apos-button {
+    position: absolute;
+    right: 10px;
+  }
+}
+
+// Browse only
+.apos-browse {
+  margin-bottom: 16px;
 }

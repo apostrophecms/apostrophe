@@ -64,9 +64,17 @@
 {
 	.apos-dropdown-items
 	{
+		overflow: hidden;
+		height: 0;
 		.apos-rounded-bl;
 		.apos-rounded-br;
 	}
+
+	&.apos-active .apos-dropdown-items {
+		overflow: auto;
+		height: auto;
+	}
+
 	&.apos-active>.apos-button
 	{
 		border-bottom-left-radius: 0;

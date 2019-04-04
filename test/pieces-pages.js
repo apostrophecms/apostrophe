@@ -1,28 +1,24 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var request = require('request');
-
+var Promise = require('bluebird');
 var apos;
 
 describe('Pieces Pages', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -53,14 +49,22 @@ describe('Pieces Pages', function() {
           ]
         }
       },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
       afterListen: function(err) {
+        assert(!err);
         assert(apos.modules['events-pages']);
         done();
       }
     });
   });
 
-  it('should be able to use db to insert test pieces', function(done){
+  it('should be able to use db to insert test pieces', function(done) {
     var testItems = [];
     var total = 100;
     for (var i = 1; (i <= total); i++) {
@@ -85,7 +89,7 @@ describe('Pieces Pages', function() {
       });
     }
 
-    apos.docs.db.insert(testItems, function(err){
+    apos.docs.db.insert(testItems, function(err) {
       assert(!err);
       done();
     });
@@ -93,6 +97,25 @@ describe('Pieces Pages', function() {
 
   it('should populate the ._url property of pieces in any docs query', function(done) {
     return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }).toObject(function(err, piece) {
+      assert(!err);
+      assert(piece);
+      assert(piece._url);
+      assert(piece._url === '/events/event-001');
+      done();
+    });
+  });
+
+  it('should not correctly populate the ._url property of pieces in a docs query with an inadequate projection', function(done) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { type: 1 }).toObject(function(err, piece) {
+      assert(!err);
+      assert(piece);
+      assert((!piece._url) || (piece._url.match(/undefined/)));
+      done();
+    });
+  });
+
+  it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', function(done) {
+    return apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { _url: 1 }).toObject(function(err, piece) {
       assert(!err);
       assert(piece);
       assert(piece._url);
@@ -139,4 +162,36 @@ describe('Pieces Pages', function() {
     });
   });
 
+  it('pieces-page as home page: switch page types', function() {
+    return Promise.try(function() {
+      return apos.docs.db.update({
+        slug: '/'
+      }, {
+        $set: {
+          type: 'events'
+        }
+      });
+    }).then(function() {
+      return apos.docs.db.update({
+        slug: '/events'
+      }, {
+        $set: {
+          type: 'default'
+        }
+      });
+    });
+  });
+
+  it('pieces-page as home page: correct permalinks on index page', function(done) {
+    return request('http://localhost:7900/', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Only page one events should show up
+      assert(body.match(/event-001"/));
+      assert(!body.match(/event-011"/));
+      assert(body.match(/"\/event-001"/));
+      return done();
+    });
+  });
 });

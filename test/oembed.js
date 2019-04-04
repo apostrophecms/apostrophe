@@ -1,29 +1,25 @@
 
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
-var request = require('request');
-var qs = require('qs');
 var apos;
 
 describe('Oembed', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -43,31 +39,35 @@ describe('Oembed', function() {
       afterListen: function(err) {
         assert(!err);
         done();
-      },
+      }
     });
   });
 
-  var youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
+  // TODO: test this with mocks. Travis CI erratically times out
+  // when we test against real YouTube, which produces false
+  // failures that lead us to ignore CI results.
+  //
+  // var youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
 
-  it('YouTube still has the video we like to use for testing', function(done) {
-    return request(youtube, function(err, response, body) {
-      assert(!err);
-      assert(response.statusCode === 200);
-      return done();
-    });
-  });
+  // it('YouTube still has the video we like to use for testing', function(done) {
+  //   return request(youtube, function(err, response, body) {
+  //     assert(!err);
+  //     assert(response.statusCode === 200);
+  //     return done();
+  //   });
+  // });
 
-  it('Should deliver an oembed response for YouTube', function(done) {
-    return request('http://localhost:7900/modules/apostrophe-oembed/query?' + qs.stringify(
-    {
-      url: youtube
-    }), function(err, response, body) {
-      assert(!err);
-      assert(response.statusCode === 200);
-      var data = JSON.parse(body);
-      assert(data.type === 'video');
-      return done();
-    });
-  });
+  // it('Should deliver an oembed response for YouTube', function(done) {
+  //   return request('http://localhost:7900/modules/apostrophe-oembed/query?' + qs.stringify(
+  //   {
+  //     url: youtube
+  //   }), function(err, response, body) {
+  //     assert(!err);
+  //     assert(response.statusCode === 200);
+  //     var data = JSON.parse(body);
+  //     assert(data.type === 'video');
+  //     return done();
+  //   });
+  // });
 
 });

@@ -1,13 +1,14 @@
 .apos-buttons
 {
   background: @apos-white;
+  white-space: nowrap;
   .apos-glow;
   .apos-rounded;
   .apos-button-border(@apos-green);
   .apos-button-group
   {
-    float: left;
-    margin: 0 @apos-padding-1 / 2;
+    display: inline-block;
+    margin: 0 (@apos-padding-1 / 2);
   }
   .apos-button
   {
@@ -19,6 +20,8 @@
 
 .apos-button
 {
+  -moz-appearance: none;
+  -webkit-appearance: none;
   position: relative;
   .apos-inline-block;
   padding: @apos-padding-1 @apos-padding-2;
@@ -26,6 +29,7 @@
   .apos-button-border;
   // .apos-text-small;
   font-size: 14px;
+  line-height: inherit;
   letter-spacing: 1px;
   @media @apos-breakpoint-desktop-xl { .apos-text-small; }
   background-color: @apos-white;
@@ -41,19 +45,35 @@
     .apos-transition();
   }
 
+  .fa-caret-right {
+    margin-left: 10px;
+    position: relative;
+    top: 1px;
+  }
+
 
   &:hover
   {
     .apos-glow;
     cursor: pointer;
   }
-  &:active
+  &:focus
+  {
+    outline: none;
+  }
+  &:active,
+  &:focus
   {
     .apos-drop-shadow(0px, 0px, 13px, 4px, fade(@apos-base, 30%));
   }
   &.apos-button--square
   {
     border-radius: 0px;
+  }
+
+  &.ui-draggable-handle
+  {
+    cursor: move;
   }
 
   &[data-busy="1"]
@@ -94,6 +114,13 @@
 }
 
 // TYPES =======================
+
+.apos-button--small {
+  .apos-button {
+    padding: 8px;
+    font-size: 12px;
+  }
+}
 
 .apos-button--in-context
 {
@@ -225,6 +252,21 @@
   &:hover, &:active
   {
     box-shadow: none;
+  }
+}
+
+.apos-button--inline {
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+
+  .apos-button {
+    color: @apos-dark;
+    padding: 4px 5px;
+    font-size: 12px;
+    &:hover { color: @apos-white; }
   }
 }
 

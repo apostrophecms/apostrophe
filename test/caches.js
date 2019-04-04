@@ -7,7 +7,7 @@ describe('Caches', function() {
     return t.destroy(apos, done);
   });
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   var apos;
   var cache;
@@ -15,10 +15,17 @@ describe('Caches', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       afterInit: function(callback) {
-          assert(apos.caches);
-          return done();
+        assert(apos.caches);
+        apos.argv._ = [];
+        return callback(null);
+      },
+
+      afterListen: function(err) {
+        console.error(err);
+        assert(!err);
+        return done();
       }
     });
   });
@@ -58,5 +65,48 @@ describe('Caches', function() {
       assert(!monkey);
       return done();
     });
+  });
+
+  it('should not crash on clear with promise', function() {
+    return cache.clear();
+  });
+  it('should not contain capuchin yet', function() {
+    return cache.get('capuchin')
+      .then(function(monkey) {
+        assert(!monkey);
+        return true;
+      });
+  });
+  it('should allow us to store capuchin', function() {
+    return cache.set('capuchin', { message: 'eek eek' });
+  });
+  it('should now contain capuchin', function() {
+    return cache.get('capuchin')
+      .then(function(monkey) {
+        assert(monkey);
+        assert(monkey.message === 'eek eek');
+        return true;
+      });
+  });
+  it('should allow us to store a value with a lifetime using a promise', function() {
+    return cache.set('colobus', { message: 'oop oop' }, 86400);
+  });
+  it('should now contain colobus', function() {
+    return cache.get('colobus')
+      .then(function(monkey) {
+        assert(monkey);
+        assert(monkey.message === 'oop oop');
+        return true;
+      });
+  });
+  it('should not crash on clear #2', function() {
+    return cache.clear();
+  });
+  it('should not contain capuchin anymore', function() {
+    return cache.get('capuchin')
+      .then(function(monkey) {
+        assert(!monkey);
+        return true;
+      });
   });
 });

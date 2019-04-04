@@ -1,3 +1,4 @@
+package-lock.json
 test/public/modules/*
 test/public/css/master-*
 npm-debug.log
@@ -23,3 +24,6 @@ test/public/css/master-*.less
 
 # Dont commit test uploads
 test/public/uploads
+
+# vim swp files
+.*.sw*

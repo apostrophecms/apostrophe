@@ -47,10 +47,23 @@
   .apos-transform(translate3d(0,0,0) scale3d(1,1,1));
   .apos-transitions(transform @apos-modal-timing @apos-modal-transition-curve, opacity @apos-modal-timing @apos-modal-transition-curve;);
 	.apos-table tbody
-  { 
+  {
     height: 100%;
-    overflow-y: scroll;
-  } 
+    overflow: auto;
+  }
+}
+
+// A modal nested as a view should be less aggressive about sizing and positioning
+.apos-ui.apos-modal .apos-modal
+{
+  width: 100%;
+  height: 100%;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  overflow: auto;
+  position: relative;
 }
 
 .apos-modal--pushed
@@ -77,7 +90,7 @@
 .apos-modal-body
 {
 	height: 100%;
-	overflow-y: scroll;
+	overflow: auto;
   .apos-scrollbar;
   background-color: lighten(@apos-light, 5%);
 	li a {

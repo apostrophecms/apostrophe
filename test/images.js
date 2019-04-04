@@ -1,7 +1,6 @@
 
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var async = require('async');
 
 var apos;
@@ -12,6 +11,7 @@ var mockImages = [
     slug: 'image-1',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -21,6 +21,7 @@ var mockImages = [
     slug: 'image-2',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 500,
       height: 400
     }
@@ -30,28 +31,36 @@ var mockImages = [
     slug: 'image-3',
     published: true,
     attachment: {
+      extension: 'jpg',
       width: 150,
       height: 150
     }
   },
+  {
+    type: 'apostrophe-image',
+    slug: 'image-4',
+    published: true,
+    attachment: {
+      extension: 'svg'
+    }
+  }
 ];
 
 describe('Images', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
   it('should be a property of the apos object', function(done) {
-    this.timeout(5000);
+    this.timeout(t.timeout);
     this.slow(2000);
 
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -66,7 +75,7 @@ describe('Images', function() {
         return callback(null);
       },
       afterListen: function(err) {
-        // assert(!err);
+        assert(!err);
         done();
       }
     });
@@ -92,22 +101,48 @@ describe('Images', function() {
     });
   });
 
-  it('should respect minSize filter', function(done) {
+  it('should respect minSize filter (svg is always OK)', function(done) {
     var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toArray(function(err, images) {
       assert(!err);
-      assert(images.length === 2);
+      assert(images.length === 3);
       return done();
     });
   });
 
   it('should respect minSize filter in toCount, which uses a cloned cursor', function(done) {
-    var req = apos.tasks.getAnonReq()
+    var req = apos.tasks.getAnonReq();
     return apos.images.find(req).minSize([ 200, 200 ]).toCount(function(err, count) {
       assert(!err);
-      assert(count === 2);
+      assert(count === 3);
       return done();
     });
   });
 
-})
+  it('should generate a srcset string for an image', function() {
+    var srcset = apos.images.srcset({
+      name: 'test',
+      _id: 'test',
+      extension: 'jpg',
+      width: 1200,
+      height: 800
+    });
+    assert.equal(srcset, ['/uploads/attachments/test-test.max.jpg 1200w',
+      '/uploads/attachments/test-test.full.jpg 1140w',
+      '/uploads/attachments/test-test.two-thirds.jpg 760w',
+      '/uploads/attachments/test-test.one-half.jpg 570w',
+      '/uploads/attachments/test-test.one-third.jpg 380w',
+      '/uploads/attachments/test-test.one-sixth.jpg 190w'].join(', '));
+  });
+
+  it('should not generate a srcset string for an SVG image', function() {
+    var srcset = apos.images.srcset({
+      name: 'test',
+      _id: 'test',
+      extension: 'svg',
+      width: 1200,
+      height: 800
+    });
+    assert.equal(srcset, '');
+  });
+});

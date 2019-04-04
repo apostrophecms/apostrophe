@@ -1,32 +1,27 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var request = require('request');
 
 var apos;
 
 describe('Login', function() {
 
-  this.timeout(5000);
+  this.timeout(20000);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7900,
+          port: 7901,
           csrf: false
         }
       },
@@ -38,13 +33,16 @@ describe('Login', function() {
         // return callback(null);
       },
       afterListen: function(err) {
+        if (err) {
+          console.error('* * * caught error ', err);
+        }
         assert(!err);
         done();
-      },
+      }
     });
   });
 
-  it('should be able to insert test user', function(done){
+  it('should be able to insert test user', function(done) {
     assert(apos.users.newInstance);
     var user = apos.users.newInstance();
     assert(user);
@@ -64,14 +62,14 @@ describe('Login', function() {
     });
   });
 
-  it('should not see logout link yet', function(done){
+  it('should not see logout link yet', function(done) {
     // otherwise logins are not remembered in a session
-    var jar = request.jar();
-    return request('http://localhost:7900/', function(err, response, body) {
+    request.jar();
+    return request('http://localhost:7901/', function(err, response, body) {
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 200);
-      //Did we get our page back?
+      // Did we get our page back?
       assert(body.match(/login/));
       assert(!body.match(/logout/));
       return done();
@@ -82,46 +80,46 @@ describe('Login', function() {
   var loginLogoutJar = request.jar();
   var loginEmailLogoutJar = request.jar();
 
-  it('should be able to login a user', function(done){
+  it('should be able to login a user', function(done) {
     // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7900/login', {
+    return request.post('http://localhost:7901/login', {
       form: { username: 'HarryPutter', password: 'crookshanks' },
       followAllRedirects: true,
       jar: loginLogoutJar
-    }, function(err, response, body){
+    }, function(err, response, body) {
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 200);
-      //Did we get our page back?
+      // Did we get our page back?
       assert(body.match(/logout/));
       return done();
     });
   });
 
-  it('should be able to login a user with their email', function(done){
+  it('should be able to login a user with their email', function(done) {
     // otherwise logins are not remembered in a session
-    return request.post('http://localhost:7900/login', {
+    return request.post('http://localhost:7901/login', {
       form: { username: 'hputter@aol.com', password: 'crookshanks' },
       followAllRedirects: true,
       jar: loginEmailLogoutJar
-    }, function(err, response, body){
+    }, function(err, response, body) {
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 200);
-      //Did we get our page back?
+      // Did we get our page back?
       assert(body.match(/logout/));
       return done();
     });
   });
 
-  it('should be able to log out', function(done){
+  it('should be able to log out', function(done) {
     // otherwise logins are not remembered in a session
-    return request('http://localhost:7900/logout', {
+    return request('http://localhost:7901/logout', {
       followAllRedirects: true,
       jar: loginLogoutJar
-    }, function(err, response, body){
+    }, function(err, response, body) {
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 200);
       // are we back to being able to log in?
       assert(body.match(/login/));
@@ -129,20 +127,19 @@ describe('Login', function() {
     });
   });
 
-  it('should be able to log out after having logged in with email', function(done){
+  it('should be able to log out after having logged in with email', function(done) {
     // otherwise logins are not remembered in a session
-    return request('http://localhost:7900/logout', {
+    return request('http://localhost:7901/logout', {
       followAllRedirects: true,
       jar: loginEmailLogoutJar
-    }, function(err, response, body){
+    }, function(err, response, body) {
       assert(!err);
-      //Is our status code good?
+      // Is our status code good?
       assert.equal(response.statusCode, 200);
       // are we back to being able to log in?
       assert(body.match(/login/));
       return done();
     });
   });
-
 
 });

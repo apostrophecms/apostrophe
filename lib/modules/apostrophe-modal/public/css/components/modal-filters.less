@@ -1,26 +1,36 @@
+.apos-ui .apos-modal-filter--padded {
+	background-color: @apos-light;
+	padding: 10px;
+	.apos-rounded;
+}
+
 .apos-ui.apos-modal .apos-modal-header .apos-modal-filters,
 .apos-ui.apos-modal .apos-modal-body .apos-modal-filters
 {
-
+	margin-top: @apos-margin-2;
 	.apos-pill
 	{
-		margin-top: @apos-margin-2;
+    margin-top: @apos-margin-2;
 	}
 
   .apos-modal-filter {
+  font-size: 14px;
+  margin-right: 40px;
+
     .apos-field-input-select-wrapper
     {
-      display: inline-block;
-      padding: 20px 10px 10px 10px;
+      display: inline-flex;
       border-radius: 4px;
-      margin-right: 20px;
+
       select
       {
-        padding: 8px 25px 7px 10px;
+        margin-left: 10px;
+        padding: 10px 30px 10px 15px;
+        .apos-rounded;
       }
       &::after
       {
-        right: 20px;
+        right: 10px;
       }
     }
     label.apos-modal-filter-selection
@@ -31,31 +41,35 @@
 
 	.apos-modal-filters-toggles
 	{
-		float: left;
-		width: 100%;
-		
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
 		.apos-pill
 		{
 			margin-right: @apos-margin-2;
 			margin-bottom: @apos-margin-1;
 		}
-		margin-bottom: -@apos-margin-1;
+	}
+
+	.apos-modal-filters-wrapper {
+		display: flex;
+	}
+
+	.apos-modal-filters-wrapper--right {
+		width: 30%;
+		justify-content: flex-end;
 	}
 
 	.apos-modal-filters-search
 	{
-		width: 30%;
-		float: right;
+		width: 100%;
+		max-width: 314px;
 		input
 		{
 			position: relative;
-			margin-top: @apos-padding-2;
-			max-width: 314px;
 			.apos-rounded;
-
 			padding: (@apos-padding-1 + 1.5px) @apos-padding-2;
-			float: right;
-
 			font-size: 13px;
 			line-height: 13px;
 			@media @apos-breakpoint-desktop-xl

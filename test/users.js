@@ -1,28 +1,25 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
-var request = require('request');
+var _ = require('@sailshq/lodash');
 
 var apos;
 
 describe('Users', function() {
 
-  this.timeout(5000);
+  // Password hashing can be slow
+  this.timeout(20000);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
   // EXISTENCE
-  //////
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -37,12 +34,13 @@ describe('Users', function() {
         // return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
-      },
+      }
     });
   });
 
-  var janeOne, janeTwo, janeThree;
+  var janeOne;
 
   // Test pieces.newInstance()
   it('should be able to insert a new user', function(done) {
@@ -76,39 +74,39 @@ describe('Users', function() {
   // verify that the user doc does not contain a password property at all
 
   // retrieve a user by their username
-  it('should be able to retrieve a user by their username', function(done){
+  it('should be able to retrieve a user by their username', function(done) {
     apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-      .toObject(function(err, user){
+      .toObject(function(err, user) {
         assert(!err);
         assert(user);
-        assert(user.username == 'JaneD');
+        assert(user.username === 'JaneD');
         done();
       }
-    );
+      );
   });
 
-  it('should verify a user password', function(done){
+  it('should verify a user password', function(done) {
     apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-      .toObject(function(err, user){
+      .toObject(function(err, user) {
         assert(!err);
         assert(user);
-        assert(user.username == 'JaneD');
+        assert(user.username === 'JaneD');
 
-        apos.users.verifyPassword(user, '123password', function(err){
+        apos.users.verifyPassword(user, '123password', function(err) {
           assert(!err);
           done();
         });
       });
   });
 
-  it('should not verify an incorrect user password', function(done){
+  it('should not verify an incorrect user password', function(done) {
     apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-      .toObject(function(err, user){
+      .toObject(function(err, user) {
         assert(!err);
         assert(user);
-        assert(user.username == 'JaneD');
+        assert(user.username === 'JaneD');
 
-        apos.users.verifyPassword(user, '321password', function(err){
+        apos.users.verifyPassword(user, '321password', function(err) {
           assert(err);
           done();
         });
@@ -157,7 +155,6 @@ describe('Users', function() {
     user.email = 'jane@aol.com';
     apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
-      janeTwo = user;
       done();
     });
   });
@@ -165,13 +162,13 @@ describe('Users', function() {
   it('should be able to rescue the first user from the trash and the email should be deduplicated', function(done) {
     apos.users.rescue(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
-      return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
+      return apos.docs.db.findOne({ _id: janeOne._id, trash: { $ne: true } }, function(err, doc) {
         assert(!err);
         assert(doc);
         assert(doc.email.match(/deduplicate.*jane/));
         done();
       });
-    })
+    });
   });
 
   it('there should be two users in the safe at this point and neither with a null username', function(done) {
@@ -207,7 +204,6 @@ describe('Users', function() {
     user.email = 'somethingelse@aol.com';
     apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
-      janeThree = user;
       done();
     });
   });
@@ -215,13 +211,13 @@ describe('Users', function() {
   it('should be able to rescue the first user from the trash and the username should be deduplicated', function(done) {
     apos.users.rescue(apos.tasks.getReq(), janeOne._id, function(err) {
       assert(!err);
-      return apos.docs.db.findOne({_id: janeOne._id, trash: { $ne: true}}, function(err, doc) {
+      return apos.docs.db.findOne({ _id: janeOne._id, trash: { $ne: true } }, function(err, doc) {
         assert(!err);
         assert(doc);
         assert(doc.username.match(/deduplicate.*JaneD/));
         done();
       });
-    })
+    });
   });
 
   it('there should be three users in the safe at this point and none with a null username', function(done) {
@@ -235,63 +231,62 @@ describe('Users', function() {
     });
   });
 
-
-  it('should succeed in updating a users property', function(done){
+  it('should succeed in updating a users property', function(done) {
     apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-    .toObject(function(err, user){
-      assert(!err);
-      assert(user);
-      assert(user.username == 'JaneD');
-      user.firstName = 'Jill';
-      apos.users.update(apos.tasks.getReq(), user, function(err){
+      .toObject(function(err, user) {
         assert(!err);
-        apos.users.find(apos.tasks.getReq(), { _id: user._id })
-        .toObject(function(err, user){
+        assert(user);
+        assert(user.username === 'JaneD');
+        user.firstName = 'Jill';
+        apos.users.update(apos.tasks.getReq(), user, function(err) {
           assert(!err);
-          assert(user);
-          assert(user.firstName == 'Jill');
+          apos.users.find(apos.tasks.getReq(), { _id: user._id })
+            .toObject(function(err, user) {
+              assert(!err);
+              assert(user);
+              assert(user.firstName === 'Jill');
+              done();
+            });
+        });
+      });
+  });
+
+  it('should verify a user password after their info has been updated', function(done) {
+    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
+      .toObject(function(err, user) {
+        assert(!err);
+        assert(user);
+        assert(user.username === 'JaneD');
+
+        apos.users.verifyPassword(user, '321password', function(err) {
+          assert(!err);
           done();
         });
       });
-    });
-  });
-
-  it('should verify a user password after their info has been updated', function(done){
-    apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-    .toObject(function(err, user){
-      assert(!err);
-      assert(user);
-      assert(user.username == 'JaneD');
-
-      apos.users.verifyPassword(user, '321password', function(err){
-        assert(!err);
-        done();
-      });
-    });
   });
 
   // change an existing user's password and verify the new password
-  it('should change an existing user password and verify the new password', function(done){
+  it('should change an existing user password and verify the new password', function(done) {
     apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-    .toObject(function(err, user){
-      assert(!err);
-      assert(user);
-      assert(user.username == 'JaneD');
-      assert(!user.password);
-      user.password = 'password123';
-      apos.users.update(apos.tasks.getReq(), user, function(err){
+      .toObject(function(err, user) {
         assert(!err);
-        apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
-        .toObject(function(err, user){
+        assert(user);
+        assert(user.username === 'JaneD');
+        assert(!user.password);
+        user.password = 'password123';
+        apos.users.update(apos.tasks.getReq(), user, function(err) {
           assert(!err);
-          assert(user);
-          apos.users.verifyPassword(user, 'password123', function(err){
-            assert(!err);
-            done();
-          });
+          apos.users.find(apos.tasks.getReq(), { username: 'JaneD' })
+            .toObject(function(err, user) {
+              assert(!err);
+              assert(user);
+              apos.users.verifyPassword(user, 'password123', function(err) {
+                assert(!err);
+                done();
+              });
+            });
         });
       });
-    });
   });
 
 });

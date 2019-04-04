@@ -7,7 +7,7 @@
         {% set verb = 'rescue' if (piece.trash and not (data.canEditTrash)) else 'edit' %}
         <span><a href="#" data-apos-{{ verb }}-{{ data.options.name | css }}="{{ piece._id }}">
           {%- if column.partial -%}
-            {{ column.partial(piece[column.name]) }}
+            {{ column.partial(piece[column.name], piece) }}
           {%- else -%}
             {{ piece[column.name] }}
           {%- endif -%}

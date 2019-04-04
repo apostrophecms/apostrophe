@@ -1,4 +1,5 @@
 {%- import "apostrophe-ui:components/fields.html" as commonFields with context -%}
+{%- import "fieldset.html" as fieldset with context -%}
 
 {%- macro fields(fields, options = {}) -%}
   {%- set groups = apos.schemas.toGroups(fields) -%}
@@ -37,20 +38,7 @@
 {# macro to populate it. Usually not called directly #}
 
 {%- macro fieldset(field, bodyMacro) %}
-  {# WARNING: if you remove apos-field as a class you will have problems with nested schemas reusing #}
-  {# field names. We use this class with our $.findSafe plugin. #}
-  {% set options = { 'id': apos.utils.generateId() } %}
-  <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label for="{{ options.id }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
-    {%- if field.help -%}
-      <div class="apos-field-help">{{ __(field.help) }}</div>
-    {%- endif -%}
-    {{ bodyMacro(field, options) }}
-  </fieldset>
-  {# <fieldset class="apos-fieldset apos-fieldset-{{ field.type | css }} apos-fieldset-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
-    <label>{{ __(field.label) }}<span class="apos-required-message">* Required</span><span class="apos-max-message">* Too large</span><span class="apos-error-message">Please correct errors</span></label>
-    {{ bodyMacro(field) }}
-  </fieldset> #}
+  {{ fieldset.render(field, bodyMacro) }}
 {%- endmacro -%}
 
 {# This is used directly to output a text field #}
@@ -70,11 +58,23 @@
   {%- endif -%}
 {%- endmacro -%}
 
+{%- macro colorBody(field, options) -%}
+    {{ commonFields.color(field.name, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
+{%- macro rangeBody(field, options) -%}
+    {{ commonFields.range(field.name, field.min, field.max, field.step, field.placeholder, '', field.readOnly, options) }}
+{%- endmacro -%}
+
 {%- macro integer(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
 {%- macro float(field) -%}
+  {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro email(field) -%}
   {{ fieldset(field, stringBody) }}
 {%- endmacro -%}
 
@@ -87,7 +87,7 @@
 {%- endmacro -%}
 
 {%- macro passwordBody(field, options) -%}
-  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text" name="{{ field.name }}" type="password" {% if field.readOnly %}disabled{% endif %}>
+  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" name="{{ field.name }}" type="password"{% if field.readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
@@ -115,14 +115,17 @@
   </div>
 {%- endmacro -%}
 
-{# Maybe fancier later #}
-{%- macro email(field) -%}
-  {{ fieldset(field, stringBody) }}
-{%- endmacro -%}
-
 {# Typically we enhance this with jquery ui datepicker later #}
 {%- macro date(field) -%}
   {{ fieldset(field, stringBody) }}
+{%- endmacro -%}
+
+{%- macro color(field) -%}
+  {{ fieldset(field, colorBody) }}
+{%- endmacro -%}
+
+{%- macro range(field) -%}
+  {{ fieldset(field, rangeBody) }}
 {%- endmacro -%}
 
 {%- macro time(field) -%}
@@ -137,7 +140,7 @@
   {%- for choice in field.choices -%}
     <div class="apos-form-checkbox">
       <label class="apos-form-checkbox-label apos-text-small">
-        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}" {% if field.readOnly %}disabled{% endif %}>
+        <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}"{% if field.readOnly %} disabled{% endif %}>
         <span class="apos-form-checkbox-indicator"></span>
         {{ __(choice.label | d('')) }}
       </label>

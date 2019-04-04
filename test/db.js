@@ -3,23 +3,52 @@ var assert = require('assert');
 
 var apos;
 
-describe('Db', function(){
+describe('Db', function() {
 
-  after(function(done) {
-    return t.destroy(apos, done);
-  });
+  this.timeout(t.timeout);
 
-  this.timeout(5000);
-
-  it('should exist on the apos object with a connection at port 27017', function(done){
+  it('should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       afterInit: function(callback) {
         assert(apos.db);
-        assert(apos.db.serverConfig.port === 27017)
-        return done();
+        // Verify a normal, boring connection to localhost without the db option worked
+        return apos.docs.db.findOne().then(function(doc) {
+          assert(doc);
+          return done();
+        }).catch(function(err) {
+          console.error(err);
+          assert(false);
+        });
+      }
+    });
+  });
+
+  it('should be able to launch a second instance reusing the connection', function(done) {
+    var apos2 = require('../index.js')({
+      root: module,
+      shortName: 'test2',
+      modules: {
+        'apostrophe-express': {
+          port: 7777
+        },
+        'apostrophe-db': {
+          db: apos.db,
+          uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+        }
+      },
+      afterInit: function(callback) {
+        return apos.docs.db.findOne().then(function(doc) {
+          assert(doc);
+          return t.destroy(apos2, function() {
+            return t.destroy(apos, done);
+          });
+        }).catch(function(err) {
+          console.error(err);
+          assert(false);
+        });
       }
     });
   });

@@ -25,6 +25,7 @@
 
 .apos-modal .apos-schema-tabs.apos-array-items
 {
+  padding-top: 50px;
   width: 25%;
   i
   {
@@ -57,7 +58,7 @@
     position: fixed;
     .apos-inline-block;
     height: 100%;
-    overflow-y: scroll;
+    overflow: auto;
     width: 25%;
     @media @apos-breakpoint-desktop-xl { width: 25%; }
     background-color: @apos-light;
@@ -66,11 +67,12 @@
   .apos-array-add-item, .apos-array-limit-reached
   {
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     width: 25%;
     text-align: center;
     padding: @apos-padding-2*.75 0;
+    z-index: 1;
   }
 
   .apos-array-limit-reached

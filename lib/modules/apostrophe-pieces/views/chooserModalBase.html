@@ -12,6 +12,10 @@
   apos-{{ data.options.name | css }}-manager apos-{{ data.options.name | css }}-manager--chooser apos-manager apos-manager--chooser apos-ui-modal-no-sidebar apos-modal-slideable
 {%- endblock -%}
 
+{%- block controls -%}
+  {{ module.chooserControls() }}
+{%- endblock -%}
+
 {%- block label -%}
   {%- if data.limit == 1 -%}
     {{ __('Choose ' + data.options.label) }}

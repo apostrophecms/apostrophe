@@ -3,16 +3,18 @@
 {%- import "piecesMacros.html" as pieces with context -%}
 {%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
 {%- import 'apostrophe-schemas:macros.html' as schemas -%}
+{%- import 'apostrophe-modal:batch.html' as batch -%}
+
 {%- block modalClass -%}
   {{ (data.options.name + '-manager') | css }} apos-ui-modal-no-sidebar apos-manager
 {%- endblock -%}
 
 {%- block controls -%}
-  {{ pieces.manageControls() }}
+  {{ module.managerControls() }}
 {%- endblock -%}
 
 {%- block instructions -%}
-  {{ __('You can select content to display by searching for the titles of individual %s, or tags.', __(data.options.pluralLabel |  d(''))) }}
+  {{ __('Here you can add new %s or click on existing ones to edit them.', __(data.options.pluralLabel |  d(''))) }}
 {%- endblock -%}
 
 {%- block filters -%}
@@ -32,36 +34,10 @@
 {%- endblock -%}
 
 {%- block footer -%}
-  {%- block batch -%}
-    <div data-batch class="apos-manage-batch-operations">
-      <select name="batch-operation" class="apos-field-input apos-field-input--small apos-field-input-select apos-manage-batch-operations-select">
-        {% for operation in data.options.batchOperations %}
-          <option value="{{ operation.name }}">
-            {{ __('%s Selected', operation.label) }} (0)
-          </option>
-        {% endfor %}
-      </select>
-      <div class="apos-manage-batch-operations-buttons">
-        {% for operation in data.options.batchOperations %}
-          {{ buttons.danger(__('Batch %s', operation.buttonLabel or operation.label), { action: 'batch-operation', value: operation.name }) }}
-        {% endfor %}
-      </div>
-      {% if apos.utils.filterNonempty(data.options.batchOperations, 'schema') %}
-        <div class="apos-manage-batch-operation-forms">
-      {% endif %}
-      {% for operation in data.options.batchOperations %}
-        {% if operation.schema %}
-          <div data-apos-batch-operation-form="{{ operation.name }}" class="apos-manage-batch-operation-form">
-            {% for field in operation.schema %}
-              {{ apos.schemas.field(field) }}
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-      {% if apos.utils.filterNonempty(data.options.batchOperations, 'schema') %}
-        </div>
-      {% endif %}
-    </div>
-  {%- endblock -%}
-  <div class="apos-manage-pager" data-pager></div>
+  <div class="apos-modal-footer-inner">
+    {%- block batch -%}
+      {{ batch.operations(data.options.batchOperations) }}
+    {%- endblock -%}
+    <div class="apos-manage-pager" data-pager></div>
+  </div>
 {%- endblock -%}

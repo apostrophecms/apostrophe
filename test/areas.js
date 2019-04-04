@@ -1,25 +1,24 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
 var apos;
 
 describe('Areas', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -46,7 +45,7 @@ describe('Areas', function() {
       afterListen: function(err) {
         assert(!err);
         done();
-      },
+      }
     });
   });
 
@@ -84,7 +83,7 @@ describe('Areas', function() {
           content: '<h2>Something else cool</h2>'
         }
       ]
-    }, { delimiter: ''}) === '<h2>So cool</h2><h2>Something else cool</h2>');
+    }, { delimiter: '' }) === '<h2>So cool</h2><h2>Something else cool</h2>');
     assert(apos.areas.richText({
       type: 'area',
       items: [
@@ -101,7 +100,7 @@ describe('Areas', function() {
           content: '<h2>Something else cool</h2>'
         }
       ]
-    }, { wrapper: 'div'}) === '<div><h2>So cool</h2></div><div><h2>Something else cool</h2></div>');
+    }, { wrapper: 'div' }) === '<div><h2>So cool</h2></div><div><h2>Something else cool</h2></div>');
   });
 
   it('returns the plaintext of an area via the plaintext method', function() {
@@ -140,7 +139,7 @@ describe('Areas', function() {
       ]
     }, { limit: 15 }), 'So cool...');
   });
-  
+
   it('area considered empty when it should be', function() {
     var doc = {
       type: 'test',
@@ -187,7 +186,7 @@ describe('Areas', function() {
     assert(apos.areas.isEmpty(doc, 'insignificantText'));
     assert(apos.areas.isEmpty(doc, 'insignificantPieces'));
   });
-  
+
   it('area not considered empty when it should not be', function() {
     var doc = {
       type: 'test',

@@ -1,0 +1,34 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+
+{%- block modalClass -%}
+  apos-job-modal apos-ui-modal-no-sidebar
+{%- endblock -%}
+
+{%- block controls -%}
+  {% if data.job.canCancel %}
+    {{ buttons.minor('Cancel', { action: 'job-cancel', attributes: 'data-apos-job-cancel' }) }}
+  {% elif data.job.canStop %}
+    {# It is correct to say job-cancel here, the backend will know which #}
+    {{ buttons.minor('Stop', { action: 'job-cancel', attributes: 'data-apos-job-stop' }) }}
+  {% endif %}
+  {{ buttons.major('Done', { action: 'cancel', attributes: 'data-apos-job-done' }) }}
+{%- endblock -%}
+
+{%- block label -%}
+  {# Default is not great, you should supply a title! #}
+  {{ __(data.job.labels.title or 'Progress') }}
+{%- endblock -%}
+
+{%- block body -%}
+  {# ajax constantly repopulates me, see progress.html #}
+  <div data-apos-job-progress-container class="apos-job-progress-container">
+    {% include "progress.html" %}
+  </div>
+  </div>
+{%- endblock -%}
+
+{%- block instructions -%}
+  {# Often none needed #}
+  {{ data.job.labels.instructions }}
+{%- endblock -%}

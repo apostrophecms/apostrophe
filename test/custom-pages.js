@@ -1,28 +1,26 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 var request = require('request');
 
 var apos;
 
 describe('custom-pages', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -32,7 +30,15 @@ describe('custom-pages', function() {
           extend: 'apostrophe-custom-pages'
         }
       },
+      afterInit: function(callback) {
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      },
       afterListen: function(err) {
+        assert(!err);
         done();
       }
     });
@@ -44,7 +50,7 @@ describe('custom-pages', function() {
       req.handlerInvoked = true;
       req.template = function(req, args) {
         return 'niftyPages-index';
-      }
+      };
       return setImmediate(callback);
     });
     // Simulate a page request
@@ -122,7 +128,7 @@ describe('custom-pages', function() {
       req.foo2Invoked = true;
       req.template = function(req, args) {
         return 'niftyPages-foo';
-      }
+      };
       return setImmediate(callback);
     });
     // Simulate a page request
@@ -196,31 +202,31 @@ describe('custom-pages', function() {
   });
 
   it('should match a dispatch route on a real live page request', function(done) {
-    return request('http://localhost:7900/niftyPages', function(err, response, body){
+    return request('http://localhost:7900/niftyPages', function(err, response, body) {
       console.error(err);
       console.error(body);
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/niftyPages\-index/));
+      assert(body.match(/niftyPages-index/));
       return done();
     });
   });
 
   it('runs foo route with /foo remainder', function(done) {
-    return request('http://localhost:7900/niftyPages/foo', function(err, response, body){
+    return request('http://localhost:7900/niftyPages/foo', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
-      assert(body.match(/niftyPages\-foo/));
+      assert(body.match(/niftyPages-foo/));
       return done();
     });
   });
 
   it('yields 404 with bad remainder (not matching any dispatch routes)', function(done) {
-    return request('http://localhost:7900/niftyPages/tututu', function(err, response, body){
+    return request('http://localhost:7900/niftyPages/tututu', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);

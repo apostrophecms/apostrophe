@@ -1,3 +1,3 @@
-module.exports = function(apos, config){
-	config.overrideTest += '-foo';
+module.exports = function(apos, config) {
+  config.overrideTest += '-foo';
 };

@@ -23,7 +23,7 @@
   // Rich texts have an empty state with a min-height and a background color.
   &.apos-empty
   {
-    min-height: 80px;
+    min-height: 100px;
     background-color: @apos-light;
     .apos-area-widget-controls { opacity: 1; }
   }
@@ -35,3 +35,28 @@
 }
 
 [data-apos-widget-wrapper="apostrophe-rich-text"]:hover { z-index: @apos-z-index-6; }
+
+.apos-modal-body [data-rich-text]
+{
+  p {
+    margin: 10px 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  b, strong {
+    font-weight: bold;
+  }
+  em, i {
+    font-style: italic;
+  }
+  ul {
+    margin-left: 30px;
+    list-style-type: disc;
+  }
+  ol {
+    margin-left: 30px;
+    list-style-type: decimal;
+  }
+}

@@ -1,7 +1,5 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
-var async = require('async');
 
 var apos;
 
@@ -9,20 +7,19 @@ var initDone = false;
 
 describe('Versions', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-	//////
   // EXISTENCE
-  //////
+
   it('should should be a module', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -59,7 +56,7 @@ describe('Versions', function() {
               name: '_poems',
               withType: 'poem',
               idsField: 'poemIds'
-            },
+            }
           ]
         },
 
@@ -79,6 +76,7 @@ describe('Versions', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         initDone = true;
         done();
       }
@@ -109,16 +107,16 @@ describe('Versions', function() {
         slug: 'poem-qed',
         _id: 'qed',
         type: 'poem'
-      },
+      }
     ], function(err) {
       assert(!err);
       done();
     });
   });
 
-  //////
+  /// ///
   // Versioning
-  //////
+  /// ///
 
   it('inserting a doc should result in a version', function(done) {
     var object = {
@@ -136,14 +134,14 @@ describe('Versions', function() {
       assert(object);
       assert(object._id);
       var docId = object._id;
-      //did the versions module kick-in?
-      apos.versions.db.find({ docId: docId }).toArray(function(err, versions) {
+      // did the versions module kick-in?
+      apos.versions.db.findWithProjection({ docId: docId }).toArray(function(err, versions) {
         assert(!err);
         // we should have a document
         assert(versions);
         // there should be only one document in our results
         assert(versions.length === 1);
-        //does it have a property match?
+        // does it have a property match?
         assert(versions[0].doc.age === 15);
         done();
       });
@@ -151,7 +149,7 @@ describe('Versions', function() {
   });
 
   it('should be able to update', function(done) {
-    var cursor = apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray(function(err,docs){
+    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray(function(err, docs) {
       assert(!err);
       // we should have a document
       assert(docs);
@@ -161,7 +159,7 @@ describe('Versions', function() {
       // grab the object
       var object = docs[0];
       // we want update the alive property
-      object.alive = false
+      object.alive = false;
 
       apos.docs.update(apos.tasks.getReq(), object, function(err, object) {
         assert(!err);
@@ -169,30 +167,32 @@ describe('Versions', function() {
         // has the property been updated?
         assert(object.alive === false);
 
-        //did the versions module kick-in?
-	      apos.versions.db.find({ docId: object._id }).sort({createdAt: -1}).toArray(function(err,versions){
-		    	assert(!err);
-		      // we should have a document
-		      assert(versions);
-		      // there should be two documents now in our results
-		      assert(versions.length === 2);
-		      // the property should have been updated
-		      assert(versions[0].doc.alive === false);
-		      assert(versions[1].doc.alive === true);
-		      done();
-		    });
+        // did the versions module kick-in?
+        apos.versions.db.findWithProjection({ docId: object._id }).sort({createdAt: -1}).toArray(function(err, versions) {
+          assert(!err);
+          // we should have a document
+          assert(versions);
+          // there should be two documents now in our results
+          assert(versions.length === 2);
+          // the property should have been updated
+          assert(versions[0].doc.alive === false);
+          assert(versions[1].doc.alive === true);
+          done();
+        });
       });
     });
   });
 
-  it('should be able to revert to a previous version', function(done){
-    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err,doc) {
+  it('should be able to revert to a previous version', function(done) {
+    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err, doc) {
+      assert(!err);
       apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {}, function(err, versions) {
+        assert(!err);
         assert(versions.length === 2);
         apos.versions.revert(apos.tasks.getReq(), versions[1], function(err) {
           assert(!err);
           // make sure the change propagated to the database
-          apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err,doc) {
+          apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err, doc) {
             assert(!err);
             assert(doc);
             assert(doc.alive === true);
@@ -203,9 +203,9 @@ describe('Versions', function() {
     });
   });
 
-  it('should be able to fetch all versions in proper order', function(done){
+  it('should be able to fetch all versions in proper order', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {}, function(err, versions) {
         assert(!err);
@@ -219,7 +219,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions and spot a simple field change', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
         assert(!err);
@@ -240,7 +240,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with areas and spot a widget addition', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -258,7 +258,7 @@ describe('Versions', function() {
               }
             ]
           }
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -297,7 +297,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with areas and spot a widget removal', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -320,7 +320,7 @@ describe('Versions', function() {
               }
             ]
           }
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -337,6 +337,7 @@ describe('Versions', function() {
           }
         }
       }, function(err, changes) {
+        assert(!err);
         assert(changes.length === 1);
         assert(changes[0].action === 'change');
         assert(changes[0].key === 'body');
@@ -353,7 +354,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with areas and spot a widget change', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -376,7 +377,7 @@ describe('Versions', function() {
               }
             ]
           }
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -419,7 +420,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with arrays and spot an addition', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -433,7 +434,7 @@ describe('Versions', function() {
               _id: 'a1'
             }
           ]
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -468,7 +469,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with arrays and spot an item removal', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -486,7 +487,7 @@ describe('Versions', function() {
               _id: 'a2'
             }
           ]
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -499,7 +500,7 @@ describe('Versions', function() {
           ]
         }
       }, function(err, changes) {
-
+        assert(!err);
         assert(changes.length === 1);
         assert(changes[0].action === 'change');
         assert(changes[0].key === 'nicknames');
@@ -516,7 +517,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with arrays and spot an item change', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -534,7 +535,7 @@ describe('Versions', function() {
               _id: 'a2'
             }
           ]
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -572,7 +573,7 @@ describe('Versions', function() {
 
   it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', function(done) {
     var req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err,doc) {
+    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
       assert(!err);
       assert(doc);
       // compare mock versions
@@ -581,7 +582,7 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           poemIds: [ 'abc', 'def' ]
-        },
+        }
       }, {
         doc: {
           title: 'whatever',
@@ -610,22 +611,22 @@ describe('Versions', function() {
     });
   });
 
-  //////
+  /// ///
   // When disabled the module does not create versions,
   // and docs can still be inserted
-  //////
+  /// ///
   // it('should not version pages if not set to enabled', function(done) {
   //   apos = require('../index.js')({
   //     root: module,
   //     shortName: 'test',
-  //     
+  //
   //     modules: {
   //       'apostrophe-express': {
   //         secret: 'xxx',
   //         port: 7900
   //       },
   //       'apostrophe-versions':{
-  //       	enabled: false
+  //         enabled: false
   //       }
   //     },
   //     afterInit: function(callback) {

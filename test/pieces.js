@@ -1,28 +1,27 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var async = require('async');
-var request = require('request');
 
 var apos;
 
 describe('Pieces', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   after(function(done) {
     return t.destroy(apos, done);
   });
 
-  //////
+  /// ///
   // EXISTENCE
-  //////
+  /// ///
 
   it('should initialize with a schema', function(done) {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-      
+
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -37,6 +36,15 @@ describe('Pieces', function() {
             label: 'Foo',
             type: 'string'
           }
+        },
+        'people': {
+          extend: 'apostrophe-pieces',
+          name: 'person',
+          label: 'Person',
+          addFields: {
+            name: '_things',
+            type: 'joinByArray'
+          }
         }
       },
       afterInit: function(callback) {
@@ -46,8 +54,9 @@ describe('Pieces', function() {
         return callback(null);
       },
       afterListen: function(err) {
+        assert(!err);
         done();
-      },
+      }
     });
   });
 
@@ -59,20 +68,26 @@ describe('Pieces', function() {
       .trash(null)
       .toObject(function(err, piece) {
         if (err) {
-          return callback(err)
+          return callback(err);
         }
         if (!piece) {
           return callback('notfound');
         }
         return callback(err, piece);
       }
-    );
+      );
   };
 
   var testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar'
+  };
+
+  var testThing2 = {
+    _id: 'testThing2',
+    title: 'hello2',
+    foo: 'bar2'
   };
 
   var additionalThings = [
@@ -82,11 +97,23 @@ describe('Pieces', function() {
     },
     {
       _id: 'thing2',
-      title: 'Blue'
+      title: 'Blue',
+      published: true
     },
     {
       _id: 'thing3',
-      title: 'Green'
+      title: 'Green',
+      published: true
+    }
+  ];
+
+  var testPeople = [
+    {
+      _id: 'person1',
+      title: 'Bob',
+      type: 'person',
+      thingsIds: [ 'thing2', 'thing3' ],
+      published: true
     }
   ];
 
@@ -96,7 +123,8 @@ describe('Pieces', function() {
     apos.docs.db.remove({}, function(err) {
       assert(!err);
       // Make sure it went away
-      apos.docs.db.find({ _id: 'testThing' }).toArray(function(err, docs){
+      apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
+        assert(!err);
         assert(docs.length === 0);
         done();
       });
@@ -119,6 +147,18 @@ describe('Pieces', function() {
       assert(testThing === piece);
       done();
     });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].insert);
+    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
+      .then(function(piece2) {
+        assert(testThing2 === piece2);
+        done();
+      })
+      .catch(function(err) {
+        assert(!err);
+      });
   });
 
   // Test pieces.requirePiece()
@@ -154,6 +194,28 @@ describe('Pieces', function() {
         done();
       });
     });
+  });
+
+  it('same thing with promises', function(done) {
+    assert(apos.modules['things'].update);
+    testThing.foo = 'goo';
+    apos.modules['things'].update(apos.tasks.getReq(), testThing)
+      .then(function(piece) {
+        assert(testThing === piece);
+        // Now let's get the piece and check if it was updated
+        var req = apos.tasks.getReq();
+        req.body = {};
+        req.body._id = "testThing";
+        apos.modules['things'].requirePiece(req, req.res, function() {
+          assert(req.piece);
+          assert(req.piece._id === 'testThing');
+          assert(req.piece.foo === 'goo');
+          done();
+        });
+      })
+      .catch(function(err) {
+        assert(!err);
+      });
   });
 
   // Test pieces.addListFilters()
@@ -197,7 +259,7 @@ describe('Pieces', function() {
       manageTest: 'bar',
       unsafeTest: 'nope',
       fakeTest: 'notEvenReal'
-    }
+    };
 
     mockCursor.queryToFilters(filters);
     assert(publicTest === true);
@@ -214,7 +276,7 @@ describe('Pieces', function() {
     }, function(err) {
       assert(!err);
       done();
-    })
+    });
   });
 
   it('should list all the pieces if skip and limit are set to large enough values', function(done) {
@@ -226,10 +288,10 @@ describe('Pieces', function() {
     };
     apos.modules['things'].list(req, filters, function(err, results) {
       assert(!err);
-      assert(results.total == 4);
-      assert(results.limit == 10);
-      assert(results.skip == 0);
-      assert(results.pieces.length == 4);
+      assert(results.total === 5);
+      assert(results.limit === 10);
+      assert(results.skip === 0);
+      assert(results.pieces.length === 5);
       done();
     });
   });
@@ -267,7 +329,7 @@ describe('Pieces', function() {
     // let's make sure the piece is trashed to start
     findPiece(req, id, function(err, piece) {
       assert(!err);
-      assert(piece.trash === true)
+      assert(piece.trash === true);
       apos.modules['things'].rescue(req, id, function(err) {
         assert(!err);
         // let's get the piece to make sure it is rescued
@@ -346,9 +408,9 @@ describe('Pieces', function() {
       assert(result.data._id);
       insertedRouteThing = result.data;
       done();
-    }
+    };
 
-    return apos.modules['things'].routes.insert(req, res)
+    return apos.modules['things'].routes.insert(req, res);
   });
 
   // routes.retrieve
@@ -364,7 +426,7 @@ describe('Pieces', function() {
       assert(result.status === 'ok');
       assert(result.data.title === 'purple');
       done();
-    }
+    };
 
     return apos.modules['things'].routes.retrieve(req, res);
   });
@@ -380,12 +442,12 @@ describe('Pieces', function() {
     res.send = function(result) {
       assert(result);
       assert(result.status === 'ok');
-      assert(result.data.total == 5);
-      assert(result.data.skip == 0);
-      assert(result.data.limit == 10);
-      assert(result.data.pieces.length == 5);
+      assert(result.data.total === 6);
+      assert(result.data.skip === 0);
+      assert(result.data.limit === 10);
+      assert(result.data.pieces.length === 6);
       done();
-    }
+    };
 
     return apos.modules['things'].routes.list(req, res);
   });
@@ -406,7 +468,7 @@ describe('Pieces', function() {
       assert(result.status === 'ok');
       assert(result.data.title === 'blue');
       done();
-    }
+    };
     apos.modules['things'].requirePiece(req, res, function() {
       return apos.modules['things'].routes.update(req, res);
     });
@@ -425,7 +487,7 @@ describe('Pieces', function() {
       assert(response.status === 'ok');
       // let's get the piece to make sure it is trashed
       findPiece(req, id, function(err, piece) {
-        assert(!err)
+        assert(!err);
         assert(piece);
         assert(piece.trash === true);
         done();
@@ -467,4 +529,40 @@ describe('Pieces', function() {
     });
 
   });
+
+  it('people can find things via a join', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.db.insert(testPeople)
+      .then(function() {
+        return apos.docs.getManager('person').find(req, {}).toObject();
+      })
+      .then(function(person) {
+        assert(person);
+        assert(person.title === 'Bob');
+        assert(person._things);
+        assert(person._things.length === 2);
+      });
+  });
+
+  it('people cannot find things via a join with an inadequate projection', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
+      .then(function(person) {
+        assert(person);
+        assert(person.title === 'Bob');
+        assert((!person._things) || (person._things.length === 0));
+      });
+  });
+
+  it('people can find things via a join with a "projection" of the join name', function() {
+    var req = apos.tasks.getReq();
+    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+      .then(function(person) {
+        assert(person);
+        assert(person.title === 'Bob');
+        assert(person._things);
+        assert(person._things.length === 2);
+      });
+  });
+
 });

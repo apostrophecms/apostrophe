@@ -1,10 +1,10 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 
 describe('Permissions', function() {
 
-  this.timeout(5000);
+  this.timeout(t.timeout);
 
   var apos;
 
@@ -38,15 +38,6 @@ describe('Permissions', function() {
       }
     });
   });
-
-
-  function find(a, b) {
-    for (var i in a) {
-      if (b(a[i])) {
-        return a[i];
-      }
-    }
-  }
 
   // mock up a request
   function req(d) {
@@ -93,7 +84,7 @@ describe('Permissions', function() {
       assert(!apos.permissions.can(req({ user: { _id: 2, groupIds: [ 1001, 1002 ] } }), 'view-doc', { published: true, loginRequired: 'certainUsers', docPermissions: [ 'view-1003' ] }));
     });
     it('certainUsers will not let you slide past to an unpublished doc', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', {  loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 1 } }), 'view-doc', { loginRequired: 'certainUsers', docPermissions: [ 'view-1' ] }));
     });
     it('permits view-doc for unpublished doc for individual with group id for editing', function() {
       assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'view-doc', { docPermissions: [ 'edit-1002' ] }));
