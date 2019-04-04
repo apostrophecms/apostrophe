@@ -1,15 +1,10 @@
 {% macro base(label, options, classes) -%}
-<<<<<<< HEAD
-  <a {{ ('href=' + options.url) if options.url }} class="apos-button {{ classes }}" {{ options.attributes }} {% if options.tooltip %}data-apos-tooltip="{{ options.tooltip }}"{% endif %} data-apos-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}><span class="apos-button-label">{{ __(label | d('')) }}</span>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</a>
-{%- endmacro -%}
-=======
   {%- if options.url -%}
-    <a href="{{ options.url }}" class="apos-button {{ classes }}" {{ options.attributes }} data-apos-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}><span class="apos-button-label">{{ __(label | d('')) }}</span>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</a>
+    <a href="{{ options.url }}" class="apos-button {{ classes }}" {% if options.tooltip %}data-apos-tooltip="{{ options.tooltip }}"{% endif %} {{ options.attributes }} data-apos-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}><span class="apos-button-label">{{ __(label | d('')) }}</span>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</a>
   {%- else -%}
-    <button class="apos-button {{ classes }}" type="button" {{ options.attributes }} data-apos-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}><span class="apos-button-label">{{ __(label | d('')) }}</span>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</button>
+    <button class="apos-button {{ classes }}" type="button" {% if options.tooltip %}data-apos-tooltip="{{ options.tooltip }}"{% endif %} {{ options.attributes }} data-apos-{{ options.action | css }}{% if options.value %}='{{ options.value }}'{% endif %}><span class="apos-button-label">{{ __(label | d('')) }}</span>{% if options.icon %}<i class="fa fa-{{ options.icon }}"></i>{% endif %}</button>
   {%- endif -%}
 {%- endmacro %}
->>>>>>> master
 
 {% macro normal(label, options) -%}
   {{ base(label, options, '') }}
