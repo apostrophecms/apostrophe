@@ -375,15 +375,17 @@ module.exports = function(options) {
         moduleName = packageName;
       }
     } catch (e) {}
-    if (!fs.existsSync(testDir + '/node_modules/' + moduleName)) {
-      var scope = '';
+    var testDependenciesDir = testDir + '/node_modules/';
+    if (!fs.existsSync(testDependenciesDir + moduleName)) {
+      // Ensure dependencies directory exists
+      !fs.existsSync(testDependenciesDir) && (fs.mkdirSync(testDependenciesDir));
+      // Ensure potential module scope directory exists before the symlink creation
       if (moduleName.charAt(0) === '@' && moduleName.includes('/')) {
-        scope = moduleName.split('/')[0];
+        var scope = moduleName.split('/')[0];
+        var scopeDir = testDependenciesDir + scope;
+        !fs.existsSync(scopeDir) && (fs.mkdirSync(scopeDir));
       }
-      // Ensure module folder, including its potential scope, exists before the symlink creation
-      var nodeModulePath = testDir + '/node_modules/' + scope;
-      !fs.existsSync(nodeModulePath) && (fs.mkdirSync(nodeModulePath));
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + moduleName, 'dir');
+      fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
