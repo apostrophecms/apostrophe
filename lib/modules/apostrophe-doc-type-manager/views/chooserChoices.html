@@ -11,21 +11,21 @@
         {# By default you can change the order, #}
         {# sometimes this has no meaningful effect #}
         {%- if not apos.utils.isFalse(data.field.sortable) -%}
-          {{ buttons.inGroup('', { icon: 'arrows', action: 'sort-item', value: choice._id}) }}
-          {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}
-          {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id }) }}
+          {{ buttons.inGroup('', { icon: 'arrows', action: 'sort-item', tooltip: 'Sort', value: choice._id}) }}
+          {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', tooltip: 'Move Up', value: choice._id}) }}
+          {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', tooltip: 'Move Down', value: choice._id }) }}
         {%- endif -%}
         {%- if data.relationship and (apos.utils.filterEmpty(data.relationship, 'inline').length) -%}
-          {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id}) }}
+          {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id, tooltip: 'Related Fields'}) }}
         {%- endif -%}
         {# By default you can edit the items themselves, sometimes #}
         {# this is confusing #}
         {%- if not apos.utils.isFalse(data.field.editDocs) -%}
           {%- if item._edit or item.item._edit -%}
-            {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', value: choice._id}) }}
+            {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', tooltip: 'Edit', value: choice._id}) }}
           {%- endif -%}
         {%- endif -%}
-        {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id }) }}
+        {{ buttons.inGroup('', { icon: 'trash', action: 'delete-item', value: choice._id, tooltip: 'Remove'}) }}
       </div>
     {% endif %}
     <div class="apos-choose-choice-content">
