@@ -421,6 +421,7 @@ module.exports = function(options) {
   function instantiateModules(callback) {
     self.modules = {};
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
+      console.log(item);
       var improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
         // We don't want an actual instance of this module, we are using it
