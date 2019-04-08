@@ -378,12 +378,16 @@ module.exports = function(options) {
     var testDependenciesDir = testDir + '/node_modules/';
     if (!fs.existsSync(testDependenciesDir + moduleName)) {
       // Ensure dependencies directory exists
-      !fs.existsSync(testDependenciesDir) && (fs.mkdirSync(testDependenciesDir));
+      if (!fs.existsSync(testDependenciesDir)) {
+        fs.mkdirSync(testDependenciesDir);
+      }
       // Ensure potential module scope directory exists before the symlink creation
       if (moduleName.charAt(0) === '@' && moduleName.includes('/')) {
         var scope = moduleName.split('/')[0];
         var scopeDir = testDependenciesDir + scope;
-        !fs.existsSync(scopeDir) && (fs.mkdirSync(scopeDir));
+        if (!fs.existsSync(scopeDir)) {
+          fs.mkdirSync(scopeDir);
+        }
       }
       fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, 'dir');
     }
