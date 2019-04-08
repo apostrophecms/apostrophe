@@ -53,5 +53,5 @@ https://github.com/apostrophecms/apostrophe/tree/master/test) at the test folder
 
 Great question. If it's not a bug fix or an improvement to the core UI, it often doesn't belong in the core `apostrophe` npm module. For instance, our blogging functionality is in the separate `apostrophe-blog` npm module.
 
-See [publishing your own npm modules for Apostrophe](hhttps://docs.apostrophecms.org/apostrophe/other/more-modules#publishing-your-own-npm-modules-for-apostrophe) for more information.
+See [publishing your own npm modules for Apostrophe](https://docs.apostrophecms.org/apostrophe/other/more-modules#publishing-your-own-npm-modules-for-apostrophe) for more information.
 
