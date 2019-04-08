@@ -22,8 +22,6 @@
     {% block apostropheContextMenu %}
       {% if data.user %}
         <div class="apos-ui">
-          {# {{ apos.modules['apostrophe-ui'].tooltip() }} #}
-          {% include "apostrophe-ui:components/tooltip.html" %}
           <div class="apos-context-menu-container">
             {{ apos.templates.prepended('contextMenu') }}
             {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
