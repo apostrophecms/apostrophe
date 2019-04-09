@@ -8,6 +8,9 @@
       "files": [ "**/src/**/*.js" ],
       "globals": {
         "apos": true
+      },
+      "env": {
+        "browser": 1
       }
     }
   ]
