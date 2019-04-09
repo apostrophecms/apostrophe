@@ -34,78 +34,90 @@ module.exports = async function(options) {
     }
   };
 
-  // The core must have a reference to itself in order to use the
-  // promise event emitter code
-  self.apos = self;
+  try {
+    // The core must have a reference to itself in order to use the
+    // promise event emitter code
+    self.apos = self;
 
-  require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
+    require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
 
-  // Determine root module and root directory
-  self.root = options.root || getRoot();
-  self.rootDir = options.rootDir || path.dirname(self.root.filename);
-  self.npmRootDir = options.npmRootDir || self.rootDir;
+    // Determine root module and root directory
+    self.root = options.root || getRoot();
+    self.rootDir = options.rootDir || path.dirname(self.root.filename);
+    self.npmRootDir = options.npmRootDir || self.rootDir;
 
-  testModule();
+    testModule();
 
-  self.options = mergeConfiguration(options, defaults);
-  autodetectBundles();
-  acceptGlobalOptions();
+    self.options = mergeConfiguration(options, defaults);
+    autodetectBundles();
+    acceptGlobalOptions();
 
-  // Legacy events
-  self.handlers = {};
+    // Legacy events
+    self.handlers = {};
 
-  // Module-based async events (self.on and self.emit of each module)
-  self.eventHandlers = {};
+    // Module-based async events (self.on and self.emit of each module)
+    self.eventHandlers = {};
 
-  defineModules();
+    // Destroys the Apostrophe object, freeing resources such as
+    // HTTP server ports and database connections. Does **not**
+    // delete any data; the persistent database and media files
+    // remain available for the next startup. Emits the
+    // `apostrophe:destroy` async event; use this mechanism to free your own
+    // server-side resources that could prevent garbage
+    // collection by the JavaScript engine, such as timers
+    // and intervals.
+    self.destroy = async function() {
+      await self.emit('destroy');
+    };
 
-  await instantiateModules();
-  await self.emit('modulesReady');
-  await self.emit('afterInit');
-  await self.emit('run', self.isTask());
+    // Returns true if Apostrophe is running as a command line task
+    // rather than as a server
+    self.isTask = function() {
+      return !!self.argv._.length;
+    };
 
-  // Destroys the Apostrophe object, freeing resources such as
-  // HTTP server ports and database connections. Does **not**
-  // delete any data; the persistent database and media files
-  // remain available for the next startup. Emits the
-  // `apostrophe:destroy` async event; use this mechanism to free your own
-  // server-side resources that could prevent garbage
-  // collection by the JavaScript engine, such as timers
-  // and intervals.
-  self.destroy = async function() {
-    await self.emit('destroy');
-  };
+    // Returns an array of modules that are instances of the given
+    // module name, i.e. they are of that type or they extend it.
+    // For instance, `apos.instancesOf('apostrophe-pieces')` returns
+    // an array of active modules in your project that extend
+    // pieces, such as `apostrophe-users`, `apostrophe-groups` and
+    // your own piece types
 
-  // Returns true if Apostrophe is running as a command line task
-  // rather than as a server
-  self.isTask = function() {
-    return !!self.argv._.length;
-  };
+    self.instancesOf = function(name) {
+      return _.filter(self.modules, function(module) {
+        return self.synth.instanceOf(module, name);
+      });
+    };
 
-  // Returns an array of modules that are instances of the given
-  // module name, i.e. they are of that type or they extend it.
-  // For instance, `apos.instancesOf('apostrophe-pieces')` returns
-  // an array of active modules in your project that extend
-  // pieces, such as `apostrophe-users`, `apostrophe-groups` and
-  // your own piece types
+    // Returns true if the object is an instance of the given
+    // moog class name or a subclass thereof. A convenience wrapper
+    // for `apos.synth.instanceOf`
 
-  self.instancesOf = function(name) {
-    return _.filter(self.modules, function(module) {
-      return self.synth.instanceOf(module, name);
-    });
-  };
+    self.instanceOf = function(object, name) {
+      return self.synth.instanceOf(object, name);
+    };
 
-  // Returns true if the object is an instance of the given
-  // moog class name or a subclass thereof. A convenience wrapper
-  // for `apos.synth.instanceOf`
+    defineModules();
 
-  self.instanceOf = function(object, name) {
-    return self.synth.instanceOf(object, name);
-  };
+    await instantiateModules();
+    await self.emit('modulesReady');
+    await self.emit('afterInit');
+    await self.emit('run', self.isTask());
 
-  // Return self so that app.js can refer to apos
-  // in inline functions, etc.
-  return self;
+
+    // Return self so that app.js can refer to apos
+    // in inline functions, etc.
+    return self;
+  } catch (e) {
+    // If an error occurs during startup, we want to propagate it, but we need to attach
+    // the apos object in case the developer wishes to do things like deleting content
+    // after a unit test, etc.
+    if ((typeof e) === 'string') {
+      e = new Error(e);
+    }
+    e.apos = self;
+    throw e;
+  }
 
   // SUPPORTING FUNCTIONS BEGIN HERE
 
@@ -287,6 +299,7 @@ module.exports = async function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
+    self.createSync = self.synth.createSync;
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
