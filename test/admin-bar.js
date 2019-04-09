@@ -15,11 +15,12 @@ describe('Admin bar', function() {
       apos = await require('../index.js')({
         root: module,
         shortName: 'test',
-
+        argv: {
+          _: []
+        },
         modules: {
           'apostrophe-express': {
             secret: 'xxx',
-            port: 7900,
             csrf: false
           },
           'apostrophe-admin-bar': {
@@ -60,11 +61,12 @@ describe('Admin bar', function() {
       apos = await require('../index.js')({
         root: module,
         shortName: 'test',
-
+        argv: {
+          _: []
+        },
         modules: {
           'apostrophe-express': {
             secret: 'xxx',
-            port: 7900,
             csrf: false
           },
           'apostrophe-admin-bar': {

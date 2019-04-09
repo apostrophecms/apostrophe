@@ -18,11 +18,12 @@ describe('Areas', function() {
     apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7900,
           csrf: false
         },
         'monkeys': {
