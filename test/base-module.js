@@ -1,53 +1,39 @@
 let t = require('../test-lib/test.js');
 let assert = require('assert');
+let apos;
 
 describe('Base Module', function() {
 
-  let apos;
-
-  after(function(done) {
-    return t.destroy(apos, done);
-  });
-
   this.timeout(t.timeout);
 
-  it('should be subclassable', function(done) {
-    apos = require('../index.js')({
+  after(async function() {
+    return t.destroy(apos);
+  });
+
+  it('should be subclassable', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         // will push an asset for us to look for later
         'apostrophe-test-module-push': {},
         // test the getOption method of modules
         'test-get-option': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.test && apos.test.color === 'red');
-        return done();
       }
     });
+    assert(apos.test && apos.test.color === 'red');
   });
 
-  it('should provide apos.assets with the right context for pushing assets', function(done) {
-    let found = false;
-    for (let i = apos.assets.pushed.stylesheets.length - 1; i >= 0; i--) {
-      if (apos.assets.pushed.stylesheets[i].file === __dirname + '/lib/modules/apostrophe-test-module-push/public/css/test.css') {
-        found = true;
-        break;
-      }
-    };
-    assert(found);
-    return done();
-  });
-
-  it('should produce correct responses via the getOption method', function() {
+  it('should produce correct responses via the getOption method', async function() {
     let mod = apos.modules['test-get-option'];
     let req = apos.tasks.getReq();
     assert.equal(mod.getOption(req, 'flavors.grape.sweetness'), 20);
     assert.equal(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
     assert.equal(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
-    let markup = mod.render(req, 'test.html');
+    let markup = await mod.render(req, 'test.html');
     assert(markup.match(/^\s*20\s*$/));
   });
 });
