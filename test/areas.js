@@ -6,16 +6,16 @@ describe('Areas', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
 
@@ -33,20 +33,13 @@ describe('Areas', function() {
           extend: 'apostrophe-pieces-widgets'
         }
       },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-areas']);
-        assert(apos.areas);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
-      }
     });
+    assert(apos.modules['apostrophe-areas']);
+    assert(apos.areas);
+    // In tests this will be the name of the test file,
+    // so override that in order to get apostrophe to
+    // listen normally and not try to run a task. -Tom
+    apos.argv._ = [];
   });
 
   it('returns the rich text of an area via the richText method', function() {
