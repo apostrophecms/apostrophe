@@ -10,8 +10,9 @@ describe('Admin bar', function() {
   /// ///
 
   it('should allow a group reversing the current order', async function() {
+    let apos;
     try {
-      const apos = await require('../index.js')({
+      apos = await require('../index.js')({
         root: module,
         shortName: 'test',
 
@@ -48,16 +49,15 @@ describe('Admin bar', function() {
       assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
       assert(apos.adminBar.items[6].name === 'apostrophe-files');
       assert(apos.adminBar.items[7].name === 'apostrophe-images');
-    } catch (e) {
-       apos = e.apos; 
     } finally {
-      apos && await t.destroy(apos);
+      t.destroy(apos);
     }
   });
 
   it('should allow a group obeying the current order', async function() {
+    let apos;
     try {
-      const apos = await require('../index.js')({
+      apos = await require('../index.js')({
         root: module,
         shortName: 'test',
 
@@ -94,10 +94,8 @@ describe('Admin bar', function() {
       assert(apos.adminBar.items[5].name === 'apostrophe-files');
       assert(apos.adminBar.items[6].name === 'apostrophe-images');
       assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
-    } catch (e) {
-       apos = e.apos; 
     } finally {
-      apos && await t.destroy(apos); 
+      t.destroy(apos);
     }
   });
 });

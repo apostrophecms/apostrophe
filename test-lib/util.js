@@ -7,23 +7,15 @@
 // If `apos` is null, no work is done.
 
 async function destroy(apos) {
-  if (!apos) {
-    return;
+  if (apos) {
+    await apos.destroy();
   }
-  await drop();
-  await apos.destroy();
-  async function drop() {
-    if (!(apos.db && apos.db.collections)) {
-      return;
-    }
-    const collections = await apos.db.collections();
-    for (const collection of collections) {
-      // Avoid collections that are internal to mongodb bookkeeping
-      if (!collection.collectionName.match(/^system\./)) {
-        await collection.drop();
-      }
-    }
-  }
+  // TODO at some point accommodate nonsense like testing remote databases
+  // that won't let us use dropDatabase, no shell available etc., but the
+  // important principle here is that we should not have to have an apos
+  // object to clean up the database, otherwise we have to get hold of one
+  // when initialization failed and that's really not apostrophe's concern
+  require('child_process').execSync('mongo test --eval \'db.dropDatabase()\'');
 };
 
 module.exports = {
