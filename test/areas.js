@@ -33,7 +33,7 @@ describe('Areas', function() {
         'monkeys-widgets': {
           extend: 'apostrophe-pieces-widgets'
         }
-      },
+      }
     });
     assert(apos.modules['apostrophe-areas']);
     assert(apos.areas);
