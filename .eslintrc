@@ -2,5 +2,13 @@
   "extends": "apostrophe",
   "rules": {
     "no-var": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": [ "**/src/**/*.js" ],
+      "globals": {
+        "apos": true
+      }
+    }
+  ]
 }
