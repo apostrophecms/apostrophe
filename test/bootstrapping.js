@@ -15,7 +15,7 @@ describe('Apostrophe', function() {
   // BOOTSTRAP FUNCTIONS ------------------------------------------- //
 
   it('should merge the options and local.js correctly', function(done) {
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
       overrideTest: 'test', // overriden by data/local.js
@@ -31,7 +31,7 @@ describe('Apostrophe', function() {
   });
 
   it('should accept a `__localPath` option and invoke local.js as a function if it is provided as one', function(done) {
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
       overrideTest: 'test', // overriden by data/local_fn.js
@@ -48,7 +48,7 @@ describe('Apostrophe', function() {
   });
 
   it('should invoke local.js as a function with the apos and config object', function(done) {
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
       overrideTest: 'test', // concated in local_fn_b.js
@@ -65,7 +65,7 @@ describe('Apostrophe', function() {
   });
 
   it('should accept a `__testDeafults` option and load the test modules correctly', function(done) {
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
 
@@ -82,7 +82,7 @@ describe('Apostrophe', function() {
   });
 
   it('should create the modules and invoke the construct function correctly', function(done) {
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
       __testDefaults: {
@@ -100,7 +100,7 @@ describe('Apostrophe', function() {
   it('should load the default modules and implicitly subclass the base module correctly', function(done) {
     let defaultModules = require('../defaults.js').modules;
 
-    var apos = require('../index.js')({
+    let apos = require('../index.js')({
       root: module,
       shortName: 'test',
 

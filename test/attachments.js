@@ -1,5 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const fs = require('fs');
 
 let apos;
 
@@ -77,8 +78,6 @@ describe('Attachment', function() {
       wipeIt(done);
     });
   });
-
-  var fs = require('fs');
 
   describe('accept', function() {
 

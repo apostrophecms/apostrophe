@@ -126,8 +126,9 @@ describe('Pieces Widgets', function() {
     // something other than a number in order to test
     // our autocomplete, which feeds through mongo's text
     // indexes, which don't support numbers
-    paddedInt = 'wiggly';
-    title = 'Event Wiggly';
+    const paddedInt = 'wiggly';
+    const title = 'Event Wiggly';
+    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
@@ -328,8 +329,9 @@ describe('Pieces Widget With Extra Join', function() {
     // something other than a number in order to test
     // our autocomplete, which feeds through mongo's text
     // indexes, which don't support numbers
-    paddedInt = 'wiggly';
-    title = 'Event Wiggly';
+    const paddedInt = 'wiggly';
+    const title = 'Event Wiggly';
+    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
