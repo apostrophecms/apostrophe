@@ -367,9 +367,29 @@ module.exports = function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
-    if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules');
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+    var moduleName = require('path').basename(moduleDir);
+    try {
+      // Use the given name in the package.json file if it is present
+      var packageName = JSON.parse(fs.readFileSync(path.resolve(moduleDir, 'package.json'), 'utf8')).name;
+      if (typeof packageName === 'string') {
+        moduleName = packageName;
+      }
+    } catch (e) {}
+    var testDependenciesDir = testDir + '/node_modules/';
+    if (!fs.existsSync(testDependenciesDir + moduleName)) {
+      // Ensure dependencies directory exists
+      if (!fs.existsSync(testDependenciesDir)) {
+        fs.mkdirSync(testDependenciesDir);
+      }
+      // Ensure potential module scope directory exists before the symlink creation
+      if (moduleName.charAt(0) === '@' && moduleName.includes('/')) {
+        var scope = moduleName.split('/')[0];
+        var scopeDir = testDependenciesDir + scope;
+        if (!fs.existsSync(scopeDir)) {
+          fs.mkdirSync(scopeDir);
+        }
+      }
+      fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but

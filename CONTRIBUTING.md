@@ -36,7 +36,7 @@ Finally, remember to attach the “Bug” label to the issue, to help use stay o
 
 Bonus: Although not required, if you write a test that reproduces the bug you found, and submit that failing test as a PR… well, we might even send you some swag 😉.
 
-# Suggesting a Feature or Enhancement 
+# Suggesting a Feature or Enhancement
 We also track feature requests and larger scale enhancements within the GitHub repository. After a search of existing issues to confirm your idea is unique, please feel free to submit your idea as a new issue. Remember to include details that articulate the current functionality and how this enhancement will improve or build upon that. Attaching images to illustrate your feature is often useful.
 
 Adding the label of “enhancement” along with categorizing your issue with an existing label such as UI, UX, Accessibility, Security, etc. will help the team stay organized and is greatly appreciated.
@@ -53,5 +53,5 @@ https://github.com/apostrophecms/apostrophe/tree/master/test) at the test folder
 
 Great question. If it's not a bug fix or an improvement to the core UI, it often doesn't belong in the core `apostrophe` npm module. For instance, our blogging functionality is in the separate `apostrophe-blog` npm module.
 
-See [publishing your own npm modules for Apostrophe](https://apostrophecms.org/docs/more-modules.html#publishing-your-own-npm-modules-for-apostrophe) for more information.
+See [publishing your own npm modules for Apostrophe](https://docs.apostrophecms.org/apostrophe/other/more-modules#publishing-your-own-npm-modules-for-apostrophe) for more information.
 
