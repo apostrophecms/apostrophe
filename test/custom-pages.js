@@ -1,58 +1,41 @@
 let t = require('../test-lib/test.js');
 let assert = require('assert');
 let request = require('request');
-
 let apos;
 
 describe('custom-pages', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          secret: 'xxx'
         },
         'nifty-pages': {
           extend: 'apostrophe-custom-pages'
         }
-      },
-      afterInit: function(callback) {
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
   });
 
-  it('should fire a dispatch route for its homepage', function(done) {
+  it('should fire a dispatch route for its homepage', async function() {
     let niftyPages = apos.modules['nifty-pages'];
-    niftyPages.dispatch('/', function(req, callback) {
-      req.handlerInvoked = true;
-      req.template = function(req, args) {
-        return 'niftyPages-index';
-      };
-      return setImmediate(callback);
-    });
+    await niftyPages.dispatch('/', niftyPages.indexPage);
     // Simulate a page request
     let req = {
       data: {
@@ -62,20 +45,15 @@ describe('custom-pages', function() {
       },
       remainder: '/'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyPage', function() {
       assert(req.handlerInvoked);
-      done();
     });
   });
 
-  it('should fire a dispatch route matching a second, longer URL', function(done) {
+  it('should fire a dispatch route matching a second, longer URL', async function() {
     let niftyPages = apos.modules['nifty-pages'];
-    niftyPages.dispatch('/foo', function(req, callback) {
+    await niftyPages.dispatch('/foo', function(req) {
       req.fooInvoked = true;
-      return setImmediate(callback);
     });
     // Simulate a page request
     let req = {
@@ -86,20 +64,15 @@ describe('custom-pages', function() {
       },
       remainder: '/foo'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyFooPage', function() {
       assert(req.fooInvoked);
-      done();
     });
   });
 
-  it('should fire a dispatch route with parameters', function(done) {
+  it('should fire a dispatch route with parameters', async function() {
     let niftyPages = apos.modules['nifty-pages'];
-    niftyPages.dispatch('/bar/:bizzle/:kapow/*', function(req, callback) {
+    await niftyPages.dispatch('/bar/:bizzle/:kapow/*', function(req) {
       req.barInvoked = true;
-      return setImmediate(callback);
     });
     // Simulate a page request
     let req = {
@@ -110,26 +83,21 @@ describe('custom-pages', function() {
       },
       remainder: '/bar/wacky/wonky/wibble/skip'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyBarPage', function() {
       assert(req.barInvoked);
       assert(req.params.bizzle === 'wacky');
       assert(req.params.kapow === 'wonky');
       assert(req.params[0] === 'wibble/skip');
-      done();
     });
   });
 
-  it('should allow a later call to dispatch to override an earlier dispatch route', function(done) {
+  it('should allow a later call to dispatch to override an earlier dispatch route', async function() {
     let niftyPages = apos.modules['nifty-pages'];
-    niftyPages.dispatch('/foo', function(req, callback) {
+    await niftyPages.dispatch('/foo', function(req) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
         return 'niftyPages-foo';
       };
-      return setImmediate(callback);
     });
     // Simulate a page request
     let req = {
@@ -140,17 +108,13 @@ describe('custom-pages', function() {
       },
       remainder: '/foo'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyFooPageOverride', function() {
       assert(req.foo2Invoked);
       assert(!req.fooInvoked);
-      done();
     });
   });
 
-  it('should not match when page type is wrong', function(done) {
+  it('should not match when page type is wrong', function() {
     let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
     let req = {
@@ -161,16 +125,12 @@ describe('custom-pages', function() {
       },
       remainder: '/foo'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyFooPageWrongType', function() {
       assert(!req.foo2Invoked);
-      done();
     });
   });
 
-  it('should not match when there is no bestPage', function(done) {
+  it('should not match when there is no bestPage', function() {
     let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request for the wrong page type
     let req = {
@@ -179,16 +139,12 @@ describe('custom-pages', function() {
       },
       remainder: '/foo'
     };
-    // pageServe method normally invoked via callAll in
-    // the pages module
-    niftyPages.pageServe(req, function(err) {
-      assert(!err);
+    niftyPages.on('apostrophe-pages:serve', 'dispatchNiftyFooPageNoBest', function() {
       assert(!req.foo2Invoked);
-      done();
     });
   });
 
-  it('should be able to insert a test page manually into the db', function(done) {
+  it('should be able to insert a test page manually into the db', async function() {
     let testItem =
       { _id: 'niftyPages1',
         type: 'nifty-page',
@@ -198,11 +154,11 @@ describe('custom-pages', function() {
         level: 1,
         rank: 5
       };
-    return apos.docs.db.insert(testItem, done);
+    await apos.docs.db.insert(testItem);
   });
 
-  it('should match a dispatch route on a real live page request', function(done) {
-    return request('http://localhost:7900/niftyPages', function(err, response, body) {
+  it('should match a dispatch route on a real live page request', function() {
+    return request('http://localhost:3000/niftyPages', function(err, response, body) {
       console.error(err);
       console.error(body);
       assert(!err);
@@ -210,27 +166,24 @@ describe('custom-pages', function() {
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
       assert(body.match(/niftyPages-index/));
-      return done();
     });
   });
 
-  it('runs foo route with /foo remainder', function(done) {
-    return request('http://localhost:7900/niftyPages/foo', function(err, response, body) {
+  it('runs foo route with /foo remainder', function() {
+    return request('http://localhost:3000/niftyPages/foo', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 200);
       // Did we get the index output?
       assert(body.match(/niftyPages-foo/));
-      return done();
     });
   });
 
-  it('yields 404 with bad remainder (not matching any dispatch routes)', function(done) {
-    return request('http://localhost:7900/niftyPages/tututu', function(err, response, body) {
+  it('yields 404 with bad remainder (not matching any dispatch routes)', function() {
+    return request('http://localhost:3000/niftyPages/tututu', function(err, response, body) {
       assert(!err);
       // Is our status code good?
       assert.equal(response.statusCode, 404);
-      return done();
     });
   });
 
