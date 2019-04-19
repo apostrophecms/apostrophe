@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.87.0 (2019-04-10)
+
+* Tooltips have been added to improve the editor experience. For instance, tooltips appear on hover for the "up," "down," "clone" and "trash" buttons when working with areas.
+* Building on the performance work in version 2.86.0, all `ensureIndex` calls have been moved to the `migrate` startup phase and can thus be skipped with `APOS_NO_MIGRATE=1`. Note that as with the other recent changes, this means that if your site is *always* run with `APOS_NO_MIGRATE=1`, including at the time the database is created, it is imperative that you run `node app apostrophe-migrations:migrate` at least once. If your database starts out in a dev environment and is later moved to a production environment, or you use stagecoach or a similar deployment tool that guarantees migrations are run on all code deployments (and you should definitely do that), then this will not be an issue.
+* Building on the support for namespaced npm modules as apostrophe modules added in 2.86.0, the `testModule: true` flag used to test apostrophe in the context of an npm module like `apostrophe-workflow` can now be used in a namespaced npm module. Thanks to Aurélien Wolz for this contribution.
+
+Thanks to Michelin for making much of this work possible through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.86.0 (2019-04-03)
 
 Unit tests passing.
