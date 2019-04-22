@@ -7,6 +7,10 @@ describe('Express', function() {
 
   this.timeout(t.timeout);
 
+  after(function(done) {
+    return t.destroy(apos, done);
+  });
+
   it('express should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
@@ -18,7 +22,9 @@ describe('Express', function() {
         },
         'express-test': {},
         'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.express);
@@ -133,6 +139,9 @@ describe('Express', function() {
   it('should use the extended bodyParser for submitted forms', function(done) {
     var csrfToken = getCsrfToken(jar);
     assert(csrfToken);
+    // Should be a true randomized token since
+    // disableAnonCsrfInSession is not active
+    assert(csrfToken !== 'csrf-fallback');
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
