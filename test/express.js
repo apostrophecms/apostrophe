@@ -7,10 +7,6 @@ describe('Express', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
-  });
-
   it('express should exist on the apos object', function(done) {
     apos = require('../index.js')({
       root: module,
@@ -21,7 +17,9 @@ describe('Express', function() {
           port: 7900
         },
         'express-test': {},
-        'templates-test': {},
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
         'templates-subclass-test': {
           ignoreNoCodeWarning: true
         }
@@ -217,8 +215,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.prefix);
@@ -269,8 +271,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.baseUrl);
@@ -305,8 +311,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.baseUrl);
