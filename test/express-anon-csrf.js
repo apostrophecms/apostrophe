@@ -148,7 +148,7 @@ describe('Express', function() {
   it('should use the extended bodyParser for submitted forms', function(done) {
     var csrfToken = getCsrfToken(jar);
     assert(csrfToken);
-    // Should be the fallback token since disableAnonCsrfInSession is active
+    // Should be the fallback token since disableAnonSession is active
     assert(csrfToken === 'csrf-fallback');
     request({
       method: 'POST',

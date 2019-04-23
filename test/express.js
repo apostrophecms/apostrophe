@@ -138,7 +138,7 @@ describe('Express', function() {
     var csrfToken = getCsrfToken(jar);
     assert(csrfToken);
     // Should be a true randomized token since
-    // disableAnonCsrfInSession is not active
+    // disableAnonSession is not active
     assert(csrfToken !== 'csrf-fallback');
     request({
       method: 'POST',
