@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.88.0 (2019-04-23)
+
+* An optional improvement to eliminate the use of session storage for most site visitors. By default, Apostrophe creates a session for every site visitor, even an anonymous visitor, to provide full CSRF protection. You may now optionally disable this for anonymous visitors:
+
+```javascript
+modules: {
+  'apostrophe-express': {
+    csrf: {
+      disableAnonSession: true
+    }
+  }
+}
+```
+
+When you do this, anonymous visitors receive only basic CSRF protection based on a known header value and the fact that the Same Origin Policy does not allow requests to be made by JavaScript unless the page is on the proper site.
+
+For performance reasons the largest sites will likely find this to be a valuable option.
+
+* `apos.global.findGlobal` now officially supports returning a promise. This was an unofficial side effect in earlier releases that ceased to work in recent releases.
+
+* Updated the version of `moment` that ships on the front end to the latest minor release.
+
+* Eliminated unnecessary arrangeFields warnings. `apostrophe-groups` is set up properly, the `trash` field no longer generates warnings when workflow is active, and reverse joins no longer generate warnings as they have no editing UI.
+
+* `null` values were able to crash the schema converters for strings, integers and floats when those fields were `required`. This has been fixed.
+
 ## 2.87.0 (2019-04-10)
 
 * Tooltips have been added to improve the editor experience. For instance, tooltips appear on hover for the "up," "down," "clone" and "trash" buttons when working with areas.
