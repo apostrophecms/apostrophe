@@ -1,5 +1,6 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
+var async = require('async');
 var apos;
 
 describe('Areas', function() {
@@ -268,5 +269,54 @@ describe('Areas', function() {
         name: 'test'
       }, false)
     );
+  });
+
+  it('when simultaneous updates are attempted to different areas, nothing gets lost', function(done) {
+    var home;
+    var req = apos.tasks.getReq();
+    async.series([
+      getHome,
+      simultaneousUpdates,
+      verifyUpdates
+    ], function(err) {
+      assert(!err);
+      done();
+    });
+    function getHome(callback) {
+      return apos.pages.find(req, { slug: '/' }).toObject(function(err, _home) {
+        assert(!err);
+        assert(_home);
+        home = _home;
+        return callback(null);
+      });
+    }
+    function simultaneousUpdates(callback) {
+      var areas = [ 'one', 'two', 'three', 'four' ];
+      return async.each(areas, function(area, callback) {
+        return apos.areas.lockSanitizeAndSaveArea(req, {
+          docId: home._id,
+          dotPath: area,
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              content: area
+            }
+          ]
+        }, callback);
+      }, callback);
+    }
+    function verifyUpdates(callback) {
+      return apos.pages.find(req, { slug: '/' }).toObject(function(err, _home) {
+        assert(!err);
+        assert(home);
+        home = _home;
+        var areas = [ 'one', 'two', 'three', 'four' ];
+        areas.forEach(function(area) {
+          assert(home[area]);
+          assert(home[area].items[0].content === area);
+        });
+        return callback(null);
+      });
+    }
   });
 });
