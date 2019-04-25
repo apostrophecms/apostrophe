@@ -320,4 +320,3 @@ describe('Areas', function() {
     }
   });
 });
-
