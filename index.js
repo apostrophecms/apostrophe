@@ -598,4 +598,3 @@ function traceStartup(message) {
     console.debug('⌁ startup ' + message);
   }
 }
-
