@@ -14,6 +14,8 @@ var glob = require('glob');
 
 module.exports = function(options) {
 
+  traceStartup('begin');
+
   // The core is not a true moog object but it must look enough like one
   // to participate as a promise event emitter
   var self = {
@@ -46,6 +48,7 @@ module.exports = function(options) {
     // Module-based, promisified events (self.on and self.emit of each module)
     self.eventHandlers = {};
 
+    traceStartup('defineModules');
     defineModules();
   } catch (err) {
     if (options.initFailed) {
@@ -75,6 +78,7 @@ module.exports = function(options) {
         throw err;
       }
     }
+    traceStartup('startup end');
     if (self.argv._.length) {
       self.emit('runTask');
     } else {
@@ -439,8 +443,10 @@ module.exports = function(options) {
   }
 
   function instantiateModules(callback) {
+    traceStartup('instantiateModules');
     self.modules = {};
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
+      traceStartup('Instantiating module ' + item);
       var improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
         // We don't want an actual instance of this module, we are using it
@@ -463,14 +469,17 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
+    traceStartup('modulesReady');
     return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
+    traceStartup('modulesAfterInit');
     return self.callAllAndEmit('afterInit', 'afterInit', callback);
   }
 
   function lintModules(callback) {
+    traceStartup('lintModules');
     _.each(self.modules, function(module, name) {
       if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
         lint('The module ' + name + ' does not extend anything.\n\nA `-widgets` module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\n`ignoreNoExtendWarning` option to `true` for this module.');
@@ -512,6 +521,7 @@ module.exports = function(options) {
   }
 
   function migrate(callback) {
+    traceStartup('migrate');
     if (self.argv._[0] === 'apostrophe-migrations:migrate') {
       // Migration task will do this later with custom arguments to
       // the event
@@ -540,6 +550,7 @@ module.exports = function(options) {
   }
 
   function afterInit(callback) {
+    traceStartup('afterInit');
     // Give project-level code a chance to run before we
     // listen or run a task
     if (!self.options.afterInit) {
@@ -580,3 +591,10 @@ module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
+
+function traceStartup(message) {
+  if (process.env.APOS_TRACE_STARTUP) {
+    /* eslint-disable-next-line no-console */
+    console.debug('⌁ startup ' + message);
+  }
+}
