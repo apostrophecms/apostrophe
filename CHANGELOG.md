@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.88.1 (2019-04-25)
+
+* Fix: widgets are not lost when dragged to a different area.
+* Fix: widgets are not duplicated when dragged to a different area.
+* Fix: area save operations now use a lock to avoid lost information if several requests are made simultaneously for different areas, as can happen when dragging a widget between areas, which modifies both.
+* Fix: widgets can be edited again after being dragged, without a page refresh.
+* Fix: the "purple screen of death" error page now has a 500 status code, not 200.
+
 ## 2.88.0 (2019-04-23)
 
 * An optional improvement to eliminate the use of session storage for most site visitors. By default, Apostrophe creates a session for every site visitor, even an anonymous visitor, to provide full CSRF protection. You may now optionally disable this for anonymous visitors:
