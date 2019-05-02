@@ -8,14 +8,18 @@ describe('Promisified Events Core', function() {
 
   let apos;
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
-  it('should execute handlers for several events in the proper order', function(done) {
-    apos = require('../index.js')({
+  it('should execute handlers for several events in the proper order', async function() {
+    let invoked = false;
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       modules: {
         'test1': {
           alias: 'test1',
@@ -29,11 +33,10 @@ describe('Promisified Events Core', function() {
             }
             assert(sameNameFail);
             self.on('ready1', 'ready1AddA');
-            self.ready1AddA = function(context) {
-              return Promise.delay(100).then(function() {
-                assert(!context.b);
-                context.a = true;
-              });
+            self.ready1AddA = async function(context) {
+              await Promise.delay(100);
+              assert(!context.b);
+              context.a = true;
             };
             self.on('ready2', 'ready2AddB');
             self.ready2AddB = function(context) {
@@ -41,39 +44,34 @@ describe('Promisified Events Core', function() {
               context.b = true;
             };
             self.on('ready3', 'ready3HeyNice');
-            self.ready3HeyNice = function() {
-              return Promise.delay(100).then(function() {
-                niceFinished = true;
-              });
+            self.ready3HeyNice = async function() {
+              await Promise.delay(100);
+              niceFinished = true;
             };
-            self.on('ready2', 'ready2AddC', function(context) {
-              return Promise.delay(10).then(function() {
-                assert(context.a);
-                assert(context.b);
-                context.c = true;
-              });
+            self.on('ready2', 'ready2AddC', async function(context) {
+              await Promise.delay(10);
+              assert(context.a);
+              assert(context.b);
+              context.c = true;
             });
             assert(self.ready2AddC);
-            self.modulesReady = function(callback) {
+            self.on('apostrophe:modulesReady', 'testEvents', async function() {
               let context = {};
-              return self.emit('ready1', context).then(function() {
-                assert(context.a);
-                return self.emit('ready2', context);
-              }).then(function() {
-                assert(context.a);
-                assert(context.b);
-                assert(context.c);
-                return self.emit('ready3');
-              }).then(function() {
-                assert(context.a);
-                assert(context.b);
-                assert(context.c);
-                assert(context.d);
-                assert(niceFinished);
-                assert(true);
-                done();
-              });
-            };
+              await self.emit('ready1', context);
+              assert(context.a);
+              await self.emit('ready2', context);
+              assert(context.a);
+              assert(context.b);
+              assert(context.c);
+              await self.emit('ready3');
+              assert(context.a);
+              assert(context.b);
+              assert(context.c);
+              assert(context.d);
+              assert(niceFinished);
+              assert(true);
+              invoked = true;
+            });
           }
         },
         'test2': {
@@ -94,12 +92,9 @@ describe('Promisified Events Core', function() {
         'test3': {
           alias: 'test3'
         }
-      },
-      afterInit: function(callback) {
-        callback();
-        return done();
       }
     });
+    assert(invoked);
   });
 
 });

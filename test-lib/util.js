@@ -7,6 +7,7 @@
 // If `apos` is null, no work is done.
 
 async function destroy(apos) {
+  const dbName = apos.options.shortName;
   if (apos) {
     await apos.destroy();
   }
@@ -15,7 +16,7 @@ async function destroy(apos) {
   // important principle here is that we should not have to have an apos
   // object to clean up the database, otherwise we have to get hold of one
   // when initialization failed and that's really not apostrophe's concern
-  require('child_process').execSync('mongo test --eval \'db.dropDatabase()\'');
+  require('child_process').execSync('mongo ' + test --eval \'db.dropDatabase()\'');
 };
 
 module.exports = {

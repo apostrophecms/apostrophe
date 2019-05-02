@@ -2,40 +2,38 @@ let t = require('../test-lib/test.js');
 let assert = require('assert');
 let Promise = require('bluebird');
 
-describe('Promisified Events: apostrophe-docs:beforeInses', function() {
+describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', function() {
 
   this.timeout(50000);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   let apos;
   let coreEventsWork = false;
 
-  it('should implement apostrophe-docs:beforeInsert handlers properly', function(done) {
-    apos = require('../index.js')({
+  it('should implement apostrophe-doc-type-manager:beforeInsert handlers properly', async function() {
+    apos = await require('../index.js')({
       root: module,
-      shortName: 'test2',
+      shortName: 'test',
+      argv: {
+        _: []
+      },
       modules: {
         'test1': {
           alias: 'test1',
           construct: function(self, options) {
-            self.on('apostrophe-docs:beforeInsert', 'beforeInsertReverseTitle', function(req, doc, options) {
+            self.on('apostrophe-doc-type-manager:beforeInsert', 'beforeInsertReverseTitle', async function(req, doc, options) {
+              console.log('*** bi');
               if (doc.type === 'default') {
-                return Promise.delay(50).then(function() {
-                  doc.title = doc.title.split('').reverse().join('');
-                });
+                await Promise.delay(50);
+                doc.title = doc.title.split('').reverse().join('');
               }
             });
             self.on('apostrophe:modulesReady', 'modulesReadyCoreEventsWork', function() {
               coreEventsWork = true;
             });
-            // Old school callAll works too (for now)
-            self.docBeforeInsert = function(req, doc, options, callback) {
-              doc.oldSchool = true;
-              return setImmediate(callback);
-            };
           }
         },
         'apostrophe-pages': {
@@ -49,22 +47,15 @@ describe('Promisified Events: apostrophe-docs:beforeInses', function() {
             }
           ]
         }
-      },
-      afterInit: function(callback) {
-        apos.argv._ = [];
-        done();
       }
     });
   });
 
-  it('should find the results', function(done) {
-    return apos.docs.db.findOne({ findMeAgain: true }, function(err, doc) {
-      assert(!err);
-      assert(doc);
-      assert(doc.title === 'tseT');
-      assert(doc.oldSchool);
-      assert(coreEventsWork);
-      done();
-    });
+  it('should find the results', async function() {
+    const doc = await apos.docs.db.findOne({ findMeAgain: true });
+    assert(doc);
+    assert.equal(doc.title, 'tseT');
+    assert(doc.oldSchool);
+    assert(coreEventsWork);
   });
 });
