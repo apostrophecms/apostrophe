@@ -104,7 +104,7 @@ describe('custom-pages', function() {
     await niftyPages.dispatch('/foo', function(req) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
-        return 'niftyPages-foo';
+        return 'niftyPages-foo2-template-rendered-this';
       };
     });
     // Simulate a page request
@@ -168,19 +168,19 @@ describe('custom-pages', function() {
     assert(body.match(/niftyPages-index-template-rendered-this/));
   });
 
-  // it('runs foo route with /foo remainder', async function() {
-  //   const body = await request('http://localhost:3000/niftyPages/foo');
-  //   // Did we get the foo output?
-  //   assert(body.match(/niftyPages-foo-template-rendered-this/));
-  // });
-  //
-  // it('yields 404 with bad remainder (not matching any dispatch routes)', async function() {
-  //   try {
-  //     await request('http://localhost:3000/niftyPages/tututu');
-  //     assert(false);
-  //   } catch (e) {
-  //     assert(e);
-  //   }
-  // });
+  it('runs foo route with /foo remainder', async function() {
+    const body = await request('http://localhost:3000/niftyPages/foo');
+    // Did we get the foo output?
+    assert(body.match(/niftyPages-foo2-template-rendered-this/));
+  });
+
+  it('yields 404 with bad remainder (not matching any dispatch routes)', async function() {
+    try {
+      await request('http://localhost:3000/niftyPages/tututu');
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
 });
