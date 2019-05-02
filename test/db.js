@@ -1,35 +1,37 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 let apos;
 
 describe('Db', function() {
+  after(async function () {
+    return t.destroy(apos);
+  });
 
   this.timeout(t.timeout);
 
-  it('should exist on the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should exist on the apos object', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
-      afterInit: function(callback) {
-        assert(apos.db);
-        // Verify a normal, boring connection to localhost without the db option worked
-        return apos.docs.db.findOne().then(function(doc) {
-          assert(doc);
-          return done();
-        }).catch(function(err) {
-          console.error(err);
-          assert(false);
-        });
+      argv: {
+        _: []
       }
     });
+
+    assert(apos.db);
+    // Verify a normal, boring connection to localhost without the db option worked
+    const doc = await apos.docs.db.findOne();
+
+    assert(doc);
   });
 
-  it('should be able to launch a second instance reusing the connection', function(done) {
-    let apos2 = require('../index.js')({
+  it('should be able to launch a second instance reusing the connection', async function() {
+    const apos2 = await require('../index.js')({
       root: module,
       shortName: 'test2',
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
           port: 7777
@@ -38,18 +40,13 @@ describe('Db', function() {
           db: apos.db,
           uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
         }
-      },
-      afterInit: function(callback) {
-        return apos.docs.db.findOne().then(function(doc) {
-          assert(doc);
-          return t.destroy(apos2, function() {
-            return t.destroy(apos, done);
-          });
-        }).catch(function(err) {
-          console.error(err);
-          assert(false);
-        });
       }
     });
+
+    const doc = await apos.docs.db.findOne();
+
+    assert(doc);
+
+    return t.destroy(apos2);
   });
 });
