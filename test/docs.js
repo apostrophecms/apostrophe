@@ -80,18 +80,15 @@ describe('Docs', function() {
     assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
   });
 
-  // it('should make sure there is no test data hanging around from last time', function(done) {
-  //   // Attempt to purge the entire aposDocs collection
-  //   apos.docs.db.remove({}, function(err) {
-  //     assert(!err);
-  //     // Make sure it went away
-  //     apos.docs.db.findWithProjection({ slug: 'larry' }).toArray(function(err, docs) {
-  //       assert(!err);
-  //       assert(docs.length === 0);
-  //       done();
-  //     });
-  //   });
-  // });
+  it('should make sure there is no test data hanging around from last time', async function() {
+    // Attempt to purge the entire aposDocs collection
+    await apos.docs.db.remove({});
+
+    // Make sure it went away
+    const docs = await apos.docs.db.find({ slug: 'larry' }).toArray();
+
+    assert(docs.length === 0);
+  });
 
   // it('should be able to use db to insert documents', function(done) {
   //   const testItems = [
