@@ -55,28 +55,30 @@ describe('Docs', function() {
   // SETUP
   /// ///
 
-  // it('should make sure all of the expected indexes are configured', function(done) {
-  //   const expectedIndexes = ['type', 'slug', 'titleSortified', 'tags', 'published'];
-  //   const actualIndexes = [];
+  it('should make sure all of the expected indexes are configured', async function() {
+    const expectedIndexes = [
+      'type',
+      'slug',
+      'titleSortified',
+      'tags',
+      'published'
+    ];
+    const actualIndexes = [];
 
-  //   apos.docs.db.indexInformation(function(err, info) {
-  //     assert(!err);
+    const info = await apos.docs.db.indexInformation();
+    // Extract the actual index info we care about.
+    _.forEach(info, function(index) {
+      actualIndexes.push(index[0][0]);
+    });
 
-  //     // Extract the actual index info we care about
-  //     _.each(info, function(index) {
-  //       actualIndexes.push(index[0][0]);
-  //     });
+    // Now make sure everything in expectedIndexes is in actualIndexes.
+    _.forEach(expectedIndexes, function(index) {
+      assert(_.includes(actualIndexes, index));
+    });
 
-  //     // Now make sure everything in expectedIndexes is in actualIndexes
-  //     _.each(expectedIndexes, function(index) {
-  //       assert(_.includes(actualIndexes, index));
-  //     });
-
-  //     // Lastly, make sure there is a text index present
-  //     assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
-  //     done();
-  //   });
-  // });
+    // Lastly, make sure there is a text index present
+    assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
+  });
 
   // it('should make sure there is no test data hanging around from last time', function(done) {
   //   // Attempt to purge the entire aposDocs collection
@@ -236,7 +238,7 @@ describe('Docs', function() {
   //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
   //   cursor.toArray(function(err, docs) {
   //     assert(!err);
-  //     _.each(docs, function(doc) {
+  //     _.forEach(docs, function(doc) {
   //       // There SHOULD NOT be a firstName
   //       assert(doc.published);
   //     });
