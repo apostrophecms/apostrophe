@@ -131,25 +131,24 @@ describe('Docs', function() {
     assert(response.insertedCount === 3);
   });
 
-  // it('should be able to carry out schema joins', function(done) {
+  it('should be able to carry out schema joins', async function() {
+    const manager = apos.docs.getManager('test-person');
+    const req = apos.tasks.getAnonReq();
 
-  //   const manager = apos.docs.getManager('test-person');
+    assert(manager);
+    assert(manager.find);
+    assert(manager.schema);
 
-  //   assert(manager);
-  //   assert(manager.find);
-  //   assert(manager.schema);
+    const cursor = await manager.find(req, { slug: 'carl' });
+    assert(cursor);
 
-  //   const cursor = manager.find(apos.tasks.getAnonReq(), { slug: 'carl' });
-  //   assert(cursor);
-  //   cursor.toObject(function(err, person) {
-  //     assert(!err);
-  //     assert(person);
-  //     assert(person.slug === 'carl');
-  //     assert(person._friend);
-  //     assert(person._friend.slug === 'larry');
-  //     done();
-  //   });
-  // });
+    const person = cursor.toObject();
+
+    assert(person);
+    assert(person.slug === 'carl');
+    assert(person._friend);
+    assert(person._friend.slug === 'larry');
+  });
 
   // /// ///
   // // UNIQUENESS
