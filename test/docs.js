@@ -90,46 +90,46 @@ describe('Docs', function() {
     assert(docs.length === 0);
   });
 
-  // it('should be able to use db to insert documents', function(done) {
-  //   const testItems = [
-  //     {
-  //       _id: 'lori',
-  //       slug: 'lori',
-  //       published: true,
-  //       type: 'test-person',
-  //       firstName: 'Lori',
-  //       lastName: 'Pizzaroni',
-  //       age: 32,
-  //       alive: true
-  //     },
-  //     {
-  //       _id: 'larry',
-  //       slug: 'larry',
-  //       published: true,
-  //       type: 'test-person',
-  //       firstName: 'Larry',
-  //       lastName: 'Cherber',
-  //       age: 28,
-  //       alive: true
-  //     },
-  //     {
-  //       _id: 'carl',
-  //       slug: 'carl',
-  //       published: true,
-  //       type: 'test-person',
-  //       firstName: 'Carl',
-  //       lastName: 'Sagan',
-  //       age: 62,
-  //       alive: false,
-  //       friendId: 'larry'
-  //     }
-  //   ];
+  it('should be able to use db to insert documents', async function() {
+    const testItems = [
+      {
+        _id: 'lori',
+        slug: 'lori',
+        published: true,
+        type: 'test-person',
+        firstName: 'Lori',
+        lastName: 'Pizzaroni',
+        age: 32,
+        alive: true
+      },
+      {
+        _id: 'larry',
+        slug: 'larry',
+        published: true,
+        type: 'test-person',
+        firstName: 'Larry',
+        lastName: 'Cherber',
+        age: 28,
+        alive: true
+      },
+      {
+        _id: 'carl',
+        slug: 'carl',
+        published: true,
+        type: 'test-person',
+        firstName: 'Carl',
+        lastName: 'Sagan',
+        age: 62,
+        alive: false,
+        friendId: 'larry'
+      }
+    ];
 
-  //   apos.docs.db.insert(testItems, function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+    const response = await apos.docs.db.insert(testItems);
+
+    assert(response.result.ok === 1);
+    assert(response.insertedCount === 3);
+  });
 
   // it('should be able to carry out schema joins', function(done) {
 
