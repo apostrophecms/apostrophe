@@ -1,7 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const fs = require('fs');
-const Promise = require('bluebird');
 
 let apos;
 
