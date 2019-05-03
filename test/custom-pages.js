@@ -31,6 +31,8 @@ describe('custom-pages', function() {
         }
       }
     });
+
+    assert(apos && apos.__meta.name === 'apostrophe');
   });
 
   it('should fire a dispatch route for its homepage', async function() {
