@@ -177,7 +177,7 @@ describe('custom-pages', function() {
       await request('http://localhost:3000/niftyPages/tututu');
       assert(false);
     } catch (e) {
-      assert(e);
+      assert(e.statusCode === 404);
     }
   });
 
