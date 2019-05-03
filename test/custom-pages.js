@@ -1,6 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let request = require('request-promise');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const request = require('request-promise');
 let apos;
 
 describe('custom-pages', function() {
@@ -100,7 +100,7 @@ describe('custom-pages', function() {
   });
 
   it('should allow a later call to dispatch to override an earlier dispatch route', async function() {
-    let niftyPages = apos.modules['nifty-pages'];
+    const niftyPages = apos.modules['nifty-pages'];
     await niftyPages.dispatch('/foo', function(req) {
       req.foo2Invoked = true;
       req.template = function(req, args) {
@@ -122,7 +122,6 @@ describe('custom-pages', function() {
   });
 
   it('should not match when page type is wrong', async function() {
-    let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
@@ -137,7 +136,6 @@ describe('custom-pages', function() {
   });
 
   it('should not match when there is no bestPage', async function() {
-    let niftyPages = apos.modules['nifty-pages'];
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
@@ -150,7 +148,7 @@ describe('custom-pages', function() {
   });
 
   it('should be able to insert a test page manually into the db', async function() {
-    let testItem =
+    const testItem =
       { _id: 'niftyPages1',
         type: 'nifty-page',
         slug: '/niftyPages',
