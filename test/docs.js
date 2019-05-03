@@ -142,7 +142,7 @@ describe('Docs', function() {
     const cursor = await manager.find(req, { slug: 'carl' });
     assert(cursor);
 
-    const person = cursor.toObject();
+    const person = await cursor.toObject();
 
     assert(person);
     assert(person.slug === 'carl');
