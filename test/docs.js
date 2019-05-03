@@ -150,29 +150,33 @@ describe('Docs', function() {
     assert(person._friend.slug === 'larry');
   });
 
-  // /// ///
-  // // UNIQUENESS
-  // /// ///
+  /// ///
+  // UNIQUENESS
+  /// ///
 
-  // it('should fail if you try to insert a document with the same unique key twice', function(done) {
-  //   apos.docs.db.insert([
-  //     {
-  //       type: 'test-person',
-  //       published: false,
-  //       age: 70,
-  //       slug: 'peter'
-  //     },
-  //     {
-  //       type: 'test-person',
-  //       published: false,
-  //       age: 70,
-  //       slug: 'peter'
-  //     }
-  //   ], function(err) {
-  //     assert(err);
-  //     done();
-  //   });
-  // });
+  it('should fail if you try to insert a document with the same unique key twice', async function() {
+    try {
+      const response = await apos.docs.db.insert([
+        {
+          type: 'test-person',
+          published: false,
+          age: 70,
+          slug: 'peter'
+        },
+        {
+          type: 'test-person',
+          published: false,
+          age: 70,
+          slug: 'peter'
+        }
+      ]);
+      assert(response.result.ok !== 1);
+    } catch (e) {
+      assert(e);
+      assert(e.name === 'MongoError');
+      assert(e.code === 11000);
+    }
+  });
 
   // /// ///
   // // FINDING
