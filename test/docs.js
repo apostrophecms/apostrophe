@@ -335,109 +335,64 @@ describe('Docs', function() {
     }
   });
 
-  // /// ///
-  // // UPDATING
-  // /// ///
+  /// ///
+  // UPDATING
+  /// ///
 
-  // it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', function(done) {
-  //   apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray(function(err, docs) {
-  //     assert(!err);
-  //     // we should have a document
-  //     assert(docs);
-  //     // there should be only one document in our results
-  //     assert(docs.length === 1);
+  it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', async function() {
+    const req = apos.tasks.getReq();
+    const docs = await apos.docs.find(req, { slug: 'one' }).toArray();
 
-  //     // grab the object
-  //     const object = docs[0];
-  //     // we want update the alive property
-  //     object.alive = false;
+    // We should have one document in our results.
+    assert(docs);
+    assert(docs.length === 1);
 
-  //     apos.docs.update(apos.tasks.getReq(), object, function(err, object) {
-  //       assert(!err);
-  //       assert(object);
-  //       // has the property been updated?
-  //       assert(object.alive === false);
-  //       done();
-  //     });
-  //   });
-  // });
+    // Grab the object and update the `alive` property.
+    const object = docs[0];
+    object.alive = false;
 
-  // it('should append an updated slug with a numeral if the updated slug already exists', function(done) {
+    const updated = await apos.docs.update(apos.tasks.getReq(), object);
 
-  //   const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
-  //   cursor.toObject(function(err, doc) {
-  //     assert(!err);
-  //     assert(doc);
+    // Has the property been updated?
+    assert(updated);
+    assert(updated.alive === false);
+  });
 
-  //     doc.slug = 'peter';
+  it('should append an updated slug with a numeral if the updated slug already exists', async function() {
+    const req = apos.tasks.getReq();
+    const cursor = apos.docs.find(req, { type: 'test-person', slug: 'one' });
+    const doc = await cursor.toObject();
 
-  //     apos.docs.update(apos.tasks.getReq(), doc, function(err, doc) {
-  //       assert(!err);
-  //       assert(doc);
-  //       // has the updated slug been appended?
-  //       assert(doc.slug.match(/^peter\d+$/));
-  //       done();
-  //     });
-  //   });
-  // });
+    assert(doc);
 
-  // it('same thing, but with promises', function(done) {
+    doc.slug = 'peter';
 
-  //   // We need to insert another, we used 'one' up
-  //   const object = {
-  //     slug: 'two',
-  //     published: true,
-  //     type: 'test-person',
-  //     firstName: 'Twofy',
-  //     lastName: 'Twofer',
-  //     age: 15,
-  //     alive: true
-  //   };
+    const updated = await apos.docs.update(req, doc);
+    assert(updated);
+    // Has the updated slug been appended?
+    assert(updated.slug.match(/^peter\d+$/));
+  });
 
-  //   apos.docs.insert(apos.tasks.getReq(), object)
-  //     .then(function(doc) {
-  //       let cursor;
-  //       assert(doc);
-  //       assert(doc._id);
-  //       cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'two' });
-  //       return cursor.toObject();
-  //     })
-  //     .then(function(doc) {
-  //       assert(doc);
-  //       doc.slug = 'peter';
-  //       return apos.docs.update(apos.tasks.getReq(), doc);
-  //     })
-  //     .then(function(doc) {
-  //       assert(doc);
-  //       // has the updated slug been appended?
-  //       assert(doc.slug.match(/^peter\d+$/));
-  //       done();
-  //     })
-  //     .catch(function(err) {
-  //       assert(!err);
-  //     });
-  // });
+  it('should be able to fetch all unique firstNames with toDistinct', async function() {
+    const firstNames = await apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName');
 
-  // it('should be able to fetch all unique firstNames with toDistinct', function() {
-  //   return apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName')
-  //     .then(function(firstNames) {
-  //       assert(Array.isArray(firstNames));
-  //       assert(firstNames.length === 5);
-  //       assert(_.includes(firstNames, 'Larry'));
-  //     });
-  // });
+    assert(Array.isArray(firstNames));
+    assert(firstNames.length === 4);
+    assert(_.includes(firstNames, 'Larry'));
+  });
 
-  // it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', function() {
+  // it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
   //   const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).distinctCounts(true);
-  //   return cursor.toDistinct('firstName')
-  //     .then(function(firstNames) {
-  //       assert(Array.isArray(firstNames));
-  //       assert(firstNames.length === 5);
-  //       assert(_.includes(firstNames, 'Larry'));
-  //       const counts = cursor.get('distinctCounts');
-  //       assert(counts['Larry'] === 1);
-  //       assert(counts['Lori'] === 2);
-  //     });
+
+  //   const firstNames = await cursor.toDistinct('firstName');
+  //   console.log(firstNames);
+  //   assert(Array.isArray(firstNames));
+  //   assert(firstNames.length === 4);
+  //   assert(_.includes(firstNames, 'Larry'));
+  //   const counts = await cursor.get('distinctCounts');
+  //   console.log(counts);
+  //   assert(counts['Larry'] === 1);
+  //   assert(counts['Lori'] === 2);
   // });
 
   // it('should not allow you to call the update method if you are not an admin', function(done) {
