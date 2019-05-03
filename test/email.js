@@ -19,7 +19,7 @@ describe('Email', function() {
       shortName: 'test',
       argv: {
         _: []
-      },  
+      },
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -50,7 +50,7 @@ describe('Email', function() {
       }
     );
     assert(info);
-    let message = info.message.toString();
+    const message = info.message.toString();
     assert(message.match(/Fred Astaire/));
     assert(message.match(/Subject: Welcome Aboard/));
     assert(message.match(/From: test@example\.com/));
