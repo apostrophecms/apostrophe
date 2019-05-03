@@ -230,23 +230,20 @@ describe('Docs', function() {
     assert(docs.length === 3);
   });
 
-  // it('should be that non-admins do not get unpublished docs, even if they ask for them', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).published(false);
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(docs.length === 0);
-  //     done();
-  //   });
-  // });
+  it('should be that non-admins do not get unpublished docs, even if they ask for them', async function() {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).published(false);
 
-  // it('should be that admins can get unpublished docs if they ask for them', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(false);
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(!docs[0].published);
-  //     done();
-  //   });
-  // });
+    const docs = await cursor.toArray();
+    assert(docs.length === 0);
+  });
+
+  it('should be that admins can get unpublished docs if they ask for them', async function () {
+    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(false);
+    const docs = await cursor.toArray();
+
+    assert(docs.length === 1);
+    assert(!docs[0].published);
+  });
 
   it('should be that admins can get a mixture of unpublished docs and published docs if they ask', async function() {
     const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(null);
