@@ -6,18 +6,20 @@ describe('Email', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
-  it('should be a property of the apos object', function(done) {
+  it('should be a property of the apos object', async function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = require('../index.js')({
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
           port: 7900
@@ -30,24 +32,13 @@ describe('Email', function() {
           }
         },
         'email-test': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-email']);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules['apostrophe-email']);
   });
 
-  it('can send email on behalf of a module', function(done) {
-    apos.modules['email-test'].email(apos.tasks.getReq(),
+  it('can send email on behalf of a module', async function() {
+    const info = await apos.modules['email-test'].email(apos.tasks.getReq(),
       'welcome',
       {
         name: 'Fred Astaire'
@@ -56,40 +47,14 @@ describe('Email', function() {
         from: 'test@example.com',
         to: 'recipient@example.com',
         subject: 'Welcome Aboard'
-      },
-      function(err, info) {
-        assert(!err);
-        assert(info);
-        let message = info.message.toString();
-        assert(message.match(/Fred Astaire/));
-        assert(message.match(/Subject: Welcome Aboard/));
-        assert(message.match(/From: test@example\.com/));
-        assert(message.match(/To: recipient@example\.com/));
-        assert(message.match(/\[http:\/\/example\.com\/\]/));
-        done();
       }
     );
-  });
-  it('can do it with promises', function() {
-    return apos.modules['email-test'].email(apos.tasks.getReq(),
-      'welcome',
-      {
-        name: 'Fred Astaire'
-      },
-      {
-        from: 'test@example.com',
-        to: 'recipient@example.com',
-        subject: 'Welcome Aboard'
-      }
-    ).then(function(info) {
-      assert(info);
-      let message = info.message.toString();
-      assert(message.match(/Fred Astaire/));
-      assert(message.match(/Subject: Welcome Aboard/));
-      assert(message.match(/From: test@example\.com/));
-      assert(message.match(/To: recipient@example\.com/));
-      assert(message.match(/\[http:\/\/example\.com\/\]/));
-      return true;
-    });
+    assert(info);
+    const message = info.message.toString();
+    assert(message.match(/Fred Astaire/));
+    assert(message.match(/Subject: Welcome Aboard/));
+    assert(message.match(/From: test@example\.com/));
+    assert(message.match(/To: recipient@example\.com/));
+    assert(message.match(/\[http:\/\/example\.com\/\]/));
   });
 });
