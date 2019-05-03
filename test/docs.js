@@ -412,32 +412,32 @@ describe('Docs', function() {
     }
   });
 
-  // /// ///
-  // // TRASH
-  // /// ///
+  /// ///
+  // TRASH
+  /// ///
 
-  // it('should have a "trash" method on docs', function(done) {
-  //   apos.docs.trash(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+  it('should have a "trash" method on docs', async function() {
+    const req = apos.tasks.getReq();
+    const trashed = await apos.docs.trash(req, { slug: 'carl' });
 
-  // it('should not be able to find the trashed object', function(done) {
-  //   apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).toObject(function(err, doc) {
-  //     assert(!err);
-  //     // we should not have a document
-  //     assert(!doc);
-  //     done();
-  //   });
-  // });
+    assert(trashed.trash === true);
+  });
 
-  // it('should not allow you to call the trash method if you are not an admin', function(done) {
-  //   apos.docs.trash(apos.tasks.getAnonReq(), { slug: 'lori' }, function(err) {
-  //     assert(err);
-  //     done();
-  //   });
-  // });
+  it('should not be able to find the trashed object', async function() {
+    const req = apos.tasks.getReq();
+    const doc = await apos.docs.find(req, { slug: 'carl' }).toObject();
+
+    assert(!doc);
+  });
+
+  it('should not allow you to call the trash method if you are not an admin', async function() {
+    try {
+      await apos.docs.trash(apos.tasks.getAnonReq(), { slug: 'lori' });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
   // it('should be able to find the trashed object when using the "trash" method on find()', function(done) {
   //   apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
