@@ -396,21 +396,21 @@ describe('Docs', function() {
     assert(counts['Lori'] === 2);
   });
 
-  // it('should not allow you to call the update method if you are not an admin', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
-  //   cursor.toObject(function(err, doc) {
-  //     assert(!err);
-  //     assert(doc);
+  it('should not allow you to call the update method if you are not an admin', async function() {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
 
-  //     doc.slug = 'laurie';
+    const doc = cursor.toObject();
 
-  //     apos.docs.update(apos.tasks.getAnonReq(), doc, function(err, doc) {
-  //       // did it return an error?
-  //       assert(err);
-  //       done();
-  //     });
-  //   });
-  // });
+    assert(doc);
+    doc.slug = 'laurie';
+
+    try {
+      await apos.docs.update(apos.tasks.getAnonReq(), doc);
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
   // /// ///
   // // TRASH
