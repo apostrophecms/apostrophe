@@ -178,39 +178,27 @@ describe('Docs', function() {
     }
   });
 
-  // /// ///
-  // // FINDING
-  // /// ///
+  /// ///
+  // FINDING
+  /// ///
 
-  // it('should have a find method on docs that returns a cursor', function() {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq());
-  //   assert(cursor);
-  // });
+  it('should have a find method on docs that returns a cursor', function() {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq());
 
-  // it('should be able to find all PUBLISHED test documents and output them as an array', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
+    assert(cursor);
+    assert(cursor.__meta.name === 'apostrophe-cursor');
+  });
 
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     // There should be only 3 results.
-  //     assert(docs.length === 3);
-  //     // They should all have a type of test-person
-  //     assert(docs[0].type === 'test-person');
-  //     done();
-  //   });
-  // });
+  it('should be able to find all PUBLISHED test documents and output them as an array', async function () {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
 
-  // it('same thing, but with promises', function(done) {
-  //   apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).toArray().then(function(docs) {
-  //     // There should be only 3 results.
-  //     assert(docs.length === 3);
-  //     // They should all have a type of test-person
-  //     assert(docs[0].type === 'test-person');
-  //     done();
-  //   }).catch(function(err) {
-  //     assert(!err);
-  //   });
-  // });
+    const docs = await cursor.toArray();
+
+    // There should be only 3 results.
+    assert(docs.length === 3);
+    // They should all have a type of test-person
+    assert(docs[0].type === 'test-person');
+  });
 
   // /// ///
   // // PROJECTIONS
