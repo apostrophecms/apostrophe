@@ -200,23 +200,19 @@ describe('Docs', function() {
     assert(docs[0].type === 'test-person');
   });
 
-  // /// ///
-  // // PROJECTIONS
-  // /// ///
+  /// ///
+  // PROJECTIONS
+  /// ///
 
-  // it('should be able to specify which fields to get by passing a projection object', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }, { age: 1 });
-  //   cursor.toArray(function(err, docs) {
+  it('should be able to specify which fields to get by passing a projection object', async function() {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }, { age: 1 });
+    const docs = await cursor.toArray();
 
-  //     assert(!err);
-  //     // There SHOULD be an age
-  //     assert(docs[0].age);
-
-  //     // There SHOULD NOT be a firstName
-  //     assert(!docs[0].firstName);
-  //     done();
-  //   });
-  // });
+    // There SHOULD be an age
+    assert(docs[0].age);
+    // There SHOULD NOT be a firstName
+    assert(!docs[0].firstName);
+  });
 
   // /// ///
   // // PUBLISHED vs UNPUBLISHED
