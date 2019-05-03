@@ -252,28 +252,24 @@ describe('Docs', function() {
     assert(docs.length === 4);
   });
 
-  // /// ///
-  // // SORTING
-  // /// ///
+  /// ///
+  // SORTING
+  /// ///
 
-  // it('should be able to sort', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ age: 1 });
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(docs[0].slug === 'larry');
-  //     done();
-  //   });
-  // });
+  it('should be able to sort', async function () {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ age: 1 });
+    const docs = await cursor.toArray();
 
-  // it('should be able to sort by multiple keys', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ firstName: 1, age: 1 });
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(docs[0].slug === 'carl');
-  //     assert(docs[1].slug === 'larry');
-  //     done();
-  //   });
-  // });
+    assert(docs[0].slug === 'larry');
+  });
+
+  it('should be able to sort by multiple keys', async function () {
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ firstName: 1, age: 1 });
+    const docs = await cursor.toArray();
+
+    assert(docs[0].slug === 'carl');
+    assert(docs[1].slug === 'larry');
+  });
 
   // /// ///
   // // INSERTING
