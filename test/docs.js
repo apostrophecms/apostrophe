@@ -381,19 +381,20 @@ describe('Docs', function() {
     assert(_.includes(firstNames, 'Larry'));
   });
 
-  // it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
-  //   const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).distinctCounts(true);
+  it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
+    const req = apos.tasks.getReq();
+    const cursor = apos.docs.find(req, { type: 'test-person' }).distinctCounts(true);
+    const firstNames = await cursor.toDistinct('firstName');
 
-  //   const firstNames = await cursor.toDistinct('firstName');
-  //   console.log(firstNames);
-  //   assert(Array.isArray(firstNames));
-  //   assert(firstNames.length === 4);
-  //   assert(_.includes(firstNames, 'Larry'));
-  //   const counts = await cursor.get('distinctCounts');
-  //   console.log(counts);
-  //   assert(counts['Larry'] === 1);
-  //   assert(counts['Lori'] === 2);
-  // });
+    assert(Array.isArray(firstNames));
+    assert(firstNames.length === 4);
+    assert(_.includes(firstNames, 'Larry'));
+
+    const counts = await cursor.get('distinctCounts');
+
+    assert(counts['Larry'] === 1);
+    assert(counts['Lori'] === 2);
+  });
 
   // it('should not allow you to call the update method if you are not an admin', function(done) {
   //   const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
