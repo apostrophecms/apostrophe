@@ -150,16 +150,19 @@ describe('custom-pages', function() {
   });
 
   it('should be able to insert a test page manually into the db', async function() {
-    const testItem =
-      { _id: 'niftyPages1',
-        type: 'nifty-page',
-        slug: '/niftyPages',
-        published: true,
-        path: '/niftyPages',
-        level: 1,
-        rank: 5
-      };
-    await apos.docs.db.insert(testItem);
+    const testItem = { _id: 'niftyPages1',
+      type: 'nifty-page',
+      slug: '/niftyPages',
+      published: true,
+      path: '/niftyPages',
+      level: 1,
+      rank: 5
+    };
+
+    const response = await apos.docs.db.insert(testItem);
+
+    assert(response.insertedCount === 1);
+    assert(response.ops[0]._id === 'niftyPages1');
   });
 
   it('should match a dispatch route on a real live page request', async function() {
