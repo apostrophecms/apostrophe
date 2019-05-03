@@ -426,7 +426,6 @@ describe('Docs', function() {
   it('should not be able to find the trashed object', async function() {
     const req = apos.tasks.getReq();
     const doc = await apos.docs.find(req, { slug: 'carl' }).toObject();
-
     assert(!doc);
   });
 
@@ -439,14 +438,13 @@ describe('Docs', function() {
     }
   });
 
-  // it('should be able to find the trashed object when using the "trash" method on find()', function(done) {
-  //   apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
-  //     assert(!err);
-  //     // we should have a document
-  //     assert(doc);
-  //     done();
-  //   });
-  // });
+  it('should be able to find the trashed object when using the "trash" method on find()', async function() {
+    // Look for the trashed doc with the `deduplicate-` + its `_id` + its `name` properties.
+    const doc = await apos.docs.find(apos.tasks.getReq(), { slug: 'deduplicate-carl-carl' }).trash(true).toObject();
+
+    assert(doc);
+    assert(doc.trash);
+  });
 
   // /// ///
   // // RESCUE
