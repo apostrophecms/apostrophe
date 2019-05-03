@@ -156,7 +156,7 @@ describe('Docs', function() {
 
   it('should fail if you try to insert a document with the same unique key twice', async function() {
     try {
-      const response = await apos.docs.db.insert([
+      await apos.docs.db.insert([
         {
           type: 'test-person',
           published: false,
@@ -170,7 +170,7 @@ describe('Docs', function() {
           slug: 'peter'
         }
       ]);
-      assert(response.result.ok !== 1);
+      assert(false);
     } catch (e) {
       assert(e);
       assert(e.name === 'MongoError');
@@ -271,74 +271,69 @@ describe('Docs', function() {
     assert(docs[1].slug === 'larry');
   });
 
-  // /// ///
-  // // INSERTING
-  // /// ///
+  /// ///
+  // INSERTING
+  /// ///
 
-  // it('should have an "insert" method that returns a new database object', function(done) {
-  //   const object = {
-  //     slug: 'one',
-  //     published: true,
-  //     type: 'test-person',
-  //     firstName: 'Lori',
-  //     lastName: 'Ferber',
-  //     age: 15,
-  //     alive: true
-  //   };
+  it('should have an "insert" method that returns a new database object', async function() {
+    const object = {
+      slug: 'one',
+      published: true,
+      type: 'test-person',
+      firstName: 'Lori',
+      lastName: 'Ferber',
+      age: 15,
+      alive: true
+    };
 
-  //   apos.docs.insert(apos.tasks.getReq(), object, function(err, object) {
-  //     assert(!err);
-  //     assert(object);
-  //     assert(object._id);
-  //     done();
-  //   });
-  // });
+    const response = await apos.docs.insert(apos.tasks.getReq(), object);
 
-  // it('should be able to insert a new object into the docs collection in the database', function(done) {
-  //   const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
-  //   cursor.toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(docs[0].slug === 'one');
-  //     done();
-  //   });
-  // });
+    assert(response);
+    assert(response._id);
+  });
 
-  // it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', function(done) {
-  //   const object = {
-  //     slug: 'one',
-  //     published: true,
-  //     type: 'test-person',
-  //     firstName: 'Harry',
-  //     lastName: 'Gerber',
-  //     age: 29,
-  //     alive: true
-  //   };
+  it('should be able to insert a new object into the docs collection in the database', async function() {
+    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
+    const docs = await cursor.toArray();
 
-  //   apos.docs.insert(apos.tasks.getReq(), object, function(err, object) {
-  //     assert(!err);
-  //     assert(object);
-  //     assert(object.slug.match(/^one\d+$/));
-  //     done();
-  //   });
-  // });
+    assert(docs[0].slug === 'one');
+  });
 
-  // it('should not allow you to call the insert method if you are not an admin', function(done) {
-  //   const object = {
-  //     slug: 'not-for-you',
-  //     published: false,
-  //     type: 'test-person',
-  //     firstName: 'Darry',
-  //     lastName: 'Derrber',
-  //     age: 5,
-  //     alive: true
-  //   };
+  it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', async function() {
+    const object = {
+      slug: 'one',
+      published: true,
+      type: 'test-person',
+      firstName: 'Harry',
+      lastName: 'Gerber',
+      age: 29,
+      alive: true
+    };
 
-  //   apos.docs.insert(apos.tasks.getAnonReq(), object, function(err, object) {
-  //     // did it return an error?
-  //     assert(err);
-  //     done();
-  //   });
-  // });
+    const doc = await apos.docs.insert(apos.tasks.getReq(), object);
+
+    assert(doc);
+    assert(doc.slug.match(/^one\d+$/));
+  });
+
+  it('should not allow you to call the insert method if you are not an admin', async function() {
+    const object = {
+      slug: 'not-for-you',
+      published: false,
+      type: 'test-person',
+      firstName: 'Darry',
+      lastName: 'Derrber',
+      age: 5,
+      alive: true
+    };
+
+    try {
+      await apos.docs.insert(apos.tasks.getAnonReq(), object);
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
   // /// ///
   // // UPDATING
