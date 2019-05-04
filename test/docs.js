@@ -596,54 +596,58 @@ describe('Docs', function() {
     }
   });
 
-  // it('should not be able to lock a document with a different contextId', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.lock(req, 'i27', 'def', function(err) {
-  //     assert(err);
-  //     assert(err === 'locked');
-  //     done();
-  //   });
-  // });
+  it('should not be able to lock a document with a different contextId', async function() {
+    const req = apos.tasks.getReq();
 
-  // it('should be able to unlock a document', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.unlock(req, 'i27', 'abc', function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+    try {
+      await apos.docs.lock(req, 'i27', 'def');
+    } catch (e) {
+      assert(e);
+      assert(e.name === 'locked');
+    }
+  });
 
-  // it('should be able to re-lock an unlocked document', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.lock(req, 'i27', 'def', function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+  it('should be able to unlock a document', async function() {
+    const req = apos.tasks.getReq();
 
-  // it('should be able to lock a locked document with force: true', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.lock(req, 'i27', 'abc', { force: true }, function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+    try {
+      await apos.docs.unlock(req, 'i27', 'abc');
+    } catch (e) {
+      assert(false);
+    }
+  });
 
-  // it('should be able to unlock all documents locked with the same contextId', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.lock(req, 'i26', 'abc', function(err) {
-  //     assert(!err);
-  //     apos.docs.lock(req, 'i25', 'abc', function(err) {
-  //       assert(!err);
-  //       apos.docs.unlockAll(req, 'abc', function(err) {
-  //         assert(!err);
-  //         apos.docs.lock(req, 'i26', 'def', function(err) {
-  //           assert(!err);
-  //           done();
-  //         });
-  //       });
-  //     });
-  //   });
-  // });
+  it('should be able to re-lock an unlocked document', async function() {
+    const req = apos.tasks.getReq();
+
+    try {
+      await apos.docs.lock(req, 'i27', 'def');
+    } catch (e) {
+      assert(false);
+    }
+  });
+
+  it('should be able to lock a locked document with force: true', async function() {
+    const req = apos.tasks.getReq();
+
+    try {
+      await apos.docs.lock(req, 'i27', 'abc', { force: true });
+    } catch (e) {
+      assert(false);
+    }
+  });
+
+  it('should be able to unlock all documents locked with the same contextId', async function() {
+    const req = apos.tasks.getReq();
+
+    try {
+      await apos.docs.lock(req, 'i26', 'abc');
+      await apos.docs.lock(req, 'i25', 'abc');
+      await apos.docs.unlockAll(req, 'abc');
+      await apos.docs.lock(req, 'i26', 'def');
+    } catch (e) {
+      assert(false);
+    }
+  });
 
 });
