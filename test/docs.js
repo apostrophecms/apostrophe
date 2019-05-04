@@ -360,7 +360,10 @@ describe('Docs', function() {
 
   it('should append an updated slug with a numeral if the updated slug already exists', async function() {
     const req = apos.tasks.getReq();
-    const cursor = apos.docs.find(req, { type: 'test-person', slug: 'one' });
+    const cursor = apos.docs.find(req, {
+      type: 'test-person',
+      slug: 'one'
+    });
     const doc = await cursor.toObject();
 
     assert(doc);
@@ -374,7 +377,9 @@ describe('Docs', function() {
   });
 
   it('should be able to fetch all unique firstNames with toDistinct', async function() {
-    const firstNames = await apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName');
+    const firstNames = await apos.docs.find(apos.tasks.getReq(), {
+      type: 'test-person'
+    }).toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
     assert(firstNames.length === 4);
@@ -383,7 +388,9 @@ describe('Docs', function() {
 
   it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
     const req = apos.tasks.getReq();
-    const cursor = apos.docs.find(req, { type: 'test-person' }).distinctCounts(true);
+    const cursor = apos.docs.find(req, {
+      type: 'test-person'
+    }).distinctCounts(true);
     const firstNames = await cursor.toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
@@ -397,7 +404,10 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person', slug: 'lori' });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), {
+      type: 'test-person',
+      slug: 'lori'
+    });
 
     const doc = cursor.toObject();
 
@@ -425,13 +435,18 @@ describe('Docs', function() {
 
   it('should not be able to find the trashed object', async function() {
     const req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'carl' }).toObject();
+    const doc = await apos.docs.find(req, {
+      slug: 'carl'
+    }).toObject();
+
     assert(!doc);
   });
 
   it('should not allow you to call the trash method if you are not an admin', async function() {
     try {
-      await apos.docs.trash(apos.tasks.getAnonReq(), { slug: 'lori' });
+      await apos.docs.trash(apos.tasks.getAnonReq(), {
+        slug: 'lori'
+      });
       assert(false);
     } catch (e) {
       assert(e);
@@ -440,27 +455,34 @@ describe('Docs', function() {
 
   it('should be able to find the trashed object when using the "trash" method on find()', async function() {
     // Look for the trashed doc with the `deduplicate-` + its `_id` + its `name` properties.
-    const doc = await apos.docs.find(apos.tasks.getReq(), { slug: 'deduplicate-carl-carl' }).trash(true).toObject();
+    const doc = await apos.docs.find(apos.tasks.getReq(), {
+      slug: 'deduplicate-carl-carl'
+    }).trash(true).toObject();
 
     assert(doc);
     assert(doc.trash);
   });
 
-  // /// ///
-  // // RESCUE
-  // /// ///
+  /// ///
+  // RESCUE
+  /// ///
 
-  // it('should have a "rescue" method on docs that removes the "trash" property from an object', function(done) {
-  //   apos.docs.rescue(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-  //     assert(!err);
-  //     apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).toObject(function(err, doc) {
-  //       assert(!err);
-  //       // we should have a document
-  //       assert(doc);
-  //       done();
-  //     });
-  //   });
-  // });
+  it('should have a "rescue" method on docs that removes the "trash" property from an object', async function() {
+    const req = apos.tasks.getReq();
+
+    await apos.docs.rescue(req, {
+      slug: 'deduplicate-carl-carl'
+    });
+
+    const doc = await apos.docs.find(req, {
+      slug: 'carl'
+    }).toObject();
+
+    // We should have a document.
+    assert(doc);
+    assert(doc.slug === 'carl');
+    assert(doc.trash === undefined);
+  });
 
   // it('should not allow you to call the rescue method if you are not an admin', function(done) {
   //   apos.docs.rescue(apos.tasks.getAnonReq(), { slug: 'carl' }, function(err) {
