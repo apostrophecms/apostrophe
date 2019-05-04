@@ -484,13 +484,16 @@ describe('Docs', function() {
     assert(doc.trash === undefined);
   });
 
-  // it('should not allow you to call the rescue method if you are not an admin', function(done) {
-  //   apos.docs.rescue(apos.tasks.getAnonReq(), { slug: 'carl' }, function(err) {
-  //     // was there an error?
-  //     assert(err);
-  //     done();
-  //   });
-  // });
+  it('should not allow you to call the rescue method if you are not an admin', async function() {
+    try {
+      await apos.docs.rescue(apos.tasks.getAnonReq(), {
+        slug: 'carl'
+      });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
 
   // /// ///
   // // EMPTY TRASH
