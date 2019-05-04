@@ -495,120 +495,106 @@ describe('Docs', function() {
     }
   });
 
-  // /// ///
-  // // EMPTY TRASH
-  // /// ///
+  /// ///
+  // EMPTY TRASH
+  /// ///
 
-  // it('should have an "deconsteFromTrash" method on docs that removes specified objects from the database which have a "trash" property', function(done) {
+  it('should have an "deleteFromTrash" method on docs that removes specified objects from the database which have a "trash" property', async function() {
 
-  //   return async.series({
-  //     trashCarl: function(callback) {
-  //       return apos.docs.trash(apos.tasks.getReq(), { slug: 'carl' }, function(err) {
-  //         assert(!err);
-  //         return callback(null);
-  //       });
-  //     },
-  //     deconsteFromTrash: function(callback) {
-  //       return apos.docs.deconsteFromTrash(apos.tasks.getReq(), {}, function(err) {
-  //         assert(!err);
-  //         return callback(null);
-  //       });
-  //     },
-  //     find: function(callback) {
-  //       return apos.docs.find(apos.tasks.getReq(), { slug: 'carl' }).trash(true).toObject(function(err, doc) {
-  //         assert(!err);
-  //         // we should not have a document
-  //         assert(!doc);
-  //         return callback(null);
-  //       });
-  //     }
-  //   }, done);
-  // });
+    // Trash Carl.
+    const trashed = await apos.docs.trash(apos.tasks.getReq(), {
+      slug: 'carl'
+    });
 
-  // it('should not allow you to call the deconsteFromTrash method if you are not an admin', function(done) {
-  //   return async.series({
-  //     trashLarry: function(callback) {
-  //       return apos.docs.trash(apos.tasks.getReq(), { slug: 'larry' }, function(err) {
-  //         assert(!err);
-  //         return callback(null);
-  //       });
-  //     },
-  //     deconsteFromTrash: function(callback) {
-  //       apos.docs.deconsteFromTrash(apos.tasks.getAnonReq(), {}, function(err) {
-  //         assert(!err);
-  //         return callback(null);
-  //       });
-  //     },
-  //     find: function(callback) {
-  //       return apos.docs.find(apos.tasks.getReq(), { slug: 'larry' }).trash(true).toObject(function(err, doc) {
-  //         assert(!err);
-  //         // we should have a document
-  //         assert(doc);
-  //         callback(null);
-  //       });
-  //     }
-  //   }, done);
-  // });
+    assert(trashed.slug === 'deduplicate-carl-carl');
+    assert(trashed.trash === true);
 
-  // it('should throw an exception on find() if you fail to pass req as the first argument', function() {
-  //   let exception;
-  //   try {
-  //     apos.docs.find({ slug: 'larry' });
-  //   } catch (e) {
-  //     exception = e;
-  //   }
-  //   assert(exception);
-  // });
+    // deleteFromTrash
+    const resp = await apos.docs.deleteFromTrash(apos.tasks.getReq(), {});
 
-  // it('should respect explicitOrder()', function(done) {
+    assert(resp.result.ok === 1);
 
-  //   const testItems = [];
-  //   let i;
-  //   for (i = 0; (i < 100); i++) {
-  //     testItems.push({
-  //       _id: 'i' + i,
-  //       slug: 'i' + i,
-  //       published: true,
-  //       type: 'test',
-  //       title: 'title: ' + i
-  //     });
-  //   }
+    // Try to find Carl
+    const doc = await apos.docs.find(apos.tasks.getReq(), {
+      slug: 'carl'
+    }).trash(true).toObject();
 
-  //   return apos.docs.db.insert(testItems, function(err) {
-  //     assert(!err);
-  //     return apos.docs.find(apos.tasks.getAnonReq(), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray(function(err, docs) {
-  //       assert(!err);
-  //       assert(docs[0]._id === 'i7');
-  //       assert(docs[1]._id === 'i3');
-  //       assert(docs[2]._id === 'i27');
-  //       assert(docs[3]._id === 'i9');
-  //       assert(!docs[4]);
-  //       return done();
-  //     });
-  //   });
+    assert(!doc);
+  });
 
-  // });
+  it('should not allow you to call the deleteFromTrash method if you are not an admin', async function() {
+    // Trash Larry
+    const trashed = await apos.docs.trash(apos.tasks.getReq(), {
+      slug: 'larry'
+    });
 
-  // it('should respect explicitOrder with skip and limit', function(done) {
+    assert(trashed.slug === 'deduplicate-larry-larry');
+    assert(trashed.trash === true);
 
-  //   // Relies on test data of previous test
-  //   return apos.docs.find(apos.tasks.getAnonReq(), {}).explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray(function(err, docs) {
-  //     assert(!err);
-  //     assert(docs[0]._id === 'i27');
-  //     assert(docs[1]._id === 'i9');
-  //     assert(!docs[2]);
-  //     return done();
-  //   });
+    await apos.docs.deleteFromTrash(apos.tasks.getAnonReq(), {});
 
-  // });
+    const doc = await apos.docs.find(apos.tasks.getReq(), {
+      slug: 'deduplicate-larry-larry'
+    }).trash(true).toObject();
 
-  // it('should be able to lock a document', function(done) {
-  //   const req = apos.tasks.getReq();
-  //   apos.docs.lock(req, 'i27', 'abc', function(err) {
-  //     assert(!err);
-  //     done();
-  //   });
-  // });
+    assert(doc.slug === 'deduplicate-larry-larry');
+    assert(doc.trash === true);
+  });
+
+  it('should throw an exception on find() if you fail to pass req as the first argument', async function() {
+    try {
+      await apos.docs.find({ slug: 'larry' });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
+
+  it('should respect explicitOrder()', async function() {
+    const testItems = [];
+    let i;
+
+    for (i = 0; (i < 100); i++) {
+      testItems.push({
+        _id: 'i' + i,
+        slug: 'i' + i,
+        published: true,
+        type: 'test',
+        title: 'title: ' + i
+      });
+    }
+
+    await apos.docs.db.insert(testItems);
+
+    const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
+      .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray();
+
+    assert(docs[0]._id === 'i7');
+    assert(docs[1]._id === 'i3');
+    assert(docs[2]._id === 'i27');
+    assert(docs[3]._id === 'i9');
+    assert(!docs[4]);
+  });
+
+  it('should respect explicitOrder with skip and limit', async function() {
+    // Relies on test data of previous test
+    const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
+      .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray();
+
+    assert(docs[0]._id === 'i27');
+    assert(docs[1]._id === 'i9');
+    assert(!docs[2]);
+  });
+
+  it('should be able to lock a document', async function() {
+    const req = apos.tasks.getReq();
+
+    try {
+      await apos.docs.lock(req, 'i27', 'abc');
+    } catch (e) {
+      assert(!e);
+    }
+  });
 
   // it('should not be able to lock a document with a different contextId', function(done) {
   //   const req = apos.tasks.getReq();
