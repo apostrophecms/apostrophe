@@ -118,7 +118,7 @@ describe('Express', function() {
   });
 
   it('should flunk a POST request with the wrong CSRF token', async function() {
-    let csrfToken = 'BOGOSITY';
+    const csrfToken = 'BOGOSITY';
 
     try {
       await request({
@@ -143,10 +143,11 @@ describe('Express', function() {
     }
   });
 
-  it('should use the extended bodyParser for submitted forms', function(done) {
-    let csrfToken = getCsrfToken(jar);
+  it('should use the extended bodyParser for submitted forms', async function() {
+    const csrfToken = getCsrfToken(jar);
     assert(csrfToken);
-    request({
+
+    const response = await request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
       form: {
@@ -158,55 +159,51 @@ describe('Express', function() {
       headers: {
         'X-XSRF-TOKEN': csrfToken
       }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === '30');
-      done();
     });
+
+    assert(response.toString() === '30');
   });
 
-  // it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
-  //   let csrfToken = getCsrfToken(jar);
-  //   request({
-  //     method: 'POST',
-  //     url: 'http://localhost:7900/tests/body',
-  //     json: {
-  //       person: {
-  //         age: '30'
-  //       }
-  //     },
-  //     jar: jar,
-  //     headers: {
-  //       'X-XSRF-TOKEN': csrfToken
-  //     }
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     assert(body.toString() === '30');
-  //     done();
-  //   });
-  // });
+  it('should allow us to implement a route that requires the JSON bodyParser', async function() {
+    const csrfToken = getCsrfToken(jar);
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:7900/tests/body',
+      json: {
+        person: {
+          age: '30'
+        }
+      },
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
+      }
+    });
 
-  // it('should be able to implement a route with apostrophe-module.route', function(done) {
-  //   let csrfToken = getCsrfToken(jar);
-  //   request({
-  //     method: 'POST',
-  //     url: 'http://localhost:7900/modules/express-test/test2',
-  //     json: {
-  //       person: {
-  //         age: '30'
-  //       }
-  //     },
-  //     jar: jar,
-  //     headers: {
-  //       'X-XSRF-TOKEN': csrfToken
-  //     }
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     assert(body.toString() === '30');
-  //     // Last one before a new apos object
-  //     return t.destroy(apos, done);
-  //   });
-  // });
+    assert(response.toString() === '30');
+  });
+
+  it('should be able to implement a route with apostrophe-module.route', async function() {
+    const csrfToken = getCsrfToken(jar);
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:7900/modules/express-test/test2',
+      json: {
+        person: {
+          age: '30'
+        }
+      },
+      jar: jar,
+      headers: {
+        'X-XSRF-TOKEN': csrfToken
+      }
+    });
+
+    assert(response.toString() === '30');
+
+    // Last one before a new apos object
+    t.destroy(apos);
+  });
 
   // // PREFIX STUFF
 
