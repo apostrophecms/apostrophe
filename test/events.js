@@ -33,11 +33,10 @@ describe('Promisified Events Core', function() {
             assert(sameNameFail);
 
             self.on('ready1', 'ready1AddA');
-            self.ready1AddA = function(context) {
-              return Promise.delay(100).then(function() {
-                assert(!context.b);
-                context.a = true;
-              });
+            self.ready1AddA = async function(context) {
+              await Promise.delay(100);
+              assert(!context.b);
+              context.a = true;
             };
 
             self.on('ready2', 'ready2AddB');
@@ -47,18 +46,16 @@ describe('Promisified Events Core', function() {
             };
 
             self.on('ready3', 'ready3HeyNice');
-            self.ready3HeyNice = function() {
-              return Promise.delay(100).then(function() {
-                niceFinished = true;
-              });
+            self.ready3HeyNice = async function() {
+              await Promise.delay(100);
+              niceFinished = true;
             };
 
-            self.on('ready2', 'ready2AddC', function(context) {
-              return Promise.delay(10).then(function() {
-                assert(context.a);
-                assert(context.b);
-                context.c = true;
-              });
+            self.on('ready2', 'ready2AddC', async function(context) {
+              await Promise.delay(10);
+              assert(context.a);
+              assert(context.b);
+              context.c = true;
             });
 
             assert(self.ready2AddC);
