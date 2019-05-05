@@ -205,37 +205,38 @@ describe('Express', function() {
     t.destroy(apos);
   });
 
-  // // PREFIX STUFF
+  // PREFIX STUFF
 
-  // it('should set prefix on the apos object if passed in', function(done) {
-  //   apos = require('../index.js')({
-  //     root: module,
-  //     shortName: 'test',
-  //     prefix: '/prefix',
-  //     modules: {
-  //       'apostrophe-express': {
-  //         port: 7900,
-  //         csrf: false
-  //       },
-  //       'express-test': {},
-  //       'templates-test': {},
-  //       'templates-subclass-test': {}
-  //     },
-  //     afterInit: function(callback) {
-  //       assert(apos.prefix);
-  //       assert(apos.prefix === '/prefix');
-  //       // In tests this will be the name of the test file,
-  //       // so override that in order to get apostrophe to
-  //       // listen normally and not try to run a task. -Tom
-  //       apos.argv._ = [];
-  //       return callback(null);
-  //     },
-  //     afterListen: function(err) {
-  //       assert(!err);
-  //       done();
-  //     }
-  //   });
-  // });
+  it('should set prefix on the apos object if passed in', async function() {
+    apos = await require('../index.js')({
+      root: module,
+      shortName: 'test',
+      argv: {
+        _: []
+      },
+      prefix: '/prefix',
+      modules: {
+        'apostrophe-express': {
+          port: 7900,
+          csrf: false
+        },
+        'express-test': {},
+        'templates-test': {},
+        'templates-subclass-test': {}
+      },
+      afterInit: function(callback) {
+        assert(apos.prefix);
+        assert(apos.prefix === '/prefix');
+        // In tests this will be the name of the test file,
+        // so override that in order to get apostrophe to
+        // listen normally and not try to run a task. -Tom
+        apos.argv._ = [];
+        return callback(null);
+      }
+    });
+
+    assert(apos.prefix === '/prefix');
+  });
 
   // it('should have different baseApp and app properties with a prefix', function() {
   //   assert(apos.app !== apos.baseApp);
