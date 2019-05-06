@@ -18,8 +18,11 @@ describe('Express', function() {
       },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          port: 7900,
+          address: 'localhost',
+          session: {
+            secret: 'xxx'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -218,7 +221,11 @@ describe('Express', function() {
       modules: {
         'apostrophe-express': {
           port: 7900,
-          csrf: false
+          csrf: false,
+          address: 'localhost',
+          session: {
+            secret: 'Ullamcorper'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -238,9 +245,9 @@ describe('Express', function() {
     assert(apos.prefix === '/prefix');
   });
 
-  // it('should have different baseApp and app properties with a prefix', function() {
-  //   assert(apos.app !== apos.baseApp);
-  // });
+  it('should have different baseApp and app properties with a prefix', function() {
+    assert(apos.app !== apos.baseApp);
+  });
 
   // it('should take same requests at the prefix', function(done) {
   //   request({
