@@ -9,7 +9,8 @@
 	z-index: @apos-z-index-max;
 	opacity: 0;
 	font-size: 12px;
-	transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease;
+  transition-delay: 250ms;
 	.apos-rounded;
 	.apos-drop-shadow();
 
@@ -33,4 +34,8 @@
 	transform: rotate(180deg);
 	bottom: auto;
 	top: -10px;
+}
+
+.apos-tooltip--visible {
+  opacity: 1;
 }
