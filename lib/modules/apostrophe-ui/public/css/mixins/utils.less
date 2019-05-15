@@ -87,3 +87,26 @@
   -ms-transform: translate3d(0,-50%,0);
   transform: translate3d(0,-50%,0);
 }
+
+.apos-visually-hide
+{
+  // Per https://allyjs.io/tutorials/hiding-elements.html#how-to-hide-elements-visually
+  // Hide it visually, taking up no space and not being clickable, but
+  // don't hide it for accessibility purposes. -Tom, Alex B. and Austin
+
+  visibility: visible;
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+
+  white-space: nowrap;
+
+  clip-path: inset(100%);
+  clip: rect(0 0 0 0);
+  overflow: hidden;    
+}
+

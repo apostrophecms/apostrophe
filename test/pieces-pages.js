@@ -1,7 +1,7 @@
 var t = require('../test-lib/test.js');
 var assert = require('assert');
 var request = require('request');
-
+var Promise = require('bluebird');
 var apos;
 
 describe('Pieces Pages', function() {
@@ -162,4 +162,36 @@ describe('Pieces Pages', function() {
     });
   });
 
+  it('pieces-page as home page: switch page types', function() {
+    return Promise.try(function() {
+      return apos.docs.db.update({
+        slug: '/'
+      }, {
+        $set: {
+          type: 'events'
+        }
+      });
+    }).then(function() {
+      return apos.docs.db.update({
+        slug: '/events'
+      }, {
+        $set: {
+          type: 'default'
+        }
+      });
+    });
+  });
+
+  it('pieces-page as home page: correct permalinks on index page', function(done) {
+    return request('http://localhost:7900/', function(err, response, body) {
+      assert(!err);
+      // Is our status code good?
+      assert.equal(response.statusCode, 200);
+      // Only page one events should show up
+      assert(body.match(/event-001"/));
+      assert(!body.match(/event-011"/));
+      assert(body.match(/"\/event-001"/));
+      return done();
+    });
+  });
 });

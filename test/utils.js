@@ -217,5 +217,26 @@ describe('Utils', function() {
       assert(input[3] === 'Fred');
       assert(input[4] === 'jane');
     });
+
+    it('does not crash when apos.utils.profile is called with two arguments', function() {
+      apos.utils.profile(apos.tasks.getReq(), 'this.is.a.path')();
+      assert(true);
+    });
+
+    it('does not crash when apos.utils.profile is called with three arguments', function() {
+      apos.utils.profile(apos.tasks.getReq(), 'this.is.a.path', 100);
+      assert(true);
+    });
+
+    it('does not crash when apos.utils.profile is called with one argument (no req arg)', function() {
+      apos.utils.profile('this.is.a.path')();
+      assert(true);
+    });
+
+    it('does not crash when apos.utils.profile is called with two arguments (no req arg)', function() {
+      apos.utils.profile('this.is.a.path', 100);
+      assert(true);
+    });
+
   });
 });

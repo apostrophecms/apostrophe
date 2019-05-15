@@ -1,17 +1,20 @@
 <!DOCTYPE html>
-<html lang="{% block locale %}en{% endblock %}">
+<html lang="{% block locale %}en{% endblock %}" {% block extraHtml %}{% endblock %}>
   <head>
     {% block startHead %}
     {% endblock %}
+    {{ apos.templates.prepended('head') }}
     <title>{% block title %}{% endblock %}</title>
     {{ apos.assets.stylesheets(data.when) }}
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% endblock %}
+    {{ apos.templates.appended('head') }}
     {% block extraHead %}
     {% endblock %}
   </head>
-  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}">
+  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
+    {{ apos.templates.prepended('body') }}
     {% block apostropheMenu %}
       {{ apos.adminBar.output() }}
     {% endblock %}
@@ -20,9 +23,10 @@
       {% if data.user %}
         <div class="apos-ui">
           <div class="apos-context-menu-container">
-            {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
+            {{ apos.templates.prepended('contextMenu') }}
             {{ apos.pages.menu({ contextMenu: data.contextMenu, page: data.page, bottom: true })}}
-            {{ apos.pages.afterContextMenu() }}
+            {{ apos.pages.publishMenu({ publishMenu: data.publishMenu, page: data.page, piece: data.piece, bottom: true }) }}
+            {{ apos.templates.appended('contextMenu') }}
           </div>
         </div>
       {% endif %}
@@ -30,7 +34,9 @@
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
       {% block mainAnchor %}<a name="main"></a>{% endblock %}
+      {{ apos.templates.prepended('main') }}
       {% block main %}{% endblock %}
+      {{ apos.templates.appended('main') }}
       {% block afterMain %}{% endblock %}
     </div>
     {{ apos.assets.scripts(data.when) }}
@@ -40,6 +46,7 @@
         {{ data.js.reqCalls }}
       </script>
     {% endblock %}
+    {{ apos.templates.appended('body') }}
     {% block extraBody %}{% endblock %}
   </body>
 </html>

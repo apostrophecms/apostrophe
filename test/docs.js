@@ -86,7 +86,7 @@ describe('Docs', function() {
     apos.docs.db.remove({}, function(err) {
       assert(!err);
       // Make sure it went away
-      apos.docs.db.find({ slug: 'larry' }).toArray(function(err, docs) {
+      apos.docs.db.findWithProjection({ slug: 'larry' }).toArray(function(err, docs) {
         assert(!err);
         assert(docs.length === 0);
         done();
@@ -307,7 +307,7 @@ describe('Docs', function() {
       slug: 'one',
       published: true,
       type: 'test-person',
-      firstName: 'Gary',
+      firstName: 'Lori',
       lastName: 'Ferber',
       age: 15,
       alive: true
@@ -450,16 +450,25 @@ describe('Docs', function() {
       });
   });
 
-  it('should be able to fetch all unique firstNames with toDistinct', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName')
+  it('should be able to fetch all unique firstNames with toDistinct', function() {
+    return apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).toDistinct('firstName')
       .then(function(firstNames) {
         assert(Array.isArray(firstNames));
-        assert(firstNames.length === 6);
+        assert(firstNames.length === 5);
         assert(_.contains(firstNames, 'Larry'));
-        done();
-      })
-      .catch(function(err) {
-        assert(!err);
+      });
+  });
+
+  it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', function() {
+    var cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).distinctCounts(true);
+    return cursor.toDistinct('firstName')
+      .then(function(firstNames) {
+        assert(Array.isArray(firstNames));
+        assert(firstNames.length === 5);
+        assert(_.contains(firstNames, 'Larry'));
+        var counts = cursor.get('distinctCounts');
+        assert(counts['Larry'] === 1);
+        assert(counts['Lori'] === 2);
       });
   });
 

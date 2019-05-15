@@ -1,0 +1,31 @@
+{%- extends "apostrophe-modal:base.html" -%}
+{%- import "apostrophe-modal:macros.html" as modals -%}
+{%- import "apostrophe-ui:components/buttons.html" as buttons with context -%}
+{%- import "apostrophe-schemas:macros.html" as schemas -%}
+
+{%- block modalClass -%}
+  apos-pieces-batch-permissions-modal apos-ui-modal-no-sidebar
+{%- endblock -%}
+
+{%- block controls -%}
+  {{ buttons.minor('Cancel', { action: 'cancel' }) }}
+  {{ buttons.major('Apply Permissions', { action: 'save' }) }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Applying new permissions') }}
+{%- endblock -%}
+
+{% block instructions %}
+  <p>
+    {{ __('You are applying new permissions to many documents. When you click Apply Permissions, the permissions you have selected will be the only permissions in effect for all of the currently selected documents.') }}
+  </p>
+{% endblock %}
+
+{%- block body -%}
+  <form class="apos-form" data-apos-form>
+    {{ schemas.fields(data.schema, { tabs: false }) }}
+  </form>
+{%- endblock -%}
+
+{%- block footerContainer -%}{%- endblock -%}
