@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
-const qs = require('qs');
+// const request = require('request-promise');
+// const qs = require('qs');
 
 describe('Oembed', function() {
   this.timeout(t.timeout);
