@@ -42,34 +42,34 @@ describe('Oembed', function() {
   // when we test against real YouTube, which produces false
   // failures that lead us to ignore CI results.
   //
-  let youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
+  // let youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
 
-  it('YouTube still has the video we like to use for testing', async function() {
-    try {
-      const response = await request({
-        method: 'GET',
-        uri: youtube,
-        resolveWithFullResponse: true
-      });
+  // it('YouTube still has the video we like to use for testing', async function() {
+  //   try {
+  //     const response = await request({
+  //       method: 'GET',
+  //       uri: youtube,
+  //       resolveWithFullResponse: true
+  //     });
 
-      assert(response.statusCode === 200);
-    } catch (e) {
-      assert(false);
-    }
-  });
+  //     assert(response.statusCode === 200);
+  //   } catch (e) {
+  //     assert(false);
+  //   }
+  // });
 
-  it('Should deliver an oembed response for YouTube', async function() {
-    const queryString = qs.stringify({ url: youtube });
-    const uri = `http://localhost:7900/modules/apostrophe-oembed/query?${queryString}`;
+  // it('Should deliver an oembed response for YouTube', async function() {
+  //   const queryString = qs.stringify({ url: youtube });
+  //   const uri = `http://localhost:7900/modules/apostrophe-oembed/query?${queryString}`;
 
-    const response = await request({
-      uri,
-      method: 'GET',
-      resolveWithFullResponse: true
-    });
+  //   const response = await request({
+  //     uri,
+  //     method: 'GET',
+  //     resolveWithFullResponse: true
+  //   });
 
-    assert(response.statusCode === 200);
-    const data = JSON.parse(response.body);
-    assert(data.type === 'video');
-  });
+  //   assert(response.statusCode === 200);
+  //   const data = JSON.parse(response.body);
+  //   assert(data.type === 'video');
+  // });
 });
