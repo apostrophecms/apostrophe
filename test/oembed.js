@@ -17,7 +17,7 @@ describe('Oembed', function() {
   /// ///
 
   it('should initialize', async function() {
-    const apos = await require('../index.js')({
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
       argv: {
