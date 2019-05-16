@@ -290,31 +290,22 @@ describe('Pages', function() {
     assert.strictEqual(page.rank, 3);
   });
 
-  // // MOVING
+  // MOVING
 
-  // it('is able to move root/parent/sibling/cousin after root/parent', function() {
-  //   // 'Cousin' _id === 4312
-  //   // 'Parent' _id === 1234
-  //   apos.pages.move(apos.tasks.getReq(), '4312', '1234', 'after', function(err) {
-  //     if (err) {
-  //       console.log(err);
-  //     }
-  //     assert(!err);
-  //     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
-  //     cursor.toObject(function(err, page) {
-  //       if (err) {
-  //         console.log(err);
-  //       }
-  //       assert(!err);
-  //       // Is the new path correct?
-  //       assert.strictEqual(page.path, '/cousin');
-  //       // Is the rank correct?
-  //       assert.strictEqual(page.rank, 1);
-  //       return done();
-  //     });
-  //   });
+  it('is able to move root/parent/sibling/cousin after root/parent', async function() {
+    // 'Cousin' _id === 4312
+    // 'Parent' _id === 1234
+    await apos.pages.move(apos.tasks.getReq(), '4312', '1234', 'after');
 
-  // });
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
+
+    const page = await cursor.toObject();
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, '/cousin');
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 1);
+  });
 
   // it('is able to move root/cousin before root/parent/child', function() {
   //   // 'Cousin' _id === 4312
