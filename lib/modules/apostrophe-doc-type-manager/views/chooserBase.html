@@ -1,6 +1,8 @@
 {%- import 'apostrophe-ui:components/buttons.html' as buttons with context -%}
 {% if data.autocomplete and data.browse %}
   <div class="apos-browse-and-autocomplete">
+{% elseif data.browse %}
+  <div class="apos-browse">
 {% endif %}
 {% if data.autocomplete %}
   <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" placeholder="{{ __('Search...') }}" data-autocomplete />
@@ -8,7 +10,7 @@
 {% if data.browse %}
   {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
 {% endif %}
-{% if data.autocomplete and data.browse %}
+{% if data.autocomplete or data.browse %}
   </div>
 {% endif %}
 {# Existing selections #}

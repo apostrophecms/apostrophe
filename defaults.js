@@ -16,8 +16,11 @@ module.exports = {
     'apostrophe-permissions': {},
     'apostrophe-assets': {},
     'apostrophe-admin-bar': {},
-    'apostrophe-notifications': {},
     'apostrophe-login': {},
+    // After login, so it can install the CSRF middleware exported by apostrophe-express and still have it
+    // be able to check req.user first
+    'apostrophe-csrf': {},
+    'apostrophe-notifications': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},
     'apostrophe-schemas': {},
@@ -32,6 +35,7 @@ module.exports = {
     // global comes first so it can register a doc type manager and clean things up before
     // pages claims any orphan page types
     'apostrophe-global': {},
+    'apostrophe-polymorphic-manager': {},
     'apostrophe-pages': {},
     'apostrophe-search': {},
     'apostrophe-any-page-manager': {},

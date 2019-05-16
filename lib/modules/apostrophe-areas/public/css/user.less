@@ -1,7 +1,6 @@
 
 @apos-translucent-opacity: 0.4;
 
-
 .apos-area, .apos-area-widgets, .apos-area-widget { position: relative; }
 
 .apos-area
@@ -21,7 +20,7 @@
   {
     // When there aren't any widgets in an area, it should have a height
     // and a background color set by default.
-    height: 100px;
+    height: 130px;
     background-color: @apos-light;
     // When there aren't any widgets in an area, the add content controls
     // should appear absolutely positioned in the empty state.
@@ -37,7 +36,7 @@
         display: block;
         position: absolute;
         left: -41px;
-        top: -22px;      
+        top: -22px;
         height: 60px;
         width: 100px;
       }
@@ -55,6 +54,11 @@
       &:hover { opacity: 1; }
     }
   }
+}
+
+// disable menu interactions while some windows are open
+.apos-area-widget-controls--disabled {
+  pointer-events: none;
 }
 
 .apos-area-widget-controls
@@ -259,7 +263,7 @@
   {
     display: block;
     opacity: @apos-translucent-opacity;
-    z-index: @apos-z-index-4;
+    z-index: @apos-z-index-2;
     &:hover { opacity: 1; }
   }
 }
@@ -274,7 +278,10 @@
   z-index: 0;
 }
 // TODO figure out how to select these specifically enough that !important isn't necessary
-.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-7; }
+//
+// z-index-8 puts this above the apostrophe-workflow controls so widgets can always be added at the
+// bottom of the window, please consider when changing
+.apos-area-controls.apos-active { opacity: 1 !important; display: block; z-index: @apos-z-index-8; }
 .apos-dragging .apos-area-controls { opacity: 0 !important; }
 .apos-rich-text-active .apos-area-controls { display: none !important; }
 
@@ -308,6 +315,33 @@
     border: 2px solid @apos-secondary;
     .apos-button:hover { color: @apos-secondary; }
     .apos-button[data-apos-trash-item]:hover { color: darken(@apos-red, 20%); }
+  }
+}
+.apos-area-inline-undo__label {
+  margin-right: 5px;
+}
+.apos-area-inline-undo {
+  display: flex;
+  border: 0;
+  cursor: pointer;
+  background-color: inherit;
+  color: inherit;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  .apos-rounded;
+  padding: @apos-padding-1;
+  background-color: @apos-blue;
+  color: @apos-white;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  &:hover {
+    background-color: darken(@apos-blue, 10%)
+  }
+  .apos-area-inline-undo__undo {
+    text-decoration: underline;
+    margin-left: 5px;
   }
 }
 

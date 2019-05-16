@@ -1,6 +1,6 @@
 {% macro renderChanges(changes) %}
   {% if changes and changes.length %}
-    <div class="apos-changes {% if change.changes.length > 1 %}apos-multiple-changes{% endif %}">
+    <div class="apos-changes{% if change.changes.length > 1 %} apos-multiple-changes{% endif %}">
       {% for change in changes %}
         {{ renderChange(change) }}
       {% endfor %}
@@ -26,4 +26,3 @@
     {{ renderChanges(change.changes) }}
   </div>
 {% endmacro %}
-

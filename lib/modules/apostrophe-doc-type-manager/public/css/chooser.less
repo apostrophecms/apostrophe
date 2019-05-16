@@ -7,7 +7,7 @@
     width: 80%;
     .apos-table { padding-left: @apos-padding-2; }
   }
-  
+
   .apos-chooser
   {
     position: fixed;
@@ -16,6 +16,14 @@
     overflow: auto;
     width: 20%;
     background-color: @apos-light;
+  }
+
+  .apos-chooser-tabs-wrapper
+  {
+    position: fixed;
+    .apos-inline-block;
+    width: 80%;
+    height: 100%;
   }
 
   .apos-chooser-choice
@@ -48,11 +56,11 @@
       .apos-button { opacity: 1; }
     }
   }
-  
+
   .apos-chooser-limit-reached
   {
     position: fixed;
-    width: 25%;
+    width: 20%;
     background: @apos-gold;
     color: @apos-white;
     z-index: @apos-z-index-1;
@@ -88,7 +96,11 @@
     .apos-chooser-limit-reached { display: block; }
     .apos-field-input { display: none; }
 
-  }  
+  }
+
+  [data-chooser][data-read-only="true"] .apos-chooser-controls {
+    display: none;
+  }
 }
 
 .apos-manage-pager { float: right; }
