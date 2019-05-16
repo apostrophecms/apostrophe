@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-// const request = require('request');
+const request = require('request-promise');
 
 let apos;
 let homeId;
@@ -307,88 +307,60 @@ describe('Pages', function() {
     assert.strictEqual(page.rank, 1);
   });
 
-  // it('is able to move root/cousin before root/parent/child', function() {
-  //   // 'Cousin' _id === 4312
-  //   // 'Child' _id === 2341
-  //   apos.pages.move(apos.tasks.getReq(), '4312', '2341', 'before', function(err) {
-  //     if (err) {
-  //       console.log(err);
-  //     }
-  //     assert(!err);
-  //     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
-  //     cursor.toObject(function(err, page) {
-  //       if (err) {
-  //         console.log(err);
-  //       }
-  //       assert(!err);
-  //       // Is the new path correct?
-  //       assert.strictEqual(page.path, '/parent/cousin');
-  //       // Is the rank correct?
-  //       assert.strictEqual(page.rank, 0);
-  //       return done();
-  //     });
-  //   });
-  // });
+  it('is able to move root/cousin before root/parent/child', async function() {
+    // 'Cousin' _id === 4312
+    // 'Child' _id === 2341
+    await apos.pages.move(apos.tasks.getReq(), '4312', '2341', 'before');
 
-  // it('is able to move root/parent/cousin inside root/parent/sibling', function() {
-  //   // 'Cousin' _id === 4312
-  //   // 'Sibling' _id === 4321
-  //   apos.pages.move(apos.tasks.getReq(), '4312', '4321', 'inside', function(err) {
-  //     if (err) {
-  //       console.log(err);
-  //     }
-  //     assert(!err);
-  //     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
-  //     cursor.toObject(function(err, page) {
-  //       if (err) {
-  //         console.log(err);
-  //       }
-  //       assert(!err);
-  //       // Is the new path correct?
-  //       assert.strictEqual(page.path, '/parent/sibling/cousin');
-  //       // Is the rank correct?
-  //       assert.strictEqual(page.rank, 0);
-  //       return done();
-  //     });
-  //   });
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
+    const page = await cursor.toObject();
 
-  // });
+    // Is the new path correct?
+    assert.strictEqual(page.path, '/parent/cousin');
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 0);
+  });
 
-  // it('moving /parent into /another-parent should also move /parent/sibling', function() {
-  //   apos.pages.move(apos.tasks.getReq(), '1234', '4333', 'inside', function(err) {
-  //     if (err) {
-  //       console.log(err);
-  //     }
-  //     assert(!err);
-  //     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4321' });
-  //     cursor.toObject(function(err, page) {
-  //       if (err) {
-  //         console.log(err);
-  //       }
-  //       assert(!err);
-  //       // Is the grandchild's path correct?
-  //       assert.strictEqual(page.path, '/another-parent/parent/sibling');
-  //       return done();
-  //     });
-  //   });
+  it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
+    // 'Cousin' _id === 4312
+    // 'Sibling' _id === 4321
+    await apos.pages.move(apos.tasks.getReq(), '4312', '4321', 'inside');
 
-  // });
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
+    const page = await cursor.toObject();
 
-  // it('should be able to serve a page', function() {
-  //   return request('http://localhost:7900/child', function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.strictEqual(response.statusCode, 200);
-  //     // Did we get our page back?
-  //     assert(body.match(/Sing to me, Oh Muse./));
-  //     // Does the response prove that data.home was available?
-  //     assert(body.match(/Home: \//));
-  //     // Does the response prove that data.home._children was available?
-  //     assert(body.match(/Tab: \/another-parent/));
-  //     // console.log(body);
-  //     return done();
-  //   });
-  // });
+    // Is the new path correct?
+    assert.strictEqual(page.path, '/parent/sibling/cousin');
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 0);
+  });
+
+  it('moving /parent into /another-parent should also move /parent/sibling', async function() {
+    await apos.pages.move(apos.tasks.getReq(), '1234', '4333', 'inside');
+
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4321' });
+    const page = await cursor.toObject();
+
+    // Is the grandchild's path correct?
+    assert.strictEqual(page.path, '/another-parent/parent/sibling');
+  });
+
+  it('should be able to serve a page', async function() {
+    const response = await request({
+      uri: 'http://localhost:7900/child',
+      method: 'GET',
+      resolveWithFullResponse: true
+    });
+
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 200);
+    // Did we get our page back?
+    assert(response.body.match(/Sing to me, Oh Muse./));
+    // Does the response prove that data.home was available?
+    assert(response.body.match(/Home: \//));
+    // Does the response prove that data.home._children was available?
+    assert(response.body.match(/Tab: \/another-parent/));
+  });
 
   // it('should not be able to serve a nonexistent page', function() {
   //   return request('http://localhost:7900/nobodyschild', function(err, response, body) {
