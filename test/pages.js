@@ -379,7 +379,7 @@ describe('Pages', function() {
     assert(response.body.match(/Tab: \/another-parent/));
   });
 
-  it('should detect that the home page is an ancestor of any page except itself', async function() {
+  it('should detect that the home page is an ancestor of any page except itself', function() {
     assert(
       apos.pages.isAncestorOf({
         path: '/'
