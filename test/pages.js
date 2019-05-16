@@ -362,106 +362,95 @@ describe('Pages', function() {
     assert(response.body.match(/Tab: \/another-parent/));
   });
 
-  // it('should not be able to serve a nonexistent page', function() {
-  //   return request('http://localhost:7900/nobodyschild', function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.strictEqual(response.statusCode, 404);
-  //     // Does the response prove that data.home was available?
-  //     assert(body.match(/Home: \//));
-  //     // Does the response prove that data.home._children was available?
-  //     assert(body.match(/Tab: \/another-parent/));
-  //     // console.log(body);
-  //     return done();
-  //   });
-  // });
+  it('should not be able to serve a nonexistent page', async function() {
+    const response = await request({
+      method: 'GET',
+      resolveWithFullResponse: true,
+      uri: 'http://localhost:7900/nobodyschild',
+      // Get a rejection only if the request failed for technical reasons
+      simple: false
+    });
 
-  // it('should detect that the home page is an ancestor of any page except itself', function() {
-  //   assert(
-  //     apos.pages.isAncestorOf({
-  //       path: '/'
-  //     }, {
-  //       path: '/about'
-  //     }
-  //     )
-  //   );
-  //   assert(
-  //     apos.pages.isAncestorOf({
-  //       path: '/'
-  //     }, {
-  //       path: '/about/grandkid'
-  //     }
-  //     )
-  //   );
-  //   assert(!apos.pages.isAncestorOf({
-  //     path: '/'
-  //   }, {
-  //     path: '/'
-  //   }));
-  // });
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 404);
+    // Does the response prove that data.home was available?
+    assert(response.body.match(/Home: \//));
+    // Does the response prove that data.home._children was available?
+    assert(response.body.match(/Tab: \/another-parent/));
+  });
 
-  // it('should detect a tab as the ancestor of its great grandchild but not someone else\'s', function() {
-  //   assert(
-  //     apos.pages.isAncestorOf({
-  //       path: '/about'
-  //     }, {
-  //       path: '/about/test/thing'
-  //     }
-  //     )
-  //   );
+  it('should detect that the home page is an ancestor of any page except itself', async function() {
+    assert(
+      apos.pages.isAncestorOf({
+        path: '/'
+      }, {
+        path: '/about'
+      })
+    );
+    assert(
+      apos.pages.isAncestorOf({
+        path: '/'
+      }, {
+        path: '/about/grandkid'
+      })
+    );
+    assert(!apos.pages.isAncestorOf({
+      path: '/'
+    }, {
+      path: '/'
+    }));
+  });
 
-  //   assert(
-  //     !apos.pages.isAncestorOf({
-  //       path: '/about'
-  //     }, {
-  //       path: '/wiggy/test/thing'
-  //     }
-  //     )
-  //   );
+  it('should detect a tab as the ancestor of its great grandchild but not someone else\'s', function() {
+    assert(
+      apos.pages.isAncestorOf({
+        path: '/about'
+      }, {
+        path: '/about/test/thing'
+      })
+    );
 
-  // });
+    assert(
+      !apos.pages.isAncestorOf({
+        path: '/about'
+      }, {
+        path: '/wiggy/test/thing'
+      })
+    );
 
-  // it('is able to move parent to the trash', function() {
-  //   apos.pages.moveToTrash(apos.tasks.getReq(), '1234', function(err) {
-  //     if (err) {
-  //       console.error(err);
-  //     }
-  //     assert(!err);
-  //     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '1234' });
-  //     cursor.toObject(function(err, page) {
-  //       if (err) {
-  //         console.log(err);
-  //       }
-  //       assert(!err);
-  //       assert(!page);
-  //       apos.pages.find(apos.tasks.getAnonReq(), { _id: '1234' })
-  //         .permission(false).trash(null).toObject(function(err, page) {
-  //           assert(!err);
-  //           assert.strictEqual(page.path, '/trash/parent');
-  //           assert(page.trash);
-  //           assert.strictEqual(page.level, 2);
-  //           return done();
-  //         });
-  //     });
-  //   });
-  // });
+  });
 
-  // it('is able to insert a new page with the path attempting to follow the slug rather than the title', function() {
-  //   const parentId = homeId;
+  it('is able to move parent to the trash', async function() {
+    await apos.pages.moveToTrash(apos.tasks.getReq(), '1234');
 
-  //   const newPage = {
-  //     slug: '/newish-page',
-  //     published: true,
-  //     type: 'testPage',
-  //     title: 'New Page'
-  //   };
-  //   apos.pages.insert(apos.tasks.getReq(), parentId, newPage, function(err, page) {
-  //     // did it return an error?
-  //     assert(!err);
-  //     // Is the path based on the slug rather than the title?
-  //     assert.strictEqual(page.path, '/newish-page');
-  //     done();
-  //   });
-  // });
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '1234' });
+    const page = await cursor.toObject();
 
+    assert(!page);
+
+    const trashed = await apos.pages.find(apos.tasks.getAnonReq(), {
+      _id: '1234'
+    }).permission(false).trash(null).toObject();
+
+    assert.strictEqual(trashed.path, '/trash/parent');
+    assert(trashed.trash);
+    assert.strictEqual(trashed.level, 2);
+  });
+
+  it('is able to insert a new page with the path attempting to follow the slug rather than the title', async function() {
+    const parentId = homeId;
+
+    const newPage = {
+      slug: '/newish-page',
+      published: true,
+      type: 'testPage',
+      title: 'New Page'
+    };
+
+    const req = apos.tasks.getReq();
+    const page = await apos.pages.insert(req, parentId, newPage);
+
+    // Is the path based on the slug rather than the title?
+    assert.strictEqual(page.path, '/newish-page');
+  });
 });
