@@ -5,7 +5,7 @@
   <fieldset class="apos-field apos-field-{{ field.type | css }} apos-field-{{ field.name | css }} {{ field.classes }}" data-name="{{ field.name }}" {{ field.attributes }}>
     <label for="{{ options.id }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
     {%- if field.help -%}
-      <div class="apos-field-help">{{ __(field.help) }}</div>
+      <div class="apos-field-help">{{ __(field.help) | safe }}</div>
     {%- endif -%}
     {{ bodyMacro(field, options) }}
   </fieldset>
