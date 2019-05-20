@@ -17,8 +17,12 @@ describe('Express', function() {
           port: 7900
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.express);
@@ -133,6 +137,9 @@ describe('Express', function() {
   it('should use the extended bodyParser for submitted forms', function(done) {
     var csrfToken = getCsrfToken(jar);
     assert(csrfToken);
+    // Should be a true randomized token since
+    // disableAnonSession is not active
+    assert(csrfToken !== 'csrf-fallback');
     request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
@@ -208,8 +215,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.prefix);
@@ -260,8 +271,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.baseUrl);
@@ -296,8 +311,12 @@ describe('Express', function() {
           csrf: false
         },
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        }
       },
       afterInit: function(callback) {
         assert(apos.baseUrl);

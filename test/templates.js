@@ -21,10 +21,18 @@ describe('Templates', function() {
           secret: 'xxx',
           port: 7900
         },
-        'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {},
-        'templates-options-test': {},
+        'express-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-subclass-test': {
+          ignoreNoCodeWarning: true
+        },
+        'templates-options-test': {
+          ignoreNoCodeWarning: true
+        },
         'apostrophe-pages': {
           park: [
             {

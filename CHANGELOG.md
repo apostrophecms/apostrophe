@@ -1,6 +1,82 @@
 # Changelog
 
+## 2.89.1 (2019-05-13)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* `getSchemaOptions` method no longer throws inappropriate errors when the alternate form of `apos.area` or `apos.singleton` is used. Bug introduced in 2.89.0.
+* The CSRF cookie is once again always reset on each request, to ensure no discrepancy between the session (and session cookie) lifespan and the CSRF cookie lifespan. This does not force sessions to exist unnecessarily, it just ensures CSRF errors do not mysteriously begin to appear in long-idle sessions, or when making cross-domain locale switches via the editing interface in apostrophe-workflow.
+* Edits to raw .css files once again trigger less-middleware to recognize a change has occurred and avoid sending a stale cached file in development. When `.css` (rather than `.less`) assets are pushed inline, which is necessary to match the behavior we formerly received from clean-css and avoid crashes on CSS that the LESS parser cannot handle, we now monitor them for changes ourselves and "touch" the master LESS file to help the `less-middleware` module figure out that they have been changed.
+
+Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support). Your organization can also take advantage of the opportunity to fund development of the features you would like to see as well as receiving fast, personal support from Apostrophe's core development team.
+
+## 2.89.0 (2019-05-01)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Many significant improvements to make crashes and restarts less likely.
+* The most frequently used methods now sanity-check their arguments and invoke their callback, or as appropriate, if they are not valid. This replaces many full-process crashes with polite 500 errors.
+* New, safer and easier alternatives to `self.route`:
+  * `self.apiRoute`, which accepts a `next` function that can be passed either an error, or `(null, value)`, where `value` is an object to be sent to the browser with a `status: 'ok'` property automatically added — the convention for APIs in Apostrophe 2.x. In addition, errors reported to `next` are converted to `status` properties and/or logged gracefully, including more complete information about where the error took place for easier debugging. Most core routes have been refactored to use it. This approach extends Express 4.0's concept of error handlers with the ability to handle success as well. You can still use `res` if you need to, for instance to issue a redirect.
+  * `self.renderRoute`, which accepts a `next` function that can be passed either an error that will be mapped to an appropriate HTTP status code, or `(null, { template: 'templateName', data: { ... props for the template ... })`. The named template is rendered with `self.render`, and any exceptions thrown are caught properly and logged as errors without a process crash — unlike what frequently happened before in such routes.
+  * `self.htmlRoute`, similar to renderRoute but it does not render the markup for you; instead you pass markup as the second argument to `next()`. Useful if you are rendering by some means other than `self.render`.
+* For template errors, a great deal of redundant error logging has been removed.
+* Introduced `apos.utils.warnDevOnce`, refactored some existing warnings to use it, and added a call for CSRF errors to help developers understand what these mean.
+* New trace feature to help debug crashes in Apostrophe's startup process. Try: `APOS_TRACE_STARTUP=1 node app`
+
+Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support). Your organization can also take advantage of the opportunity to fund development of the features you would like to see as well as receiving fast, personal support from Apostrophe's core development team.
+
+## 2.88.1 (2019-04-25)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fix: widgets are not lost when dragged to a different area.
+* Fix: widgets are not duplicated when dragged to a different area.
+* Fix: area save operations now use a lock to avoid lost information if several requests are made simultaneously for different areas, as can happen when dragging a widget between areas, which modifies both.
+* Fix: widgets can be edited again after being dragged, without a page refresh.
+* Fix: the "purple screen of death" error page now has a 500 status code, not 200.
+
+## 2.88.0 (2019-04-23)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* An optional improvement to eliminate the use of session storage for most site visitors. By default, Apostrophe creates a session for every site visitor, even an anonymous visitor, to provide full CSRF protection. You may now optionally disable this for anonymous visitors:
+
+```javascript
+modules: {
+  'apostrophe-express': {
+    csrf: {
+      disableAnonSession: true
+    }
+  }
+}
+```
+
+When you do this, anonymous visitors receive only basic CSRF protection based on a known header value and the fact that the Same Origin Policy does not allow requests to be made by JavaScript unless the page is on the proper site.
+
+For performance reasons the largest sites will likely find this to be a valuable option.
+
+* `apos.global.findGlobal` now officially supports returning a promise. This was an unofficial side effect in earlier releases that ceased to work in recent releases.
+
+* Updated the version of `moment` that ships on the front end to the latest minor release.
+
+* Eliminated unnecessary arrangeFields warnings. `apostrophe-groups` is set up properly, the `trash` field no longer generates warnings when workflow is active, and reverse joins no longer generate warnings as they have no editing UI.
+
+* `null` values were able to crash the schema converters for strings, integers and floats when those fields were `required`. This has been fixed.
+
 ## 2.87.0 (2019-04-10)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Tooltips have been added to improve the editor experience. For instance, tooltips appear on hover for the "up," "down," "clone" and "trash" buttons when working with areas.
 * Building on the performance work in version 2.86.0, all `ensureIndex` calls have been moved to the `migrate` startup phase and can thus be skipped with `APOS_NO_MIGRATE=1`. Note that as with the other recent changes, this means that if your site is *always* run with `APOS_NO_MIGRATE=1`, including at the time the database is created, it is imperative that you run `node app apostrophe-migrations:migrate` at least once. If your database starts out in a dev environment and is later moved to a production environment, or you use stagecoach or a similar deployment tool that guarantees migrations are run on all code deployments (and you should definitely do that), then this will not be an issue.
