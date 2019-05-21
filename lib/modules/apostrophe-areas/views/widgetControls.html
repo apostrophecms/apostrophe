@@ -9,8 +9,9 @@
       {% for group in groups %}
         <div class="apos-button-group {{ group.classes }}">
           {% for control in group.controls %}
-            {% if control.type == 'select' %}
-              <select class="apos-button apos-button--in-group apos-select" name="{{ control.name }}">
+            {% if control.type == 'select' or control.type == 'checkboxes' %}
+              {# JavaScript will enhance the "checkboxes" case to do multiple select #}
+              <select data-type="{{ control.type }}" {% if control.widgetControls %}data-schema-widget-control{% endif %} class="apos-button apos-button--in-group apos-select" name="{{ control.name }}">
                 {% for choice in control.choices %}
                   <option value="{{ choice.value }}"{% if data.widget[control.name] == choice.value %} selected{% endif %}>{{ choice.label }}</option>
                 {% endfor %}
