@@ -448,7 +448,6 @@ describe('Schemas', function() {
     var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      console.log(err);
       assert(!err);
       done();
     });
