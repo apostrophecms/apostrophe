@@ -481,6 +481,12 @@ module.exports = function(options) {
   function lintModules(callback) {
     traceStartup('lintModules');
     _.each(self.modules, function(module, name) {
+      if (module.options.extends && ((typeof module.options.extends) === 'string')) {
+        lint('The module ' + name + ' contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.');
+      }
+      if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
+        lint('The module ' + name + ' extends ' + module.options.singletonWarningIfNot + ', which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/' + module.options.singletonWarningIfNot + '/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.');
+      }
       if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
         lint('The module ' + name + ' does not extend anything.\n\nA `-widgets` module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\n`ignoreNoExtendWarning` option to `true` for this module.');
       } else if (name.match(/-pages$/) && (name !== 'apostrophe-pages') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
