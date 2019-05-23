@@ -2,7 +2,7 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var _ = require('@sailshq/lodash');
 var async = require('async');
-
+var Promise = require('bluebird');
 var apos;
 var cats = [];
 var people = [];
@@ -53,8 +53,67 @@ describe('Schema Filters', function() {
                   value: 'mint'
                 }
               ]
+            },
+            {
+              type: 'checkboxes',
+              name: 'flavors',
+              label: 'Flavors',
+              choices: [
+                {
+                  label: 'Grape',
+                  value: 'grape'
+                },
+                {
+                  label: 'Cherry',
+                  value: 'cherry'
+                },
+                {
+                  label: 'Mint',
+                  value: 'mint'
+                },
+                {
+                  label: 'Chocolate',
+                  value: 'chocolate'
+                }
+              ]
+            },
+            {
+              type: 'select',
+              name: 'dynamicFlavor',
+              label: 'Dynamic Flavor',
+              choices: 'getDynamicFlavorChoices'
+            },
+            {
+              type: 'checkboxes',
+              name: 'dynamicFlavors',
+              label: 'Dynamic Flavors',
+              choices: 'getDynamicFlavorChoices'
             }
-          ]
+          ],
+          construct: function(self, options) {
+            self.getDynamicFlavorChoices = function(req) {
+              return Promise.delay(100).then(function() {
+                return [
+                  {
+                    label: 'Dynamic Grape',
+                    value: 'dynamic grape'
+                  },
+                  {
+                    label: 'Dynamic Cherry',
+                    value: 'dynamic cherry'
+                  },
+                  {
+                    label: 'Dynamic Mint',
+                    value: 'dynamic mint'
+                  },
+                  {
+                    label: 'Dynamic Chocolate',
+                    value: 'dynamic chocolate'
+                  }
+                ];
+              });
+            };
+          }
         },
         'people': {
           extend: 'apostrophe-pieces',
@@ -96,8 +155,12 @@ describe('Schema Filters', function() {
           people[i].published = true;
         }
         cats[0].flavor = 'cherry';
+        cats[0].flavors = [ 'cherry', 'mint' ];
+        cats[4].flavors = [ 'chocolate' ];
         cats[1].flavor = 'mint';
         cats[4].flavor = 'mint';
+        cats[0].dynamicFlavor = 'dynamic cherry';
+        cats[4].dynamicFlavors = [ 'dynamic cherry', 'dynamic chocolate' ];
         var req = apos.tasks.getReq();
         return async.series([
           purgeCats,
@@ -506,12 +569,57 @@ describe('Schema Filters', function() {
     var cursor = apos.cats.find(req);
     return cursor.toChoices('flavor', function(err, flavors) {
       assert(!err);
-      // Only the flavors associated with at least one cat come up, in alpha order
+      // Only the flavor choices associated with at least one cat come up, in alpha order
       assert(flavors.length === 2);
       assert(flavors[0].value === 'cherry');
       assert(flavors[0].label === 'Cherry');
       assert(flavors[1].value === 'mint');
       assert(flavors[1].label === 'Mint');
+      done();
+    });
+  });
+
+  it('can obtain choices for flavors', function (done) {
+    var req = apos.tasks.getReq();
+    var cursor = apos.cats.find(req);
+    return cursor.toChoices('flavors', function (err, flavors) {
+      assert(!err);
+      // Only the flavors choices associated with at least one cat come up, in alpha order
+      assert(flavors.length === 3);
+      assert(flavors[0].value === 'cherry');
+      assert(flavors[0].label === 'Cherry');
+      assert(flavors[1].value === 'chocolate');
+      assert(flavors[1].label === 'Chocolate');
+      assert(flavors[2].value === 'mint');
+      assert(flavors[2].label === 'Mint');
+      done();
+    });
+  });
+
+  it('can obtain choices for dynamicFlavor', function (done) {
+    var req = apos.tasks.getReq();
+    var cursor = apos.cats.find(req);
+    return cursor.toChoices('dynamicFlavor', function (err, flavors) {
+      assert(!err);
+      // Only the dynamicFlavor choices associated with at least one cat come up, in alpha order
+      assert(flavors.length === 1);
+      assert(flavors[0].value === 'dynamic cherry');
+      assert(flavors[0].label === 'Dynamic Cherry');
+      done();
+    });
+  });
+
+  it('can obtain choices for dynamicFlavors', function (done) {
+    var req = apos.tasks.getReq();
+    var cursor = apos.cats.find(req);
+    return cursor.toChoices('dynamicFlavors', function (err, flavors) {
+      assert(!err);
+      // Only the dynamicFlavors choices associated with at least one cat come up, in alpha order
+      assert(flavors.length === 2);
+      assert(flavors[0].value === 'dynamic cherry');
+      assert(flavors[0].label === 'Dynamic Cherry');
+      assert(flavors[1].value === 'dynamic chocolate');
+      assert(flavors[1].label === 'Dynamic Chocolate');
       done();
     });
   });
