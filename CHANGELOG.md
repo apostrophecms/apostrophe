@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.90.0 (2019-05-23)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New feature: `select` schema fields now support dynamic choices. To use this feature, set `choices` to the name of a method of your module. Apostrophe will invoke that method on the fly to get the choices. Your method receives `(req)` and must return an array of choices. **Your method can be an `async` function, or return a promise for the choices array.** This means you can contact external APIs to obtain the choices. The choices array is in the same format as ever (objects with `label` and `value` properties). Note that if you just want to choose Apostrophe objects of various types, there is a better way: use `joinByOne` or `joinByArray` fields. Fields with dynamic choices do not support the `showFields` option.
+* New feature: `checkboxes` schema fields also support dynamic choices. The syntax is exactly the same as above. This allows multiple selection.
+* New feature: any `select` or `checkboxes` field in the schema of a widget can be moved to a compact select element that appears "in context" on the page, among the widget's controls. To do that, just set `widgetControls: true` in the schema field definition. If you wish, you can also set `contextual: true` so that the field no longer appears in the schema's editing dialog box. By default the field appears in both places. For space reasons, the interface for `checkboxes` is also powered by a select element, but you can add multiple choices by selecting the dropdown more than once. Each time you make a change via one of these fields, the widget is refreshed to show the impact of the change. **You may use dynamic choices as described above.**
+* New feature: the `viewsFolderFallback` option to `apostrophe-templates` may now be an array. Thanks to Amin Shazrin.
+* New feature: help has been added to the video widget explaining that what is needed is a URL to a YouTube or other oEmbed-friendly video.
+* New feature: you may now specify `htmlHelp` as a schema field option if you want to include simple markup, like links. The existing `help` option expects plaintext and escapes accordingly.
+* New feature: the `req` objects returned by `apos.tasks.getReq` and `apos.tasks.getAnonReq` now include a `session` object for broader compatibility with methods that expect a proper `req`. It is a plain object and does not remember anything beyond the lifetime of the `req`.
+* Bug fix: copying the "Home" page works properly.
+* Bug fix: the Apostrophe migrations progress meter no longer crashes if the operation reports more steps than the expected total.
+* Bug fix: watch all inlined stylesheets for changes, not just those implicitly inlined due to the use of the `css` extension when pushing them.
+* Bug fix: improved clearing of tooltips. Addresses various situations where a tooltip could linger on the screen.
+* Developer warnings: warning at startup if your module tries to use "extends" rather than "extend" to extend another module.
+* Developer warnings: warning at startup if your module attempts to "extend" `apostrophe-assets` or one of a few other core modules that are normally singletons, and probably should not ever have a competing instance under another name. Advice is given to write project level code for the module without `extend`, or to use `improve` when enhancing it via an npm module.
+
 ## 2.89.1 (2019-05-13)
 
 Unit tests passing.
