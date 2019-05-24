@@ -1,14 +1,257 @@
 # Changelog
 
+## 2.90.0 (2019-05-23)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* New feature: `select` schema fields now support dynamic choices. To use this feature, set `choices` to the name of a method of your module. Apostrophe will invoke that method on the fly to get the choices. Your method receives `(req)` and must return an array of choices. **Your method can be an `async` function, or return a promise for the choices array.** This means you can contact external APIs to obtain the choices. The choices array is in the same format as ever (objects with `label` and `value` properties). Note that if you just want to choose Apostrophe objects of various types, there is a better way: use `joinByOne` or `joinByArray` fields. Fields with dynamic choices do not support the `showFields` option.
+* New feature: `checkboxes` schema fields also support dynamic choices. The syntax is exactly the same as above. This allows multiple selection.
+* New feature: any `select` or `checkboxes` field in the schema of a widget can be moved to a compact select element that appears "in context" on the page, among the widget's controls. To do that, just set `widgetControls: true` in the schema field definition. If you wish, you can also set `contextual: true` so that the field no longer appears in the schema's editing dialog box. By default the field appears in both places. For space reasons, the interface for `checkboxes` is also powered by a select element, but you can add multiple choices by selecting the dropdown more than once. Each time you make a change via one of these fields, the widget is refreshed to show the impact of the change. **You may use dynamic choices as described above.**
+* New feature: the `viewsFolderFallback` option to `apostrophe-templates` may now be an array. Thanks to Amin Shazrin.
+* New feature: help has been added to the video widget explaining that what is needed is a URL to a YouTube or other oEmbed-friendly video.
+* New feature: you may now specify `htmlHelp` as a schema field option if you want to include simple markup, like links. The existing `help` option expects plaintext and escapes accordingly.
+* New feature: the `req` objects returned by `apos.tasks.getReq` and `apos.tasks.getAnonReq` now include a `session` object for broader compatibility with methods that expect a proper `req`. It is a plain object and does not remember anything beyond the lifetime of the `req`.
+* Bug fix: copying the "Home" page works properly.
+* Bug fix: the Apostrophe migrations progress meter no longer crashes if the operation reports more steps than the expected total.
+* Bug fix: watch all inlined stylesheets for changes, not just those implicitly inlined due to the use of the `css` extension when pushing them.
+* Bug fix: improved clearing of tooltips. Addresses various situations where a tooltip could linger on the screen.
+* Developer warnings: warning at startup if your module tries to use "extends" rather than "extend" to extend another module.
+* Developer warnings: warning at startup if your module attempts to "extend" `apostrophe-assets` or one of a few other core modules that are normally singletons, and probably should not ever have a competing instance under another name. Advice is given to write project level code for the module without `extend`, or to use `improve` when enhancing it via an npm module.
+
+## 2.89.1 (2019-05-13)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* `getSchemaOptions` method no longer throws inappropriate errors when the alternate form of `apos.area` or `apos.singleton` is used. Bug introduced in 2.89.0.
+* The CSRF cookie is once again always reset on each request, to ensure no discrepancy between the session (and session cookie) lifespan and the CSRF cookie lifespan. This does not force sessions to exist unnecessarily, it just ensures CSRF errors do not mysteriously begin to appear in long-idle sessions, or when making cross-domain locale switches via the editing interface in apostrophe-workflow.
+* Edits to raw .css files once again trigger less-middleware to recognize a change has occurred and avoid sending a stale cached file in development. When `.css` (rather than `.less`) assets are pushed inline, which is necessary to match the behavior we formerly received from clean-css and avoid crashes on CSS that the LESS parser cannot handle, we now monitor them for changes ourselves and "touch" the master LESS file to help the `less-middleware` module figure out that they have been changed.
+
+Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support). Your organization can also take advantage of the opportunity to fund development of the features you would like to see as well as receiving fast, personal support from Apostrophe's core development team.
+
+## 2.89.0 (2019-05-01)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Many significant improvements to make crashes and restarts less likely.
+* The most frequently used methods now sanity-check their arguments and invoke their callback, or as appropriate, if they are not valid. This replaces many full-process crashes with polite 500 errors.
+* New, safer and easier alternatives to `self.route`:
+  * `self.apiRoute`, which accepts a `next` function that can be passed either an error, or `(null, value)`, where `value` is an object to be sent to the browser with a `status: 'ok'` property automatically added — the convention for APIs in Apostrophe 2.x. In addition, errors reported to `next` are converted to `status` properties and/or logged gracefully, including more complete information about where the error took place for easier debugging. Most core routes have been refactored to use it. This approach extends Express 4.0's concept of error handlers with the ability to handle success as well. You can still use `res` if you need to, for instance to issue a redirect.
+  * `self.renderRoute`, which accepts a `next` function that can be passed either an error that will be mapped to an appropriate HTTP status code, or `(null, { template: 'templateName', data: { ... props for the template ... })`. The named template is rendered with `self.render`, and any exceptions thrown are caught properly and logged as errors without a process crash — unlike what frequently happened before in such routes.
+  * `self.htmlRoute`, similar to renderRoute but it does not render the markup for you; instead you pass markup as the second argument to `next()`. Useful if you are rendering by some means other than `self.render`.
+* For template errors, a great deal of redundant error logging has been removed.
+* Introduced `apos.utils.warnDevOnce`, refactored some existing warnings to use it, and added a call for CSRF errors to help developers understand what these mean.
+* New trace feature to help debug crashes in Apostrophe's startup process. Try: `APOS_TRACE_STARTUP=1 node app`
+
+Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support). Your organization can also take advantage of the opportunity to fund development of the features you would like to see as well as receiving fast, personal support from Apostrophe's core development team.
+
+## 2.88.1 (2019-04-25)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fix: widgets are not lost when dragged to a different area.
+* Fix: widgets are not duplicated when dragged to a different area.
+* Fix: area save operations now use a lock to avoid lost information if several requests are made simultaneously for different areas, as can happen when dragging a widget between areas, which modifies both.
+* Fix: widgets can be edited again after being dragged, without a page refresh.
+* Fix: the "purple screen of death" error page now has a 500 status code, not 200.
+
+## 2.88.0 (2019-04-23)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* An optional improvement to eliminate the use of session storage for most site visitors. By default, Apostrophe creates a session for every site visitor, even an anonymous visitor, to provide full CSRF protection. You may now optionally disable this for anonymous visitors:
+
+```javascript
+modules: {
+  'apostrophe-express': {
+    csrf: {
+      disableAnonSession: true
+    }
+  }
+}
+```
+
+When you do this, anonymous visitors receive only basic CSRF protection based on a known header value and the fact that the Same Origin Policy does not allow requests to be made by JavaScript unless the page is on the proper site.
+
+For performance reasons the largest sites will likely find this to be a valuable option.
+
+* `apos.global.findGlobal` now officially supports returning a promise. This was an unofficial side effect in earlier releases that ceased to work in recent releases.
+
+* Updated the version of `moment` that ships on the front end to the latest minor release.
+
+* Eliminated unnecessary arrangeFields warnings. `apostrophe-groups` is set up properly, the `trash` field no longer generates warnings when workflow is active, and reverse joins no longer generate warnings as they have no editing UI.
+
+* `null` values were able to crash the schema converters for strings, integers and floats when those fields were `required`. This has been fixed.
+
+## 2.87.0 (2019-04-10)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Tooltips have been added to improve the editor experience. For instance, tooltips appear on hover for the "up," "down," "clone" and "trash" buttons when working with areas.
+* Building on the performance work in version 2.86.0, all `ensureIndex` calls have been moved to the `migrate` startup phase and can thus be skipped with `APOS_NO_MIGRATE=1`. Note that as with the other recent changes, this means that if your site is *always* run with `APOS_NO_MIGRATE=1`, including at the time the database is created, it is imperative that you run `node app apostrophe-migrations:migrate` at least once. If your database starts out in a dev environment and is later moved to a production environment, or you use stagecoach or a similar deployment tool that guarantees migrations are run on all code deployments (and you should definitely do that), then this will not be an issue.
+* Building on the support for namespaced npm modules as apostrophe modules added in 2.86.0, the `testModule: true` flag used to test apostrophe in the context of an npm module like `apostrophe-workflow` can now be used in a namespaced npm module. Thanks to Aurélien Wolz for this contribution.
+
+Thanks to Michelin for making much of this work possible through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.86.0 (2019-04-03)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Apostrophe now supports namespaced NPM modules as apostrophe modules. This allows NPM private modules to be used to deliver, for instance, an apostrophe piece type, page type or widget type. Here is an example of valid configuration:
+
+```javascript
+require('apostrophe', { 
+  modules: {
+    // ordinary npm module
+    'apostrophe-blog': {},
+    // namespaced npm module
+    '@somenamespace/somemodule': {}
+  }
+}
+```
+
+```javascript
+// in lib/modules/@somenamespace/somemodule/index.js
+module.exports = {
+  nifty: true
+};
+```
+ 
+* In addition, modules may be namespaced NPM-style inside a [bundle](https://docs.apostrophecms.org/apostrophe/other/more-modules#packaging-apostrophe-modules-together-creating-bundles). You will need to use a subdirectory structure, as seen above. As a best practice, you should only use this for module names you would have to publish to npm if the bundle feature did not exist. The "lead module" of the bundle should be in the same npm namespace.
+* If you are using the `partial` feature of `addColumn` with your pieces, you can now accept `piece` as a second argument. For bc, the value of that particular column property is still the first argument.
+* All of Apostrophe's "sanity-checking" database operations at startup, plus all Apostrophe migrations, now execute during a new `migrate` startup phase. This phase emits the `apostrophe:migrate` promise event. This phase occurs immediately after `afterInit` is invoked for modules, but before it is invoked for the global `afterInit` hook, if any. This change ensures there is a "sane" database before any interaction with the site takes place, and means that developers no longer have to remember to run `apostrophe-migrations:migrate` when upgrading during development.
+* You can also suppress these database operations at startup completely by setting the `APOS_NO_MIGRATE` environment variable to `1`, or by passing the `migrate: false` top-level option to Apostrophe. In this case, these operations all occur only when the `apostrophe-migrations:migrate` command line task is run. This option saves a great deal of startup time for the enterprise customers with the largest databases. Thus the best practice in production is the same as ever: run `node app apostrophe-migrations:migrate` before launching the new version of the app. In addition, you may set `APOS_NO_MIGRATE=1` in your production environment to save valuable startup time, especially during process restarts, etc.
+* Apostrophe now always instructs `less` to import CSS (not LESS) files `inline`. This is necessary because CleanCSS, which we no longer use, formerly automatically did it and without it import paths are incorrect. Thanks to Fredrik Ekelund for this fix.
+* UX improvement: if you edit a page, then follow a link from that page, and then click the "back" button, you should see your changes intact without the need to click "Refresh" thanks to the use of cachebusting headers. Thanks to Fredrik Ekelund for recommending an approach to the problem.
+* Bug fix: if your site startup or migration task invokes multiple time-consuming operations you'll now see a progress meter for each one, not just the first.
+* To save space and make sure developers don't just tune out, the warning about fields not properly arranged into tabs now appears at startup just for the first such module, unless you pass `--all-unarranged-fields` to get more information.
+
+Thanks to Michelin for making many of these features possible through [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.85.0 (2019-03-27)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If a JPEG file has EXIF data such as the description, credit, etc. this information is
+now copied into new properties of the attachment field and made available automatically
+on corresponding new schema properties of `apostrophe-images` pieces. 
+* `req.data.global` now becomes available even before its joins and area loaders are
+executed, as `req.aposGlobalCore`. This allows modules such as `apostrophe-pieces-orderings-bundle` to avoid recursive scenarios and performance problems.
+* Sortable columns in the manage view can now indicate whether the first click sorts forwards
+or backwards, simply by specifying the sort direction in the usual MongoDB way with `1` or
+`-1`.
+* Sortable columns can now be toggled from "no sort" to "forward" to "backward" and back to "no sort" again, and the hover state indicates all of these "next" states.
+* The `limitByAll` and `limitByTag` options of the `apostrophe-pieces-widgets` module now correctly remove these fields from the `showFields` of the select element that chooses how the widget will select content to display.
+* To select many consecutive pieces or pages quickly in the "Manage Pieces" and "Reorganize Pages" views, hold down the shift button while clicking a second piece. All pieces between the two pieces selected so far will be chosen. 
+* Fixed a bug where removing an array item other than the last could cause a failure of the array field editor if the last array item were active. Thanks to anwarhussain93.
+
+## 2.84.1 (2019-03-25)
+
+* Documentation issue only. No code changes.
+
+## 2.84.0 (2019-03-25)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* `npm audit` issue: `nunjucks`
+  * Created maintenance-only fork of `nunjucks` 2.x as `@apostrophecms/nunjucks`
+  * We will use Nunjucks 3.x in Apostrophe 3.x, this is a maintenance fork only
+  * Addressed dependency on old version of `chokidar` in `nunjucks` 2.x
+
+* `npm audit` issue: `clean-css`
+  * Verified this module offers no significant improvement in minification over the `compress` flag of `less`
+  * Removed this module from ApostropheCMS
+  * Verified CSS still minifies
+
+* You may now sort the "Manage Pieces" view by clicking on any column that has a `sort`
+property. By default `title` and `updatedAt` are now sortable. When using `addColumns`
+specify a `sort` property like:
+
+```javascript
+sort: {
+  title: 1
+}
+```
+
+For more information see [custom columns and sortable columns for the "manage pieces"
+modal](https://apostrophecms.org/docs/tutorials/getting-started/reusable-content-with-pieces.html#custom-columns-and-sortable-columns-for-the-quot-manage-quot-modal).
+
+* Fixed several situations formerly requiring a page refresh before editing. More
+such fixes to come. Thanks to `hexitex` for the bug reports and insight into the
+causes.
+
+* A recent change broke the display of the minimum image size to the user. This
+has been fixed.
+
+* A new warning has been added for failure to use `arrangeFields` comprehensively for
+all of your fields to make the "manage pieces" modal as clear as possible for the user.
+
+* Fixes were made allowing contextual editing of more types of content nested in `object` fields on the page. Thanks to bharathkumarc.
+
+Many thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.83.1 (2019-03-13)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: a crash in the lock refresh route was possible if an advisory lock was taken away by another tab or user. Thanks to `hexitex` for the report and the solution.
+
+## 2.83.0 (2019-03-12)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* When using the `apostrophe-pieces-import` module, you may now set the `importAsRichText: true` option on an `area` or `singleton` field to import markup rather than treating it as plaintext. With this setting in place the behavior matches `apostrophe-pieces-export`. Also note that both `apostrophe-pieces-import` and `apostrophe-pieces-export` have been updated to be more compatible with one another.
+
+## 2.82.0 (2019-03-08)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* If the `APOS_ALWAYS_COPY_ASSETS` environment variable is set, always copy assets rather than symlinking them. This is useful when running under Docker. Thanks to hexitex for this contribution. See also [building Docker images for Apostrophe projects](https://apostrophecms.org/docs/tutorials/howtos/docker.html).
+
 ## 2.81.2 (2019-03-06)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Stability improvement: search index method of the `tags` type will not crash if the `tags` type is somehow truthy without being an array.
 
 ## 2.81.1 (2019-03-05)
 
+Unit tests passing.
+
+Regression tests passing.
+
 * Default values are now respected by the global doc. Specifically, if your field has a `def` property when the global doc is first created, it will be set accordingly. In addition, if a field is added to the schema and your site is restarted, it will also be added with the correct default at this time. Tests coverage has been added for this scenario.
 
 ## 2.81.0 (2019-03-04)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * The conflict resolution mechanism for simultaneous edits has been improved. Previously, Apostrophe tracked how long it had been since the "last edit" by the previous person. But if the browser window closed without sending an "unlock" message, that "last edit" might be a very long time ago. This led to nuisance confirmation prompts and a tendency to ignore their message.
 
@@ -25,6 +268,10 @@ Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/
 * The case-insensitive sort for filter choices no longer crashes if a choice cannot be converted to a string. Thanks to Fawzi Fakhro.
 
 ## 2.80.0 (2019-02-28)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * A recently introduced change broke the filtering that prevented users from selecting too-small images when `minSize` is in effect. This has been corrected. Note that site visitors never actually saw too-small images because filtering did take effect later in the process.
 * Numbers (in addition to strings) are now permissible choices for select elements. If the choice selected is a number, a number will be stored in the field. Most of this fix is in the `launder` module but there is a small fix in apostrophe core as well.
@@ -46,6 +293,10 @@ Thanks to our [Apostrophe Enterprise Support](https://apostrophecms.org/support/
 Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility. 
 
 ## 2.79.0 (2019-02-22)
+
+Unit tests passing.
+
+Regression tests passing.
 
 * Built-in migration progress meter is much improved. The new implementation:
   * Does not display anything if the task completes within 1 second;

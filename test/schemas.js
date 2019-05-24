@@ -448,7 +448,6 @@ describe('Schemas', function() {
     var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      console.log(err);
       assert(!err);
       done();
     });
@@ -552,6 +551,54 @@ describe('Schemas', function() {
       assert(!err);
       assert(_.keys(result).length === 1);
       assert(result.price === 0);
+      done();
+    });
+  });
+
+  it('should gracefully reject null provided as a number if a field is required for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: null
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      assert.equal(err, 'price.required');
+      done();
+    });
+  });
+
+  it('should gracefully reject undefined provided as a number if a field is required for an integer field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'integer',
+          name: 'price',
+          label: 'Price',
+          required: true
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      price: undefined
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(err);
+      assert.equal(err, 'price.required');
       done();
     });
   });

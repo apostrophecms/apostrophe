@@ -6,6 +6,8 @@
     <label for="{{ options.id }}" class="apos-field-label">{{ __(field.label | d('')) }}</label>
     {%- if field.help -%}
       <div class="apos-field-help">{{ __(field.help) }}</div>
+    {%- elif field.htmlHelp -%}
+      <div class="apos-field-help">{{ __(field.htmlHelp) | safe }}</div>
     {%- endif -%}
     {{ bodyMacro(field, options) }}
   </fieldset>

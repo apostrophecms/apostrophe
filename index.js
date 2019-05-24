@@ -14,6 +14,8 @@ var glob = require('glob');
 
 module.exports = function(options) {
 
+  traceStartup('begin');
+
   // The core is not a true moog object but it must look enough like one
   // to participate as a promise event emitter
   var self = {
@@ -46,6 +48,7 @@ module.exports = function(options) {
     // Module-based, promisified events (self.on and self.emit of each module)
     self.eventHandlers = {};
 
+    traceStartup('defineModules');
     defineModules();
   } catch (err) {
     if (options.initFailed) {
@@ -63,8 +66,9 @@ module.exports = function(options) {
     instantiateModules,
     modulesReady,
     modulesAfterInit,
-    afterInit,
-    lintModules
+    lintModules,
+    migrate,
+    afterInit
   ], function(err) {
     if (err) {
       if (options.initFailed) {
@@ -74,6 +78,7 @@ module.exports = function(options) {
         throw err;
       }
     }
+    traceStartup('startup end');
     if (self.argv._.length) {
       self.emit('runTask');
     } else {
@@ -366,9 +371,29 @@ module.exports = function(options) {
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
-    if (!fs.existsSync(testDir + '/node_modules')) {
-      fs.mkdirSync(testDir + '/node_modules');
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + require('path').basename(moduleDir), 'dir');
+    var moduleName = require('path').basename(moduleDir);
+    try {
+      // Use the given name in the package.json file if it is present
+      var packageName = JSON.parse(fs.readFileSync(path.resolve(moduleDir, 'package.json'), 'utf8')).name;
+      if (typeof packageName === 'string') {
+        moduleName = packageName;
+      }
+    } catch (e) {}
+    var testDependenciesDir = testDir + '/node_modules/';
+    if (!fs.existsSync(testDependenciesDir + moduleName)) {
+      // Ensure dependencies directory exists
+      if (!fs.existsSync(testDependenciesDir)) {
+        fs.mkdirSync(testDependenciesDir);
+      }
+      // Ensure potential module scope directory exists before the symlink creation
+      if (moduleName.charAt(0) === '@' && moduleName.includes('/')) {
+        var scope = moduleName.split('/')[0];
+        var scopeDir = testDependenciesDir + scope;
+        if (!fs.existsSync(scopeDir)) {
+          fs.mkdirSync(scopeDir);
+        }
+      }
+      fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, 'dir');
     }
 
     // Not quite superfluous: it'll return self.root, but
@@ -418,8 +443,10 @@ module.exports = function(options) {
   }
 
   function instantiateModules(callback) {
+    traceStartup('instantiateModules');
     self.modules = {};
     return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
+      traceStartup('Instantiating module ' + item);
       var improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
         // We don't want an actual instance of this module, we are using it
@@ -442,15 +469,24 @@ module.exports = function(options) {
   }
 
   function modulesReady(callback) {
+    traceStartup('modulesReady');
     return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
   }
 
   function modulesAfterInit(callback) {
+    traceStartup('modulesAfterInit');
     return self.callAllAndEmit('afterInit', 'afterInit', callback);
   }
 
   function lintModules(callback) {
+    traceStartup('lintModules');
     _.each(self.modules, function(module, name) {
+      if (module.options.extends && ((typeof module.options.extends) === 'string')) {
+        lint('The module ' + name + ' contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.');
+      }
+      if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
+        lint('The module ' + name + ' extends ' + module.options.singletonWarningIfNot + ', which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use lib/modules/' + module.options.singletonWarningIfNot + '/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.');
+      }
       if (name.match(/-widgets$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
         lint('The module ' + name + ' does not extend anything.\n\nA `-widgets` module usually extends `apostrophe-widgets` or\n`apostrophe-pieces-widgets`. Or possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\n`ignoreNoExtendWarning` option to `true` for this module.');
       } else if (name.match(/-pages$/) && (name !== 'apostrophe-pages') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
@@ -465,7 +501,7 @@ module.exports = function(options) {
         // Module definition at project level has construct
         return true;
       }
-      if (d.__meta.name.match(/^my-/)) {
+      if (self.synth.isMy(d.__meta.name)) {
         // None at project level, but maybe at npm level, look there
         d = d.extend;
       }
@@ -490,11 +526,37 @@ module.exports = function(options) {
     return callback(null);
   }
 
+  function migrate(callback) {
+    traceStartup('migrate');
+    if (self.argv._[0] === 'apostrophe-migrations:migrate') {
+      // Migration task will do this later with custom arguments to
+      // the event
+      return callback(null);
+    }
+    // Allow the migrate-at-startup behavior to be complete shut off, including
+    // parked page checks, etc. In this case you are obligated to run the
+    // apostrophe-migrations:migrate task during deployment before launching
+    // with new versions of the code
+    if (process.env.APOS_NO_MIGRATE || (self.options.migrate === false)) {
+      return callback(null);
+    }
+    // Carry out all migrations and consistency checks of the database that are
+    // still pending before proceeding to listen for connections or run tasks
+    // that assume a sane environment. If `apostrophe-migrations:migrate` has
+    // already been run then this will typically find no work to do, although
+    // the consistency checks can take time on a very large distributed database
+    // (see the options above).
+    return self.promiseEmit('migrate', {}).then(function() {
+      return callback(null);
+    }).catch(callback);
+  }
+
   function lint(s) {
-    self.utils.warn('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+    self.utils.warnDev('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
   }
 
   function afterInit(callback) {
+    traceStartup('afterInit');
     // Give project-level code a chance to run before we
     // listen or run a task
     if (!self.options.afterInit) {
@@ -535,3 +597,10 @@ module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'lib/modules'
 };
+
+function traceStartup(message) {
+  if (process.env.APOS_TRACE_STARTUP) {
+    /* eslint-disable-next-line no-console */
+    console.debug('⌁ startup ' + message);
+  }
+}
