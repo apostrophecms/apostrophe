@@ -118,75 +118,90 @@ describe('Locks', function() {
     }
   });
 
-  // it('four parallel lock calls via the different modules should all succeed but not simultaneously', function(done) {
-  //   const one = apos.modules['apostrophe-locks'];
-  //   const two = apos.modules['apostrophe-locks-1'];
-  //   const three = apos.modules['apostrophe-locks-2'];
-  //   const four = apos.modules['apostrophe-locks-3'];
-  //   let active = 0;
-  //   let successful = 0;
+  it('four parallel lock calls via the different modules should all succeed but not simultaneously', async function() {
+    const one = apos.modules['apostrophe-locks'];
+    const two = apos.modules['apostrophe-locks-1'];
+    const three = apos.modules['apostrophe-locks-2'];
+    const four = apos.modules['apostrophe-locks-3'];
 
-  //   attempt(one);
-  //   attempt(two);
-  //   attempt(three);
-  //   attempt(four);
-  //   function attempt(locks) {
-  //     return locks.lock('test', function(err) {
-  //       assert(!err);
-  //       active++;
-  //       assert(active === 1);
-  //       setTimeout(release, 75 + Math.random() * 50);
-  //     });
-  //     function release() {
-  //       // We have to decrement this before we start the call to
-  //       // locks.unlock because otherwise the callback for one of our
-  //       // peers' insert attempts may succeed before the callback for
-  //       // remove, leading to a false positive for test failure. -Tom
-  //       active--;
-  //       return locks.unlock('test', function(err) {
-  //         assert(!err);
-  //         successful++;
-  //         if (successful === 4) {
-  //           done();
-  //         }
-  //       });
-  //     }
-  //   }
-  // });
-  // it('four parallel lock calls via the different modules should all succeed but not simultaneously, even when the idleTimeout is short', function(done) {
-  //   const one = apos.modules['apostrophe-locks'];
-  //   const two = apos.modules['apostrophe-locks-1'];
-  //   const three = apos.modules['apostrophe-locks-2'];
-  //   const four = apos.modules['apostrophe-locks-3'];
-  //   let active = 0;
-  //   let successful = 0;
-  //   attempt(one);
-  //   attempt(two);
-  //   attempt(three);
-  //   attempt(four);
-  //   function attempt(locks) {
-  //     return locks.lock('test', { idleTimeout: 50 }, function(err) {
-  //       assert(!err);
-  //       active++;
-  //       assert(active === 1);
-  //       setTimeout(release, 75 + Math.random() * 50);
-  //     });
-  //     function release() {
-  //       // We have to decrement this before we start the call to
-  //       // locks.unlock because otherwise the callback for one of our
-  //       // peers' insert attempts may succeed before the callback for
-  //       // remove, leading to a false positive for test failure. -Tom
-  //       active--;
-  //       return locks.unlock('test', function(err) {
-  //         assert(!err);
-  //         successful++;
-  //         if (successful === 4) {
-  //           done();
-  //         }
-  //       });
-  //     }
-  //   }
-  // });
+    let active = 0;
+    let successful = 0;
+
+    await Promise.all([
+      attempt(one),
+      attempt(two),
+      attempt(three),
+      attempt(four)
+    ]);
+
+    assert(successful === 4);
+
+    async function attempt(locks) {
+      await locks.lock('test');
+
+      active++;
+      assert(active === 1);
+      return release();
+
+      async function release() {
+        // We have to decrement this before we start the call to
+        // locks.unlock because otherwise the callback for one of our
+        // peers' insert attempts may succeed before the callback for
+        // remove, leading to a false positive for test failure. -Tom
+        active--;
+
+        await Promise.delay(75 + Math.random() * 50);
+
+        await locks.unlock('test');
+
+        successful++;
+
+        return null;
+      }
+    }
+  });
+
+  it('four parallel lock calls via the different modules should all succeed but not simultaneously, even when the idleTimeout is short', async function() {
+    const one = apos.modules['apostrophe-locks'];
+    const two = apos.modules['apostrophe-locks-1'];
+    const three = apos.modules['apostrophe-locks-2'];
+    const four = apos.modules['apostrophe-locks-3'];
+
+    let active = 0;
+    let successful = 0;
+
+    await Promise.all([
+      attempt(one),
+      attempt(two),
+      attempt(three),
+      attempt(four)
+    ]);
+
+    assert(successful === 4);
+
+    async function attempt(locks) {
+      await locks.lock('test', { idleTimeout: 50 });
+
+      active++;
+      assert(active === 1);
+
+      await release();
+
+      async function release() {
+        // We have to decrement this before we start the call to
+        // locks.unlock because otherwise the callback for one of our
+        // peers' insert attempts may succeed before the callback for
+        // remove, leading to a false positive for test failure. -Tom
+        active--;
+        await Promise.delay(75 + Math.random() * 50);
+        await locks.unlock('test');
+
+        successful++;
+
+        return null;
+      }
+    }
+  });
 
   // it('with promises: should flunk a second lock by the same module', function() {
   //   const locks = apos.modules['apostrophe-locks'];
