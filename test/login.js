@@ -76,24 +76,29 @@ describe('Login', function() {
     assert(!response.body.match(/logout/));
   });
 
-  // const loginLogoutJar = request.jar();
+  const loginLogoutJar = request.jar();
   // const loginEmailLogoutJar = request.jar();
 
-  // it('should be able to login a user', function(done) {
-  //   // otherwise logins are not remembered in a session
-  //   return request.post('http://localhost:7901/login', {
-  //     form: { username: 'HarryPutter', password: 'crookshanks' },
-  //     followAllRedirects: true,
-  //     jar: loginLogoutJar
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.equal(response.statusCode, 200);
-  //     // Did we get our page back?
-  //     assert(body.match(/logout/));
-  //     return done();
-  //   });
-  // });
+  it('should be able to login a user', async function() {
+    // otherwise logins are not remembered in a session
+    const response = await request({
+      method: 'POST',
+      uri: 'http://localhost:7901/login',
+      form: {
+        username: 'HarryPutter',
+        password: 'crookshanks'
+      },
+      jar: loginLogoutJar,
+      followAllRedirects: true,
+      json: true,
+      resolveWithFullResponse: true
+    });
+
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 200);
+    // Did we get our page back?
+    assert(response.body.match(/logout/));
+  });
 
   // it('should be able to login a user with their email', function(done) {
   //   // otherwise logins are not remembered in a session
