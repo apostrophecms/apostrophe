@@ -203,73 +203,63 @@ describe('Locks', function() {
     }
   });
 
-  // it('with promises: should flunk a second lock by the same module', function() {
-  //   const locks = apos.modules['apostrophe-locks'];
-  //   return Promise.try(function() {
-  //     return locks.lock('test');
-  //   }).then(function() {
-  //     return locks.lock('test')
-  //       .catch(function(err) {
-  //         // SHOULD fail
-  //         assert(err);
-  //       });
-  //   }).then(function() {
-  //     return locks.unlock('test');
-  //   }).then(function() {
-  //     return locks.unlock('test')
-  //       .catch(function(err) {
-  //         // SHOULD fail
-  //         assert(err);
-  //       });
-  //   });
-  // });
+  it('with promises: should flunk a second lock by the same module', async function() {
+    const locks = apos.modules['apostrophe-locks'];
 
-  // it('withLock method should run a function inside a lock', function() {
-  //   const locks = apos.modules['apostrophe-locks'];
-  //   return locks.withLock('test-lock', function() {
-  //     return Promise.delay(50).then(function() {
-  //       return 'result';
-  //     });
-  //   }).then(function(result) {
-  //     assert(result === 'result');
-  //   });
-  // });
+    await locks.lock('test');
 
-  // it('withLock method should be able to run again (lock released)', function() {
-  //   const locks = apos.modules['apostrophe-locks'];
-  //   return locks.withLock('test-lock', function() {
-  //     return Promise.delay(50).then(function() {
-  //       return 'result';
-  //     });
-  //   }).then(function(result) {
-  //     assert(result === 'result');
-  //   });
-  // });
+    try {
+      await locks.lock('test');
+    } catch (e) {
+      // SHOULD fail
+      assert(e);
+    }
 
-  // it('withLock method should hold the lock (cannot relock within fn)', function() {
-  //   const locks = apos.modules['apostrophe-locks'];
-  //   return locks.withLock('test-lock', function() {
-  //     return Promise.delay(50).then(function() {
-  //       return locks.lock('test-lock').then(function() {
-  //         assert(false);
-  //       }).catch(function(e) {
-  //         assert(e);
-  //       });
-  //     });
-  //   });
-  // });
+    await locks.unlock('test');
 
-  // it('callbacks: withLock method should run a function inside a lock', function(done) {
-  //   const locks = apos.modules['apostrophe-locks'];
-  //   return locks.withLock('test-lock', function(callback) {
-  //     return setTimeout(function() {
-  //       return callback(null, 'result');
-  //     }, 50);
-  //   }, function(err, result) {
-  //     assert(!err);
-  //     assert(result === 'result');
-  //     done();
-  //   });
-  // });
+    try {
+      await locks.unlock('test');
+    } catch (e) {
+      // SHOULD fail
+      assert(e);
+    }
+  });
 
+  it('withLock method should run a function inside a lock', async function() {
+    const locks = apos.modules['apostrophe-locks'];
+
+    const result = await locks.withLock('test-lock', async () => {
+      await Promise.delay(50);
+
+      return 'result';
+    });
+
+    assert(result === 'result');
+  });
+
+  it('withLock method should be able to run again (lock released)', async function() {
+    const locks = apos.modules['apostrophe-locks'];
+
+    const result = await locks.withLock('test-lock', async () => {
+      await Promise.delay(50);
+      return 'result';
+    });
+
+    assert(result === 'result');
+  });
+
+  it('withLock method should hold the lock (cannot relock within fn)', async function() {
+    const locks = apos.modules['apostrophe-locks'];
+
+    return locks.withLock('test-lock', async () => {
+      await Promise.delay(50);
+
+      try {
+        await locks.lock('test-lock');
+        assert(false);
+      } catch (e) {
+        assert(e);
+      }
+    });
+  });
 });
