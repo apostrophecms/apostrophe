@@ -1,73 +1,75 @@
-
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let apos;
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+// const request = require('request-promise');
+// const qs = require('qs');
 
 describe('Oembed', function() {
-
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  let apos;
+
+  after(function () {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
+          session: {
+            secret: 'xxx'
+          },
           port: 7900,
           csrf: false
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-oembed']);
-        assert(apos.oembed);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+
+    assert(apos.modules['apostrophe-oembed']);
+    assert(apos.oembed.__meta.name === 'apostrophe-oembed');
   });
 
   // TODO: test this with mocks. Travis CI erratically times out
   // when we test against real YouTube, which produces false
   // failures that lead us to ignore CI results.
   //
-  // var youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
+  // let youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
 
-  // it('YouTube still has the video we like to use for testing', function(done) {
-  //   return request(youtube, function(err, response, body) {
-  //     assert(!err);
+  // it('YouTube still has the video we like to use for testing', async function() {
+  //   try {
+  //     const response = await request({
+  //       method: 'GET',
+  //       uri: youtube,
+  //       resolveWithFullResponse: true
+  //     });
+
   //     assert(response.statusCode === 200);
-  //     return done();
-  //   });
+  //   } catch (e) {
+  //     assert(false);
+  //   }
   // });
 
-  // it('Should deliver an oembed response for YouTube', function(done) {
-  //   return request('http://localhost:7900/modules/apostrophe-oembed/query?' + qs.stringify(
-  //   {
-  //     url: youtube
-  //   }), function(err, response, body) {
-  //     assert(!err);
-  //     assert(response.statusCode === 200);
-  //     var data = JSON.parse(body);
-  //     assert(data.type === 'video');
-  //     return done();
-  //   });
-  // });
+  // it('Should deliver an oembed response for YouTube', async function() {
+  //   const queryString = qs.stringify({ url: youtube });
+  //   const uri = `http://localhost:7900/modules/apostrophe-oembed/query?${queryString}`;
 
+  //   const response = await request({
+  //     uri,
+  //     method: 'GET',
+  //     resolveWithFullResponse: true
+  //   });
+
+  //   assert(response.statusCode === 200);
+  //   const data = JSON.parse(response.body);
+  //   assert(data.type === 'video');
+  // });
 });
