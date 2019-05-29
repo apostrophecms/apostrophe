@@ -361,7 +361,7 @@ describe('Pieces', function() {
   it('should not pass through an error message if the error is not passed as a string', function(done) {
     assert(apos.modules['things'].apiResponse);
     var res = apos.tasks.getAnonReq().res;
-    var errMsg = true;
+    var errMsg = new Error('it is good to see this error in the log');
     res.send = function(response) {
       assert(response);
       assert(response.status === 'error');

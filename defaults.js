@@ -17,6 +17,9 @@ module.exports = {
     'apostrophe-assets': {},
     'apostrophe-admin-bar': {},
     'apostrophe-login': {},
+    // After login, so it can install the CSRF middleware exported by apostrophe-express and still have it
+    // be able to check req.user first
+    'apostrophe-csrf': {},
     'apostrophe-notifications': {},
     'apostrophe-browser-utils': {},
     'apostrophe-ui': {},

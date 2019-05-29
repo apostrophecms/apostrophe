@@ -458,6 +458,24 @@ describe('Global with separateWhileBusyMiddleware', function() {
     });
   });
 
+  it('test findGlobal with callback', function(done) {
+    var req = apos.tasks.getReq();
+    return apos.global.findGlobal(req, function(err, global) {
+      assert(!err);
+      assert(global);
+      assert(global.type === 'apostrophe-global');
+      done();
+    });
+  });
+
+  it('test findGlobal with promise', function() {
+    var req = apos.tasks.getReq();
+    return apos.global.findGlobal(req).then(function(global) {
+      assert(global);
+      assert(global.type === 'apostrophe-global');
+    });
+  });
+
   it('give global doc a workflowLocale property to simulate use with workflow', function() {
     return apos.docs.db.update({
       type: 'apostrophe-global'
