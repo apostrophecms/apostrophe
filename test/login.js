@@ -77,7 +77,7 @@ describe('Login', function() {
   });
 
   const loginLogoutJar = request.jar();
-  // const loginEmailLogoutJar = request.jar();
+  const loginEmailLogoutJar = request.jar();
 
   it('should be able to login a user', async function() {
     // otherwise logins are not remembered in a session
@@ -100,50 +100,53 @@ describe('Login', function() {
     assert(response.body.match(/logout/));
   });
 
-  // it('should be able to login a user with their email', function(done) {
-  //   // otherwise logins are not remembered in a session
-  //   return request.post('http://localhost:7901/login', {
-  //     form: { username: 'hputter@aol.com', password: 'crookshanks' },
-  //     followAllRedirects: true,
-  //     jar: loginEmailLogoutJar
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.equal(response.statusCode, 200);
-  //     // Did we get our page back?
-  //     assert(body.match(/logout/));
-  //     return done();
-  //   });
-  // });
+  it('should be able to login a user with their email', async function() {
+    // otherwise logins are not remembered in a session
+    const response = await request({
+      method: 'POST',
+      uri: 'http://localhost:7901/login',
+      form: {
+        username: 'hputter@aol.com',
+        password: 'crookshanks'
+      },
+      followAllRedirects: true,
+      jar: loginEmailLogoutJar,
+      resolveWithFullResponse: true
+    });
 
-  // it('should be able to log out', function(done) {
-  //   // otherwise logins are not remembered in a session
-  //   return request('http://localhost:7901/logout', {
-  //     followAllRedirects: true,
-  //     jar: loginLogoutJar
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.equal(response.statusCode, 200);
-  //     // are we back to being able to log in?
-  //     assert(body.match(/login/));
-  //     return done();
-  //   });
-  // });
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 200);
+    // Did we get our page back?
+    assert(response.body.match(/logout/));
+  });
 
-  // it('should be able to log out after having logged in with email', function(done) {
-  //   // otherwise logins are not remembered in a session
-  //   return request('http://localhost:7901/logout', {
-  //     followAllRedirects: true,
-  //     jar: loginEmailLogoutJar
-  //   }, function(err, response, body) {
-  //     assert(!err);
-  //     // Is our status code good?
-  //     assert.equal(response.statusCode, 200);
-  //     // are we back to being able to log in?
-  //     assert(body.match(/login/));
-  //     return done();
-  //   });
-  // });
+  it('should be able to log out', async function() {
+    // otherwise logins are not remembered in a session
+    const response = await request({
+      uri: 'http://localhost:7901/logout',
+      followAllRedirects: true,
+      jar: loginLogoutJar,
+      resolveWithFullResponse: true
+    });
 
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 200);
+    // are we back to being able to log in?
+    assert(response.body.match(/login/));
+  });
+
+  it('should be able to log out after having logged in with email', async function() {
+    // otherwise logins are not remembered in a session
+    const response = await request({
+      uri: 'http://localhost:7901/logout',
+      followAllRedirects: true,
+      jar: loginEmailLogoutJar,
+      resolveWithFullResponse: true
+    });
+
+    // Is our status code good?
+    assert.strictEqual(response.statusCode, 200);
+    // are we back to being able to log in?
+    assert(response.body.match(/login/));
+  });
 });
