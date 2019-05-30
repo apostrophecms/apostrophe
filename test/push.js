@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 
 let apos;
 
@@ -7,39 +7,37 @@ describe('Templates', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(function() {
+    return t.destroy(apos);
   });
 
-  it('should have a push property', function(done) {
-    apos = require('../index.js')({
+  it('should have a push property', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
+          session: {
+            secret: 'I stole a candybar'
+          },
           port: 7900
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.push);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+
+    assert(apos.push.__meta.name === 'apostrophe-push');
   });
 
   it('should be able to push a browser call and get back an HTML-safe JSON string', function() {
-    let req = apos.tasks.getAnonReq();
-    req.browserCall('test(?)', { data: '<script>alert(\'ruh roh\');</script>' });
-    let calls = req.getBrowserCalls();
+    const req = apos.tasks.getAnonReq();
+    req.browserCall('test(?)', {
+      data: '<script>alert(\'ruh roh\');</script>'
+    });
+
+    const calls = req.getBrowserCalls();
     assert(calls.indexOf('<\\/script>') !== -1);
     assert(calls.indexOf('</script>') === -1);
   });
