@@ -163,8 +163,8 @@ describe('Schema Filters', function() {
     // the sample data generator above)
     cursor._cats(cats[5]._id);
 
-    const people = await cursor.toArray();
-    assert(people.length === 4);
+    const peopleArray = await cursor.toArray();
+    assert(peopleArray.length === 4);
   });
 
   it('filter for _cats can select people with any of three cats via array', async function() {
@@ -172,9 +172,9 @@ describe('Schema Filters', function() {
     const cursor = apos.people.find(req);
     cursor._cats([ cats[0]._id, cats[1]._id, cats[2]._id ]);
 
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
     // Everybody except person 0 has the first cat
-    assert(people.length === 9);
+    assert(peopleArray.length === 9);
   });
 
   it('_catsAnd filter can select people with all three cats', async function() {
@@ -205,21 +205,21 @@ describe('Schema Filters', function() {
   it('when not used filter for _cats has no effect', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 11);
+    assert(peopleArray.length === 11);
   });
 
   it('can obtain choices for _cats', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const cats = await cursor.toChoices('_cats');
+    const choiceCats = await cursor.toChoices('_cats');
 
     // Only the cats that are actually somebody's cat come up
-    assert(cats.length === 9);
-    assert(cats[0].value);
-    assert(cats[0].label);
-    assert(cats[0].slug);
+    assert(choiceCats.length === 9);
+    assert(choiceCats[0].value);
+    assert(choiceCats[0].label);
+    assert(choiceCats[0].slug);
   });
 
   it('filter for cats exists', function() {
@@ -235,8 +235,8 @@ describe('Schema Filters', function() {
     // the sample data generator above)
     cursor.cats(cats[5].slug);
 
-    const people = await cursor.toArray();
-    assert(people.length === 4);
+    const peopleArray = await cursor.toArray();
+    assert(peopleArray.length === 4);
   });
 
   it('filter for cats can select people with any of three cats via array (by slug)', async function() {
@@ -245,10 +245,10 @@ describe('Schema Filters', function() {
 
     cursor.cats([ cats[0].slug, cats[1].slug, cats[2].slug ]);
 
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Everybody except person 0 has the first cat
-    assert(people.length === 9);
+    assert(peopleArray.length === 9);
   });
 
   it('catsAnd filter can select people with all three cats (by slug)', async function() {
@@ -256,10 +256,10 @@ describe('Schema Filters', function() {
     const cursor = apos.people.find(req);
     cursor.catsAnd([ cats[0].slug, cats[1].slug, cats[2].slug ]);
 
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Only people 3-9 have cat 2
-    assert(people.length === 7);
+    assert(peopleArray.length === 7);
   });
 
   it('filter for cats can select sad people with no cat (by slug)', async function() {
@@ -279,22 +279,22 @@ describe('Schema Filters', function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
 
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 11);
+    assert(peopleArray.length === 11);
   });
 
   it('can obtain choices for cats (by slug)', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
 
-    const cats = await cursor.toChoices('cats');
+    const choiceCats = await cursor.toChoices('cats');
 
     // Only the cats that are actually somebody's cat come up
-    assert(cats.length === 9);
-    assert(cats[0].value);
-    assert(cats[0].label);
-    assert(cats[0].value === 'cat-0');
+    assert(choiceCats.length === 9);
+    assert(choiceCats[0].value);
+    assert(choiceCats[0].label);
+    assert(choiceCats[0].value === 'cat-0');
   });
 
   it('filter for _favorite exists', function() {
@@ -309,52 +309,52 @@ describe('Schema Filters', function() {
     // Only one person has each favorite
     cursor._favorite(cats[3]._id);
 
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 1);
-    assert(people[0].i === 3);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 3);
   });
 
   it('filter for _favorite can use array syntax', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
     cursor._favorite([ cats[7]._id ]);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Only person 0 prefers the first cat
-    assert(people.length === 1);
-    assert(people[0].i === 7);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 7);
   });
 
   it('filter for _favorite can select sad people who dislike cats', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
     cursor._favorite('none');
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Only person 10 has no favorite cat
-    assert(people.length === 1);
-    assert(people[0].i === 10);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 10);
   });
 
   it('when not used filter for _favorite has no effect', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 11);
+    assert(peopleArray.length === 11);
   });
 
   it('can obtain choices for _favorite', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const cats = await cursor.toChoices('_favorite');
+    const choiceCats = await cursor.toChoices('_favorite');
 
     // Only the cats that are actually someone's favorite come up
-    assert(cats.length === 10);
-    assert(cats[0].value);
-    assert(cats[0].label);
-    assert(cats[0].slug);
+    assert(choiceCats.length === 10);
+    assert(choiceCats[0].value);
+    assert(choiceCats[0].label);
+    assert(choiceCats[0].slug);
   });
 
   it('filter for favorite (by slug) exists', function() {
@@ -368,10 +368,10 @@ describe('Schema Filters', function() {
     const cursor = apos.people.find(req);
     // Only one person has each favorite
     cursor.favorite(cats[3].slug);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 1);
-    assert(people[0].i === 3);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 3);
   });
 
   it('filter for favorite can select people with a specified favorite cat (by slug) plus a search without a refinalize crash', async function() {
@@ -379,52 +379,52 @@ describe('Schema Filters', function() {
     const cursor = apos.people.find(req);
     // Only one person has each favorite
     cursor.favorite(cats[3].slug);
-    const people = await cursor.search('person').toArray();
+    const peopleArray = await cursor.search('person').toArray();
 
-    assert(people.length === 1);
-    assert(people[0].i === 3);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 3);
   });
 
   it('filter for favorite (by slug) can use array syntax', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
     cursor.favorite([ cats[7].slug ]);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Only person 0 prefers the first cat
-    assert(people.length === 1);
-    assert(people[0].i === 7);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 7);
   });
 
   it('filter for favorite (by slug) can select sad people who dislike cats', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
     cursor.favorite('none');
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
     // Only person 10 has no favorite cat
-    assert(people.length === 1);
-    assert(people[0].i === 10);
+    assert(peopleArray.length === 1);
+    assert(peopleArray[0].i === 10);
   });
 
   it('when not used filter for favorite (by slug) has no effect', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const people = await cursor.toArray();
+    const peopleArray = await cursor.toArray();
 
-    assert(people.length === 11);
+    assert(peopleArray.length === 11);
   });
 
   it('can obtain choices for favorite (by slug)', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.people.find(req);
-    const cats = await cursor.toChoices('favorite');
+    const choiceCats = await cursor.toChoices('favorite');
 
     // Only the cats that are actually someone's favorite come up
-    assert(cats.length === 10);
-    assert(cats[0].value);
-    assert(cats[0].label);
-    assert(cats[0].value === 'cat-0');
+    assert(choiceCats.length === 10);
+    assert(choiceCats[0].value);
+    assert(choiceCats[0].label);
+    assert(choiceCats[0].value === 'cat-0');
   });
 
   it('filter for flavor exists', function() {
@@ -437,31 +437,31 @@ describe('Schema Filters', function() {
     const req = apos.tasks.getReq();
     const cursor = apos.cats.find(req);
     cursor.flavor('mint');
-    const cats = await cursor.toArray();
+    const catsArray = await cursor.toArray();
 
-    assert(cats.length === 2);
-    assert(_.find(cats, { i: 1 }));
-    assert(_.find(cats, { i: 4 }));
+    assert(catsArray.length === 2);
+    assert(_.find(catsArray, { i: 1 }));
+    assert(_.find(catsArray, { i: 4 }));
   });
 
   it('filter for flavor can use array syntax', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.cats.find(req);
     cursor.flavor([ 'mint', 'cherry' ]);
-    const cats = await cursor.toArray();
+    const catsArray = await cursor.toArray();
 
-    assert(cats.length === 3);
-    assert(_.find(cats, { i: 0 }));
-    assert(_.find(cats, { i: 1 }));
-    assert(_.find(cats, { i: 4 }));
+    assert(catsArray.length === 3);
+    assert(_.find(catsArray, { i: 0 }));
+    assert(_.find(catsArray, { i: 1 }));
+    assert(_.find(catsArray, { i: 4 }));
   });
 
   it('when not used filter for flavor has no effect', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.cats.find(req);
-    const cats = await cursor.toArray();
+    const catsArray = await cursor.toArray();
 
-    assert(cats.length === 11);
+    assert(catsArray.length === 11);
   });
 
   it('can obtain choices for flavor', async function() {
