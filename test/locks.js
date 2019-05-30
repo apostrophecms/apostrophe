@@ -57,45 +57,23 @@ describe('Locks', function() {
   });
 
   it('cleanup', async function() {
-    try {
-      const response = await apos.locks.db.remove({});
-
-      assert(response.result.ok === 1);
-    } catch (e) {
-      assert(false);
-    }
+    await apos.locks.db.remove({});
   });
 
   it('should allow a single lock without contention uneventfully', async function() {
     const locks = apos.modules['apostrophe-locks'];
 
-    try {
-      await locks.lock('test');
-
-      await locks.unlock('test');
-    } catch (e) {
-      assert(false);
-    }
-
-    // function lock(callback) {
-    //   return locks.lock('test', callback);
-    // }
-    // function unlock(callback) {
-    //   return locks.unlock('test', callback);
-    // }
+    await locks.lock('test');
+    await locks.unlock('test');
   });
 
   it('should allow two differently-named locks uneventfully', async function() {
     const locks = apos.modules['apostrophe-locks'];
 
-    try {
-      await locks.lock('test1');
-      await locks.unlock('test1');
-      await locks.lock('test2');
-      await locks.unlock('test2');
-    } catch (e) {
-      assert(false);
-    }
+    await locks.lock('test1');
+    await locks.lock('test2');
+    await locks.unlock('test1');
+    await locks.unlock('test2');
   });
 
   it('should flunk a second lock by the same module', async function() {
@@ -105,6 +83,7 @@ describe('Locks', function() {
 
     try {
       await locks.lock('test');
+      assert(false);
     } catch (e) {
       assert(e);
     }
@@ -113,6 +92,7 @@ describe('Locks', function() {
 
     try {
       await locks.unlock('test');
+      assert(false);
     } catch (e) {
       assert(e);
     }
@@ -200,28 +180,6 @@ describe('Locks', function() {
 
         return null;
       }
-    }
-  });
-
-  it('with promises: should flunk a second lock by the same module', async function() {
-    const locks = apos.modules['apostrophe-locks'];
-
-    await locks.lock('test');
-
-    try {
-      await locks.lock('test');
-    } catch (e) {
-      // SHOULD fail
-      assert(e);
-    }
-
-    await locks.unlock('test');
-
-    try {
-      await locks.unlock('test');
-    } catch (e) {
-      // SHOULD fail
-      assert(e);
     }
   });
 
