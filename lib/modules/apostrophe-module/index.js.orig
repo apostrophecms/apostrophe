@@ -634,28 +634,6 @@ module.exports = {
       return (self.options.components && self.options.components[name]) || name;
     };
 
-    self.components = {};
-
-    // Add a reusable, asynchronous component for use in templates. `fn` must be a
-    // function; it may be `async` and will be awaited. The return value must be a data
-    // object. Once the function returns, the template `name` is rendered by the module,
-    // passing in the returned data object as `data`.
-    //
-    // `fn` receives `(req, data)`, where `req` is the request and `data` is
-    // an optional data object as described below.
-    //
-    // Templates can render these components with the following syntax:
-    //
-    // {% component "module-name:componentName" with { ... data object here ...} %}
-    //
-    // If the component is rendered `with` a data object, that becomes the second
-    // argument to `fn`. For ease of coding, if no data object is specified, an
-    // empty object is passed.
-
-    self.addComponent = function(name, fn) {
-      self.components[name] = fn;
-    };
-
     // Only safe or meaningful to add a helper in modules initialized after the
     // templates module
     if (self.apos.templates && self.apos.templates.addHelpersForModule) {
