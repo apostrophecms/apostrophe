@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.90.1 (2019-06-05)
+## 2.91.1 (2019-06-05)
 
 Unit tests passing.
 
@@ -8,7 +8,17 @@ Regression tests passing.
 
 * Bug fix: the `apos.utils.post` method introduced in version 2.90.0 now correctly submits the CSRF header.
 
-## 2.90.0 (2019-06-05)
+## 2.91.0 (2019-06-05)
+
+* Feature: it is much easier to write sites with **no jQuery, lodash, etc.** on the front end. The `apostrophe-lean-frontend` module has been deprecated and its functionality has been merged into the core. All of the functionality of the `apos.lean` object is now available on the `apos.utils` object at all times. And if you set the `lean: true` option for the `apostrophe-assets` module, **only lean JavaScript is pushed** when logged out (assets pushed with `when: 'lean'`, including the lean methods of `apos.utils`). This creates a migration path to a leaner frontend: developers can write NPM modules that rely only the lean `apos.utils` methods without worrying about whether they are present or not. Note that this is also the official frontend library for the forthcoming Apostrophe 3.x (Of course, as always, you can choose to push more code, use webpack, etc.)
+* Bug fix: a regression introduced in 2.90.0 caused all uses of "Copy Page" to copy the home page. This is fixed.
+* Bug fix: copying a page with custom fields now copies those fields properly.
+* Bug fix: "Copy Page" now correctly copies parked page fields to the new, unparked page and then allows them to be edited for the new page.
+* Bug fix: addressed browser errors that occurred when using an empty rich text toolbar. Unfortunately it is not possible to completely eliminate the ckeditor 4 toolbar when there are no tools present. This is due to a ckeditor bug.
+
+Thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+## 2.90.0 (2019-05-23)
 
 Unit tests passing.
 
