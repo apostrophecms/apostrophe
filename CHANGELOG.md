@@ -12,6 +12,8 @@ Regression tests passing.
 * Bug fix: "Copy Page" now correctly copies parked page fields to the new, unparked page and then allows them to be edited for the new page.
 * Bug fix: addressed browser errors that occurred when using an empty rich text toolbar. Unfortunately it is not possible to completely eliminate the ckeditor 4 toolbar when there are no tools present. This is due to a ckeditor bug.
 
+Thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.90.0 (2019-05-23)
 
 Unit tests passing.
