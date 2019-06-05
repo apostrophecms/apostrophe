@@ -1,6 +1,14 @@
 # Changelog
 
-## 2.90.0 (2019-05-23)
+## 2.90.1 (2019-06-05)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: the `apos.utils.post` method introduced in version 2.90.0 now correctly submits the CSRF header.
+
+## 2.90.0 (2019-06-05)
 
 Unit tests passing.
 
