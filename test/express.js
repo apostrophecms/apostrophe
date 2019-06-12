@@ -1,20 +1,28 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('@sailshq/lodash');
-var apos;
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
+const request = require('request-promise');
+let jar;
+let apos;
 
 describe('Express', function() {
 
   this.timeout(t.timeout);
 
-  it('express should exist on the apos object', function(done) {
-    apos = require('../index.js')({
+  it('express should exist on the apos object', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          port: 7900,
+          address: 'localhost',
+          session: {
+            secret: 'xxx'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -22,15 +30,11 @@ describe('Express', function() {
       },
       afterInit: function(callback) {
         assert(apos.express);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
+
         return callback(null);
       },
       afterListen: function(err) {
         assert(!err);
-        done();
       }
     });
   });
@@ -47,93 +51,106 @@ describe('Express', function() {
     assert(apos.baseApp === apos.app);
   });
 
-  var request = require('request');
-
-  var jar;
-
   function getCsrfToken(jar) {
-    var csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), { key: apos.csrfCookieName });
+    const csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), {
+      key: apos.csrfCookieName
+    });
+
     if (!csrfCookie) {
       return null;
     }
-    var csrfToken = csrfCookie.value;
+
+    const csrfToken = csrfCookie.value;
     return csrfToken;
   }
 
-  it('should successfully make a GET request to establish CSRF', function(done) {
+  it('should successfully make a GET request to establish CSRF', async function() {
     // otherwise request does not track cookies
     jar = request.jar();
-    request({
+    await request({
       method: 'GET',
       url: 'http://localhost:7900/tests/welcome',
       jar: jar
     }, function(err, response, body) {
       assert(!err);
       assert(body.toString() === 'ok');
-      done();
     });
   });
 
-  it('should flunk a POST request with no X-XSRF-TOKEN header', function(done) {
-    request({
-      method: 'POST',
-      url: 'http://localhost:7900/tests/body',
-      form: {
-        person: {
-          age: '30'
+  it('should flunk a POST request with no X-XSRF-TOKEN header', async function() {
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:7900/tests/body',
+        form: {
+          person: {
+            age: '30'
+          }
+        },
+        jar: jar,
+        headers: {}
+      }, function(err, response, body) {
+        assert(!err);
+        assert(response.statusCode === 403);
+      });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
+
+  it('should flunk a POST request with no cookies at all', async function() {
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:7900/tests/body',
+        form: {
+          person: {
+            age: '30'
+          }
+        },
+        headers: {}
+      }, function(err, response, body) {
+        assert(!err);
+        assert(response.statusCode === 403);
+      });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
+  });
+
+  it('should flunk a POST request with the wrong CSRF token', async function() {
+    const csrfToken = 'BOGOSITY';
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:7900/tests/body',
+        form: {
+          person: {
+            age: '30'
+          }
+        },
+        jar: jar,
+        headers: {
+          'X-XSRF-TOKEN': csrfToken
         }
-      },
-      jar: jar,
-      headers: {}
-    }, function(err, response, body) {
-      assert(!err);
-      assert(response.statusCode === 403);
-      done();
-    });
+      }, function(err, response, body) {
+        assert(!err);
+        assert(response.statusCode === 403);
+      });
+      assert(false);
+    } catch (e) {
+      assert(e);
+    }
   });
 
-  it('should flunk a POST request with no cookies at all', function(done) {
-    request({
-      method: 'POST',
-      url: 'http://localhost:7900/tests/body',
-      form: {
-        person: {
-          age: '30'
-        }
-      },
-      headers: {}
-    }, function(err, response, body) {
-      assert(!err);
-      assert(response.statusCode === 403);
-      done();
-    });
-  });
-
-  it('should flunk a POST request with the wrong CSRF token', function(done) {
-    var csrfToken = 'BOGOSITY';
-    request({
-      method: 'POST',
-      url: 'http://localhost:7900/tests/body',
-      form: {
-        person: {
-          age: '30'
-        }
-      },
-      jar: jar,
-      headers: {
-        'X-XSRF-TOKEN': csrfToken
-      }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(response.statusCode === 403);
-      done();
-    });
-  });
-
-  it('should use the extended bodyParser for submitted forms', function(done) {
-    var csrfToken = getCsrfToken(jar);
+  it('should use the extended bodyParser for submitted forms', async function() {
+    const csrfToken = getCsrfToken(jar);
     assert(csrfToken);
-    request({
+
+    const response = await request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
       form: {
@@ -145,16 +162,14 @@ describe('Express', function() {
       headers: {
         'X-XSRF-TOKEN': csrfToken
       }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === '30');
-      done();
     });
+
+    assert(response.toString() === '30');
   });
 
-  it('should allow us to implement a route that requires the JSON bodyParser', function(done) {
-    var csrfToken = getCsrfToken(jar);
-    request({
+  it('should allow us to implement a route that requires the JSON bodyParser', async function() {
+    const csrfToken = getCsrfToken(jar);
+    const response = await request({
       method: 'POST',
       url: 'http://localhost:7900/tests/body',
       json: {
@@ -166,16 +181,14 @@ describe('Express', function() {
       headers: {
         'X-XSRF-TOKEN': csrfToken
       }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === '30');
-      done();
     });
+
+    assert(response.toString() === '30');
   });
 
-  it('should be able to implement a route with apostrophe-module.route', function(done) {
-    var csrfToken = getCsrfToken(jar);
-    request({
+  it('should be able to implement a route with apostrophe-module.route', async function() {
+    const csrfToken = getCsrfToken(jar);
+    const response = await request({
       method: 'POST',
       url: 'http://localhost:7900/modules/express-test/test2',
       json: {
@@ -187,25 +200,32 @@ describe('Express', function() {
       headers: {
         'X-XSRF-TOKEN': csrfToken
       }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === '30');
-      // Last one before a new apos object
-      return t.destroy(apos, done);
     });
+
+    assert(response.toString() === '30');
+
+    // Last one before a new apos object
+    t.destroy(apos);
   });
 
   // PREFIX STUFF
 
-  it('should set prefix on the apos object if passed in', function(done) {
-    apos = require('../index.js')({
+  it('should set prefix on the apos object if passed in', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
           port: 7900,
-          csrf: false
+          csrf: false,
+          address: 'localhost',
+          session: {
+            secret: 'Ullamcorper'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -219,20 +239,18 @@ describe('Express', function() {
         // listen normally and not try to run a task. -Tom
         apos.argv._ = [];
         return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+
+    assert(apos.prefix === '/prefix');
   });
 
   it('should have different baseApp and app properties with a prefix', function() {
     assert(apos.app !== apos.baseApp);
   });
 
-  it('should take same requests at the prefix', function(done) {
-    request({
+  it('should take same requests at the prefix', async function() {
+    const body = await request({
       method: 'POST',
       url: 'http://localhost:7900/prefix/tests/body',
       form: {
@@ -240,24 +258,28 @@ describe('Express', function() {
           age: '30'
         }
       }
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === '30');
-      // Last one before a new apos object
-      return t.destroy(apos, done);
     });
+
+    assert(body.toString() === '30');
+    t.destroy(apos);
   });
 
-  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl option is set on apos object', function(done) {
-
-    apos = require('../index.js')({
+  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl option is set on apos object', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       baseUrl: 'https://example.com',
       modules: {
         'apostrophe-express': {
           port: 7900,
-          csrf: false
+          csrf: false,
+          address: 'localhost',
+          session: {
+            secret: 'Commodo'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -266,34 +288,36 @@ describe('Express', function() {
       afterInit: function(callback) {
         assert(apos.baseUrl);
         assert(apos.baseUrl === 'https://example.com');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
+
         return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        var req = apos.tasks.getReq({ url: '/test' });
-        assert(req.baseUrl === 'https://example.com');
-        assert(req.absoluteUrl === 'https://example.com/test');
-        // Last one before a new apos object
-        return t.destroy(apos, done);
       }
     });
+
+    const req = apos.tasks.getReq({ url: '/test' });
+    assert(req.baseUrl === 'https://example.com');
+    assert(req.absoluteUrl === 'https://example.com/test');
+
+    // Last one before a new apos object
+    t.destroy(apos);
   });
 
-  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl and prefix options are set on apos object', function(done) {
-
-    apos = require('../index.js')({
+  it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl and prefix options are set on apos object', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       baseUrl: 'https://example.com',
       prefix: '/subdir',
       modules: {
         'apostrophe-express': {
           port: 7900,
-          csrf: false
+          csrf: false,
+          address: 'localhost',
+          session: {
+            secret: 'Ligula'
+          }
         },
         'express-test': {},
         'templates-test': {},
@@ -303,21 +327,17 @@ describe('Express', function() {
         assert(apos.baseUrl);
         assert(apos.baseUrl === 'https://example.com');
         assert(apos.prefix === '/subdir');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
+
         return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        var req = apos.tasks.getReq({ url: '/test' });
-        assert(req.baseUrl === 'https://example.com');
-        assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
-        assert(req.absoluteUrl === 'https://example.com/subdir/test');
-        // Last use of this apos object
-        return t.destroy(apos, done);
       }
     });
+
+    const req = apos.tasks.getReq({ url: '/test' });
+    assert(req.baseUrl === 'https://example.com');
+    assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
+    assert(req.absoluteUrl === 'https://example.com/subdir/test');
+
+    // Last use of this apos object
+    t.destroy(apos);
   });
 });

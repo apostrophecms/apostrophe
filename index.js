@@ -1,16 +1,34 @@
-var path = require('path');
-var _ = require('@sailshq/lodash');
-var argv = require('yargs').argv;
-var fs = require('fs');
-var async = require('async');
-var npmResolve = require('resolve');
-var defaults = require('./defaults.js');
+const path = require('path');
+const _ = require('lodash');
+const argv = require('yargs').argv;
+const fs = require('fs');
+const npmResolve = require('resolve');
+let defaults = require('./defaults.js');
 
-module.exports = function(options) {
+// **Awaiting the Apostrophe function is optional**
+
+// The apos function is async, but in typical cases you do not
+// need to await it. If you simply call it, Apostrophe will
+// start up and listen for connections forever, or run a
+// task and exit, as appropriate.
+
+// If you do `await` the function, then your code will continue
+// after apostrophe successfully begins listening for
+// connections.
+
+// **Awaiting a task**
+
+// If Apostrophe is being invoked to run a
+// command line task, it will **exit the process** after the
+// task completes, unless you pass the `exit: false` option
+// to the `apostrophe-tasks` module. In that case, your
+// code will continue after the task completes.
+
+module.exports = async function(options) {
 
   // The core is not a true moog object but it must look enough like one
-  // to participate as a promise event emitter
-  var self = {
+  // to participate as an async event emitter
+  const self = {
     __meta: {
       name: 'apostrophe'
     }
@@ -22,154 +40,33 @@ module.exports = function(options) {
 
   require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
 
-  try {
-    // Determine root module and root directory
-    self.root = options.root || getRoot();
-    self.rootDir = options.rootDir || path.dirname(self.root.filename);
-    self.npmRootDir = options.npmRootDir || self.rootDir;
+  // Determine root module and root directory
+  self.root = options.root || getRoot();
+  self.rootDir = options.rootDir || path.dirname(self.root.filename);
+  self.npmRootDir = options.npmRootDir || self.rootDir;
 
-    testModule();
+  testModule();
 
-    self.options = mergeConfiguration(options, defaults);
-    autodetectBundles();
-    acceptGlobalOptions();
+  self.options = mergeConfiguration(options, defaults);
+  autodetectBundles();
+  acceptGlobalOptions();
 
-    // Legacy events
-    self.handlers = {};
+  // Legacy events
+  self.handlers = {};
 
-    // Module-based, promisified events (self.on and self.emit of each module)
-    self.eventHandlers = {};
-
-    defineModules();
-  } catch (err) {
-    if (options.initFailed) {
-      // Report error in an extensible way
-      return options.initFailed(err);
-    } else {
-      throw err;
-    }
-  }
-
-  // No return statement here because we need to
-  // return "self" after kicking this process off
-
-  async.series([
-    instantiateModules,
-    modulesReady,
-    modulesAfterInit,
-    afterInit
-  ], function(err) {
-    if (err) {
-      if (options.initFailed) {
-        // Report error in an extensible way
-        return options.initFailed(err);
-      } else {
-        throw err;
-      }
-    }
-    if (self.argv._.length) {
-      self.emit('runTask');
-    } else {
-      // The apostrophe-express module adds this method
-      self.listen();
-    }
-  });
-
-  // EVENT HANDLING (legacy events)
-  //
-  // apos.emit(eventName, /* arg1, arg2, arg3... */)
-  //
-  // Emit an Apostrophe legacy event. All handlers that have been set
-  // with apos.on for the same eventName will be invoked. Any additional
-  // arguments are received by the handler functions as arguments.
-  //
-  // See the `self.on` and `self.emit` methods of all modules
-  // (via the `apostrophe-module`) base class for a better,
-  // promisified event system.
-
-  self.emit = function(eventName /* ,arg1, arg2, arg3... */) {
-    var handlers = self.handlers[eventName];
-    if (!handlers) {
-      return;
-    }
-    var args = Array.prototype.slice.call(arguments, 1);
-    var i;
-    for (i = 0; (i < handlers.length); i++) {
-      handlers[i].apply(self, args);
-    }
-  };
-
-  // Install an Apostrophe legacy event handler. The handler will be called
-  // when apos.emit is invoked with the same eventName. The handler
-  // will receive any additional arguments passed to apos.emit.
-  //
-  // See the `self.on` and `self.emit` methods of all modules
-  // (via the `apostrophe-module`) base class for a better,
-  // promisified event system.
-
-  self.on = function(eventName, fn) {
-    self.handlers[eventName] = (self.handlers[eventName] || []).concat([ fn ]);
-  };
-
-  // Remove an Apostrophe event handler. If fn is not supplied, all
-  // handlers for the given eventName are removed.
-  self.off = function(eventName, fn) {
-    if (!fn) {
-      delete self.handlers[eventName];
-      return;
-    }
-    self.handlers[eventName] = _.filter(self.handlers[eventName], function(_fn) {
-      return fn !== _fn;
-    });
-  };
-
-  // Legacy feature only. New code should call the `emit` method of the
-  // relevant module to implement a promise event instead. Will be removed
-  // in 3.x.
-  //
-  // For every module, if the method `method` exists,
-  // invoke it. The method may optionally take a callback.
-  // The method must take exactly as many additional
-  // arguments as are passed here between `method`
-  // and the final `callback`.
-
-  self.callAll = function(method, /* argument, ... */ callback) {
-    var args = Array.prototype.slice.call(arguments);
-    var extraArgs = args.slice(1, args.length - 1);
-    callback = args[args.length - 1];
-    return async.eachSeries(_.keys(self.modules), function(name, callback) {
-      return invoke(name, method, extraArgs, callback);
-    }, function(err) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(null);
-    });
-  };
-
-  /**
-   * Allow to bind a callAll method for one module. Legacy feature.
-   * Use promise events instead.
-   */
-  self.callOne = function(moduleName, method, /* argument, ... */ callback) {
-    var args = Array.prototype.slice.call(arguments);
-    var extraArgs = args.slice(2, args.length - 1);
-    callback = args[args.length - 1];
-    return invoke(moduleName, method, extraArgs, callback);
-  };
+  // Module-based async events (self.on and self.emit of each module)
+  self.eventHandlers = {};
 
   // Destroys the Apostrophe object, freeing resources such as
   // HTTP server ports and database connections. Does **not**
   // delete any data; the persistent database and media files
-  // remain available for the next startup. Invokes
-  // the `apostropheDestroy` methods of all modules that
-  // provide one, and also emits the `destroy` promise event on
-  // the `apostrophe` module; use this mechanism to free your own
+  // remain available for the next startup. Emits the
+  // `apostrophe:destroy` async event; use this mechanism to free your own
   // server-side resources that could prevent garbage
   // collection by the JavaScript engine, such as timers
   // and intervals.
-  self.destroy = function(callback) {
-    return self.callAllAndEmit('apostropheDestroy', 'destroy', callback);
+  self.destroy = async function() {
+    await self.emit('destroy');
   };
 
   // Returns true if Apostrophe is running as a command line task
@@ -192,12 +89,20 @@ module.exports = function(options) {
   };
 
   // Returns true if the object is an instance of the given
-  // moog type name or a subclass thereof. A convenience wrapper
+  // moog class name or a subclass thereof. A convenience wrapper
   // for `apos.synth.instanceOf`
 
   self.instanceOf = function(object, name) {
     return self.synth.instanceOf(object, name);
   };
+
+  defineModules();
+
+  await instantiateModules();
+  await self.emit('modulesReady');
+  await self.emit('afterInit');
+  await self.emit('run', self.isTask());
+
 
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
@@ -207,10 +112,10 @@ module.exports = function(options) {
 
   // Merge configuration from defaults, data/local.js and app.js
   function mergeConfiguration(options, defaults) {
-    var config = {};
-    var local = {};
-    var localPath = options.__localPath || '/data/local.js';
-    var reallyLocalPath = self.rootDir + localPath;
+    let config = {};
+    let local = {};
+    let localPath = options.__localPath || '/data/local.js';
+    let reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
       local = require(reallyLocalPath);
@@ -239,8 +144,8 @@ module.exports = function(options) {
   }
 
   function getRoot() {
-    var _module = module;
-    var m = _module;
+    let _module = module;
+    let m = _module;
     while (m.parent) {
       // The test file is the root as far as we are concerned,
       // not mocha itself
@@ -254,18 +159,18 @@ module.exports = function(options) {
   }
 
   function autodetectBundles() {
-    var modules = _.keys(self.options.modules);
+    let modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
-      var path = getNpmPath(name);
+      let path = getNpmPath(name);
       if (!path) {
         return;
       }
-      var module = require(path);
+      let module = require(path);
       if (module.moogBundle) {
         self.options.bundles = (self.options.bundles || []).concat(name);
         _.each(module.moogBundle.modules, function(name) {
           if (!_.has(self.options.modules, name)) {
-            var bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            let bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
             if (bundledModule.improve) {
               self.options.modules[name] = {};
             }
@@ -276,7 +181,7 @@ module.exports = function(options) {
   }
 
   function getNpmPath(name) {
-    var parentPath = path.resolve(self.npmRootDir);
+    let parentPath = path.resolve(self.npmRootDir);
     try {
       return npmResolve.sync(name, { basedir: parentPath });
     } catch (e) {
@@ -337,10 +242,10 @@ module.exports = function(options) {
       port: 7900,
       secret: 'irrelevant'
     });
-    var m = findTestModule();
+    let m = findTestModule();
     // Allow tests to be in test/ or in tests/
-    var testDir = require('path').dirname(m.filename);
-    var moduleDir = testDir.replace(/\/tests?$/, '');
+    let testDir = require('path').dirname(m.filename);
+    let moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
@@ -353,7 +258,7 @@ module.exports = function(options) {
     // it also makes sure we encounter mocha along the way
     // and throws an exception if we don't
     function findTestModule() {
-      var m = module;
+      let m = module;
       while (m) {
         if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
           return m;
@@ -369,7 +274,7 @@ module.exports = function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    var synth = require('moog-require')({
+    let synth = require('moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
@@ -383,6 +288,7 @@ module.exports = function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
+    self.createSync = self.synth.createSync;
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
@@ -391,74 +297,25 @@ module.exports = function(options) {
     return synth;
   }
 
-  function instantiateModules(callback) {
+  async function instantiateModules() {
     self.modules = {};
-    return async.eachSeries(_.keys(self.options.modules), function(item, callback) {
-      var improvement = self.synth.isImprovement(item);
+    for (let item of _.keys(self.options.modules)) {
+      const improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
         // We don't want an actual instance of this module, we are using it
         // as an abstract base class in this particular project (but still
         // configuring it, to easily carry those options to subclasses, which
         // is how we got here)
-        return setImmediate(callback);
+        continue;
       }
-      return self.synth.create(item, { apos: self }, function(err, obj) {
-        if (err) {
-          return callback(err);
-        }
-        return callback(null);
-      });
-    }, function(err) {
-      return setImmediate(function() {
-        return callback(err);
-      });
-    });
-  }
-
-  function modulesReady(callback) {
-    return self.callAllAndEmit('modulesReady', 'modulesReady', callback);
-  }
-
-  function modulesAfterInit(callback) {
-    return self.callAllAndEmit('afterInit', 'afterInit', callback);
-  }
-
-  function afterInit(callback) {
-    // Give project-level code a chance to run before we
-    // listen or run a task
-    if (!self.options.afterInit) {
-      return setImmediate(callback);
-    }
-    return self.options.afterInit(callback);
-  }
-
-  // Generic helper for call* methods
-  function invoke(moduleName, method, extraArgs, callback) {
-    var module = self.modules[moduleName];
-    var invoke = module[method];
-    if (invoke) {
-      if (invoke.length === (1 + extraArgs.length)) {
-        return invoke.apply(module, extraArgs.concat([callback]));
-      } else if (invoke.length === extraArgs.length) {
-        return setImmediate(function () {
-          try {
-            invoke.apply(module, extraArgs);
-          } catch (e) {
-            return callback(e);
-          }
-          return callback(null);
-        });
-      } else {
-        return callback(moduleName + ' module: your ' + method + ' method must take ' + extraArgs.length + ' arguments, plus an optional callback.');
-      }
-    } else {
-      return setImmediate(callback);
+      // module registers itself in self.modules
+      await self.synth.create(item, { apos: self });
     }
   }
 
 };
 
-var abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets', 'apostrophe-doc-type-manager' ];
+const abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets', 'apostrophe-doc-type-manager' ];
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),

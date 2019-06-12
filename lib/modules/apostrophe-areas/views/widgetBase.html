@@ -1,0 +1,19 @@
+{# Need to add something to the outer wrapper for one widget type? #}
+{# Set the `wrapperTemplate` option to `wrapper`, supply a #}
+{# `wrapper.html` template in your widget module that extends #}
+{# `apostrophe-areas:widget.html`, and override the blocks below. #}
+
+<div 
+  class="apos-area-widget-wrapper {% block extraWrapperClasses %}{% endblock %} {{ data.manager.getWidgetWrapperClasses(data.widget) | join(' ') }}"
+  data-apos-widget-wrapper="{{ data.widget.type }}"
+  {% block extraWrapperAttributes %}{% endblock -%}
+>
+  {# This wrapper exists for editor.js to inject contextual widget insertion controls into,
+    since those are area level controls rather than widget level #}
+  <div class="apos-area-widget{% if data.manager.options.contextualOnly %} apos-area-widget--contextual{% endif %} {% block extraWidgetClasses %}{% endblock %}  {{ data.manager.getWidgetClasses(data.widget) | join(' ') }}" data-apos-widget="{{ data.widget.type }}" data-apos-widget-id="{{ data.widget._id }}" data='{{ data.dataFiltered | jsonAttribute({ single: true }) }}' data-options='{{ data.manager.filterOptionsForDataAttribute(apos.utils.omit(data.options, 'area')) | jsonAttribute({ single: true }) }}' {% block extraWidgetAttributes %}{% endblock %}>
+    {%- if data.widget._edit and data.options.edit != false -%}
+      {%- include 'widgetControls.html' -%}
+    {%- endif -%}
+    {{ data.output() | safe }}
+  </div>
+</div>

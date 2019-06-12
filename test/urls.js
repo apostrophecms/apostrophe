@@ -1,13 +1,13 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('@sailshq/lodash');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let _ = require('lodash');
 
 describe('Urls', function() {
 
   this.timeout(t.timeout);
 
-  var apos;
-  var start;
+  let apos;
+  let start;
 
   after(function(done) {
     return t.destroy(apos, done);
@@ -44,11 +44,11 @@ describe('Urls', function() {
       });
       it('appends a parameter to a URL with a query', function() {
         // Neither of these is wrong
-        var options = [
+        let options = [
           '/events?tag=blue&page=5',
           '/events?page=5&tag=blue'
         ];
-        assert(_.contains(options, apos.urls.build('/events?page=5', { tag: 'blue' })));
+        assert(_.includes(options, apos.urls.build('/events?page=5', { tag: 'blue' })));
       });
       it('replaces parameters in the URL', function() {
         assert(apos.urls.build('/events?tag=blue', { tag: 'red' }) === '/events?tag=red');
@@ -78,35 +78,35 @@ describe('Urls', function() {
           { tag: 'tour' }) === '/events/2013/05?tag=tour');
       });
       it('DR use case #2', function() {
-        var result = apos.urls.build('/events',
+        let result = apos.urls.build('/events',
           [ 'year', 'month' ],
           { year: '2013', month: '05', tag: 'dance' },
           { page: '2' });
         assert(result === '/events/2013/05?tag=dance&page=2');
       });
       it('DR use case #3', function() {
-        var result = apos.urls.build('/events',
+        let result = apos.urls.build('/events',
           [ 'year', 'month' ],
           { year: '2013', month: '05', tag: 'dance' },
           {});
         assert(result === '/events/2013/05?tag=dance');
       });
       it('IH use case #1: later objects can prevent path properties from being added', function() {
-        var result = apos.urls.build('/calendar',
+        let result = apos.urls.build('/calendar',
           [ 'year', 'month' ],
           { year: '2014', month: '01', tag: undefined },
           { year: null, month: null });
         assert(result === '/calendar');
       });
       it('Preserves hashes', function() {
-        var result = apos.urls.build('/calendar#skipdown',
+        let result = apos.urls.build('/calendar#skipdown',
           [ 'year', 'month' ],
           { year: '2014', month: '01', tag: 'blue' }
         );
         assert(result === '/calendar/2014/01?tag=blue#skipdown');
       });
       it('Adds an array when $addToSet is used', function() {
-        var result = apos.urls.build('/events', {
+        let result = apos.urls.build('/events', {
           tags: {
             $addToSet: 'blue'
           }
@@ -114,7 +114,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=blue');
       });
       it('Adds to existing query string array when $addToSet is used', function() {
-        var result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
+        let result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
           tags: {
             $addToSet: 'blue'
           }
@@ -122,7 +122,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue');
       });
       it('Adds to existing URI encoded query string array when $addToSet is used', function() {
-        var result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
+        let result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
           tags: {
             $addToSet: 'green'
           }
@@ -130,7 +130,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue&tags%5B3%5D=green');
       });
       it('Does not create duplicates when $addToSet is used', function() {
-        var result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
+        let result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
           tags: {
             $addToSet: 'blue'
           }
@@ -138,7 +138,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue');
       });
       it('Treats numbers and strings the same when preventing duplicates', function() {
-        var result = apos.urls.build('/events?tags[]=4&tags[]=5', {
+        let result = apos.urls.build('/events?tags[]=4&tags[]=5', {
           tags: {
             $addToSet: 5
           }
@@ -146,7 +146,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=4&tags%5B1%5D=5');
       });
       it('Removes from existing query string array when $pull is used', function() {
-        var result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
+        let result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
           tags: {
             $pull: 'red'
           }
@@ -154,7 +154,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=purple');
       });
       it('Removes array entirely when $pull removes last item', function() {
-        var result = apos.urls.build('/events?tags[]=purple', {
+        let result = apos.urls.build('/events?tags[]=purple', {
           tags: {
             $pull: 'purple'
           }
@@ -162,7 +162,7 @@ describe('Urls', function() {
         assert(result === '/events');
       });
       it('Behaves reasonably when a nonexistent item is removed', function() {
-        var result = apos.urls.build('/events?tags[]=purple', {
+        let result = apos.urls.build('/events?tags[]=purple', {
           tags: {
             $pull: 'blue'
           }
@@ -170,7 +170,7 @@ describe('Urls', function() {
         assert(result === '/events?tags%5B0%5D=purple');
       });
       it('Takes less than 250 msec to run these tests', function() {
-        var end = (new Date()).getTime();
+        let end = (new Date()).getTime();
         assert((end - start) < 250);
       });
     });

@@ -1,0 +1,31 @@
+{%- import 'apostrophe-ui:components/buttons.html' as buttons -%}
+{% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
+{% if groups.length %}
+  <div class="apos-ui" data-apos-widget-controls>
+    <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context
+    {% if data.options.controls.position %}
+      apos-area-widget-controls--{{ data.options.controls.position | css }}
+    {% endif %} ">
+      {% for group in groups %}
+        <div class="apos-button-group {{ group.classes }}">
+          {% for control in group.controls %}
+            {% if control.type == 'select' or control.type == 'checkboxes' %}
+              {# JavaScript will enhance the "checkboxes" case to do multiple select #}
+              <select data-type="{{ control.type }}" {% if control.widgetControls %}data-schema-widget-control-label="{{ control.label }}"{% endif %} class="apos-button apos-button--in-group apos-select" name="{{ control.name }}">
+                {% for choice in control.choices %}
+                  <option value="{{ choice.value }}"{% if data.widget[control.name] == choice.value %} selected{% endif %}>{{ choice.label }}</option>
+                {% endfor %}
+              </select>
+            {% else %}
+              {% set label = control.label or '' %}
+              {% if control.label == '$editLabel' %}
+                {% set label = data.options.editLabel or data.manager.editLabel or 'Edit ' + data.manager.label %}
+              {% endif %}
+              {{ buttons.inGroup(label, control) }}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

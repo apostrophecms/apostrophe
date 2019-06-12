@@ -1,28 +1,29 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var apos;
+let t = require('../test-lib/test.js');
+let assert = require('assert');
+let apos;
 
 describe('Areas', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
-          port: 7900,
           csrf: false
         },
         'monkeys': {
@@ -32,21 +33,14 @@ describe('Areas', function() {
         'monkeys-widgets': {
           extend: 'apostrophe-pieces-widgets'
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-areas']);
-        assert(apos.areas);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules['apostrophe-areas']);
+    assert(apos.areas);
+    // In tests this will be the name of the test file,
+    // so override that in order to get apostrophe to
+    // listen normally and not try to run a task. -Tom
+    apos.argv._ = [];
   });
 
   it('returns the rich text of an area via the richText method', function() {
@@ -141,7 +135,7 @@ describe('Areas', function() {
   });
 
   it('area considered empty when it should be', function() {
-    var doc = {
+    let doc = {
       type: 'test',
       _id: 'test',
       body: {
@@ -188,7 +182,7 @@ describe('Areas', function() {
   });
 
   it('area not considered empty when it should not be', function() {
-    var doc = {
+    let doc = {
       type: 'test',
       _id: 'test',
       body: {

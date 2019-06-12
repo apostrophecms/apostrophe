@@ -1,47 +1,38 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var _ = require('@sailshq/lodash');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
 
 describe('Permissions', function() {
-
   this.timeout(t.timeout);
 
-  var apos;
+  let apos;
 
-  after(function(done) {
-    return t.destroy(apos, function() {
-      return done();
-    });
+  after(function() {
+    return t.destroy(apos);
   });
 
-  it('should have a permissions property', function(done) {
-    apos = require('../index.js')({
+  it('should have a permissions property', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
+          session: {
+            secret: 'xxx'
+          },
           port: 7900
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.permissions);
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.permissions.__meta.name = 'apostrophe-permissions');
   });
 
   // mock up a request
   function req(d) {
-    var o = {
+    const o = {
       traceIn: function() {},
       traceOut: function() {}
     };

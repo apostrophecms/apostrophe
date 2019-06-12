@@ -1,25 +1,26 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
-var async = require('async');
-var request = require('request');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const request = require('request-promise');
 
 describe('Pieces Widgets', function() {
 
-  var apos;
+  let apos;
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
           secret: 'xxx',
@@ -76,33 +77,22 @@ describe('Pieces Widgets', function() {
           ]
         }
       },
-      afterInit: function(callback) {
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        assert(apos.modules['events-widgets']);
-        done();
-      }
     });
   });
 
-  it('should be able to use db to insert test pieces', function(done) {
-    var testItems = [];
-    var total = 100;
-    for (var i = 1; (i <= total); i++) {
-      var paddedInt = apos.launder.padInteger(i, 3);
-      var tags;
+  it('should be able to use db to insert test pieces', async function() {
+    assert(apos.modules['events-widgets']);
+    let testItems = [];
+    let total = 100;
+    for (let i = 1; (i <= total); i++) {
+      let paddedInt = apos.launder.padInteger(i, 3);
+      let tags;
       if (i > 50) {
         tags = [ 'tag2' ];
       } else {
         tags = [ 'tag1' ];
       }
-      var title = 'Event ' + paddedInt;
+      let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
@@ -126,8 +116,9 @@ describe('Pieces Widgets', function() {
     // something other than a number in order to test
     // our autocomplete, which feeds through mongo's text
     // indexes, which don't support numbers
-    paddedInt = 'wiggly';
-    title = 'Event Wiggly';
+    const paddedInt = 'wiggly';
+    const title = 'Event Wiggly';
+    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
@@ -149,66 +140,60 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    var req = apos.tasks.getReq();
-    return async.eachSeries(testItems, function(item, callback) {
-      return apos.docs.insert(req, item, callback);
-    }, function(err) {
-      assert(!err);
-      done();
-    });
+    const req = apos.tasks.getReq();
+    for (const item of testItems) {
+      await apos.docs.insert(req, item);
+    }
   });
 
-  it('should find appropriate events and not others in a page containing tag and id-based event widgets', function(done) {
+  it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
 
-    return request('http://localhost:7900/page-with-events', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Does it contain the right events via a widget?
+    const body = await request('http://localhost:7900/page-with-events');
+    // Does it contain the right events via a widget?
+    assert(body.match(/Event 005/));
+    assert(body.match(/Event 006/));
+    assert(body.match(/Event 007/));
 
-      assert(body.match(/Event 005/));
-      assert(body.match(/Event 006/));
-      assert(body.match(/Event 007/));
+    // Are they in the right order (reversed on purpose)?
+    let i5 = body.indexOf('Event 005');
+    let i6 = body.indexOf('Event 006');
+    let i7 = body.indexOf('Event 007');
+    assert((i5 > i6) && (i6 > i7));
 
-      // Are they in the right order (reversed on purpose)?
-      var i5 = body.indexOf('Event 005');
-      var i6 = body.indexOf('Event 006');
-      var i7 = body.indexOf('Event 007');
-      assert((i5 > i6) && (i6 > i7));
+    // These are by tag
+    assert(body.match(/Event 051/));
+    assert(body.match(/Event 052/));
+    assert(body.match(/Event 053/));
+    assert(body.match(/Event 054/));
+    assert(body.match(/Event 055/));
 
-      // These are by tag
-      assert(body.match(/Event 051/));
-      assert(body.match(/Event 052/));
-      assert(body.match(/Event 053/));
-      assert(body.match(/Event 054/));
-      assert(body.match(/Event 055/));
+    // Respect limit by tag
+    assert(!body.match(/Event 056/));
 
-      // Respect limit by tag
-      assert(!body.match(/Event 056/));
-
-      // Does it contain events not associated with the widget?
-      assert(!body.match(/Event 001/));
-      assert(!body.match(/Event 030/));
-      done();
-    });
+    // Does it contain events not associated with the widget?
+    assert(!body.match(/Event 001/));
+    assert(!body.match(/Event 030/));
   });
 
 });
 
 describe('Pieces Widget With Extra Join', function() {
 
-  var apos;
+  let apos;
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function() {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should initialize', function(done) {
-    apos = require('../index.js')({
+  it('should initialize', async function() {
+    apos = await require('../index.js')({
+      argv: {
+        _: []
+      },
       root: module,
       shortName: 'test',
 
@@ -277,34 +262,23 @@ describe('Pieces Widget With Extra Join', function() {
             }
           ]
         }
-      },
-      afterInit: function(callback) {
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        assert(apos.modules['events-widgets']);
-        done();
       }
     });
   });
 
-  it('should be able to use db to insert test pieces', function(done) {
-    var testItems = [];
-    var total = 100;
-    for (var i = 1; (i <= total); i++) {
-      var paddedInt = apos.launder.padInteger(i, 3);
-      var tags;
+  it('should be able to use db to insert test pieces', async function() {
+    assert(apos.modules['events-widgets']);
+    let testItems = [];
+    let total = 100;
+    for (let i = 1; (i <= total); i++) {
+      let paddedInt = apos.launder.padInteger(i, 3);
+      let tags;
       if (i > 50) {
         tags = [ 'tag2' ];
       } else {
         tags = [ 'tag1' ];
       }
-      var title = 'Event ' + paddedInt;
+      let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
@@ -328,8 +302,9 @@ describe('Pieces Widget With Extra Join', function() {
     // something other than a number in order to test
     // our autocomplete, which feeds through mongo's text
     // indexes, which don't support numbers
-    paddedInt = 'wiggly';
-    title = 'Event Wiggly';
+    const paddedInt = 'wiggly';
+    const title = 'Event Wiggly';
+    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
@@ -351,59 +326,49 @@ describe('Pieces Widget With Extra Join', function() {
         ]
       }
     });
-    var req = apos.tasks.getReq();
-    return async.eachSeries(testItems, function(item, callback) {
-      return apos.docs.insert(req, item, callback);
-    }, function(err) {
-      assert(!err);
-      done();
-    });
+    let req = apos.tasks.getReq();
+    for (const item of testItems) {
+      await apos.docs.insert(req, item);
+    }
   });
 
-  it('should find appropriate events and not others in a page containing tag and id-based event widgets', function(done) {
+  it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
 
-    return request('http://localhost:7900/page-with-events', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Does it contain the right events via a widget?
+    const body = await request('http://localhost:7900/page-with-events');
+    // Does it contain the right events via a widget?
+    assert(body.match(/Event 005/));
+    assert(body.match(/Event 006/));
+    assert(body.match(/Event 007/));
 
-      assert(body.match(/Event 005/));
-      assert(body.match(/Event 006/));
-      assert(body.match(/Event 007/));
+    // Are they in the right order (reversed on purpose)?
+    let i5 = body.indexOf('Event 005');
+    let i6 = body.indexOf('Event 006');
+    let i7 = body.indexOf('Event 007');
+    assert((i5 > i6) && (i6 > i7));
 
-      // Are they in the right order (reversed on purpose)?
-      var i5 = body.indexOf('Event 005');
-      var i6 = body.indexOf('Event 006');
-      var i7 = body.indexOf('Event 007');
-      assert((i5 > i6) && (i6 > i7));
+    // These are by tag
+    assert(body.match(/Event 051/));
+    assert(body.match(/Event 052/));
+    assert(body.match(/Event 053/));
+    assert(body.match(/Event 054/));
+    assert(body.match(/Event 055/));
 
-      // These are by tag
-      assert(body.match(/Event 051/));
-      assert(body.match(/Event 052/));
-      assert(body.match(/Event 053/));
-      assert(body.match(/Event 054/));
-      assert(body.match(/Event 055/));
+    // Respect limit by tag
+    assert(!body.match(/Event 056/));
 
-      // Respect limit by tag
-      assert(!body.match(/Event 056/));
+    // Does it contain events not associated with the widget?
+    assert(!body.match(/Event 001/));
+    assert(!body.match(/Event 030/));
 
-      // Does it contain events not associated with the widget?
-      assert(!body.match(/Event 001/));
-      assert(!body.match(/Event 030/));
-
-      // Does it contain the featured events in the extra join?
-      assert(body.match(/Event 003/));
-      assert(body.match(/Event 004/));
-      var i3 = body.indexOf('Event 003');
-      var i4 = body.indexOf('Event 004');
-      // Are they in the right order and in the right place (before the regular stuff)?
-      assert(i3 < i7);
-      assert(i4 < i7);
-      assert(i3 < i4);
-
-      done();
-    });
+    // Does it contain the featured events in the extra join?
+    assert(body.match(/Event 003/));
+    assert(body.match(/Event 004/));
+    let i3 = body.indexOf('Event 003');
+    let i4 = body.indexOf('Event 004');
+    // Are they in the right order and in the right place (before the regular stuff)?
+    assert(i3 < i7);
+    assert(i4 < i7);
+    assert(i3 < i4);
   });
 
 });

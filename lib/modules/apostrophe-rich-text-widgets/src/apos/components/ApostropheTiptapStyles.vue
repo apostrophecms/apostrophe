@@ -16,8 +16,9 @@ export default {
   },
   methods: {
     active() {
-      for (let i = 0; (i < this.options.styles.length); i++) {
-        const style = this.options.styles[i];
+      const styles = this.options.styles || [];
+      for (let i = 0; (i < styles.length); i++) {
+        const style = styles[i];
         const attrs = {
           tag: style.tag,
           class: style.class || null

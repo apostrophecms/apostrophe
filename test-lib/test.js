@@ -1,4 +1,4 @@
-var fs = require('fs');
+let fs = require('fs');
 
 if (!fs.existsSync(__dirname + '/../test/node_modules')) {
   fs.mkdirSync(__dirname + '/../test/node_modules');

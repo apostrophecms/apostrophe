@@ -1,3 +1,17 @@
 {
-  "extends": "apostrophe"
+  "extends": "apostrophe",
+  "rules": {
+    "no-var": "error"
+  },
+  "overrides": [
+    {
+      "files": [ "**/src/**/*.js" ],
+      "globals": {
+        "apos": true
+      },
+      "env": {
+        "browser": 1
+      }
+    }
+  ]
 }

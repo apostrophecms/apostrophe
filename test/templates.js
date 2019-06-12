@@ -1,7 +1,7 @@
-var t = require('../test-lib/test.js');
-var assert = require('assert');
+let t = require('../test-lib/test.js');
+let assert = require('assert');
 
-var apos;
+let apos;
 
 describe('Templates', function() {
 
@@ -51,51 +51,51 @@ describe('Templates', function() {
   });
 
   it('should be able to render a template relative to a module', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'test', { age: 50 });
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-test'].render(req, 'test', { age: 50 });
     assert(result === '<h1>50</h1>\n');
   });
 
   it('should respect templateData at module level', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].render(req, 'test');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-test'].render(req, 'test');
     assert(result === '<h1>30</h1>\n');
   });
 
   it('should respect template overrides', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-subclass-test'].render(req, 'override-test');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-subclass-test'].render(req, 'override-test');
     assert(result === '<h1>I am overridden</h1>\n');
   });
 
   it('should inherit in the absence of overrides', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-subclass-test'].render(req, 'inherit-test');
     assert(result === '<h1>I am inherited</h1>\n');
   });
 
   it('should be able to see the options of the module via module.options', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-options-test'].render(req, 'options-test');
     assert(result.match(/nifty/));
   });
 
   it('should be able to call helpers on the modules object', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-options-test'].render(req, 'options-test');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-options-test'].render(req, 'options-test');
     assert(result.match(/4/));
   });
 
   it('should render pages successfully with outerLayout', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].renderPage(req, 'page');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-test'].renderPage(req, 'page');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
   });
 
   it('cross-module-included files should be able to include/extend other files relative to their own module', function() {
-    var req = apos.tasks.getAnonReq();
-    var result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
+    let req = apos.tasks.getAnonReq();
+    let result = apos.modules['templates-test'].renderPage(req, 'pageWithLayout');
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the inner content</h2>') !== -1);
     assert(result.indexOf('<h3>I am in the layout</h3>') !== -1);
@@ -103,7 +103,7 @@ describe('Templates', function() {
   });
 
   it('should render pages successfully with prepend and append to locations', function() {
-    var req = apos.tasks.getReq();
+    let req = apos.tasks.getReq();
     apos.templates.prepend('head', function(req) {
       assert(req.res);
       return '<meta name="before-test" />';
@@ -116,12 +116,12 @@ describe('Templates', function() {
       assert(req.res);
       return '<h4>After the Context Menu</h4>';
     });
-    var result = apos.pages.renderPage(req, 'pages/withLayout');
-    var titleIndex = result.indexOf('<title>');
-    var beforeTestIndex = result.indexOf('<meta name="before-test" />');
-    var afterTestIndex = result.indexOf('<meta name="after-test" />');
-    var bodyIndex = result.indexOf('<body');
-    var afterContextMenu = result.indexOf('<h4>After the Context Menu</h4>');
+    let result = apos.pages.renderPage(req, 'pages/withLayout');
+    let titleIndex = result.indexOf('<title>');
+    let beforeTestIndex = result.indexOf('<meta name="before-test" />');
+    let afterTestIndex = result.indexOf('<meta name="after-test" />');
+    let bodyIndex = result.indexOf('<body');
+    let afterContextMenu = result.indexOf('<h4>After the Context Menu</h4>');
     assert(titleIndex !== -1);
     assert(beforeTestIndex !== -1);
     assert(afterTestIndex !== -1);
