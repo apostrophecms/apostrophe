@@ -274,11 +274,12 @@ module.exports = async function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    let synth = require('moog-require')({
+    const synth = require('./lib/moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
-      defaultBaseClass: 'apostrophe-module'
+      defaultBaseClass: 'apostrophe-module',
+      sections: [ 'helpers', 'eventHandlers', 'routes', 'apiRoutes', 'renderRoutes', 'htmlRoutes' ]
     });
 
     self.synth = synth;
