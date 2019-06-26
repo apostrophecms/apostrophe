@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.92.0 (2019-06-26)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Bug fix: an open redirect vulnerability has been fixed. It was possible to convince Apostrophe to redirect to a third-party website by appending an escaped URL with a trailing slash added at the end. Apostrophe's trailing-slash remover would then cause a redirect to the un-escaped version of the slug part of the URL. The fix removes all multiple-slash sequences from the slug part of the URL. Thanks to Bharath for reporting this issue.
+* Bug fix: attempting to save a doc with a `required` `array` field without ever opening the array editor formerly caused strange behavior. You now get a standard indication that the field is required.
+* Feature: the method that supplies the choices for a dynamic `select` element may be a simple synchronous function, if desired. Formerly returning a promise (or using an async function) was mandatory.
+* Feature: `apos.utils.post` will now accept a `FormData` object as the `data` prameter. In this situation JSON encoding is not used. This may be used to easily submit file uploads with Apostrophe's CSRF protection and is supported at least back to IE11.
+
 ## 2.91.1 (2019-06-05)
 
 Unit tests passing.
