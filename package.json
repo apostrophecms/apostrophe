@@ -6,8 +6,7 @@
   "scripts": {
     "test": "mocha && eslint .",
     "lint": "eslint .",
-    "storybook": "(cd node_modules/apostrophe-storybook && start-storybook -p 6006)",
-    "build-storybook": "build-storybook"
+    "storybook": "(cd node_modules/apostrophe-storybook && start-storybook -p 6006)"
   },
   "repository": {
     "type": "git",
