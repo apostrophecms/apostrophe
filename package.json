@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha && eslint .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "storybook": "(cd node_modules/apostrophe-storybook && start-storybook -p 6006)"
   },
   "repository": {
     "type": "git",
@@ -100,6 +101,12 @@
     "yargs": "^3.32.0"
   },
   "devDependencies": {
+    "@storybook/addon-actions": "^5.1.9",
+    "@storybook/addon-links": "^5.1.9",
+    "@storybook/addons": "^5.1.9",
+    "@storybook/vue": "^5.1.9",
+    "apostrophe-storybook": "git+https://github.com/apostrophecms/apostrophe-storybook.git",
+    "babel-preset-vue": "^2.0.2",
     "eslint": "^5.16.0",
     "eslint-config-apostrophe": "^2.0.0",
     "eslint-config-standard": "^11.0.0",
