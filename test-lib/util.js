@@ -7,7 +7,7 @@ var async = require('async');
 // credentials per database.
 
 function destroy(apos, done) {
-  if (!apos) {
+  if (!apos && done) {
     done();
     return;
   }
@@ -20,7 +20,7 @@ function destroy(apos, done) {
       console.error(err);
       process.exit(1);
     }
-    return done();
+    return done ? done() : null;
   });
   function drop(callback) {
     if (!(apos.db && apos.db.collections)) {
