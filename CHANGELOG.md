@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.92.1 (2019-07-09)
+
+Unit tests passing.
+
+Regression tests passing.
+
+* Fixes for several bugs relating to tooltips persisting on the page longer than they should.
+* Nested areas can now be edited properly when found inside a dialog box, such as the "Edit" dialog box of a piece type.
+* Upgraded `diff` package to continue passing `npm audit`.
+* Upgraded `jQuery` from version 3.3.1 to version 3.4.1, for those who have set `jQuery: 3` as an option to `apostrophe-assets`. This addresses a minor prototype pollution bug in jQuery. Please note that if you are not using `jQuery: 3`, you are still using jQuery 1.x. If you have jQuery code that will not work with 3.x, you should take the plunge and fix it, as there are no new fixes forthcoming for any issues with jQuery 1.x. You can also use the new `lean: true` option to eliminate jQuery altogether when no user is logged in (in Apostrophe 3.x this will be the behavior all the time).
+
 ## 2.92.0 (2019-06-26)
 
 Unit tests passing.
@@ -142,7 +153,7 @@ Regression tests passing.
 * Apostrophe now supports namespaced NPM modules as apostrophe modules. This allows NPM private modules to be used to deliver, for instance, an apostrophe piece type, page type or widget type. Here is an example of valid configuration:
 
 ```javascript
-require('apostrophe', { 
+require('apostrophe', {
   modules: {
     // ordinary npm module
     'apostrophe-blog': {},
@@ -158,7 +169,7 @@ module.exports = {
   nifty: true
 };
 ```
- 
+
 * In addition, modules may be namespaced NPM-style inside a [bundle](https://docs.apostrophecms.org/apostrophe/other/more-modules#packaging-apostrophe-modules-together-creating-bundles). You will need to use a subdirectory structure, as seen above. As a best practice, you should only use this for module names you would have to publish to npm if the bundle feature did not exist. The "lead module" of the bundle should be in the same npm namespace.
 * If you are using the `partial` feature of `addColumn` with your pieces, you can now accept `piece` as a second argument. For bc, the value of that particular column property is still the first argument.
 * All of Apostrophe's "sanity-checking" database operations at startup, plus all Apostrophe migrations, now execute during a new `migrate` startup phase. This phase emits the `apostrophe:migrate` promise event. This phase occurs immediately after `afterInit` is invoked for modules, but before it is invoked for the global `afterInit` hook, if any. This change ensures there is a "sane" database before any interaction with the site takes place, and means that developers no longer have to remember to run `apostrophe-migrations:migrate` when upgrading during development.
@@ -178,7 +189,7 @@ Regression tests passing.
 
 * If a JPEG file has EXIF data such as the description, credit, etc. this information is
 now copied into new properties of the attachment field and made available automatically
-on corresponding new schema properties of `apostrophe-images` pieces. 
+on corresponding new schema properties of `apostrophe-images` pieces.
 * `req.data.global` now becomes available even before its joins and area loaders are
 executed, as `req.aposGlobalCore`. This allows modules such as `apostrophe-pieces-orderings-bundle` to avoid recursive scenarios and performance problems.
 * Sortable columns in the manage view can now indicate whether the first click sorts forwards
@@ -186,7 +197,7 @@ or backwards, simply by specifying the sort direction in the usual MongoDB way w
 `-1`.
 * Sortable columns can now be toggled from "no sort" to "forward" to "backward" and back to "no sort" again, and the hover state indicates all of these "next" states.
 * The `limitByAll` and `limitByTag` options of the `apostrophe-pieces-widgets` module now correctly remove these fields from the `showFields` of the select element that chooses how the widget will select content to display.
-* To select many consecutive pieces or pages quickly in the "Manage Pieces" and "Reorganize Pages" views, hold down the shift button while clicking a second piece. All pieces between the two pieces selected so far will be chosen. 
+* To select many consecutive pieces or pages quickly in the "Manage Pieces" and "Reorganize Pages" views, hold down the shift button while clicking a second piece. All pieces between the two pieces selected so far will be chosen.
 * Fixed a bug where removing an array item other than the last could cause a failure of the array field editor if the last array item were active. Thanks to anwarhussain93.
 
 ## 2.84.1 (2019-03-25)
@@ -319,7 +330,7 @@ Regression tests passing.
 }
 ```
 
-Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility. 
+Although the documentation formerly claimed that `required: true` would have this effect for boolean fields, it was pointed out that this functionality did not work, and as a result far too many sites already use `required: true` for booleans in a way that would break if we implemented the original documented behavior. Therefore we are changing the documentation to match this new implementation that maintains backwards compatibility.
 
 ## 2.79.0 (2019-02-22)
 
@@ -349,7 +360,7 @@ Note that if you check the box to select all the pieces on this page, you will b
 if you want to select *all* pieces. So it is possible to set the permissions of all of the
 pieces at once.
 
-Note that **permissions have no effect on file attachment URLs unless you use 
+Note that **permissions have no effect on file attachment URLs unless you use
 the optional [apostrophe-secure-attachments](https://github.com/apostrophecms/apostrophe-secure-attachments) module.** Once you add that module, the new batch operation becomes a powerful
 way to lock down all of your PDFs at once.
 
@@ -509,7 +520,7 @@ Regression tests passing.
 * The `poll-notifications` API now runs as middleware that is scheduled as early as `req.user` becomes available, avoiding the overhead of loading `req.data.global` in this frequently polled API.
 * The `poll-notifications` API does not crash if the `apos` object has been destroyed. This is not an issue for typical sites. However, this fix removes scary error messages displayed by the very useful [apostrophe-monitor](https://github.com/apostrophecms/apostrophe-monitor) module, which is similar to `nodemon` but specialized to Apostrophe for much faster restarts.
 * Although technically released in the `moog-require` module, not here, a recent fix in that module bears mentioning because it prevents both `apostrophe-monitor` and `apostrophe-multisite` from misbehaving when the options objects of modules are modified. Specifically, the modifications are now reliably distinct for each `apos` object.
-* 
+*
 * The logic that removes certain typically unwanted buttons from CKEditor is now conditional and does not remove them when they are explicitly requested in the toolbar. Thanks to Fredrik Ekelund.
 * Placeholder markup when a pieces widget is empty. Although not often used directly, this template is often copied as a starting point.
 * An open "add widget" area menu now appears above any hovered widget controls rather than being lost behind them.
@@ -589,7 +600,7 @@ Unit tests passing.
 
 Regression tests passing.
 
-* The "apply to subpages" feature for page permissions has been greatly simplified and made easier to understand. There is now just one shared "copy these permissions to subpages now?" dropdown, which applies to ALL current permissions for the current page: "who can view this page," "these users can view," "these groups can edit," etc. 
+* The "apply to subpages" feature for page permissions has been greatly simplified and made easier to understand. There is now just one shared "copy these permissions to subpages now?" dropdown, which applies to ALL current permissions for the current page: "who can view this page," "these users can view," "these groups can edit," etc.
 
 As the help text now properly explains, if you pick "yes" and save page settings as usual, the permissions of all subpages are updated to match **on a one-time basis.** After that, you can edit them normally for the subpages. This is an action that takes place at "save" time, it is not a setting that is remembered.
 
@@ -701,7 +712,7 @@ Apostrophe now allows direct import of unparsed CSS files via import flags of LE
 To push a CSS asset *without* compiling it as LESS, you may write:
 
 ```
-self.pushAsset('stylesheet', { 
+self.pushAsset('stylesheet', {
   name: 'bundle',
   import: {
     inline: true
@@ -892,7 +903,7 @@ Regression tests passing.
 * “Promise events” have arrived. This is a major feature. Promise events will completely
 replace `callAll` in Apostrophe 3.x. For 2.x, all existing invocations of `callAll` in the
 core Apostrophe module now also emit a promise event. For instance, when the `docBeforeInsert`
-callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the 
+callAll method is invoked, Apostrophe also emits the `beforeInsert` promise event on the
 apostrophe-docs` module.
 
 Other modules may listen for this event by writing code like this:
@@ -1142,7 +1153,7 @@ Functional tests passing.
 
 * Displaying and saving schema-driven forms is much, much faster.
 This becomes very noticeable with 100 or more fields. With about
-250 fields, this formerly took about 4.5 seconds to load or to 
+250 fields, this formerly took about 4.5 seconds to load or to
 save such a form on a fast Mac. It now takes about 250 milliseconds.
 * Users may re-order the items they have selected via drag and drop
 when using "Browse" to select pieces, images, etc.
@@ -1166,7 +1177,7 @@ Unit tests passing.
 Functional tests passing.
 
 * **Security:** numerous issues formerly flagged by the new `npm audit` command have been addressed. We are now using a [maintained branch of lodash 3.x](https://github.com/sailshq/lodash) to keep bc while addressing security (many thanks to the Sails team). We are also using LESS 3.x, which has caused no issues in our testing and corrects security concerns with LESS 2.x. Numerous `npm audit` security reports regarding `imagemin` modules were addressed by removing `imagemin` from `uploadfs` itself, however you may opt into it via the new [`postprocessors` option of `uploadfs`](https://github.com/punkave/uploadfs). As of this writing, one `npm audit` complaint remains: the `azure-storage` module needs to update a dependency to address a possible vulnerability. You may mitigate this issue by not using the `azure` backend of `uploadfs` with Apostrophe until it is resolved upstream.
-* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before. 
+* Many UI enhancements when choosing, browsing and managing items which reduce user confusion. For instance: moving items up and down in a selection no longer refreshes the entire list and forces the user to scroll down again. Trashed pages are easier to distinguish in "reorganize." "More" dropdown for pieces is again fully visible when clicked. Placeholder helpers make the search field for joins easier to understand. Chevrons added to various select elements which were difficult to identify as dropdowns before.
 * Deeply nested areas now save properly. Formerly in certain situations the same widget might be duplicated.
 * `apos.tasks.getReq` now supplies an empty `req.data` object for easier use with code expecting an Express request, Apostrophe-style.
 * Bedeviled by case-sensitive sorting? The `sortify: true` property for `string` schema fields is now documented and automatically creates a database migration to ensure it is available for your existing data as well. When used, this flag ensures that any `sort('fieldname')` call for that field in Apostrophe is case-insensitive, ignores punctuation and otherwise behaves as end users expect.
@@ -1211,7 +1222,7 @@ As always, be sure to run the `apostrophe-migrations:migrate` task. This will ma
 
 * Overrideable block in the outerLayout for the context menu.
 
-* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer. 
+* The `apostrophe-soft-redirects` module now accepts a `statusCode` option, which you may change to `301` to use hard redirects. Thanks to Leo Melzer.
 
 ## 2.54.3 (2018-05-02)
 
@@ -1263,7 +1274,7 @@ Regression tests passing.
 * The named anchor `main` can now be overridden via the `mainAnchor` nunjucks block.
 * The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `lib/modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
 * Raw HTML widgets now offer help text out of the box.
-* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware. 
+* The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware.
 * Your own module-level `expressMiddleware` object can specify `{ when: 'beforeRequired', middleware: function(req, res, next) { ... })` to run before the required middleware as well. Note that this means no sessions, no users and no body parser. Most of the time you'll want those things.
 * CSS adjustment to tabs in modals so they don't scroll in Firefox.
 * Dropzones for empty areas are easier to drop onto.
@@ -1538,7 +1549,7 @@ Regression tests passing.
 overrides of this that pay attention to `req`.
 * Report `pageBeforeSend` errors and failures to load the global doc properly, don't silently tolerate them.
 * Documentation corrections. Thanks to Frederik Ekelund.
- 
+
 
 ## 2.39.0 (2017-10-24)
 
@@ -1666,7 +1677,7 @@ Regression tests passing.
 }}
 ```
 
-The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`. 
+The `position` suboption may be set to `top-left`, `top-right`, `bottom-left` or `bottom-right`.
 
 The `removable` and `movable` suboptions are primarily intended for singletons.
 
