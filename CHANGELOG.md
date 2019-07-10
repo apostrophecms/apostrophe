@@ -7,6 +7,7 @@ Unit tests passing.
 Regression tests passing.
 
 * Fixes for several bugs relating to tooltips persisting on the page longer than they should.
+* Fixes for three bugs relating to array fields: a `required` array field that is hidden by `showFields` is now correctly treated as not required (like other fields). Clicking "cancel" when editing an array now correctly reverts to the original contents of the array. And dynamic choice methods for `select` and `checkboxes` fields now work correctly when nested in an `array` or `object` field.
 * Nested areas can now be edited properly when found inside a dialog box, such as the "Edit" dialog box of a piece type.
 * Upgraded `diff` package to continue passing `npm audit`.
 * Upgraded `jQuery` from version 3.3.1 to version 3.4.1, for those who have set `jQuery: 3` as an option to `apostrophe-assets`. This addresses a minor prototype pollution bug in jQuery. Please note that if you are not using `jQuery: 3`, you are still using jQuery 1.x. If you have jQuery code that will not work with 3.x, you should take the plunge and fix it, as there are no new fixes forthcoming for any issues with jQuery 1.x. You can also use the new `lean: true` option to eliminate jQuery altogether when no user is logged in (in Apostrophe 3.x this will be the behavior all the time).
