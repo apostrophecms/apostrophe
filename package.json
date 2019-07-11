@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.92.0",
+  "version": "2.92.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -39,7 +39,7 @@
     "credential": "^2.0.0",
     "cuid": "^1.3.8",
     "deep-get-set": "^0.1.1",
-    "diff": "^2.2.3",
+    "diff": "^4.0.1",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
     "glob": "^5.0.15",
