@@ -2,7 +2,7 @@
 
 ## 2.93.0 (2019-07-25)
 
-* New, simplified static asset bundling feature for deploying to cloud hosts like Heroku.
+* New, simplified static asset bundling feature for deploying to cloud hosts like Heroku. See the [ApostropheCMS Heroku HOWTO](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/deploying-apostrophe-in-the-cloud-with-heroku) for details. There is more to successful Heroku deployment than just static assert bundling.
 
 First, make sure the `APOS_BUNDLE=1` environment variable is set in your production environment, i.e. in your Heroku environment settings.
 
@@ -22,6 +22,8 @@ And that's all you have to do! No more creating named bundles and committing the
 This new method does require that the release tasks script have access to the production database, as MongoDB is used to store the bundle until the Heroku dynos have a chance to unpack it locally.
 
 > Due to the temporary storage of the bundle in MongoDB, if your asset bundle is larger than 16MB this technique will not work... and your users will be miserable, waiting for a 16MB asset bundle to download on their phones! So please, just don't push that much code to the browser. If you must though, you can use the old technique.
+
+Again, see the [ApostropheCMS Heroku HOWTO](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/deploying-apostrophe-in-the-cloud-with-heroku) for details. There is more to successful Heroku deployment than just static assert bundling, most importantly you need to use S3 for media storage.
 
 * In the lean library (`apos.utils.post`), use the csrf-fallback value for the csrf token if there is no csrf cookie name, same as the regular jquery library would. This achieves compatibility with the `disableAnonSessions: true` option of `apostrophe-express`.
 
