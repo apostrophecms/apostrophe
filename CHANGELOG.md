@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.93.0 (2019-07-25)
+
+* New, simplified static asset bundling feature for deploying to cloud hosts like Heroku.
+
+First, make sure the `APOS_BUNDLE=1` environment variable is set in your production environment, i.e. in your Heroku environment settings.
+
+Next, set up a ["release tasks" script](https://devcenter.heroku.com/articles/release-phase):
+
+```
+# Remember, APOS_BUNDLE=1 must be set globally in your Heroku
+# environment settings already - not just this script but also
+# the regular dyno startup must see it
+
+node app apostrophe:generation
+node app apostrophe-migrations:migrate
+```
+
+And that's all you have to do! No more creating named bundles and committing them to git. That technique still works, but it is much more work for you.
+
+This new method does require that the release tasks script have access to the production database, as MongoDB is used to store the bundle until the Heroku dynos have a chance to unpack it locally.
+
+> Due to the temporary storage of the bundle in MongoDB, if your asset bundle is larger than 16MB this technique will not work... and your users will be miserable, waiting for a 16MB asset bundle to download on their phones! So please, just don't push that much code to the browser. If you must though, you can use the old technique.
+
+* In the lean library (`apos.utils.post`), use the csrf-fallback value for the csrf token if there is no csrf cookie name, same as the regular jquery library would. This achieves compatibility with the `disableAnonSessions: true` option of `apostrophe-express`.
+
+* When copying the permissions of a parent page to subpages, you now have the option to append them rather than replacing all existing permissions. Thanks to Siddharth Joshi.
+
 ## 2.92.1 (2019-07-09)
 
 Unit tests passing.
