@@ -20,6 +20,7 @@
     }
   }
   label {
+    position: relative;
     &:first-of-type {
       color: @apos-red;
     }
@@ -29,9 +30,24 @@
       color: inherit;
     }
   }
+  &.apos-error--taken label {
+    display: inline-block;
+  }
   .apos-schema-fix {
     display: inline-block;
-    margin-left: 10px;
+    position: absolute;
+    left: ~"calc(100% + 10px)";
+    font-size: 12px;
+    color: @apos-blue;
+    white-space: nowrap;
+    text-decoration: none;
+    top: 1px;
+    .fa {
+      display:inline-block;
+      position: relative;
+      margin-left: 2px;
+      font-size: 10px;
+    }
   }
 }
 
