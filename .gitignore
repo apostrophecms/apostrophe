@@ -1,3 +1,4 @@
+*.swp
 package-lock.json
 test/public/modules/*
 test/public/css/master-*
