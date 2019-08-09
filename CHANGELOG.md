@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.93.0 (2019-07-25)
+
+* New, simplified static asset bundling feature for deploying to cloud hosts like Heroku. See the [ApostropheCMS Heroku HOWTO](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/deploying-apostrophe-in-the-cloud-with-heroku) for details. There is more to successful Heroku deployment than just static assert bundling.
+
+First, make sure the `APOS_BUNDLE=1` environment variable is set in your production environment, i.e. in your Heroku environment settings.
+
+Next, set up a ["release tasks" script](https://devcenter.heroku.com/articles/release-phase):
+
+```
+# Remember, APOS_BUNDLE=1 must be set globally in your Heroku
+# environment settings already - not just this script but also
+# the regular dyno startup must see it
+
+node app apostrophe:generation
+node app apostrophe-migrations:migrate
+```
+
+And that's all you have to do! No more creating named bundles and committing them to git. That technique still works, but it is much more work for you.
+
+This new method does require that the release tasks script have access to the production database, as MongoDB is used to store the bundle until the Heroku dynos have a chance to unpack it locally.
+
+> Due to the temporary storage of the bundle in MongoDB, if your asset bundle is larger than 16MB this technique will not work... and your users will be miserable, waiting for a 16MB asset bundle to download on their phones! So please, just don't push that much code to the browser. If you must though, you can use the old technique.
+
+Again, see the [ApostropheCMS Heroku HOWTO](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/deploying-apostrophe-in-the-cloud-with-heroku) for details. There is more to successful Heroku deployment than just static assert bundling, most importantly you need to use S3 for media storage.
+
+* In the lean library (`apos.utils.post`), use the csrf-fallback value for the csrf token if there is no csrf cookie name, same as the regular jquery library would. This achieves compatibility with the `disableAnonSessions: true` option of `apostrophe-express`.
+
+* When copying the permissions of a parent page to subpages, you now have the option to append them rather than replacing all existing permissions. Thanks to Siddharth Joshi.
+
 ## 2.92.1 (2019-07-09)
 
 Unit tests passing.
@@ -7,6 +36,7 @@ Unit tests passing.
 Regression tests passing.
 
 * Fixes for several bugs relating to tooltips persisting on the page longer than they should.
+* Fixes for three bugs relating to array fields: a `required` array field that is hidden by `showFields` is now correctly treated as not required (like other fields). Clicking "cancel" when editing an array now correctly reverts to the original contents of the array. And dynamic choice methods for `select` and `checkboxes` fields now work correctly when nested in an `array` or `object` field.
 * Nested areas can now be edited properly when found inside a dialog box, such as the "Edit" dialog box of a piece type.
 * Upgraded `diff` package to continue passing `npm audit`.
 * Upgraded `jQuery` from version 3.3.1 to version 3.4.1, for those who have set `jQuery: 3` as an option to `apostrophe-assets`. This addresses a minor prototype pollution bug in jQuery. Please note that if you are not using `jQuery: 3`, you are still using jQuery 1.x. If you have jQuery code that will not work with 3.x, you should take the plunge and fix it, as there are no new fixes forthcoming for any issues with jQuery 1.x. You can also use the new `lean: true` option to eliminate jQuery altogether when no user is logged in (in Apostrophe 3.x this will be the behavior all the time).
