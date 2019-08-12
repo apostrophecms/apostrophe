@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.94.1 (2019-08-12)
+
+* Bug fix for a regression that impacted the ability to edit an array field again after cancelling the first time. Thanks to Amin Shazrin for this contribution.
+
 ## 2.94.0 (2019-08-09)
 
 * Bug fix for the new simplified static asset bundling: URLs beginning with `/` in CSS files are correctly rewritten to point to the bundle in the cloud when using the simple bundle feature (`APOS_BUNDLE=1`). This was already done for the old method.
