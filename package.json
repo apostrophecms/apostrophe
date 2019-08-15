@@ -29,7 +29,6 @@
     "bless": "^3.0.3",
     "bluebird": "^3.5.5",
     "body-parser": "^1.19.0",
-    "broadband": "^1.0.0",
     "cheerio": "^0.22.0",
     "cli-progress": "^2.1.1",
     "connect-flash": "^0.1.1",
