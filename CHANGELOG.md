@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.95.0 (2019-08-21)
+
+* Nested content in sub-areas is no longer lost when editing schema properties of the widget that contains the areas.
+* The `slugPrefix` option for pieces modules now works correctly. This option prefixes the slugs of all pieces of that type with the given string. It is recommended, but not required, that the prefix end in `-`. The editor requires that the slug be prefixed with the `slugPrefix`, the editor suggests slugs that include the prefix, and a migration now runs to add the `slugPrefix` to pieces that lack the prefix. If this results in a slug conflict the offending piece is left alone and flagged for your manual attention. A slug without the prefix does not cause any harm, other than cluttering up the namespace of slugs.
+* `apostrophe-images` and `apostrophe-files` now use the `slugPrefix` option to prefix their slugs. This will result in a **one-time** migration for each at startup, after which your image and file slugs will no longer be in frequent conflict with other pieces when you try to give them friendly slugs. Note that **image and file slugs are not used in actual media asset filenames**, so there is no bc break there. And although most sites don't have an `apostrophe-images-pages` or `apostrophe-files-pages` module, those that do will experience no 404 errors due to Apostrophe's robust redirect features.
+* Apostrophe migrations are now more stable in MongoDB Atlas and other environments in which it is unwise to keep a single MongoDB cursor alive for long periods. To achieve greater stability, the `apos.migrations.eachDoc` method now fetches the `_id` properties of all relevant docs first, and they are then processed in small batches.
+* The `APOS_TRACE_DB=1` environment variable, which is useful for tracking down MongoDB issues, now includes traces for `distinct` calls.
+* A division-by-zero error in the migration progress display was fixed, correcting some strange-looking output.
+* In `apostrophe-assets`, the logic to determine the dev environment asset generation id was factored out to the `determineDevGeneration` method to simplify overriding it in `apostrophe-multisite`.
+* `apos.utils.post` and `apos.utils.get` now report HTTP errors (status >= 400) properly to their callbacks. The object provided as the error includes a `status` property with the HTTP status code. The body is still available in the second argument to the callback.
+
 ## 2.94.1 (2019-08-12)
 
 * Bug fix for a regression that impacted the ability to edit an array field again after cancelling the first time. Thanks to Amin Shazrin for this contribution.
