@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.95.1 (2019-09-01)
+
+* Drag and drop operations within an area, and various other operations, no longer result in a race condition where the same document is locked more than once and content can be lost. This is especially noticeable on slower connections but can happen anytime. This was a longstanding problem. Thanks to Eric Wong for his patient reporting and testing of this issue.
+* eslint has been updated, addressing npm audit complaints.
+
 ## 2.95.0 (2019-08-21)
 
 * Nested content in sub-areas is no longer lost when editing schema properties of the widget that contains the areas.
