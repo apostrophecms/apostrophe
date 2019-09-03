@@ -28,16 +28,19 @@
   text-align: left;
   line-height: inherit;
   position: relative;
+  cursor: pointer;
   .apos-transition;
 
   &-message {
     font-size: 16px;
     margin-right: 32px;
     padding: @apos-padding-1 @apos-padding-2 !important;
-    cursor: pointer;
+
     &-close {
       position: absolute;
       right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
     }
   }
 
