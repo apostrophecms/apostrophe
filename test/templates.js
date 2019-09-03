@@ -112,6 +112,11 @@ describe('Templates', function() {
 
   it('should render pages successfully with prepend and append to locations', function() {
     var req = apos.tasks.getReq();
+    // Otherwise there is no context menu (we need a page or a piece)
+    req.data.page = {
+      _id: 'imadethisup',
+      _edit: true
+    };
     apos.templates.prepend('head', function(req) {
       assert(req.res);
       return '<meta name="before-test" />';
