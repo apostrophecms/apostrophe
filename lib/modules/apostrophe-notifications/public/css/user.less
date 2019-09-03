@@ -24,13 +24,24 @@
   .apos-drop-shadow();
   overflow: hidden;
   margin-bottom: @apos-padding-2;
+  padding: 0;
+  text-align: left;
+  line-height: inherit;
   position: relative;
+  cursor: pointer;
   .apos-transition;
 
   &-message {
     font-size: 16px;
     margin-right: 32px;
     padding: @apos-padding-1 @apos-padding-2 !important;
+
+    &-close {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 
   &--hidden {
@@ -60,4 +71,3 @@
   animation: aposPulse 2s infinite;
 }
 
-// .apos-drop-shadow(@x-axis: 0, @y-axis: 2px, @blur: 7px, @spread:2px, @color: fade(@apos-black, 23%))
