@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.96.0 (2019-09-04)
+
+* Reverse joins no longer result in an empty tab when they are the only unarranged field, since they have no editing UI in any case.
+* The "context menu" (aka "Page Settings," "Published," etc.) has been cleaned up in several ways. It no longer appears unless the user at least has edit access to either `data.page` or `data.piece`. This deciding factor can be altered by overriding `apos.templates.showContextMenu`, which accepts `req` and must return `true` or `false`. In addition, the "Unpublished" dropdown works properly in all cases.
+* Notifications now have an explicit "close" button to help those who did not realize they were clickable. Also, they display the proper cursor when hovered and use a suitable HTML tag for improved accessibility.
+
 ## 2.95.1 (2019-09-01)
 
 * Drag and drop operations within an area, and various other operations, no longer result in a race condition where the same document is locked more than once and content can be lost. This is especially noticeable on slower connections but can happen anytime. This was a longstanding problem. Thanks to Eric Wong for his patient reporting and testing of this issue.
