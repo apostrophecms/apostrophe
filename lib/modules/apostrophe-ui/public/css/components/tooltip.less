@@ -10,7 +10,8 @@
 	opacity: 0;
 	font-size: 12px;
   transition: opacity 0.5s ease;
-  transition-delay: 250ms;
+	transition-delay: 250ms;
+	pointer-events: none;
 	.apos-rounded;
 	.apos-drop-shadow();
 
@@ -37,5 +38,6 @@
 }
 
 .apos-tooltip--visible {
-  opacity: 1;
+	opacity: 1;
+	pointer-events: auto;
 }
