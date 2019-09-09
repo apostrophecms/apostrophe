@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.96.1 (2019-09-09)
+
+* Setting PORT to `0`, or passing `0` as the `port` option to `apostrophe-express`, now works per the TCP documentation: you get a random port number. You can access that port number as `apos.modules['apostrophe-express'].port`. Thanks to J. Garijo for this contribution.
+* The ability to add a new image while selecting one for a widget has been restored. Similar scenarios while editing other joins are also fixed.
+* Double-clicking the "Edit" button of a widget no longer causes a race condition. Thanks to Mayank Bansal for pointing out the issue and how to reproduce it.
+* Undisplayed tooltips no longer take up space in a way that causes interface frustration.
+
 ## 2.96.0 (2019-09-04)
 
 * Reverse joins no longer result in an empty tab when they are the only unarranged field, since they have no editing UI in any case.
