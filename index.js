@@ -401,8 +401,9 @@ module.exports = function(options) {
     // and throws an exception if we don't
     function findTestModule() {
       var m = module;
+      var nodeModuleRegex = process.platform === "win32" ? new RegExp("node_modules\\\\mocha") : new RegExp("node_modules\/mocha")
       while (m) {
-        if (m.parent && m.parent.filename.match(/node_modules\/mocha/)) {
+        if (m.parent && m.parent.filename.match(nodeModuleRegex)) {
           return m;
         }
         m = m.parent;
