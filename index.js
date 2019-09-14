@@ -367,7 +367,13 @@ module.exports = function(options) {
     var m = findTestModule();
     // Allow tests to be in test/ or in tests/
     var testDir = require('path').dirname(m.filename);
-    var moduleDir = testDir.replace(/\/tests?$/, '');
+    var testRegex;
+    if (process.platform === "win32") {
+      testRegex = /\\tests?$/
+    } else {
+      testRegex = /\/tests?$/
+    }
+    var moduleDir = testDir.replace(testRegex, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
@@ -379,21 +385,29 @@ module.exports = function(options) {
         moduleName = packageName;
       }
     } catch (e) {}
-    var testDependenciesDir = testDir + '/node_modules/';
+    var testDependenciesDir = testDir + require("path").normalize('/node_modules/');
     if (!fs.existsSync(testDependenciesDir + moduleName)) {
       // Ensure dependencies directory exists
       if (!fs.existsSync(testDependenciesDir)) {
         fs.mkdirSync(testDependenciesDir);
       }
       // Ensure potential module scope directory exists before the symlink creation
-      if (moduleName.charAt(0) === '@' && moduleName.includes('/')) {
-        var scope = moduleName.split('/')[0];
+      if (moduleName.charAt(0) === '@' && moduleName.includes(path.sep)) {
+        var scope = moduleName.split(path.sep)[0];
         var scopeDir = testDependenciesDir + scope;
         if (!fs.existsSync(scopeDir)) {
           fs.mkdirSync(scopeDir);
         }
       }
-      fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, 'dir');
+      // Windows 10 got an issue with permission , known issue at https://github.com/nodejs/node/issues/18518
+      // Therefore need to have if else statement to determine type of symlinkSync uses.
+      var type;
+      if (process.platform === "win32") {
+        type = "junction"
+      } else {
+        type = "dir"
+      }
+      fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, type);
     }
 
     // Not quite superfluous: it'll return self.root, but
