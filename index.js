@@ -369,9 +369,9 @@ module.exports = function(options) {
     var testDir = require('path').dirname(m.filename);
     var testRegex;
     if (process.platform === "win32") {
-      testRegex = /\\tests?$/
+      testRegex = /\\tests?$/;
     } else {
-      testRegex = /\/tests?$/
+      testRegex = /\/tests?$/;
     }
     var moduleDir = testDir.replace(testRegex, '');
     if (testDir === moduleDir) {
@@ -403,9 +403,9 @@ module.exports = function(options) {
       // Therefore need to have if else statement to determine type of symlinkSync uses.
       var type;
       if (process.platform === "win32") {
-        type = "junction"
+        type = "junction";
       } else {
-        type = "dir"
+        type = "dir";
       }
       fs.symlinkSync(moduleDir, testDependenciesDir + moduleName, type);
     }
