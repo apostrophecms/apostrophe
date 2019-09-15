@@ -392,8 +392,8 @@ module.exports = function(options) {
         fs.mkdirSync(testDependenciesDir);
       }
       // Ensure potential module scope directory exists before the symlink creation
-      if (moduleName.charAt(0) === '@' && moduleName.includes(path.sep)) {
-        var scope = moduleName.split(path.sep)[0];
+      if (moduleName.charAt(0) === '@' && moduleName.includes(require("path").sep)) {
+        var scope = moduleName.split(require("path").sep)[0];
         var scopeDir = testDependenciesDir + scope;
         if (!fs.existsSync(scopeDir)) {
           fs.mkdirSync(scopeDir);
