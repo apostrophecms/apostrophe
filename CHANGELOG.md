@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.96.2 (2019-09-17)
+
+* Bug fix: missing required fields nested in `array` or `object` fields hidden fvia `showFields` no longer result in a server-side error. They adhere to the usual rule that if you can't see it, you're not expected to enter it.
+* Bug fix: autocomplete now works again for tags and joins. This was caused by a difference of z-index introduced by an upgrade of jQuery UI in July.
+* Better UX for drag and drop.
+* The `findTestModule` method now works properly in Windows, opening the door to testing Apostrophe modules more easily on Windows. Thanks to Amin Shazrin for this contribution.
+* The base name of the master stylesheet has been factored out to a `getStylesheetsMasterBase` method in `apostrophe-assets`, for easier overrides in multisite projects.
+* Thanks to refactoring of the implementation, it is now possible to override the behavior of the `apostrophe-email` module to use different transports in different circumstances. Thanks to Aurélien Wolz for this contribution.
+
 ## 2.96.1 (2019-09-09)
 
 * Setting PORT to `0`, or passing `0` as the `port` option to `apostrophe-express`, now works per the TCP documentation: you get a random port number. You can access that port number as `apos.modules['apostrophe-express'].port`. Thanks to J. Garijo for this contribution.
