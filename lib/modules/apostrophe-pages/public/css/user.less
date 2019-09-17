@@ -91,9 +91,15 @@ ul.jqtree-tree .jqtree-title { margin-left: 0; }
     padding: 10px;
     border-bottom: 1px solid @apos-light;
     white-space: nowrap;
+    cursor: grab;
     .apos-transition;
+
     &:hover {
       background-color: @apos-light;
+    }
+
+    &:active {
+      cursor: grabbing;
     }
   }
 
@@ -116,7 +122,7 @@ ul.jqtree-tree .jqtree-title { margin-left: 0; }
     padding-left: @apos-padding-1;
     text-decoration: none;
     .apos-transition;
-    &:hover { color: @apos-primary; } 
+    &:hover { color: @apos-primary; }
     &.apos-visit:hover { color: @apos-primary; }
     &.apos-delete { color: @apos-delete; }
     &.apos-delete:hover { color: @apos-delete; }
