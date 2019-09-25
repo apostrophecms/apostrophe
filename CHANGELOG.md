@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.97.0 (2019-09-25)
+
+* The simplified `APOS_BUNDLE=1` feature for asset deployment in the cloud now uses the actual `tar` utility when extracting assets locally, rather than the `tar` npm module, as a blocking bug was encountered and the actual utility is faster.
+* Improved support for subclasses of `apostrophe-rich-text-widgets`. These now receive the same CSS UX considerations and store their content under the appropriate widget name. This opens the door to the new `tiptap` option offered by the latest release of [apostrophe-tiptap-rich-text-widgets](https://github.com/apostrophecms/apostrophe-tiptap-rich-text-widgets), which can be used to selectively enable or disable the use of tiptap as an alternative to CKEditor for some subclasses but not others.
+* Low-level support for namespacing asset themes. By default this has no effect, however if getThemeName is overridden to return a theme name then asset masters, minified assets, bundles in the collection, etc. all get namespaced to play side by side with other themes used by other apos objects in the same project. Meant for use with apostrophe-multisite, this is not equivalent to a Wordpress or Drupal theme as such.
+* The widget editor's `afterShow` method takes no callback; removed an invocation that did not make sense. Thanks to Amin Shazrin for this contribution.
+* Improved sizing for video widgets. This is now based on the parent element. Also added empty alt tag to the placeholder image as a hint not to read it aloud.
+
+Thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.96.2 (2019-09-17)
 
 * Bug fix: missing required fields nested in `array` or `object` fields hidden fvia `showFields` no longer result in a server-side error. They adhere to the usual rule that if you can't see it, you're not expected to enter it.
