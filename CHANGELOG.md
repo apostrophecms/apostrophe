@@ -1,5 +1,53 @@
 # Changelog
 
+## 2.96.2 (2019-09-17)
+
+* Bug fix: missing required fields nested in `array` or `object` fields hidden fvia `showFields` no longer result in a server-side error. They adhere to the usual rule that if you can't see it, you're not expected to enter it.
+* Bug fix: autocomplete now works again for tags and joins. This was caused by a difference of z-index introduced by an upgrade of jQuery UI in July.
+* Better UX for drag and drop.
+* The `findTestModule` method now works properly in Windows, opening the door to testing Apostrophe modules more easily on Windows. Thanks to Amin Shazrin for this contribution.
+* The base name of the master stylesheet has been factored out to a `getStylesheetsMasterBase` method in `apostrophe-assets`, for easier overrides in multisite projects.
+* Thanks to refactoring of the implementation, it is now possible to override the behavior of the `apostrophe-email` module to use different transports in different circumstances. Thanks to Aurélien Wolz for this contribution.
+
+## 2.96.1 (2019-09-09)
+
+* Setting PORT to `0`, or passing `0` as the `port` option to `apostrophe-express`, now works per the TCP documentation: you get a random port number. You can access that port number as `apos.modules['apostrophe-express'].port`. Thanks to J. Garijo for this contribution.
+* The ability to add a new image while selecting one for a widget has been restored. Similar scenarios while editing other joins are also fixed.
+* Double-clicking the "Edit" button of a widget no longer causes a race condition. Thanks to Mayank Bansal for pointing out the issue and how to reproduce it.
+* Undisplayed tooltips no longer take up space in a way that causes interface frustration.
+
+## 2.96.0 (2019-09-04)
+
+* Reverse joins no longer result in an empty tab when they are the only unarranged field, since they have no editing UI in any case.
+* The "context menu" (aka "Page Settings," "Published," etc.) has been cleaned up in several ways. It no longer appears unless the user at least has edit access to either `data.page` or `data.piece`. This deciding factor can be altered by overriding `apos.templates.showContextMenu`, which accepts `req` and must return `true` or `false`. In addition, the "Unpublished" dropdown works properly in all cases.
+* Notifications now have an explicit "close" button to help those who did not realize they were clickable. Also, they display the proper cursor when hovered and use a suitable HTML tag for improved accessibility.
+
+## 2.95.1 (2019-09-01)
+
+* Drag and drop operations within an area, and various other operations, no longer result in a race condition where the same document is locked more than once and content can be lost. This is especially noticeable on slower connections but can happen anytime. This was a longstanding problem. Thanks to Eric Wong for his patient reporting and testing of this issue.
+* eslint has been updated, addressing npm audit complaints.
+
+## 2.95.0 (2019-08-21)
+
+* Nested content in sub-areas is no longer lost when editing schema properties of the widget that contains the areas.
+* The `slugPrefix` option for pieces modules now works correctly. This option prefixes the slugs of all pieces of that type with the given string. It is recommended, but not required, that the prefix end in `-`. The editor requires that the slug be prefixed with the `slugPrefix`, the editor suggests slugs that include the prefix, and a migration now runs to add the `slugPrefix` to pieces that lack the prefix. If this results in a slug conflict the offending piece is left alone and flagged for your manual attention. A slug without the prefix does not cause any harm, other than cluttering up the namespace of slugs.
+* `apostrophe-images` and `apostrophe-files` now use the `slugPrefix` option to prefix their slugs. This will result in a **one-time** migration for each at startup, after which your image and file slugs will no longer be in frequent conflict with other pieces when you try to give them friendly slugs. Note that **image and file slugs are not used in actual media asset filenames**, so there is no bc break there. And although most sites don't have an `apostrophe-images-pages` or `apostrophe-files-pages` module, those that do will experience no 404 errors due to Apostrophe's robust redirect features.
+* Apostrophe migrations are now more stable in MongoDB Atlas and other environments in which it is unwise to keep a single MongoDB cursor alive for long periods. To achieve greater stability, the `apos.migrations.eachDoc` method now fetches the `_id` properties of all relevant docs first, and they are then processed in small batches.
+* The `APOS_TRACE_DB=1` environment variable, which is useful for tracking down MongoDB issues, now includes traces for `distinct` calls.
+* A division-by-zero error in the migration progress display was fixed, correcting some strange-looking output.
+* In `apostrophe-assets`, the logic to determine the dev environment asset generation id was factored out to the `determineDevGeneration` method to simplify overriding it in `apostrophe-multisite`.
+* `apos.utils.post` and `apos.utils.get` now report HTTP errors (status >= 400) properly to their callbacks. The object provided as the error includes a `status` property with the HTTP status code. The body is still available in the second argument to the callback.
+
+## 2.94.1 (2019-08-12)
+
+* Bug fix for a regression that impacted the ability to edit an array field again after cancelling the first time. Thanks to Amin Shazrin for this contribution.
+
+## 2.94.0 (2019-08-09)
+
+* Bug fix for the new simplified static asset bundling: URLs beginning with `/` in CSS files are correctly rewritten to point to the bundle in the cloud when using the simple bundle feature (`APOS_BUNDLE=1`). This was already done for the old method.
+* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string). 
+* When you edit the slug of a piece or page manually and a slug conflict with another piece or page is created, you can now optionally click a button in order to edit the conflicting piece or page, and change its slug to eliminate the conflict.
+
 ## 2.93.0 (2019-07-25)
 
 * New, simplified static asset bundling feature for deploying to cloud hosts like Heroku. See the [ApostropheCMS Heroku HOWTO](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/deploying-apostrophe-in-the-cloud-with-heroku) for details. There is more to successful Heroku deployment than just static assert bundling.

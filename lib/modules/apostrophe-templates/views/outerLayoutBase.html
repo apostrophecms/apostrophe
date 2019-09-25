@@ -20,7 +20,7 @@
     {% endblock %}
 
     {% block apostropheContextMenu %}
-      {% if data.user %}
+      {% if apos.templates.showContextMenu() %}
         <div class="apos-ui">
           <div class="apos-context-menu-container">
             {{ apos.templates.prepended('contextMenu') }}

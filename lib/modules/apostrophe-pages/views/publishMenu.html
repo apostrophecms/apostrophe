@@ -1,5 +1,5 @@
 {% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context -%}
-{%- if not data.page.published or (data.piece and not data.piece.published) -%}
+{%- if not (data.page and data.page.published) or (data.piece and not data.piece.published) -%}
 <div class="apos-context-menu">
   {{ dropdowns.base({
       label: "Unpublished",
