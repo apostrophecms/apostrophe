@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.97.1 (2019-09-26)
+
+* Hotfix for a potential Denial Of Service issue reported by NPM. A user with login privileges could eventually exhaust available memory by submitting thousands of batch job requests.
+ 
 ## 2.97.0 (2019-09-25)
 
 * The simplified `APOS_BUNDLE=1` feature for asset deployment in the cloud now uses the actual `tar` utility when extracting assets locally, rather than the `tar` npm module, as a blocking bug was encountered and the actual utility is faster.
