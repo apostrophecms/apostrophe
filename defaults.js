@@ -51,6 +51,7 @@ module.exports = {
     'apostrophe-files': {},
     'apostrophe-files-widgets': {},
     'apostrophe-soft-redirects': {},
+    'apostrophe-i18n-tooltips': {},
     // ALWAYS LAST FOREVER
     'apostrophe-service-bridge': {}
   }
