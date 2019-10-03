@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.97.2 (2019-10-03)
+
+* All [i18n](https://www.npmjs.com/package/i18n) helpers are now available in templates, not just the `__` helper. See the [i18n module documentation](https://www.npmjs.com/package/i18n) for more information. Test coverage was added to ensure this remains in place.
+* UX improvements in "reorganize" (Manage Pages).
+* contributing.md now points to the [apostrophecms Discord chat community](https://chat.apostrophecms.org) for live community help, rather than Gitter, which has been retired.
+
 ## 2.97.1 (2019-09-26)
 
 * Hotfix for a potential Denial Of Service issue reported by NPM. A user with login privileges could eventually exhaust available memory by submitting thousands of batch job requests.
