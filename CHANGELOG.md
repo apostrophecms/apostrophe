@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.98.0 (2019-10-11)
+
+* Bug fix: the `sendPage` method now emits the `apostrophe-pages:beforeSend` promise event no matter which module is calling `self.sendPage`. This was always the intention, as shown by the fact that the legacy `pageBeforeSend` method is called. The purpose of `sendPage` has always been to allow a custom route to render a page exactly as Apostrophe normally does, and that includes calling all `apostrophe-pages:beforeSend` handlers.
+* Bug fix: the `title` field is now required in the `apostrophe-users` module. Thanks to Jose Garcia of swiss4ward.
+* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers. 
+
 ## 2.97.2 (2019-10-03)
 
 * All [i18n](https://www.npmjs.com/package/i18n) helpers are now available in templates, not just the `__` helper. See the [i18n module documentation](https://www.npmjs.com/package/i18n) for more information. Test coverage was added to ensure this remains in place.
