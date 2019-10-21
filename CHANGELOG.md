@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.98.1 (2019-10-21)
+
+* When selecting pages for a join, you are now permitted to choose any page you have access to view. This was never intended to be locked down to pages you can edit. For instance, you should be able to link to any page you can see when editing a navigation widget. Thanks to Freshworks for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.98.0 (2019-10-11)
 
 * Bug fix: the `sendPage` method now emits the `apostrophe-pages:beforeSend` promise event no matter which module is calling `self.sendPage`. This was always the intention, as shown by the fact that the legacy `pageBeforeSend` method is called. The purpose of `sendPage` has always been to allow a custom route to render a page exactly as Apostrophe normally does, and that includes calling all `apostrophe-pages:beforeSend` handlers.
