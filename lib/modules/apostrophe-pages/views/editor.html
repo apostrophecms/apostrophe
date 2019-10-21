@@ -38,14 +38,4 @@
   </div>
 {% endblock %}
 
-{% block footerContainer %}
-  {% if data.verb == 'copy' and data.copyFrom %}
-    <div class="apos-modal-footer">
-      <div class="apos-modal-footer-inner">
-        <div class="apos-pages-copy-from">
-          {{ apos.schemas.field(data.copyFrom) }}
-        </div>
-      </div>
-    </div> 
-  {% endif %}
-{% endblock %}
+{% block footerContainer %}{% endblock %}
