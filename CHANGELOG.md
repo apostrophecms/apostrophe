@@ -3,6 +3,7 @@
 ## 2.98.1 (2019-10-21)
 
 * When selecting pages for a join, you are now permitted to choose any page you have access to view. This was never intended to be locked down to pages you can edit. For instance, you should be able to link to any page you can see when editing a navigation widget. Thanks to Freshworks for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* Beginning with this version we are whitelisting `npm audit` advisories that are not relevant to Apostrophe. Specifically, advisory `1203` has no bearing on Apostrophe because end users cannot specify collection names to MongoDB via Apostrophe.
 
 ## 2.98.0 (2019-10-11)
 
