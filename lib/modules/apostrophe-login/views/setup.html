@@ -1,0 +1,15 @@
+{% extends data.outerLayout %}
+{% block title %}{{ __("Setup Two Factor Authentication") }}{% endblock %}
+
+{% block bodyClass %}apos-login-page apos-setup-two-factor{% endblock %}
+
+{% block main %}
+  <div class="apos-login-wrapper">
+    <div class="apos-login-content">
+      <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
+      <div class="apos-ui apos-login">
+        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Enable Two Factor Authentication') }}{% endblock %}</div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

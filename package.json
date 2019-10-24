@@ -61,6 +61,7 @@
     "oembetter": "^0.1.19",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
+    "passport-totp": "0.0.2",
     "path-to-regexp": "^1.7.0",
     "performance-now": "^2.1.0",
     "prompt": "^0.2.14",
