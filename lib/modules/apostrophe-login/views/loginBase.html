@@ -11,13 +11,7 @@
         <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Login') }}{% endblock %}</div>
         {% block form %}
           <form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
-            {% if data.errors and data.errors[0] %}
-              <div class="apos-login-warning">
-                {{ data.errors | join(', ') }}
-              </div>
-            {% else %}
-              {% if data.message %}<div class="apos-login-warning">{{ __(data.message) }}</div>{% endif %}
-            {% endif %}
+            {% if data.message %}<div class="apos-login-warning">{{ __(data.message) }}</div>{% endif %}
             {% block fields %}
               <div class="apos-field apos-login-username">
                 <label class="apos-field-label" for="username">{{ __('Username or Email') }} {% block usernameHint %}{% endblock %}</label>
