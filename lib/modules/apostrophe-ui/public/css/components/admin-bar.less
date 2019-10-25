@@ -2,49 +2,53 @@
 {
   position: fixed;
   height: 60px;
-  top: @apos-padding-2;
-  left: @apos-padding-2;
+  top: 0;
+  left: 0;
+  width: 100%;
   z-index: @apos-z-index-7;
   background-color: @apos-base;
   color: @apos-white;
-  .apos-button-border(@apos-white);
-  .apos-rounded();
-  .apos-drop-shadow();
+  // .apos-button-border(@apos-white);
+  // .apos-rounded();
+  // .apos-drop-shadow();
   overflow: hidden;
   // .apos-transition;
   .apos-no-select;
 
-  @media @apos-breakpoint-desktop-xl
-  {
-    height: 80px;
-    top: @apos-padding-4;
-    left: @apos-padding-4;
-  }
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   height: 80px;
+  //   top: @apos-padding-4;
+  //   left: @apos-padding-4;
+  // }
 
   * { .apos-transition; }
+}
+
+.apos-is-logged-in {
+  padding: 100px;
 }
 
 .apos-admin-bar-logo
 {
   position: relative;
   padding: 13px 15px 8px 15px;
-  @media @apos-breakpoint-desktop-xl
-  {
-    padding: @apos-padding-2;
-  }
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   padding: @apos-padding-2;
+  // }
   .apos-inline-block();
   
   cursor: pointer;
-
   svg
   {
     max-height: 30px;
     max-width: 30px;
-    @media @apos-breakpoint-desktop-xl
-    {
-      max-height: 36px;
-      max-width: 36px;
-    }
+    // @media @apos-breakpoint-desktop-xl
+    // {
+    //   max-height: 36px;
+    //   max-width: 36px;
+    // }
   }
 
 }
@@ -63,11 +67,11 @@
 .apos-admin-bar-item
 {
   cursor: pointer;
-  height: 56px;
-  @media @apos-breakpoint-desktop-xl
-  {
-    height: 75px;  
-  }
+  height: 60px;
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   height: 75px;  
+  // }
 
   &:hover
   {
@@ -100,29 +104,29 @@
 {
   max-width: 60px;
   font-size: 13px;
-  @media @apos-breakpoint-desktop-xl
-  {
-    font-size: 16px;
-    max-width: 80px;
-  }
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   font-size: 16px;
+  //   max-width: 80px;
+  // }
 }
 
 .apos-admin-bar-item-inner
 {
   .apos-inline-block(middle);
   padding: 0 @apos-padding-1;
-  @media @apos-breakpoint-desktop-xl
-  {
-    padding: 0 @apos-padding-2;
-  }
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   padding: 0 @apos-padding-2;
+  // }
   
   // .apos-transition();
   height: 100%;
   line-height: 4.5em;
-  @media @apos-breakpoint-desktop-xl
-  {
-    line-height: 4.9em;
-  }
+  // @media @apos-breakpoint-desktop-xl
+  // {
+  //   line-height: 4.9em;
+  // }
 }
 
 .apos-admin-bar.apos-active
