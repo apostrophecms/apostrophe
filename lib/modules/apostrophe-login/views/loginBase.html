@@ -13,7 +13,7 @@
           <form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
             {% if data.errors and data.errors[0] %}
               <div class="apos-login-warning">
-                {{ data.errors | join(', ') }}
+                {{ data.errors | join(' ') }}
               </div>
             {% else %}
               {% if data.message %}<div class="apos-login-warning">{{ __(data.message) }}</div>{% endif %}
