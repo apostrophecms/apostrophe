@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.99.0 (2019-10-30)
+
+* Optional password complexity rules. You may set `passwordMinLength` to a number of your choice. You may also set `passwordRules` to an array of rule names. Those available by default are `noSlashes`, `noSpaces`, `mixedCase`, `digits`, and `noTripleRepeats`. To block **existing** passwords that don't meet this standard, you should also set `passwordRulesAtLoginTime: true`. Additional password rules may be registered by calling `apos.login.addPasswordRule('name', { test: fn, message: 'error message' })`. The function will receive the password and must return `true` if it is acceptable. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* `apos.utils.attachmentUrl` has been added to lean mode. It works exactly like `apos.attachments.url`, which is not available in lean mode, with one exception: to avoid adding more overhead to lean mode, the default size is the original. So you must take care to specify the `size` option for performance when working with images.
+* When an in-page edit is made and an area is updated as a result, the `update` method of the appropriate module is now called, rather than `apos.docs.update`. This allows for `beforeSave`, etc. to fire in this situation. Thanks to Kalia Martin of swiss4ward for this contribution.
+* Apostrophe now provides a `res.rawRedirect` method, which performs a redirect without adding the sitewide prefix. On sites without a prefix it is equivalent to `res.redirect`. This is useful when working with a URL that is already prefixed, such as the `_url` property of a page or piece.
+* Using the `groups` option to `apostrophe-users` together with a very large database can lead to slow startup because the groups are found by title, and title is not an indexed field. You may now specify the `slug` for each group in the array, in which case they are found by `slug` instead, which is an optimized query. However most very large sites would be better off removing the `groups` option and allowing groups to be managed flexibly via the admin bar.
+* `apos.tasks.getReq` now provides more simulated i18n support.
+
+
 ## 2.98.1 (2019-10-21)
 
 * When selecting pages for a join, you are now permitted to choose any page you have access to view. This was never intended to be locked down to pages you can edit. For instance, you should be able to link to any page you can see when editing a navigation widget. Thanks to Freshworks for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
