@@ -8,7 +8,7 @@
 * Apostrophe now provides a `res.rawRedirect` method, which performs a redirect without adding the sitewide prefix. On sites without a prefix it is equivalent to `res.redirect`. This is useful when working with a URL that is already prefixed, such as the `_url` property of a page or piece.
 * Using the `groups` option to `apostrophe-users` together with a very large database can lead to slow startup because the groups are found by title, and title is not an indexed field. You may now specify the `slug` for each group in the array, in which case they are found by `slug` instead, which is an optimized query. However most very large sites would be better off removing the `groups` option and allowing groups to be managed flexibly via the admin bar.
 * `apos.tasks.getReq` now provides more simulated i18n support.
-
+* The occasional but irritating "not blessed" bug when editing content on the page has been fixed via a new "reinforced blessing" mechanism.
 
 ## 2.98.1 (2019-10-21)
 
