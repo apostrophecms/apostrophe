@@ -1,4 +1,3 @@
-
 {% extends data.outerLayout %}
 {% block title %}{{ __("Password Reset Request") }}{% endblock %}
 
@@ -16,6 +15,7 @@
             {% block fields %}
               <div class="apos-field apos-login-code">
                 <label class="apos-field-label" for="code">{{ __('Code') }}</label>
+                <input class="apos-field-input apos-field-input-text" type="text" name="code" id="code" autofocus />
               </div>
             {% endblock %}
             <div class="apos-login-submit">

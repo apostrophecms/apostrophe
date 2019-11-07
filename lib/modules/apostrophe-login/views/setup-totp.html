@@ -9,6 +9,10 @@
       <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
       <div class="apos-ui apos-login">
         <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Enable Two Factor Authentication') }}{% endblock %}</div>
+        <p>Scan this QR Code in Google Authenticator</p>
+        <img src="{{ data.qrImage }}" />
+        <p>- or enter this key manually -</p>
+        <code>{{ data.key }}</code>
       </div>
     </div>
   </div>
