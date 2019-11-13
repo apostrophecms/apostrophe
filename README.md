@@ -10,7 +10,7 @@ Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for 
 
 ## Getting Started
 
-The [ApostropheCMS documentation](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started) will walk you through some simple steps to get your [local environment set up](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/setting-up-your-environment) with the technology stack that runs ApostropheCMS (Node.js, MongoDB, ImageMagick) along with installing ApostropheCMS itself.
+The [ApostropheCMS documentation](https://docs.apostrophecms.org/apostrophe/) will walk you through some simple steps to get your [local environment set up](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/setting-up-your-environment) with the technology stack that runs ApostropheCMS (Node.js, MongoDB, ImageMagick) along with installing ApostropheCMS itself.
 
 Then [create a new project](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/creating-your-first-project) on your computer and work on building your beautiful website.
 
