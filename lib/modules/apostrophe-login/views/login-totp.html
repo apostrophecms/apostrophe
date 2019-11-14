@@ -8,9 +8,10 @@
     <div class="apos-login-content">
       <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
       <div class="apos-ui apos-login">
-        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Log in with Googler Authenticator (TOTP)') }}{% endblock %}</div>
+        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __('Log in with Google Authenticator or a compatible app (TOTP)') }}{% endblock %}</div>
         {% block form %}
           <form action="{% block action %}{{ apos.prefix }}/login-totp{% endblock %}" method="post">
+            {{ apos.log(data.error) }}
             {% if data.error %}<div class="apos-login-warning">{{ "That code was not correct." }}</div>{% endif %}
             {% block fields %}
               <div class="apos-field apos-login-code">
@@ -22,7 +23,7 @@
               <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __('Submit Code') }}{% endblock %}" />
             </div>
             <div class="apos-login-reset-cancel">
-              <a href="{{ apos.prefix }}/logout">{{ __('Cancel') }}</a>
+              <a href="{{ apos.prefix }}/logout">{{ __('Log Out') }}</a>
             </div>
             <p class="apos-login-help">You should see a code in Google Authenticator at this point in the process. Enter that code here.</p>
           </form>
