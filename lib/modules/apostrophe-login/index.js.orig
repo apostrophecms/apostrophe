@@ -311,49 +311,17 @@ module.exports = {
         });
         self.apos.app.post('/login',
           function(req, res, next) {
-            if (!(self.options.passwordRulesAtLoginTime || self.options.resetLegacyPassword)) {
+            if (!self.options.passwordRulesAtLoginTime) {
               return next();
             }
             var password = req.body.password;
             var errors = self.checkPasswordRules(req, password);
             if (errors.length) {
-              if (self.options.resetLegacyPassword) {
-                // If the password is inadequate, check to see if it is
-                // the correct legacy password for the user. If it is,
-                // allow them to fix it
-                return self.verifyLogin(req.body.username, password, function(err, user) {
-                  if (err || (!user)) {
-                    return fail();
-                  }
-                  req.session.resetLegacyPasswordId = user._id;
-                  var reset;
-                  return Promise.try(function() {
-                    reset = self.apos.utils.generateId();
-                    user.passwordReset = reset;
-                    user.passwordResetAt = new Date();
-                    return self.apos.users.update(req, user, { permissions: false }).then(function() {
-                      return user;
-                    });
-                  }).then(function(user) {
-                    return res.redirect('/password-reset?' + qs.stringify({
-                      reset: reset,
-                      errors: errors
-                    }));
-                  }).catch(function(err) {
-                    self.apos.utils.error(err);
-                    return fail();
-                  });
-                });
-              } else {
-                return fail();
-              }
-              function fail() {
-                return res.redirect('/login?' + qs.stringify({
-                  errors: errors,
-                  // bc
-                  error: '1'
-                }));
-              }
+              return res.redirect('/login?' + qs.stringify({
+                errors: errors,
+                // bc
+                error: '1'
+              }));
             }
             return next();
           },
@@ -407,10 +375,6 @@ module.exports = {
           });
         });
 
-      }
-
-      if ((self.options.localLogin !== false) && (self.options.passwordReset || self.options.resetLegacyPassword)) {
-
         self.apos.app.get('/password-reset', function(req, res) {
           var reset = self.apos.launder.string(req.query.reset);
           var email = self.apos.launder.string(req.query.email);
@@ -419,19 +383,11 @@ module.exports = {
           }
           req.scene = 'user';
           var adminReq = self.apos.tasks.getReq();
-          var criteria = {
+          return self.apos.users.find(adminReq, {
+            email: email,
             passwordResetAt: { $gte: new Date(Date.now() - self.getPasswordResetLifetimeInMilliseconds()) }
-          };
-
-          if (req.session.resetLegacyPasswordId) {
-            criteria._id = req.session.resetLegacyPasswordId;
-          } else {
-            criteria.email = email;
-          }
-
-          return self.apos.users.find(adminReq, criteria).toObject().then(function(user) {
+          }).toObject().then(function(user) {
             if (!user) {
-              delete req.session.resetLegacyPasswordId;
               throw 'notfound';
             }
             return self.sendPage(req, 'passwordReset', { reset: reset, email: email, message: getMessage(), errors: req.query.errors });
@@ -477,19 +433,13 @@ module.exports = {
             }));
           }
           var adminReq = self.apos.tasks.getReq();
-          var criteria = {
-            passwordResetAt: { $gte: new Date(Date.now() - self.getPasswordResetLifetimeInMilliseconds()) }
-          };
-          if (req.session.resetLegacyPasswordId) {
-            criteria._id = req.session.resetLegacyPasswordId;
-          } else {
-            criteria.email = email;
-          }
           return Promise.try(function() {
-            return self.apos.users.find(adminReq, criteria).toObject();
+            return self.apos.users.find(adminReq, {
+              email: email,
+              passwordResetAt: { $gte: new Date(Date.now() - self.getPasswordResetLifetimeInMilliseconds()) }
+            }).toObject();
           }).then(function(user) {
             if (!user) {
-              delete req.session.resetLegacyPasswordId;
               throw new Error('notfound');
             }
             return self.apos.users.verifySecret(user, 'passwordReset', reset).then(function() {
@@ -509,11 +459,11 @@ module.exports = {
           });
         });
 
-      }
+        self.getPasswordResetLifetimeInMilliseconds = function() {
+          return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
+        };
 
-      self.getPasswordResetLifetimeInMilliseconds = function() {
-        return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
-      };
+      }
 
       if (self.options.resetKnownPassword) {
         self.renderRoute('post', 'reset-known-password-modal', function(req, res, next) {
