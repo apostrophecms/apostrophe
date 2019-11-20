@@ -10,10 +10,9 @@
   background-color: @apos-primary;
   position: relative;
   top: @apos-margin-5;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
 }
 .apos-login-logo
 {
@@ -43,11 +42,32 @@
   {
     width: 100%;
   }
-  .apos-login-reset, .apos-login-reset-cancel, .apos-login-password-reset-help
+  .apos-login-reset, .apos-login-reset-cancel, .apos-login-password-reset-help, .apos-totp-help
   {
     margin-top: 1em;
   }
-  .apos-login-warning {
+  .apos-login-warning, .apos-login-reset-cancel {
     margin-bottom: 1em;
   }
+}
+
+.apos-ui .apos-totp-qr-image {
+  display: block;
+  margin: 22px auto;
+  border: 10px solid @apos-white;
+}
+
+.apos-ui.apos-login code {
+  font-family: 'Andale Mono', 'Courier', monospace;
+  overflow: none;
+  overflow-x: inherit;
+  padding: 10px;
+  margin-top: 11px;
+  text-align: center;
+  color: @apos-dark;
+  background-color: @apos-white;
+}
+
+.apos-ui .apos-totp-submit {
+  margin-top: 16px;
 }
