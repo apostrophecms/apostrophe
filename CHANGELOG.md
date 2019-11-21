@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.100.0 (2019-11-21)
+
+* New feature: Google Authenticator two-factor authentication (TOTP) support for Apostrophe accounts. Set the `totp: true` option of the `apostrophe-login` module. When enabled, users (including admins) are required to set up and complete authentication with Google Authenticator or a compatible TOTP app on their mobile device. On the user's next login they set up Google Authenticator; after that they must supply a code from Google Authenticator at each login. If a user loses their device, an admin can reset their access by editing that user via "Manage Users" and selecting "Reset TOTP 2-Factor Authentication." If the admin loses their device, they can use the new `apostrophe-users:reset-totp` command line task.
+* New feature: `resetLegacyPassword: true` option for `apostrophe-login`. When the `passwordRules` and `passwordMinLength` options are present, enabling `resetLegacyPassword` permits the user to change their password right away at login time if it is correct, but does not meet your new standards for adequate passwords. This does not require receiving a confirmation email; if you are concerned by that, consider enabling `passwordReset` instead if you are willing to [configure email delivery](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/email). 
+* New feature: `resetKnownPassword: true` option for `apostrophe-login`. When enabled, a currently logged-in user is permitted to change their own password without receiving an email, as long as they know their current password. This adds an additional admin bar item, which you may want to group.
+* Performance: Apostrophe is now much faster when editing a piece with hundreds of areas in its schema. Thanks to Bharathkumar Chandrasekaran of Freshworks for his contributions to finding the solution.
+* Bug fix: `passwordRules` and `passwordMinLength` no longer break support for new users created via `apostrophe-passport` who use single sign-on and do not have explicit passwords in Apostrophe.
+* Developer warning: a module that implements a widget must have a name ending in `-widgets` or the editor will not work properly in the browser. We now display a warning.
+* Developer warning: if the developer tries to configure `piecesFilters` for the pieces module, rather than the corresponding pieces-pages module, a warning is displayed.
+* UI fix: modal dialog box height corrected. Thanks to Paul Grieselhuber for this contribution.
+* UI fix: better Microsoft Edge support. Thanks to Denis Lysenko.
+
 ## 2.99.0 (2019-10-30)
 
 * Optional password complexity rules. You may set `passwordMinLength` to a number of your choice. You may also set `passwordRules` to an array of rule names. Those available by default are `noSlashes`, `noSpaces`, `mixedCase`, `digits`, and `noTripleRepeats`. To block **existing** passwords that don't meet this standard, you should also set `passwordRulesAtLoginTime: true`. Additional password rules may be registered by calling `apos.login.addPasswordRule('name', { test: fn, message: 'error message' })`. The function will receive the password and must return `true` if it is acceptable. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
