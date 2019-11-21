@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.100.1 (2019-11-21)
+
+* Must confirm when resetting password, since there are no do-overs if we do not have the email confirmation method available (with `resetLegacyPassword: true`) and since it's generally a pain not to have this.
+* Fixed the "Reset TOTP authentication" feature of "Manage Users".
+
 ## 2.100.0 (2019-11-21)
 
 * New feature: Google Authenticator two-factor authentication (TOTP) support for Apostrophe accounts. Set the `totp: true` option of the `apostrophe-login` module. When enabled, users (including admins) are required to set up and complete authentication with Google Authenticator or a compatible TOTP app on their mobile device. On the user's next login they set up Google Authenticator; after that they must supply a code from Google Authenticator at each login. If a user loses their device, an admin can reset their access by editing that user via "Manage Users" and selecting "Reset TOTP 2-Factor Authentication." If the admin loses their device, they can use the new `apostrophe-users:reset-totp` command line task. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
