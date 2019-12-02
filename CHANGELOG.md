@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.100.2 (2019-12-02)
+
+* Corrected a significant performance problem with the `apostrophe-users:add` command line task when thousands of users exist.
+
 ## 2.100.1 (2019-11-21)
 
 * Must confirm when resetting password, since there are no do-overs if we do not have the email confirmation method available (with `resetLegacyPassword: true`) and since it's generally a pain not to have this.
