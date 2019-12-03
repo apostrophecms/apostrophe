@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.100.3 (2019-12-03)
+
+* The `aspectRatio` option to the `attachments` schema field type is now fully implemented. We always had this for selecting images, e.g. in our `apostrophe-images-widgets` module, but it is now also available when directly using an `attachment` schema field as a property of your own doc. You can also set `crop: true` to allow manual cropping in that case. This is a useful technique when including the image in a reusable media library does not make sense.
+
 ## 2.100.2 (2019-12-02)
 
 * Corrected a significant performance problem with the `apostrophe-users:add` command line task when thousands of users exist.
