@@ -8,7 +8,7 @@
     <span class="apos-attachment-name" data-name></span>
     <div class="apos-button-group">
       <a class="apos-button apos-button--action" href="#" data-link target="_blank">{{ __("View file") }}</a>
-      {% if field.crop %}
+      {% if field.crop or field.aspectRatio %}
         <a class="apos-button apos-button--action" href="#" data-apos-crop-attachment>{{ __("Crop image") }}</a>
       {% endif %}
       {% if field.focalPoint %}
