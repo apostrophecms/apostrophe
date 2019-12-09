@@ -24,6 +24,7 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
+    "emulate-mongo-2-driver": "apostrophecms/emulate-mongo-2-driver",
     "@apostrophecms/nunjucks": "^2.5.3",
     "@sailshq/lodash": "^3.10.4",
     "async": "^1.5.2",
