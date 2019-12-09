@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run lint && npm run audit && mocha",
-    "audit": "npm audit --json | node ./lib/audit-filter",
+    "audit": "npm audit",
     "lint": "eslint ."
   },
   "repository": {
@@ -33,7 +33,6 @@
     "cheerio": "^0.22.0",
     "cli-progress": "^2.1.1",
     "connect-flash": "^0.1.1",
-    "connect-mongo": "^1.3.2",
     "connect-multiparty": "^2.2.0",
     "cookie-parser": "^1.4.4",
     "credential": "^2.0.0",
@@ -55,7 +54,6 @@
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.1",
     "moment": "^2.23.0",
-    "mongodb": "^2.2.36",
     "moog-require": "^1.1.0",
     "nodemailer": "^4.7.0",
     "oembetter": "^0.1.19",
