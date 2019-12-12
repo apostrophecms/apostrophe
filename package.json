@@ -24,7 +24,6 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
-    "emulate-mongo-2-driver": "apostrophecms/emulate-mongo-2-driver",
     "@apostrophecms/nunjucks": "^2.5.3",
     "@sailshq/lodash": "^3.10.4",
     "async": "^1.5.2",
@@ -40,6 +39,7 @@
     "cuid": "^1.3.8",
     "deep-get-set": "^0.1.1",
     "diff": "^4.0.1",
+    "emulate-mongo-2-driver": "github:apostrophecms/emulate-mongo-2-driver",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "glob": "^5.0.15",
