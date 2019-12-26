@@ -23,6 +23,21 @@ describe('Login', function() {
           secret: 'xxx',
           port: 7901,
           csrf: false
+        },
+        'apostrophe-users': {
+          groups: [
+            {
+              title: 'guest',
+              permissions: ['guest']
+            },
+            {
+              title: 'admin',
+              permissions: ['admin']
+            }
+          ],
+          disableInactiveAccounts: {
+            inactivityDuration: 0
+          }
         }
       },
       afterInit: function(callback) {
@@ -53,6 +68,7 @@ describe('Login', function() {
     user.username = 'HarryPutter';
     user.password = 'crookshanks';
     user.email = 'hputter@aol.com';
+    user.groupIds = [ apos.users.options.groups[1]._id ];
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
@@ -140,6 +156,61 @@ describe('Login', function() {
       assert(body.match(/login/));
       return done();
     });
+  });
+
+  it('should log a whitelisted user', function(done) {
+    var user = apos.users.newInstance();
+
+    user.firstName = 'Admin';
+    user.lastName = 'Test';
+    user.title = 'Admin Test';
+    user.username = 'admin-test';
+    user.password = 'crookshanks';
+    user.email = 'admintest@aol.com';
+    user.lastLogin = new Date();
+    user.groupIds = [ apos.users.options.groups[1]._id ]; // admin group
+
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
+      assert(!err);
+      return request.post('http://localhost:7901/login', {
+        form: { username: 'admin-test', password: 'crookshanks' },
+        followAllRedirects: true,
+        jar: loginLogoutJar
+      }, function(err, response, body) {
+        assert(!err);
+        assert.equal(response.statusCode, 200);
+        assert(body.match(/logout/));
+        return done();
+      });
+    });
+  });
+
+  it('should disable an inactive user', function(done) {
+    var user = apos.users.newInstance();
+
+    user.firstName = 'Random';
+    user.lastName = 'Test';
+    user.title = 'Random Test';
+    user.username = 'random-test';
+    user.password = 'crookshanks';
+    user.email = 'randomtest@aol.com';
+    user.lastLogin = new Date();
+    user.groupIds = [ apos.users.options.groups[0]._id ]; // guest group
+
+    apos.users.insert(apos.tasks.getReq(), user, function(err) {
+      assert(!err);
+      return request.post('http://localhost:7901/login', {
+        form: { username: 'random-test', password: 'crookshanks' },
+        followAllRedirects: true,
+        jar: loginLogoutJar
+      }, function(err, response, body) {
+        assert(!err);
+        assert.equal(response.statusCode, 500);
+        assert(body.match(/Account disabled due to inactivity. Please, refer to the administrator of the site for assistance.</));
+        return done();
+      });
+    });
+
   });
 
 });
