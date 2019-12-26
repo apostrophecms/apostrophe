@@ -318,9 +318,9 @@ describe('Users', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        assert(apos2.users.options.disableInactiveAccounts.whitelistGroups);
+        assert(apos2.users.options.disableInactiveAccounts.neverDisabledGroups);
         assert(apos2.users.options.disableInactiveAccounts.inactivityDuration);
-        assert(apos2.users.options.disableInactiveAccounts, { whitelistGroups: ['admin'], inactivityDuration: 90 });
+        assert(apos2.users.options.disableInactiveAccounts, { neverDisabledGroups: ['admin'], inactivityDuration: 90 });
         done();
       }
     });
@@ -338,7 +338,7 @@ describe('Users', function() {
         },
         'apostrophe-users': {
           disableInactiveAccounts: {
-            whitelistGroups: ['test'],
+            neverDisabledGroups: ['test'],
             inactivityDuration: 45
           }
         }
@@ -349,7 +349,7 @@ describe('Users', function() {
       },
       afterListen: function(err) {
         assert(!err);
-        assert(apos3.users.options.disableInactiveAccounts, { whitelistGroups: ['test'], inactivityDuration: 45 });
+        assert(apos3.users.options.disableInactiveAccounts, { neverDisabledGroups: ['test'], inactivityDuration: 45 });
         done();
       }
     });
