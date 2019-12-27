@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.101.0 (2019-12-14)
+
+* Due to `npm audit` security vulnerability warnings and the end of upstream support, the 2.x version of the `mongodb` npm module (the driver we used to connect to MongoDB, not MongoDB itself) can no longer be responsibly used in Apostrophe. Therefore we have replaced it with the new [emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver) module, which strives to match the interface of the MongoDB driver version 2.x while acting as a wrapper for the official, supported MongoDB driver version 3.x. This has been tested in many projects. Therefore no code changes should be required for your project to `npm update` to version 2.101.0. However if you encounter incompatibilities, most likely in driver features not used in Apostrophe, please [contribute additional wrappers and test coverage to emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver). Another option is to use [apostrophe-db-mongo-3-driver](https://www.npmjs.com/package/apostrophe-db-mongo-3-driver), which allows you to use the 3.x driver API directly and also provides a `findWithProjection` collection method as a migration path for quickly patching legacy code.
+* The `def` property of schema fields associated with specific page types is now displayed in the editor when creating new pages. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* A schema field named `fields` can now be included in a projection without surprising behavior.
+* EPS (`.eps`) files are now accepted as Apostrophe attachments and categorized in the `office` group, meaning they can be uploaded as "files."
+* The `aspectRatio` option, when specified directly for attachment schema field properties, now implies permission to crop as forced center-cropping differed from what we do when applying aspect ratios to image widgets.
+* Cross-browser fix for the back button when using our page-refresh-free AJAX features for browsing pieces. Thanks to sergiodop92 for this fix.
+
 ## 2.100.3 (2019-12-03)
 
 * The `aspectRatio` option to the `attachments` schema field type is now fully implemented. We always had this for selecting images, e.g. in our `apostrophe-images-widgets` module, but it is now also available when directly using an `attachment` schema field as a property of your own doc. You can also set `crop: true` to allow manual cropping in that case. This is a useful technique when including the image in a reusable media library does not make sense.
