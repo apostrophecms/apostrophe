@@ -2,14 +2,16 @@ var t = require('../test-lib/test.js');
 var assert = require('assert');
 var request = require('request');
 
-var apos;
+var apos, apos2;
 
 describe('Login', function() {
 
   this.timeout(20000);
 
   after(function(done) {
-    return t.destroy(apos, done);
+    return t.destroy(apos, function() {
+      return t.destroy(apos2, done);
+    });
   });
 
   // EXISTENCE
@@ -213,7 +215,7 @@ describe('Login', function() {
   });
 
   it('should log a non-timed out user', function(done) {
-    var apos2 = require('../index.js')({
+    apos2 = require('../index.js')({
       root: module,
       shortName: 'test2',
       modules: {
@@ -273,7 +275,6 @@ describe('Login', function() {
             return done();
           });
         });
-        return t.destroy(apos2, done);
       }
     });
   });
