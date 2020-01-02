@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.101.0",
+  "version": "2.101.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
   "author": "P'unk Avenue LLC",
   "license": "MIT",
   "dependencies": {
-    "emulate-mongo-2-driver": "^1.0.0",
+    "emulate-mongo-2-driver": "^1.0.3",
     "@apostrophecms/nunjucks": "^2.5.3",
     "@sailshq/lodash": "^3.10.4",
     "async": "^1.5.2",
