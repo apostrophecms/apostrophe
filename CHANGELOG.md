@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.101.1 (2020-01-08)
+
+* Dependency on `emulate-mongo-2-driver` is now explicitly set to require at least version 1.0.3 to bring in various fixes.
+* Reported `landscape` and `portrait` properties of an image attachment object now correspond to the crop in use, if any.
+
 ## 2.101.0 (2019-12-14)
 
 * Due to `npm audit` security vulnerability warnings and the end of upstream support, the 2.x version of the `mongodb` npm module (the driver we used to connect to MongoDB, not MongoDB itself) can no longer be responsibly used in Apostrophe. Therefore we have replaced it with the new [emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver) module, which strives to match the interface of the MongoDB driver version 2.x while acting as a wrapper for the official, supported MongoDB driver version 3.x. This has been tested in many projects. Therefore no code changes should be required for your project to `npm update` to version 2.101.0. However if you encounter incompatibilities, most likely in driver features not used in Apostrophe, please [contribute additional wrappers and test coverage to emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver). Another option is to use [apostrophe-db-mongo-3-driver](https://www.npmjs.com/package/apostrophe-db-mongo-3-driver), which allows you to use the 3.x driver API directly and also provides a `findWithProjection` collection method as a migration path for quickly patching legacy code.
