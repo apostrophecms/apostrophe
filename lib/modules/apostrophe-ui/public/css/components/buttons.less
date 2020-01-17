@@ -51,6 +51,17 @@
     top: 1px;
   }
 
+  &[disabled] {
+    .fa {
+      opacity: 0.3;
+    }
+    &:hover {
+      cursor: not-allowed;
+      .fa {
+        color: black;
+      }
+    } 
+  }
 
   &:hover
   {
