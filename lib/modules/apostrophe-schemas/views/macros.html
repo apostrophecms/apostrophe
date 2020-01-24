@@ -185,6 +185,11 @@
       <span class="apos-ui-container" name="{{ field.name }}">
         <label for="{{ field.name }}" class="apos-field-label"></label>
         <label data-array-length></label><br>
+        {%- if field.help -%}
+          <div class="apos-field-help">{{ __(field.help) }}</div>
+        {%- elif field.htmlHelp -%}
+          <div class="apos-field-help">{{ __(field.htmlHelp) | safe }}</div>
+        {%- endif -%}
         <a href="#" class="apos-control apos-button" data-apos-edit-array>
           {{ __("Edit %s", __(field.label | d(''))) }}
           <i class="fa fa-angle-right"></i>
