@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.102.0 (2020-01-30)
+
+* New `disableInactiveAccounts` option, which can be set like so:
+
+```javascript
+{
+  // in your project level lib/modules/apostrophe-users/index.js file
+  disableInactiveAccounts: {
+    neverDisabledGroups: [ 'admin' ],
+    // After 30 days without logging in, the account is marked disabled
+    // on next login attempt, until an admin explicitly enables it again
+    inactivityDuration: 30
+  }
+}
+```
+
+If you enable this option you must set both sub-options explicitly.
+
+* A longstanding bug relating to schemas has been fixed. Previously, if you attempted to clear a string field that had a `def` property, that field would be repopulated with the `def` value. This was never intended; `def` is only for the initial population of a newly created object. If you were relying on this bug, update your code to use `apos.schemas.newInstance(schema)` from the start so that you begin with an object that has the right defaults for each field. Note that pieces, pages, etc. already do this.
+
+* Added a `bodyAttributes` block to `outerLayoutBase.html`. You may override this block to add new attributes to `body` without overriding the entire `outerLayoutBase.html` template. It is a best practice to not override this template, use the provided blocks.
+
+* Fields of type `attachment` with `required` not set to `true` now work properly.
+
+* You may now set the `loginUrl` option of the `apostrophe-login` module to change the login URL from `/login` to something else. Thanks to Giuseppe Monteleone for this contribution.
+
+* `help` property is now supported for array fields.
+
+* Uploads with a capitalized file extension are now accepted where appropriate. Thanks to Fernando Figaroli for this contribution.
+
+* When editing a join with pages, a nonfunctional edit pencil icon is no longer displayed. Actual inline editing of page settings from another page may be a 3.0 feature.
+
 ## 2.101.1 (2020-01-08)
 
 * Dependency on `emulate-mongo-2-driver` is now explicitly set to require at least version 1.0.3 to bring in various fixes.
