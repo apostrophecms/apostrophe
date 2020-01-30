@@ -1387,12 +1387,13 @@ describe('Schemas', function() {
       addFields: simpleFields
     });
     assert(schema.length === 5);
-    var input = {
+    var input = apos.schemas.newInstance(schema);
+    Object.assign(input, {
       name: 'Bob Smith',
       address: '5017 Awesome Street\nPhiladelphia, PA 19147',
       irrelevant: 'Irrelevant',
       slug: 'This Is Cool'
-    };
+    });
     var req = apos.tasks.getReq();
     var result = {};
     return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
