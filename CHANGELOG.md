@@ -2,7 +2,23 @@
 
 ## 2.102.0 (2020-01-30)
 
-* New `disableInactiveAccounts` option, which can be set like so:
+* Apostrophe now displays "Saving... Saved" indicators near the context
+menu in the lower left indicator. In our UX tests, users often did not
+realize Apostrophe automatically saved their work and were concerned
+by the lack of an explicit save button. In addition, Apostrophe no longer
+attempts to save your remaining changes via a synchronous HTTP request when you
+close the page, because this is deprecated in all browsers and disabled
+in many. Instead, Apostrophe uses the standard "you have unsaved changes,
+are you sure you wish to leave this page?" dialog. Together with the
+"saving... saved" indicator, this provides a mechanism for preventing
+lost work that is robust in modern browsers. 
+
+This does impact Apostrophe's "advisory locking" mechanism that warns users
+if another user is already editing. Since we cannot guarantee a synchronous
+request to unlock the page will ever be received, we have instead
+shortened the expiration time for document locks to 30 seconds. Since
+these are refreshed every 5 seconds there should be no negative impacts
+in typical use.
 
 ```javascript
 {
