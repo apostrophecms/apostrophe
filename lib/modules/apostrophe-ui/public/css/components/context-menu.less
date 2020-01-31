@@ -24,9 +24,11 @@
     // also note we need this to pass functional tests
     display: none;
   }
-  .apos-unsaved::after {
-    content: 'Saving...';
-    .apos-button;
+  .apos-unsaved {
     margin-left: @apos-padding-1;
+    &:hover, &:focus {
+      cursor: initial;
+      box-shadow: none;
+    }
   }
 }
