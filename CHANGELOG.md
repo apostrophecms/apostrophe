@@ -20,6 +20,9 @@ shortened the expiration time for document locks to 30 seconds. Since
 these are refreshed every 5 seconds there should be no negative impacts
 in typical use.
 
+Thanks to Freshworks for making this improvement possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+* New `disableInactiveAccounts` option, which can be set like so:
 ```javascript
 {
   // in your project level lib/modules/apostrophe-users/index.js file
