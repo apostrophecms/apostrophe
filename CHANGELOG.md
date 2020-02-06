@@ -24,18 +24,24 @@ Thanks to Freshworks for making this improvement possible via [Apostrophe Enterp
 
 * New `disableInactiveAccounts` option, which can be set like so:
 ```javascript
+  'apostrophe-users': {
+    disableInactiveAccounts: true
+  }
+```
+
+By default, users from the "admin" group are whitelisted and the inactivity period is 90 days. This can be changed:
+
+```javascript
 {
   // in your project level lib/modules/apostrophe-users/index.js file
   disableInactiveAccounts: {
-    neverDisabledGroups: [ 'admin' ],
+    neverDisabledGroups: [ 'test', 'otherGroup' ],
     // After 30 days without logging in, the account is marked disabled
     // on next login attempt, until an admin explicitly enables it again
     inactivityDuration: 30
   }
 }
 ```
-
-If you enable this option you must set both sub-options explicitly.
 
 * A longstanding bug relating to schemas has been fixed. Previously, if you attempted to clear a string field that had a `def` property, that field would be repopulated with the `def` value. This was never intended; `def` is only for the initial population of a newly created object. If you were relying on this bug, update your code to use `apos.schemas.newInstance(schema)` from the start so that you begin with an object that has the right defaults for each field. Note that pieces, pages, etc. already do this.
 
