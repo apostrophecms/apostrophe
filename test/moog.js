@@ -406,25 +406,25 @@ describe('moog', function() {
       assert(subClassTwo.order[2] === 'third');
     });
 
-    it('should call `adjustOptions` methods subClass-first', async function() {
+    it('should call `beforeSuperClass` methods subClass-first', async function() {
       const moog = require('../lib/moog.js')({});
 
       moog.define('baseClass', {
-        adjustOptions(options) {
+        beforeSuperClass(self, options) {
           options.order = (options.order || []).concat('third');
         }
       });
 
       moog.define('subClassOne', {
         extend: 'baseClass',
-        adjustOptions(options) {
+        beforeSuperClass(self, options) {
           options.order = (options.order || []).concat('second');
         }
       });
 
       moog.define('subClassTwo', {
         extend: 'subClassOne',
-        adjustOptions(options) {
+        beforeSuperClass(self, options) {
           options.order = (options.order || []).concat('first');
         }
       });
@@ -480,7 +480,7 @@ describe('moog', function() {
         options: {
           color: 'red'
         },
-        adjustOptions(options) {
+        beforeSuperClass(self, options) {
           options.color = 'purple';
         },
         extend: 'baseclass'
@@ -506,7 +506,7 @@ describe('moog', function() {
         options: {
           color: 'red'
         },
-        adjustOptions(self, options) {
+        beforeSuperClass(self, options) {
           options.color = 'purple';
         },
         extend: 'baseclass'
