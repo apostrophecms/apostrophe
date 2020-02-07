@@ -19,10 +19,10 @@ describe('Admin bar', function() {
           _: []
         },
         modules: {
-          'apostrophe-express': {
-            secret: 'xxx',
-            csrf: false
-          },
+          // 'apostrophe-express': {
+          //   secret: 'xxx',
+          //   csrf: false
+          // },
           'apostrophe-admin-bar': {
             addGroups: [
               {
