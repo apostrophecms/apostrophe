@@ -50,7 +50,7 @@
     "joinr": "^1.0.2",
     "jpeg-exif": "^1.1.4",
     "launder": "^1.1.1",
-    "less": "^3.10.3",
+    "less": "~3.10.3",
     "less-middleware": "^3.1.0",
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.1",

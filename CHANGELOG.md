@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.102.1 (2020-02-10)
+
+* Temporarily pinned to `less` version 3.10.x to work around an
+[upstream bug](https://github.com/less/less.js/issues/3469) that broke
+deployments.
+
 ## 2.102.0 (2020-01-30)
 
 * Apostrophe now displays "Saving... Saved" indicators near the context
