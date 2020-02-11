@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.102.2 (2020-02-11)
+
+* Removed the restriction preventing the use of `mongodb+srv` connection
+URIs with MongoDB. `emulate-mongo-2-driver` has no problem with these, since
+it passes them on to the 3.x driver.
+* Updated dependency to `emulate-mongo-2-driver` 1.1.0, which knocks out 100% of the common MongoDB deprecation warnings when using Apostrophe, with one exception: you should set the `useUnifiedTopology: true` option yourself. We do not do this for you because we cannot break legacy configurations using other topologies. However most of you can just turn this option on and enjoy more reliable connections and no more warnings.
+
+Here is how to configure that in Apostrophe:
+
+```javascript
+// in app.js, where your modules key is...
+modules: {
+  'apostrophe-db': {
+    connect: {
+      useUnifiedTopology: true
+    }
+  }
+}
+```
+
 ## 2.102.1 (2020-02-10)
 
 * Temporarily pinned to `less` version 3.10.x to work around an
