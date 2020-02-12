@@ -120,7 +120,7 @@ describe('Pieces', function() {
   // Wipe the database so we can run this test suite independent of bootstrap
   it('should make sure there is no test data hanging around from last time', function(done) {
     // Attempt to purge the entire aposDocs collection
-    apos.docs.db.remove({}, function(err) {
+    apos.docs.db.deleteMany({}, function(err) {
       assert(!err);
       // Make sure it went away
       apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
@@ -532,7 +532,7 @@ describe('Pieces', function() {
 
   it('people can find things via a join', function() {
     let req = apos.tasks.getReq();
-    return apos.docs.db.insert(testPeople)
+    return apos.docs.db.insertOne(testPeople)
       .then(function() {
         return apos.docs.getManager('person').find(req, {}).toObject();
       })

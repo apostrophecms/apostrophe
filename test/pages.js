@@ -153,7 +153,7 @@ describe('Pages', function() {
       }
     ];
 
-    const items = await apos.docs.db.insert(testItems);
+    const items = await apos.docs.db.insertOne(testItems);
 
     assert(items.result.ok === 1);
     assert(items.insertedCount === 6);

@@ -82,7 +82,7 @@ describe('Docs', function() {
 
   it('should make sure there is no test data hanging around from last time', async function() {
     // Attempt to purge the entire aposDocs collection
-    await apos.docs.db.remove({});
+    await apos.docs.db.deleteMany({});
 
     // Make sure it went away
     const docs = await apos.docs.db.find({ slug: 'larry' }).toArray();
@@ -125,7 +125,7 @@ describe('Docs', function() {
       }
     ];
 
-    const response = await apos.docs.db.insert(testItems);
+    const response = await apos.docs.db.insertOne(testItems);
 
     assert(response.result.ok === 1);
     assert(response.insertedCount === 3);
@@ -156,7 +156,7 @@ describe('Docs', function() {
 
   it('should fail if you try to insert a document with the same unique key twice', async function() {
     try {
-      await apos.docs.db.insert([
+      await apos.docs.db.insertMany([
         {
           type: 'test-person',
           published: false,
@@ -564,7 +564,7 @@ describe('Docs', function() {
       });
     }
 
-    await apos.docs.db.insert(testItems);
+    await apos.docs.db.insertOne(testItems);
 
     const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
       .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray();

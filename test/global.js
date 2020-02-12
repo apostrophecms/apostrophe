@@ -74,7 +74,7 @@ describe('Global', function() {
   });
 
   it('give global doc a workflowLocale property to simulate use with workflow', function() {
-    return apos.docs.db.update({
+    return apos.docs.db.updateOne({
       type: 'apostrophe-global'
     }, {
       $set: {
@@ -100,7 +100,7 @@ describe('Global', function() {
         assert(global.globalBusy);
       }).then(function() {
         return Promise.mapSeries(_.range(0, 10), function(i) {
-          return apos.docs.db.update({
+          return apos.docs.db.updateOne({
             type: 'apostrophe-global'
           }, {
             $inc: {
@@ -147,7 +147,7 @@ describe('Global', function() {
   });
 
   it('reset counts', function() {
-    return apos.docs.db.update({
+    return apos.docs.db.updateOne({
       type: 'apostrophe-global'
     }, {
       $set: {
@@ -173,7 +173,7 @@ describe('Global', function() {
         assert(global.globalBusyen);
       }).then(function() {
         return Promise.mapSeries(_.range(0, 10), function(i) {
-          return apos.docs.db.update({
+          return apos.docs.db.updateOne({
             type: 'apostrophe-global'
           }, {
             $inc: {
@@ -220,7 +220,7 @@ describe('Global', function() {
   });
 
   it('reset counts', function() {
-    return apos.docs.db.update({
+    return apos.docs.db.updateOne({
       type: 'apostrophe-global'
     }, {
       $set: {
@@ -250,7 +250,7 @@ describe('Global', function() {
         assert(!global.globalBusyfr);
       }).then(function() {
         return Promise.mapSeries(_.range(0, 10), function(i) {
-          return apos.docs.db.update({
+          return apos.docs.db.updateOne({
             type: 'apostrophe-global'
           }, {
             $inc: {
@@ -353,7 +353,7 @@ describe('Global with separateWhileBusyMiddleware', function() {
   });
 
   it('give global doc a workflowLocale property to simulate use with workflow', function() {
-    return apos.docs.db.update({
+    return apos.docs.db.updateOne({
       type: 'apostrophe-global'
     }, {
       $set: {
@@ -379,7 +379,7 @@ describe('Global with separateWhileBusyMiddleware', function() {
         assert(global.globalBusy);
       }).then(function() {
         return Promise.mapSeries(_.range(0, 10), function(i) {
-          return apos.docs.db.update({
+          return apos.docs.db.updateOne({
             type: 'apostrophe-global'
           }, {
             $inc: {

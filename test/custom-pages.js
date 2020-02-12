@@ -159,7 +159,7 @@ describe('custom-pages', function() {
       rank: 5
     };
 
-    const response = await apos.docs.db.insert(testItem);
+    const response = await apos.docs.db.insertOne(testItem);
 
     assert(response.insertedCount === 1);
     assert(response.ops[0]._id === 'niftyPages1');

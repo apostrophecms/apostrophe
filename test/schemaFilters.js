@@ -108,7 +108,7 @@ describe('Schema Filters', function() {
           return callback(err);
         });
         function purgeCats(callback) {
-          return apos.docs.db.remove({ type: 'cat' }, callback);
+          return apos.docs.db.deleteMany({ type: 'cat' }, callback);
         }
         function insertCats(callback) {
           return async.eachSeries(cats, function(cat, callback) {
@@ -116,7 +116,7 @@ describe('Schema Filters', function() {
           }, callback);
         }
         function purgePeople(callback) {
-          return apos.docs.db.remove({ type: 'person' }, callback);
+          return apos.docs.db.deleteMany({ type: 'person' }, callback);
         }
         function insertPeople(callback) {
           return async.eachSeries(people, function(person, callback) {

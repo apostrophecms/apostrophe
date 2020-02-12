@@ -57,7 +57,7 @@ describe('Locks', function() {
   });
 
   it('cleanup', async function() {
-    await apos.locks.db.remove({});
+    await apos.locks.db.deleteMany({});
   });
 
   it('should allow a single lock without contention uneventfully', async function() {

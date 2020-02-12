@@ -88,7 +88,7 @@ describe('Versions', function() {
   });
 
   it('should accept a direct mongo insert of poems for join test purposes', function(done) {
-    return apos.docs.db.insert([
+    return apos.docs.db.insertMany([
       {
         title: 'Poem ABC',
         slug: 'poem-abc',

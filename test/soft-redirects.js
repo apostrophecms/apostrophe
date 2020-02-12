@@ -58,7 +58,7 @@ describe('Soft Redirects', function() {
   });
 
   it('should be able to change the URL via db', function() {
-    return apos.docs.db.update({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
   });
 
   it('should be able to serve the page at its new URL', function(done) {
@@ -146,7 +146,7 @@ describe('Soft Redirects - with `statusCode` option', function() {
   });
 
   it('should be able to change the URL via db', function() {
-    return apos.docs.db.update({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
   });
 
   it('should be able to serve the page at its old URL too, via redirect', function(done) {

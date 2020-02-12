@@ -79,7 +79,7 @@ describe('Images', function() {
   // Test pieces.list()
   it('should clean up any existing images for testing', async function() {
     try {
-      const response = await apos.docs.db.remove({ type: 'apostrophe-image' }
+      const response = await apos.docs.db.deleteMany({ type: 'apostrophe-image' }
       );
       assert(response.result.ok === 1);
     } catch (e) {
