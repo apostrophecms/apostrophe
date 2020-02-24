@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.102.3 (2020-02-24)
+
+* Security fix for [Prototype Override Protection Bypass vulnerability in the qs module](https://snyk.io/vuln/npm:qs:20170213). It appears this risk only occurs when our `build` Nunjucks filter is used in conjunction with a URL based on what the browser sent, rather than starting with the `_url` property of the page and adding parameters to that with `build`, thus it is not an issue "out of the box" in all or most ApostropheCMS sites. However the vulnerability should be patched promptly because it could definitely exist in current or future project level code that uses `build`. To eliminate the risk, update to this version of Apostrophe and make sure you "npm update" to get the required updated version of `qs` via Apostrophe's dependencies.
+
 ## 2.102.2 (2020-02-11)
 
 * Removed the restriction preventing the use of `mongodb+srv` connection
