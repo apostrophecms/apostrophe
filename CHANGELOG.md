@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.102.4 (2020-02-24)
+## 2.102.4 (2020-02-25)
 
 * Explicitly require emulate-mongo-2-driver 1.2.0 or better, which provides a deprecation-free wrapper for `count` and fixes bugs in the wrapper for `aggregate`.
 
