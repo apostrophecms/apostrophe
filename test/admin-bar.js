@@ -46,10 +46,11 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['apostrophe-admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
-      assert(apos.adminBar.items[6].name === 'apostrophe-files');
-      assert(apos.adminBar.items[7].name === 'apostrophe-images');
+      console.log('***', apos.adminBar.items);
+      assert(apos.adminBar.items.length === 7);
+      assert(apos.adminBar.items[6].name === 'apostrophe-login-logout');
+      assert(apos.adminBar.items[4].name === 'apostrophe-images');
+      assert(apos.adminBar.items[5].name === 'apostrophe-files');
     } finally {
       t.destroy(apos);
     }

@@ -38,7 +38,7 @@ module.exports = async function(options) {
   // promise event emitter code
   self.apos = self;
 
-  require('./lib/modules/apostrophe-module/lib/events.js')(self, options);
+  Object.assign(self, require('./lib/modules/apostrophe-module/lib/events.js')(self, options));
 
   // Determine root module and root directory
   self.root = options.root || getRoot();
@@ -50,9 +50,6 @@ module.exports = async function(options) {
   self.options = mergeConfiguration(options, defaults);
   autodetectBundles();
   acceptGlobalOptions();
-
-  // Legacy events
-  self.handlers = {};
 
   // Module-based async events (self.on and self.emit of each module)
   self.eventHandlers = {};
@@ -279,7 +276,7 @@ module.exports = async function(options) {
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
       defaultBaseClass: 'apostrophe-module',
-      sections: [ 'helpers', 'eventHandlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes' ]
+      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes' ]
     });
 
     self.synth = synth;
