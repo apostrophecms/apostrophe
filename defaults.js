@@ -28,6 +28,7 @@ module.exports = {
     'apostrophe-attachments': {},
     'apostrophe-oembed': {},
     'apostrophe-pager': {},
+    'apostrophe-any-doc-type-manager': {},
     // global comes first so it can register a doc type manager and clean things up before
     // pages claims any orphan page types
     'apostrophe-global': {},
