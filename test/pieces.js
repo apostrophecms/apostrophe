@@ -226,7 +226,7 @@ describe('Pieces', function() {
     // definitions that are safe for 'public' or 'manage' contexts
     let mockCursor = apos.docs.find(apos.tasks.getAnonReq());
     _.merge(mockCursor, {
-      filters: {
+      builders: {
         publicTest: {
           launder: function(s) {
             return 'laundered';
@@ -261,7 +261,7 @@ describe('Pieces', function() {
       fakeTest: 'notEvenReal'
     };
 
-    mockCursor.queryToFilters(filters);
+    mockCursor.applyBuildersSafely(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });

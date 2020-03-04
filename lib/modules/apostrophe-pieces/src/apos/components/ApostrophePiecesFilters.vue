@@ -11,7 +11,7 @@
 </template>
 
 <script>
-// ApostrophePicesFilters is designed to be bound via
+// ApostrophePiecesFilters is designed to be bound via
 // `v-model` to an object property containing the
 // initial values of various filters. This implicitly
 // passes the `value` prop, you do not have to do that.

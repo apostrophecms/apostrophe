@@ -1278,7 +1278,7 @@ All tests passing.
 
 * As always, Apostrophe always populates `req.data.home`; when `req.data.page._ancestors[0]` exists that is used, otherwise Apostrophe carries out a separate query. However as a performance enhancement, you may now disable this additional query by passing the `home: false` option to the `apostrophe-pages` module. Note that `req.data.home` is not guaranteed to exist if you do this.
 
-As for children of the home page, for performance you may now pass `home: { children: false }` option to the `apostrophe-pages` module. This option only comes into play when using `filters: { ancestors: false }`.
+As for children of the home page, for performance you may now pass `home: { children: false }` option to the `apostrophe-pages` module. This option only comes into play when using `builders: { ancestors: false }`.
 
 Thanks to Michelin for their support of this work.
 
