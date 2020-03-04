@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.103.1 (2020-03-04)
+
+* An incompatibility with apostrophe-headless was introduced in Apostrophe 2.102.0. This version addresses that incompatibility, however you must also upgrade apostrophe-headless to version 2.9.3. The issue had to do with a change that was made to allow users to intentionally clear default values in forms. We are updating our regression test procedures to ensure that if a new release of apostrophe would break the unit tests of apostrophe-headless, it will not be published until that issue is resolved.
+
 ## 2.103.0 (2020-03-02)
 
 * Frustrations with conflict resolution have been much improved. First, Apostrophe no longer displays the "another user has taken control of the document" message multiple times in a row. Second, due to changes in what browsers allow to happen when you leave the page, beginning in version 2.102.0 Apostrophe displayed too many messages about a conflict with your **own** work in another tab. We no longer display these messages. However, if there really *is* work lost for the same document in another tab, Apostrophe will still tell you what happened in order to teach the habit of not editing the same page in two tabs simultaneously.
