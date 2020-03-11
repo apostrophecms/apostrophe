@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.103.1",
+  "version": "2.104.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -39,7 +39,7 @@
     "cuid": "^1.3.8",
     "deep-get-set": "^0.1.1",
     "diff": "^4.0.1",
-    "emulate-mongo-2-driver": "^1.2.1",
+    "emulate-mongo-2-driver": "^1.2.3",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "glob": "^5.0.15",

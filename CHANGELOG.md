@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.104.0 (2020-03-11)
+
+* `apos.utils.get` and `apos.utils.post` now return a promise if invoked without a callback. This means you may use `await` with them. *It is up to you to provide a `Promise` polyfill if you use this feature without callbacks and intend to support IE11. For instance you could use the `core-js` library.* These methods are similar to `$.get` and `$.post` but do not require jQuery. `apos.utils.post` supports Apostrophe's CSRF protection natively so you do not have to add an exception if you use it. These methods are available in [lean frontend mode](https://docs.apostrophecms.org/apostrophe/core-concepts/front-end-assets/lean-frontend-assets).
+* `apos.utils.get` no longer adds an unnecessary `?` to the URL it fetches if `data` has no properties. In addition, `apos.utils.get` leaves the URL unchanged if `data` is null.
+* Recursion warnings now include a hint to add a projection to pieces-widgets as well as more obvious joins.
+* Dependencies updated to reflect latest version of `emulate-mongo-2-driver`, which contains an important fix to `count`.
+
 ## 2.103.1 (2020-03-04)
 
 * An incompatibility with apostrophe-headless was introduced in Apostrophe 2.102.0. This version addresses that incompatibility, however you must also upgrade apostrophe-headless to version 2.9.3. The issue had to do with a change that was made to allow users to intentionally clear default values in forms. We are updating our regression test procedures to ensure that if a new release of apostrophe would break the unit tests of apostrophe-headless, it will not be published until that issue is resolved.
