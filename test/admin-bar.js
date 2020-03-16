@@ -19,37 +19,36 @@ describe('Admin bar', function() {
           _: []
         },
         modules: {
-          // 'apostrophe-express': {
-          //   secret: 'xxx',
-          //   csrf: false
-          // },
           'apostrophe-admin-bar': {
-            addGroups: [
-              {
-                label: 'Media',
-                items: [
-                  'apostrophe-images',
-                  'apostrophe-files'
-                ]
-              },
-              {
-                label: 'Content',
-                items: [
-                  'apostrophe-login-logout',
-                  'apostrophe-files',
-                  'apostrophe-images'
-                ]
-              }
-            ]
+            options: {
+              addGroups: [
+                {
+                  label: 'Media',
+                  items: [
+                    'apostrophe-images',
+                    'apostrophe-files'
+                  ]
+                },
+                {
+                  label: 'Content',
+                  items: [
+                    'apostrophe-login-logout',
+                    'apostrophe-files',
+                    'apostrophe-images'
+                  ]
+                }
+              ]
+            }
           }
         }
       });
       assert(apos.modules['apostrophe-admin-bar']);
       assert(apos.adminBar);
+      console.log(JSON.stringify(apos.adminBar.items, null, '  '));
       assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
-      assert(apos.adminBar.items[5].name === 'apostrophe-images');
+      assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
       assert(apos.adminBar.items[6].name === 'apostrophe-files');
+      assert(apos.adminBar.items[7].name === 'apostrophe-images');
     } finally {
       t.destroy(apos);
     }
@@ -70,23 +69,25 @@ describe('Admin bar', function() {
             csrf: false
           },
           'apostrophe-admin-bar': {
-            addGroups: [
-              {
-                label: 'Media',
-                items: [
-                  'apostrophe-images',
-                  'apostrophe-files'
-                ]
-              },
-              {
-                label: 'Content',
-                items: [
-                  'apostrophe-files',
-                  'apostrophe-images',
-                  'apostrophe-login-logout'
-                ]
-              }
-            ]
+            options: {
+              addGroups: [
+                {
+                  label: 'Media',
+                  items: [
+                    'apostrophe-images',
+                    'apostrophe-files'
+                  ]
+                },
+                {
+                  label: 'Content',
+                  items: [
+                    'apostrophe-files',
+                    'apostrophe-images',
+                    'apostrophe-login-logout'
+                  ]
+                }
+              ]
+            }
           }
         }
       });

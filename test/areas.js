@@ -22,13 +22,8 @@ describe('Areas', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          csrf: false
-        },
         'monkeys': {
-          extend: 'apostrophe-pieces',
-          name: 'monkey'
+          extend: 'apostrophe-pieces'
         },
         'monkeys-widgets': {
           extend: 'apostrophe-pieces-widgets'

@@ -58,9 +58,9 @@ describe('Attachment', function() {
     });
   });
 
-  describe('accept', async function() {
+  describe('insert', async function() {
 
-    async function accept(filename) {
+    async function insert(filename) {
       const info = await apos.attachments.insert(apos.tasks.getReq(), {
         name: filename,
         path: uploadSource + filename
@@ -78,11 +78,11 @@ describe('Attachment', function() {
     }
 
     it('should upload a text file using the attachments api when user', async function() {
-      return accept('upload_apos_api.txt');
+      return insert('upload_apos_api.txt');
     });
 
     it('should upload an image file using the attachments api when user', async function() {
-      return accept('upload_image.png');
+      return insert('upload_image.png');
     });
 
     it('should not upload an exe file', async function() {
@@ -99,8 +99,8 @@ describe('Attachment', function() {
       assert(good);
     });
 
-    it('should crop an image file when user', async function() {
-      let result = await accept('crop_image.png');
+    it('should crop an image file when requested', async function() {
+      let result = await insert('crop_image.png');
       let crop = { top: 10, left: 10, width: 80, height: 80 };
       await apos.attachments.crop(
         apos.tasks.getReq(),
