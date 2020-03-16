@@ -1,5 +1,5 @@
 module.exports = {
-  construct: function(self, options) {
+  init(self, options) {
     // Set property
     self.color = 'red';
     // Attach to apos
