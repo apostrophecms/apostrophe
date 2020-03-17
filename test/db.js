@@ -34,7 +34,9 @@ describe('Db', function() {
       },
       modules: {
         'apostrophe-express': {
-          port: 7777
+          options: {
+            port: 7777
+          }
         },
         'apostrophe-db': {
           db: apos.db,
