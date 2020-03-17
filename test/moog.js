@@ -62,17 +62,7 @@ describe('moog', function() {
     });
   });
 
-  describe('`create` and `createSync` syntax', function() {
-    it('should `createSync` without options', function() {
-      const moog = require('../lib/moog.js')();
-
-      moog.define('myClass', {});
-
-      var myObject = moog.createSync('myClass');
-      assert(myObject);
-      assert(myObject.__meta.name === 'myClass');
-    });
-
+  describe('`create` syntax', function() {
     it('should `create` without options', async function() {
       const moog = require('../lib/moog.js')();
 
@@ -123,27 +113,6 @@ describe('moog', function() {
       assert(myObject.options.color === 'red');
     });
 
-    it('should be able to create a subclass with expected default option behavior (sync)', function() {
-      const moog = require('../lib/moog.js')({});
-
-      moog.define('baseClass', {
-        options: {
-          color: 'blue'
-        }
-      });
-
-      moog.define('subClass', {
-        options: {
-          color: 'red'
-        },
-        extend: 'baseClass'
-      });
-
-      const myObject = moog.createSync('subClass', {});
-      assert(myObject);
-      assert(myObject.options.color === 'red');
-    });
-
     it('should report an error gracefully if subclass to be extended does not exist (async)', async function() {
       const moog = require('../lib/moog.js')({});
 
@@ -157,26 +126,6 @@ describe('moog', function() {
 
       try {
         await moog.create('subClass', {});
-        assert(false);
-      } catch (e) {
-        assert(e);
-        assert(e.toString().match(/baseClass/));
-      }
-    });
-
-    it('should throw an exception gracefully if subclass to be extended does not exist (sync)', function() {
-      const moog = require('../lib/moog.js')({});
-
-      // base class does not actually exist
-      moog.define('subClass', {
-        options: {
-          color: 'red'
-        },
-        extend: 'baseClass'
-      });
-
-      try {
-        moog.createSync('subClass', {});
         assert(false);
       } catch (e) {
         assert(e);
@@ -462,73 +411,6 @@ describe('moog', function() {
       }
       assert(e);
       assert(!classOne);
-    });
-
-    it('should allow synchronous creation of a class with no asynchronous init methods', function() {
-      const moog = require('../lib/moog.js')({});
-
-      moog.define('baseclass', {
-        options: {
-          color: 'blue'
-        },
-        init(self, options) {
-          self._options = options;
-        }
-      });
-
-      moog.define('subclass', {
-        options: {
-          color: 'red'
-        },
-        beforeSuperClass(self, options) {
-          options.color = 'purple';
-        },
-        extend: 'baseclass'
-      });
-
-      const obj = moog.createSync('subclass', {});
-      assert(obj.options.color === 'purple');
-    });
-
-    it('should not allow synchronous creation of a class with asynchronous construct methods', function() {
-      const moog = require('../lib/moog.js')({});
-
-      moog.define('baseclass', {
-        options: {
-          color: 'blue'
-        },
-        async init(self, options) {
-          self._options = options;
-        }
-      });
-
-      moog.define('subclass', {
-        options: {
-          color: 'red'
-        },
-        beforeSuperClass(self, options) {
-          options.color = 'purple';
-        },
-        extend: 'baseclass'
-      });
-
-      let errorReported = false;
-      try {
-        moog.createSync('subclass', {});
-      } catch (e) {
-        errorReported = true;
-      }
-      assert(errorReported);
-    });
-
-    it('should report an error synchronously when creating a nonexistent type synchronously', function() {
-      const moog = require('../lib/moog.js')({});
-      try {
-        moog.createSync('nonesuch');
-        assert(false);
-      } catch (e) {
-        assert(true);
-      }
     });
 
     it('should report an error asynchronously when creating a nonexistent type asynchronously', async function() {

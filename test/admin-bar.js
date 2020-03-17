@@ -44,7 +44,6 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['apostrophe-admin-bar']);
       assert(apos.adminBar);
-      console.log(JSON.stringify(apos.adminBar.items, null, '  '));
       assert(apos.adminBar.items.length === 8);
       assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
       assert(apos.adminBar.items[6].name === 'apostrophe-files');

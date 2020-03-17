@@ -276,7 +276,7 @@ module.exports = async function(options) {
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
       defaultBaseClass: 'apostrophe-module',
-      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'queryFeatures' ],
+      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'middleware' ],
       unparsedSections: [ 'queries', 'extendQueries' ]
     });
 
@@ -287,7 +287,6 @@ module.exports = async function(options) {
     self.define = self.synth.define;
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
-    self.createSync = self.synth.createSync;
 
     _.each(self.options.modules, function(options, name) {
       synth.define(name, options);
