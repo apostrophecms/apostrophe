@@ -23,9 +23,6 @@ describe('custom-pages', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx'
-        },
         'nifty-pages': {
           extend: 'apostrophe-custom-pages'
         }
