@@ -12,7 +12,7 @@
         <img src="/modules/apos/images/small-spinner.gif">
       </span>
     {%- endif -%}
-    {{ __(options.label | d('')) }}
+    {{ __ns('apostrophe', options.label | d('')) }}
   </a>
 {%- endmacro -%}
 

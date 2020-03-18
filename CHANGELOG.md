@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.105.0 (2020-03-17)
+
+The regular `i18n` template helpers are enhanced with an additional set of namespaced functions: `__ns()`, `__ns_l()`, etc. These take a namespace name as the first argument, for instance `__ns('apostrophe', 'Save')`. Also, all of the i18n calls in Apostrophe's core UI now use the namespace `apostrophe`.
+
+For backwards compatibility, the namespace is ignored by default. However, if you set the `namespaces: true` option for the `apostrophe-i18n` module, calls with the namespace `apostrophe` will be mapped to a separate set of translation files in the `apostrophe-locales` folder, and so on.
+
+Ordinary calls to `__()` and other non-namespaced i18n functions will continue to map to translation files in the default `locales` folder. The namespace `default` will map to this folder as well.
+
+When the `namespaces` option is present, separate instances of the `i18n` npm module are configured for each namespace, since it has no built-in support for namespacing. When you pass `namespaces: true`, the configuration passed to each them is the same, except for the name of the locales folder. You can also pass an object with separate configuration:
+
+```javascript
+// in lib/modules/apostrophe-i18n/index.js
+
+module.exports = {
+  namespaces: {
+    apostrophe: {
+      // Not interested in translating the UI, so don't update those locale files
+      // or specify any locales for it
+      update: false
+    },
+    default: {
+      // Do update the locale files for the project level namespace (this is the default)
+      update: true,
+      locales: [ 'en', 'fr' ]
+    }
+  }
+};
+```
+
 ## 2.104.0 (2020-03-11)
 
 * `apos.utils.get` and `apos.utils.post` now return a promise if invoked without a callback. This means you may use `await` with them. *It is up to you to provide a `Promise` polyfill if you use this feature without callbacks and intend to support IE11. For instance you could use the `core-js` library.* These methods are similar to `$.get` and `$.post` but do not require jQuery. `apos.utils.post` supports Apostrophe's CSRF protection natively so you do not have to add an exception if you use it. These methods are available in [lean frontend mode](https://docs.apostrophecms.org/apostrophe/core-concepts/front-end-assets/lean-frontend-assets).
@@ -2427,7 +2456,7 @@ All tests passing.
 * `apos.permissions.addPublic` accepts multiple arguments and array arguments,
 adding all of the permission names given including any listed in the arrays.
 * Permissions checks for pieces admin routes longer check for req.user, checking for the appropriate `edit-` permission is sufficient and makes addPublic more useful.
-* Updated the `i18n` module to address a problem where labels that happened to be numbers rather than strings would crash the template if passed to `__()`.
+* Updated the `i18n` module to address a problem where labels that happened to be numbers rather than strings would crash the template if passed to `__ns('apostrophe', )`.
 * Documentation improvements.
 
 ## 2.14.3
@@ -2456,7 +2485,7 @@ All tests passing.
 
 * A version rollback dialog box for the `global` doc is now opened if an element with the `data-apos-versions-global` attribute is clicked. There is currently no such element in the standard UI but you may introduce one in your own layout if you have mission-critical content in the `global` doc that is awkward to recreate after an accidental deletion, such as a custom sitewide nav.
 * An error message is correctly displayed when login fails.
-* Many UI messages are now passed through the `__()` internationalization helper correctly. Thanks to `timaebi`.
+* Many UI messages are now passed through the `__ns('apostrophe', )` internationalization helper correctly. Thanks to `timaebi`.
 
 ## 2.13.2 (2016-12-22)
 
