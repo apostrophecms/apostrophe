@@ -17,7 +17,7 @@
 
 {%- block label -%}
   {# Default is not great, you should supply a title! #}
-  {{ __(data.job.labels.title or 'Progress') }}
+  {{ __ns('apostrophe', data.job.labels.title or 'Progress') }}
 {%- endblock -%}
 
 {%- block body -%}

@@ -2,7 +2,7 @@
 
 {% macro menuItem(content, options) -%}
   <li class="apos-dropdown-item" data-apos-{{ content.action }}{% if content.value %}="{{ content.value }}"{% endif %}>
-    {{ __(content.label | d('')) }}
+    {{ __ns('apostrophe', content.label | d('')) }}
   </li>
 {%- endmacro %}
 
@@ -23,7 +23,7 @@
     {%- elif type == 'admin' -%}
       {# TODO: is this dead code? adminBar.html appears to output its own #}
       <div class="apos-admin-bar-item-inner">
-        {{ __(menu.label | d('')) }}
+        {{ __ns('apostrophe', menu.label | d('')) }}
       </div>
     {%- endif -%}
     <ul class="apos-dropdown-items" data-apos-dropdown-items>

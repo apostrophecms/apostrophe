@@ -5,7 +5,7 @@
   <div class="apos-browse">
 {% endif %}
 {% if data.autocomplete %}
-  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" placeholder="{{ __('Search...') }}" data-autocomplete />
+  <input type="text" name="autocomplete" class="apos-field-input apos-field-input-text" placeholder="{{ __ns('apostrophe', 'Search...') }}" data-autocomplete />
 {% endif %}
 {% if data.browse %}
   {{ buttons.action('Browse', { action: 'browse', icon: 'caret-right' }) }}
@@ -18,4 +18,4 @@
   {# AJAX populates me #}
 </div>
 {# Initially hidden #}
-<div class="apos-chooser-limit-reached">{{ __("Limit Reached") }}</div>
+<div class="apos-chooser-limit-reached">{{ __ns('apostrophe', "Limit Reached") }}</div>
