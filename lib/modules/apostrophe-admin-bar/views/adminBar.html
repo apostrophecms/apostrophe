@@ -19,7 +19,7 @@
           {%- if item.options.href -%}
             <a href="{{ apos.prefix }}{{ item.options.href }}">
           {%- endif -%}
-            {{ __(item.label | d('')) }}
+            {{ __ns('apostrophe', item.label | d('')) }}
           {%- if item.options.href -%}
             </a>
           {%- endif -%}
@@ -31,7 +31,7 @@
                   {%- if subItem.options.href -%}
                     <a href="{{ apos.prefix }}{{ subItem.options.href }}">
                   {%- endif -%}
-                  {{ __(subItem.label | d('')) }}
+                  {{ __ns('apostrophe', subItem.label | d('')) }}
                   {%- if subItem.options.href -%}
                     </a>
                   {%- endif -%}

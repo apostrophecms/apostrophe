@@ -14,7 +14,7 @@
 {%- endblock -%}
 
 {%- block instructions -%}
-  {{ __('Here you can add new %s or click on existing ones to edit them.', __(data.options.pluralLabel |  d(''))) }}
+  {{ __ns('apostrophe', 'Here you can add new %s or click on existing ones to edit them.', __ns('apostrophe', data.options.pluralLabel |  d(''))) }}
 {%- endblock -%}
 
 {%- block filters -%}
@@ -24,7 +24,7 @@
 {%- endblock -%}
 
 {%- block label -%}
-  {{ __('Manage %s', __(data.options.pluralLabel | d(''))) }}
+  {{ __ns('apostrophe', 'Manage %s', __ns('apostrophe', data.options.pluralLabel | d(''))) }}
 {%- endblock -%}
 
 {%- block body -%}

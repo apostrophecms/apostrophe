@@ -1,7 +1,7 @@
 {% macro radioTableHeader(choices) %}
   <td></td>
   {%- for choice in choices -%}
-    <td>{{ __(choice.label | d('')) }}</td>
+    <td>{{ __ns('apostrophe', choice.label | d('')) }}</td>
   {%- endfor -%}
 {% endmacro %}
 
@@ -18,7 +18,7 @@
 
 
 <fieldset class="apos-fieldset apos-fieldset-radio-table apos-fieldset-{{ data.name | css }}" data-name="{{ data.name }}">
-  <label>{{ __(data.label | d('')) }}</label>
+  <label>{{ __ns('apostrophe', data.label | d('')) }}</label>
   {# Text entry for autocompleting the next item #}
   {# { label: 'Admin', value: 'admin'}
   { name:'blog', label: 'Blog' } #}
