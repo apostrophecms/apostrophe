@@ -153,7 +153,8 @@ describe('custom-pages', function() {
       published: true,
       path: '/niftyPages',
       level: 1,
-      rank: 5
+      rank: 5,
+      trash: false
     };
 
     const response = await apos.docs.db.insertOne(testItem);
@@ -163,7 +164,9 @@ describe('custom-pages', function() {
   });
 
   it('should match a dispatch route on a real live page request', async function() {
+    console.log('awaiting...');
     const body = await request('http://localhost:3000/niftyPages');
+    console.log('after await');
     // Did we get the index output?
     assert(body.match(/niftyPages-index-template-rendered-this/));
   });

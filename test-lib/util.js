@@ -20,5 +20,5 @@ async function destroy(apos) {
 
 module.exports = {
   destroy: destroy,
-  timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 5000
+  timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };
