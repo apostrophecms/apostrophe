@@ -25,10 +25,12 @@ describe('Email', function() {
           port: 7900
         },
         'apostrophe-email': {
-          nodemailer: {
-            streamTransport: true,
-            buffer: true,
-            newline: 'unix'
+          options: {
+            nodemailer: {
+              streamTransport: true,
+              buffer: true,
+              newline: 'unix'
+            }
           }
         },
         'email-test': {}
