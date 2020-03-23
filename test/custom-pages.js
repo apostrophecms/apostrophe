@@ -165,7 +165,6 @@ describe('custom-pages', function() {
 
   it('should match a dispatch route on a real live page request', async function() {
     const body = await request('http://localhost:3000/niftyPages');
-    console.log(body);
     // Did we get the index output?
     assert(body.match(/niftyPages-index-template-rendered-this/));
   });

@@ -25,16 +25,16 @@ describe('Docs', function() {
         },
         'test-people': {
           extend: 'apostrophe-doc-type-manager',
-          name: 'test-person',
-          addFields: [
-            {
-              name: '_friend',
-              type: 'joinByOne',
-              withType: 'test-person',
-              idField: 'friendId',
-              label: 'Friend'
+          fields: {
+            add: {
+              _friend: {
+                type: 'joinByOne',
+                withType: 'test-people',
+                idField: 'friendId',
+                label: 'Friend'
+              }
             }
-          ]
+          }
         }
       },
       argv: {
@@ -96,7 +96,7 @@ describe('Docs', function() {
         _id: 'lori',
         slug: 'lori',
         published: true,
-        type: 'test-person',
+        type: 'test-people',
         firstName: 'Lori',
         lastName: 'Pizzaroni',
         age: 32,
@@ -106,7 +106,7 @@ describe('Docs', function() {
         _id: 'larry',
         slug: 'larry',
         published: true,
-        type: 'test-person',
+        type: 'test-people',
         firstName: 'Larry',
         lastName: 'Cherber',
         age: 28,
@@ -116,7 +116,7 @@ describe('Docs', function() {
         _id: 'carl',
         slug: 'carl',
         published: true,
-        type: 'test-person',
+        type: 'test-people',
         firstName: 'Carl',
         lastName: 'Sagan',
         age: 62,
@@ -125,14 +125,14 @@ describe('Docs', function() {
       }
     ];
 
-    const response = await apos.docs.db.insertOne(testItems);
+    const response = await apos.docs.db.insertMany(testItems);
 
     assert(response.result.ok === 1);
     assert(response.insertedCount === 3);
   });
 
   it('should be able to carry out schema joins', async function() {
-    const manager = apos.docs.getManager('test-person');
+    const manager = apos.docs.getManager('test-people');
     const req = apos.tasks.getAnonReq();
 
     assert(manager);
@@ -158,13 +158,13 @@ describe('Docs', function() {
     try {
       await apos.docs.db.insertMany([
         {
-          type: 'test-person',
+          type: 'test-people',
           published: false,
           age: 70,
           slug: 'peter'
         },
         {
-          type: 'test-person',
+          type: 'test-people',
           published: false,
           age: 70,
           slug: 'peter'
@@ -173,7 +173,6 @@ describe('Docs', function() {
       assert(false);
     } catch (e) {
       assert(e);
-      assert(e.name === 'MongoError');
       assert(e.code === 11000);
     }
   });
@@ -184,20 +183,19 @@ describe('Docs', function() {
 
   it('should have a find method on docs that returns a cursor', function() {
     const cursor = apos.docs.find(apos.tasks.getAnonReq());
-
     assert(cursor);
-    assert(cursor.__meta.name === 'apostrophe-cursor');
+    assert(cursor.toArray);
   });
 
   it('should be able to find all PUBLISHED test documents and output them as an array', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' });
 
     const docs = await cursor.toArray();
 
     // There should be only 3 results.
     assert(docs.length === 3);
-    // They should all have a type of test-person
-    assert(docs[0].type === 'test-person');
+    // They should all have a type of test-people
+    assert(docs[0].type === 'test-people');
   });
 
   /// ///
@@ -205,7 +203,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to specify which fields to get by passing a projection object', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }, { age: 1 });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }, { age: 1 });
     const docs = await cursor.toArray();
 
     // There SHOULD be an age
@@ -219,7 +217,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be that non-admins DO NOT get unpublished docs by default', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' });
     const docs = await cursor.toArray();
 
     _.forEach(docs, function(doc) {
@@ -231,14 +229,14 @@ describe('Docs', function() {
   });
 
   it('should be that non-admins do not get unpublished docs, even if they ask for them', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).published(false);
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).published(false);
 
     const docs = await cursor.toArray();
     assert(docs.length === 0);
   });
 
   it('should be that admins can get unpublished docs if they ask for them', async function () {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(false);
+    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people' }).published(false);
     const docs = await cursor.toArray();
 
     assert(docs.length === 1);
@@ -246,7 +244,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get a mixture of unpublished docs and published docs if they ask', async function() {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person' }).published(null);
+    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people' }).published(null);
     const docs = await cursor.toArray();
 
     assert(docs.length === 4);
@@ -257,14 +255,14 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to sort', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ age: 1 });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'larry');
   });
 
   it('should be able to sort by multiple keys', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-person' }).sort({ firstName: 1, age: 1 });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({ firstName: 1, age: 1 });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'carl');
@@ -279,7 +277,7 @@ describe('Docs', function() {
     const object = {
       slug: 'one',
       published: true,
-      type: 'test-person',
+      type: 'test-people',
       firstName: 'Lori',
       lastName: 'Ferber',
       age: 15,
@@ -293,7 +291,7 @@ describe('Docs', function() {
   });
 
   it('should be able to insert a new object into the docs collection in the database', async function() {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-person', slug: 'one' });
+    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people', slug: 'one' });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'one');
@@ -303,7 +301,7 @@ describe('Docs', function() {
     const object = {
       slug: 'one',
       published: true,
-      type: 'test-person',
+      type: 'test-people',
       firstName: 'Harry',
       lastName: 'Gerber',
       age: 29,
@@ -320,7 +318,7 @@ describe('Docs', function() {
     const object = {
       slug: 'not-for-you',
       published: false,
-      type: 'test-person',
+      type: 'test-people',
       firstName: 'Darry',
       lastName: 'Derrber',
       age: 5,
@@ -361,7 +359,7 @@ describe('Docs', function() {
   it('should append an updated slug with a numeral if the updated slug already exists', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.docs.find(req, {
-      type: 'test-person',
+      type: 'test-people',
       slug: 'one'
     });
     const doc = await cursor.toObject();
@@ -378,7 +376,7 @@ describe('Docs', function() {
 
   it('should be able to fetch all unique firstNames with toDistinct', async function() {
     const firstNames = await apos.docs.find(apos.tasks.getReq(), {
-      type: 'test-person'
+      type: 'test-people'
     }).toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
@@ -389,7 +387,7 @@ describe('Docs', function() {
   it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
     const req = apos.tasks.getReq();
     const cursor = apos.docs.find(req, {
-      type: 'test-person'
+      type: 'test-people'
     }).distinctCounts(true);
     const firstNames = await cursor.toDistinct('firstName');
 
@@ -405,7 +403,7 @@ describe('Docs', function() {
 
   it('should not allow you to call the update method if you are not an admin', async function() {
     const cursor = apos.docs.find(apos.tasks.getAnonReq(), {
-      type: 'test-person',
+      type: 'test-people',
       slug: 'lori'
     });
 
@@ -564,7 +562,7 @@ describe('Docs', function() {
       });
     }
 
-    await apos.docs.db.insertOne(testItems);
+    await apos.docs.db.insertMany(testItems);
 
     const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
       .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray();

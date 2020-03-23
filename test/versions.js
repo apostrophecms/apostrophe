@@ -26,11 +26,11 @@ describe('Versions', function() {
           port: 7900
         },
 
-        // Create a custom schema for test-person so we can
+        // Create a custom schema for test-people so we can
         // play with comparing versions
         'test-people': {
           extend: 'apostrophe-pieces',
-          name: 'test-person',
+          name: 'test-people',
           label: 'Test Person',
           addFields: [
             {
@@ -66,7 +66,7 @@ describe('Versions', function() {
           label: 'Poem'
         },
 
-        'test-person-pages': {
+        'test-people-pages': {
           extend: 'apostrophe-custom-pages'
         }
       },
@@ -121,7 +121,7 @@ describe('Versions', function() {
     let object = {
       slug: 'one',
       published: true,
-      type: 'test-person',
+      type: 'test-people',
       firstName: 'Gary',
       lastName: 'Ferber',
       age: 15,

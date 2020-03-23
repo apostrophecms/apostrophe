@@ -79,7 +79,7 @@ describe('Pieces Pages', function() {
       });
     }
 
-    return apos.docs.db.insertOne(testItems);
+    return apos.docs.db.insertMany(testItems);
   });
 
   it('should populate the ._url property of pieces in any docs query', async function() {
