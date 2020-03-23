@@ -7,16 +7,16 @@
 
 {% block controls %}
   <div class="apos-modal-controls">
-    {{ buttons.minor(__('Finished'), { action: 'cancel' }) }}
+    {{ buttons.minor(__ns('apostrophe', 'Finished'), { action: 'cancel' }) }}
   </div>
 {% endblock %}
 
 {% block label %}
-{{ __('Versions') }}
+{{ __ns('apostrophe', 'Versions') }}
 {% endblock %}
 
 {% block body %}
-<div class="apos-versions" data-no-changes="{{ __('No changes to display.') }}">
+<div class="apos-versions" data-no-changes="{{ __ns('apostrophe', 'No changes to display.') }}">
   {# Loop over all versions and render changes in each one #}
   {% for version in data.versions %}
     <div class="apos-version{% if loop.first %} apos-version-current{% endif %}" data-version="{{ version._id }}" data-previous="{{ version._previous._id }}">
@@ -25,16 +25,16 @@
         </div>
       </div>{#
       #}<div class="apos-changes-meta">
-          <cite>{{ version.author }}</cite><span>{{ __('made changes on') }}</span>
-          <h4>{{ version.createdAt | date(__('MM/DD/YY[ at ]h:mma')) }}</h4><br>
+          <cite>{{ version.author }}</cite><span>{{ __ns('apostrophe', 'made changes on') }}</span>
+          <h4>{{ version.createdAt | date(__ns('apostrophe', 'MM/DD/YY[ at ]h:mma')) }}</h4><br>
           {%- if version._previous -%}
-            <h5 data-open-changes>{{ __('See Changes') }}</h5>
+            <h5 data-open-changes>{{ __ns('apostrophe', 'See Changes') }}</h5>
           {%- endif -%}
       </div>
         {%- if loop.first -%}
-          {{ buttons.disabled(__('Current'), { action: 'none', value: version._id }) }}
+          {{ buttons.disabled(__ns('apostrophe', 'Current'), { action: 'none', value: version._id }) }}
         {%- else -%}
-          {{ buttons.major(__('Revert to'), { action: 'revert', value: version._id })}}
+          {{ buttons.major(__ns('apostrophe', 'Revert to'), { action: 'revert', value: version._id })}}
         {%- endif -%}
         <div class="apos-changes">
         {% if version._previous -%}

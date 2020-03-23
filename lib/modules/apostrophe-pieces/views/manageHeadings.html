@@ -5,7 +5,7 @@
   <td>{{fields.checkbox('select-all')}}</td>
   {%- for column in data.columns -%}
   <th class="apos-manage-column apos-manage-{{ data.options.name | css }}-{{ column.name | css }}{% if column.sort %} apos-manage-column--sortable{% endif %}" {% if column.sort %}data-sort data-default-sort-direction="{{ column.defaultSortDirection or '1' }}" {% endif %}data-column-name="{{ column.name }}">{#
-      #}{{ __(column.label) }}{#
+      #}{{ __ns('apostrophe', column.label) }}{#
       #}</th>
   {%- endfor -%}
 </tr>

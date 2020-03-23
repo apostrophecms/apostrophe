@@ -1,14 +1,14 @@
 <div class='apos-manage-result-label'>
   {%- if data.minSize -%}
-    {%- set minSize = __(' at least %sx%s pixels in size', data.minSize[0], data.minSize[1]) -%}
+    {%- set minSize = __ns('apostrophe', ' at least %sx%s pixels in size', data.minSize[0], data.minSize[1]) -%}
   {%- else -%}
     {%- set minSize = '' -%}
   {%- endif -%}
 	{%- if data.filters.q -%}
-    {{ __('Showing %s results%s for ', data.total, minSize) }}<span>"{{ data.filters.q }}"</span>
+    {{ __ns('apostrophe', 'Showing %s results%s for ', data.total, minSize) }}<span>"{{ data.filters.q }}"</span>
 	{%- elif data.total == 0 -%}
-    {{ __('No results for current filters%s', minSize) }}
+    {{ __ns('apostrophe', 'No results for current filters%s', minSize) }}
 	{%- else -%}
-    {{ __('Showing %s - %s of %s results%s', data.skip + 1, data.skip + data.pieces.length, data.total, minSize) }}
+    {{ __ns('apostrophe', 'Showing %s - %s of %s results%s', data.skip + 1, data.skip + data.pieces.length, data.total, minSize) }}
 	{%- endif -%}
 </div>
