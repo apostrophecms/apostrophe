@@ -4,7 +4,7 @@
 {% block main %}
   <form data-apos-search-page-form method="GET" action="{{ data.url | e }}#main">
     {% if data.filters %}
-      <div class="ld-meta">{{ __('Filter Results By Type') }}</div>
+      <div class="ld-meta">{{ __ns('apostrophe', 'Filter Results By Type') }}</div>
       <ul>
         {% for filter in data.filters %}
           <li>
@@ -16,7 +16,7 @@
         {% endfor %}
       </ul>
     {% endif %}
-    <div class="ld-meta">{{ __('New Search') }}</div>
+    <div class="ld-meta">{{ __ns('apostrophe', 'New Search') }}</div>
     <input type="search" data-apos-search-field value="{{ data.query.q | e }}" name="q" />
     <input type="submit" value="Search" />
   </form>

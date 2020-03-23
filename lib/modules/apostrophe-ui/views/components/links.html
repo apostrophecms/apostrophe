@@ -1,5 +1,5 @@
 {% macro base(label, options, classes) -%}
-  <a {{ ('href=' + options.url) if options.url }} class="apos-link {{ classes }}" data-{{ options.action }}>{{ __(label | d('')) }}</a>
+  <a {{ ('href=' + options.url) if options.url }} class="apos-link {{ classes }}" data-{{ options.action }}>{{ __ns('apostrophe', label | d('')) }}</a>
 {%- endmacro -%}
 
 {% macro major(label, options) -%}

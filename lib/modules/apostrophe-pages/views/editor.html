@@ -13,19 +13,19 @@
 
 {% block label %}
 	{% if data.verb == 'update' %}
-        {{ __('Page Settings') }}
+        {{ __ns('apostrophe', 'Page Settings') }}
 	{% elif data.verb == 'insert' %}
-        {{ __('New Page') }}
+        {{ __ns('apostrophe', 'New Page') }}
   {% elif data.verb == 'copy' %}
-        {{ __('Copy Page') }}
+        {{ __ns('apostrophe', 'Copy Page') }}
 	{% endif %}
 {% endblock %}
 
 {% block instructions %}
 	{% if data.verb == 'update' %}
-    {{ __("Change the settings of a page.") }}
+    {{ __ns('apostrophe', "Change the settings of a page.") }}
 	{% elif data.verb == 'insert' %}
-    {{ __("Set the options for a new page.") }}
+    {{ __ns('apostrophe', "Set the options for a new page.") }}
 	{% endif %}
 {% endblock %}
 
