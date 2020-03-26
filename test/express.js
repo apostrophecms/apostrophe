@@ -18,25 +18,20 @@ describe('Express', function() {
       },
       modules: {
         'apostrophe-express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'xxx'
+          options: {
+            port: 7900,
+            address: 'localhost',
+            session: {
+              secret: 'xxx'
+            }
           }
         },
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.express);
-
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
       }
     });
+    assert(apos.express);
   });
 
   it('app should exist on the apos object', function() {
@@ -55,11 +50,9 @@ describe('Express', function() {
     const csrfCookie = _.find(jar.getCookies('http://localhost:7900/'), {
       key: apos.csrfCookieName
     });
-
     if (!csrfCookie) {
       return null;
     }
-
     const csrfToken = csrfCookie.value;
     return csrfToken;
   }
@@ -205,7 +198,7 @@ describe('Express', function() {
     assert(response.toString() === '30');
 
     // Last one before a new apos object
-    t.destroy(apos);
+    await t.destroy(apos);
   });
 
   // PREFIX STUFF
@@ -220,29 +213,26 @@ describe('Express', function() {
       prefix: '/prefix',
       modules: {
         'apostrophe-express': {
-          port: 7900,
-          csrf: false,
-          address: 'localhost',
-          session: {
-            secret: 'Ullamcorper'
+          options: {
+            port: 7900,
+            csrf: false,
+            address: 'localhost',
+            session: {
+              secret: 'Ullamcorper'
+            }
           }
         },
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.prefix);
-        assert(apos.prefix === '/prefix');
-        // In tests this will be the name of the test file,
-        // so override that in order to get apostrophe to
-        // listen normally and not try to run a task. -Tom
-        apos.argv._ = [];
-        return callback(null);
       }
     });
-
+    assert(apos.prefix);
     assert(apos.prefix === '/prefix');
+    // In tests this will be the name of the test file,
+    // so override that in order to get apostrophe to
+    // listen normally and not try to run a task. -Tom
+    apos.argv._ = [];
   });
 
   it('should have different baseApp and app properties with a prefix', function() {
@@ -261,7 +251,7 @@ describe('Express', function() {
     });
 
     assert(body.toString() === '30');
-    t.destroy(apos);
+    await t.destroy(apos);
   });
 
   it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl option is set on apos object', async function() {
@@ -274,31 +264,29 @@ describe('Express', function() {
       baseUrl: 'https://example.com',
       modules: {
         'apostrophe-express': {
-          port: 7900,
-          csrf: false,
-          address: 'localhost',
-          session: {
-            secret: 'Commodo'
+          options: {
+            port: 7900,
+            csrf: false,
+            address: 'localhost',
+            session: {
+              secret: 'Commodo'
+            }
           }
         },
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.baseUrl);
-        assert(apos.baseUrl === 'https://example.com');
-
-        return callback(null);
       }
     });
+    assert(apos.baseUrl);
+    assert(apos.baseUrl === 'https://example.com');
 
     const req = apos.tasks.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.absoluteUrl === 'https://example.com/test');
 
     // Last one before a new apos object
-    t.destroy(apos);
+    await t.destroy(apos);
   });
 
   it('should provide reasonable absolute and base URLs in tasks reqs if baseUrl and prefix options are set on apos object', async function() {
@@ -312,32 +300,29 @@ describe('Express', function() {
       prefix: '/subdir',
       modules: {
         'apostrophe-express': {
-          port: 7900,
-          csrf: false,
-          address: 'localhost',
-          session: {
-            secret: 'Ligula'
+          options: {
+            port: 7900,
+            csrf: false,
+            address: 'localhost',
+            session: {
+              secret: 'Ligula'
+            }
           }
         },
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {}
-      },
-      afterInit: function(callback) {
-        assert(apos.baseUrl);
-        assert(apos.baseUrl === 'https://example.com');
-        assert(apos.prefix === '/subdir');
-
-        return callback(null);
       }
     });
-
+    assert(apos.baseUrl);
+    assert(apos.baseUrl === 'https://example.com');
+    assert(apos.prefix === '/subdir');
     const req = apos.tasks.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
     assert(req.absoluteUrl === 'https://example.com/subdir/test');
 
     // Last use of this apos object
-    t.destroy(apos);
+    await t.destroy(apos);
   });
 });
