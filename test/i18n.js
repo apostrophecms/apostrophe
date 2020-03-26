@@ -65,6 +65,7 @@ describe('Static i18n', function() {
     var rp = require('request-promise');
     return rp('http://localhost:7900/i18n').then(function(page) {
       assert(page);
+      assert(!page.match(/An error has occurred/));
       // The bulk of the tests are executed by template helpers,
       // just make sure that happened
       assert(apos.test.testsRun > 0);
