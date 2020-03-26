@@ -22,36 +22,36 @@ describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', functio
       modules: {
         'test1': {
           alias: 'test1',
-          construct: function(self, options) {
-            self.on(
-              'apostrophe-doc-type-manager:beforeInsert', 'beforeInsertReverseTitle',
-              async function(req, doc, options) {
-                if (doc.type === 'default') {
-                  await Promise.delay(50);
-
-                  doc.title = doc.title.split('').reverse().join('');
+          handlers(self) {
+            return {
+              'apostrophe-doc-type-manager:beforeInsert': {
+                async beforeInsertReverseTitle(req, doc, options) {
+                  if (doc.type === 'default') {
+                    await Promise.delay(50);
+                    doc.title = doc.title.split('').reverse().join('');
+                  }
+                }
+              },
+              'apostrophe:modulesReady': {
+                modulesReadyCoreEventsWork() {
+                  coreEventsWork = true;
                 }
               }
-            );
-
-            self.on(
-              'apostrophe:modulesReady', 'modulesReadyCoreEventsWork',
-              function() {
-                coreEventsWork = true;
-              }
-            );
+            };
           }
         },
         'apostrophe-pages': {
-          park: [
-            {
-              type: 'default',
-              findMeAgain: true,
-              title: 'Test',
-              slug: '/test',
-              published: true
-            }
-          ]
+          options: {
+            park: [
+              {
+                type: 'default',
+                findMeAgain: true,
+                title: 'Test',
+                slug: '/test',
+                published: true
+              }
+            ]
+          }
         }
       }
     });
