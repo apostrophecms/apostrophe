@@ -25,10 +25,12 @@ describe('Locks', function() {
       },
       modules: {
         'apostrophe-express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'Vulputate'
+          options: {
+            port: 7900,
+            address: 'localhost',
+            session: {
+              secret: 'Vulputate'
+            }
           }
         },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
@@ -37,15 +39,21 @@ describe('Locks', function() {
         // now"
         'apostrophe-locks-1': {
           extend: 'apostrophe-locks',
-          alias: 'locks1'
+          options: {
+            alias: 'locks1'
+          }
         },
         'apostrophe-locks-2': {
           extend: 'apostrophe-locks',
-          alias: 'locks2'
+          options: {
+            alias: 'locks2'
+          }
         },
         'apostrophe-locks-3': {
           extend: 'apostrophe-locks',
-          alias: 'locks3'
+          options: {
+            alias: 'locks3'
+          }
         }
       }
     });
