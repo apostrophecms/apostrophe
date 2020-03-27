@@ -60,14 +60,12 @@ describe('Express', function() {
   it('should successfully make a GET request to establish CSRF', async function() {
     // otherwise request does not track cookies
     jar = request.jar();
-    await request({
+    const body = await request({
       method: 'GET',
       url: 'http://localhost:7900/tests/welcome',
       jar: jar
-    }, function(err, response, body) {
-      assert(!err);
-      assert(body.toString() === 'ok');
     });
+    assert(body.toString() === 'ok');
   });
 
   it('should flunk a POST request with no X-XSRF-TOKEN header', async function() {
@@ -82,9 +80,6 @@ describe('Express', function() {
         },
         jar: jar,
         headers: {}
-      }, function(err, response, body) {
-        assert(!err);
-        assert(response.statusCode === 403);
       });
       assert(false);
     } catch (e) {
@@ -103,9 +98,6 @@ describe('Express', function() {
           }
         },
         headers: {}
-      }, function(err, response, body) {
-        assert(!err);
-        assert(response.statusCode === 403);
       });
       assert(false);
     } catch (e) {
@@ -117,7 +109,7 @@ describe('Express', function() {
     const csrfToken = 'BOGOSITY';
 
     try {
-      await request({
+      const body = await request({
         method: 'POST',
         url: 'http://localhost:7900/tests/body',
         form: {
@@ -129,9 +121,6 @@ describe('Express', function() {
         headers: {
           'X-XSRF-TOKEN': csrfToken
         }
-      }, function(err, response, body) {
-        assert(!err);
-        assert(response.statusCode === 403);
       });
       assert(false);
     } catch (e) {
@@ -177,26 +166,6 @@ describe('Express', function() {
     });
 
     assert(response.toString() === '30');
-  });
-
-  it('should be able to implement a route with apostrophe-module.route', async function() {
-    const csrfToken = getCsrfToken(jar);
-    const response = await request({
-      method: 'POST',
-      url: 'http://localhost:7900/modules/express-test/test2',
-      json: {
-        person: {
-          age: '30'
-        }
-      },
-      jar: jar,
-      headers: {
-        'X-XSRF-TOKEN': csrfToken
-      }
-    });
-
-    assert(response.toString() === '30');
-
     // Last one before a new apos object
     await t.destroy(apos);
   });
