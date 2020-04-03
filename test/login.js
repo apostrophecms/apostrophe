@@ -23,16 +23,15 @@ describe('Login', function() {
       },
       modules: {
         'apostrophe-express': {
-          port: 7901,
-          csrf: false,
-          address: 'localhost',
-          session: {
-            secret: 'Cursus'
+          options: {
+            port: 7901,
+            csrf: false,
+            address: 'localhost',
+            session: {
+              secret: 'Cursus'
+            }
           }
         }
-      },
-      afterInit: function(callback) {
-        // return callback(null);
       }
     });
 
@@ -60,93 +59,113 @@ describe('Login', function() {
     assert(doc._id);
   });
 
-  it('should not see logout link yet', async function() {
-    // otherwise logins are not remembered in a session
-    request.jar();
+  it('should be able to login a user with their username', async function() {
 
-    const response = await request({
+    const jar = request.jar();
+
+    // establish session
+    let page = await request({
       uri: 'http://localhost:7901/',
-      resolveWithFullResponse: true
+      jar,
+      followAllRedirects: true
     });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // Did we get our page back?
-    assert(response.body.match(/login/));
-    assert(!response.body.match(/logout/));
-  });
+    assert(page.match(/logged out/));
 
-  const loginLogoutJar = request.jar();
-  const loginEmailLogoutJar = request.jar();
-
-  it('should be able to login a user', async function() {
-    // otherwise logins are not remembered in a session
-    const response = await request({
+    await request({
       method: 'POST',
-      uri: 'http://localhost:7901/login',
-      form: {
+      uri: 'http://localhost:7901/api/v1/apostrophe-login/login',
+      json: {
         username: 'HarryPutter',
         password: 'crookshanks'
       },
-      jar: loginLogoutJar,
       followAllRedirects: true,
-      json: true,
-      resolveWithFullResponse: true
+      jar
     });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // Did we get our page back?
-    assert(response.body.match(/logout/));
-  });
+    page = await request({
+      uri: 'http://localhost:7901/',
+      jar,
+      followAllRedirects: true
+    });
 
-  it('should be able to login a user with their email', async function() {
+    assert(page.match(/logged in/));
+
     // otherwise logins are not remembered in a session
-    const response = await request({
+    await request({
       method: 'POST',
-      uri: 'http://localhost:7901/login',
-      form: {
+      uri: 'http://localhost:7901/api/v1/apostrophe-login/logout',
+      json: {
         username: 'hputter@aol.com',
         password: 'crookshanks'
       },
       followAllRedirects: true,
-      jar: loginEmailLogoutJar,
-      resolveWithFullResponse: true
+      jar
     });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
+    page = await request({
+      uri: 'http://localhost:7901/',
+      jar,
+      followAllRedirects: true
+    });
+
+    // are we back to being able to log in?
+    assert(page.match(/logged out/));
+  });
+
+  it('should be able to login a user with their email', async function() {
+
+    const jar = request.jar();
+
+    // establish session
+    let page = await request({
+      uri: 'http://localhost:7901/',
+      jar,
+      followAllRedirects: true
+    });
+
+    assert(page.match(/logged out/));
+
+    await request({
+      method: 'POST',
+      uri: 'http://localhost:7901/api/v1/apostrophe-login/login',
+      json: {
+        username: 'hputter@aol.com',
+        password: 'crookshanks'
+      },
+      followAllRedirects: true,
+      jar
+    });
+
+    page = await request({
+      uri: 'http://localhost:7901/',
+      jar,
+      followAllRedirects: true
+    });
+
     // Did we get our page back?
-    assert(response.body.match(/logout/));
-  });
+    assert(page.match(/logged in/));
 
-  it('should be able to log out', async function() {
     // otherwise logins are not remembered in a session
     const response = await request({
-      uri: 'http://localhost:7901/logout',
+      method: 'POST',
+      uri: 'http://localhost:7901/api/v1/apostrophe-login/logout',
+      json: {
+        username: 'hputter@aol.com',
+        password: 'crookshanks'
+      },
       followAllRedirects: true,
-      jar: loginLogoutJar,
-      resolveWithFullResponse: true
+      jar
     });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // are we back to being able to log in?
-    assert(response.body.match(/login/));
-  });
-
-  it('should be able to log out after having logged in with email', async function() {
-    // otherwise logins are not remembered in a session
-    const response = await request({
-      uri: 'http://localhost:7901/logout',
-      followAllRedirects: true,
-      jar: loginEmailLogoutJar,
-      resolveWithFullResponse: true
+    page = await request({
+      uri: 'http://localhost:7901/',
+      jar,
+      followAllRedirects: true
     });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
     // are we back to being able to log in?
-    assert(response.body.match(/login/));
+    assert(page.match(/logged out/));
   });
+
 });
