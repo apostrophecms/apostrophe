@@ -23,60 +23,66 @@ describe('Pieces Widgets', function() {
       },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          }
         },
         'events': {
           extend: 'apostrophe-pieces',
-          name: 'event',
-          label: 'Event',
-          alias: 'events',
-          sort: { title: 1 }
+          options: {
+            name: 'event',
+            label: 'Event',
+            alias: 'events',
+            sort: { title: 1 }
+          }
         },
         'events-widgets': {
           extend: 'apostrophe-pieces-widgets'
         },
         'apostrophe-pages': {
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'default',
-              label: 'Default'
-            }
-          ],
-          park: [
-            {
-              title: 'Page With Events Widget',
-              type: 'default',
-              slug: '/page-with-events',
-              published: true,
-              body: {
-                type: 'area',
-                items: [
-                  {
-                    type: 'events',
-                    by: 'id',
-                    pieceIds: [
-                      'wevent007', 'wevent006', 'wevent005'
-                    ]
-                  },
-                  {
-                    type: 'events',
-                    by: 'tag',
-                    tags: [
-                      'tag2', 'madeupfaketag'
-                    ],
-                    limitByTag: 5
-                  }
-                ]
+          options: {
+            types: [
+              {
+                name: 'home',
+                label: 'Home'
+              },
+              {
+                name: 'default',
+                label: 'Default'
               }
-            }
-          ]
+            ],
+            park: [
+              {
+                title: 'Page With Events Widget',
+                type: 'default',
+                slug: '/page-with-events',
+                published: true,
+                body: {
+                  type: 'area',
+                  items: [
+                    {
+                      type: 'events',
+                      by: 'id',
+                      pieceIds: [
+                        'wevent007', 'wevent006', 'wevent005'
+                      ]
+                    },
+                    {
+                      type: 'events',
+                      by: 'tag',
+                      tags: [
+                        'tag2', 'madeupfaketag'
+                      ],
+                      limitByTag: 5
+                    }
+                  ]
+                }
+              }
+            ]
+          }
         }
-      },
+      }
     });
   });
 
@@ -199,68 +205,76 @@ describe('Pieces Widget With Extra Join', function() {
 
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          }
         },
         'events': {
           extend: 'apostrophe-pieces',
-          name: 'event',
-          label: 'Event',
-          alias: 'events',
-          sort: { title: 1 }
+          options: {
+            name: 'event',
+            label: 'Event',
+            alias: 'events',
+            sort: { title: 1 }
+          }
         },
         'events-widgets': {
           extend: 'apostrophe-pieces-widgets',
-          addFields: [
-            {
-              name: '_featured',
-              type: 'joinByArray',
-              withType: 'event'
-            }
-          ]
+          options: {
+            addFields: [
+              {
+                name: '_featured',
+                type: 'joinByArray',
+                withType: 'event'
+              }
+            ]
+          }
         },
         'apostrophe-pages': {
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'default',
-              label: 'Default'
-            }
-          ],
-          park: [
-            {
-              title: 'Page With Events Widget',
-              type: 'default',
-              slug: '/page-with-events',
-              published: true,
-              body: {
-                type: 'area',
-                items: [
-                  {
-                    type: 'events',
-                    by: 'id',
-                    pieceIds: [
-                      'wevent007', 'wevent006', 'wevent005'
-                    ],
-                    featuredIds: [
-                      'wevent003', 'wevent004'
-                    ]
-                  },
-                  {
-                    type: 'events',
-                    by: 'tag',
-                    tags: [
-                      'tag2', 'madeupfaketag'
-                    ],
-                    limitByTag: 5
-                  }
-                ]
+          options: {
+            types: [
+              {
+                name: 'home',
+                label: 'Home'
+              },
+              {
+                name: 'default',
+                label: 'Default'
               }
-            }
-          ]
+            ],
+            park: [
+              {
+                title: 'Page With Events Widget',
+                type: 'default',
+                slug: '/page-with-events',
+                published: true,
+                body: {
+                  type: 'area',
+                  items: [
+                    {
+                      type: 'events',
+                      by: 'id',
+                      pieceIds: [
+                        'wevent007', 'wevent006', 'wevent005'
+                      ],
+                      featuredIds: [
+                        'wevent003', 'wevent004'
+                      ]
+                    },
+                    {
+                      type: 'events',
+                      by: 'tag',
+                      tags: [
+                        'tag2', 'madeupfaketag'
+                      ],
+                      limitByTag: 5
+                    }
+                  ]
+                }
+              }
+            ]
+          }
         }
       }
     });
