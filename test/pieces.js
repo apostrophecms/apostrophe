@@ -17,77 +17,67 @@ describe('Pieces', function() {
   // EXISTENCE
   /// ///
 
-  it('should initialize with a schema', function(done) {
-    apos = require('../index.js')({
+  it('should initialize with a schema', async () => {
+    apos = await (require('../index.js')({
       root: module,
+      argv: {
+        _: []
+      },
       shortName: 'test',
 
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          },
         },
         'things': {
           extend: 'apostrophe-pieces',
-          name: 'thing',
-          label: 'Thing',
-          addFields: {
-            name: 'foo',
-            label: 'Foo',
-            type: 'string'
+          options: {
+            name: 'thing',
+            label: 'Thing',
+            addFields: {
+              name: 'foo',
+              label: 'Foo',
+              type: 'string'
+            }
           }
         },
         'people': {
           extend: 'apostrophe-pieces',
-          name: 'person',
-          label: 'Person',
-          addFields: {
-            name: '_things',
-            type: 'joinByArray'
+          options: {
+            name: 'person',
+            label: 'Person',
+            addFields: {
+              name: '_things',
+              type: 'joinByArray'
+            }
           }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['things']);
-        assert(apos.modules['things'].schema);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
-    });
+    }));
+    assert(apos.modules['things']);
+    assert(apos.modules['things'].schema);
   });
 
   // little test-helper function to get piece by id regardless of trash status
-  function findPiece(req, id, callback) {
-    return apos.modules['things'].find(req, { _id: id })
+  async function findPiece(req, id) {
+    const piece = apos.modules['things'].find(req, { _id: id })
       .permission('edit')
       .published(null)
       .trash(null)
-      .toObject(function(err, piece) {
-        if (err) {
-          return callback(err);
-        }
-        if (!piece) {
-          return callback('notfound');
-        }
-        return callback(err, piece);
-      }
-      );
-  };
+      .toObject();
+    if (!piece) {
+      throw 'notfound';
+    }
+    return piece;
+  }
 
   let testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar'
-  };
-
-  let testThing2 = {
-    _id: 'testThing2',
-    title: 'hello2',
-    foo: 'bar2'
   };
 
   let additionalThings = [
@@ -118,17 +108,12 @@ describe('Pieces', function() {
   ];
 
   // Wipe the database so we can run this test suite independent of bootstrap
-  it('should make sure there is no test data hanging around from last time', function(done) {
+  it('should make sure there is no test data hanging around from last time', async function() {
     // Attempt to purge the entire aposDocs collection
-    apos.docs.db.deleteMany({}, function(err) {
-      assert(!err);
-      // Make sure it went away
-      apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
-        assert(!err);
-        assert(docs.length === 0);
-        done();
-      });
-    });
+    await apos.docs.db.deleteMany({});
+    // Make sure it went away
+    const docs = await apos.docs.db.find({ _id: 'testThing' }).toArray();
+    assert(docs.length === 0);
   });
 
   // Test pieces.newInstance()
@@ -140,82 +125,33 @@ describe('Pieces', function() {
   });
 
   // Test pieces.insert()
-  it('should be able to insert a piece into the database', function(done) {
+  it('should be able to insert a piece into the database', async () => {
     assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      done();
-    });
+    await apos.modules['things'].insert(apos.tasks.getReq(), testThing);
   });
 
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
-      .then(function(piece2) {
-        assert(testThing2 === piece2);
-        done();
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
-  });
-
-  // Test pieces.requirePiece()
-  it('should be able to retrieve a piece by id from the database', function(done) {
-    assert(apos.modules['things'].requirePiece);
+  it('should be able to retrieve a piece by id from the database', async () => {
+    assert(apos.modules['things'].requireOneForEditing);
     let req = apos.tasks.getReq();
-    req.body = {};
-    req.body._id = "testThing";
-    apos.modules['things'].requirePiece(req, req.res, function() {
-      assert(req.piece);
-      assert(req.piece._id === 'testThing');
-      assert(req.piece.title === 'hello');
-      assert(req.piece.foo === 'bar');
-      done();
-    });
+    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing');
+    assert(req.piece.title === 'hello');
+    assert(req.piece.foo === 'bar');
   });
 
   // Test pieces.update()
-  it('should be able to update a piece in the database', function(done) {
+  it('should be able to update a piece in the database', async () => {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      // Now let's get the piece and check if it was updated
-      let req = apos.tasks.getReq();
-      req.body = {};
-      req.body._id = "testThing";
-      apos.modules['things'].requirePiece(req, req.res, function() {
-        assert(req.piece);
-        assert(req.piece._id === 'testThing');
-        assert(req.piece.foo === 'moo');
-        done();
-      });
-    });
-  });
-
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].update);
-    testThing.foo = 'goo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing)
-      .then(function(piece) {
-        assert(testThing === piece);
-        // Now let's get the piece and check if it was updated
-        let req = apos.tasks.getReq();
-        req.body = {};
-        req.body._id = "testThing";
-        apos.modules['things'].requirePiece(req, req.res, function() {
-          assert(req.piece);
-          assert(req.piece._id === 'testThing');
-          assert(req.piece.foo === 'goo');
-          done();
-        });
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
+    const piece = await apos.modules['things'].update(apos.tasks.getReq(), testThing);
+    assert(testThing === piece);
+    // Now let's get the piece and check if it was updated
+    let req = apos.tasks.getReq();
+    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing');
+    assert(req.piece.foo === 'moo');
   });
 
   // Test pieces.addListFilters()
@@ -267,123 +203,59 @@ describe('Pieces', function() {
   });
 
   // Test pieces.list()
-  it('should add some more things for testing', function(done) {
+  it('should add some more things for testing', async () => {
     assert(apos.modules['things'].insert);
-    async.each(additionalThings, function(thing, callback) {
-      apos.modules['things'].insert(apos.tasks.getReq(), thing, function(err) {
-        callback(err);
-      });
-    }, function(err) {
-      assert(!err);
-      done();
-    });
+    for (const thing of additionalThings) {
+      await apos.modules['things'].insert(apos.tasks.getReq(), thing);
+    }
   });
 
-  it('should list all the pieces if skip and limit are set to large enough values', function(done) {
+  it('should list all the pieces if skip and limit are set to large enough values', async () => {
     assert(apos.modules['things'].list);
     let req = apos.tasks.getReq();
     let filters = {
       limit: 10,
       skip: 0
     };
-    apos.modules['things'].list(req, filters, function(err, results) {
-      assert(!err);
-      assert(results.total === 5);
-      assert(results.limit === 10);
-      assert(results.skip === 0);
-      assert(results.pieces.length === 5);
-      done();
-    });
+    const results = await apos.modules['things'].list(req, filters);
+    assert(results.total === 5);
+    assert(results.limit === 10);
+    assert(results.skip === 0);
+    assert(results.pieces.length === 5);
   });
 
   // pieces.trash()
-  it('should be able to trash a piece', function(done) {
+  it('should be able to trash a piece', async () => {
     assert(apos.modules['things'].trash);
-    assert(apos.modules['things'].requirePiece);
+    assert(apos.modules['things'].requireOneForEditing);
     let req = apos.tasks.getReq();
     let id = 'testThing';
     req.body = {_id: id};
     // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].trash(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is trashed
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(piece.trash === true);
-          done();
-        });
-      });
-    });
+    const piece = await findPiece(req, id);
+    assert(!piece.trash);
+    await apos.modules['things'].trash(req, id);
+    // let's get the piece to make sure it is trashed
+    const piece2 = findPiece(req, id);
+    assert(piece2);
+    assert(piece2.trash === true);
   });
 
   // pieces.rescue()
-  it('should be able to rescue a trashed piece', function(done) {
+  it('should be able to rescue a trashed piece', async () => {
     assert(apos.modules['things'].rescue);
     let req = apos.tasks.getReq();
     let id = 'testThing';
-    req.body = {_id: id};
+    req.body = {
+      _id: id
+    };
     // let's make sure the piece is trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].rescue(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is rescued
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(!piece.trash);
-          done();
-        });
-      });
-    });
-  });
-
-  // pieces.apiResponse()
-  it('should pass through an error message if the error is passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    let errMsg = "Test Error";
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === errMsg);
-      assert(!response.data);
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
-  });
-
-  it('should not pass through an error message if the error is not passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    let errMsg = true;
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'error');
-      assert(!response.data);
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
-  });
-
-  it('should properly pass a result as a json if there is no error', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'ok');
-      assert(response.data);
-      assert(response.data.foo === 'bar');
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, null, { foo: 'bar' });
+    const piece = await findPiece(req, id);
+    assert(piece.trash === true);
+    await apos.modules['things'].rescue(req, id);
+    const piece2 = await findPiece(req, id);
+    assert(piece2);
+    assert(!piece2.trash);
   });
 
   // done with api.js tests, now let's test routes
