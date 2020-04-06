@@ -22,32 +22,40 @@ describe('Pieces Pages', function() {
       },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          }
         },
         'events': {
           extend: 'apostrophe-pieces',
-          name: 'event',
-          label: 'Event',
-          alias: 'events',
-          sort: { title: 1 }
+          options: {
+            name: 'event',
+            label: 'Event',
+            alias: 'events',
+            sort: { title: 1 }
+          }
         },
         'events-pages': {
           extend: 'apostrophe-pieces-pages',
-          name: 'events',
-          label: 'Events',
-          alias: 'eventsPages',
-          perPage: 10
+          options: {
+            name: 'events',
+            label: 'Events',
+            alias: 'eventsPages',
+            perPage: 10
+          }
         },
         'apostrophe-pages': {
-          park: [
-            {
-              title: 'Events',
-              type: 'events',
-              slug: '/events',
-              published: true
-            }
-          ]
+          options: {
+            park: [
+              {
+                title: 'Events',
+                type: 'events',
+                slug: '/events',
+                published: true
+              }
+            ]
+          }
         }
       }
     });

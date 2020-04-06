@@ -261,7 +261,7 @@ describe('Pieces', function() {
       fakeTest: 'notEvenReal'
     };
 
-    mockCursor.applyBuildersSafely(filters);
+    mockCursor.applySafeBuilders(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });
