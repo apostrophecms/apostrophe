@@ -25,23 +25,27 @@ describe('Pages', function() {
       },
       modules: {
         'apostrophe-express': {
-          session: {
-            secret: 'Adipiscing'
-          },
-          port: 7900
+          options: {
+            session: {
+              secret: 'Adipiscing'
+            },
+            port: 7900
+          }
         },
         'apostrophe-pages': {
-          park: [],
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'testPage',
-              label: 'Test Page'
-            }
-          ]
+          options: {
+            park: [],
+            types: [
+              {
+                name: 'home',
+                label: 'Home'
+              },
+              {
+                name: 'testPage',
+                label: 'Test Page'
+              }
+            ]
+          }
         }
       }
     });
