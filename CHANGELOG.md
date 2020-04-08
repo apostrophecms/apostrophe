@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.105.1 (2020-04-08)
+
+* When using lean mode, video widgets did not support Internet Explorer 11. This issue has been fixed. Non-lean mode video widgets have always supported Internet Explorer 11.
+* If the `jQuery: 3` option is not passed to `apostrophe-assets` a developer warning is now printed at startup. The use of jQuery 1.x is deprecated. All Apostrophe-published modules work fine with the `jQuery: 3` option. You may need to review the jQuery 3 changelogs for a few changes required for your own legacy code.
+* Users may now intentionally clear a `date` field, whether or not it has a `def` setting, in which case it is stored as `null` (unless `required: true` is present). The inability to do this was a regression introduced in verion 2.102.0.
+* The `objectNotation: true` option to `apostrophe-i18n`, which we pass on to the `i18n` module, is now compatible with the `namespaces: true` option. When both are active, the namespace separator defaults to `<@>` to avoid a conflict with the `:` character used to begin the default value when using object notation.
+* Various documentation corrections and minor aesthetic improvements.
+
 ## 2.105.0 (2020-03-26)
 
 * Security: Node 6.x has not been supported by its creators since April 2019, and Node 8.x reached its end of support date in December 2019. **As of this release of Apostrophe, we are officially acknowledging that it is not possible to maintain support for Node 6.x in Apostrophe and it is unlikely to work on that version,** since both the testing frameworks on which we rely and common sub-dependencies of essential open source modules used by Apostrophe now require Node 8 at a minimum. While we will make a good-faith effort to maintain Node 8.x usability as long as possible, we expect to similarly be forced to drop Node 8 compatibility soon. **Both Node 6 and Node 8 might not be safe to use for reasons entirely unrelated to Apostrophe**, so you should upgrade your servers as soon as practical. Few or no code changes should be needed in Apostrophe 2.x projects. **We strongly recommend moving to Node 12.x,** the most up to date LTS (Long-Term Support) release of Node. In the future, we recommend becoming familiar with the [Node.js release schedule](https://nodejs.org/en/about/releases/) so you can better plan for such upgrades.
