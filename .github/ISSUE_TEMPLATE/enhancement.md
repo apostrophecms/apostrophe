@@ -7,14 +7,24 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem you are experiencing that is not a bug? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]. If this is a bug report, open a bug report instead.
+## The problem to solve
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+Is your feature request related to a problem you are experiencing that is *not* a bug? Please describe.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+> A clear and concise description of what the problem is. Ex: "When I do [some task], I find it frustrating when [something happens]." If this is a bug report (things are actually breaking), open a bug report instead.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## Proposed solution
+
+Describe the solution you'd like
+
+> A clear and concise description of what you want to happen.
+
+## Alternatives
+
+Describe alternatives you've considered
+
+> A clear and concise description of any alternative solutions or features you've considered. For example, should this be done on the project level instead?
+
+## Additional context
+
+> Mention any other context or attach screenshots regarding the feature request.
