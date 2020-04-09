@@ -1,12 +1,12 @@
-# [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](http://apostrophecms.org/)
+# [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](https://apostrophecms.com)
 
 ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
 
-Please see the [ApostropheCMS documentation](http://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS.
+Please see the [ApostropheCMS documentation](https://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS. If you're interested in contributing, check out our [contribution guide](https://github.com/apostrophecms/apostrophe/blob/master/CONTRIBUTING.md) to get started.
 
 [![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
 [<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
-[![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](http://chat.apostrophecms.org)
+[![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.com)
 
 ## Getting Started
 
@@ -14,7 +14,7 @@ The [ApostropheCMS documentation](https://docs.apostrophecms.org/apostrophe/) wi
 
 Then [create a new project](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/creating-your-first-project) on your computer and work on building your beautiful website.
 
-The ApostropheCMS documentation will walk you through [editing page templates](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/editing-page-templates), [global content](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/global), [creating custom widgets](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/custom-widgets) and [navigation](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/building-navigation), along with [configuring reusable "pieces"](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/reusable-content-with-pieces) and [global settings](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/settings). Plus, a whole lot more!
+The ApostropheCMS documentation will walk you through [editing page templates](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/editing-page-templates), [global content](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/global), [creating custom widgets](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/custom-widgets) and [navigation](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/building-navigation), along with [configuring reusable "pieces"](https://docs.apostrophecms.org/apostrophe/tutorials/getting-started/reusable-content-with-pieces) and [global settings](https://docs.apostrophecms.org/apostrophe/core-concepts/global-settings/settings). Plus, a whole lot more!
 
 ## Taking it Further
 
@@ -24,7 +24,7 @@ Moreover, there's tons of great info in the ["How To"](https://docs.apostrophecm
 
 ## Extending the Core with Modules
 
-ApostropheCMS is Node.js all the way through, which means it can be [extended](http://apostrophecms.org/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
+ApostropheCMS is Node.js all the way through, which means it can be [extended](https://apostrophecms.com/extend) in all sorts of interesting ways. Here's a list of some of our favorite modules:
 
 * [apostrophe-headless](https://github.com/apostrophecms/apostrophe-headless) - Add REST APIs and power your React / Vue / Native / etc. apps with a headless CMS.
 * [apostrophe-blog](https://github.com/apostrophecms/apostrophe-blog) - Everything you need to put a blog on your site.
@@ -36,7 +36,7 @@ ApostropheCMS is Node.js all the way through, which means it can be [extended](h
 * [apostrophe-redirects](https://github.com/apostrophecms/apostrophe-redirects) - An easy redirects module.
 
 ## Additional Resources
-We've got some great [open-source tools and how-to articles](https://docs.apostrophecms.org/apostrophe/tutorials/intermediate/deployment) that can help you out deploying, managing and maintaining ApostropheCMS sites.
+We've got some great [open-source tools and how-to articles](https://docs.apostrophecms.org/apostrophe/howtos/howtos) that can help you out deploying, managing and maintaining ApostropheCMS sites.
 
 ## Community
 
@@ -46,7 +46,7 @@ We've got some great [open-source tools and how-to articles](https://docs.apostr
 
 **Stay up to date with announcements** on our [forum](https://forum.apostrophecms.org).
 
-**Chat with the community** on our [Discord server](http://chat.apostrophecms.org).
+**Chat with the community** and ask for assistance on our [Discord server](https://chat.apostrophecms.org).
 
 ## License
 ApostropheCMS is released under the [MIT License](https://github.com/apostrophecms/apostrophe/blob/master/LICENSE.md).
