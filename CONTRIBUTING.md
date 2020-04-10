@@ -108,7 +108,7 @@ Even typo fixes are great!
 
 Authoring blog posts, giving talks at a meet-up, or otherwise sharing
 experiences using ApostropheCMS help spread the word. When you launch a site on
-ApostropheCMS, ping us in [Discord](https://chat.apostrophecms.com) or on
+ApostropheCMS, ping us in [Discord](https://chat.apostrophecms.org) or on
 [Twitter](https://twitter.com/apostrpohecms). We love a good success story.
 
 ## Should I make a new npm module?
