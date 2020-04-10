@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.105.2 (2020-04-09)
+
+* `apos.utils.emit` now works properly in IE11, addressing an issue that impacted `apostrophe-forms` submissions in IE11 in 2.105.0.
+* IE11 now respects the `prefix` option properly in `apos.utils.get` and `apos.utils.post` (lean mode helpers for making API calls).
+
 ## 2.105.1 (2020-04-08)
 
 * When using lean mode, video widgets did not support Internet Explorer 11. This issue has been fixed. Non-lean mode video widgets have always supported Internet Explorer 11.
