@@ -1,9 +1,11 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
-let async = require('async');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
+const request = require('request-promise');
+const cuid = require('cuid');
 
 let apos;
+let jar;
 
 describe('Pieces', function() {
 
@@ -30,7 +32,7 @@ describe('Pieces', function() {
           options: {
             secret: 'xxx',
             port: 7900
-          },
+          }
         },
         'things': {
           extend: 'apostrophe-pieces',
@@ -52,6 +54,63 @@ describe('Pieces', function() {
             addFields: {
               name: '_things',
               type: 'joinByArray'
+            }
+          }
+        },
+        'products': {
+          extend: 'apostrophe-pieces',
+          name: 'product',
+          fields: {
+            body: {
+              type: 'area',
+              options: {
+                widgets: {
+                  'apostrophe-rich-text': {},
+                  'apostrophe-images': {}
+                }
+              }
+            },
+            color: {
+              type: 'select',
+              choices: [
+                {
+                  label: 'Red',
+                  value: 'red'
+                },
+                {
+                  label: 'Blue',
+                  value: 'blue'
+                }
+              ]
+            },
+            photo: {
+              type: 'attachment',
+              group: 'images'
+            },
+            addresses: {
+              type: 'array',
+              schema: {
+                street: {
+                  type: 'string'
+                }
+              }
+            },
+            _articles: {
+              type: 'joinByArray',
+              filters: {
+                projection: {
+                  title: 1,
+                  slug: 1
+                }
+              }
+            }
+          }
+        },
+        articles: {
+          extend: 'apostrophe-pieces',
+          fields: {
+            name: {
+              type: 'string'
             }
           }
         }
@@ -258,148 +317,20 @@ describe('Pieces', function() {
     assert(!piece2.trash);
   });
 
-  // done with api.js tests, now let's test routes
-  let routeThing = {
-    title: 'purple',
-    foo: 'bar'
-  };
+  it('should be able to insert test user', async function() {
+    assert(apos.users.newInstance);
+    const user = apos.users.newInstance();
+    assert(user);
 
-  let insertedRouteThing;
+    user.firstName = 'ad';
+    user.lastName = 'min';
+    user.title = 'admin';
+    user.username = 'admin';
+    user.password = 'admin';
+    user.email = 'ad@min.com';
+    user.permissions = [ 'admin' ];
 
-  // routes.insert
-  it('should insert an item from the routes.insert method', function(done) {
-    assert(apos.modules['things'].routes.insert);
-
-    let req = apos.tasks.getReq();
-    req.body = routeThing;
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data);
-      assert(result.data._id);
-      insertedRouteThing = result.data;
-      done();
-    };
-
-    return apos.modules['things'].routes.insert(req, res);
-  });
-
-  // routes.retrieve
-  it('should get an item from the routes.retrieve method', function(done) {
-    assert(apos.modules['things'].routes.retrieve);
-
-    let req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.piece = insertedRouteThing;
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'purple');
-      done();
-    };
-
-    return apos.modules['things'].routes.retrieve(req, res);
-  });
-
-  // routes.list
-  it('should get a list of all the items from routes.list', function(done) {
-    assert(apos.modules['things'].routes.list);
-
-    let req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.body = { limit: 10, skip: 0 };
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.total === 6);
-      assert(result.data.skip === 0);
-      assert(result.data.limit === 10);
-      assert(result.data.pieces.length === 6);
-      done();
-    };
-
-    return apos.modules['things'].routes.list(req, res);
-  });
-
-  // routes.update
-  it('should update an item in the database from route.update', function(done) {
-    assert(apos.modules['things'].routes.update);
-
-    // simulate that middleware first
-    assert(apos.modules['things'].requirePiece);
-    let req = apos.tasks.getReq();
-    req.body = insertedRouteThing;
-    // make a change to the thing we are inserting
-    req.body.title = "blue";
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'blue');
-      done();
-    };
-    apos.modules['things'].requirePiece(req, res, function() {
-      return apos.modules['things'].routes.update(req, res);
-    });
-  });
-
-  // routes.trash
-  it('should trash an item in the database from route.trash', function(done) {
-    assert(apos.modules['things'].routes.trash);
-    assert(apos.modules['things'].requirePiece);
-
-    let req = apos.tasks.getReq();
-    let id = insertedRouteThing._id;
-    req.body = {_id: id};
-    let res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it is trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(piece.trash === true);
-        done();
-      });
-    };
-    // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].routes.trash(req, res);
-    });
-
-  });
-
-  // routes.rescue
-  it('should rescue an item in the database from route.rescue', function(done) {
-    assert(apos.modules['things'].routes.rescue);
-    assert(apos.modules['things'].requirePiece);
-
-    let req = apos.tasks.getReq();
-    let id = insertedRouteThing._id;
-    req.body = {_id: id};
-    let res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it no longer trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(!piece.trash);
-        done();
-      });
-    };
-    // let's make sure the piece trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].routes.rescue(req, res);
-    });
-
+    return apos.users.insert(apos.tasks.getReq(), user);
   });
 
   it('people can find things via a join', function() {
@@ -437,4 +368,332 @@ describe('Pieces', function() {
       });
   });
 
+  it('should be able to log in as admin', async () => {
+    jar = request.jar();
+
+    // establish session
+    let page = await request({
+      uri: 'http://localhost:7900/',
+      jar,
+      followAllRedirects: true
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+    await request({
+      method: 'POST',
+      uri: 'http://localhost:7900/api/v1/apostrophe-login/login',
+      json: {
+        username: 'admin',
+        password: 'admin'
+      },
+      followAllRedirects: true,
+      jar
+    });
+
+    // Confirm login
+    page = await request({
+      uri: 'http://localhost:7900/',
+      jar,
+      followAllRedirects: true
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('cannot POST a product without a session', async () => {
+    await request('http://localhost:7900/api/v1/products', {
+      method: 'POST',
+      json: {
+        title: 'Fake Product',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is fake</p>'
+            }
+          ]
+        }
+      }
+    });
+    // Should not get here
+    assert(false);
+  });
+
+  let updateProduct;
+
+  it('can POST products with a bearer token, some published', async () => {
+    // range is exclusive at the top end, I want 10 things
+    for (let i = 1; (i <= 10); i++) {
+      const response = await request('http://localhost:7900/api/v1/products', {
+        method: 'POST',
+        json: {
+          title: 'Cool Product #' + i,
+          published: !!(i & 1),
+          body: {
+            type: 'area',
+            items: [
+              {
+                type: 'apostrophe-rich-text',
+                id: cuid(),
+                content: '<p>This is thing ' + i + '</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(response);
+      assert(response._id);
+      assert(response.title === 'Cool Product #' + i);
+      assert(response.slug === 'cool-product-' + i);
+      assert(response.type === 'product');
+      if (i === 1) {
+        updateProduct = response;
+      }
+    }
+  });
+
+  it('can GET five of those products without the user session', async () => {
+    const response = await request('http://localhost:7900/api/v1/products');
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  it('can GET five of those products with a user session and no query parameters', async () => {
+    const response = await request('http://localhost:7900/api/v1/products', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  it('can GET all ten of those products with a user session and published: "any"', async () => {
+    const response = await request('http://localhost:7900/api/v1/products?published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  let firstId;
+
+  it('can GET only 5 if perPage is 5', async () => {
+    const response = await request('http://localhost:7900/api/v1/products?perPage=5&published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    firstId = response.results[0]._id;
+    assert(response.pages === 2);
+  });
+
+  it('can GET a different 5 on page 2', async () => {
+    const response = await request('http://localhost:7900/api/v1/products?perPage=5&published=any&page=2', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    assert(response.results[0]._id !== firstId);
+    assert(response.pages === 2);
+  });
+
+  it('can update a product', async () => {
+    const response = await request(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      method: 'PUT',
+      json: {
+        ...updateProduct,
+        title: 'I like cheese',
+        _id: 'should-not-change'
+      },
+      jar
+    });
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('fetch of updated product shows updated content', async () => {
+    const response = await request(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      jar
+    });
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('can delete a product', async () => {
+    return request(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      method: 'DELETE'
+    });
+  });
+
+  it('cannot fetch a deleted product', function(done) {
+    it('fetch of updated product shows updated content', async () => {
+      const response = await request(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+        jar
+      });
+      // Should have been a 404, 200 = test fails
+      assert(false);
+    });
+  });
+
+  let joinedProductId;
+
+  it('can insert a product with joins', async () => {
+    let response = await request('http://localhost:7900/api/v1/articles', {
+      method: 'POST',
+      json: {
+        title: 'First Article',
+        name: 'first-article'
+      },
+      jar
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await request('http://localhost:7900/api/v1/products', {
+      method: 'POST',
+      json: {
+        title: 'Product Key Product With Join',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with join</p>'
+            }
+          ]
+        },
+        articlesIds: [articleId]
+      }
+    });
+    assert(response._id);
+    assert(response.articlesIds[0] === articleId);
+    joinedProductId = response._id;
+  });
+
+  it('can GET a product with joins', async () => {
+    const response = await request('http://localhost:7900/api/v1/products');
+    assert(response);
+    assert(response.results);
+    var product = _.find(response.results, { slug: 'product-key-product-with-join' });
+    assert(Array.isArray(product['_articles']));
+    assert(product['_articles'].length === 1);
+  });
+
+  it('can GET a single product with joins', async () => {
+    const response = await request(`http://localhost:7900/api/v1/products/${joinedProductId}`);
+    assert(response);
+    assert(response._articles);
+    assert(response._articles.length === 1);
+  });
+
+  it('can GET results with distinct article join information', async () => {
+    const response = await request('http://localhost:7900/api/v1/products?distinct=_articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.distinct);
+    assert(response.distinct._articles);
+    assert(response.distinct._articles[0].label === 'First Article');
+  });
+
+  it('can GET results with distinct article join information', async () => {
+    const response = await request('http://localhost:7900/api/v1/products?distinct-counts=_articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.distinct);
+    assert(response.distinct._articles);
+    assert(response.distinct._articles[0].label === 'First Article');
+    assert(response.distinct._articles[0].count === 1);
+  });
+
+  it('can patch a join', async () => {
+    let response = await request('http://localhost:7900/api/v1/articles', {
+      method: 'POST',
+      jar,
+      json: {
+        title: 'Join Article',
+        name: 'join-article'
+      }
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await request('http://localhost:7900/api/v1/products', {
+      method: 'POST',
+      jar,
+      json: {
+        title: 'Initially No Join Value',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product without initial join</p>'
+            }
+          ]
+        }
+      }
+    });
+
+    const product = response;
+    assert(product._id);
+    response = await request(`http://localhost:7900/api/v1/products/${product._id}`, {
+      method: 'PATCH',
+      json: {
+        articlesIds: [ articleId ]
+      }
+    });
+    assert(response.title === 'Initially No Join Value');
+    assert(response.articlesIds);
+    assert(response.articlesIds[0] === articleId);
+  });
+
+  it('can log out to destroy a session', async () => {
+   return request({
+      method: 'POST',
+      uri: 'http://localhost:7900/api/v1/apostrophe-login/logout',
+      json: {},
+      followAllRedirects: true,
+      jar
+    });
+  });
+
+  it('cannot POST a product with a logged-out bearer token', async () => {
+    await request('http://localhost:7900/api/v1/products', {
+      method: 'POST',
+      json: {
+        title: 'Fake Product After Logout',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is fake</p>'
+            }
+          ]
+        }
+      },
+      jar
+    });
+    assert(false);
+  });
 });
