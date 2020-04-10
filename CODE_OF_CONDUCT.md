@@ -56,7 +56,7 @@ further defined and clarified by project maintainers.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting the core team at
-[help@apostrophecms.com](mailto:help@apostrophecms.com). All
+[support@apostrophecms.com](mailto:support@apostrophecms.com). All
 complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The core team is
 obligated to maintain confidentiality with regard to the reporter of an incident.

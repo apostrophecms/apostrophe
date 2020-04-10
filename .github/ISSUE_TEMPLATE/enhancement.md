@@ -28,3 +28,5 @@ Describe alternatives you've considered
 ## Additional context
 
 > Mention any other context or attach screenshots regarding the feature request.
+> Check the existing issue labels and add any you think are relevant, e.g.,
+> `UI`, `UX`, `accessibility`, `security`.
