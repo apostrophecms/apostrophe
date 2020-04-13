@@ -25,7 +25,6 @@ describe('Login', function() {
         'apostrophe-express': {
           options: {
             port: 7901,
-            csrf: false,
             address: 'localhost',
             session: {
               secret: 'Cursus'
@@ -72,12 +71,18 @@ describe('Login', function() {
 
     assert(page.match(/logged out/));
 
+    console.log('login attempt');
+    console.log(getCookie(jar, 'test.csrf'));
+
     await request({
       method: 'POST',
       uri: 'http://localhost:7901/api/v1/apostrophe-login/login',
       json: {
         username: 'HarryPutter',
         password: 'crookshanks'
+      },
+      headers: {
+        'X-XSRF-TOKEN': getCookie(jar, 'test.csrf')
       },
       followAllRedirects: true,
       jar
@@ -98,6 +103,9 @@ describe('Login', function() {
       json: {
         username: 'hputter@aol.com',
         password: 'crookshanks'
+      },
+      headers: {
+        'X-XSRF-TOKEN': jar.cookie('test.csrf')
       },
       followAllRedirects: true,
       jar
@@ -133,6 +141,9 @@ describe('Login', function() {
         username: 'hputter@aol.com',
         password: 'crookshanks'
       },
+      headers: {
+        'X-XSRF-TOKEN': jar.cookie('test.csrf')
+      },
       followAllRedirects: true,
       jar
     });
@@ -147,12 +158,15 @@ describe('Login', function() {
     assert(page.match(/logged in/));
 
     // otherwise logins are not remembered in a session
-    const response = await request({
+    await request({
       method: 'POST',
       uri: 'http://localhost:7901/api/v1/apostrophe-login/logout',
       json: {
         username: 'hputter@aol.com',
         password: 'crookshanks'
+      },
+      headers: {
+        'X-XSRF-TOKEN': jar.cookie('test.csrf')
       },
       followAllRedirects: true,
       jar
@@ -169,3 +183,8 @@ describe('Login', function() {
   });
 
 });
+
+function getCookie(jar, name) {
+  console.log(jar.getCookies('http://localhost:7901'));
+  return jar.getCookies('http://localhost:7901').find(key => key === name).value;
+}
