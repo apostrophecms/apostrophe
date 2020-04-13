@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 
 let apos;
 
@@ -60,62 +59,62 @@ describe('Login', function() {
 
   it('should be able to login a user with their username', async function() {
 
-    const jar = request.jar();
+    const jar = apos.http.jar();
 
     // establish session
-    let page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    let page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     assert(page.match(/logged out/));
 
-    console.log('login attempt');
-    console.log(getCookie(jar, 'test.csrf'));
+    await apos.http.post(
+      'http://localhost:7901/api/v1/apostrophe-login/login',
+      {
+        method: 'POST',
+        json: {
+          username: 'HarryPutter',
+          password: 'crookshanks'
+        },
+        csrf: true,
+        jar
+      }
+    );
 
-    await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/api/v1/apostrophe-login/login',
-      json: {
-        username: 'HarryPutter',
-        password: 'crookshanks'
-      },
-      headers: {
-        'X-XSRF-TOKEN': getCookie(jar, 'test.csrf')
-      },
-      followAllRedirects: true,
-      jar
-    });
-
-    page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     assert(page.match(/logged in/));
 
     // otherwise logins are not remembered in a session
-    await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/api/v1/apostrophe-login/logout',
-      json: {
-        username: 'hputter@aol.com',
-        password: 'crookshanks'
-      },
-      headers: {
-        'X-XSRF-TOKEN': jar.cookie('test.csrf')
-      },
-      followAllRedirects: true,
-      jar
-    });
+    await apos.http.post(
+      'http://localhost:7901/api/v1/apostrophe-login/logout',
+      {
+        json: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        headers: {
+          'X-XSRF-TOKEN': jar.cookie('test.csrf')
+        },
+        csrf: true,
+        jar
+      }
+    );
 
-    page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     // are we back to being able to log in?
     assert(page.match(/logged out/));
@@ -123,60 +122,59 @@ describe('Login', function() {
 
   it('should be able to login a user with their email', async function() {
 
-    const jar = request.jar();
+    const jar = apos.http.jar();
 
     // establish session
-    let page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    let page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     assert(page.match(/logged out/));
 
-    await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/api/v1/apostrophe-login/login',
-      json: {
-        username: 'hputter@aol.com',
-        password: 'crookshanks'
-      },
-      headers: {
-        'X-XSRF-TOKEN': jar.cookie('test.csrf')
-      },
-      followAllRedirects: true,
-      jar
-    });
+    await apos.http.post(
+      'http://localhost:7901/api/v1/apostrophe-login/login',
+      {
+        json: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        csrf: true,
+        jar
+      }
+    );
 
-    page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     // Did we get our page back?
     assert(page.match(/logged in/));
 
     // otherwise logins are not remembered in a session
-    await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/api/v1/apostrophe-login/logout',
-      json: {
-        username: 'hputter@aol.com',
-        password: 'crookshanks'
-      },
-      headers: {
-        'X-XSRF-TOKEN': jar.cookie('test.csrf')
-      },
-      followAllRedirects: true,
-      jar
-    });
+    await apos.http.post(
+      'http://localhost:7901/api/v1/apostrophe-login/logout',
+      {
+        json: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        csrf: true,
+        jar
+      }
+    );
 
-    page = await request({
-      uri: 'http://localhost:7901/',
-      jar,
-      followAllRedirects: true
-    });
+    page = await apos.http.get(
+      'http://localhost:7901/',
+      {
+        jar
+      }
+    );
 
     // are we back to being able to log in?
     assert(page.match(/logged out/));
@@ -184,7 +182,3 @@ describe('Login', function() {
 
 });
 
-function getCookie(jar, name) {
-  console.log(jar.getCookies('http://localhost:7901'));
-  return jar.getCookies('http://localhost:7901').find(key => key === name).value;
-}

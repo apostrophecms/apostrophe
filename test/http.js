@@ -38,7 +38,7 @@ describe('Http', function() {
     });
 
     assert(apos.http);
-    jar = apos.http.getCookieJar();
+    jar = apos.http.jar();
   });
 
   it('should be able to make an http request', async () => {
@@ -47,7 +47,6 @@ describe('Http', function() {
     });
     assert(result);
     assert(result.match(/logged out/));
-    const cookies = jar.getCookiesSync('http://localhost:7900/csrf-test');
   });
 
   it('should not be able to make an http POST request without csrf header', async () => {
@@ -57,18 +56,29 @@ describe('Http', function() {
       });
       assert(false);
     } catch (e) {
-      console.error(e);
       assert(e.status === 403);
     }
   });
 
   it('should be able to make an http POST request with csrf header', async () => {
-    const cookies = jar.getCookiesSync('http://localhost:7900/csrf-test');
     const response = await apos.http.post('http://localhost:7900/csrf-test', {
       jar,
       headers: {
         'X-XSRF-TOKEN': apos.http.getCookie(jar, 'http://localhost:7900', 'test.csrf')
       },
+      send: 'json',
+      parse: 'json',
+      body: {}
+    });
+    assert(response.ok === true);
+  });
+
+  it('should be able to make an http POST request with csrf header via csrf convenience option to http.post', async () => {
+    const response = await apos.http.post('http://localhost:7900/csrf-test', {
+      jar,
+      csrf: true,
+      send: 'json',
+      parse: 'json',
       json: {}
     });
     assert(response.ok === true);
