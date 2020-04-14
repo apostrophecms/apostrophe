@@ -66,8 +66,6 @@ describe('Http', function() {
       headers: {
         'X-XSRF-TOKEN': apos.http.getCookie(jar, 'http://localhost:7900', 'test.csrf')
       },
-      send: 'json',
-      parse: 'json',
       body: {}
     });
     assert(response.ok === true);
@@ -77,9 +75,7 @@ describe('Http', function() {
     const response = await apos.http.post('http://localhost:7900/csrf-test', {
       jar,
       csrf: true,
-      send: 'json',
-      parse: 'json',
-      json: {}
+      body: {}
     });
     assert(response.ok === true);
   });
