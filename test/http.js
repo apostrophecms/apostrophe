@@ -52,7 +52,8 @@ describe('Http', function() {
   it('should not be able to make an http POST request without csrf header', async () => {
     try {
       await apos.http.post('http://localhost:7900/csrf-test', {
-        jar
+        jar,
+        csrf: false
       });
       assert(false);
     } catch (e) {
@@ -60,21 +61,21 @@ describe('Http', function() {
     }
   });
 
-  it('should be able to make an http POST request with csrf header', async () => {
+  it('should be able to make an http POST request with manually built csrf header', async () => {
     const response = await apos.http.post('http://localhost:7900/csrf-test', {
       jar,
       headers: {
         'X-XSRF-TOKEN': apos.http.getCookie(jar, 'http://localhost:7900', 'test.csrf')
       },
-      body: {}
+      body: {},
+      csrf: false
     });
     assert(response.ok === true);
   });
 
-  it('should be able to make an http POST request with csrf header via csrf convenience option to http.post', async () => {
+  it('should be able to make an http POST request with csrf header via default csrf convenience of http.post', async () => {
     const response = await apos.http.post('http://localhost:7900/csrf-test', {
       jar,
-      csrf: true,
       body: {}
     });
     assert(response.ok === true);

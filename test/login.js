@@ -75,11 +75,10 @@ describe('Login', function() {
       'http://localhost:7901/api/v1/apostrophe-login/login',
       {
         method: 'POST',
-        json: {
+        body: {
           username: 'HarryPutter',
           password: 'crookshanks'
         },
-        csrf: true,
         jar
       }
     );
@@ -97,14 +96,10 @@ describe('Login', function() {
     await apos.http.post(
       'http://localhost:7901/api/v1/apostrophe-login/logout',
       {
-        json: {
+        body: {
           username: 'hputter@aol.com',
           password: 'crookshanks'
         },
-        headers: {
-          'X-XSRF-TOKEN': jar.cookie('test.csrf')
-        },
-        csrf: true,
         jar
       }
     );
@@ -137,11 +132,10 @@ describe('Login', function() {
     await apos.http.post(
       'http://localhost:7901/api/v1/apostrophe-login/login',
       {
-        json: {
+        body: {
           username: 'hputter@aol.com',
           password: 'crookshanks'
         },
-        csrf: true,
         jar
       }
     );
@@ -160,11 +154,10 @@ describe('Login', function() {
     await apos.http.post(
       'http://localhost:7901/api/v1/apostrophe-login/logout',
       {
-        json: {
+        body: {
           username: 'hputter@aol.com',
           password: 'crookshanks'
         },
-        csrf: true,
         jar
       }
     );
