@@ -417,61 +417,61 @@ describe('Pieces', function() {
       assert(response._id);
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
-      assert(response.type === 'product');
+      assert(response.type === 'products');
       if (i === 1) {
         updateProduct = response;
       }
     }
   });
 
-  // it('can GET five of those products without the user session', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products');
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.results.length === 5);
-  // });
+  it('can GET five of those products without the user session', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products');
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
 
-  // it('can GET five of those products with a user session and no query parameters', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.results.length === 5);
-  // });
+  it('can GET five of those products with a user session and no query parameters', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
 
-  // it('can GET all ten of those products with a user session and published: "any"', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products?published=any', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.results.length === 5);
-  // });
+  it('can GET all ten of those products with a user session and published: "any"', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
 
-  // let firstId;
+  let firstId;
 
-  // it('can GET only 5 if perPage is 5', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.results.length === 5);
-  //   firstId = response.results[0]._id;
-  //   assert(response.pages === 2);
-  // });
+  it('can GET only 5 if perPage is 5', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    firstId = response.results[0]._id;
+    assert(response.pages === 2);
+  });
 
-  // it('can GET a different 5 on page 2', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any&page=2', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.results.length === 5);
-  //   assert(response.results[0]._id !== firstId);
-  //   assert(response.pages === 2);
-  // });
+  it('can GET a different 5 on page 2', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any&page=2', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    assert(response.results[0]._id !== firstId);
+    assert(response.pages === 2);
+  });
 
   // it('can update a product', async () => {
   //   const response = await apos.http.put(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
