@@ -415,6 +415,7 @@ describe('Pieces', function() {
       });
       assert(response);
       assert(response._id);
+      assert(response.body);
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
       assert(response.type === 'products');
@@ -440,30 +441,32 @@ describe('Pieces', function() {
     assert(response.results.length === 5);
   });
 
-  it('can GET all ten of those products with a user session and published: "any"', async () => {
-    const response = await apos.http.get('http://localhost:7900/api/v1/products?published=any', {
+  it('can GET all ten of those products with a user session and _edit=1', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?_edit=1', {
       jar
     });
     assert(response);
     assert(response.results);
-    assert(response.results.length === 5);
+    console.log(JSON.stringify(response.results, null, '  '));
+    assert(response.results.length === 10);
   });
 
   let firstId;
 
   it('can GET only 5 if perPage is 5', async () => {
-    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any', {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&_edit=1', {
       jar
     });
     assert(response);
     assert(response.results);
+    console.log(response.results.length);
     assert(response.results.length === 5);
     firstId = response.results[0]._id;
     assert(response.pages === 2);
   });
 
   it('can GET a different 5 on page 2', async () => {
-    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&published=any&page=2', {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?perPage=5&page=2&_edit=1', {
       jar
     });
     assert(response);
@@ -473,44 +476,47 @@ describe('Pieces', function() {
     assert(response.pages === 2);
   });
 
-  // it('can update a product', async () => {
-  //   const response = await apos.http.put(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
-  //     body: {
-  //       ...updateProduct,
-  //       title: 'I like cheese',
-  //       _id: 'should-not-change'
-  //     },
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response._id === updateProduct._id);
-  //   assert(response.title === 'I like cheese');
-  //   assert(response.body.items.length);
-  // });
+  it('can update a product with PUT', async () => {
+    const args = {
+      body: {
+        ...updateProduct,
+        title: 'I like cheese',
+        _id: 'should-not-change'
+      },
+      jar
+    };
+    console.log(JSON.stringify(args, null, '  '));
+    const response = await apos.http.put(`http://localhost:7900/api/v1/products/${updateProduct._id}`, args);
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    console.log(response);
+    assert(response.body.items.length);
+  });
 
-  // it('fetch of updated product shows updated content', async () => {
-  //   const response = await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response._id === updateProduct._id);
-  //   assert(response.title === 'I like cheese');
-  //   assert(response.body.items.length);
-  // });
+  it('fetch of updated product shows updated content', async () => {
+    const response = await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      jar
+    });
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
 
-  // it('can delete a product', async () => {
-  //   return apos.http.delete(`http://localhost:7900/api/v1/products/${updateProduct._id}`);
-  // });
+  it('can delete a product', async () => {
+    return apos.http.delete(`http://localhost:7900/api/v1/products/${updateProduct._id}`);
+  });
 
-  // it('cannot fetch a deleted product', function(done) {
-  //   it('fetch of updated product shows updated content', async () => {
-  //     await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
-  //       jar
-  //     });
-  //     // Should have been a 404, 200 = test fails
-  //     assert(false);
-  //   });
-  // });
+  it('cannot fetch a deleted product', function(done) {
+    it('fetch of updated product shows updated content', async () => {
+      await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+        jar
+      });
+      // Should have been a 404, 200 = test fails
+      assert(false);
+    });
+  });
 
   // let joinedProductId;
 
