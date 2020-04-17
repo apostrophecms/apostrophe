@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.106.0 (2020-04-17)
+
+**Security:** the `list` route of the `apostrophe-pieces` module and the `info` route of the `apostrophe-pages` module formerly allowed site visitors to obtain the complete contents of publicly accessible pages and pieces. While there was no inappropriate access to documents that were unpublished, restricted to certain users, etc., properties not normally visible to end users were exposed. Since the global document can be fetched as part of requests made by the public, this means that any credentials in the schema of the global document are vulnerable to being viewed until your site is updated to at least Apostrophe 2.106.0. Note that if you are using Apostrophe Workflow you must also update that module to Apostrophe 2.34.0, otherwise the "Manage Workflow" view will not work. 
+
+The most important change made to resolve this issue is the use of a projection to populate the "Manage" view of pieces (the "list" route). While Apostrophe will automatically include any extra columns configured with `addColumns` in the projection, you may need to add additional properties to the projection if you have overridden the manage list view template entirely for some of your pieces to display additional information.
+
+The easiest way to do that is to configure the `addToListProjection` option for your custom piece type, like so:
+
+```javascript
+// in lib/modules/my-module
+module.exports = {
+  extend: 'apostrophe-pieces',
+  addToListProjection: {
+    myExtraProperty: 1
+  }
+  // other configuration here as usual
+}
+```
+
+You can also apply the `super` pattern to the new `getListProjection` method of `apostrophe-pieces`.
+
+Many thanks to Kristian Mattila for bringing the issue to our attention, allowing us to patch the vulnerability
+before any public disclosure was made. If you become aware of a security issue in Apostrophe, please contact
+us via email at [security@apostrophecms.com](mailto:security@apostrophecms.com).
+
 ## 2.105.2 (2020-04-09)
 
 * `apos.utils.emit` now works properly in IE11, addressing an issue that impacted `apostrophe-forms` submissions in IE11 in 2.105.0.
