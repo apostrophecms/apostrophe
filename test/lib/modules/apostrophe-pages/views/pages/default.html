@@ -6,13 +6,4 @@
   <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
 {% endfor %}
 
-{# events widget is needed for pieces-widgets test #}
-{% area data.page, 'body', {
-    widgets: {
-      'events': {},
-      'apostrophe-rich-text': {
-        toolbar: [ 'Bold', 'Italic', 'Link', 'Anchor', 'Unlink' ]
-      }
-    }
-  }
-%}
+{% area data.page, 'body' %}

@@ -62,46 +62,49 @@ describe('Pieces', function() {
           extend: 'apostrophe-pieces',
           name: 'product',
           fields: {
-            body: {
-              type: 'area',
-              options: {
-                widgets: {
-                  'apostrophe-rich-text': {},
-                  'apostrophe-images': {}
+            add: {
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    'apostrophe-rich-text': {},
+                    'apostrophe-images': {}
+                  }
                 }
-              }
-            },
-            color: {
-              type: 'select',
-              choices: [
-                {
-                  label: 'Red',
-                  value: 'red'
-                },
-                {
-                  label: 'Blue',
-                  value: 'blue'
+              },
+              color: {
+                type: 'select',
+                choices: [
+                  {
+                    label: 'Red',
+                    value: 'red'
+                  },
+                  {
+                    label: 'Blue',
+                    value: 'blue'
+                  }
+                ]
+              },
+              photo: {
+                type: 'attachment',
+                group: 'images'
+              },
+              addresses: {
+                type: 'array',
+                schema: {
+                  street: {
+                    type: 'string'
+                  }
                 }
-              ]
-            },
-            photo: {
-              type: 'attachment',
-              group: 'images'
-            },
-            addresses: {
-              type: 'array',
-              schema: {
-                street: {
-                  type: 'string'
-                }
-              }
-            },
-            _articles: {
-              type: 'joinByArray',
-              filters: {
-                projection: {
-                  title: 1,
-                  slug: 1
+              },
+              _articles: {
+                type: 'joinByArray',
+                withType: 'article',
+                filters: {
+                  projection: {
+                    title: 1,
+                    slug: 1
+                  }
                 }
               }
             }
@@ -109,6 +112,9 @@ describe('Pieces', function() {
         },
         articles: {
           extend: 'apostrophe-pieces',
+          options: {
+            name: 'article'
+          },
           fields: {
             name: {
               type: 'string'
