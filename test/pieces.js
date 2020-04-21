@@ -453,7 +453,6 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.results);
-    console.log(JSON.stringify(response.results, null, '  '));
     assert(response.results.length === 10);
   });
 
@@ -465,7 +464,6 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.results);
-    console.log(response.results.length);
     assert(response.results.length === 5);
     firstId = response.results[0]._id;
     assert(response.pages === 2);
@@ -491,12 +489,10 @@ describe('Pieces', function() {
       },
       jar
     };
-    console.log(JSON.stringify(args, null, '  '));
     const response = await apos.http.put(`http://localhost:7900/api/v1/products/${updateProduct._id}`, args);
     assert(response);
     assert(response._id === updateProduct._id);
     assert(response.title === 'I like cheese');
-    console.log(response);
     assert(response.body.items.length);
   });
 
@@ -579,27 +575,25 @@ describe('Pieces', function() {
     assert(response._articles.length === 1);
   });
 
-  it('can GET results with distinct article join information', async () => {
-    const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct=_articles', {
+  it('can GET results plus filter choices', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?_edit=1&choices=title,published,_articles,articles', {
       jar
     });
     assert(response);
     assert(response.results);
-    assert(response.distinct);
-    assert(response.distinct._articles);
-    assert(response.distinct._articles[0].label === 'First Article');
-  });
-
-  it('can GET results with distinct article join information', async () => {
-    const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct-counts=_articles', {
-      jar
-    });
-    assert(response);
-    assert(response.results);
-    assert(response.distinct);
-    assert(response.distinct._articles);
-    assert(response.distinct._articles[0].label === 'First Article');
-    assert(response.distinct._articles[0].count === 1);
+    assert(response.choices);
+    assert(response.choices.title);
+    assert(response.choices.title[0].label.match(/Cool Product/));
+    assert(response.choices.published);
+    assert(response.choices.published[0].value === '0');
+    assert(response.choices.published[1].value === '1');
+    assert(response.choices._articles);
+    assert(response.choices._articles[0].label === 'First Article');
+    // an _id
+    assert(response.choices._articles[0].value.match(/^c/));
+    assert(response.choices.articles[0].label === 'First Article');
+    // a slug
+    assert(response.choices.articles[0].value === 'first-article');
   });
 
   it('can patch a join', async () => {
