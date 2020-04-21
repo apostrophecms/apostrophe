@@ -596,6 +596,29 @@ describe('Pieces', function() {
     assert(response.choices.articles[0].value === 'first-article');
   });
 
+  it('can GET results plus filter counts', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?_edit=1&counts=title,published,_articles,articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.counts);
+    assert(response.counts.title);
+    assert(response.counts.title[0].label.match(/Cool Product/));
+    // Doesn't work for every field type, but does for this
+    assert(response.counts.title[0].count === 1);
+    assert(response.counts.published);
+    assert(response.counts.published[0].value === '0');
+    assert(response.counts.published[1].value === '1');
+    assert(response.counts._articles);
+    assert(response.counts._articles[0].label === 'First Article');
+    // an _id
+    assert(response.counts._articles[0].value.match(/^c/));
+    assert(response.counts.articles[0].label === 'First Article');
+    // a slug
+    assert(response.counts.articles[0].value === 'first-article');
+  });
+
   it('can patch a join', async () => {
     let response = await apos.http.post('http://localhost:7900/api/v1/articles', {
       jar,
