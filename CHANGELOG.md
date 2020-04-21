@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.106.1 (2020-04-20)
+
+* Fixed a regression that broke the thumbnail display of images in "Manage Images." This regression was introduced in version 2.106.0, which was otherwise an important security update, so you should definitely update to 2.106.1 to get the benefit of that security fix if you haven't already.
+
 ## 2.106.0 (2020-04-17)
 
 **Security:** the `list` route of the `apostrophe-pieces` module and the `info` route of the `apostrophe-pages` module formerly allowed site visitors to obtain the complete contents of publicly accessible pages and pieces. While there was no inappropriate access to documents that were unpublished, restricted to certain users, etc., properties not normally visible to end users were exposed. Since the global document can be fetched as part of requests made by the public, this means that any credentials in the schema of the global document are vulnerable to being viewed until your site is updated to at least Apostrophe 2.106.0. Note that if you are using Apostrophe Workflow you must also update that module to Apostrophe 2.34.0, otherwise the "Manage Workflow" view will not work. 
