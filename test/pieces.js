@@ -511,156 +511,166 @@ describe('Pieces', function() {
   });
 
   it('can delete a product', async () => {
-    return apos.http.delete(`http://localhost:7900/api/v1/products/${updateProduct._id}`);
+    return apos.http.delete(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      jar
+    });
   });
 
-  it('cannot fetch a deleted product', function(done) {
-    it('fetch of updated product shows updated content', async () => {
+  it('cannot fetch a deleted product', async () => {
+    try {
       await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
         jar
       });
       // Should have been a 404, 200 = test fails
       assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+  });
+
+  let joinedProductId;
+
+  it('can insert a product with joins', async () => {
+    let response = await apos.http.post('http://localhost:7900/api/v1/articles', {
+      body: {
+        title: 'First Article',
+        name: 'first-article'
+      },
+      jar
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await apos.http.post('http://localhost:7900/api/v1/products', {
+      body: {
+        title: 'Product Key Product With Join',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with join</p>'
+            }
+          ]
+        },
+        articlesIds: [articleId]
+      },
+      jar
+    });
+    assert(response._id);
+    assert(response.articlesIds[0] === articleId);
+    joinedProductId = response._id;
+  });
+
+  it('can GET a product with joins', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products');
+    assert(response);
+    assert(response.results);
+    const product = _.find(response.results, { slug: 'product-key-product-with-join' });
+    assert(Array.isArray(product['_articles']));
+    assert(product['_articles'].length === 1);
+  });
+
+  it('can GET a single product with joins', async () => {
+    const response = await apos.http.get(`http://localhost:7900/api/v1/products/${joinedProductId}`);
+    assert(response);
+    assert(response._articles);
+    assert(response._articles.length === 1);
+  });
+
+  it('can GET results with distinct article join information', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct=_articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.distinct);
+    assert(response.distinct._articles);
+    assert(response.distinct._articles[0].label === 'First Article');
+  });
+
+  it('can GET results with distinct article join information', async () => {
+    const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct-counts=_articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.distinct);
+    assert(response.distinct._articles);
+    assert(response.distinct._articles[0].label === 'First Article');
+    assert(response.distinct._articles[0].count === 1);
+  });
+
+  it('can patch a join', async () => {
+    let response = await apos.http.post('http://localhost:7900/api/v1/articles', {
+      jar,
+      body: {
+        title: 'Join Article',
+        name: 'join-article'
+      }
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await apos.http.post('http://localhost:7900/api/v1/products', {
+      jar,
+      body: {
+        title: 'Initially No Join Value',
+        body: {
+          type: 'area',
+          items: [
+            {
+              type: 'apostrophe-rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product without initial join</p>'
+            }
+          ]
+        }
+      }
+    });
+
+    const product = response;
+    assert(product._id);
+    response = await apos.http.patch(`http://localhost:7900/api/v1/products/${product._id}`, {
+      body: {
+        articlesIds: [ articleId ]
+      },
+      jar
+    });
+    assert(response.title === 'Initially No Join Value');
+    assert(response.articlesIds);
+    assert(response.articlesIds[0] === articleId);
+  });
+
+  it('can log out to destroy a session', async () => {
+    return apos.http.post('http://localhost:7900/api/v1/apostrophe-login/logout', {
+      followAllRedirects: true,
+      jar
     });
   });
 
-  // let joinedProductId;
-
-  // it('can insert a product with joins', async () => {
-  //   let response = await apos.http.post('http://localhost:7900/api/v1/articles', {
-  //     body: {
-  //       title: 'First Article',
-  //       name: 'first-article'
-  //     },
-  //     jar
-  //   });
-  //   const articleId = response._id;
-  //   assert(articleId);
-
-  //   response = await apos.http.post('http://localhost:7900/api/v1/products', {
-  //     body: {
-  //       title: 'Product Key Product With Join',
-  //       body: {
-  //         type: 'area',
-  //         items: [
-  //           {
-  //             type: 'apostrophe-rich-text',
-  //             id: cuid(),
-  //             content: '<p>This is the product key product with join</p>'
-  //           }
-  //         ]
-  //       },
-  //       articlesIds: [articleId]
-  //     }
-  //   });
-  //   assert(response._id);
-  //   assert(response.articlesIds[0] === articleId);
-  //   joinedProductId = response._id;
-  // });
-
-  // it('can GET a product with joins', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products');
-  //   assert(response);
-  //   assert(response.results);
-  //   const product = _.find(response.results, { slug: 'product-key-product-with-join' });
-  //   assert(Array.isArray(product['_articles']));
-  //   assert(product['_articles'].length === 1);
-  // });
-
-  // it('can GET a single product with joins', async () => {
-  //   const response = await apos.http.get(`http://localhost:7900/api/v1/products/${joinedProductId}`);
-  //   assert(response);
-  //   assert(response._articles);
-  //   assert(response._articles.length === 1);
-  // });
-
-  // it('can GET results with distinct article join information', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct=_articles', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.distinct);
-  //   assert(response.distinct._articles);
-  //   assert(response.distinct._articles[0].label === 'First Article');
-  // });
-
-  // it('can GET results with distinct article join information', async () => {
-  //   const response = await apos.http.get('http://localhost:7900/api/v1/products?distinct-counts=_articles', {
-  //     jar
-  //   });
-  //   assert(response);
-  //   assert(response.results);
-  //   assert(response.distinct);
-  //   assert(response.distinct._articles);
-  //   assert(response.distinct._articles[0].label === 'First Article');
-  //   assert(response.distinct._articles[0].count === 1);
-  // });
-
-  // it('can patch a join', async () => {
-  //   let response = await apos.http.post('http://localhost:7900/api/v1/articles', {
-  //     jar,
-  //     body: {
-  //       title: 'Join Article',
-  //       name: 'join-article'
-  //     }
-  //   });
-  //   const articleId = response._id;
-  //   assert(articleId);
-
-  //   response = await apos.http.post('http://localhost:7900/api/v1/products', {
-  //     jar,
-  //     body: {
-  //       title: 'Initially No Join Value',
-  //       body: {
-  //         type: 'area',
-  //         items: [
-  //           {
-  //             type: 'apostrophe-rich-text',
-  //             id: cuid(),
-  //             content: '<p>This is the product key product without initial join</p>'
-  //           }
-  //         ]
-  //       }
-  //     }
-  //   });
-
-  //   const product = response;
-  //   assert(product._id);
-  //   response = await apos.http.patch(`http://localhost:7900/api/v1/products/${product._id}`, {
-  //     body: {
-  //       articlesIds: [ articleId ]
-  //     }
-  //   });
-  //   assert(response.title === 'Initially No Join Value');
-  //   assert(response.articlesIds);
-  //   assert(response.articlesIds[0] === articleId);
-  // });
-
-  // it('can log out to destroy a session', async () => {
-  //   return apos.http.post('http://localhost:7900/api/v1/apostrophe-login/logout', {
-  //     followAllRedirects: true,
-  //     jar
-  //   });
-  // });
-
-  // it('cannot POST a product with a logged-out cookie jar', async () => {
-  //   await apos.http.post('http://localhost:7900/api/v1/products', {
-  //     body: {
-  //       title: 'Fake Product After Logout',
-  //       body: {
-  //         type: 'area',
-  //         items: [
-  //           {
-  //             type: 'apostrophe-rich-text',
-  //             id: cuid(),
-  //             content: '<p>This is fake</p>'
-  //           }
-  //         ]
-  //       }
-  //     },
-  //     jar
-  //   });
-  //   assert(false);
-  // });
+  it('cannot POST a product with a logged-out cookie jar', async () => {
+    try {
+      await apos.http.post('http://localhost:7900/api/v1/products', {
+        body: {
+          title: 'Fake Product After Logout',
+          body: {
+            type: 'area',
+            items: [
+              {
+                type: 'apostrophe-rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
 });
