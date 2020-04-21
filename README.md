@@ -4,7 +4,7 @@ ApostropheCMS is a content management system (CMS) for Node.js. It supports in-c
 
 Please see the [ApostropheCMS documentation](https://apostrophecms.org/docs) for detailed information about building sites with ApostropheCMS. If you're interested in contributing, check out our [contribution guide](https://github.com/apostrophecms/apostrophe/blob/master/CONTRIBUTING.md) to get started.
 
-[![TravisCI Status](https://travis-ci.org/apostrophecms/apostrophe.svg?branch=master)](https://travis-ci.org/apostrophecms/apostrophe)
+[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/master.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/master)
 [<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
 [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
 

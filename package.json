@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "2.106.0",
+  "version": "2.106.2",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -18,10 +18,9 @@
     "apostrophecms",
     "cms",
     "content management",
-    "content management system",
-    "punkave"
+    "content management system"
   ],
-  "author": "P'unk Avenue LLC",
+  "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
     "@apostrophecms/nunjucks": "^2.5.4",

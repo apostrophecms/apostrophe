@@ -1,8 +1,16 @@
 # Changelog
 
+## 2.106.2 (2020-04-22)
+
+* Switched the continuous integration service to CircleCI from Travis.
+
+## 2.106.1 (2020-04-20)
+
+* Fixed a regression that broke the thumbnail display of images in "Manage Images." This regression was introduced in version 2.106.0, which was otherwise an important security update, so you should definitely update to 2.106.1 to get the benefit of that security fix if you haven't already.
+
 ## 2.106.0 (2020-04-17)
 
-**Security:** the `list` route of the `apostrophe-pieces` module and the `info` route of the `apostrophe-pages` module formerly allowed site visitors to obtain the complete contents of publicly accessible pages and pieces. While there was no inappropriate access to documents that were unpublished, restricted to certain users, etc., properties not normally visible to end users were exposed. Since the global document can be fetched as part of requests made by the public, this means that any credentials in the schema of the global document are vulnerable to being viewed until your site is updated to at least Apostrophe 2.106.0. Note that if you are using Apostrophe Workflow you must also update that module to Apostrophe 2.34.0, otherwise the "Manage Workflow" view will not work. 
+**Security:** the `list` route of the `apostrophe-pieces` module and the `info` route of the `apostrophe-pages` module formerly allowed site visitors to obtain the complete contents of publicly accessible pages and pieces. While there was no inappropriate access to documents that were unpublished, restricted to certain users, etc., properties not normally visible to end users were exposed. Since the global document can be fetched as part of requests made by the public, this means that any credentials in the schema of the global document are vulnerable to being viewed until your site is updated to at least Apostrophe 2.106.0. Note that if you are using Apostrophe Workflow you must also update that module to Apostrophe 2.34.0, otherwise the "Manage Workflow" view will not work.
 
 The most important change made to resolve this issue is the use of a projection to populate the "Manage" view of pieces (the "list" route). While Apostrophe will automatically include any extra columns configured with `addColumns` in the projection, you may need to add additional properties to the projection if you have overridden the manage list view template entirely for some of your pieces to display additional information.
 
@@ -117,7 +125,7 @@ close the page, because this is deprecated in all browsers and disabled
 in many. Instead, Apostrophe uses the standard "you have unsaved changes,
 are you sure you wish to leave this page?" dialog. Together with the
 "saving... saved" indicator, this provides a mechanism for preventing
-lost work that is robust in modern browsers. 
+lost work that is robust in modern browsers.
 
 This does impact Apostrophe's "advisory locking" mechanism that warns users
 if another user is already editing. Since we cannot guarantee a synchronous
@@ -221,7 +229,7 @@ By default, users from the "admin" group are whitelisted and the inactivity peri
 
 * Bug fix: the `sendPage` method now emits the `apostrophe-pages:beforeSend` promise event no matter which module is calling `self.sendPage`. This was always the intention, as shown by the fact that the legacy `pageBeforeSend` method is called. The purpose of `sendPage` has always been to allow a custom route to render a page exactly as Apostrophe normally does, and that includes calling all `apostrophe-pages:beforeSend` handlers.
 * Bug fix: the `title` field is now required in the `apostrophe-users` module. Thanks to Jose Garcia of swiss4ward.
-* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers. 
+* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers.
 
 ## 2.97.2 (2019-10-03)
 
@@ -232,7 +240,7 @@ By default, users from the "admin" group are whitelisted and the inactivity peri
 ## 2.97.1 (2019-09-26)
 
 * Hotfix for a potential Denial Of Service issue reported by NPM. A user with login privileges could eventually exhaust available memory by submitting thousands of batch job requests.
- 
+
 ## 2.97.0 (2019-09-25)
 
 * The simplified `APOS_BUNDLE=1` feature for asset deployment in the cloud now uses the actual `tar` utility when extracting assets locally, rather than the `tar` npm module, as a blocking bug was encountered and the actual utility is faster.
@@ -288,7 +296,7 @@ Thanks to Michelin for making much of this work possible via [Apostrophe Enterpr
 ## 2.94.0 (2019-08-09)
 
 * Bug fix for the new simplified static asset bundling: URLs beginning with `/` in CSS files are correctly rewritten to point to the bundle in the cloud when using the simple bundle feature (`APOS_BUNDLE=1`). This was already done for the old method.
-* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string). 
+* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string).
 * When you edit the slug of a piece or page manually and a slug conflict with another piece or page is created, you can now optionally click a button in order to edit the conflicting piece or page, and change its slug to eliminate the conflict.
 
 ## 2.93.0 (2019-07-25)
