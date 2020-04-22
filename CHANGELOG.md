@@ -2,7 +2,8 @@
 
 ## 2.106.2 (2020-04-22)
 
-* Switched the continuous integration service to CircleCI from Travis.
+* The icons of custom CKEditor plugins now appear properly. Previously they were hidden.
+* Switched the continuous integration testing service to CircleCI from Travis.
 
 ## 2.106.1 (2020-04-20)
 
