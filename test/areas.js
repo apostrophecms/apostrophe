@@ -40,51 +40,60 @@ describe('Areas', function() {
 
   it('returns the rich text of an area via the richText method', function() {
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }) === '<h2>So cool</h2>\n<h2>Something else cool</h2>');
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }, { delimiter: '' }) === '<h2>So cool</h2><h2>Something else cool</h2>');
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>Something else cool</h2>'
         }
@@ -94,34 +103,40 @@ describe('Areas', function() {
 
   it('returns the plaintext of an area via the plaintext method', function() {
     assert.strictEqual(apos.areas.plaintext({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }), 'So cool\nSomething else cool');
     assert.strictEqual(apos.areas.plaintext({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
+          metaType: 'widget',
           type: 'apostrophe-rich-text',
           content: '<h2>Something else cool</h2>'
         }
@@ -134,13 +149,14 @@ describe('Areas', function() {
       type: 'test',
       _id: 'test',
       body: {
-        type: 'area',
+        metaType: 'area',
         items: []
       },
       emptyText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
             type: 'apostrophe-rich-text',
             content: ''
@@ -148,9 +164,10 @@ describe('Areas', function() {
         ]
       },
       insignificantText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
             type: 'apostrophe-rich-text',
             content: '<h4> </h4>'
@@ -158,9 +175,10 @@ describe('Areas', function() {
         ]
       },
       insignificantPieces: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test3',
             type: 'monkeys',
             _pieces: []
@@ -181,9 +199,10 @@ describe('Areas', function() {
       type: 'test',
       _id: 'test',
       body: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
             type: 'apostrophe-video',
             url: 'http://somewhere.com'
@@ -191,9 +210,10 @@ describe('Areas', function() {
         ]
       },
       emptyText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
             type: 'apostrophe-rich-text',
             content: ''
@@ -201,9 +221,10 @@ describe('Areas', function() {
         ]
       },
       fullText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
             type: 'apostrophe-rich-text',
             content: '<h4>Some text</h4>'
@@ -211,9 +232,10 @@ describe('Areas', function() {
         ]
       },
       significantPieces: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test3',
             type: 'monkeys',
             _pieces: [

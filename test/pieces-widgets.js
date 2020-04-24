@@ -40,6 +40,24 @@ describe('Pieces Widgets', function() {
         'events-widgets': {
           extend: 'apostrophe-pieces-widgets'
         },
+        'default-pages': {
+          extend: 'apostrophe-custom-pages',
+          options: {
+            name: 'default'
+          },
+          fields: {
+            add: {
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    'events': {}
+                  }
+                }
+              }
+            }
+          }
+        },
         'apostrophe-pages': {
           options: {
             types: [
@@ -55,13 +73,15 @@ describe('Pieces Widgets', function() {
             park: [
               {
                 title: 'Page With Events Widget',
+                metaType: 'doc',
                 type: 'default',
                 slug: '/page-with-events',
                 published: true,
                 body: {
-                  type: 'area',
+                  metaType: 'area',
                   items: [
                     {
+                      metaType: 'widget',
                       type: 'events',
                       by: 'id',
                       pieceIds: [
@@ -69,6 +89,7 @@ describe('Pieces Widgets', function() {
                       ]
                     },
                     {
+                      metaType: 'widget',
                       type: 'events',
                       by: 'tag',
                       tags: [
@@ -103,13 +124,15 @@ describe('Pieces Widgets', function() {
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
         published: true,
+        metaType: 'doc',
         type: 'event',
         title: title,
         tags: tags,
         body: {
-          type: 'area',
+          metaType: 'area',
           items: [
             {
+              metaType: 'widget',
               type: 'apostrophe-rich-text',
               content: '<p>This is some content.</p>'
             }
@@ -129,6 +152,7 @@ describe('Pieces Widgets', function() {
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
       published: true,
+      metaType: 'doc',
       type: 'event',
       title: title,
       tags: tags,
@@ -137,9 +161,10 @@ describe('Pieces Widgets', function() {
       highSearchText: apos.utils.sortify(title),
       highSearchWords: apos.utils.sortify(title).split(/ /),
       body: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             type: 'apostrophe-rich-text',
             content: '<p>This is some content.</p>'
           }
@@ -221,14 +246,13 @@ describe('Pieces Widget With Extra Join', function() {
         },
         'events-widgets': {
           extend: 'apostrophe-pieces-widgets',
-          options: {
-            addFields: [
-              {
-                name: '_featured',
+          fields: {
+            add: {
+              _featured: {
                 type: 'joinByArray',
                 withType: 'event'
               }
-            ]
+            }
           }
         },
         'apostrophe-pages': {
@@ -250,9 +274,10 @@ describe('Pieces Widget With Extra Join', function() {
                 slug: '/page-with-events',
                 published: true,
                 body: {
-                  type: 'area',
+                  metaType: 'area',
                   items: [
                     {
+                      metaType: 'widget',
                       type: 'events',
                       by: 'id',
                       pieceIds: [
@@ -263,6 +288,7 @@ describe('Pieces Widget With Extra Join', function() {
                       ]
                     },
                     {
+                      metaType: 'widget',
                       type: 'events',
                       by: 'tag',
                       tags: [
@@ -274,6 +300,24 @@ describe('Pieces Widget With Extra Join', function() {
                 }
               }
             ]
+          }
+        },
+        'default-pages': {
+          extend: 'apostrophe-custom-pages',
+          options: {
+            name: 'default'
+          },
+          fields: {
+            add: {
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    'events': {}
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -301,9 +345,10 @@ describe('Pieces Widget With Extra Join', function() {
         title: title,
         tags: tags,
         body: {
-          type: 'area',
+          metaType: 'area',
           items: [
             {
+              metaType: 'widget',
               type: 'apostrophe-rich-text',
               content: '<p>This is some content.</p>'
             }
@@ -331,9 +376,10 @@ describe('Pieces Widget With Extra Join', function() {
       highSearchText: apos.utils.sortify(title),
       highSearchWords: apos.utils.sortify(title).split(/ /),
       body: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             type: 'apostrophe-rich-text',
             content: '<p>This is some content.</p>'
           }

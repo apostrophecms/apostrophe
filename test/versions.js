@@ -248,9 +248,10 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            meaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
@@ -263,14 +264,16 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
               },
               {
+                metaType: 'widget',
                 _id: 'woo2',
                 type: 'apostrophe-rich-text',
                 content: 'So amazing'
@@ -305,14 +308,16 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
               },
               {
+                metaType: 'widget',
                 _id: 'woo2',
                 type: 'apostrophe-rich-text',
                 content: 'So amazing'
@@ -325,9 +330,10 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
@@ -362,14 +368,16 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
               },
               {
+                metaType: 'widget',
                 _id: 'woo2',
                 type: 'apostrophe-rich-text',
                 content: 'So amazing'
@@ -382,14 +390,16 @@ describe('Versions', function() {
           title: 'whatever',
           slug: 'whatever',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 _id: 'woo',
                 type: 'apostrophe-rich-text',
                 content: 'So great'
               },
               {
+                metaType: 'widget',
                 _id: 'woo2',
                 type: 'apostrophe-rich-text',
                 content: 'So wimpy'

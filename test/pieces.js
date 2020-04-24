@@ -379,9 +379,10 @@ describe('Pieces', function() {
         body: {
           title: 'Fake Product',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 type: 'apostrophe-rich-text',
                 id: cuid(),
                 content: '<p>This is fake</p>'
@@ -407,9 +408,10 @@ describe('Pieces', function() {
           title: 'Cool Product #' + i,
           published: !!(i & 1),
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 type: 'apostrophe-rich-text',
                 id: cuid(),
                 content: '<p>This is thing ' + i + '</p>'
@@ -541,9 +543,10 @@ describe('Pieces', function() {
       body: {
         title: 'Product Key Product With Join',
         body: {
-          type: 'area',
+          metaType: 'area',
           items: [
             {
+              metaType: 'widget',
               type: 'apostrophe-rich-text',
               id: cuid(),
               content: '<p>This is the product key product with join</p>'
@@ -635,9 +638,10 @@ describe('Pieces', function() {
       body: {
         title: 'Initially No Join Value',
         body: {
-          type: 'area',
+          metaType: 'area',
           items: [
             {
+              metaType: 'widget',
               type: 'apostrophe-rich-text',
               id: cuid(),
               content: '<p>This is the product key product without initial join</p>'
@@ -673,9 +677,10 @@ describe('Pieces', function() {
         body: {
           title: 'Fake Product After Logout',
           body: {
-            type: 'area',
+            metaType: 'area',
             items: [
               {
+                metaType: 'widget',
                 type: 'apostrophe-rich-text',
                 id: cuid(),
                 content: '<p>This is fake</p>'

@@ -76,9 +76,10 @@ describe('Pieces Pages', function() {
         title: 'Event ' + paddedInt,
         titleSortified: 'event ' + paddedInt,
         body: {
-          type: 'area',
+          metaType: 'area',
           items: [
             {
+              metaType: 'widget',
               type: 'apostrophe-rich-text',
               content: '<p>This is some content.</p>'
             }
