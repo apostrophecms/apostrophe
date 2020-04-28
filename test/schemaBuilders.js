@@ -183,7 +183,7 @@ describe('Schema builders', function() {
   it('can obtain choices for _cats', async function() {
     let req = apos.tasks.getReq();
     let query = apos.people.find(req);
-    const cats = query.toChoices('_cats');
+    const cats = await query.toChoices('_cats');
     // Only the cats that are actually somebody's cat come up
     assert(cats.length === 9);
     assert(cats[0].value);
@@ -330,7 +330,7 @@ describe('Schema builders', function() {
     let query = apos.people.find(req);
     // Only one person has each favorite
     query.favorite(cats[3].slug);
-    const people = query.search('person').toArray();
+    const people = await query.search('person').toArray();
     assert(people.length === 1);
     assert(people[0].i === 3);
   });
