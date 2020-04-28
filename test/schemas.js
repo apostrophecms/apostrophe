@@ -212,27 +212,24 @@ describe('Schemas', function() {
   // EXISTENCE
   /// ///
 
-  it('should be a property of the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should be a property of the apos object', async () => {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+        options: {
+          'apostrophe-express': {
+            secret: 'xxx',
+            port: 7900
+          }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.schemas);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.schemas);
+    apos.argv._ = [];
   });
 
   it('should compose schemas correctly', function() {
@@ -293,7 +290,7 @@ describe('Schemas', function() {
     assert(_newPage.group.name === 'info');
   });
 
-  it('should error if a field is required and an empty value is submitted for a string field type', function(done) {
+  it('should error if a field is required and an empty value is submitted for a string field type', async () => {
     let schema = apos.schemas.compose({
       addFields: [
         {
@@ -308,15 +305,10 @@ describe('Schemas', function() {
     let input = {
       name: ''
     };
-    let req = apos.tasks.getReq();
-    let result = {};
-    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      assert(err === 'name.required');
-      done();
-    });
+    await testSchemaError(schema, input, 'name', 'required');
   });
 
-  it('should error if the value submitted is less than min length for a string field type', function(done) {
+  it('should error if the value submitted is less than min length for a string field type', async () => {
     let schema = apos.schemas.compose({
       addFields: [
         {
@@ -333,10 +325,7 @@ describe('Schemas', function() {
     };
     let req = apos.tasks.getReq();
     let result = {};
-    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
-      assert(err === 'name.min');
-      done();
-    });
+    await testSchemaError(schema, input, 'name', 'min');
   });
 
   it('should convert and keep the correct value for a field which is required for a string field type', function(done) {
@@ -1940,5 +1929,18 @@ describe('Schemas', function() {
       done();
     });
   });
-
 });
+
+async function testSchemaError(schema, input, path, name) {
+  const req = apos.tasks.getReq();
+  const result = {};
+  try {
+    await apos.schemas.convert(req, schema, input, result);
+    assert(false);
+  } catch (e) {
+    assert(Array.isArray(e));
+    assert(e.length === 1);
+    assert(e[0].path === path);
+    assert(e[0].error === name);
+  }
+}
