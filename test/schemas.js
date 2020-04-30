@@ -194,7 +194,19 @@ let hasArea = {
       name: 'body',
       label: 'Body',
       widgets: {
-        'apostrophe-rich-text': {}
+        'apostrophe-rich-text': {
+          'toolbar': [ 'styles', 'bold' ],
+          styles: [
+            {
+              tag: 'p',
+              label: 'Paragraph'
+            },
+            {
+              tag: 'h4',
+              label: 'Header 4'
+            }
+          ]
+        }
       }
     }
   ]
@@ -1259,6 +1271,34 @@ describe('Schemas', function() {
     assert(result.body.items[0]);
     assert(result.body.items[0].type === 'apostrophe-rich-text');
     assert(result.body.items[0].content === apos.utils.escapeHtml(input.body));
+  });
+
+  it('should convert arrays of widgets to areas correctly', async () => {
+    let schema = apos.schemas.compose(hasArea);
+    assert(schema.length === 1);
+    let input = {
+      irrelevant: 'Irrelevant',
+      body: [
+        {
+          metaType: 'widget',
+          type: 'apostrophe-rich-text',
+          content: '<h4>This <em>is</em> <strong>a header.</strong></h4>'
+        }
+      ]
+    };
+    let req = apos.tasks.getReq();
+    let result = {};
+    await apos.schemas.convert(req, schema, input, result);
+    // no irrelevant or missing fields
+    assert(_.keys(result).length === 1);
+    // expected fields came through
+    assert(result.body);
+    assert(result.body.metaType === 'area');
+    assert(result.body.items);
+    assert(result.body.items[0]);
+    assert(result.body.items[0].type === 'apostrophe-rich-text');
+    // Only tags in the toolbar come through
+    assert.equal(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
   });
 
   it('should convert areas gracefully when they are undefined', async () => {
