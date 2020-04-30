@@ -937,7 +937,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a required float field', async () => {
@@ -955,7 +955,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field with min and max', async () => {
@@ -974,7 +974,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field with min and max', async () => {
@@ -993,7 +993,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field with a default value set', async () => {
@@ -1011,7 +1011,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field with a default value set', async () => {
@@ -1029,7 +1029,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field', async () => {
@@ -1046,7 +1046,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field', async () => {
@@ -1063,7 +1063,7 @@ describe('Schemas', function() {
     let input = {
       price: 'A'
     };
-    testSchemaError(schema, input, 'price', 'invalid');
+    await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should allow a parsable string/integer value to be submitted for a non required integer field', async () => {
@@ -1232,7 +1232,6 @@ describe('Schemas', function() {
     assert(_.keys(result).length === 1);
     assert(result.addresses);
     assert(result.addresses.metaType === 'array');
-    console.log('addresses:', result.addresses);
     assert(result.addresses.entries.length === 2);
     assert(result.addresses.entries[0]._id);
     assert(result.addresses.entries[1]._id);
@@ -1282,507 +1281,434 @@ describe('Schemas', function() {
     assert(!result.body.items[0]);
   });
 
-  // it('should accept csv as a bc equivalent for string in convert', async () => {
-  //   let schema = apos.schemas.compose(hasArea);
-  //   assert(schema.length === 1);
-  //   let input = {
-  //     irrelevant: 'Irrelevant',
-  //     // Should get escaped, not be treated as HTML
-  //     body: 'This is the greatest <h1>thing</h1>'
-  //   };
-  //   let req = apos.tasks.getReq();
-  //   let result = {};
-  //   await apos.schemas.convert(req, schema, 'string', input, result);
-      
-  //     // no irrelevant or missing fields
-  //     assert(_.keys(result).length === 1);
-  //     // expected fields came through
-  //     assert(result.body);
-  //     assert(result.body.type === 'area');
-  //     assert(result.body.items);
-  //     assert(result.body.items[0]);
-  //     assert(result.body.items[0].type === 'apostrophe-rich-text');
-  //     assert(result.body.items[0].content === apos.utils.escapeHtml(input.body));
-  //     done();
-  //   });
-  // });
+  it('should clean up extra slashes in page slugs', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    let input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    let result = {};
+    await apos.schemas.convert(req, schema, input, result);
+    assert.equal(result.slug, '/wiggy/wacky/wobbly/whizzle');
+  });
 
-  // it('should clean up extra slashes in page slugs', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({ addFields: pageSlug });
-  //   assert(schema.length === 1);
-  //   let input = {
-  //     slug: '/wiggy//wacky///wobbly////whizzle/////'
-  //   };
-  //   let result = {};
-  //   await apos.schemas.convert(req, schema, 'string', input, result);
-      
-  //     assert(result.slug === '/wiggy/wacky/wobbly/whizzle');
-  //     done();
-  //   });
-  // });
+  it('retains trailing / on the home page', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({ addFields: pageSlug });
+    assert(schema.length === 1);
+    let input = {
+      slug: '/'
+    };
+    let result = {};
+    await apos.schemas.convert(req, schema, input, result);
+    assert(result.slug === '/');
+  });
 
-  // it('retains trailing / on the home page', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({ addFields: pageSlug });
-  //   assert(schema.length === 1);
-  //   let input = {
-  //     slug: '/'
-  //   };
-  //   let result = {};
-  //   await apos.schemas.convert(req, schema, 'string', input, result);
-      
-  //     assert(result.slug === '/');
-  //     done();
-  //   });
-  // });
+  it('does not keep slashes when page: true not present for slug', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({ addFields: regularSlug });
+    assert(schema.length === 1);
+    let input = {
+      slug: '/wiggy//wacky///wobbly////whizzle/////'
+    };
+    let result = {};
+    await apos.schemas.convert(req, schema, input, result);
+    assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
+  });
 
-  // it('does not keep slashes when page: true not present for slug', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({ addFields: regularSlug });
-  //   assert(schema.length === 1);
-  //   let input = {
-  //     slug: '/wiggy//wacky///wobbly////whizzle/////'
-  //   };
-  //   let result = {};
-  //   await apos.schemas.convert(req, schema, 'string', input, result);
-      
-  //     assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
-  //     done();
-  //   });
-  // });
+  it('enforces required property for ordinary field', async () => {
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          label: 'Age',
+          type: 'integer',
+          required: true
+        }
+      ]
+    });
+    await testSchemaError(schema, { age: '' }, 'age', 'required');
+  });
 
-  // it('enforces required property for ordinary field', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         label: 'Age',
-  //         type: 'integer',
-  //         required: true
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { age: '' }, output);
-  //     assert(err);
-  //     assert(err === 'age.required');
-  //     done();
-  //   });
-  // });
+  it('ignores required property for hidden field', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        }
+      ]
+    });
+    let output = {};
+    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'shoeSize', age: '' }, output);
+    assert(output.ageOrShoeSize === 'shoeSize');
+  });
 
-  // it('ignores required property for hidden field', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: 'shoeSize', age: '' }, output);
-      
-  //     assert(output.ageOrShoeSize === 'shoeSize');
-  //     done();
-  //   });
-  // });
+  it('enforces required property for shown field', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        }
+      ]
+    });
+    await testSchemaError(schema, { ageOrShoeSize: 'age', age: '' }, 'age', 'required');
+  });
 
-  // it('enforces required property for shown field', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', age: '' }, output);
-  //     assert(err);
-  //     assert(err === 'age.required');
-  //     done();
-  //   });
-  // });
+  it('ignores required property for recursively hidden field', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'select',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    let output = {};
+    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: '0', age: '' }, output);
+    assert(output.ageOrShoeSize === 'age');
+  });
 
-  // it('ignores required property for recursively hidden field', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'Yes',
-  //             value: '1',
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             label: 'No',
-  //             value: '0',
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: '0', age: '' }, output);
-      
-  //     assert(output.ageOrShoeSize === 'age');
-  //     done();
-  //   });
-  // });
+  it('enforces required property for recursively shown field', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'select',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    await testSchemaError(schema, { ageOrShoeSize: 'age', doWeCare: '1', age: '' }, 'age', 'required');
+  });
 
-  // it('enforces required property for recursively shown field', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'Yes',
-  //             value: '1',
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             label: 'No',
-  //             value: '0',
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: '1', age: '' }, output);
-  //     assert(err);
-  //     assert(err === 'age.required');
-  //     done();
-  //   });
-  // });
+  it('ignores required property for recursively hidden field with checkboxes', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    let output = {};
+    await apos.schemas.convert(req, schema, { ageOrShoeSize: ['age'], doWeCare: ['0'], age: '' }, output);
+    assert.deepEqual(output.ageOrShoeSize, ['age']);
+  });
 
-  // it('ignores required property for recursively hidden field with checkboxes', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'checkboxes',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'checkboxes',
-  //         choices: [
-  //           {
-  //             label: 'Yes',
-  //             value: '1',
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             label: 'No',
-  //             value: '0',
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: ['age'], doWeCare: ['0'], age: '' }, output);
-      
-  //     assert.deepEqual(output.ageOrShoeSize, ['age']);
-  //     done();
-  //   });
-  // });
+  it('enforces required property for recursively shown field with checkboxes', async () => {
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'Yes',
+              value: '1',
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              label: 'No',
+              value: '0',
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    await testSchemaError(schema, { ageOrShoeSize: [ 'age', 'shoeSize' ], doWeCare: [ '1' ], age: '' }, 'age', 'required');
+  });
 
-  // it('enforces required property for recursively shown field with checkboxes', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'checkboxes',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'checkboxes',
-  //         choices: [
-  //           {
-  //             label: 'Yes',
-  //             value: '1',
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             label: 'No',
-  //             value: '0',
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: ['age', 'shoeSize'], doWeCare: ['1'], age: '' }, output);
-  //     assert(err);
-  //     assert(err === 'age.required');
-  //     done();
-  //   });
-  // });
+  it('ignores required property for recursively hidden field with boolean', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'select',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'boolean',
+          choices: [
+            {
+              value: true,
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              value: false,
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    let output = {};
+    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: false, age: '' }, output);
+    assert(output.ageOrShoeSize === 'age');
+  });
 
-  // it('ignores required property for recursively hidden field with boolean', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'select',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'boolean',
-  //         choices: [
-  //           {
-  //             value: true,
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             value: false,
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: false, age: '' }, output);
-      
-  //     assert(output.ageOrShoeSize === 'age');
-  //     done();
-  //   });
-  // });
-
-  // it('enforces required property for recursively shown field with boolean', async () => {
-  //   let req = apos.tasks.getReq();
-  //   let schema = apos.schemas.compose({
-  //     addFields: [
-  //       {
-  //         name: 'age',
-  //         type: 'integer',
-  //         required: true
-  //       },
-  //       {
-  //         name: 'shoeSize',
-  //         type: 'integer',
-  //         required: false
-  //       },
-  //       {
-  //         name: 'ageOrShoeSize',
-  //         type: 'checkboxes',
-  //         choices: [
-  //           {
-  //             label: 'age',
-  //             value: 'age',
-  //             showFields: [ 'age' ]
-  //           },
-  //           {
-  //             label: 'shoeSize',
-  //             value: 'shoeSize',
-  //             showFields: [ 'shoeSize' ]
-  //           }
-  //         ]
-  //       },
-  //       {
-  //         name: 'doWeCare',
-  //         type: 'boolean',
-  //         choices: [
-  //           {
-  //             value: true,
-  //             showFields: [ 'ageOrShoeSize' ]
-  //           },
-  //           {
-  //             value: false,
-  //             showFields: []
-  //           }
-  //         ]
-  //       }
-  //     ]
-  //   });
-  //   let output = {};
-  //   apos.schemas.convert(req, schema, { ageOrShoeSize: ['age', 'shoeSize'], doWeCare: true, age: '' }, output);
-  //     assert(err);
-  //     assert(err === 'age.required');
-  //     done();
-  //   });
-  // });
+  it('enforces required property for recursively shown field with boolean', async () => {
+    let req = apos.tasks.getReq();
+    let schema = apos.schemas.compose({
+      addFields: [
+        {
+          name: 'age',
+          type: 'integer',
+          required: true
+        },
+        {
+          name: 'shoeSize',
+          type: 'integer',
+          required: false
+        },
+        {
+          name: 'ageOrShoeSize',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'age',
+              value: 'age',
+              showFields: [ 'age' ]
+            },
+            {
+              label: 'shoeSize',
+              value: 'shoeSize',
+              showFields: [ 'shoeSize' ]
+            }
+          ]
+        },
+        {
+          name: 'doWeCare',
+          type: 'boolean',
+          choices: [
+            {
+              value: true,
+              showFields: [ 'ageOrShoeSize' ]
+            },
+            {
+              value: false,
+              showFields: []
+            }
+          ]
+        }
+      ]
+    });
+    await testSchemaError(schema, { ageOrShoeSize: [ 'age', 'shoeSize' ], doWeCare: true, age: '' }, 'age', 'required');
+  });
 });
 
 async function testSchemaError(schema, input, path, name) {
