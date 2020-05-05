@@ -8,9 +8,7 @@
       <img src="{{ apos.attachments.url(piece.attachment, { size: (piece.trash and 'one-sixth') or 'one-third' } ) }}" alt="">
       <div class="apos-image-screen"></div>
       <div class="apos-manage-grid-piece-controls">
-        {% set verb = 'rescue' if (piece.trash and not (data.canEditTrash)) else 'edit' %}
-        {% set label = 'Rescue' if (verb == rescue) else 'Edit' %}
-        {{ buttons.minor(label, { action: verb + '-' + data.options.name | css, value: piece._id, icon: 'caret-right' }) }}
+        {{ buttons.minor('Edit', { action: 'edit-' + data.options.name | css, value: piece._id, icon: 'caret-right' }) }}
       </div>
     </div>
     <div class="apos-manage-grid-piece-label">{{ piece.title }}</div>

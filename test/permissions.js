@@ -87,10 +87,10 @@ describe('Permissions', function() {
       assert(!apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-doc for individual with group id for managing and edit permission', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('forbids edit-doc for other person', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
   });
 });
