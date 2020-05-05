@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.106.3 (2020-05-06)
+
+* Fixes a page tree interface bug that would cause pages to be lost when they
+were trashed with their parent, then the parent was dragged out of the trash.
+This only effected projects with `trashInSchema: true` set in the
+`apostrophe-docs` module, however that includes anything using
+`apostrophe-workflow`.
+
 ## 2.106.2 (2020-04-22)
 
 * The icons of custom CKEditor plugins now appear properly. Previously they were hidden.
