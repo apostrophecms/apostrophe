@@ -10,42 +10,40 @@ describe('Tags', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async () => {
+    return t.destroy(apos);
   });
 
-  it('should be a property of the apos object', function(done) {
+  it('should be a property of the apos object', async () => {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900,
-          csrf: {
-            // We're not here to test CSRF, so make the test simpler
-            exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
+          options: {
+            secret: 'xxx',
+            port: 7900,
+            csrf: {
+              // We're not here to test CSRF, so make the test simpler
+              exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
+            }
           }
         },
         'events': {
           extend: 'apostrophe-pieces',
-          name: 'event'
+          options: {
+            name: 'event'
+          }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.tags);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.tags);
   });
 
-  it('should insert some docs to test itself', function(done) {
+  it('should insert some docs to test itself', async () => {
     let testDocs = [
       {
         title: 'Tag Test Doc 1',
@@ -70,21 +68,15 @@ describe('Tags', function() {
       }
     ];
 
-    return async.eachSeries(testDocs, function(doc, callback) {
-      apos.docs.insert(apos.tasks.getReq(), doc, callback);
-    }, function(err) {
-      assert(!err);
-      done();
-    });
+    for (const doc of testDocs) {
+      await apos.docs.insert(apos.tasks.getReq(), doc);
+    }
   });
 
-  it('should have a listTags method that returns a list of tags', function(done) {
-    return apos.tags.listTags(apos.tasks.getReq(), {}, function(err, tags) {
-      assert(!err);
-      assert(tags);
-      assert(Array.isArray(tags));
-      done();
-    });
+  it('should have a listTags method that returns a list of tags', async() => {
+    const tags = await apos.tags.listTags(apos.tasks.getReq(), {});
+    assert(tags);
+    assert(Array.isArray(tags));
   });
 
   it('should have a prefix option on the get method that filters the tags', function(done) {
