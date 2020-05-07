@@ -250,7 +250,7 @@ describe('Pages', function() {
       title: 'New Page'
     };
 
-    const page = await apos.pages.insert(apos.tasks.getReq(), parentId, newPage);
+    const page = await apos.pages.insert(apos.tasks.getReq(), parentId, 'lastChild', newPage);
 
     // Is the path generally correct?
     assert.strictEqual(page.path, '/parent/new-page');
@@ -279,7 +279,7 @@ describe('Pages', function() {
       title: 'New Page 2'
     };
 
-    const page = await apos.pages.insert(apos.tasks.getReq(), parentId, newPage);
+    const page = await apos.pages.insert(apos.tasks.getReq(), parentId, 'lastChild', newPage);
 
     assert.strictEqual(page.path, '/parent/new-page-2');
   });
@@ -328,7 +328,7 @@ describe('Pages', function() {
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
     // 'Cousin' _id === 4312
     // 'Sibling' _id === 4321
-    await apos.pages.move(apos.tasks.getReq(), '4312', '4321', 'inside');
+    await apos.pages.move(apos.tasks.getReq(), '4312', '4321', 'firstChild');
 
     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
     const page = await cursor.toObject();
@@ -340,7 +340,7 @@ describe('Pages', function() {
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.pages.move(apos.tasks.getReq(), '1234', '4333', 'inside');
+    await apos.pages.move(apos.tasks.getReq(), '1234', '4333', 'firstChild');
 
     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4321' });
     const page = await cursor.toObject();
@@ -452,7 +452,7 @@ describe('Pages', function() {
     };
 
     const req = apos.tasks.getReq();
-    const page = await apos.pages.insert(req, parentId, newPage);
+    const page = await apos.pages.insert(req, parentId, 'lastChild', newPage);
 
     // Is the path based on the slug rather than the title?
     assert.strictEqual(page.path, '/newish-page');

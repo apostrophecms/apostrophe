@@ -135,7 +135,7 @@ describe('Pieces', function() {
       .trash(null)
       .toObject();
     if (!piece) {
-      throw 'notfound';
+      throw self.apos.error('notfound');
     }
     return piece;
   }

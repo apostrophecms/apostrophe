@@ -1,5 +1,6 @@
 module.exports = {
   modules: {
+    'apostrophe-errors': {},
     'apostrophe-utils': {},
     'apostrophe-http': {},
     'apostrophe-tasks': {},
