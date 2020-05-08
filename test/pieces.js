@@ -135,7 +135,7 @@ describe('Pieces', function() {
       .trash(null)
       .toObject();
     if (!piece) {
-      throw self.apos.error('notfound');
+      throw apos.error('notfound');
     }
     return piece;
   }
@@ -259,26 +259,27 @@ describe('Pieces', function() {
     assert(manageTest === true);
   });
 
-  // pieces.trash()
-  it('should be able to trash a piece', async () => {
-    assert(apos.modules['things'].trash);
+  it('should be able to trash a piece with proper deduplication', async () => {
     assert(apos.modules['things'].requireOneForEditing);
     let req = apos.tasks.getReq();
     let id = 'testThing';
     req.body = { _id: id };
     // let's make sure the piece is not trashed to start
     const piece = await findPiece(req, id);
+    console.log(piece);
     assert(!piece.trash);
-    await apos.modules['things'].trash(req, id);
+    piece.trash = true;
+    await apos.modules['things'].update(req, piece);
     // let's get the piece to make sure it is trashed
     const piece2 = await findPiece(req, id);
+    console.log(piece2);
     assert(piece2);
     assert(piece2.trash === true);
+    assert(piece2.aposWasTrash === true);
+    assert(piece2.slug === 'deduplicate-testThing-hello');
   });
 
-  // pieces.rescue()
-  it('should be able to rescue a trashed piece', async () => {
-    assert(apos.modules['things'].rescue);
+  it('should be able to rescue a trashed piece with proper deduplication', async () => {
     let req = apos.tasks.getReq();
     let id = 'testThing';
     req.body = {
@@ -287,10 +288,13 @@ describe('Pieces', function() {
     // let's make sure the piece is trashed to start
     const piece = await findPiece(req, id);
     assert(piece.trash === true);
-    await apos.modules['things'].rescue(req, id);
+    piece.trash = false;
+    await apos.modules['things'].update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
     assert(!piece2.trash);
+    assert(!piece2.aposWasTrash);
+    assert(piece2.slug === 'hello');
   });
 
   it('should be able to insert test user', async function() {
@@ -508,15 +512,30 @@ describe('Pieces', function() {
     assert(response.body.items.length);
   });
 
-  it('can delete a product', async () => {
-    return apos.http.delete(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+  it('can trash a product', async () => {
+    return apos.http.patch(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+      body: {
+        trash: true
+      },
       jar
     });
   });
 
-  it('cannot fetch a deleted product', async () => {
+  it('cannot fetch a trashed product', async () => {
     try {
       await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}`, {
+        jar
+      });
+      // Should have been a 404, 200 = test fails
+      assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+  });
+
+  it('can fetch trashed product with trash=any and the right user', async () => {
+    try {
+      await apos.http.get(`http://localhost:7900/api/v1/products/${updateProduct._id}?trash=any`, {
         jar
       });
       // Should have been a 404, 200 = test fails
