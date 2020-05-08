@@ -314,8 +314,8 @@ describe('Pages', function() {
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    await apos.pages.move(apos.tasks.getReq(), '4312', '2341', 'before');
 
+    await apos.pages.move(apos.tasks.getReq(), '4312', '2341', 'before');
     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: '4312' });
     const page = await cursor.toObject();
 
