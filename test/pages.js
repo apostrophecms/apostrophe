@@ -5,6 +5,7 @@ const request = require('request-promise');
 
 let apos;
 let homeId;
+let jar;
 
 describe('Pages', function() {
 
@@ -410,4 +411,81 @@ describe('Pages', function() {
     assert(trashed.trash);
     assert.strictEqual(trashed.level, 2);
   });
+
+  it('REST: should be able to find the parked homepage', async function() {
+    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/' });
+
+    const page = await cursor.toObject();
+
+    // There should be only 1 result.
+    assert(page);
+    assert(page.path === page._id);
+    assert(page.rank === 0);
+  });
+
+  it('should be able to log in as admin', async () => {
+    jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('http://localhost:7900/', {
+      jar
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('http://localhost:7900/api/v1/apostrophe-login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin'
+      },
+      jar
+    });
+
+    // Confirm login
+    page = await apos.http.get('http://localhost:7900/', {
+      jar
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  let home;
+
+  it('can GET the home page without session', async () => {
+    home = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages', {});
+    assert(home);
+    assert(home.slug === '/');
+    // make sure new style paths used
+    assert(home.path !== '/');
+    assert(home.path === home._id);
+    assert(home.level === 0);
+  });
+  it('cannot POST a product without a session', async () => {
+    try {
+      await apos.http.post('http://localhost:7900/api/v1/products', {
+        body: {
+          title: 'Fake Product',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: 'apostrophe-rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        }
+      });
+      // Should not get here
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
+
+
 });
