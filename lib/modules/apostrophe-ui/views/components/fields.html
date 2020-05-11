@@ -32,6 +32,7 @@
   <label>
     <div class="apos-field-input-color-preview" data-apos-color-preview></div>
     <input id="{{ options.id }}" name="{{ name }}" data-apos-color-empty-label="{{ __ns('apostrophe', "None selected") }}" class="apos-field-input apos-field-input-color{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" data-apos-color type="text" value="{{__ns('apostrophe', value | d(''))}}"{% if readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+    <span class="apos-field-input-colorpicker-value" data-apos-color-value></span>
   </label>
 {%- endmacro %}
 
