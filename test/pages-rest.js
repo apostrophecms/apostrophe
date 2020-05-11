@@ -214,6 +214,7 @@ describe('Pages', function() {
     // Is the path generally correct?
     assert.strictEqual(page.path, `${homeId}/parent/${page._id}`);
     assert.strictEqual(page.level, 2);
+    assert.strictEqual(page.rank, 2);
   });
 
   it('cannot POST a page without a session', async () => {
@@ -268,4 +269,56 @@ describe('Pages', function() {
     assert(page._children[1]._id === 'sibling');
     assert(page._children[2].slug === '/new-page');
   });
+
+  it('is able to move root/parent/sibling/cousin after root/parent', async function() {
+    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+      body: {
+        _targetId: 'parent',
+        _position: 'after'
+      },
+      jar
+    });
+    assert(page._id);
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/cousin`);
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 1);
+  });
+
+  // it('is able to move root/cousin before root/parent/child', async function() {
+  //   // 'Cousin' _id === 4312
+  //   // 'Child' _id === 2341
+
+  //   await apos.pages.move(apos.tasks.getReq(), 'cousin', 'child', 'before');
+  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
+  //   const page = await cursor.toObject();
+
+  //   // Is the new path correct?
+  //   assert.strictEqual(page.path, `${homeId}/parent/cousin`);
+  //   // Is the rank correct?
+  //   assert.strictEqual(page.rank, 0);
+  // });
+
+  // it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
+  //   await apos.pages.move(apos.tasks.getReq(), 'cousin', 'sibling', 'firstChild');
+
+  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
+  //   const page = await cursor.toObject();
+
+  //   // Is the new path correct?
+  //   assert.strictEqual(page.path, `${homeId}/parent/sibling/cousin`);
+  //   // Is the rank correct?
+  //   assert.strictEqual(page.rank, 0);
+  // });
+
+  // it('moving /parent into /another-parent should also move /parent/sibling', async function() {
+  //   await apos.pages.move(apos.tasks.getReq(), 'parent', 'another-parent', 'firstChild');
+
+  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'sibling' });
+  //   const page = await cursor.toObject();
+
+  //   // Is the grandchild's path correct?
+  //   assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
+  // });
+
 });
