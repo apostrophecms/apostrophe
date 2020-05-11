@@ -216,7 +216,7 @@ describe('Pages', function() {
     assert.strictEqual(page.level, 2);
   });
 
-  it('cannot POST a product without a session', async () => {
+  it('cannot POST a page without a session', async () => {
     const body = {
       slug: '/new-tab',
       published: true,
@@ -231,5 +231,41 @@ describe('Pages', function() {
     } catch (e) {
       assert(true);
     }
+  });
+
+  it('should be able to find just a single page with ancestors', async function() {
+    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/child');
+
+    assert(page);
+    assert(page.path === `${homeId}/parent/child`);
+    // There should be 2 ancestors.
+    assert(page._ancestors.length === 2);
+    // The first ancestor should be the homepage
+    assert.strictEqual(page._ancestors[0].path, homeId);
+    // The second ancestor should be 'parent'
+    assert.strictEqual(page._ancestors[1].path, `${homeId}/parent`);
+
+    // There should be only 1 result.
+    assert(page);
+    // There should be 2 ancestors.
+    assert(page._ancestors.length === 2);
+  });
+
+  it('should be able to find just a single page with children', async function() {
+    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/parent');
+
+    assert(page);
+    assert(page.path === `${homeId}/parent`);
+    // There should be 1 ancestor
+    assert(page._ancestors.length === 1);
+    // The first ancestor should be the homepage
+    assert.strictEqual(page._ancestors[0].path, homeId);
+
+    // There should be children
+    assert(page._children);
+    assert(page._children.length === 3);
+    assert(page._children[0]._id === 'child');
+    assert(page._children[1]._id === 'sibling');
+    assert(page._children[2].slug === '/new-page');
   });
 });
