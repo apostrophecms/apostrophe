@@ -1,0 +1,28 @@
+{% extends data.outerLayout %}
+{% block title %}{{ __ns('apostrophe', "Set Up Google Authenticator") }}{% endblock %}
+
+{% block bodyClass %}apos-login-page apos-setup-two-factor{% endblock %}
+
+{% block main %}
+  <div class="apos-login-wrapper">
+    <div class="apos-login-content">
+      <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
+      <div class="apos-ui apos-login">
+        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __ns('apostrophe', 'Set Up Google Authenticator') }}{% endblock %}</div>
+        <p>{{ __ns('apostrophe', 'Scan this QR Code in Google Authenticator or a similar app:') }}</p>
+        <img src="{{ data.qrImage }}" class="apos-totp-qr-image" />
+        <p>{{ __ns('apostrophe', 'Or, enter this key manually:') }}</p>
+        <code>{{ data.key }}</code>
+        <p class="apos-totp-help">{{ __ns('apostrophe', 'When you are finished setting up Google Authenticator, click this button to confirm:') }}</p>
+        <form action="{% block action %}{{ apos.prefix }}/confirm-totp{% endblock %}" method="post">
+          <div class="apos-login-submit apos-totp-submit">
+            <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __ns('apostrophe', 'I Have Added It To My App') }}{% endblock %}" />
+          </div>
+          <div class="apos-login-reset-cancel">
+            <a href="{{ apos.prefix }}/logout">{{ __ns('apostrophe', 'Log Out') }}</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

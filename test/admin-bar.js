@@ -11,6 +11,7 @@ describe('Admin bar', function() {
   /// ///
 
   it('should allow a group reversing the current order', function(done) {
+    this.timeout(10000);
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
@@ -62,6 +63,7 @@ describe('Admin bar', function() {
   });
 
   it('should allow a group obeying the current order', function(done) {
+    this.timeout(10000);
     apos = require('../index.js')({
       root: module,
       shortName: 'test',

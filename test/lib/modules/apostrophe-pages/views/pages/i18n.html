@@ -1,0 +1,19 @@
+<h4>Home Page Template</h4>
+{# This is necessary to the login.js tests. -Tom #}
+{% if data.user %}
+  <a href="/logout">Log Out</a>
+{% else %}
+  <a href="/login">Log In</a>
+{% endif %}
+{# Necessary to the apostrophe-global tests. #}
+counts: {{ data.global.counts }}
+
+{# Use a helper function to test template level i18n of static phrases #}
+{{ apos.test.verify(__ns('apostrophe', 'Test Phrase'), 'Test Phrase') }}
+{{ apos.test.verify(__ns('apostrophe', { phrase: 'Test Phrase', locale: 'es' }), 'es Test Phrase') }}
+{{ apos.test.verify(__ns_n('apostrophe', 'Kitten', 1), 'Kitten') }}
+{{ apos.test.verify(__ns_n('apostrophe', 'Kitten', 2), 'Kittens') }}
+{{ apos.test.verify(__ns_mf('apostrophe', 'Interpolation {name}', { name: 'test' }), 'Interpolation test') }}
+{{ apos.test.verify(__ns_l('apostrophe', 'Test Phrase') | join(':'), 'Test Phrase:es Test Phrase') }}
+{{ apos.test.verify(__ns_h('apostrophe', 'Test Phrase')[0].en, 'Test Phrase') }}
+{{ apos.test.verify(__ns_h('apostrophe', 'Test Phrase')[1].es, 'es Test Phrase') }}

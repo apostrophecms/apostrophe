@@ -10,7 +10,7 @@
           {%- for group in groups -%}
             {%- if group.fields.length -%}
             <div class="apos-schema-tab{% if loop.first %} apos-active{% endif %}" data-apos-open-group="{{ group.name }}">
-              {{ __(group.label | d('')) }}
+              {{ __ns('apostrophe', group.label | d('')) }}
             </div>
             {%- endif -%}
           {%- endfor -%}
@@ -87,7 +87,7 @@
 {%- endmacro -%}
 
 {%- macro passwordBody(field, options) -%}
-  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" name="{{ field.name }}" type="password"{% if field.readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
+  <input id="{{ options.id }}" class="apos-field-input apos-field-input-text{% if options.fieldClasses %} {{ options.fieldClasses }}{% endif %}" name="{{ field.name }}" autocomplete="off" type="password"{% if field.readOnly %} disabled{% endif %}{% if options.fieldAttributes %} {{ options.fieldAttributes }}{% endif %}>
 {%- endmacro -%}
 
 {%- macro tags(field) -%}
@@ -102,14 +102,14 @@
     <ul data-list class="apos-tag-list">
       <li data-item class="apos-tag-list-item">
         {% if not field.readOnly %}<a href="#" class="apos-tag-remove fa fa-remove" data-remove></a>{% endif %}
-        <span class="apos-tag-entry" data-label>{{ __('Example label') }}</span>
+        <span class="apos-tag-entry" data-label>{{ __ns('apostrophe', 'Example label') }}</span>
         {# Link to remove this choice #}
       </li>
     </ul>
     {% if not field.readOnly %}
-      <input id="{{ options.id }}" type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __('Type Here') }}" class="apos-field-input apos-field-input-text" />
-      <span class="apos-limit-indicator" data-limit-indicator>{{ __('Limit Reached!') }}</span>
-      <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __("Add") }}</a>
+      <input id="{{ options.id }}" type="text" name="{{ field.name }}" data-autocomplete placeholder="{{ __ns('apostrophe', 'Type Here') }}" class="apos-field-input apos-field-input-text" />
+      <span class="apos-limit-indicator" data-limit-indicator>{{ __ns('apostrophe', 'Limit Reached!') }}</span>
+      <a href="#" class="apos-tag-add" data-add><i class="fa fa-plus"></i> {{ __ns('apostrophe', "Add") }}</a>
     {% endif %}
 
   </div>
@@ -142,7 +142,7 @@
       <label class="apos-form-checkbox-label apos-text-small">
         <input class="apos-form-checkbox-input" type="checkbox" name="{{ field.name }}" value="{{ choice.value }}"{% if field.readOnly %} disabled{% endif %}>
         <span class="apos-form-checkbox-indicator"></span>
-        {{ __(choice.label | d('')) }}
+        {{ __ns('apostrophe', choice.label | d('')) }}
       </label>
     </div>
   {%- endfor -%}
@@ -175,7 +175,7 @@
 {%- endmacro -%}
 
 {% macro booleanBody(field) %}
-  {{ selectBody(field | merge({ choices: [ { value: '1', label: __('Yes') }, { value: '0', label: __('No') }] })) }}
+  {{ selectBody(field | merge({ choices: [ { value: '1', label: __ns('apostrophe', 'Yes') }, { value: '0', label: __ns('apostrophe', 'No') }] })) }}
 {%- endmacro -%}
 
 {%- macro array(field) -%}
@@ -185,8 +185,13 @@
       <span class="apos-ui-container" name="{{ field.name }}">
         <label for="{{ field.name }}" class="apos-field-label"></label>
         <label data-array-length></label><br>
+        {%- if field.help -%}
+          <div class="apos-field-help">{{ __ns('apostrophe', field.help) }}</div>
+        {%- elif field.htmlHelp -%}
+          <div class="apos-field-help">{{ __ns('apostrophe', field.htmlHelp) | safe }}</div>
+        {%- endif -%}
         <a href="#" class="apos-control apos-button" data-apos-edit-array>
-          {{ __("Edit %s", __(field.label | d(''))) }}
+          {{ __ns('apostrophe', "Edit %s", __ns('apostrophe', field.label | d(''))) }}
           <i class="fa fa-angle-right"></i>
         </a>
       </span>

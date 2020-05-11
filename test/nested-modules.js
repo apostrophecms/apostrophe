@@ -20,7 +20,12 @@ describe('Nested Modules', function() {
       shortName: 'test',
       nestedModuleSubdirs: true,
       modules: {
-        'apostrophe-test-module': {}
+        'apostrophe-test-module': {},
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7900,
+          csrf: false
+        }
       },
       afterInit: function(callback) {
         // In tests this will be the name of the test file,

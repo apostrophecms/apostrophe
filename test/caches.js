@@ -16,6 +16,14 @@ describe('Caches', function() {
       root: module,
       shortName: 'test',
 
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7900,
+          csrf: false
+        }
+      },
+
       afterInit: function(callback) {
         assert(apos.caches);
         apos.argv._ = [];

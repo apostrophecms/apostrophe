@@ -1,0 +1,34 @@
+{% extends data.outerLayout %}
+{% block title %}{{ __ns('apostrophe', "Password Reset Request") }}{% endblock %}
+
+{% block bodyClass %}apos-login-page apos-password-reset-request-page{% endblock %}
+
+{% block main %}
+  <div class="apos-login-wrapper">
+    <div class="apos-login-content">
+      <div class="apos-login-logo">{% block logo %}{% include "apostrophe-admin-bar:logo.html" %}{% endblock %}</div>
+      <div class="apos-ui apos-login">
+        <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __ns('apostrophe', 'Log in with Google Authenticator or a compatible app (TOTP)') }}{% endblock %}</div>
+        {% block form %}
+          <form action="{% block action %}{{ apos.prefix }}/login-totp{% endblock %}" method="post">
+            {{ apos.log(data.error) }}
+            {% if data.error %}<div class="apos-login-warning">{{ "That code was not correct." }}</div>{% endif %}
+            {% block fields %}
+              <div class="apos-field apos-login-code">
+                <label class="apos-field-label" for="code">{{ __ns('apostrophe', 'Code') }}</label>
+                <input class="apos-field-input apos-field-input-text" type="text" name="code" id="code" autofocus />
+              </div>
+            {% endblock %}
+            <div class="apos-login-submit">
+              <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __ns('apostrophe', 'Submit Code') }}{% endblock %}" />
+            </div>
+            <div class="apos-login-reset-cancel">
+              <a href="{{ apos.prefix }}/logout">{{ __ns('apostrophe', 'Log Out') }}</a>
+            </div>
+            <p class="apos-login-help">You should see a code in Google Authenticator at this point in the process. Enter that code here.</p>
+          </form>
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

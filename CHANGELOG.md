@@ -1,5 +1,265 @@
 # Changelog
 
+## 2.106.3 (2020-05-06)
+
+* Fixes a page tree interface bug that would cause pages to be lost when they
+were trashed with their parent, then the parent was dragged out of the trash.
+This only effected projects with `trashInSchema: true` set in the
+`apostrophe-docs` module, however that includes anything using
+`apostrophe-workflow`.
+
+## 2.106.2 (2020-04-22)
+
+* The icons of custom CKEditor plugins now appear properly. Previously they were hidden.
+* Switched the continuous integration testing service to CircleCI from Travis.
+
+## 2.106.1 (2020-04-20)
+
+* Fixed a regression that broke the thumbnail display of images in "Manage Images." This regression was introduced in version 2.106.0, which was otherwise an important security update, so you should definitely update to 2.106.1 to get the benefit of that security fix if you haven't already.
+
+## 2.106.0 (2020-04-17)
+
+**Security:** the `list` route of the `apostrophe-pieces` module and the `info` route of the `apostrophe-pages` module formerly allowed site visitors to obtain the complete contents of publicly accessible pages and pieces. While there was no inappropriate access to documents that were unpublished, restricted to certain users, etc., properties not normally visible to end users were exposed. Since the global document can be fetched as part of requests made by the public, this means that any credentials in the schema of the global document are vulnerable to being viewed until your site is updated to at least Apostrophe 2.106.0. Note that if you are using Apostrophe Workflow you must also update that module to Apostrophe 2.34.0, otherwise the "Manage Workflow" view will not work.
+
+The most important change made to resolve this issue is the use of a projection to populate the "Manage" view of pieces (the "list" route). While Apostrophe will automatically include any extra columns configured with `addColumns` in the projection, you may need to add additional properties to the projection if you have overridden the manage list view template entirely for some of your pieces to display additional information.
+
+The easiest way to do that is to configure the `addToListProjection` option for your custom piece type, like so:
+
+```javascript
+// in lib/modules/my-module
+module.exports = {
+  extend: 'apostrophe-pieces',
+  addToListProjection: {
+    myExtraProperty: 1
+  }
+  // other configuration here as usual
+}
+```
+
+You can also apply the `super` pattern to the new `getListProjection` method of `apostrophe-pieces`.
+
+Many thanks to Kristian Mattila for bringing the issue to our attention, allowing us to patch the vulnerability
+before any public disclosure was made. If you become aware of a security issue in Apostrophe, please contact
+us via email at [security@apostrophecms.com](mailto:security@apostrophecms.com).
+
+## 2.105.2 (2020-04-09)
+
+* `apos.utils.emit` now works properly in IE11, addressing an issue that impacted `apostrophe-forms` submissions in IE11 in 2.105.0.
+* IE11 now respects the `prefix` option properly in `apos.utils.get` and `apos.utils.post` (lean mode helpers for making API calls).
+
+## 2.105.1 (2020-04-08)
+
+* When using lean mode, video widgets did not support Internet Explorer 11. This issue has been fixed. Non-lean mode video widgets have always supported Internet Explorer 11.
+* If the `jQuery: 3` option is not passed to `apostrophe-assets` a developer warning is now printed at startup. The use of jQuery 1.x is deprecated. All Apostrophe-published modules work fine with the `jQuery: 3` option. You may need to review the jQuery 3 changelogs for a few changes required for your own legacy code.
+* Users may now intentionally clear a `date` field, whether or not it has a `def` setting, in which case it is stored as `null` (unless `required: true` is present). The inability to do this was a regression introduced in verion 2.102.0.
+* The `objectNotation: true` option to `apostrophe-i18n`, which we pass on to the `i18n` module, is now compatible with the `namespaces: true` option. When both are active, the namespace separator defaults to `<@>` to avoid a conflict with the `:` character used to begin the default value when using object notation.
+* Various documentation corrections and minor aesthetic improvements.
+
+## 2.105.0 (2020-03-26)
+
+* Security: Node 6.x has not been supported by its creators since April 2019, and Node 8.x reached its end of support date in December 2019. **As of this release of Apostrophe, we are officially acknowledging that it is not possible to maintain support for Node 6.x in Apostrophe and it is unlikely to work on that version,** since both the testing frameworks on which we rely and common sub-dependencies of essential open source modules used by Apostrophe now require Node 8 at a minimum. While we will make a good-faith effort to maintain Node 8.x usability as long as possible, we expect to similarly be forced to drop Node 8 compatibility soon. **Both Node 6 and Node 8 might not be safe to use for reasons entirely unrelated to Apostrophe**, so you should upgrade your servers as soon as practical. Few or no code changes should be needed in Apostrophe 2.x projects. **We strongly recommend moving to Node 12.x,** the most up to date LTS (Long-Term Support) release of Node. In the future, we recommend becoming familiar with the [Node.js release schedule](https://nodejs.org/en/about/releases/) so you can better plan for such upgrades.
+* Security: all of the recently new `npm audit` warnings were fixed. These were considered `low` risk according to the `npm audit` tool. In the process we removed dependencies on the `tar` and `prompt` modules in favor of simpler solutions with fewer moving parts.
+* Lean mode: the `apos.utils.get` and `apos.utils.post` methods no longer prepend the site's global `prefix` when the call targets a different origin (another site's API, for instance). This is a bug fix to match the behavior of `$.jsonCall()` which set the standard for this in Apostrophe.
+* Lean mode: `apos.utils.emit(el, name, data)` has been introduced. This method emits a custom DOM event with the given `name` and adds the properties of the `data` object to the event. The event is emitted on `el`. When emitting events with global significance, our convention is to emit them on `document.body`. To listen for such events one uses the standard browser method `document.body.addEventListener('eventname', function(event) { ... })`.
+* Lean mode: `apos.utils.get` now emits an `apos-before-get` event with `uri`, `data` and `request` properties just before the request is actually sent. You may use this hook to add headers to `request`.
+* Cloud deployment: when starting up a site with `APOS_BUNDLE=1`, the asset bundle is by default extracted to the root of the project so that the assets can be found in the filesystem of each server if needed. New feature: for the benefit of environments in which the bundle files are already present and the root of the project is not writable, `APOS_EXTRACT_BUNDLE=0` may now be set to disable the extraction (note `0`, not `1`).
+* Localization: Apostrophe's static i18n of its user interface can now be "namespaced," opening the door to giving your translators better guidance on whether to translate it or ignore it when working with the JSON files in the `locales/` folder of your site. You can turn this on by enabling the `namespaces: true` option for the `apostrophe-i18n` module. When you do, Apostrophe's i18n phrases will be prefaced with `apostrophe<:>` in the JSON files (not in the browser). You can create your own namespaced translations by calling `__ns('namespacename', 'phrase')` rather than `__('phrase')`, `__ns_n` rather than `__n`, etc. Note that if the namespaces option is not actually turned on, these new helpers are still available in templates; they just don't prefix a namespace. The forthcoming `apostrophe-static-i18n` module, which allows for editing static translations as pieces, will also have an option to ignore a namespace, which is helpful if you wish to avoid showing our user interface phrases to your translation team at all.
+
+## 2.104.0 (2020-03-11)
+
+* `apos.utils.get` and `apos.utils.post` now return a promise if invoked without a callback. This means you may use `await` with them. *It is up to you to provide a `Promise` polyfill if you use this feature without callbacks and intend to support IE11. For instance you could use the `core-js` library.* These methods are similar to `$.get` and `$.post` but do not require jQuery. `apos.utils.post` supports Apostrophe's CSRF protection natively so you do not have to add an exception if you use it. These methods are available in [lean frontend mode](https://docs.apostrophecms.org/apostrophe/core-concepts/front-end-assets/lean-frontend-assets).
+* `apos.utils.get` no longer adds an unnecessary `?` to the URL it fetches if `data` has no properties. In addition, `apos.utils.get` leaves the URL unchanged if `data` is null.
+* Recursion warnings now include a hint to add a projection to pieces-widgets as well as more obvious joins.
+* Dependencies updated to reflect latest version of `emulate-mongo-2-driver`, which contains an important fix to `count`.
+
+## 2.103.1 (2020-03-04)
+
+* An incompatibility with apostrophe-headless was introduced in Apostrophe 2.102.0. This version addresses that incompatibility, however you must also upgrade apostrophe-headless to version 2.9.3. The issue had to do with a change that was made to allow users to intentionally clear default values in forms. We are updating our regression test procedures to ensure that if a new release of apostrophe would break the unit tests of apostrophe-headless, it will not be published until that issue is resolved.
+
+## 2.103.0 (2020-03-02)
+
+* Frustrations with conflict resolution have been much improved. First, Apostrophe no longer displays the "another user has taken control of the document" message multiple times in a row. Second, due to changes in what browsers allow to happen when you leave the page, beginning in version 2.102.0 Apostrophe displayed too many messages about a conflict with your **own** work in another tab. We no longer display these messages. However, if there really *is* work lost for the same document in another tab, Apostrophe will still tell you what happened in order to teach the habit of not editing the same page in two tabs simultaneously.
+* You may now use `select` schema field with dynamic choices as a filter in "Manage Pieces."
+* `required` is now enforced on the server side for `joinByOne`. However, note that it is always possible for the document you joined with to be moved to the trash at a later time. You must therefore always check that the join was really loaded before relying on it. Thanks to Ricardo José Rodríguez Álvarez.
+* Hidden information at the bottom of certain modals has been restored to view.
+
+## 2.102.5 (2020-02-26)
+
+* Explicitly require emulate-mongo-2-driver 1.2.1 or better, to address a bug in 1.2.0.
+
+## 2.102.4 (2020-02-25)
+
+* Explicitly require emulate-mongo-2-driver 1.2.0 or better, which provides a deprecation-free wrapper for `count` and fixes bugs in the wrapper for `aggregate`.
+
+## 2.102.3 (2020-02-24)
+
+* Security fix for [Prototype Override Protection Bypass vulnerability in the qs module](https://snyk.io/vuln/npm:qs:20170213). It appears this risk only occurs when our `build` Nunjucks filter is used in conjunction with a URL based on what the browser sent, rather than starting with the `_url` property of the page and adding parameters to that with `build`, thus it is not an issue "out of the box" in all or most ApostropheCMS sites. However the vulnerability should be patched promptly because it could definitely exist in current or future project level code that uses `build`. To eliminate the risk, update to this version of Apostrophe and make sure you "npm update" to get the required updated version of `qs` via Apostrophe's dependencies.
+
+* This version also corrects a bug that prevented the recently released disableInactiveAccounts feature from working.
+
+## 2.102.2 (2020-02-11)
+
+* Removed the restriction preventing the use of `mongodb+srv` connection
+URIs with MongoDB. `emulate-mongo-2-driver` has no problem with these, since
+it passes them on to the 3.x driver.
+* Updated dependency to `emulate-mongo-2-driver` 1.1.0, which knocks out 100% of the common MongoDB deprecation warnings when using Apostrophe, with one exception: you should set the `useUnifiedTopology: true` option yourself. We do not do this for you because we cannot break legacy configurations using other topologies. However most of you can just turn this option on and enjoy more reliable connections and no more warnings.
+
+Here is how to configure that in Apostrophe:
+
+```javascript
+// in app.js, where your modules key is...
+modules: {
+  'apostrophe-db': {
+    connect: {
+      useUnifiedTopology: true
+    }
+  }
+}
+```
+
+## 2.102.1 (2020-02-10)
+
+* Temporarily pinned to `less` version 3.10.x to work around an
+[upstream bug](https://github.com/less/less.js/issues/3469) that broke
+deployments.
+
+## 2.102.0 (2020-01-30)
+
+* Apostrophe now displays "Saving... Saved" indicators near the context
+menu in the lower left indicator. In our UX tests, users often did not
+realize Apostrophe automatically saved their work and were concerned
+by the lack of an explicit save button. In addition, Apostrophe no longer
+attempts to save your remaining changes via a synchronous HTTP request when you
+close the page, because this is deprecated in all browsers and disabled
+in many. Instead, Apostrophe uses the standard "you have unsaved changes,
+are you sure you wish to leave this page?" dialog. Together with the
+"saving... saved" indicator, this provides a mechanism for preventing
+lost work that is robust in modern browsers.
+
+This does impact Apostrophe's "advisory locking" mechanism that warns users
+if another user is already editing. Since we cannot guarantee a synchronous
+request to unlock the page will ever be received, we have instead
+shortened the expiration time for document locks to 30 seconds. Since
+these are refreshed every 5 seconds there should be no negative impacts
+in typical use.
+
+Thanks to Freshworks for making this improvement possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
+* New `disableInactiveAccounts` option, which can be set like so:
+```javascript
+  'apostrophe-users': {
+    disableInactiveAccounts: true
+  }
+```
+
+By default, users from the "admin" group are whitelisted and the inactivity period is 90 days. This can be changed:
+
+```javascript
+{
+  // in your project level lib/modules/apostrophe-users/index.js file
+  disableInactiveAccounts: {
+    neverDisabledGroups: [ 'test', 'otherGroup' ],
+    // After 30 days without logging in, the account is marked disabled
+    // on next login attempt, until an admin explicitly enables it again
+    inactivityDuration: 30
+  }
+}
+```
+
+* A longstanding bug relating to schemas has been fixed. Previously, if you attempted to clear a string field that had a `def` property, that field would be repopulated with the `def` value. This was never intended; `def` is only for the initial population of a newly created object. If you were relying on this bug, update your code to use `apos.schemas.newInstance(schema)` from the start so that you begin with an object that has the right defaults for each field. Note that pieces, pages, etc. already do this.
+
+* Added a `bodyAttributes` block to `outerLayoutBase.html`. You may override this block to add new attributes to `body` without overriding the entire `outerLayoutBase.html` template. It is a best practice to not override this template, use the provided blocks.
+
+* Fields of type `attachment` with `required` not set to `true` now work properly.
+
+* You may now set the `loginUrl` option of the `apostrophe-login` module to change the login URL from `/login` to something else. Thanks to Giuseppe Monteleone for this contribution.
+
+* `help` property is now supported for array fields.
+
+* Uploads with a capitalized file extension are now accepted where appropriate. Thanks to Fernando Figaroli for this contribution.
+
+* When editing a join with pages, a nonfunctional edit pencil icon is no longer displayed. Actual inline editing of page settings from another page may be a 3.0 feature.
+
+## 2.101.1 (2020-01-08)
+
+* Dependency on `emulate-mongo-2-driver` is now explicitly set to require at least version 1.0.3 to bring in various fixes.
+* Reported `landscape` and `portrait` properties of an image attachment object now correspond to the crop in use, if any.
+
+## 2.101.0 (2019-12-14)
+
+* Due to `npm audit` security vulnerability warnings and the end of upstream support, the 2.x version of the `mongodb` npm module (the driver we used to connect to MongoDB, not MongoDB itself) can no longer be responsibly used in Apostrophe. Therefore we have replaced it with the new [emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver) module, which strives to match the interface of the MongoDB driver version 2.x while acting as a wrapper for the official, supported MongoDB driver version 3.x. This has been tested in many projects. Therefore no code changes should be required for your project to `npm update` to version 2.101.0. However if you encounter incompatibilities, most likely in driver features not used in Apostrophe, please [contribute additional wrappers and test coverage to emulate-mongo-2-driver](https://www.npmjs.com/package/emulate-mongo-2-driver). Another option is to use [apostrophe-db-mongo-3-driver](https://www.npmjs.com/package/apostrophe-db-mongo-3-driver), which allows you to use the 3.x driver API directly and also provides a `findWithProjection` collection method as a migration path for quickly patching legacy code.
+* The `def` property of schema fields associated with specific page types is now displayed in the editor when creating new pages. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* A schema field named `fields` can now be included in a projection without surprising behavior.
+* EPS (`.eps`) files are now accepted as Apostrophe attachments and categorized in the `office` group, meaning they can be uploaded as "files."
+* The `aspectRatio` option, when specified directly for attachment schema field properties, now implies permission to crop as forced center-cropping differed from what we do when applying aspect ratios to image widgets.
+* Cross-browser fix for the back button when using our page-refresh-free AJAX features for browsing pieces. Thanks to sergiodop92 for this fix.
+
+## 2.100.3 (2019-12-03)
+
+* The `aspectRatio` option to the `attachments` schema field type is now fully implemented. We always had this for selecting images, e.g. in our `apostrophe-images-widgets` module, but it is now also available when directly using an `attachment` schema field as a property of your own doc. You can also set `crop: true` to allow manual cropping in that case. This is a useful technique when including the image in a reusable media library does not make sense.
+
+## 2.100.2 (2019-12-02)
+
+* Corrected a significant performance problem with the `apostrophe-users:add` command line task when thousands of users exist.
+
+## 2.100.1 (2019-11-21)
+
+* Must confirm when resetting password, since there are no do-overs if we do not have the email confirmation method available (with `resetLegacyPassword: true`) and since it's generally a pain not to have this.
+* Fixed the "Reset TOTP authentication" feature of "Manage Users".
+
+## 2.100.0 (2019-11-21)
+
+* New feature: Google Authenticator two-factor authentication (TOTP) support for Apostrophe accounts. Set the `totp: true` option of the `apostrophe-login` module. When enabled, users (including admins) are required to set up and complete authentication with Google Authenticator or a compatible TOTP app on their mobile device. On the user's next login they set up Google Authenticator; after that they must supply a code from Google Authenticator at each login. If a user loses their device, an admin can reset their access by editing that user via "Manage Users" and selecting "Reset TOTP 2-Factor Authentication." If the admin loses their device, they can use the new `apostrophe-users:reset-totp` command line task. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* New feature: `resetLegacyPassword: true` option for `apostrophe-login`. When the `passwordRules` and `passwordMinLength` options are present, enabling `resetLegacyPassword` permits the user to change their password right away at login time if it is correct, but does not meet your new standards for adequate passwords. This does not require receiving a confirmation email; if you are concerned by that, consider enabling `passwordReset` instead if you are willing to [configure email delivery](https://docs.apostrophecms.org/apostrophe/tutorials/howtos/email). Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* New feature: `resetKnownPassword: true` option for `apostrophe-login`. When enabled, a currently logged-in user is permitted to change their own password without receiving an email, as long as they know their current password. This adds an additional admin bar item, which you may want to group. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* Performance: Apostrophe is now much faster when editing a piece with hundreds of areas in its schema. Thanks to Bharathkumar Chandrasekaran of Freshworks for his contributions to finding the solution.
+* Bug fix: `passwordRules` and `passwordMinLength` no longer break support for new users created via `apostrophe-passport` who use single sign-on and do not have explicit passwords in Apostrophe.
+* Developer warning: a module that implements a widget must have a name ending in `-widgets` or the editor will not work properly in the browser. We now display a warning.
+* Developer warning: if the developer tries to configure `piecesFilters` for the pieces module, rather than the corresponding pieces-pages module, a warning is displayed.
+* UI fix: modal dialog box height corrected. Thanks to Paul Grieselhuber for this contribution.
+* UI fix: better Microsoft Edge support. Thanks to Denis Lysenko.
+
+## 2.99.0 (2019-10-30)
+
+* Optional password complexity rules. You may set `passwordMinLength` to a number of your choice. You may also set `passwordRules` to an array of rule names. Those available by default are `noSlashes`, `noSpaces`, `mixedCase`, `digits`, and `noTripleRepeats`. To block **existing** passwords that don't meet this standard, you should also set `passwordRulesAtLoginTime: true`. Additional password rules may be registered by calling `apos.login.addPasswordRule('name', { test: fn, message: 'error message' })`. The function will receive the password and must return `true` if it is acceptable. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* `apos.utils.attachmentUrl` has been added to lean mode. It works exactly like `apos.attachments.url`, which is not available in lean mode, with one exception: to avoid adding more overhead to lean mode, the default size is the original. So you must take care to specify the `size` option for performance when working with images.
+* When an in-page edit is made and an area is updated as a result, the `update` method of the appropriate module is now called, rather than `apos.docs.update`. This allows for `beforeSave`, etc. to fire in this situation. Thanks to Kalia Martin of swiss4ward for this contribution.
+* Apostrophe now provides a `res.rawRedirect` method, which performs a redirect without adding the sitewide prefix. On sites without a prefix it is equivalent to `res.redirect`. This is useful when working with a URL that is already prefixed, such as the `_url` property of a page or piece.
+* Using the `groups` option to `apostrophe-users` together with a very large database can lead to slow startup because the groups are found by title, and title is not an indexed field. You may now specify the `slug` for each group in the array, in which case they are found by `slug` instead, which is an optimized query. However most very large sites would be better off removing the `groups` option and allowing groups to be managed flexibly via the admin bar.
+* `apos.tasks.getReq` now provides more simulated i18n support.
+* The occasional but irritating "not blessed" bug when editing content on the page has been fixed via a new "reinforced blessing" mechanism.
+
+## 2.98.1 (2019-10-21)
+
+* When selecting pages for a join, you are now permitted to choose any page you have access to view. This was never intended to be locked down to pages you can edit. For instance, you should be able to link to any page you can see when editing a navigation widget. Thanks to Freshworks for making this fix possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* Beginning with this version we are whitelisting `npm audit` advisories that are not relevant to Apostrophe. Specifically, advisory `1203` has no bearing on Apostrophe because end users cannot specify collection names to MongoDB via Apostrophe.
+
+## 2.98.0 (2019-10-11)
+
+* Bug fix: the `sendPage` method now emits the `apostrophe-pages:beforeSend` promise event no matter which module is calling `self.sendPage`. This was always the intention, as shown by the fact that the legacy `pageBeforeSend` method is called. The purpose of `sendPage` has always been to allow a custom route to render a page exactly as Apostrophe normally does, and that includes calling all `apostrophe-pages:beforeSend` handlers.
+* Bug fix: the `title` field is now required in the `apostrophe-users` module. Thanks to Jose Garcia of swiss4ward.
+* The `apostrophe-templates` module now has an internal `i18n` method intended to be overridden by those who want to monitor and/or alter static internationalization results. This will be used by the forthcoming `apostrophe-i18n-debugger` module. You don't need to call this method, you can use the standard [i18n](https://www.npmjs.com/package/i18n) helpers.
+
+## 2.97.2 (2019-10-03)
+
+* All [i18n](https://www.npmjs.com/package/i18n) helpers are now available in templates, not just the `__` helper. See the [i18n module documentation](https://www.npmjs.com/package/i18n) for more information. Test coverage was added to ensure this remains in place.
+* UX improvements in "reorganize" (Manage Pages).
+* contributing.md now points to the [apostrophecms Discord chat community](https://chat.apostrophecms.org) for live community help, rather than Gitter, which has been retired.
+
+## 2.97.1 (2019-09-26)
+
+* Hotfix for a potential Denial Of Service issue reported by NPM. A user with login privileges could eventually exhaust available memory by submitting thousands of batch job requests.
+
+## 2.97.0 (2019-09-25)
+
+* The simplified `APOS_BUNDLE=1` feature for asset deployment in the cloud now uses the actual `tar` utility when extracting assets locally, rather than the `tar` npm module, as a blocking bug was encountered and the actual utility is faster.
+* Improved support for subclasses of `apostrophe-rich-text-widgets`. These now receive the same CSS UX considerations and store their content under the appropriate widget name. This opens the door to the new `tiptap` option offered by the latest release of [apostrophe-tiptap-rich-text-widgets](https://github.com/apostrophecms/apostrophe-tiptap-rich-text-widgets), which can be used to selectively enable or disable the use of tiptap as an alternative to CKEditor for some subclasses but not others.
+* Low-level support for namespacing asset themes. By default this has no effect, however if getThemeName is overridden to return a theme name then asset masters, minified assets, bundles in the collection, etc. all get namespaced to play side by side with other themes used by other apos objects in the same project. Meant for use with apostrophe-multisite, this is not equivalent to a Wordpress or Drupal theme as such.
+* The widget editor's `afterShow` method takes no callback; removed an invocation that did not make sense. Thanks to Amin Shazrin for this contribution.
+* Improved sizing for video widgets. This is now based on the parent element. Also added empty alt tag to the placeholder image as a hint not to read it aloud.
+
+Thanks to Michelin for making much of this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.96.2 (2019-09-17)
 
 * Bug fix: missing required fields nested in `array` or `object` fields hidden fvia `showFields` no longer result in a server-side error. They adhere to the usual rule that if you can't see it, you're not expected to enter it.
@@ -45,7 +305,7 @@
 ## 2.94.0 (2019-08-09)
 
 * Bug fix for the new simplified static asset bundling: URLs beginning with `/` in CSS files are correctly rewritten to point to the bundle in the cloud when using the simple bundle feature (`APOS_BUNDLE=1`). This was already done for the old method.
-* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string). 
+* In the browser, the lean methods `apos.utils.post` and `apos.utils.get` now accept non-JSON responses from APIs. To maximize bc, if the response has the `application/json` content type, it is always parsed for you; if not, it is still parsed for you if it is valid JSON, but otherwise it is delivered to you as-is (as a string).
 * When you edit the slug of a piece or page manually and a slug conflict with another piece or page is created, you can now optionally click a button in order to edit the conflicting piece or page, and change its slug to eliminate the conflict.
 
 ## 2.93.0 (2019-07-25)

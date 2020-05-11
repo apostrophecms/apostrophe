@@ -19,9 +19,12 @@
           {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id, tooltip: 'Related Fields'}) }}
         {%- endif -%}
         {# By default you can edit the items themselves, sometimes #}
-        {# this is confusing #}
+        {# this is confusing. Pages can never be edited here because #}
+        {# Apostrophe is not designed to edit pages without breaking #}
+        {# out of the chooser #}
         {%- if not apos.utils.isFalse(data.field.editDocs) -%}
-          {%- if item._edit or item.item._edit -%}
+          {%- set _item = item.item or item -%}
+          {%- if (not apos.utils.isFalse(data.field.editDocs)) and _item._edit and (not apos.pages.isPage(_item)) %}
             {{ buttons.inGroup('', { icon: 'pencil', action: 'edit-item', tooltip: 'Edit', value: choice._id}) }}
           {%- endif -%}
         {%- endif -%}
