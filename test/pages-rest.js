@@ -331,4 +331,30 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
   });
 
+  it('can use PUT to modify a page', async function() {
+    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    assert(page);
+    page.title = 'Changed Title';
+    page.tags = [ 'tag' ];
+    await apos.http.put('http://localhost:7900/api/v1/apostrophe-pages/sibling', { body: page, jar });
+    const page2 = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    assert.strictEqual(page2.title, 'Changed Title');
+  });
+
+  it('can use PATCH to modify one property of a page', async function() {
+    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    assert(page);
+    page.title = 'Changed Title';
+    await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/sibling', {
+      body: {
+        title: 'New Title'
+      },
+      jar
+    });
+    const page2 = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    assert.strictEqual(page2.title, 'New Title');
+    // Did not modify this
+    assert.deepEqual(page2.tags, [ 'tag' ]);
+  });
+
 });
