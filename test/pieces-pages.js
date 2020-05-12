@@ -52,6 +52,7 @@ describe('Pieces Pages', function() {
                 title: 'Events',
                 type: 'events',
                 slug: '/events',
+                parkedId: 'events',
                 published: true
               }
             ]
