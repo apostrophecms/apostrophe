@@ -424,9 +424,13 @@ describe('Docs', function() {
   // TRASH
   /// ///
 
-  it('should have a "trash" method on docs', async function() {
+  it('should trash docs by updating them', async function() {
     const req = apos.tasks.getReq();
-    const trashed = await apos.docs.trash(req, { slug: 'carl' });
+    const doc = await apos.docs.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+    const trashed = await apos.docs.update(req, { ...doc, trash: true });
 
     assert(trashed.trash === true);
   });
@@ -465,21 +469,20 @@ describe('Docs', function() {
   // RESCUE
   /// ///
 
-  it('should have a "rescue" method on docs that removes the "trash" property from an object', async function() {
+  it('should rescue a doc by updating the "trash" property from an object', async function() {
     const req = apos.tasks.getReq();
 
-    await apos.docs.rescue(req, {
-      slug: 'deduplicate-carl-carl'
-    });
-
     const doc = await apos.docs.find(req, {
-      slug: 'carl'
-    }).toObject();
+      slug: 'deduplicate-carl-carl'
+    }).trash(null).toObject();
+
+    await apos.docs.update(req, { ...doc, trash: false });
+    const newDoc = await apos.docs.find(req, { slug: 'carl' }).toObject();
 
     // We should have a document.
-    assert(doc);
-    assert(doc.slug === 'carl');
-    assert(doc.trash === undefined);
+    assert(newDoc);
+    assert(newDoc.slug === 'carl');
+    assert(newDoc.trash === false);
   });
 
   it('should not allow you to call the rescue method if you are not an admin', async function() {
@@ -491,52 +494,6 @@ describe('Docs', function() {
     } catch (e) {
       assert(e);
     }
-  });
-
-  /// ///
-  // EMPTY TRASH
-  /// ///
-
-  it('should have an "deleteFromTrash" method on docs that removes specified objects from the database which have a "trash" property', async function() {
-
-    // Trash Carl.
-    const trashed = await apos.docs.trash(apos.tasks.getReq(), {
-      slug: 'carl'
-    });
-
-    assert(trashed.slug === 'deduplicate-carl-carl');
-    assert(trashed.trash === true);
-
-    // deleteFromTrash
-    const resp = await apos.docs.deleteFromTrash(apos.tasks.getReq(), {});
-
-    assert(resp.result.ok === 1);
-
-    // Try to find Carl
-    const doc = await apos.docs.find(apos.tasks.getReq(), {
-      slug: 'carl'
-    }).trash(true).toObject();
-
-    assert(!doc);
-  });
-
-  it('should not allow you to call the deleteFromTrash method if you are not an admin', async function() {
-    // Trash Larry
-    const trashed = await apos.docs.trash(apos.tasks.getReq(), {
-      slug: 'larry'
-    });
-
-    assert(trashed.slug === 'deduplicate-larry-larry');
-    assert(trashed.trash === true);
-
-    await apos.docs.deleteFromTrash(apos.tasks.getAnonReq(), {});
-
-    const doc = await apos.docs.find(apos.tasks.getReq(), {
-      slug: 'deduplicate-larry-larry'
-    }).trash(true).toObject();
-
-    assert(doc.slug === 'deduplicate-larry-larry');
-    assert(doc.trash === true);
   });
 
   it('should throw an exception on find() if you fail to pass req as the first argument', async function() {
