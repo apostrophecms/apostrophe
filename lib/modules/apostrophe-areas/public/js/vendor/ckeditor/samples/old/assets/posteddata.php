@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <?php
 /*
-Copyright (c) 2003-2018, CKSource - Frederico Knabben. All rights reserved.
+Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
 For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 */
 ?>
-<html>
+<html lang="en">
 <head>
 	<meta charset="utf-8">
 	<title>Sample &mdash; CKEditor</title>
 	<link rel="stylesheet" href="sample.css">
+	<meta name="description" content="Try the latest sample of CKEditor 4 and learn more about customizing your WYSIWYG editor with endless possibilities.">
 </head>
 <body>
 	<h1 class="samples">
@@ -52,7 +53,7 @@ if (!empty($_POST))
 			CKEditor - The text editor for the Internet - <a class="samples" href="https://ckeditor.com/">https://ckeditor.com</a>
 		</p>
 		<p id="copy">
-			Copyright &copy; 2003-2018, <a class="samples" href="https://cksource.com/">CKSource</a> - Frederico Knabben. All rights reserved.
+			Copyright &copy; 2003-2020, <a class="samples" href="https://cksource.com/">CKSource</a> - Frederico Knabben. All rights reserved.
 		</p>
 	</div>
 </body>
