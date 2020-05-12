@@ -1758,9 +1758,10 @@ async function testSchemaError(schema, input, path, name) {
     await apos.schemas.convert(req, schema, input, result);
     assert(false);
   } catch (e) {
+    console.log(require('util').inspect(e, { depth: 10 }));
     assert(Array.isArray(e));
     assert(e.length === 1);
     assert(e[0].path === path);
-    assert(e[0].error === name);
+    assert(e[0].error.name === name);
   }
 }
