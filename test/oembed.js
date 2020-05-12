@@ -24,7 +24,7 @@ describe('Oembed', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           session: {
             secret: 'xxx'
           },
@@ -34,8 +34,8 @@ describe('Oembed', function() {
       }
     });
 
-    assert(apos.modules['apostrophe-oembed']);
-    assert(apos.oembed.__meta.name === 'apostrophe-oembed');
+    assert(apos.modules['@apostrophecms/oembed']);
+    assert(apos.oembed.__meta.name === '@apostrophecms/oembed');
   });
 
   // TODO: test this with mocks. Travis CI erratically times out
@@ -60,7 +60,7 @@ describe('Oembed', function() {
 
   // it('Should deliver an oembed response for YouTube', async function() {
   //   const queryString = qs.stringify({ url: youtube });
-  //   const uri = `http://localhost:7900/modules/apostrophe-oembed/query?${queryString}`;
+  //   const uri = `http://localhost:7900/modules/@apostrophecms/oembed/query?${queryString}`;
 
   //   const response = await request({
   //     uri,

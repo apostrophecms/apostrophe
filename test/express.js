@@ -17,7 +17,7 @@ describe('Express', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             address: 'localhost',
@@ -181,7 +181,7 @@ describe('Express', function() {
       },
       prefix: '/prefix',
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             csrf: false,
@@ -232,7 +232,7 @@ describe('Express', function() {
       },
       baseUrl: 'https://example.com',
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             csrf: false,
@@ -268,7 +268,7 @@ describe('Express', function() {
       baseUrl: 'https://example.com',
       prefix: '/subdir',
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             csrf: false,

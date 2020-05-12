@@ -21,7 +21,7 @@ describe('Versions', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           secret: 'xxx',
           port: 7900
         },
@@ -29,7 +29,7 @@ describe('Versions', function() {
         // Create a custom schema for test-people so we can
         // play with comparing versions
         'test-people': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           name: 'test-people',
           label: 'Test Person',
           addFields: [
@@ -61,13 +61,13 @@ describe('Versions', function() {
         },
 
         'poems': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           name: 'poem',
           label: 'Poem'
         },
 
         'test-people-pages': {
-          extend: 'apostrophe-custom-pages'
+          extend: '@apostrophecms/custom-pages'
         }
       },
       afterInit: async function() {
@@ -253,7 +253,7 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               }
             ]
@@ -269,13 +269,13 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               },
               {
                 metaType: 'widget',
                 _id: 'woo2',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So amazing'
               }
             ]
@@ -313,13 +313,13 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               },
               {
                 metaType: 'widget',
                 _id: 'woo2',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So amazing'
               }
             ]
@@ -335,7 +335,7 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               }
             ]
@@ -373,13 +373,13 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               },
               {
                 metaType: 'widget',
                 _id: 'woo2',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So amazing'
               }
             ]
@@ -395,13 +395,13 @@ describe('Versions', function() {
               {
                 metaType: 'widget',
                 _id: 'woo',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So great'
               },
               {
                 metaType: 'widget',
                 _id: 'woo2',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 content: 'So wimpy'
               }
             ]
@@ -630,11 +630,11 @@ describe('Versions', function() {
   //     shortName: 'test',
   //
   //     modules: {
-  //       'apostrophe-express': {
+  //       '@apostrophecms/express': {
   //         secret: 'xxx',
   //         port: 7900
   //       },
-  //       'apostrophe-versions':{
+  //       '@apostrophecms/versions':{
   //         enabled: false
   //       }
   //     },

@@ -2,7 +2,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', function() {
+describe('Promisified Events: @apostrophecms/doc-type-manager:beforeInsert', function() {
   this.timeout(50000);
 
   after(function() {
@@ -12,7 +12,7 @@ describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', functio
   let apos;
   let coreEventsWork = false;
 
-  it('should implement apostrophe-doc-type-manager:beforeInsert handlers properly', async function() {
+  it('should implement @apostrophecms/doc-type-manager:beforeInsert handlers properly', async function() {
     apos = await require('../index.js')({
       root: module,
       shortName: 'test',
@@ -24,7 +24,7 @@ describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', functio
           alias: 'test1',
           handlers(self) {
             return {
-              'apostrophe-doc-type-manager:beforeInsert': {
+              '@apostrophecms/doc-type-manager:beforeInsert': {
                 async beforeInsertReverseTitle(req, doc, options) {
                   if (doc.type === 'default') {
                     await Promise.delay(50);
@@ -40,7 +40,7 @@ describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', functio
             };
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [
               {

@@ -20,13 +20,13 @@ describe('Soft Redirects', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             secret: 'test'
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [
               {
@@ -41,7 +41,7 @@ describe('Soft Redirects', function() {
         }
       }
     });
-    assert(apos.modules['apostrophe-soft-redirects']);
+    assert(apos.modules['@apostrophecms/soft-redirects']);
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
@@ -89,13 +89,13 @@ describe('Soft Redirects - with `statusCode` option', async() => {
       },
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900,
             secret: 'test'
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [
               {
@@ -108,15 +108,15 @@ describe('Soft Redirects - with `statusCode` option', async() => {
             ]
           }
         },
-        'apostrophe-soft-redirects': {
+        '@apostrophecms/soft-redirects': {
           options: {
             statusCode: 301
           }
         }
       }
     });
-    assert(apos.modules['apostrophe-soft-redirects']);
-    assert.equal(apos.modules['apostrophe-soft-redirects'].options.statusCode, 301);
+    assert(apos.modules['@apostrophecms/soft-redirects']);
+    assert.equal(apos.modules['@apostrophecms/soft-redirects'].options.statusCode, 301);
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {

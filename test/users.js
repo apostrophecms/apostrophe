@@ -21,13 +21,13 @@ describe('Users', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           secret: 'xxx',
           port: 7900
         }
       },
       afterInit: function(callback) {
-        assert(apos.modules['apostrophe-users']);
+        assert(apos.modules['@apostrophecms/users']);
         apos.argv._ = [];
         assert(apos.users.safe.remove);
         return apos.users.safe.remove({}, callback);
@@ -55,7 +55,7 @@ describe('Users', function() {
     user.password = '123password';
     user.email = 'jane@aol.com';
 
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
     assert(apos.users.insert);
     apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
@@ -124,7 +124,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
 
     assert(apos.users.insert);
     apos.users.insert(apos.tasks.getReq(), user, function(err) {

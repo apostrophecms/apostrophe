@@ -22,14 +22,14 @@ describe('Search', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'events': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'event',
             label: 'Event'

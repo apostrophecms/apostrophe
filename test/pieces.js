@@ -27,14 +27,14 @@ describe('Pieces', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'things': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             alias: 'things',
             name: 'thing',
@@ -47,7 +47,7 @@ describe('Pieces', function() {
           }
         },
         'people': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             alias: 'people',
             name: 'person',
@@ -59,7 +59,7 @@ describe('Pieces', function() {
           }
         },
         'products': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           name: 'product',
           fields: {
             add: {
@@ -67,8 +67,8 @@ describe('Pieces', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    'apostrophe-rich-text': {},
-                    'apostrophe-images': {}
+                    '@apostrophecms/rich-text': {},
+                    '@apostrophecms/images': {}
                   }
                 }
               },
@@ -111,7 +111,7 @@ describe('Pieces', function() {
           }
         },
         articles: {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'article'
           },
@@ -361,7 +361,7 @@ describe('Pieces', function() {
 
     // Log in
 
-    await apos.http.post('http://localhost:7900/api/v1/apostrophe-login/login', {
+    await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
         password: 'admin'
@@ -387,7 +387,7 @@ describe('Pieces', function() {
             items: [
               {
                 metaType: 'widget',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 id: cuid(),
                 content: '<p>This is fake</p>'
               }
@@ -416,7 +416,7 @@ describe('Pieces', function() {
             items: [
               {
                 metaType: 'widget',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 id: cuid(),
                 content: '<p>This is thing ' + i + '</p>'
               }
@@ -566,7 +566,7 @@ describe('Pieces', function() {
           items: [
             {
               metaType: 'widget',
-              type: 'apostrophe-rich-text',
+              type: '@apostrophecms/rich-text',
               id: cuid(),
               content: '<p>This is the product key product with join</p>'
             }
@@ -661,7 +661,7 @@ describe('Pieces', function() {
           items: [
             {
               metaType: 'widget',
-              type: 'apostrophe-rich-text',
+              type: '@apostrophecms/rich-text',
               id: cuid(),
               content: '<p>This is the product key product without initial join</p>'
             }
@@ -684,7 +684,7 @@ describe('Pieces', function() {
   });
 
   it('can log out to destroy a session', async () => {
-    return apos.http.post('http://localhost:7900/api/v1/apostrophe-login/logout', {
+    return apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/logout', {
       followAllRedirects: true,
       jar
     });
@@ -700,7 +700,7 @@ describe('Pieces', function() {
             items: [
               {
                 metaType: 'widget',
-                type: 'apostrophe-rich-text',
+                type: '@apostrophecms/rich-text',
                 id: cuid(),
                 content: '<p>This is fake</p>'
               }

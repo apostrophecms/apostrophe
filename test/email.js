@@ -21,10 +21,10 @@ describe('Email', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           port: 7900
         },
-        'apostrophe-email': {
+        '@apostrophecms/email': {
           options: {
             nodemailer: {
               streamTransport: true,
@@ -36,7 +36,7 @@ describe('Email', function() {
         'email-test': {}
       }
     });
-    assert(apos.modules['apostrophe-email']);
+    assert(apos.modules['@apostrophecms/email']);
   });
 
   it('can send email on behalf of a module', async function() {

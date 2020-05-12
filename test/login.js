@@ -21,7 +21,7 @@ describe('Login', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7901,
             address: 'localhost',
@@ -33,7 +33,7 @@ describe('Login', function() {
       }
     });
 
-    assert(apos.modules['apostrophe-login']);
+    assert(apos.modules['@apostrophecms/login']);
     assert(apos.users.safe.remove);
     const response = await apos.users.safe.remove({});
     assert(response.result.ok === 1);
@@ -51,7 +51,7 @@ describe('Login', function() {
     user.password = 'crookshanks';
     user.email = 'hputter@aol.com';
 
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
     assert(apos.users.insert);
     const doc = await apos.users.insert(apos.tasks.getReq(), user);
     assert(doc._id);
@@ -72,7 +72,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
 
     await apos.http.post(
-      'http://localhost:7901/api/v1/apostrophe-login/login',
+      'http://localhost:7901/api/v1/@apostrophecms/login/login',
       {
         method: 'POST',
         body: {
@@ -94,7 +94,7 @@ describe('Login', function() {
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
-      'http://localhost:7901/api/v1/apostrophe-login/logout',
+      'http://localhost:7901/api/v1/@apostrophecms/login/logout',
       {
         body: {
           username: 'hputter@aol.com',
@@ -130,7 +130,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
 
     await apos.http.post(
-      'http://localhost:7901/api/v1/apostrophe-login/login',
+      'http://localhost:7901/api/v1/@apostrophecms/login/login',
       {
         body: {
           username: 'hputter@aol.com',
@@ -152,7 +152,7 @@ describe('Login', function() {
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
-      'http://localhost:7901/api/v1/apostrophe-login/logout',
+      'http://localhost:7901/api/v1/@apostrophecms/login/logout',
       {
         body: {
           username: 'hputter@aol.com',

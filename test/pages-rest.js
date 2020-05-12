@@ -24,7 +24,7 @@ describe('Pages', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             session: {
               secret: 'Adipiscing'
@@ -32,7 +32,7 @@ describe('Pages', function() {
             port: 7900
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [],
             types: [
@@ -50,7 +50,7 @@ describe('Pages', function() {
       }
     });
 
-    assert(apos.pages.__meta.name === 'apostrophe-pages');
+    assert(apos.pages.__meta.name === '@apostrophecms/pages');
   });
 
   it('should be able to insert test user', async function() {
@@ -81,7 +81,7 @@ describe('Pages', function() {
 
     // Log in
 
-    await apos.http.post('http://localhost:7900/api/v1/apostrophe-login/login', {
+    await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
         password: 'admin'
@@ -98,7 +98,7 @@ describe('Pages', function() {
   });
 
   it('can GET the home page without session', async () => {
-    const home = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages', {});
+    const home = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages', {});
     assert(home);
     assert(home.slug === '/');
     // make sure new style paths used
@@ -181,7 +181,7 @@ describe('Pages', function() {
       title: 'New Tab'
     };
 
-    const page = await apos.http.post('http://localhost:7900/api/v1/apostrophe-pages', {
+    const page = await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/pages', {
       body,
       jar
     });
@@ -204,7 +204,7 @@ describe('Pages', function() {
       _position: 'lastChild'
     };
 
-    const page = await apos.http.post('http://localhost:7900/api/v1/apostrophe-pages', {
+    const page = await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/pages', {
       body,
       jar
     });
@@ -225,7 +225,7 @@ describe('Pages', function() {
       title: 'New Tab'
     };
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-pages', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/pages', {
         body
       });
       assert(false);
@@ -235,7 +235,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page with ancestors', async function() {
-    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/child');
+    const page = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/child');
 
     assert(page);
     assert(page.path === `${homeId}/parent/child`);
@@ -253,7 +253,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page with children', async function() {
-    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/parent');
+    const page = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/parent');
 
     assert(page);
     assert(page.path === `${homeId}/parent`);
@@ -271,7 +271,7 @@ describe('Pages', function() {
   });
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+    let page = await apos.http.patch('http://localhost:7900/api/v1/@apostrophecms/pages/cousin', {
       body: {
         _targetId: 'parent',
         _position: 'after'
@@ -288,7 +288,7 @@ describe('Pages', function() {
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+    let page = await apos.http.patch('http://localhost:7900/api/v1/@apostrophecms/pages/cousin', {
       body: {
         _targetId: 'child',
         _position: 'before'
@@ -303,7 +303,7 @@ describe('Pages', function() {
   });
 
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+    let page = await apos.http.patch('http://localhost:7900/api/v1/@apostrophecms/pages/cousin', {
       body: {
         _targetId: 'sibling',
         _position: 'firstChild'
@@ -318,40 +318,40 @@ describe('Pages', function() {
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/parent', {
+    await apos.http.patch('http://localhost:7900/api/v1/@apostrophecms/pages/parent', {
       body: {
         _targetId: 'another-parent',
         _position: 'firstChild'
       },
       jar
     });
-    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    const page = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { jar });
 
     // Is the grandchild's path correct?
     assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
   });
 
   it('can use PUT to modify a page', async function() {
-    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    const page = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { jar });
     assert(page);
     page.title = 'Changed Title';
     page.tags = [ 'tag' ];
-    await apos.http.put('http://localhost:7900/api/v1/apostrophe-pages/sibling', { body: page, jar });
-    const page2 = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    await apos.http.put('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { body: page, jar });
+    const page2 = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { jar });
     assert.strictEqual(page2.title, 'Changed Title');
   });
 
   it('can use PATCH to modify one property of a page', async function() {
-    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    const page = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { jar });
     assert(page);
     page.title = 'Changed Title';
-    await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/sibling', {
+    await apos.http.patch('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', {
       body: {
         title: 'New Title'
       },
       jar
     });
-    const page2 = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
+    const page2 = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages/sibling', { jar });
     assert.strictEqual(page2.title, 'New Title');
     // Did not modify this
     assert.deepEqual(page2.tags, [ 'tag' ]);

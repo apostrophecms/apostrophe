@@ -22,7 +22,7 @@ describe('REST API routing', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7900
           }

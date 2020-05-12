@@ -26,14 +26,14 @@ describe('Schema builders', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'cats': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'cat',
             label: 'Cat',
@@ -62,7 +62,7 @@ describe('Schema builders', function() {
           }
         },
         'people': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'person',
             label: 'Person',

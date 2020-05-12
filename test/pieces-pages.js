@@ -21,14 +21,14 @@ describe('Pieces Pages', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'events': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'event',
             label: 'Event',
@@ -37,7 +37,7 @@ describe('Pieces Pages', function() {
           }
         },
         'events-pages': {
-          extend: 'apostrophe-pieces-pages',
+          extend: '@apostrophecms/pieces-pages',
           options: {
             name: 'events',
             label: 'Events',
@@ -45,7 +45,7 @@ describe('Pieces Pages', function() {
             perPage: 10
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [
               {
@@ -81,7 +81,7 @@ describe('Pieces Pages', function() {
           items: [
             {
               metaType: 'widget',
-              type: 'apostrophe-rich-text',
+              type: '@apostrophecms/rich-text',
               content: '<p>This is some content.</p>'
             }
           ]

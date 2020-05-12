@@ -19,22 +19,22 @@ describe('Admin bar', function() {
           _: []
         },
         modules: {
-          'apostrophe-admin-bar': {
+          '@apostrophecms/admin-bar': {
             options: {
               addGroups: [
                 {
                   label: 'Media',
                   items: [
-                    'apostrophe-images',
-                    'apostrophe-files'
+                    '@apostrophecms/images',
+                    '@apostrophecms/files'
                   ]
                 },
                 {
                   label: 'Content',
                   items: [
-                    'apostrophe-login-logout',
-                    'apostrophe-files',
-                    'apostrophe-images'
+                    '@apostrophecms/login-logout',
+                    '@apostrophecms/files',
+                    '@apostrophecms/images'
                   ]
                 }
               ]
@@ -42,12 +42,12 @@ describe('Admin bar', function() {
           }
         }
       });
-      assert(apos.modules['apostrophe-admin-bar']);
+      assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
       assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
-      assert(apos.adminBar.items[6].name === 'apostrophe-files');
-      assert(apos.adminBar.items[7].name === 'apostrophe-images');
+      assert(apos.adminBar.items[5].name === '@apostrophecms/login-logout');
+      assert(apos.adminBar.items[6].name === '@apostrophecms/files');
+      assert(apos.adminBar.items[7].name === '@apostrophecms/images');
     } finally {
       t.destroy(apos);
     }
@@ -63,26 +63,26 @@ describe('Admin bar', function() {
           _: []
         },
         modules: {
-          'apostrophe-express': {
+          '@apostrophecms/express': {
             secret: 'xxx',
             csrf: false
           },
-          'apostrophe-admin-bar': {
+          '@apostrophecms/admin-bar': {
             options: {
               addGroups: [
                 {
                   label: 'Media',
                   items: [
-                    'apostrophe-images',
-                    'apostrophe-files'
+                    '@apostrophecms/images',
+                    '@apostrophecms/files'
                   ]
                 },
                 {
                   label: 'Content',
                   items: [
-                    'apostrophe-files',
-                    'apostrophe-images',
-                    'apostrophe-login-logout'
+                    '@apostrophecms/files',
+                    '@apostrophecms/images',
+                    '@apostrophecms/login-logout'
                   ]
                 }
               ]
@@ -90,12 +90,12 @@ describe('Admin bar', function() {
           }
         }
       });
-      assert(apos.modules['apostrophe-admin-bar']);
+      assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
       assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[5].name === 'apostrophe-files');
-      assert(apos.adminBar.items[6].name === 'apostrophe-images');
-      assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
+      assert(apos.adminBar.items[5].name === '@apostrophecms/files');
+      assert(apos.adminBar.items[6].name === '@apostrophecms/images');
+      assert(apos.adminBar.items[7].name === '@apostrophecms/login-logout');
     } finally {
       t.destroy(apos);
     }

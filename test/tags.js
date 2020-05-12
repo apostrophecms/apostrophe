@@ -22,18 +22,18 @@ describe('Tags', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900,
             csrf: {
               // We're not here to test CSRF, so make the test simpler
-              exceptions: [ '/modules/apostrophe-tags/autocomplete' ]
+              exceptions: [ '/modules/@apostrophecms/tags/autocomplete' ]
             }
           }
         },
         'events': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'event'
           }
@@ -106,7 +106,7 @@ describe('Tags', function() {
 
   it('should provide an api route for autocomplete', function(done) {
     return request({
-      url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
+      url: 'http://localhost:7900/modules/@apostrophecms/tags/autocomplete',
       method: 'POST',
       form: { term: 'ag' }
     }, function(err, response, body) {
@@ -126,7 +126,7 @@ describe('Tags', function() {
 
   it('should provide an api route for autocomplete', function(done) {
     return request({
-      url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
+      url: 'http://localhost:7900/modules/@apostrophecms/tags/autocomplete',
       method: 'POST',
       form: { term: 'ag', prefix: true }
     }, function(err, response, body) {

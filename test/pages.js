@@ -25,7 +25,7 @@ describe('Pages', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             session: {
               secret: 'Adipiscing'
@@ -33,7 +33,7 @@ describe('Pages', function() {
             port: 7900
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [],
             types: [
@@ -51,7 +51,7 @@ describe('Pages', function() {
       }
     });
 
-    assert(apos.pages.__meta.name === 'apostrophe-pages');
+    assert(apos.pages.__meta.name === '@apostrophecms/pages');
   });
 
   // SETUP
@@ -435,7 +435,7 @@ describe('Pages', function() {
 
     // Log in
 
-    await apos.http.post('http://localhost:7900/api/v1/apostrophe-login/login', {
+    await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
         password: 'admin'
@@ -452,7 +452,7 @@ describe('Pages', function() {
   });
 
   it('can GET the home page without session', async () => {
-    const home = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages', {});
+    const home = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages', {});
     assert(home);
     assert(home.slug === '/');
     // make sure new style paths used

@@ -24,7 +24,7 @@ describe('custom-pages', function() {
       },
       modules: {
         'nifty-pages': {
-          extend: 'apostrophe-custom-pages'
+          extend: '@apostrophecms/custom-pages'
         }
       }
     });

@@ -19,7 +19,7 @@ describe('Permissions', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           session: {
             secret: 'xxx'
           },
@@ -27,7 +27,7 @@ describe('Permissions', function() {
         }
       }
     });
-    assert(apos.permissions.__meta.name = 'apostrophe-permissions');
+    assert(apos.permissions.__meta.name = '@apostrophecms/permissions');
   });
 
   // mock up a request

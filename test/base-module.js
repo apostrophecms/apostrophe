@@ -19,7 +19,7 @@ describe('Base Module', function() {
       },
       modules: {
         // will push an asset for us to look for later
-        'apostrophe-test-module-push': {},
+        '@apostrophecms/test-module-push': {},
         // test the getOption method of modules
         'test-get-option': {},
         'test-get-option-2': {}

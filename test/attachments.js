@@ -160,7 +160,7 @@ describe('Attachment', function() {
       assert(url === '/uploads/attachments/test-test.pdf');
     });
 
-    it('should save and track docIds properly as part of an apostrophe-image', async function() {
+    it('should save and track docIds properly as part of an @apostrophecms/image', async function() {
       let image = apos.images.newInstance();
       let req = apos.tasks.getReq();
       let attachment = await apos.attachments.insert(apos.tasks.getReq(), {
@@ -187,7 +187,8 @@ describe('Attachment', function() {
       } catch (e) {
         assert(false);
       }
-      await apos.images.trash(req, image._id);
+      image.trash = true;
+      await apos.images.update(req, image);
       attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
       assert(attachment.trash);
       assert(attachment.docIds.length === 0);
@@ -201,7 +202,8 @@ describe('Attachment', function() {
       if (!good) {
         throw new Error('should not have been accessible');
       }
-      await apos.images.rescue(req, image._id);
+      image.trash = false;
+      await apos.images.update(req, image);
       attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
       assert(!attachment.trash);
       assert(attachment.docIds.length === 1);
