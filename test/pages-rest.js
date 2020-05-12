@@ -285,40 +285,50 @@ describe('Pages', function() {
     assert.strictEqual(page.rank, 1);
   });
 
-  // it('is able to move root/cousin before root/parent/child', async function() {
-  //   // 'Cousin' _id === 4312
-  //   // 'Child' _id === 2341
+  it('is able to move root/cousin before root/parent/child', async function() {
+    // 'Cousin' _id === 4312
+    // 'Child' _id === 2341
+    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+      body: {
+        _targetId: 'child',
+        _position: 'before'
+      },
+      jar
+    });
 
-  //   await apos.pages.move(apos.tasks.getReq(), 'cousin', 'child', 'before');
-  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
-  //   const page = await cursor.toObject();
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/cousin`);
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 0);
+  });
 
-  //   // Is the new path correct?
-  //   assert.strictEqual(page.path, `${homeId}/parent/cousin`);
-  //   // Is the rank correct?
-  //   assert.strictEqual(page.rank, 0);
-  // });
+  it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
+    let page = await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/cousin', {
+      body: {
+        _targetId: 'sibling',
+        _position: 'firstChild'
+      },
+      jar
+    });
 
-  // it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-  //   await apos.pages.move(apos.tasks.getReq(), 'cousin', 'sibling', 'firstChild');
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/sibling/cousin`);
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 0);
+  });
 
-  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
-  //   const page = await cursor.toObject();
+  it('moving /parent into /another-parent should also move /parent/sibling', async function() {
+    await apos.http.patch('http://localhost:7900/api/v1/apostrophe-pages/parent', {
+      body: {
+        _targetId: 'another-parent',
+        _position: 'firstChild'
+      },
+      jar
+    });
+    const page = await apos.http.get('http://localhost:7900/api/v1/apostrophe-pages/sibling', { jar });
 
-  //   // Is the new path correct?
-  //   assert.strictEqual(page.path, `${homeId}/parent/sibling/cousin`);
-  //   // Is the rank correct?
-  //   assert.strictEqual(page.rank, 0);
-  // });
-
-  // it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-  //   await apos.pages.move(apos.tasks.getReq(), 'parent', 'another-parent', 'firstChild');
-
-  //   const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'sibling' });
-  //   const page = await cursor.toObject();
-
-  //   // Is the grandchild's path correct?
-  //   assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
-  // });
+    // Is the grandchild's path correct?
+    assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
+  });
 
 });
