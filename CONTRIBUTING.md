@@ -134,4 +134,4 @@ which modules the core team is committed to maintaining.
 - Add `apostrophe`, `apostrophecms` and `apostrophe-cms` to your keywords in
 `package.json` to help people find your module.
 
-See [publishing your own npm modules for Apostrophe](https://docs.apostrophecms.org/apostrophe/other/more-modules#publishing-your-own-npm-modules-for-apostrophe) for more information.
+See [publishing your own npm modules for Apostrophe](https://docs.apostrophecms.org/core-concepts/modules/more-modules.html#publishing-your-own-npm-modules-for-apostrophe) for more information.
