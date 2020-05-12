@@ -20,8 +20,12 @@ describe('Docs', function() {
 
       modules: {
         'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            session: {
+              secret: 'Adipiscing'
+            },
+            port: 7900
+          }
         },
         'test-people': {
           extend: 'apostrophe-doc-type-manager',
