@@ -19,7 +19,7 @@ describe('Global', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
@@ -54,7 +54,7 @@ describe('Global', function() {
     let req = apos.tasks.getAnonReq();
     await apos.global.addGlobalToData(req);
     assert(req.data.global);
-    assert(req.data.global.type === 'apostrophe-global');
+    assert(req.data.global.type === '@apostrophecms/global');
     assert(req.data.global.test === 'test');
   });
 

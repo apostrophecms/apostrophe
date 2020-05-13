@@ -1,0 +1,18 @@
+{%- extends "editorModal.html" -%}
+{%- import "@apostrophecms/schemas:macros.html" as schemas -%}
+
+{%- block modalClass -%}
+  apos-pieces-editor apos-pieces-create {{ data.options.name | css }}-editor apos-ui-modal-no-sidebar apos-ui-modal-has-tabs apos-modal-slideable
+{%- endblock -%}
+
+{%- block controls -%}
+  {{ module.createControls() }}
+{%- endblock -%}
+
+{%- block label -%}
+  {{ __('Create %s', data.options.label) }}
+{%- endblock -%}
+
+{%- block instructions -%}
+  {{ __('Fill out the fields to add a new %s.', data.options.label | d(''))}}
+{%- endblock -%}

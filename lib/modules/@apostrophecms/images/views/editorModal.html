@@ -1,0 +1,16 @@
+{% extends 'editorBase.html' %}
+
+{%- block label -%}
+{{ __("Edit Image") }}
+{%- endblock -%}
+
+{%- block filters -%}
+{%- endblock -%}
+
+{%- block body -%}
+<div class="apos-form">
+	<div class="@apostrophecms/image-editor-fields">
+    {{ schemas.fields(data.schema) }}
+  </div>
+</div>
+{%- endblock -%}

@@ -33,12 +33,12 @@ describe('Db', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             port: 7777
           }
         },
-        'apostrophe-db': {
+        '@apostrophecms/db': {
           db: apos.db,
           uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
         }

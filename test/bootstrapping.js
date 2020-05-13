@@ -84,11 +84,11 @@ describe('Apostrophe', function() {
 
         __testDefaults: {
           modules: {
-            'apostrophe-test-module': {}
+            '@apostrophecms/test-module': {}
           }
         }
       });
-      assert(apos.modules['apostrophe-test-module']);
+      assert(apos.modules['@apostrophecms/test-module']);
     } finally {
       await t.destroy(apos);
     }
@@ -105,7 +105,7 @@ describe('Apostrophe', function() {
         shortName: 'test',
         __testDefaults: {
           modules: {
-            'apostrophe-test-module': {}
+            '@apostrophecms/test-module': {}
           }
         },
         afterInit: function(callback) {

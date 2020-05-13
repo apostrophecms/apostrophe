@@ -19,7 +19,7 @@ describe('Templates', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
@@ -30,7 +30,7 @@ describe('Templates', function() {
         'templates-subclass-test': {},
         'templates-options-test': {},
         'inject-test': {},
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             park: [
               {

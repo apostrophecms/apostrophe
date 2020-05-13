@@ -16,7 +16,7 @@ describe('Docs', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             session: {
               secret: 'Adipiscing'
@@ -25,7 +25,7 @@ describe('Docs', function() {
           }
         },
         'test-people': {
-          extend: 'apostrophe-doc-type-manager',
+          extend: '@apostrophecms/doc-type-manager',
           fields: {
             add: {
               _friend: {
@@ -75,7 +75,7 @@ describe('Docs', function() {
       jar
     });
     // Log in
-    await apos.http.post('http://localhost:7900/api/v1/apostrophe-login/login', {
+    await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
         password: 'admin'
@@ -90,7 +90,7 @@ describe('Docs', function() {
   });
 
   it('should be able to lock a document', async function() {
-    return apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/lock', {
+    return apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/lock', {
       body: {
         _id: 'i27',
         htmlPageId: 'abc'
@@ -101,7 +101,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document when not logged in', async function() {
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/lock', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc'
@@ -116,7 +116,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document with a different contextId', async function() {
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/lock', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'def'
@@ -133,7 +133,7 @@ describe('Docs', function() {
 
   it('should be able to unlock a document', async function() {
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/unlock', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/unlock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc'
@@ -147,7 +147,7 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/lock', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'def'
@@ -161,7 +161,7 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     try {
-      await apos.http.post('http://localhost:7900/api/v1/apostrophe-docs/lock', {
+      await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/docs/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc',

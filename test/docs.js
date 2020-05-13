@@ -19,7 +19,7 @@ describe('Docs', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             session: {
               secret: 'Adipiscing'
@@ -28,7 +28,7 @@ describe('Docs', function() {
           }
         },
         'test-people': {
-          extend: 'apostrophe-doc-type-manager',
+          extend: '@apostrophecms/doc-type-manager',
           fields: {
             add: {
               _friend: {

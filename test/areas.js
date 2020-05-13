@@ -23,14 +23,14 @@ describe('Areas', function() {
       },
       modules: {
         'monkeys': {
-          extend: 'apostrophe-pieces'
+          extend: '@apostrophecms/pieces'
         },
         'monkeys-widgets': {
-          extend: 'apostrophe-pieces-widgets'
+          extend: '@apostrophecms/pieces-widgets'
         }
       }
     });
-    assert(apos.modules['apostrophe-areas']);
+    assert(apos.modules['@apostrophecms/areas']);
     assert(apos.areas);
     // In tests this will be the name of the test file,
     // so override that in order to get apostrophe to
@@ -44,7 +44,7 @@ describe('Areas', function() {
       items: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
@@ -54,7 +54,7 @@ describe('Areas', function() {
         },
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -64,7 +64,7 @@ describe('Areas', function() {
       items: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
@@ -74,7 +74,7 @@ describe('Areas', function() {
         },
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -84,7 +84,7 @@ describe('Areas', function() {
       items: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
@@ -94,7 +94,7 @@ describe('Areas', function() {
         },
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -107,7 +107,7 @@ describe('Areas', function() {
       items: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
@@ -117,7 +117,7 @@ describe('Areas', function() {
         },
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -127,7 +127,7 @@ describe('Areas', function() {
       items: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
@@ -137,7 +137,7 @@ describe('Areas', function() {
         },
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -158,7 +158,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: ''
           }
         ]
@@ -169,7 +169,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<h4> </h4>'
           }
         ]
@@ -204,7 +204,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-video',
+            type: '@apostrophecms/video',
             url: 'http://somewhere.com'
           }
         ]
@@ -215,7 +215,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: ''
           }
         ]
@@ -226,7 +226,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<h4>Some text</h4>'
           }
         ]

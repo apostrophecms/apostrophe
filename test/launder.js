@@ -19,7 +19,7 @@ describe('Launder', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           port: 7900,
           address: 'localhost',
           session: {

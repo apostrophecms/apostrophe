@@ -22,14 +22,14 @@ describe('Pieces Widgets', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'events': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'event',
             label: 'Event',
@@ -38,10 +38,10 @@ describe('Pieces Widgets', function() {
           }
         },
         'events-widgets': {
-          extend: 'apostrophe-pieces-widgets'
+          extend: '@apostrophecms/pieces-widgets'
         },
         'default-pages': {
-          extend: 'apostrophe-custom-pages',
+          extend: '@apostrophecms/custom-pages',
           options: {
             name: 'default'
           },
@@ -58,7 +58,7 @@ describe('Pieces Widgets', function() {
             }
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             types: [
               {
@@ -133,7 +133,7 @@ describe('Pieces Widgets', function() {
           items: [
             {
               metaType: 'widget',
-              type: 'apostrophe-rich-text',
+              type: '@apostrophecms/rich-text',
               content: '<p>This is some content.</p>'
             }
           ]
@@ -165,7 +165,7 @@ describe('Pieces Widgets', function() {
         items: [
           {
             metaType: 'widget',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<p>This is some content.</p>'
           }
         ]
@@ -229,14 +229,14 @@ describe('Pieces Widget With Extra Join', function() {
       shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         },
         'events': {
-          extend: 'apostrophe-pieces',
+          extend: '@apostrophecms/pieces',
           options: {
             name: 'event',
             label: 'Event',
@@ -245,7 +245,7 @@ describe('Pieces Widget With Extra Join', function() {
           }
         },
         'events-widgets': {
-          extend: 'apostrophe-pieces-widgets',
+          extend: '@apostrophecms/pieces-widgets',
           fields: {
             add: {
               _featured: {
@@ -255,7 +255,7 @@ describe('Pieces Widget With Extra Join', function() {
             }
           }
         },
-        'apostrophe-pages': {
+        '@apostrophecms/pages': {
           options: {
             types: [
               {
@@ -303,7 +303,7 @@ describe('Pieces Widget With Extra Join', function() {
           }
         },
         'default-pages': {
-          extend: 'apostrophe-custom-pages',
+          extend: '@apostrophecms/custom-pages',
           options: {
             name: 'default'
           },
@@ -349,7 +349,7 @@ describe('Pieces Widget With Extra Join', function() {
           items: [
             {
               metaType: 'widget',
-              type: 'apostrophe-rich-text',
+              type: '@apostrophecms/rich-text',
               content: '<p>This is some content.</p>'
             }
           ]
@@ -380,7 +380,7 @@ describe('Pieces Widget With Extra Join', function() {
         items: [
           {
             metaType: 'widget',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<p>This is some content.</p>'
           }
         ]

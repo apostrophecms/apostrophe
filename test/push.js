@@ -19,7 +19,7 @@ describe('Templates', function() {
         _: []
       },
       modules: {
-        'apostrophe-express': {
+        '@apostrophecms/express': {
           session: {
             secret: 'I stole a candybar'
           },
@@ -28,7 +28,7 @@ describe('Templates', function() {
       }
     });
 
-    assert(apos.push.__meta.name === 'apostrophe-push');
+    assert(apos.push.__meta.name === '@apostrophecms/push');
   });
 
   it('should be able to push a browser call and get back an HTML-safe JSON string', function() {

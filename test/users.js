@@ -23,12 +23,30 @@ describe('Users', function() {
         _: []
       },
       modules: {
+<<<<<<< HEAD
         'apostrophe-express': {
           options: {
             secret: 'xxx',
             port: 7900
           }
         }
+=======
+        '@apostrophecms/express': {
+          secret: 'xxx',
+          port: 7900
+        }
+      },
+      afterInit: function(callback) {
+        assert(apos.modules['@apostrophecms/users']);
+        apos.argv._ = [];
+        assert(apos.users.safe.remove);
+        return apos.users.safe.remove({}, callback);
+        // return callback(null);
+      },
+      afterListen: function(err) {
+        assert(!err);
+        done();
+>>>>>>> 428e787d5b97d3039c5a9d6f1352c85e1bc45b30
       }
     });
   });
@@ -46,7 +64,7 @@ describe('Users', function() {
     user.password = '123password';
     user.email = 'jane@aol.com';
 
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
     assert(apos.users.insert);
     await apos.users.insert(apos.tasks.getReq(), user);
   });
@@ -97,7 +115,7 @@ describe('Users', function() {
     user.username = 'DaneJ';
     user.password = '321password';
     user.email = 'jane@aol.com';
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
 
     assert(apos.users.insert);
     try {

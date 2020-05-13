@@ -21,7 +21,7 @@ let defaults = require('./defaults.js');
 // If Apostrophe is being invoked to run a
 // command line task, it will **exit the process** after the
 // task completes, unless you pass the `exit: false` option
-// to the `apostrophe-tasks` module. In that case, your
+// to the `@apostrophecms/tasks` module. In that case, your
 // code will continue after the task completes.
 
 module.exports = async function(options) {
@@ -38,7 +38,7 @@ module.exports = async function(options) {
   // promise event emitter code
   self.apos = self;
 
-  Object.assign(self, require('./lib/modules/apostrophe-module/lib/events.js')(self, options));
+  Object.assign(self, require('./lib/modules/@apostrophecms/module/lib/events.js')(self, options));
 
   // Determine root module and root directory
   self.root = options.root || getRoot();
@@ -74,9 +74,9 @@ module.exports = async function(options) {
 
   // Returns an array of modules that are instances of the given
   // module name, i.e. they are of that type or they extend it.
-  // For instance, `apos.instancesOf('apostrophe-pieces')` returns
+  // For instance, `apos.instancesOf('@apostrophecms/pieces')` returns
   // an array of active modules in your project that extend
-  // pieces, such as `apostrophe-users`, `apostrophe-groups` and
+  // pieces, such as `@apostrophecms/users`, `@apostrophecms/groups` and
   // your own piece types
 
   self.instancesOf = function(name) {
@@ -216,7 +216,7 @@ module.exports = async function(options) {
 
   // Tweak the Apostrophe environment suitably for
   // unit testing a separate npm module that extends
-  // Apostrophe, like apostrophe-workflow. For instance,
+  // Apostrophe, like @apostrophecms/workflow. For instance,
   // a node_modules subdirectory with a symlink to the
   // module itself is created so that the module can
   // be found by Apostrophe during testing. Invoked
@@ -233,9 +233,9 @@ module.exports = async function(options) {
     }
     defaults = _.cloneDeep(defaults);
     _.defaults(defaults, {
-      'apostrophe-express': {}
+      '@apostrophecms/express': {}
     });
-    _.defaults(defaults['apostrophe-express'], {
+    _.defaults(defaults['@apostrophecms/express'], {
       port: 7900,
       secret: 'irrelevant'
     });
@@ -275,7 +275,7 @@ module.exports = async function(options) {
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
-      defaultBaseClass: 'apostrophe-module',
+      defaultBaseClass: '@apostrophecms/module',
       sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'middleware', 'customTags', 'components' ],
       unparsedSections: [ 'queries', 'extendQueries' ]
     });
@@ -313,7 +313,7 @@ module.exports = async function(options) {
 
 };
 
-const abstractClasses = [ 'apostrophe-module', 'apostrophe-widgets', 'apostrophe-custom-pages', 'apostrophe-pieces', 'apostrophe-pieces-pages', 'apostrophe-pieces-widgets', 'apostrophe-doc-type-manager' ];
+const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widgets', '@apostrophecms/custom-pages', '@apostrophecms/pieces', '@apostrophecms/pieces-pages', '@apostrophecms/pieces-widgets', '@apostrophecms/doc-type-manager' ];
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),

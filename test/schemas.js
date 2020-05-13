@@ -127,7 +127,7 @@ let realWorldCase = {
     {
       "name": "_newPage",
       "type": "joinByOne",
-      "withType": "apostrophe-page",
+      "withType": "@apostrophecms/page",
       "label": "Page Title",
       "idField": "pageId"
     }
@@ -194,7 +194,7 @@ let hasArea = {
       name: 'body',
       label: 'Body',
       widgets: {
-        'apostrophe-rich-text': {
+        '@apostrophecms/rich-text': {
           'toolbar': [ 'styles', 'bold' ],
           styles: [
             {
@@ -233,7 +233,7 @@ describe('Schemas', function() {
       },
       modules: {
         options: {
-          'apostrophe-express': {
+          '@apostrophecms/express': {
             secret: 'xxx',
             port: 7900
           }
@@ -1183,7 +1183,7 @@ describe('Schemas', function() {
     await apos.schemas.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     // hashing is not the business of schemas, see the
-    // apostrophe-users module
+    // @apostrophecms/users module
     assert(result.password === 'silly');
   });
 
@@ -1206,7 +1206,7 @@ describe('Schemas', function() {
     await apos.schemas.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     // hashing is not the business of schemas, see the
-    // apostrophe-users module
+    // @apostrophecms/users module
     assert(result.password === 'serious');
   });
 
@@ -1269,7 +1269,7 @@ describe('Schemas', function() {
     assert(result.body.metaType === 'area');
     assert(result.body.items);
     assert(result.body.items[0]);
-    assert(result.body.items[0].type === 'apostrophe-rich-text');
+    assert(result.body.items[0].type === '@apostrophecms/rich-text');
     assert(result.body.items[0].content === apos.utils.escapeHtml(input.body));
   });
 
@@ -1281,7 +1281,7 @@ describe('Schemas', function() {
       body: [
         {
           metaType: 'widget',
-          type: 'apostrophe-rich-text',
+          type: '@apostrophecms/rich-text',
           content: '<h4>This <em>is</em> <strong>a header.</strong></h4>'
         }
       ]
@@ -1296,7 +1296,7 @@ describe('Schemas', function() {
     assert(result.body.metaType === 'area');
     assert(result.body.items);
     assert(result.body.items[0]);
-    assert(result.body.items[0].type === 'apostrophe-rich-text');
+    assert(result.body.items[0].type === '@apostrophecms/rich-text');
     // Only tags in the toolbar come through
     assert.equal(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
   });
@@ -1758,9 +1758,10 @@ async function testSchemaError(schema, input, path, name) {
     await apos.schemas.convert(req, schema, input, result);
     assert(false);
   } catch (e) {
+    console.log(require('util').inspect(e, { depth: 10 }));
     assert(Array.isArray(e));
     assert(e.length === 1);
     assert(e[0].path === path);
-    assert(e[0].error === name);
+    assert(e[0].error.name === name);
   }
 }
