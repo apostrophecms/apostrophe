@@ -1,10 +1,13 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
+
+let apos, apos2;
 
 describe('Db', function() {
+
   after(async function () {
-    return t.destroy(apos);
+    await t.destroy(apos);
+    await t.destroy(apos2);
   });
 
   this.timeout(t.timeout);
@@ -15,6 +18,13 @@ describe('Db', function() {
       shortName: 'test',
       argv: {
         _: []
+      },
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            port: 7900
+          }
+        }
       }
     });
 
@@ -24,9 +34,8 @@ describe('Db', function() {
 
     assert(doc);
   });
-
   it('should be able to launch a second instance reusing the connection', async function() {
-    const apos2 = await require('../index.js')({
+    apos2 = await require('../index.js')({
       root: module,
       shortName: 'test2',
       argv: {
@@ -45,10 +54,8 @@ describe('Db', function() {
       }
     });
 
-    const doc = await apos.docs.db.findOne();
+    const doc = await apos2.docs.db.findOne();
 
     assert(doc);
-
-    return t.destroy(apos2);
   });
 });

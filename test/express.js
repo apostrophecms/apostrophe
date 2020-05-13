@@ -109,7 +109,7 @@ describe('Express', function() {
     const csrfToken = 'BOGOSITY';
 
     try {
-      const body = await request({
+      await request({
         method: 'POST',
         url: 'http://localhost:7900/tests/body',
         form: {

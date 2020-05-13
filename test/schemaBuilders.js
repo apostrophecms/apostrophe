@@ -403,7 +403,7 @@ describe('Schema builders', function() {
   it('when not used builder for flavor has no effect', async function() {
     let req = apos.tasks.getReq();
     let query = apos.cats.find(req);
-    const people = await query.toArray();
+    const cats = await query.toArray();
     assert(cats.length === 11);
   });
 

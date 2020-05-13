@@ -174,4 +174,3 @@ describe('Login', function() {
   });
 
 });
-

@@ -5,7 +5,6 @@ const request = require('request-promise');
 
 let apos;
 let homeId;
-let jar;
 
 describe('Pages', function() {
 

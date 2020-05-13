@@ -1,7 +1,5 @@
 let t = require('../test-lib/test.js');
 let assert = require('assert');
-let _ = require('lodash');
-
 let apos;
 
 describe('Users', function() {
@@ -29,7 +27,7 @@ describe('Users', function() {
             port: 7900
           }
         }
-      },
+      }
     });
   });
 
@@ -83,7 +81,7 @@ describe('Users', function() {
       assert(false);
     } catch (e) {
       assert(e);
-   }
+    }
   });
 
   it('should not be able to insert a new user if their email already exists', async () => {

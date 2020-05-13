@@ -23,7 +23,7 @@ describe('Apostrophe', function() {
         }
       });
       assert(apos.options.overrideTest === 'foo');
-    } finally {  
+    } finally {
       await t.destroy(apos);
     }
   });
@@ -64,7 +64,7 @@ describe('Apostrophe', function() {
         __localPath: '/data/local_fn_b.js',
         __testDefaults: {
           modules: {}
-        },
+        }
       });
       assert(apos.options.overrideTest === 'test-foo');
     } finally {
@@ -107,9 +107,6 @@ describe('Apostrophe', function() {
           modules: {
             '@apostrophecms/test-module': {}
           }
-        },
-        afterInit: function(callback) {
-          return t.destroy(apos, done);
         }
       });
       assert(apos.test && apos.test.color === 'red');

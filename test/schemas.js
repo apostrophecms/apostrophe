@@ -335,8 +335,6 @@ describe('Schemas', function() {
     let input = {
       name: 'Cow'
     };
-    let req = apos.tasks.getReq();
-    let result = {};
     await testSchemaError(schema, input, 'name', 'min');
   });
 
@@ -1409,7 +1407,6 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for shown field', async () => {
-    let req = apos.tasks.getReq();
     let schema = apos.schemas.compose({
       addFields: [
         {
@@ -1497,7 +1494,6 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for recursively shown field', async () => {
-    let req = apos.tasks.getReq();
     let schema = apos.schemas.compose({
       addFields: [
         {
@@ -1702,7 +1698,6 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for recursively shown field with boolean', async () => {
-    let req = apos.tasks.getReq();
     let schema = apos.schemas.compose({
       addFields: [
         {

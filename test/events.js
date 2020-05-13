@@ -81,7 +81,7 @@ describe('Promisified Events Core', function() {
               'test1:ready1': {
                 ready1SetD(context) {
                   context.d = true;
-                },
+                }
               }
             };
           }

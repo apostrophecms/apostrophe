@@ -1,7 +1,5 @@
 let t = require('../test-lib/test.js');
 let assert = require('assert');
-let request = require('request');
-
 let apos;
 
 describe('Soft Redirects', function() {

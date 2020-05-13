@@ -3,8 +3,6 @@ let assert = require('assert');
 
 let apos;
 
-let initDone = false;
-
 describe('Versions', function() {
 
   this.timeout(t.timeout);
@@ -82,7 +80,7 @@ describe('Versions', function() {
         'test-people-pages': {
           extend: '@apostrophecms/custom-pages'
         }
-      },
+      }
     });
     assert(apos.versions);
     assert(apos.versions.db);

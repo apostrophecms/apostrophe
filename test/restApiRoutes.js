@@ -32,7 +32,7 @@ describe('REST API routing', function() {
             return {
               getAll(req) {
                 return {
-                  action: 'getAll',
+                  action: 'getAll'
                 };
               },
               getOne(req, _id) {

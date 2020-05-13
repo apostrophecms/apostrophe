@@ -71,7 +71,7 @@ describe('Docs', function() {
 
     jar = apos.http.jar();
     // establish session
-    let page = await apos.http.get('http://localhost:7900/', {
+    await apos.http.get('http://localhost:7900/', {
       jar
     });
     // Log in
@@ -84,7 +84,7 @@ describe('Docs', function() {
     });
 
     // Confirm login
-    page = await apos.http.get('http://localhost:7900/', {
+    await apos.http.get('http://localhost:7900/', {
       jar
     });
   });

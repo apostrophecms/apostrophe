@@ -209,7 +209,7 @@ describe('moog', function() {
             extended(times) {
               return 2 * times;
             }
-          }
+          };
         }
       });
 
@@ -219,14 +219,14 @@ describe('moog', function() {
             overridden() {
               return true;
             }
-          }
+          };
         },
         extendMethods(self, options) {
           return {
             extended(_super, times) {
               return _super(times) * 2;
             }
-          }; 
+          };
         }
       });
 
@@ -248,7 +248,7 @@ describe('moog', function() {
         methods(self, options) {
           return {
             oldMethod() {}
-          }
+          };
         }
       });
 
@@ -256,7 +256,7 @@ describe('moog', function() {
         methods(self, options) {
           return {
             newMethod() {}
-          }
+          };
         }
       });
 
@@ -495,11 +495,7 @@ describe('moog', function() {
             }
           };
         }
-      }); 
-      function canSee(req, res, next) {
-        req.seen = true;
-        return next();
-      }
+      });
       moog.define('subclass', {
         extend: 'baseclass',
         routes(self, options) {

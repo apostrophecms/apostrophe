@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const async = require('async');
 const Promise = require('bluebird');
 
 let apos;

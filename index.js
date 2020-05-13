@@ -100,7 +100,6 @@ module.exports = async function(options) {
   await self.emit('afterInit');
   await self.emit('run', self.isTask());
 
-
   // Return self so that app.js can refer to apos
   // in inline functions, etc.
   return self;
