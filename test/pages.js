@@ -412,7 +412,7 @@ describe('Pages', function() {
     assert.strictEqual(trashed.level, 2);
   });
 
-  it('REST: should be able to find the parked homepage', async function() {
+  it('should be able to find the parked homepage', async function() {
     const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/' });
 
     const page = await cursor.toObject();
