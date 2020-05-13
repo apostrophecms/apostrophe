@@ -36,7 +36,8 @@ describe('Templates', function() {
               {
                 title: 'With Layout',
                 slug: '/with-layout',
-                type: 'withLayout'
+                type: 'withLayout',
+                parkedId: 'withLayout'
               }
             ]
           }
