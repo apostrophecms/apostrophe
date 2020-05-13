@@ -596,17 +596,4 @@ describe('Docs', function() {
     }
   });
 
-  it('should be able to unlock all documents locked with the same contextId', async function() {
-    const req = apos.tasks.getReq();
-
-    try {
-      await apos.docs.lock(req, 'i26', 'abc');
-      await apos.docs.lock(req, 'i25', 'abc');
-      await apos.docs.unlockAll(req, 'abc');
-      await apos.docs.lock(req, 'i26', 'def');
-    } catch (e) {
-      assert(false);
-    }
-  });
-
 });

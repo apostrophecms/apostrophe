@@ -423,34 +423,6 @@ describe('Pages', function() {
     assert(page.rank === 0);
   });
 
-  it('should be able to log in as admin', async () => {
-    jar = apos.http.jar();
-
-    // establish session
-    let page = await apos.http.get('http://localhost:7900/', {
-      jar
-    });
-
-    assert(page.match(/logged out/));
-
-    // Log in
-
-    await apos.http.post('http://localhost:7900/api/v1/@apostrophecms/login/login', {
-      body: {
-        username: 'admin',
-        password: 'admin'
-      },
-      jar
-    });
-
-    // Confirm login
-    page = await apos.http.get('http://localhost:7900/', {
-      jar
-    });
-
-    assert(page.match(/logged in/));
-  });
-
   it('can GET the home page without session', async () => {
     const home = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages', {});
     assert(home);

@@ -24,8 +24,10 @@ describe('Users', function() {
       },
       modules: {
         '@apostrophecms/express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          }
         }
       },
     });

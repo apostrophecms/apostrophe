@@ -48,7 +48,8 @@ describe('Promisified Events: @apostrophecms/doc-type-manager:beforeInsert', fun
                 findMeAgain: true,
                 title: 'Test',
                 slug: '/test',
-                published: true
+                published: true,
+                parkedId: 'test'
               }
             ]
           }

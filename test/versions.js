@@ -9,85 +9,86 @@ describe('Versions', function() {
 
   this.timeout(t.timeout);
 
-  after(function() {
+  after(() => {
     return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should should be a module', function(done) {
-    apos = require('../index.js')({
+  it('should should be a module', async () => {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
+      argv: {
+        _: []
+      },
       modules: {
         '@apostrophecms/express': {
-          secret: 'xxx',
-          port: 7900
+          options: {
+            secret: 'xxx',
+            port: 7900
+          }
         },
 
         // Create a custom schema for test-people so we can
         // play with comparing versions
         'test-people': {
           extend: '@apostrophecms/pieces',
-          name: 'test-people',
-          label: 'Test Person',
-          addFields: [
-            {
-              label: 'Alive',
-              type: 'boolean',
-              name: 'alive'
-            },
-            {
-              label: 'Nicknames',
-              type: 'array',
-              name: 'nicknames',
-              schema: [
-                {
-                  type: 'string',
-                  name: 'nickname',
-                  label: 'Nickname'
+          options: {
+            name: 'test-people',
+            label: 'Test Person'
+          },
+          fields: {
+            add: {
+              alive: {
+                label: 'Alive',
+                type: 'boolean'
+              },
+              nicknames: {
+                label: 'Nicknames',
+                type: 'array',
+                schema: [
+                  {
+                    type: 'string',
+                    name: 'nickname',
+                    label: 'Nickname'
+                  }
+                ]
+              },
+              _poems: {
+                label: 'Poems',
+                type: 'joinByArray',
+                withType: 'poem',
+                idsField: 'poemIds'
+              },
+              body: {
+                type: 'area',
+                widgets: {
+                  '@apostrophecms/rich-text': {}
                 }
-              ]
-            },
-            {
-              label: 'Poems',
-              type: 'joinByArray',
-              name: '_poems',
-              withType: 'poem',
-              idsField: 'poemIds'
+              }
             }
-          ]
+          }
         },
 
         'poems': {
           extend: '@apostrophecms/pieces',
-          name: 'poem',
-          label: 'Poem'
+          options: {
+            name: 'poem',
+            label: 'Poem'
+          }
         },
 
         'test-people-pages': {
           extend: '@apostrophecms/custom-pages'
         }
       },
-      afterInit: async function() {
-        assert(apos.versions);
-        apos.argv._ = [];
-      },
-      afterListen: function(err) {
-        assert(!err);
-        initDone = true;
-        done();
-      }
     });
-  });
-
-  it('should have a db property', function() {
-    assert(initDone);
+    assert(apos.versions);
     assert(apos.versions.db);
   });
 
-  it('should accept a direct mongo insert of poems for join test purposes', function(done) {
+  it('should accept a direct mongo insert of poems for join test purposes', async () => {
     return apos.docs.db.insertMany([
       {
         title: 'Poem ABC',
@@ -107,17 +108,14 @@ describe('Versions', function() {
         _id: 'qed',
         type: 'poem'
       }
-    ], function(err) {
-      assert(!err);
-      done();
-    });
+    ]);
   });
 
   /// ///
   // Versioning
   /// ///
 
-  it('inserting a doc should result in a version', function(done) {
+  it('inserting a doc should result in a version', async () => {
     let object = {
       slug: 'one',
       published: true,
@@ -128,521 +126,428 @@ describe('Versions', function() {
       alive: true
     };
 
-    apos.docs.insert(apos.tasks.getReq(), object, function(err, object) {
-      assert(!err);
-      assert(object);
-      assert(object._id);
-      let docId = object._id;
-      // did the versions module kick-in?
-      apos.versions.db.findWithProjection({ docId: docId }).toArray(function(err, versions) {
-        assert(!err);
-        // we should have a document
-        assert(versions);
-        // there should be only one document in our results
-        assert(versions.length === 1);
-        // does it have a property match?
-        assert(versions[0].doc.age === 15);
-        done();
-      });
-    });
+    const object2 = await apos.docs.insert(apos.tasks.getReq(), object);
+    assert(object2);
+    assert(object2._id);
+    let docId = object2._id;
+    // did the versions module kick in?
+    const versions = await apos.versions.db.find({ docId: docId }).toArray();
+    // we should have a document
+    assert(versions);
+    // there should be only one document in our results
+    assert(versions.length === 1);
+    // does it have a property match?
+    assert(versions[0].doc.age === 15);
   });
 
-  it('should be able to update', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray(function(err, docs) {
-      assert(!err);
-      // we should have a document
-      assert(docs);
-      // there should be only one document in our results
-      assert(docs.length === 1);
+  it('should be able to update', async () => {
+    const docs = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray();
+    // we should have a document
+    assert(docs);
+    // there should be only one document in our results
+    assert(docs.length === 1);
 
-      // grab the object
-      let object = docs[0];
-      // we want update the alive property
-      object.alive = false;
+    // grab the object
+    let object = docs[0];
+    // we want update the alive property
+    object.alive = false;
 
-      apos.docs.update(apos.tasks.getReq(), object, function(err, object) {
-        assert(!err);
-        assert(object);
-        // has the property been updated?
-        assert(object.alive === false);
+    const object2 = await apos.docs.update(apos.tasks.getReq(), object);
+    assert(object2);
+    // has the property been updated?
+    assert(object2.alive === false);
 
-        // did the versions module kick-in?
-        apos.versions.db.findWithProjection({ docId: object._id }).sort({createdAt: -1}).toArray(function(err, versions) {
-          assert(!err);
-          // we should have a document
-          assert(versions);
-          // there should be two documents now in our results
-          assert(versions.length === 2);
-          // the property should have been updated
-          assert(versions[0].doc.alive === false);
-          assert(versions[1].doc.alive === true);
-          done();
-        });
-      });
-    });
+    // did the versions module kick in?
+    const versions = await apos.versions.db.find({ docId: object._id }).sort({ createdAt: -1 }).toArray();
+    // we should have a document
+    assert(versions);
+    // there should be two documents now in our results
+    assert(versions.length === 2);
+    // the property should have been updated
+    assert(versions[0].doc.alive === false);
+    assert(versions[1].doc.alive === true);
   });
 
-  it('should be able to revert to a previous version', function(done) {
-    apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {}, function(err, versions) {
-        assert(!err);
-        assert(versions.length === 2);
-        apos.versions.revert(apos.tasks.getReq(), versions[1], function(err) {
-          assert(!err);
-          // make sure the change propagated to the database
-          apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject(function(err, doc) {
-            assert(!err);
-            assert(doc);
-            assert(doc.alive === true);
-            done();
-          });
-        });
-      });
-    });
+  it('should be able to revert to a previous version', async () => {
+    const doc = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject();
+    const versions = await apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {});
+    assert(versions.length === 2);
+    await apos.versions.revert(apos.tasks.getReq(), versions[1]);
+    // make sure the change propagated to the database
+    const doc2 = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject();
+    assert(doc2);
+    assert(doc2.alive === true);
   });
 
-  it('should be able to fetch all versions in proper order', function(done) {
+  it('should be able to fetch all versions in proper order', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {}, function(err, versions) {
-        assert(!err);
-        assert(versions.length === 3);
-        assert(versions[0].createdAt > versions[1].createdAt);
-        assert(versions[1].createdAt > versions[2].createdAt);
-        done();
-      });
-    });
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    const versions = await apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {});
+    assert(versions.length === 3);
+    assert(versions[0].createdAt > versions[1].createdAt);
+    assert(versions[1].createdAt > versions[2].createdAt);
   });
 
-  it('should be able to compare versions and spot a simple field change', function(done) {
+  it('should be able to compare versions and spot a simple field change', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      apos.versions.find(req, { docId: doc._id }, {}, function(err, versions) {
-        assert(!err);
-        assert(versions.length === 3);
-        return apos.versions.compare(req, doc, versions[1], versions[0], function(err, changes) {
-          assert(!err);
-          assert(changes.length === 1);
-          assert(changes[0].action === 'change');
-          assert(changes[0].old === false);
-          assert(changes[0].current === true);
-          assert(changes[0].field);
-          assert(changes[0].field.label === 'Alive');
-          done();
-        });
-      });
-    });
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    const versions = await apos.versions.find(req, { docId: doc._id }, {});
+    assert(versions.length === 3);
+    const changes = await apos.versions.compare(req, doc, versions[1], versions[0]);
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].old === false);
+    assert(changes[0].current === true);
+    assert(changes[0].field);
+    assert(changes[0].field.label === 'Alive');
   });
 
-  it('should be able to compare versions with areas and spot a widget addition', function(done) {
+  it('should be able to compare versions with areas and spot a widget addition', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            meaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              }
-            ]
-          }
-        }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            metaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              },
-              {
-                metaType: 'widget',
-                _id: 'woo2',
-                type: '@apostrophecms/rich-text',
-                content: 'So amazing'
-              }
-            ]
-          }
-        }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'body');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'add');
-        assert(change.current);
-        assert(change.current._id === 'woo2');
-        done();
-      });
-    });
-  });
-
-  it('should be able to compare versions with areas and spot a widget removal', function(done) {
-    let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            metaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              },
-              {
-                metaType: 'widget',
-                _id: 'woo2',
-                type: '@apostrophecms/rich-text',
-                content: 'So amazing'
-              }
-            ]
-          }
-        }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            metaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              }
-            ]
-          }
-        }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'body');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'remove');
-        assert(change.old);
-        assert(change.old._id === 'woo2');
-        done();
-      });
-    });
-  });
-
-  it('should be able to compare versions with areas and spot a widget change', function(done) {
-    let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            metaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              },
-              {
-                metaType: 'widget',
-                _id: 'woo2',
-                type: '@apostrophecms/rich-text',
-                content: 'So amazing'
-              }
-            ]
-          }
-        }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          body: {
-            metaType: 'area',
-            items: [
-              {
-                metaType: 'widget',
-                _id: 'woo',
-                type: '@apostrophecms/rich-text',
-                content: 'So great'
-              },
-              {
-                metaType: 'widget',
-                _id: 'woo2',
-                type: '@apostrophecms/rich-text',
-                content: 'So wimpy'
-              }
-            ]
-          }
-        }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'body');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'change');
-        assert(change.old);
-        assert(change.old._id === 'woo2');
-        assert(change.old.content === 'So amazing');
-        assert(change.current);
-        assert(change.current._id === 'woo2');
-        assert(change.current.content === 'So wimpy');
-        done();
-      });
-    });
-  });
-
-  it('should be able to compare versions with arrays and spot an addition', function(done) {
-    let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'joe',
-              _id: 'a1'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             }
           ]
         }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'joe',
-              _id: 'a1'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             },
             {
-              nickname: 'jane',
-              _id: 'a2'
+              metaType: 'widget',
+              _id: 'woo2',
+              type: '@apostrophecms/rich-text',
+              content: 'So amazing'
             }
           ]
         }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'nicknames');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'add');
-        assert(change.current);
-        assert(change.current._id === 'a2');
-        assert(change.current.nickname === 'jane');
-        done();
-      });
+      }
     });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'body');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'add');
+    assert(change.current);
+    assert(change.current._id === 'woo2');
   });
 
-  it('should be able to compare versions with arrays and spot an item removal', function(done) {
+  it('should be able to compare versions with areas and spot a widget removal', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'joe',
-              _id: 'a1'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             },
             {
-              nickname: 'jane',
-              _id: 'a2'
+              metaType: 'widget',
+              _id: 'woo2',
+              type: '@apostrophecms/rich-text',
+              content: 'So amazing'
             }
           ]
         }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'jane',
-              _id: 'a2'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             }
           ]
         }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'nicknames');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'remove');
-        assert(change.old);
-        assert(change.old._id === 'a1');
-        done();
-      });
+      }
     });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'body');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'remove');
+    assert(change.old);
+    assert(change.old._id === 'woo2');
   });
 
-  it('should be able to compare versions with arrays and spot an item change', function(done) {
+  it('should be able to compare versions with areas and spot a widget change', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'joe',
-              _id: 'a1'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             },
             {
-              nickname: 'jane',
-              _id: 'a2'
+              metaType: 'widget',
+              _id: 'woo2',
+              type: '@apostrophecms/rich-text',
+              content: 'So amazing'
             }
           ]
         }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          nicknames: [
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        body: {
+          metaType: 'area',
+          items: [
             {
-              nickname: 'sarah',
-              _id: 'a1'
+              metaType: 'widget',
+              _id: 'woo',
+              type: '@apostrophecms/rich-text',
+              content: 'So great'
             },
             {
-              nickname: 'jane',
-              _id: 'a2'
+              metaType: 'widget',
+              _id: 'woo2',
+              type: '@apostrophecms/rich-text',
+              content: 'So wimpy'
             }
           ]
         }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'nicknames');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 1);
-        let change = changes[0].changes[0];
-        assert(change.action === 'change');
-        assert(change.old);
-        assert(change.old._id === 'a1');
-        assert(change.old.nickname === 'joe');
-        assert(change.current);
-        assert(change.current._id === 'a1');
-        assert(change.current.nickname === 'sarah');
-        done();
-      });
+      }
     });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'body');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'change');
+    assert(change.old);
+    assert(change.old._id === 'woo2');
+    assert(change.old.content === 'So amazing');
+    assert(change.current);
+    assert(change.current._id === 'woo2');
+    assert(change.current.content === 'So wimpy');
   });
 
-  it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', function(done) {
+  it('should be able to compare versions with arrays and spot an addition', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.find(req, { slug: 'one' }).toObject(function(err, doc) {
-      assert(!err);
-      assert(doc);
-      // compare mock versions
-      apos.versions.compare(req, doc, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          poemIds: [ 'abc', 'def' ]
-        }
-      }, {
-        doc: {
-          title: 'whatever',
-          slug: 'whatever',
-          poemIds: [ 'abc', 'qed' ]
-        }
-      }, function(err, changes) {
-        assert(!err);
-        assert(changes.length === 1);
-        assert(changes[0].action === 'change');
-        assert(changes[0].key === 'poemIds');
-        assert(changes[0].changes);
-        assert(changes[0].changes.length === 2);
-        let change0 = changes[0].changes[0];
-        let change1 = changes[0].changes[1];
-        assert(change0.action === 'remove');
-        assert(change0.old);
-        assert(change0.old === 'def');
-        assert(change0.text === 'Poem DEF');
-        assert(change1.action === 'add');
-        assert(change1.current);
-        assert(change1.current === 'qed');
-        assert(change1.text === 'Poem QED');
-        done();
-      });
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'joe',
+            _id: 'a1'
+          }
+        ]
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'joe',
+            _id: 'a1'
+          },
+          {
+            nickname: 'jane',
+            _id: 'a2'
+          }
+        ]
+      }
     });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'nicknames');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'add');
+    assert(change.current);
+    assert(change.current._id === 'a2');
+    assert(change.current.nickname === 'jane');
   });
 
-  /// ///
-  // When disabled the module does not create versions,
-  // and docs can still be inserted
-  /// ///
-  // it('should not version pages if not set to enabled', function(done) {
-  //   apos = require('../index.js')({
-  //     root: module,
-  //     shortName: 'test',
-  //
-  //     modules: {
-  //       '@apostrophecms/express': {
-  //         secret: 'xxx',
-  //         port: 7900
-  //       },
-  //       '@apostrophecms/versions':{
-  //         enabled: false
-  //       }
-  //     },
-  //     afterInit: function(callback) {
-  //       apos.argv._ = [];
-  //       assert(!apos.versions.db);
-  //       return callback(null);
-  //     }
-  //   });
-  // });
+  it('should be able to compare versions with arrays and spot an item removal', async () => {
+    let req = apos.tasks.getReq();
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'joe',
+            _id: 'a1'
+          },
+          {
+            nickname: 'jane',
+            _id: 'a2'
+          }
+        ]
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'jane',
+            _id: 'a2'
+          }
+        ]
+      }
+    });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'nicknames');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'remove');
+    assert(change.old);
+    assert(change.old._id === 'a1');
+  });
+
+  it('should be able to compare versions with arrays and spot an item change', async () => {
+    let req = apos.tasks.getReq();
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'joe',
+            _id: 'a1'
+          },
+          {
+            nickname: 'jane',
+            _id: 'a2'
+          }
+        ]
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        nicknames: [
+          {
+            nickname: 'sarah',
+            _id: 'a1'
+          },
+          {
+            nickname: 'jane',
+            _id: 'a2'
+          }
+        ]
+      }
+    });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'nicknames');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 1);
+    let change = changes[0].changes[0];
+    assert(change.action === 'change');
+    assert(change.old);
+    assert(change.old._id === 'a1');
+    assert(change.old.nickname === 'joe');
+    assert(change.current);
+    assert(change.current._id === 'a1');
+    assert(change.current.nickname === 'sarah');
+  });
+
+  it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', async () => {
+    let req = apos.tasks.getReq();
+    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    assert(doc);
+    // compare mock versions
+    const changes = await apos.versions.compare(req, doc, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        poemIds: [ 'abc', 'def' ]
+      }
+    }, {
+      doc: {
+        title: 'whatever',
+        slug: 'whatever',
+        poemIds: [ 'abc', 'qed' ]
+      }
+    });
+    assert(changes.length === 1);
+    assert(changes[0].action === 'change');
+    assert(changes[0].key === 'poemIds');
+    assert(changes[0].changes);
+    assert(changes[0].changes.length === 2);
+    let change0 = changes[0].changes[0];
+    let change1 = changes[0].changes[1];
+    assert(change0.action === 'remove');
+    assert(change0.old);
+    assert(change0.old === 'def');
+    assert(change0.text === 'Poem DEF');
+    assert(change1.action === 'add');
+    assert(change1.current);
+    assert(change1.current === 'qed');
+    assert(change1.text === 'Poem QED');
+  });
+
 });

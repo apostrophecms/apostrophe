@@ -76,6 +76,7 @@ describe('Pieces Widgets', function() {
                 metaType: 'doc',
                 type: 'default',
                 slug: '/page-with-events',
+                parkedId: 'page-with-events-widget',
                 published: true,
                 body: {
                   metaType: 'area',
@@ -273,6 +274,7 @@ describe('Pieces Widget With Extra Join', function() {
                 type: 'default',
                 slug: '/page-with-events',
                 published: true,
+                parkedId: 'page-with-events-widget',
                 body: {
                   metaType: 'area',
                   items: [

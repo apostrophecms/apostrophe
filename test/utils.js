@@ -8,20 +8,26 @@ describe('Utils', function() {
 
   let apos;
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(() => {
+    return t.destroy(apos);
   });
 
-  it('should exist on the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should exist on the apos object', async () => {
+    apos = await require('../index.js')({
       root: module,
       shortName: 'test',
-
-      afterInit: function(callback) {
-        assert(apos.utils);
-        return done();
+      argv: {
+        _: []
+      },
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            port: 7900
+          }
+        }
       }
     });
+    assert(apos.utils);
   });
 
   // UTIL METHODS ------------------------------------------------------- //

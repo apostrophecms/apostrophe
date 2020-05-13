@@ -77,21 +77,6 @@ describe('moog', function() {
 
   describe('explicit subclassing behavior', function() {
 
-    it('should be able to override a default option value at create time', async function() {
-      const moog = require('../lib/moog.js')({});
-
-      moog.define('myObject', {
-        options: {
-          color: 'blue'
-        }
-      });
-
-      const myObject = await moog.create('myObject', { color: 'purple' });
-      assert(myObject);
-      // Built-in assignment to self.options is working
-      assert(myObject.options.color === 'purple');
-    });
-
     it('should be able to create a subclass with expected default option behavior (async)', async function() {
       const moog = require('../lib/moog.js')({});
 

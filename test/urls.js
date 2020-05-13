@@ -9,19 +9,16 @@ describe('Urls', function() {
   let apos;
   let start;
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async () => {
+    return t.destroy(apos);
   });
 
-  it('should exist on the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should exist on the apos object', async () => {
+    apos = await require('../index.js')({
       root: module,
-      shortName: 'test',
-      afterInit: function(callback) {
-        assert(apos.urls);
-        return done();
-      }
+      shortName: 'test'
     });
+    assert(apos.urls);
   });
 
   // URLS METHODS ------------------------------------------------------- //
