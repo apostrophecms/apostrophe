@@ -4,7 +4,7 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "pretest": "npm run lint",
+    "pretest": "npm audit && npm run lint",
     "test": "nyc --reporter=html --check-coverage=true mocha",
     "lint": "eslint ."
   },
