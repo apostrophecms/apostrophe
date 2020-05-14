@@ -34,7 +34,7 @@ describe('Pieces', function() {
           }
         },
         'things': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             alias: 'things',
             name: 'thing',
@@ -47,7 +47,7 @@ describe('Pieces', function() {
           }
         },
         'people': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             alias: 'people',
             name: 'person',
@@ -59,7 +59,7 @@ describe('Pieces', function() {
           }
         },
         'products': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           name: 'product',
           fields: {
             add: {
@@ -111,7 +111,7 @@ describe('Pieces', function() {
           }
         },
         articles: {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'article'
           },

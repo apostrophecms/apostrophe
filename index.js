@@ -74,7 +74,7 @@ module.exports = async function(options) {
 
   // Returns an array of modules that are instances of the given
   // module name, i.e. they are of that type or they extend it.
-  // For instance, `apos.instancesOf('@apostrophecms/pieces')` returns
+  // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
   // an array of active modules in your project that extend
   // pieces, such as `@apostrophecms/users`, `@apostrophecms/groups` and
   // your own piece types
@@ -312,7 +312,7 @@ module.exports = async function(options) {
 
 };
 
-const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widgets', '@apostrophecms/custom-pages', '@apostrophecms/pieces', '@apostrophecms/pieces-pages', '@apostrophecms/pieces-widgets', '@apostrophecms/doc-type-manager' ];
+const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widget-type', '@apostrophecms/page-type', '@apostrophecms/piece-type', '@apostrophecms/pieces-page-type', '@apostrophecms/pieces-widget-type', '@apostrophecms/doc-type' ];
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),

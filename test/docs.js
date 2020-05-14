@@ -28,7 +28,7 @@ describe('Docs', function() {
           }
         },
         'test-people': {
-          extend: '@apostrophecms/doc-type-manager',
+          extend: '@apostrophecms/doc-type',
           fields: {
             add: {
               _friend: {

@@ -2,7 +2,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-describe('Promisified Events: @apostrophecms/doc-type-manager:beforeInsert', function() {
+describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() {
   this.timeout(50000);
 
   after(function() {
@@ -12,7 +12,7 @@ describe('Promisified Events: @apostrophecms/doc-type-manager:beforeInsert', fun
   let apos;
   let coreEventsWork = false;
 
-  it('should implement @apostrophecms/doc-type-manager:beforeInsert handlers properly', async function() {
+  it('should implement @apostrophecms/doc-type:beforeInsert handlers properly', async function() {
     apos = await require('../index.js')({
       root: module,
       shortName: 'test',
@@ -24,7 +24,7 @@ describe('Promisified Events: @apostrophecms/doc-type-manager:beforeInsert', fun
           alias: 'test1',
           handlers(self) {
             return {
-              '@apostrophecms/doc-type-manager:beforeInsert': {
+              '@apostrophecms/doc-type:beforeInsert': {
                 async beforeInsertReverseTitle(req, doc, options) {
                   if (doc.type === 'default') {
                     await Promise.delay(50);

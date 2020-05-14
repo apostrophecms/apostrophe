@@ -33,7 +33,7 @@ describe('Schema builders', function() {
           }
         },
         'cats': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'cat',
             label: 'Cat',
@@ -62,7 +62,7 @@ describe('Schema builders', function() {
           }
         },
         'people': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'person',
             label: 'Person',

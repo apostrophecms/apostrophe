@@ -29,14 +29,14 @@ module.exports = {
     '@apostrophecms/attachments': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
-    '@apostrophecms/any-doc-type-manager': {},
+    '@apostrophecms/any-doc-type': {},
     // global comes first so it can register a doc type manager and clean things up before
     // pages claims any orphan page types
     '@apostrophecms/global': {},
-    '@apostrophecms/polymorphic-manager': {},
+    '@apostrophecms/polymorphic-type': {},
     '@apostrophecms/pages': {},
     '@apostrophecms/search': {},
-    '@apostrophecms/any-page-manager': {},
+    '@apostrophecms/any-page-type': {},
     '@apostrophecms/areas': {},
     '@apostrophecms/rich-text-widgets': {},
     '@apostrophecms/html-widgets': {},
