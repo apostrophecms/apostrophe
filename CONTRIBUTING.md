@@ -89,7 +89,7 @@ include a test that reproduces the issue.
 the code linters.
 3. **Enhancements should include documentation** and include implementation details
 were applicable. For Apostrophe core, that should be in the
-[main documentation](](https://github.com/apostrophecms/apostrophe-documentation))
+[main documentation](https://github.com/apostrophecms/apostrophe-documentation)
 and for other modules, add it in their README files (unless the README directs
 you elsewhere).
 
