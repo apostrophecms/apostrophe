@@ -4,7 +4,8 @@
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha && eslint .",
+    "pretest": "npm run lint",
+    "test": "nyc --reporter=html --check-coverage=true mocha",
     "lint": "eslint ."
   },
   "repository": {
@@ -110,6 +111,7 @@
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "mocha": "^5.1.1"
+    "mocha": "^7.1.2",
+    "nyc": "^15.0.1"
   }
 }
