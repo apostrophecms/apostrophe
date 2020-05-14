@@ -505,6 +505,30 @@ describe('Schemas', function() {
     });
   });
 
+  it('should keep an empty submitted field value null for a time field type', function(done) {
+    var schema = apos.schemas.compose({
+      addFields: [
+        {
+          type: 'time',
+          name: 'time',
+          label: 'time'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    var input = {
+      time: ''
+    };
+    var req = apos.tasks.getReq();
+    var result = {};
+    return apos.schemas.convert(req, schema, 'form', input, result, function(err) {
+      assert(!err);
+      assert(_.keys(result).length === 1);
+      assert(result.time === null);
+      done();
+    });
+  });
+
   it('should ensure a max value is being trimmed to the max length for a string field type', function(done) {
     var schema = apos.schemas.compose({
       addFields: [
