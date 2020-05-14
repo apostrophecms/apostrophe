@@ -11,7 +11,8 @@ describe('Admin bar', function() {
   /// ///
 
   it('should allow a group reversing the current order', function(done) {
-    this.timeout(10000);
+    // This is the first one, allow for sleepy computers
+    this.timeout(30000);
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
