@@ -49,7 +49,7 @@ describe('Db', function() {
         },
         '@apostrophecms/db': {
           options: {
-            db: apos.db,
+            client: apos.dbClient,
             uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
           }
         }
