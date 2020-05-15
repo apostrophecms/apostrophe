@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.106.4 (2020-05-20)
+
+* Users may now intentionally clear a `time` field, whether or not it has a `def` setting, in which case it is stored as `null` (unless `required: true` is present). The inability to do this was a regression introduced in version 2.102.0.
+
 ## 2.106.3 (2020-05-06)
 
 * Fixes a page tree interface bug that would cause pages to be lost when they
