@@ -18,7 +18,10 @@ async function destroy(apos) {
   // when initialization failed and that's really not apostrophe's concern
   if (dbName) {
     const mongo = require('mongodb');
-    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`);
+    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`, {
+      useUnifiedTopology: true,
+      useNewUrlParser: true
+    });
     const db = client.db(dbName);
     await db.dropDatabase();
     await client.close();

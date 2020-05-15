@@ -16,7 +16,8 @@ describe('Admin bar', function() {
         root: module,
         shortName: 'test',
         argv: {
-          _: []
+          _: [],
+          'hide-orphan-modules': true
         },
         modules: {
           '@apostrophecms/admin-bar': {
@@ -60,15 +61,10 @@ describe('Admin bar', function() {
         root: module,
         shortName: 'test',
         argv: {
-          _: []
+          _: [],
+          'hide-orphan-modules': true
         },
         modules: {
-          '@apostrophecms/express': {
-            options: {
-              secret: 'xxx',
-              csrf: false
-            }
-          },
           '@apostrophecms/admin-bar': {
             options: {
               addGroups: [
