@@ -3,7 +3,7 @@ const assert = require('assert');
 const request = require('request-promise');
 let apos;
 
-describe('custom-pages', function() {
+describe('page-type', function() {
 
   this.timeout(t.timeout);
 
@@ -24,7 +24,7 @@ describe('custom-pages', function() {
       },
       modules: {
         'nifty-pages': {
-          extend: '@apostrophecms/custom-pages'
+          extend: '@apostrophecms/page-type'
         }
       }
     });

@@ -31,7 +31,7 @@ describe('Versions', function() {
         // Create a custom schema for test-people so we can
         // play with comparing versions
         'test-people': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'test-people',
             label: 'Test Person'
@@ -70,7 +70,7 @@ describe('Versions', function() {
         },
 
         'poems': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'poem',
             label: 'Poem'
@@ -78,7 +78,7 @@ describe('Versions', function() {
         },
 
         'test-people-pages': {
-          extend: '@apostrophecms/custom-pages'
+          extend: '@apostrophecms/page-type'
         }
       }
     });

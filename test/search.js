@@ -29,7 +29,7 @@ describe('Search', function() {
           }
         },
         'events': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event'

@@ -28,7 +28,7 @@ describe('Pieces Pages', function() {
           }
         },
         'events': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
@@ -37,7 +37,7 @@ describe('Pieces Pages', function() {
           }
         },
         'events-pages': {
-          extend: '@apostrophecms/pieces-pages',
+          extend: '@apostrophecms/pieces-page-type',
           options: {
             name: 'events',
             label: 'Events',

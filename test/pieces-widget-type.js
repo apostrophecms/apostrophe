@@ -29,7 +29,7 @@ describe('Pieces Widgets', function() {
           }
         },
         'events': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
@@ -38,10 +38,10 @@ describe('Pieces Widgets', function() {
           }
         },
         'events-widgets': {
-          extend: '@apostrophecms/pieces-widgets'
+          extend: '@apostrophecms/pieces-widget-type'
         },
         'default-pages': {
-          extend: '@apostrophecms/custom-pages',
+          extend: '@apostrophecms/page-type',
           options: {
             name: 'default'
           },
@@ -237,7 +237,7 @@ describe('Pieces Widget With Extra Join', function() {
           }
         },
         'events': {
-          extend: '@apostrophecms/pieces',
+          extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
@@ -246,7 +246,7 @@ describe('Pieces Widget With Extra Join', function() {
           }
         },
         'events-widgets': {
-          extend: '@apostrophecms/pieces-widgets',
+          extend: '@apostrophecms/pieces-widget-type',
           fields: {
             add: {
               _featured: {
@@ -305,7 +305,7 @@ describe('Pieces Widget With Extra Join', function() {
           }
         },
         'default-pages': {
-          extend: '@apostrophecms/custom-pages',
+          extend: '@apostrophecms/page-type',
           options: {
             name: 'default'
           },

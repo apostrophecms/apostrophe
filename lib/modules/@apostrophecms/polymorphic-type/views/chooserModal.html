@@ -24,7 +24,7 @@
 
 {%- block body -%}
   <div class="apos-chooser" data-chooser></div>
-  <div class="apos-chooser-tabs-wrapper apos-polymorphic-manager">
+  <div class="apos-chooser-tabs-wrapper apos-polymorphic-type">
     <div class="apos-chooser-tab-bar">
       {% for type in data.types %}
         <button class="apos-chooser-tab-button{% if loop.index0 === 0 %} apos-chooser-tab-button--active{% endif %}" data-tab-button="{{ type.name }}">{{ type.options.pluralLabel }}</button>

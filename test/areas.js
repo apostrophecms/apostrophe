@@ -23,10 +23,10 @@ describe('Areas', function() {
       },
       modules: {
         'monkeys': {
-          extend: '@apostrophecms/pieces'
+          extend: '@apostrophecms/piece-type'
         },
         'monkeys-widgets': {
-          extend: '@apostrophecms/pieces-widgets'
+          extend: '@apostrophecms/pieces-widget-type'
         }
       }
     });

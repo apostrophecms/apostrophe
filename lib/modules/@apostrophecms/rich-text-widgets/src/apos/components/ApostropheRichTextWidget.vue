@@ -4,7 +4,7 @@
 
 <script>
 
-import ApostropheWidgetMixin from 'apostrophe/apostrophe-widgets/mixins/ApostropheWidgetMixin';
+import ApostropheWidgetMixin from 'apostrophe/apostrophe-widget-type/mixins/ApostropheWidgetMixin';
 
 export default {
   mixins: [ ApostropheWidgetMixin ],

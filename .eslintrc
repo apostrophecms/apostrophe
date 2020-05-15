@@ -13,5 +13,6 @@
         "browser": 1
       }
     }
-  ]
+  ],
+  "parser": "babel-eslint"
 }
