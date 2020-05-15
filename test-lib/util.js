@@ -28,7 +28,19 @@ async function destroy(apos) {
   }
 };
 
+async function create(options) {
+  return require('../index.js')({
+    shortName: 'test',
+    argv: {
+      _: [],
+      'hide-orphan-modules': true
+    },
+    ...options
+  });
+}
+
 module.exports = {
-  destroy: destroy,
+  destroy,
+  create,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };

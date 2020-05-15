@@ -12,13 +12,8 @@ describe('Admin bar', function() {
   it('should allow a group reversing the current order', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        shortName: 'test',
-        argv: {
-          _: [],
-          'hide-orphan-modules': true
-        },
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
@@ -57,13 +52,7 @@ describe('Admin bar', function() {
   it('should allow a group obeying the current order', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
-        root: module,
-        shortName: 'test',
-        argv: {
-          _: [],
-          'hide-orphan-modules': true
-        },
+      apos = await t.create({
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
