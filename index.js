@@ -6,23 +6,20 @@ const npmResolve = require('resolve');
 let defaults = require('./defaults.js');
 
 // **Awaiting the Apostrophe function is optional**
-
+//
 // The apos function is async, but in typical cases you do not
 // need to await it. If you simply call it, Apostrophe will
 // start up and listen for connections forever, or run a
-// task and exit, as appropriate.
-
+// task and exit, as appropriate. On failure, the error is
+// printed to stderr and the process exits.
+//
 // If you do `await` the function, then your code will continue
 // after apostrophe successfully begins listening for
-// connections.
-
-// **Awaiting a task**
-
-// If Apostrophe is being invoked to run a
-// command line task, it will **exit the process** after the
-// task completes, unless you pass the `exit: false` option
-// to the `@apostrophecms/tasks` module. In that case, your
-// code will continue after the task completes.
+// connections. However note it will still exit on errors.
+//
+// To avoid exiting on errors, pass the `exit: false` option.
+// This can option also can be used to allow awaiting a command line
+// task, as they also normally exit on completion.
 
 module.exports = async function(options) {
 
@@ -34,77 +31,88 @@ module.exports = async function(options) {
     }
   };
 
-  // The core must have a reference to itself in order to use the
-  // promise event emitter code
-  self.apos = self;
+  try {
 
-  Object.assign(self, require('./lib/modules/@apostrophecms/module/lib/events.js')(self, options));
+    // The core must have a reference to itself in order to use the
+    // promise event emitter code
+    self.apos = self;
 
-  // Determine root module and root directory
-  self.root = options.root || getRoot();
-  self.rootDir = options.rootDir || path.dirname(self.root.filename);
-  self.npmRootDir = options.npmRootDir || self.rootDir;
+    Object.assign(self, require('./lib/modules/@apostrophecms/module/lib/events.js')(self, options));
 
-  testModule();
+    // Determine root module and root directory
+    self.root = options.root || getRoot();
+    self.rootDir = options.rootDir || path.dirname(self.root.filename);
+    self.npmRootDir = options.npmRootDir || self.rootDir;
 
-  self.options = mergeConfiguration(options, defaults);
-  autodetectBundles();
-  acceptGlobalOptions();
+    testModule();
 
-  // Module-based async events (self.on and self.emit of each module)
-  self.eventHandlers = {};
+    self.options = mergeConfiguration(options, defaults);
+    autodetectBundles();
+    acceptGlobalOptions();
 
-  // Destroys the Apostrophe object, freeing resources such as
-  // HTTP server ports and database connections. Does **not**
-  // delete any data; the persistent database and media files
-  // remain available for the next startup. Emits the
-  // `apostrophe:destroy` async event; use this mechanism to free your own
-  // server-side resources that could prevent garbage
-  // collection by the JavaScript engine, such as timers
-  // and intervals.
-  self.destroy = async function() {
-    await self.emit('destroy');
-  };
+    // Module-based async events (self.on and self.emit of each module)
+    self.eventHandlers = {};
 
-  // Returns true if Apostrophe is running as a command line task
-  // rather than as a server
-  self.isTask = function() {
-    return !!self.argv._.length;
-  };
+    // Destroys the Apostrophe object, freeing resources such as
+    // HTTP server ports and database connections. Does **not**
+    // delete any data; the persistent database and media files
+    // remain available for the next startup. Emits the
+    // `apostrophe:destroy` async event; use this mechanism to free your own
+    // server-side resources that could prevent garbage
+    // collection by the JavaScript engine, such as timers
+    // and intervals.
+    self.destroy = async function() {
+      await self.emit('destroy');
+    };
 
-  // Returns an array of modules that are instances of the given
-  // module name, i.e. they are of that type or they extend it.
-  // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
-  // an array of active modules in your project that extend
-  // pieces, such as `@apostrophecms/users`, `@apostrophecms/groups` and
-  // your own piece types
+    // Returns true if Apostrophe is running as a command line task
+    // rather than as a server
+    self.isTask = function() {
+      return !!self.argv._.length;
+    };
 
-  self.instancesOf = function(name) {
-    return _.filter(self.modules, function(module) {
-      return self.synth.instanceOf(module, name);
-    });
-  };
+    // Returns an array of modules that are instances of the given
+    // module name, i.e. they are of that type or they extend it.
+    // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
+    // an array of active modules in your project that extend
+    // pieces, such as `@apostrophecms/users`, `@apostrophecms/groups` and
+    // your own piece types
 
-  // Returns true if the object is an instance of the given
-  // moog class name or a subclass thereof. A convenience wrapper
-  // for `apos.synth.instanceOf`
+    self.instancesOf = function(name) {
+      return _.filter(self.modules, function(module) {
+        return self.synth.instanceOf(module, name);
+      });
+    };
 
-  self.instanceOf = function(object, name) {
-    return self.synth.instanceOf(object, name);
-  };
+    // Returns true if the object is an instance of the given
+    // moog class name or a subclass thereof. A convenience wrapper
+    // for `apos.synth.instanceOf`
 
-  defineModules();
+    self.instanceOf = function(object, name) {
+      return self.synth.instanceOf(object, name);
+    };
 
-  await instantiateModules();
-  await self.emit('modulesReady');
-  await self.emit('afterInit');
-  await self.emit('run', self.isTask());
+    defineModules();
 
-  // Return self so that app.js can refer to apos
-  // in inline functions, etc.
-  return self;
+    await instantiateModules();
+    lintOrphanModules();
+    await self.emit('modulesReady');
+    await self.emit('afterInit');
+    await self.emit('run', self.isTask());
+
+    return self;
+  } catch (e) {
+    if (options.exit !== false) {
+      console.error(e);
+      process.exit(1);
+    }
+  }
 
   // SUPPORTING FUNCTIONS BEGIN HERE
+
+  function lint(s) {
+    console.debug('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+  }
 
   // Merge configuration from defaults, data/local.js and app.js
   function mergeConfiguration(options, defaults) {
@@ -270,10 +278,11 @@ module.exports = async function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
+    self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules');
     const synth = require('./lib/moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
-      localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
+      localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
       sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'middleware', 'customTags', 'components' ],
       unparsedSections: [ 'queries', 'extendQueries' ]
@@ -307,6 +316,36 @@ module.exports = async function(options) {
       }
       // module registers itself in self.modules
       await self.synth.create(item, { apos: self });
+    }
+  }
+
+  function lintOrphanModules() {
+    const validSteps = [];
+    for (const module of Object.values(self.modules)) {
+      for (const step of module.__meta.chain) {
+        validSteps.push(step.name);
+      }
+    }
+    const dirs = fs.readdirSync(self.localModules);
+    for (const dir of dirs) {
+      if (dir.match(/^@/)) {
+        const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
+        for (let nsDir of nsDirs) {
+          nsDir = `${dir}/${nsDir}`;
+          test(nsDir);
+        }
+      } else {
+        test(dir);
+      }
+    }
+    function test(name) {
+      if (!validSteps.includes(name)) {
+        if (name.match(/^apostrophe-/)) {
+          lint(`You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
+        } else {
+          lint(`You have a ${self.localModules}/${name} folder, but that module is not activated in app.js and it is not a base class of any other active module. Right now that code doesn't do anything.`);
+        }
+      }
     }
   }
 
