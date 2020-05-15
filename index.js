@@ -95,6 +95,7 @@ module.exports = async function(options) {
     defineModules();
 
     await instantiateModules();
+    lintOrphanModules();
     await self.emit('modulesReady');
     await self.emit('afterInit');
     await self.emit('run', self.isTask());
@@ -108,6 +109,10 @@ module.exports = async function(options) {
   }
 
   // SUPPORTING FUNCTIONS BEGIN HERE
+
+  function lint(s) {
+    console.debug('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
+  }
 
   // Merge configuration from defaults, data/local.js and app.js
   function mergeConfiguration(options, defaults) {
@@ -273,10 +278,11 @@ module.exports = async function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
+    self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules');
     const synth = require('./lib/moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
-      localModules: self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules'),
+      localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
       sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'middleware', 'customTags', 'components' ],
       unparsedSections: [ 'queries', 'extendQueries' ]
@@ -310,6 +316,36 @@ module.exports = async function(options) {
       }
       // module registers itself in self.modules
       await self.synth.create(item, { apos: self });
+    }
+  }
+
+  function lintOrphanModules() {
+    const validSteps = [];
+    for (const module of Object.values(self.modules)) {
+      for (const step of module.__meta.chain) {
+        validSteps.push(step.name);
+      }
+    }
+    const dirs = fs.readdirSync(self.localModules);
+    for (const dir of dirs) {
+      if (dir.match(/^@/)) {
+        const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
+        for (let nsDir of nsDirs) {
+          nsDir = `${dir}/${nsDir}`;
+          test(nsDir);
+        }
+      } else {
+        test(dir);
+      }
+    }
+    function test(name) {
+      if (!validSteps.includes(name)) {
+        if (name.match(/^apostrophe-/)) {
+          lint(`You have a ${self.localModules}/${name} folder. You are probably trying to configure an official Apostrophe module, but those are namespaced now. Your directory should be renamed ${self.localModules}/${name.replace(/^apostrophe-/, '@apostrophecms/')}\n\nIf you get this warning for your own, original module, do not use the apostrophe- prefix. It is reserved.`);
+        } else {
+          lint(`You have a ${self.localModules}/${name} folder, but that module is not activated in app.js and it is not a base class of any other active module. Right now that code doesn't do anything.`);
+        }
+      }
     }
   }
 
