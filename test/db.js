@@ -48,8 +48,10 @@ describe('Db', function() {
           }
         },
         '@apostrophecms/db': {
-          db: apos.db,
-          uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+          options: {
+            db: apos.db,
+            uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+          }
         }
       }
     });

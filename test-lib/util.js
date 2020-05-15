@@ -17,7 +17,11 @@ async function destroy(apos) {
   // object to clean up the database, otherwise we have to get hold of one
   // when initialization failed and that's really not apostrophe's concern
   if (dbName) {
-    require('child_process').execSync(`mongo ${dbName} --eval 'db.dropDatabase()'`);
+    const mongo = require('mongodb');
+    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`);
+    const db = client.db(dbName);
+    await db.dropDatabase();
+    await client.close();
   }
 };
 

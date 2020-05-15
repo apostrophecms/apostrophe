@@ -64,8 +64,10 @@ describe('Admin bar', function() {
         },
         modules: {
           '@apostrophecms/express': {
-            secret: 'xxx',
-            csrf: false
+            options: {
+              secret: 'xxx',
+              csrf: false
+            }
           },
           '@apostrophecms/admin-bar': {
             options: {
