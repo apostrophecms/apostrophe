@@ -12,19 +12,9 @@ describe('Templates', function() {
   });
 
   it('should have a templates property', async () => {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'express-test': {},
         'templates-test': {},
         'templates-subclass-test': {},

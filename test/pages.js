@@ -1,7 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-const request = require('request-promise');
 
 let apos;
 let homeId;
@@ -17,21 +16,9 @@ describe('Pages', function() {
   // EXISTENCE
 
   it('should be a property of the apos object', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            session: {
-              secret: 'Adipiscing'
-            },
-            port: 7900
-          }
-        },
         '@apostrophecms/pages': {
           options: {
             park: [],
@@ -318,14 +305,12 @@ describe('Pages', function() {
   });
 
   it('should be able to serve a page', async function() {
-    const response = await request({
-      uri: 'http://localhost:7900/child',
-      method: 'GET',
-      resolveWithFullResponse: true
+    const response = await apos.http.get('/child', {
+      fullResponse: true
     });
 
     // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.status, 200);
     // Did we get our page back?
     assert(response.body.match(/Sing to me, Oh Muse./));
     // Does the response prove that data.home was available?
@@ -335,20 +320,17 @@ describe('Pages', function() {
   });
 
   it('should not be able to serve a nonexistent page', async function() {
-    const response = await request({
-      method: 'GET',
-      resolveWithFullResponse: true,
-      uri: 'http://localhost:7900/nobodyschild',
-      // Get a rejection only if the request failed for technical reasons
-      simple: false
-    });
-
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 404);
-    // Does the response prove that data.home was available?
-    assert(response.body.match(/Home: \//));
-    // Does the response prove that data.home._children was available?
-    assert(response.body.match(/Tab: \/another-parent/));
+    try {
+      await apos.http.get('/nobodyschild');
+      assert(false);
+    } catch (e) {
+      // Is our status code good?
+      assert.strictEqual(e.status, 404);
+      // Does the response prove that data.home was available?
+      assert(e.body.match(/Home: \//));
+      // Does the response prove that data.home._children was available?
+      assert(e.body.match(/Tab: \/another-parent/));
+    }
   });
 
   it('should detect that the home page is an ancestor of any page except itself', function() {
@@ -423,7 +405,7 @@ describe('Pages', function() {
   });
 
   it('can GET the home page without session', async () => {
-    const home = await apos.http.get('http://localhost:7900/api/v1/@apostrophecms/pages', {});
+    const home = await apos.http.get('/api/v1/@apostrophecms/pages', {});
     assert(home);
     assert(home.slug === '/');
     // make sure new style paths used

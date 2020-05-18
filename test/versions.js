@@ -14,19 +14,9 @@ describe('Versions', function() {
   // EXISTENCE
 
   it('should should be a module', async () => {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
 
         // Create a custom schema for test-people so we can
         // play with comparing versions

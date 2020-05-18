@@ -225,20 +225,8 @@ describe('Schemas', function() {
   /// ///
 
   it('should be a property of the apos object', async () => {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        options: {
-          '@apostrophecms/express': {
-            secret: 'xxx',
-            port: 7900
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.schemas);
     apos.argv._ = [];

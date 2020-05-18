@@ -11,18 +11,9 @@ describe('Http', function() {
   this.timeout(t.timeout);
 
   it('should exist on the apos object', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900
-          }
-        },
         'test': {
           apiRoutes: (self, options) => ({
             post: {
@@ -42,7 +33,7 @@ describe('Http', function() {
   });
 
   it('should be able to make an http request', async () => {
-    const result = await apos.http.get('http://localhost:7900/', {
+    const result = await apos.http.get('/', {
       jar
     });
     assert(result);
@@ -51,7 +42,7 @@ describe('Http', function() {
 
   it('should not be able to make an http POST request without csrf header', async () => {
     try {
-      await apos.http.post('http://localhost:7900/csrf-test', {
+      await apos.http.post('/csrf-test', {
         jar,
         csrf: false
       });
@@ -62,10 +53,10 @@ describe('Http', function() {
   });
 
   it('should be able to make an http POST request with manually built csrf header', async () => {
-    const response = await apos.http.post('http://localhost:7900/csrf-test', {
+    const response = await apos.http.post('/csrf-test?manual=1', {
       jar,
       headers: {
-        'X-XSRF-TOKEN': apos.http.getCookie(jar, 'http://localhost:7900', 'test.csrf')
+        'X-XSRF-TOKEN': apos.http.getCookie(jar, '/', `${apos.options.shortName}.csrf`)
       },
       body: {},
       csrf: false
@@ -74,7 +65,7 @@ describe('Http', function() {
   });
 
   it('should be able to make an http POST request with csrf header via default csrf convenience of http.post', async () => {
-    const response = await apos.http.post('http://localhost:7900/csrf-test', {
+    const response = await apos.http.post('/csrf-test', {
       jar,
       body: {}
     });

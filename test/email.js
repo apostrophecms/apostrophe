@@ -14,16 +14,9 @@ describe('Email', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          port: 7900
-        },
         '@apostrophecms/email': {
           options: {
             nodemailer: {

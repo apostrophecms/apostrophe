@@ -14,9 +14,8 @@ describe('Urls', function() {
   });
 
   it('should exist on the apos object', async () => {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test'
+    apos = await t.create({
+      root: module
     });
     assert(apos.urls);
   });

@@ -107,7 +107,7 @@ console.log('\n\nTAGS TESTS: on hold until we decide how tags work in 3.x\n\n');
 
 //   it('should provide an api route for autocomplete', function(done) {
 //     return request({
-//       url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
+//       url: '/modules/apostrophe-tags/autocomplete',
 //       method: 'POST',
 //       form: { term: 'ag' }
 //     }, function(err, response, body) {
@@ -127,7 +127,7 @@ console.log('\n\nTAGS TESTS: on hold until we decide how tags work in 3.x\n\n');
 
 //   it('should provide an api route for autocomplete', function(done) {
 //     return request({
-//       url: 'http://localhost:7900/modules/apostrophe-tags/autocomplete',
+//       url: '/modules/apostrophe-tags/autocomplete',
 //       method: 'POST',
 //       form: { term: 'ag', prefix: true }
 //     }, function(err, response, body) {

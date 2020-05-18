@@ -1,7 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-// const request = require('request-promise');
-// const qs = require('qs');
 
 describe('Oembed', function() {
   this.timeout(t.timeout);
@@ -17,21 +15,8 @@ describe('Oembed', function() {
   /// ///
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          session: {
-            secret: 'xxx'
-          },
-          port: 7900,
-          csrf: false
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.modules['@apostrophecms/oembed']);
@@ -60,7 +45,7 @@ describe('Oembed', function() {
 
   // it('Should deliver an oembed response for YouTube', async function() {
   //   const queryString = qs.stringify({ url: youtube });
-  //   const uri = `http://localhost:7900/modules/@apostrophecms/oembed/query?${queryString}`;
+  //   const uri = `/modules/@apostrophecms/oembed/query?${queryString}`;
 
   //   const response = await request({
   //     uri,

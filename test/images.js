@@ -55,21 +55,8 @@ describe('Images', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'Porta'
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.images);

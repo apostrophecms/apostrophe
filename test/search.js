@@ -15,19 +15,9 @@ describe('Search', function() {
   // EXISTENCE
 
   it('should be a property of the apos object', async () => {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'events': {
           extend: '@apostrophecms/piece-type',
           options: {

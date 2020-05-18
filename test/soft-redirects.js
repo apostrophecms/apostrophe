@@ -11,19 +11,9 @@ describe('Soft Redirects', function() {
   });
 
   it('should exist', async () => {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900,
-            secret: 'test'
-          }
-        },
         '@apostrophecms/pages': {
           options: {
             park: [
@@ -43,7 +33,7 @@ describe('Soft Redirects', function() {
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
-    const body = await apos.http.get('http://localhost:7900/child');
+    const body = await apos.http.get('/child');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
@@ -53,13 +43,13 @@ describe('Soft Redirects', function() {
   });
 
   it('should be able to serve the page at its new URL', async () => {
-    const body = await apos.http.get('http://localhost:7900/child-moved');
+    const body = await apos.http.get('/child-moved');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
   it('should be able to serve the page at its old URL too, via redirect', async () => {
-    const response = await apos.http.get('http://localhost:7900/child', {
+    const response = await apos.http.get('/child', {
       followRedirect: false,
       fullResponse: true,
       redirect: 'manual'
@@ -67,7 +57,7 @@ describe('Soft Redirects', function() {
     // Is our status code good?
     assert.equal(response.status, 302);
     // Are we going to be redirected to our page?
-    assert.equal(response.headers['location'], 'http://localhost:7900/child-moved');
+    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });
@@ -79,20 +69,10 @@ describe('Soft Redirects - with `statusCode` option', async() => {
   });
 
   it('should exist', async () => {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
 
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900,
-            secret: 'test'
-          }
-        },
         '@apostrophecms/pages': {
           options: {
             park: [
@@ -118,7 +98,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
-    const body = await apos.http.get('http://localhost:7900/child');
+    const body = await apos.http.get('/child');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
@@ -128,20 +108,20 @@ describe('Soft Redirects - with `statusCode` option', async() => {
   });
 
   it('should be able to serve the page at its new URL', async () => {
-    const body = await apos.http.get('http://localhost:7900/child-moved');
+    const body = await apos.http.get('/child-moved');
     // Did we get our page back?
     assert(body.match(/Default Page Template/));
   });
 
   it('should be able to serve the page at its old URL too, via redirect', async () => {
-    const response = await apos.http.get('http://localhost:7900/child', {
+    const response = await apos.http.get('/child', {
       fullResponse: true,
       redirect: 'manual'
     });
     // Is our status code good?
     assert.equal(response.status, 301);
     // Are we going to be redirected to our page?
-    assert.equal(response.headers['location'], 'http://localhost:7900/child-moved');
+    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });

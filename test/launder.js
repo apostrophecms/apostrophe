@@ -12,21 +12,8 @@ describe('Launder', function() {
   let apos;
 
   it('should exist on the apos object', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'Amet'
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.launder);

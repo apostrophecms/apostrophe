@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 
 describe('Pieces Widgets', function() {
 
@@ -15,19 +14,9 @@ describe('Pieces Widgets', function() {
   // EXISTENCE
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'events': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -180,7 +169,7 @@ describe('Pieces Widgets', function() {
 
   it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
 
-    const body = await request('http://localhost:7900/page-with-events');
+    const body = await apos.http.get('/page-with-events');
     // Does it contain the right events via a widget?
     assert(body.match(/Event 005/));
     assert(body.match(/Event 006/));
@@ -222,20 +211,9 @@ describe('Pieces Widget With Extra Join', function() {
   // EXISTENCE
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
-      argv: {
-        _: []
-      },
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'events': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -396,7 +374,7 @@ describe('Pieces Widget With Extra Join', function() {
 
   it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
 
-    const body = await request('http://localhost:7900/page-with-events');
+    const body = await apos.http.get('/page-with-events');
     // Does it contain the right events via a widget?
     assert(body.match(/Event 005/));
     assert(body.match(/Event 006/));

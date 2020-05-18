@@ -13,15 +13,13 @@ describe('Promisified Events Core', function() {
 
   it('should execute handlers for several events in the proper order', async function() {
     let niceFinished = false;
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         'test1': {
-          alias: 'test1',
+          options: {
+            alias: 'test1'
+          },
           handlers(self) {
             return {
               ready1: {
@@ -75,7 +73,9 @@ describe('Promisified Events Core', function() {
           }
         },
         'test2': {
-          alias: 'test2',
+          options: {
+            alias: 'test2'
+          },
           handlers(self) {
             return {
               'test1:ready1': {
@@ -87,7 +87,9 @@ describe('Promisified Events Core', function() {
           }
         },
         'test3': {
-          alias: 'test3'
+          options: {
+            alias: 'test3'
+          }
         }
       }
     });

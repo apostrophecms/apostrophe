@@ -14,19 +14,10 @@ describe('Docs', function() {
   // EXISTENCE
 
   it('should be a property of the apos object', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
 
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            session: {
-              secret: 'Adipiscing'
-            },
-            port: 7900
-          }
-        },
         'test-people': {
           extend: '@apostrophecms/doc-type',
           fields: {
@@ -40,14 +31,10 @@ describe('Docs', function() {
             }
           }
         }
-      },
-      argv: {
-        _: []
       }
     });
 
     assert(apos.docs);
-    apos.argv._ = [];
 
   });
 

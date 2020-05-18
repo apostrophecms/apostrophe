@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 let apos;
 
 describe('Pieces Pages', function() {
@@ -14,19 +13,9 @@ describe('Pieces Pages', function() {
   // EXISTENCE
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'events': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -114,21 +103,21 @@ describe('Pieces Pages', function() {
 
   it('should be able to access index page with first event on it, but not eleventh event', async function() {
 
-    const body = await request('http://localhost:7900/events');
+    const body = await apos.http.get('/events');
     // Only page one events should show up
     assert(body.match(/event-001"/));
     assert(!body.match(/event-011"/));
   });
 
   it('should be able to access second page', async function() {
-    const body = await request('http://localhost:7900/events?page=2');
+    const body = await apos.http.get('/events?page=2');
     // Only page two events should show up
     assert(body.match(/event-011"/));
     assert(!body.match(/event-001"/));
   });
 
   it('should be able to access "show" page for first event, should not also contain second event', async function() {
-    const body = await request('http://localhost:7900/events/event-001');
+    const body = await apos.http.get('/events/event-001');
     // Only event 1's title should show up
     assert(body.match(/Event 001/));
     assert(!body.match(/Event 002/));

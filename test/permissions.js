@@ -12,20 +12,8 @@ describe('Permissions', function() {
   });
 
   it('should have a permissions property', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          session: {
-            secret: 'xxx'
-          },
-          port: 7900
-        }
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.permissions.__meta.name = '@apostrophecms/permissions');
   });

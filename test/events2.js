@@ -13,15 +13,13 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
   let coreEventsWork = false;
 
   it('should implement @apostrophecms/doc-type:beforeInsert handlers properly', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         'test1': {
-          alias: 'test1',
+          options: {
+            alias: 'test1'
+          },
           handlers(self) {
             return {
               '@apostrophecms/doc-type:beforeInsert': {

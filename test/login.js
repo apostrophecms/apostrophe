@@ -14,28 +14,13 @@ describe('Login', function() {
   // EXISTENCE
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7901,
-            address: 'localhost',
-            session: {
-              secret: 'Cursus'
-            }
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.modules['@apostrophecms/login']);
     assert(apos.users.safe.remove);
-    const response = await apos.users.safe.remove({});
+    const response = await apos.users.safe.removeMany({});
     assert(response.result.ok === 1);
   });
 
@@ -63,7 +48,7 @@ describe('Login', function() {
 
     // establish session
     let page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }
@@ -72,7 +57,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
 
     await apos.http.post(
-      'http://localhost:7901/api/v1/@apostrophecms/login/login',
+      '/api/v1/@apostrophecms/login/login',
       {
         method: 'POST',
         body: {
@@ -84,7 +69,7 @@ describe('Login', function() {
     );
 
     page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }
@@ -94,7 +79,7 @@ describe('Login', function() {
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
-      'http://localhost:7901/api/v1/@apostrophecms/login/logout',
+      '/api/v1/@apostrophecms/login/logout',
       {
         body: {
           username: 'hputter@aol.com',
@@ -105,7 +90,7 @@ describe('Login', function() {
     );
 
     page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }
@@ -121,7 +106,7 @@ describe('Login', function() {
 
     // establish session
     let page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }
@@ -130,7 +115,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
 
     await apos.http.post(
-      'http://localhost:7901/api/v1/@apostrophecms/login/login',
+      '/api/v1/@apostrophecms/login/login',
       {
         body: {
           username: 'hputter@aol.com',
@@ -141,7 +126,7 @@ describe('Login', function() {
     );
 
     page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }
@@ -152,7 +137,7 @@ describe('Login', function() {
 
     // otherwise logins are not remembered in a session
     await apos.http.post(
-      'http://localhost:7901/api/v1/@apostrophecms/login/logout',
+      '/api/v1/@apostrophecms/login/logout',
       {
         body: {
           username: 'hputter@aol.com',
@@ -163,7 +148,7 @@ describe('Login', function() {
     );
 
     page = await apos.http.get(
-      'http://localhost:7901/',
+      '/',
       {
         jar
       }

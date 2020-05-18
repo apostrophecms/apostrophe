@@ -35,19 +35,15 @@ describe('Attachment', function() {
       }
     }
 
-    return apos.db.collection(collectionName).remove({});
+    return apos.db.collection(collectionName).removeMany({});
   }
 
   it('should be a property of the apos object', async function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.attachments);
   });

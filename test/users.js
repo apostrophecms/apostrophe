@@ -14,20 +14,8 @@ describe('Users', function() {
   // EXISTENCE
 
   it('should initialize', async () => {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
   });
 

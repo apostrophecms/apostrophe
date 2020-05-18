@@ -12,20 +12,8 @@ describe('Templates', function() {
   });
 
   it('should have a push property', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          session: {
-            secret: 'I stole a candybar'
-          },
-          port: 7900
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.push.__meta.name === '@apostrophecms/push');

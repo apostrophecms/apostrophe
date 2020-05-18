@@ -13,19 +13,8 @@ describe('Db', function() {
   this.timeout(t.timeout);
 
   it('should exist on the apos object', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.db);
@@ -35,18 +24,9 @@ describe('Db', function() {
     assert(doc);
   });
   it('should be able to launch a second instance reusing the connection', async function() {
-    apos2 = await require('../index.js')({
+    apos2 = await t.create({
       root: module,
-      shortName: 'test2',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7777
-          }
-        },
         '@apostrophecms/db': {
           options: {
             client: apos.dbClient,

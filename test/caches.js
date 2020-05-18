@@ -12,12 +12,8 @@ describe('Caches', function() {
   let apos;
   let cache;
   it('should exist on the apos object', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.caches);
   });

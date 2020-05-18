@@ -15,12 +15,8 @@ describe('Areas', function() {
   /// ///
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         'monkeys': {
           extend: '@apostrophecms/piece-type'

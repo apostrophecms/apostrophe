@@ -1,3 +1,5 @@
+const cuid = require('cuid');
+
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
 // Drops the collections, not the entire database, to avoid problems
@@ -29,14 +31,28 @@ async function destroy(apos) {
 };
 
 async function create(options) {
-  return require('../index.js')({
-    shortName: 'test',
+  const config = {
+    shortName: `test-${cuid()}`,
     argv: {
       _: [],
-      'hide-orphan-modules': true
+      'ignore-orphan-modules': true
     },
     ...options
-  });
+  };
+  // Automatically configure Express, but not if we're in a special
+  // environment where the default apostrophe modules don't initialize
+  if (!config.__testDefaults) {
+    config.modules = config.modules || {};
+    const express = config.modules['@apostrophecms/express'] || {};
+    express.options = express.options || {};
+    // Allow OS to choose open port
+    express.options.port = null;
+    express.options.address = express.options.address || 'localhost';
+    express.options.session = express.options.session || {};
+    express.options.session.secret = express.options.session.secret || 'test';
+    config.modules['@apostrophecms/express'] = express;
+  }
+  return require('../index.js')(config);
 }
 
 module.exports = {

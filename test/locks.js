@@ -16,22 +16,9 @@ describe('Locks', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900,
-            address: 'localhost',
-            session: {
-              secret: 'Vulputate'
-            }
-          }
-        },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
         // we're doing it to deliberately force them to contend with each other,
         // rather than just throwing an error saying "hey you have this lock

@@ -13,19 +13,8 @@ describe('Utils', function() {
   });
 
   it('should exist on the apos object', async () => {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        '@apostrophecms/express': {
-          options: {
-            port: 7900
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.utils);
   });

@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 let apos;
 
 describe('Global', function() {
@@ -12,19 +11,9 @@ describe('Global', function() {
   });
 
   it('global should exist on the apos object', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            secret: 'xxx',
-            port: 7900
-          }
-        },
         'global-tests': {
           apiRoutes(self, options) {
             return {
@@ -59,7 +48,7 @@ describe('Global', function() {
   });
 
   it('should populate via middleware', async function() {
-    const body = await request('http://localhost:7900/api/v1/global-tests/test');
+    const body = await apos.http.get('/api/v1/global-tests/test');
     assert(body === 'test');
   });
 

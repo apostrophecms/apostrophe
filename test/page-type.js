@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 let apos;
 
 describe('page-type', function() {
@@ -16,12 +15,8 @@ describe('page-type', function() {
   /// ///
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         'nifty-pages': {
           extend: '@apostrophecms/page-type'
@@ -164,23 +159,23 @@ describe('page-type', function() {
   });
 
   it('should match a dispatch route on a real live page request', async function() {
-    const body = await request('http://localhost:3000/niftyPages');
+    const body = await apos.http.get('/niftyPages');
     // Did we get the index output?
     assert(body.match(/niftyPages-index-template-rendered-this/));
   });
 
   it('runs foo route with /foo remainder', async function() {
-    const body = await request('http://localhost:3000/niftyPages/foo');
+    const body = await apos.http.get('/niftyPages/foo');
     // Did we get the foo output?
     assert(body.match(/niftyPages-foo2-template-rendered-this/));
   });
 
   it('yields 404 with bad remainder (not matching any dispatch routes)', async function() {
     try {
-      await request('http://localhost:3000/niftyPages/tututu');
+      await apos.http.get('/niftyPages/tututu');
       assert(false);
     } catch (e) {
-      assert(e.statusCode === 404);
+      assert(e.status === 404);
     }
   });
 

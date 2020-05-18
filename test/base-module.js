@@ -11,12 +11,8 @@ describe('Base Module', function() {
   });
 
   it('should be subclassable', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         // will push an asset for us to look for later
         '@apostrophecms/test-module-push': {},
