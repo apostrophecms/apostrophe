@@ -1,9 +1,11 @@
 # Changelog
 
-## 2.106.4 (2020-05-20)
+## 2.107.0 (2020-05-20)
 
+* CKEditor has been updated to version 4.14, addressing a low-risk XSRF vulnerability. The vulnerability required that the source code editor feature be activated and that a user with editing privileges be convinced to import specially crafted markup, which is unlikely in practice.
 * Users may now intentionally clear a `time` field, whether or not it has a `def` setting, in which case it is stored as `null` (unless `required: true` is present). The inability to do this was a regression introduced in version 2.102.0.
 * Developers can now pass a `spectrumOptions` object to a `color` field and take full control of Spectrum, the plugin that powers Apostrophe's color picker. [Documentation for this configuration here.](https://docs.apostrophecms.org/reference/field-types/color.html#example)
+* Activating the `objectNotation` option to `i18n` no longer causes problems for certain strings in Apostrophe's admin interface, which does not use it. You will see alternate Unicode characters for the `:` and `.` characters in these strings if you do choose to translate them. These are transformed back for end users.
 
 ## 2.106.3 (2020-05-06)
 
