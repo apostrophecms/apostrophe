@@ -3,6 +3,7 @@
 ## 2.106.4 (2020-05-20)
 
 * Users may now intentionally clear a `time` field, whether or not it has a `def` setting, in which case it is stored as `null` (unless `required: true` is present). The inability to do this was a regression introduced in version 2.102.0.
+* Developers can now pass a `spectrumOptions` object to a `color` field and take full control of Spectrum, the plugin that powers Apostrophe's color picker. [Documentation for this configuration here.](https://docs.apostrophecms.org/reference/field-types/color.html#example)
 
 ## 2.106.3 (2020-05-06)
 
