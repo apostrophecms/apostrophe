@@ -107,16 +107,13 @@ module.exports = async function(options) {
     return self;
   } catch (e) {
     if (options.exit !== false) {
+      /* eslint-disable-next-line no-console */
       console.error(e);
       process.exit(1);
     }
   }
 
   // SUPPORTING FUNCTIONS BEGIN HERE
-
-  function lint(s) {
-    console.debug('\n⚠️  It looks like you may have made a mistake in your code:\n\n' + s + '\n');
-  }
 
   // Merge configuration from defaults, data/local.js and app.js
   function mergeConfiguration(options, defaults) {
@@ -358,6 +355,7 @@ module.exports = async function(options) {
           if (self.argv[`ignore-${name}`]) {
             return;
           }
+          /* eslint-disable-next-line no-console */
           console.warn(message);
         }
       }

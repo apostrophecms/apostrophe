@@ -101,7 +101,7 @@ describe('bootstrap of Apostrophe core', function() {
       let defaultModules = require('../defaults.js').modules;
 
       apos = await t.create({
-        root: module,
+        root: module
       });
       // color = blue is inherited from our implicit subclass of the base module
       assert(apos.assets && apos.assets.color === 'blue');

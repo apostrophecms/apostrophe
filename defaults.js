@@ -14,7 +14,6 @@ module.exports = {
     '@apostrophecms/urls': {},
     '@apostrophecms/templates': {},
     '@apostrophecms/email': {},
-    '@apostrophecms/push': {},
     '@apostrophecms/permissions': {},
     '@apostrophecms/assets': {},
     '@apostrophecms/admin-bar': {},

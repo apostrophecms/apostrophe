@@ -1,5 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const cheerio = require('cheerio');
 
 let apos;
 
@@ -72,9 +73,29 @@ describe('Templates', function() {
     assert(result.match(/4/));
   });
 
-  it('should render pages successfully with outerLayout', async function() {
+  it('should render pages successfully with outerLayout, with core data-apos attribute', async function() {
     let req = apos.tasks.getAnonReq();
     let result = await apos.modules['templates-test'].renderPage(req, 'page');
+    const $ = cheerio.load(result);
+    const $body = $('body');
+    assert($body.length);
+    let aposData = JSON.parse($body.attr('data-apos'));
+    assert(aposData);
+    assert(aposData.csrfCookieName);
+    assert(!aposData.modules['@apostrophecms/admin-bar']);
+    assert(result.indexOf('<title>I am the title</title>') !== -1);
+    assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
+  });
+
+  it('should render pages successfully with outerLayout for admin user, with expanded data-apos attribute', async function() {
+    let req = apos.tasks.getReq();
+    let result = await apos.modules['templates-test'].renderPage(req, 'page');
+    const $ = cheerio.load(result);
+    const $body = $('body');
+    assert($body.length);
+    let aposData = JSON.parse($body.attr('data-apos'));
+    assert(aposData);
+    assert(aposData.modules['@apostrophecms/admin-bar'].items.length);
     assert(result.indexOf('<title>I am the title</title>') !== -1);
     assert(result.indexOf('<h2>I am the main content</h2>') !== -1);
   });

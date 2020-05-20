@@ -14,6 +14,7 @@
     {% endblock %}
   </head>
   <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
+    woo woo test
     {% component '@apostrophecms/templates:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}
       <div id="apos-admin-bar"></div>

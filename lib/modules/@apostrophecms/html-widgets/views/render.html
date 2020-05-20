@@ -1,0 +1,7 @@
+{%- if data.render == 'safeMode' -%}
+  Running in safe mode, not showing raw HTML.
+{%- else if data.render -%}
+  {{ data.code | safe }}
+{% else %}
+  Refresh the page to view raw HTML.
+{%- endif -%}
