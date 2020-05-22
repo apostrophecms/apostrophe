@@ -12,12 +12,7 @@ describe('Assets', function() {
 
   it('should should exist on the apos object', async function() {
     apos = await t.create({
-      root: module,
-      modules: {
-        'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
-      }
+      root: module
     });
     assert(apos.assets);
   });
