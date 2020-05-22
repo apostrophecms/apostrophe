@@ -103,67 +103,67 @@ describe('Urls', function() {
       });
       it('Adds an array when $addToSet is used', function() {
         let result = apos.urls.build('/events', {
-          tags: {
+          colors: {
             $addToSet: 'blue'
           }
         });
-        assert(result === '/events?tags%5B0%5D=blue');
+        assert(result === '/events?colors%5B0%5D=blue');
       });
       it('Adds to existing query string array when $addToSet is used', function() {
-        let result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
-          tags: {
+        let result = apos.urls.build('/events?colors[]=purple&colors[]=red', {
+          colors: {
             $addToSet: 'blue'
           }
         });
-        assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue');
+        assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue');
       });
       it('Adds to existing URI encoded query string array when $addToSet is used', function() {
-        let result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
-          tags: {
+        let result = apos.urls.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
+          colors: {
             $addToSet: 'green'
           }
         });
-        assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue&tags%5B3%5D=green');
+        assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue&colors%5B3%5D=green');
       });
       it('Does not create duplicates when $addToSet is used', function() {
-        let result = apos.urls.build('/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue', {
-          tags: {
+        let result = apos.urls.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
+          colors: {
             $addToSet: 'blue'
           }
         });
-        assert(result === '/events?tags%5B0%5D=purple&tags%5B1%5D=red&tags%5B2%5D=blue');
+        assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue');
       });
       it('Treats numbers and strings the same when preventing duplicates', function() {
-        let result = apos.urls.build('/events?tags[]=4&tags[]=5', {
-          tags: {
+        let result = apos.urls.build('/events?colors[]=4&colors[]=5', {
+          colors: {
             $addToSet: 5
           }
         });
-        assert(result === '/events?tags%5B0%5D=4&tags%5B1%5D=5');
+        assert(result === '/events?colors%5B0%5D=4&colors%5B1%5D=5');
       });
       it('Removes from existing query string array when $pull is used', function() {
-        let result = apos.urls.build('/events?tags[]=purple&tags[]=red', {
-          tags: {
+        let result = apos.urls.build('/events?colors[]=purple&colors[]=red', {
+          colors: {
             $pull: 'red'
           }
         });
-        assert(result === '/events?tags%5B0%5D=purple');
+        assert(result === '/events?colors%5B0%5D=purple');
       });
       it('Removes array entirely when $pull removes last item', function() {
-        let result = apos.urls.build('/events?tags[]=purple', {
-          tags: {
+        let result = apos.urls.build('/events?colors[]=purple', {
+          colors: {
             $pull: 'purple'
           }
         });
         assert(result === '/events');
       });
       it('Behaves reasonably when a nonexistent item is removed', function() {
-        let result = apos.urls.build('/events?tags[]=purple', {
-          tags: {
+        let result = apos.urls.build('/events?colors[]=purple', {
+          colors: {
             $pull: 'blue'
           }
         });
-        assert(result === '/events?tags%5B0%5D=purple');
+        assert(result === '/events?colors%5B0%5D=purple');
       });
       it('Takes less than 250 msec to run these tests', function() {
         let end = (new Date()).getTime();

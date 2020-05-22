@@ -33,11 +33,6 @@ let simpleFields = [
     def: 'candy'
   },
   {
-    name: 'tags',
-    label: 'Tags',
-    type: 'tags'
-  },
-  {
     name: 'slug',
     label: 'Slug',
     type: 'slug'
@@ -58,11 +53,6 @@ let realWorldCase = {
       "name": "slug",
       "label": "Slug",
       "required": true
-    },
-    {
-      "type": "tags",
-      "name": "tags",
-      "label": "Tags"
     },
     {
       "type": "boolean",
@@ -132,9 +122,6 @@ let realWorldCase = {
       "idField": "pageId"
     }
   ],
-  "removeFields": [
-    "tags"
-  ],
   "arrangeFields": [
     {
       "name": "basics",
@@ -142,8 +129,7 @@ let realWorldCase = {
       "fields": [
         "title",
         "slug",
-        "published",
-        "tags"
+        "published"
       ]
     },
     {
@@ -1125,29 +1111,7 @@ describe('Schemas', function() {
     assert(result.address === input.address);
     // default
     assert(result.variety === simpleFields[2].choices[0].value);
-    assert(Array.isArray(result.tags) && (result.tags.length === 0));
     assert(result.slug === 'this-is-cool');
-  });
-
-  it('should convert tags correctly', async () => {
-    let schema = apos.schemas.compose({
-      addFields: simpleFields
-    });
-    assert(schema.length === 5);
-    let input = {
-      tags: [ 4, 5, 'Seven' ]
-    };
-    let req = apos.tasks.getReq();
-    let result = {};
-    await apos.schemas.convert(req, schema, input, result);
-    // without def, the default is undefined, so this is right
-    assert(_.keys(result.tags).length === 3);
-    assert(Array.isArray(result.tags));
-    assert(result.tags[0] === '4');
-    assert(result.tags[1] === '5');
-    // case conversion
-    assert(result.tags[2] === 'seven');
-    assert(result.slug === 'none');
   });
 
   it('should update a password if provided', async () => {
@@ -1283,7 +1247,6 @@ describe('Schemas', function() {
     assert(result.body.items);
     assert(result.body.items[0]);
     assert(result.body.items[0].type === '@apostrophecms/rich-text');
-    // Only tags in the toolbar come through
     assert.equal(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
   });
 

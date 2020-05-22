@@ -33,6 +33,14 @@ describe('Pages', function() {
               }
             ]
           }
+        },
+        testPage: {
+          extend: '@apostrophecms/page-type',
+          fields: {
+            color: {
+              type: 'string'
+            }
+          }
         }
       }
     });
@@ -322,10 +330,11 @@ describe('Pages', function() {
     const page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
     assert(page);
     page.title = 'Changed Title';
-    page.tags = [ 'tag' ];
+    page.color = 'blue';
     await apos.http.put('/api/v1/@apostrophecms/pages/sibling', { body: page, jar });
     const page2 = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
     assert.strictEqual(page2.title, 'Changed Title');
+    assert.strictEqual(page2.color, 'blue');
   });
 
   it('can use PATCH to modify one property of a page', async function() {
@@ -341,7 +350,6 @@ describe('Pages', function() {
     const page2 = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
     assert.strictEqual(page2.title, 'New Title');
     // Did not modify this
-    assert.deepEqual(page2.tags, [ 'tag' ]);
+    assert.strictEqual(page2.color, 'blue');
   });
-
 });

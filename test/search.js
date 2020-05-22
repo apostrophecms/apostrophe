@@ -35,7 +35,6 @@ describe('Search', function() {
     await apos.docs.insert(req, {
       title: 'Testing Search Event',
       type: 'event',
-      tags: ['search', 'test', 'pizza'],
       slug: 'search-test-event',
       published: true
     });
@@ -48,6 +47,6 @@ describe('Search', function() {
 
     assert(doc.lowSearchText.match(/pizza/));
     assert(doc.highSearchText.match(/testing/));
-    assert(_.includes(doc.highSearchWords, 'test', 'pizza', 'testing'));
+    assert(_.includes(doc.highSearchWords, testing'));
   });
 });

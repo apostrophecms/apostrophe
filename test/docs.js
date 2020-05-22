@@ -51,7 +51,6 @@ describe('Docs', function() {
       'type',
       'slug',
       'titleSortified',
-      'tags',
       'published'
     ];
     const actualIndexes = [];

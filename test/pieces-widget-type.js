@@ -75,17 +75,14 @@ describe('Pieces Widgets', function() {
                       type: 'events',
                       by: 'id',
                       pieceIds: [
-                        'wevent007', 'wevent006', 'wevent005'
+                        'wevent010', 'wevent011', 'wevent012'
                       ]
                     },
                     {
                       metaType: 'widget',
                       type: 'events',
-                      by: 'tag',
-                      tags: [
-                        'tag2', 'madeupfaketag'
-                      ],
-                      limitByTag: 5
+                      by: 'all',
+                      limitAll: 5
                     }
                   ]
                 }
@@ -103,12 +100,6 @@ describe('Pieces Widgets', function() {
     let total = 100;
     for (let i = 1; (i <= total); i++) {
       let paddedInt = apos.launder.padInteger(i, 3);
-      let tags;
-      if (i > 50) {
-        tags = [ 'tag2' ];
-      } else {
-        tags = [ 'tag1' ];
-      }
       let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
@@ -117,7 +108,6 @@ describe('Pieces Widgets', function() {
         metaType: 'doc',
         type: 'event',
         title: title,
-        tags: tags,
         body: {
           metaType: 'area',
           items: [
@@ -137,7 +127,6 @@ describe('Pieces Widgets', function() {
     // indexes, which don't support numbers
     const paddedInt = 'wiggly';
     const title = 'Event Wiggly';
-    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
@@ -145,7 +134,6 @@ describe('Pieces Widgets', function() {
       metaType: 'doc',
       type: 'event',
       title: title,
-      tags: tags,
       // fake highSearchText and highSearchWords until the
       // search module is finished
       highSearchText: apos.utils.sortify(title),
@@ -167,7 +155,7 @@ describe('Pieces Widgets', function() {
     }
   });
 
-  it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
+  it('should find appropriate events and not others in a page containing all and id-based event widgets', async function() {
 
     const body = await apos.http.get('/page-with-events');
     // Does it contain the right events via a widget?
@@ -181,19 +169,15 @@ describe('Pieces Widgets', function() {
     let i7 = body.indexOf('Event 007');
     assert((i5 > i6) && (i6 > i7));
 
-    // These are by tag
-    assert(body.match(/Event 051/));
-    assert(body.match(/Event 052/));
-    assert(body.match(/Event 053/));
-    assert(body.match(/Event 054/));
-    assert(body.match(/Event 055/));
+    // These are by all
+    assert(body.match(/Event 001/));
+    assert(body.match(/Event 002/));
+    assert(body.match(/Event 003/));
+    assert(body.match(/Event 004/));
+    assert(body.match(/Event 005/));
 
-    // Respect limit by tag
-    assert(!body.match(/Event 056/));
-
-    // Does it contain events not associated with the widget?
-    assert(!body.match(/Event 001/));
-    assert(!body.match(/Event 030/));
+    // Respect limit by all
+    assert(!body.match(/Event 006/));
   });
 
 });
@@ -261,20 +245,17 @@ describe('Pieces Widget With Extra Join', function() {
                       type: 'events',
                       by: 'id',
                       pieceIds: [
-                        'wevent007', 'wevent006', 'wevent005'
+                        'wevent010', 'wevent011', 'wevent012'
                       ],
                       featuredIds: [
-                        'wevent003', 'wevent004'
+                        'wevent020', 'wevent021'
                       ]
                     },
                     {
                       metaType: 'widget',
                       type: 'events',
-                      by: 'tag',
-                      tags: [
-                        'tag2', 'madeupfaketag'
-                      ],
-                      limitByTag: 5
+                      by: 'all',
+                      limitByAll: 5
                     }
                   ]
                 }
@@ -310,12 +291,6 @@ describe('Pieces Widget With Extra Join', function() {
     let total = 100;
     for (let i = 1; (i <= total); i++) {
       let paddedInt = apos.launder.padInteger(i, 3);
-      let tags;
-      if (i > 50) {
-        tags = [ 'tag2' ];
-      } else {
-        tags = [ 'tag1' ];
-      }
       let title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
@@ -323,7 +298,6 @@ describe('Pieces Widget With Extra Join', function() {
         published: true,
         type: 'event',
         title: title,
-        tags: tags,
         body: {
           metaType: 'area',
           items: [
@@ -343,14 +317,12 @@ describe('Pieces Widget With Extra Join', function() {
     // indexes, which don't support numbers
     const paddedInt = 'wiggly';
     const title = 'Event Wiggly';
-    const tags = [];
     testItems.push({
       _id: 'weventwiggly' + paddedInt,
       slug: 'wevent-wiggl' + paddedInt,
       published: true,
       type: 'event',
       title: title,
-      tags: tags,
       // fake highSearchText and highSearchWords until the
       // search module is finished
       highSearchText: apos.utils.sortify(title),
@@ -372,43 +344,41 @@ describe('Pieces Widget With Extra Join', function() {
     }
   });
 
-  it('should find appropriate events and not others in a page containing tag and id-based event widgets', async function() {
+  it('should find appropriate events and not others in a page containing all and id-based event widgets', async function() {
 
     const body = await apos.http.get('/page-with-events');
     // Does it contain the right events via a widget?
-    assert(body.match(/Event 005/));
-    assert(body.match(/Event 006/));
-    assert(body.match(/Event 007/));
+    assert(body.match(/Event 010/));
+    assert(body.match(/Event 011/));
+    assert(body.match(/Event 012/));
 
     // Are they in the right order (reversed on purpose)?
-    let i5 = body.indexOf('Event 005');
-    let i6 = body.indexOf('Event 006');
-    let i7 = body.indexOf('Event 007');
-    assert((i5 > i6) && (i6 > i7));
+    let i10 = body.indexOf('Event 010');
+    let i11 = body.indexOf('Event 011');
+    let i12 = body.indexOf('Event 012');
+    assert((i10 > i11) && (i11 > i12));
 
-    // These are by tag
-    assert(body.match(/Event 051/));
-    assert(body.match(/Event 052/));
-    assert(body.match(/Event 053/));
-    assert(body.match(/Event 054/));
-    assert(body.match(/Event 055/));
-
-    // Respect limit by tag
-    assert(!body.match(/Event 056/));
-
-    // Does it contain events not associated with the widget?
-    assert(!body.match(/Event 001/));
-    assert(!body.match(/Event 030/));
-
-    // Does it contain the featured events in the extra join?
+    // These are by all
+    assert(body.match(/Event 001/));
+    assert(body.match(/Event 002/));
     assert(body.match(/Event 003/));
     assert(body.match(/Event 004/));
-    let i3 = body.indexOf('Event 003');
-    let i4 = body.indexOf('Event 004');
+    assert(body.match(/Event 005/));
+
+    // Respect limit by all
+    assert(!body.match(/Event 006/));
+
+    // Does it contain events not associated with the widgets?
+    assert(!body.match(/Event 040/));
+
+    // Does it contain the featured events in the extra join?
+    assert(body.match(/Event 020/));
+    assert(body.match(/Event 021/));
+    let i20 = body.indexOf('Event 020');
+    let i21 = body.indexOf('Event 021');
     // Are they in the right order and in the right place (before the regular stuff)?
-    assert(i3 < i7);
-    assert(i4 < i7);
-    assert(i3 < i4);
+    assert(i20 < i10);
+    assert(i21 < i10);
   });
 
 });

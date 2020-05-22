@@ -77,7 +77,7 @@ describe('Pages', function() {
     assert(trash);
     assert(trash.slug === '/trash');
     assert(trash.path === `${homeId}/${trash._id}`);
-    assert(trash.type === 'trash');
+    assert(trash.type === '@apostrophecms/trash');
     assert(trash.parked);
     assert(!trash.published);
     // Verify that clonePermanent did its

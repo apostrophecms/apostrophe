@@ -24,7 +24,6 @@ module.exports = {
     '@apostrophecms/jobs': {},
     '@apostrophecms/versions': {},
     '@apostrophecms/modals': {},
-    '@apostrophecms/tags': {},
     '@apostrophecms/attachments': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
