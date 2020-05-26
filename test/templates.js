@@ -20,19 +20,7 @@ describe('Templates', function() {
         'templates-test': {},
         'templates-subclass-test': {},
         'templates-options-test': {},
-        'inject-test': {},
-        '@apostrophecms/pages': {
-          options: {
-            park: [
-              {
-                title: 'With Layout',
-                slug: '/with-layout',
-                type: 'withLayout',
-                parkedId: 'withLayout'
-              }
-            ]
-          }
-        }
+        'inject-test': {}
       }
     });
   });
@@ -111,7 +99,7 @@ describe('Templates', function() {
 
   it('should render pages successfully with prepend and append to locations', async function() {
     let req = apos.tasks.getReq();
-    let result = await apos.pages.renderPage(req, 'pages/withLayout');
+    let result = await apos.modules['with-layout-pages'].renderPage(req, 'page');
     let titleIndex = result.indexOf('<title>');
     let beforeTestIndex = result.indexOf('<meta name="prepend-head-test" />');
     let afterTestIndex = result.indexOf('<meta name="append-head-test" />');

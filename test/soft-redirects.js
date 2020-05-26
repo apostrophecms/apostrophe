@@ -21,11 +21,14 @@ describe('Soft Redirects', function() {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default',
+                type: 'default-pages',
                 published: true
               }
             ]
           }
+        },
+        'default-pages': {
+          extend: '@apostrophecms/page-type'
         }
       }
     });
@@ -80,7 +83,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default',
+                type: 'default-pages',
                 published: true
               }
             ]
@@ -90,7 +93,10 @@ describe('Soft Redirects - with `statusCode` option', async() => {
           options: {
             statusCode: 301
           }
-        }
+        },
+        'default-pages': {
+          extend: '@apostrophecms/page-type'
+        },
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirects']);

@@ -51,7 +51,7 @@ describe('Pieces Widgets', function() {
           options: {
             types: [
               {
-                name: '@apostrophecms/home',
+                name: '@apostrophecms/home-pages',
                 label: 'Home'
               },
               {
@@ -63,7 +63,7 @@ describe('Pieces Widgets', function() {
               {
                 title: 'Page With Events Widget',
                 metaType: 'doc',
-                type: 'default',
+                type: 'default-pages',
                 slug: '/page-with-events',
                 parkedId: 'page-with-events-widget',
                 published: true,
@@ -238,7 +238,7 @@ describe('Pieces Widget With Extra Join', function() {
           options: {
             types: [
               {
-                name: '@apostrophecms/home',
+                name: '@apostrophecms/home-pages',
                 label: 'Home'
               },
               {
