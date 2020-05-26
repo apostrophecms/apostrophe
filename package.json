@@ -76,7 +76,6 @@
     "path-to-regexp": "^1.8.0",
     "performance-now": "^2.1.0",
     "prompt": "^0.2.14",
-    "prosemirror-tables": "^1.1.0",
     "qs": "^6.9.4",
     "regexp-quote": "0.0.0",
     "resolve": "^1.17.0",
