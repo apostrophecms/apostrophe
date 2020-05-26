@@ -51,7 +51,7 @@ describe('Pieces Widgets', function() {
           options: {
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home',
                 label: 'Home'
               },
               {
@@ -238,7 +238,7 @@ describe('Pieces Widget With Extra Join', function() {
           options: {
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home',
                 label: 'Home'
               },
               {

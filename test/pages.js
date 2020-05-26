@@ -24,7 +24,7 @@ describe('Pages', function() {
             park: [],
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home',
                 label: 'Home'
               },
               {
@@ -66,7 +66,7 @@ describe('Pages', function() {
     homeId = home._id;
     assert(home.slug === '/');
     assert(home.path === home._id);
-    assert(home.type === 'home');
+    assert(home.type === '@apostrophecms/home');
     assert(home.parked);
     assert(home.published);
   });

@@ -24,7 +24,7 @@ describe('Pages', function() {
             park: [],
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home',
                 label: 'Home'
               },
               {
