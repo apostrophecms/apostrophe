@@ -20,7 +20,10 @@ describe('Templates', function() {
         'templates-test': {},
         'templates-subclass-test': {},
         'templates-options-test': {},
-        'inject-test': {}
+        'inject-test': {},
+        'with-layout-pages': {
+          extend: '@apostrophecms/page-type'
+        }
       }
     });
   });

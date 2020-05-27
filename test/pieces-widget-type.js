@@ -31,9 +31,6 @@ describe('Pieces Widgets', function() {
         },
         'default-pages': {
           extend: '@apostrophecms/page-type',
-          options: {
-            name: 'default'
-          },
           fields: {
             add: {
               body: {
@@ -55,7 +52,7 @@ describe('Pieces Widgets', function() {
                 label: 'Home'
               },
               {
-                name: 'default',
+                name: 'default-pages',
                 label: 'Default'
               }
             ],
@@ -242,14 +239,14 @@ describe('Pieces Widget With Extra Join', function() {
                 label: 'Home'
               },
               {
-                name: 'default',
+                name: 'default-pages',
                 label: 'Default'
               }
             ],
             park: [
               {
                 title: 'Page With Events Widget',
-                type: 'default',
+                type: 'default-pages',
                 slug: '/page-with-events',
                 published: true,
                 parkedId: 'page-with-events-widget',
@@ -284,9 +281,6 @@ describe('Pieces Widget With Extra Join', function() {
         },
         'default-pages': {
           extend: '@apostrophecms/page-type',
-          options: {
-            name: 'default'
-          },
           fields: {
             add: {
               body: {
