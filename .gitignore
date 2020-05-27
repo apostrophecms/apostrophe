@@ -16,9 +16,6 @@ test/node_modules
 lib/modules/*/public/css/*.css
 */public/css/*.css
 lib/modules/*/public/css/*.css
-lib/modules/apostrophe-assets/public/css/vendor/cropper.css
-lib/modules/apostrophe-assets/public/css/vendor/pikaday.css
-lib/modules/apostrophe-ui/public/css/vendor/font-awesome/font-awesome.css
 # Never commit a CSS map file, anywhere
 *.css.map
 

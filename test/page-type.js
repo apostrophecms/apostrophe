@@ -31,15 +31,13 @@ describe('page-type', function() {
     const niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/', async function(req) {
       req.handlerInvoked = true;
-      req.template = function(req, args) {
-        return 'niftyPages-index-template-rendered-this';
-      };
+      niftyPages.setTemplate(req, 'index');
     });
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-page'
+          type: 'nifty-pages'
         }
       },
       remainder: '/'
@@ -52,15 +50,13 @@ describe('page-type', function() {
     const niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/foo', async function(req) {
       req.handlerInvoked = true;
-      req.template = function(req, args) {
-        return 'niftyPages-foo-template-rendered-this';
-      };
+      niftyPages.setTemplate(req, 'foo');
     });
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-page'
+          type: 'nifty-pages'
         }
       },
       remainder: '/foo'
@@ -73,15 +69,13 @@ describe('page-type', function() {
     const niftyPages = apos.modules['nifty-pages'];
     niftyPages.dispatch('/bar/:bizzle/:kapow/*', async function(req) {
       req.barInvoked = true;
-      req.template = function(req, args) {
-        return 'niftyPages-bar-template-rendered-this';
-      };
+      niftyPages.setTemplate(req, 'bar');
     });
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-page'
+          type: 'nifty-pages'
         }
       },
       remainder: '/bar/wacky/wonky/wibble/skip'
@@ -97,15 +91,13 @@ describe('page-type', function() {
     const niftyPages = apos.modules['nifty-pages'];
     await niftyPages.dispatch('/foo', function(req) {
       req.foo2Invoked = true;
-      req.template = function(req, args) {
-        return 'niftyPages-foo2-template-rendered-this';
-      };
+      niftyPages.setTemplate(req, 'foo2');
     });
     // Simulate a page request
     const req = apos.tasks.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-page'
+          type: 'nifty-pages'
         }
       },
       remainder: '/foo'
@@ -143,7 +135,7 @@ describe('page-type', function() {
 
   it('should be able to insert a test page manually into the db', async function() {
     const testItem = { _id: 'niftyPages1',
-      type: 'nifty-page',
+      type: 'nifty-pages',
       slug: '/niftyPages',
       published: true,
       path: '/niftyPages',

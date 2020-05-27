@@ -45,8 +45,7 @@ describe('Search', function() {
     assert(doc.lowSearchText);
     assert(doc.searchSummary !== undefined);
 
-    assert(doc.lowSearchText.match(/pizza/));
     assert(doc.highSearchText.match(/testing/));
-    assert(_.includes(doc.highSearchWords, testing'));
+    assert(_.includes(doc.highSearchWords, 'testing'));
   });
 });

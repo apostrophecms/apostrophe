@@ -33,6 +33,8 @@ module.exports = {
     '@apostrophecms/global': {},
     '@apostrophecms/polymorphic-type': {},
     '@apostrophecms/pages': {},
+    '@apostrophecms/home-pages': {},
+    '@apostrophecms/trash': {},
     '@apostrophecms/search': {},
     '@apostrophecms/any-page-type': {},
     '@apostrophecms/areas': {},

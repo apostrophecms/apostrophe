@@ -105,8 +105,10 @@ describe('Pieces', function() {
             name: 'article'
           },
           fields: {
-            name: {
-              type: 'string'
+            add: {
+              name: {
+                type: 'string'
+              }
             }
           }
         }

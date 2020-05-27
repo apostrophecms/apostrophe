@@ -24,15 +24,18 @@ describe('Pages', function() {
             park: [],
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home-pages',
                 label: 'Home'
               },
               {
-                name: 'testPage',
+                name: 'test-pages',
                 label: 'Test Page'
               }
             ]
           }
+        },
+        'test-pages': {
+          extend: '@apostrophecms/page-type'
         }
       }
     });
@@ -66,7 +69,7 @@ describe('Pages', function() {
     homeId = home._id;
     assert(home.slug === '/');
     assert(home.path === home._id);
-    assert(home.type === 'home');
+    assert(home.type === '@apostrophecms/home-pages');
     assert(home.parked);
     assert(home.published);
   });
@@ -89,7 +92,7 @@ describe('Pages', function() {
   it('should be able to use db to insert documents', async function() {
     const testItems = [
       { _id: 'parent',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/parent',
         published: true,
         path: `${homeId}/parent`,
@@ -98,7 +101,7 @@ describe('Pages', function() {
       },
       {
         _id: 'child',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/child',
         published: true,
         path: `${homeId}/parent/child`,
@@ -107,7 +110,7 @@ describe('Pages', function() {
       },
       {
         _id: 'grandchild',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/grandchild',
         published: true,
         path: `${homeId}/parent/child/grandchild`,
@@ -116,7 +119,7 @@ describe('Pages', function() {
       },
       {
         _id: 'sibling',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/sibling',
         published: true,
         path: `${homeId}/parent/sibling`,
@@ -126,7 +129,7 @@ describe('Pages', function() {
       },
       {
         _id: 'cousin',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/cousin',
         published: true,
         path: `${homeId}/parent/sibling/cousin`,
@@ -135,7 +138,7 @@ describe('Pages', function() {
       },
       {
         _id: 'another-parent',
-        type: 'testPage',
+        type: 'test-pages',
         slug: '/another-parent',
         published: true,
         path: `${homeId}/another-parent`,
@@ -232,7 +235,7 @@ describe('Pages', function() {
     const newPage = {
       slug: '/new-page',
       published: true,
-      type: 'testPage',
+      type: 'test-pages',
       title: 'New Page'
     };
 

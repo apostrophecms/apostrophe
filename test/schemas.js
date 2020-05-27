@@ -1094,7 +1094,7 @@ describe('Schemas', function() {
     let schema = apos.schemas.compose({
       addFields: simpleFields
     });
-    assert(schema.length === 5);
+    assert(schema.length === 4);
     let input = {
       name: 'Bob Smith',
       address: '5017 Awesome Street\nPhiladelphia, PA 19147',
@@ -1105,7 +1105,7 @@ describe('Schemas', function() {
     let result = {};
     await apos.schemas.convert(req, schema, input, result);
     // no irrelevant or missing fields
-    assert(_.keys(result).length === 5);
+    assert(_.keys(result).length === 4);
     // expected fields came through
     assert(result.name === input.name);
     assert(result.address === input.address);

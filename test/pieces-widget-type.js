@@ -31,9 +31,6 @@ describe('Pieces Widgets', function() {
         },
         'default-pages': {
           extend: '@apostrophecms/page-type',
-          options: {
-            name: 'default'
-          },
           fields: {
             add: {
               body: {
@@ -51,11 +48,11 @@ describe('Pieces Widgets', function() {
           options: {
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home-pages',
                 label: 'Home'
               },
               {
-                name: 'default',
+                name: 'default-pages',
                 label: 'Default'
               }
             ],
@@ -63,7 +60,7 @@ describe('Pieces Widgets', function() {
               {
                 title: 'Page With Events Widget',
                 metaType: 'doc',
-                type: 'default',
+                type: 'default-pages',
                 slug: '/page-with-events',
                 parkedId: 'page-with-events-widget',
                 published: true,
@@ -75,7 +72,7 @@ describe('Pieces Widgets', function() {
                       type: 'events',
                       by: 'id',
                       pieceIds: [
-                        'wevent010', 'wevent011', 'wevent012'
+                        'wevent012', 'wevent011', 'wevent010'
                       ]
                     },
                     {
@@ -159,14 +156,14 @@ describe('Pieces Widgets', function() {
 
     const body = await apos.http.get('/page-with-events');
     // Does it contain the right events via a widget?
-    assert(body.match(/Event 005/));
-    assert(body.match(/Event 006/));
-    assert(body.match(/Event 007/));
+    assert(body.match(/Event 010/));
+    assert(body.match(/Event 011/));
+    assert(body.match(/Event 012/));
 
     // Are they in the right order (reversed on purpose)?
-    let i5 = body.indexOf('Event 005');
-    let i6 = body.indexOf('Event 006');
-    let i7 = body.indexOf('Event 007');
+    let i5 = body.indexOf('Event 010');
+    let i6 = body.indexOf('Event 011');
+    let i7 = body.indexOf('Event 012');
     assert((i5 > i6) && (i6 > i7));
 
     // These are by all
@@ -222,18 +219,18 @@ describe('Pieces Widget With Extra Join', function() {
           options: {
             types: [
               {
-                name: 'home',
+                name: '@apostrophecms/home-pages',
                 label: 'Home'
               },
               {
-                name: 'default',
+                name: 'default-pages',
                 label: 'Default'
               }
             ],
             park: [
               {
                 title: 'Page With Events Widget',
-                type: 'default',
+                type: 'default-pages',
                 slug: '/page-with-events',
                 published: true,
                 parkedId: 'page-with-events-widget',
@@ -245,7 +242,7 @@ describe('Pieces Widget With Extra Join', function() {
                       type: 'events',
                       by: 'id',
                       pieceIds: [
-                        'wevent010', 'wevent011', 'wevent012'
+                        'wevent012', 'wevent011', 'wevent010'
                       ],
                       featuredIds: [
                         'wevent020', 'wevent021'
@@ -265,9 +262,6 @@ describe('Pieces Widget With Extra Join', function() {
         },
         'default-pages': {
           extend: '@apostrophecms/page-type',
-          options: {
-            name: 'default'
-          },
           fields: {
             add: {
               body: {
