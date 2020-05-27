@@ -1,5 +1,3 @@
-.nyc_output
-coverage
 *.swp
 package-lock.json
 test/public/modules/*
