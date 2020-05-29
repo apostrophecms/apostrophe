@@ -214,14 +214,12 @@ describe('Pieces', function() {
         publicTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'public'
+          }
         },
         manageTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'manage'
+          }
         },
         unsafeTest: {}
       },
@@ -245,7 +243,7 @@ describe('Pieces', function() {
       fakeTest: 'notEvenReal'
     };
 
-    mockCursor.applySafeBuilders(filters);
+    mockCursor.applyBuildersSafely(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });
@@ -442,8 +440,8 @@ describe('Pieces', function() {
     assert(response.results.length === 5);
   });
 
-  it('can GET all ten of those products with a user session and _edit=1', async () => {
-    const response = await apos.http.get('/api/v1/products?_edit=1', {
+  it('can GET all ten of those products with a user session and published=any', async () => {
+    const response = await apos.http.get('/api/v1/products?published=any', {
       jar
     });
     assert(response);
@@ -454,7 +452,7 @@ describe('Pieces', function() {
   let firstId;
 
   it('can GET only 5 if perPage is 5', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&_edit=1', {
+    const response = await apos.http.get('/api/v1/products?perPage=5&published=any', {
       jar
     });
     assert(response);
@@ -465,7 +463,7 @@ describe('Pieces', function() {
   });
 
   it('can GET a different 5 on page 2', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&page=2&_edit=1', {
+    const response = await apos.http.get('/api/v1/products?perPage=5&page=2&published=any', {
       jar
     });
     assert(response);
@@ -523,15 +521,11 @@ describe('Pieces', function() {
   });
 
   it('can fetch trashed product with trash=any and the right user', async () => {
-    try {
-      await apos.http.get(`/api/v1/products/${updateProduct._id}?trash=any`, {
-        jar
-      });
-      // Should have been a 404, 200 = test fails
-      assert(false);
-    } catch (e) {
-      assert(e.status === 404);
-    }
+    const product = await apos.http.get(`/api/v1/products/${updateProduct._id}?trash=any`, {
+      jar
+    });
+    // Should have been a 404, 200 = test fails
+    assert(product.trash);
   });
 
   let joinedProductId;
@@ -587,7 +581,7 @@ describe('Pieces', function() {
   });
 
   it('can GET results plus filter choices', async () => {
-    const response = await apos.http.get('/api/v1/products?_edit=1&choices=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/products?choices=title,published,_articles,articles', {
       jar
     });
     assert(response);

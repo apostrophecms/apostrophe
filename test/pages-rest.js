@@ -378,7 +378,7 @@ describe('Pages', function() {
       jar
     });
     assert(page._id);
-    const trash = await apos.http.get('/api/v1/@apostrophecms/pages/_trash?_edit=1&trash=1', {
+    const trash = await apos.http.get('/api/v1/@apostrophecms/pages/_trash?trash=1', {
       jar
     });
     assert(trash);
