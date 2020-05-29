@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.107.1 (2020-05-29)
+
+* The `distinctCounts` feature (also known as `counts: true` for `piecesFilters`) is now compatible with the `apostrophe-db-mongo-3-driver` module, when in use. Note that there is little benefit to that module now that `emulate-mongo-2-driver` is standard in Apostrophe and employs the MongoDB 3.x driver under the hood but provides a 2.x-compatible API. However those who strongly prefer the 3.x driver APIs for direct MongoDB queries may use `apostrophe-db-mongo-3-driver` with more confidence given this fix.
+
 ## 2.107.0 (2020-05-20)
 
 * CKEditor has been updated to version 4.14, addressing a low-risk XSRF vulnerability. The vulnerability required that the source code editor feature be activated and that a user with editing privileges be convinced to import specially crafted markup, which is unlikely in practice.
