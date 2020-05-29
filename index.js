@@ -54,7 +54,9 @@ module.exports = async function(options) {
     autodetectBundles();
     acceptGlobalOptions();
 
-    // Module-based async events (self.on and self.emit of each module)
+    // Module-based async events (self.on and self.emit of each module,
+    // handlers are usually registered via `handlers` in the module
+    // definition rather than `self.on`)
     self.eventHandlers = {};
 
     // Destroys the Apostrophe object, freeing resources such as
