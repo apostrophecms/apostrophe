@@ -96,7 +96,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
         },
         'default-pages': {
           extend: '@apostrophecms/page-type'
-        },
+        }
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirects']);

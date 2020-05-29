@@ -12,6 +12,18 @@
       "env": {
         "browser": 1
       }
+    },
+    {
+      "files": [ "**/src/apos/always/*.js" ],
+      "globals": {
+        "apos": true
+      },
+      "env": {
+        "browser": 1
+      },
+      "rules": {
+        "no-var": 0
+      }
     }
   ],
   "parser": "babel-eslint"
