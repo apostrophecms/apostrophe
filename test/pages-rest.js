@@ -354,4 +354,44 @@ describe('Pages', function() {
     // Did not modify this
     assert.strictEqual(page2.color, 'blue');
   });
+
+  it('can use PATCH to move a page beneath the home page with _targetId: _home', async function() {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+      body: {
+        _targetId: '_home',
+        _position: 'firstChild'
+      },
+      jar
+    });
+    assert(page._id);
+    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.level, 1);
+    assert.strictEqual(page.rank, 0);
+  });
+
+  it('can use PATCH to move a page into the trash using _trash as _targetId', async function() {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+      body: {
+        _targetId: '_trash',
+        _position: 'firstChild'
+      },
+      jar
+    });
+    assert(page._id);
+    const trash = await apos.http.get('/api/v1/@apostrophecms/pages/_trash?_edit=1&trash=1', {
+      jar
+    });
+    assert(trash);
+    // Verify this is really working because of the _trash
+    // shortcut
+    assert(trash._id !== '_trash');
+    assert.strictEqual(page.path, `${homeId}/${trash._id}/${page._id}`);
+    assert.strictEqual(page.level, 2);
+    assert.strictEqual(page.rank, 0);
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/cousin?_edit=1&trash=1', {
+      jar
+    });
+    assert(page.trash);
+  });
+
 });
