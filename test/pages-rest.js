@@ -442,7 +442,7 @@ describe('Pages', function() {
 
   it('Can use PATCH to update a widget via @ syntax', async () => {
     let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    const _id = `@${page.body.items[0]._id}`; 
+    const _id = `@${page.body.items[0]._id}`;
     page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
       body: {
         [_id]: {
@@ -450,7 +450,8 @@ describe('Pages', function() {
           type: '@apostrophecms/rich-text',
           content: 'I @ syntax'
         }
-      }, jar
+      },
+      jar
     });
     page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
     assert(page.body.items[0]);

@@ -300,7 +300,7 @@ describe('Utils', function() {
       apos.utils.set(data, 'shoe.laces.0', 'gnarly');
       assert(data.shoe.laces[0] === 'gnarly');
     });
-    
+
     it('can get a subobject with @ syntax', () => {
       const data = {
         shoes: [
