@@ -40,6 +40,16 @@ describe('Pages', function() {
             add: {
               color: {
                 type: 'string'
+              },
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {
+                      toolbar: [ 'bold', 'italic' ]
+                    }
+                  }
+                }
               }
             }
           }
@@ -392,6 +402,59 @@ describe('Pages', function() {
       jar
     });
     assert(page.trash);
+  });
+
+  it('Can use PATCH to add a widget to an area by path', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        $push: {
+          'body.items': {
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: 'This is <b>Bold</b>'
+          }
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/<b>Bold<\/b>/));
+  });
+
+  it('Can use PATCH to update a widget by path', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        'body.items.0': {
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: 'This is normal'
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/normal/));
+  });
+
+  it('Can use PATCH to update a widget via @ syntax', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const _id = `@${page.body.items[0]._id}`; 
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        [_id]: {
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: 'I @ syntax'
+        }
+      }, jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/I @ syntax/));
   });
 
 });
