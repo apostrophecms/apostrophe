@@ -67,6 +67,7 @@ describe('Pieces Pages', function() {
         titleSortified: 'event ' + paddedInt,
         body: {
           metaType: 'area',
+          _id: apos.utils.generateId(),
           items: [
             {
               metaType: 'widget',
