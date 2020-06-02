@@ -179,20 +179,35 @@ let hasArea = {
       type: 'area',
       name: 'body',
       label: 'Body',
-      widgets: {
-        '@apostrophecms/rich-text': {
-          'toolbar': [ 'styles', 'bold' ],
-          styles: [
-            {
-              tag: 'p',
-              label: 'Paragraph'
-            },
-            {
-              tag: 'h4',
-              label: 'Header 4'
-            }
-          ]
+      options: {
+        widgets: {
+          '@apostrophecms/rich-text': {
+            'toolbar': [ 'styles', 'bold' ],
+            styles: [
+              {
+                tag: 'p',
+                label: 'Paragraph'
+              },
+              {
+                tag: 'h4',
+                label: 'Header 4'
+              }
+            ]
+          }
         }
+      }
+    }
+  ]
+};
+
+let hasAreaWithoutWidgets = {
+  addFields: [
+    {
+      type: 'area',
+      name: 'body',
+      label: 'Body',
+      options: {
+        widgets: {}
       }
     }
   ]
@@ -1231,6 +1246,7 @@ describe('Schemas', function() {
       body: [
         {
           metaType: 'widget',
+          _id: 'abc',
           type: '@apostrophecms/rich-text',
           content: '<h4>This <em>is</em> <strong>a header.</strong></h4>'
         }
@@ -1248,6 +1264,27 @@ describe('Schemas', function() {
     assert(result.body.items[0]);
     assert(result.body.items[0].type === '@apostrophecms/rich-text');
     assert.equal(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
+  });
+
+  it('should not accept a widget not in the widgets object of the area', async () => {
+    let schema = apos.schemas.compose(hasAreaWithoutWidgets);
+    assert(schema.length === 1);
+    let input = {
+      irrelevant: 'Irrelevant',
+      body: [
+        {
+          metaType: 'widget',
+          _id: 'abc',
+          type: '@apostrophecms/rich-text',
+          content: '<h4>This <em>is</em> <strong>a header.</strong></h4>'
+        }
+      ]
+    };
+    let req = apos.tasks.getReq();
+    let result = {};
+    await apos.schemas.convert(req, schema, input, result);
+    // no irrelevant or missing fields
+    assert(!result.body.items[0]);
   });
 
   it('should convert areas gracefully when they are undefined', async () => {
