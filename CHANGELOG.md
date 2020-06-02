@@ -1,7 +1,8 @@
 # Changelog
 
-## 2.107.1 (2020-05-29)
+## 2.108.0 (2020-05-29)
 
+* If called with a scalar argument, `apos.utils.clonePermanent` now returns scalars (strings, booleans, numbers) as-is. This makes it easier to use the method when the argument might or might not be an object that requires cloning.
 * The `distinctCounts` feature (also known as `counts: true` for `piecesFilters`) is now compatible with the `apostrophe-db-mongo-3-driver` module, when in use. Note that there is little benefit to that module now that `emulate-mongo-2-driver` is standard in Apostrophe and employs the MongoDB 3.x driver under the hood but provides a 2.x-compatible API. However those who strongly prefer the 3.x driver APIs for direct MongoDB queries may use `apostrophe-db-mongo-3-driver` with more confidence given this fix.
 
 ## 2.107.0 (2020-05-20)
