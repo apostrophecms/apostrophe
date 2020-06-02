@@ -514,4 +514,68 @@ describe('Pages', function() {
     assert(!page.body.items[3]);
   });
 
+  it('Can use $before to insert a widget in the middle of the area', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        $push: {
+          'body.items': {
+            $each: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: "before"
+              }
+            ],
+            $before: page.body.items[1]._id
+          }
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/Oh in the beginning/));
+    assert(page.body.items[1]);
+    assert(page.body.items[1].content.match(/before/));
+    assert(page.body.items[2]);
+    assert(page.body.items[2].content.match(/middle/));
+    assert(page.body.items[3]);
+    assert(page.body.items[3].content.match(/I @ syntax/));
+    assert(!page.body.items[4]);
+  });
+
+  it('Can use $after to insert a widget in the middle of the area', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        $push: {
+          'body.items': {
+            $each: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: "after"
+              }
+            ],
+            $after: page.body.items[0]._id
+          }
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/Oh in the beginning/));
+    assert(page.body.items[1]);
+    assert(page.body.items[1].content.match(/after/));
+    assert(page.body.items[2]);
+    assert(page.body.items[2].content.match(/before/));
+    assert(page.body.items[3]);
+    assert(page.body.items[3].content.match(/middle/));
+    assert(page.body.items[4]);
+    assert(page.body.items[4].content.match(/I @ syntax/));
+    assert(!page.body.items[5]);
+  });
+
 });
