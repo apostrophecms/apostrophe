@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.107.1 (2020-05-29)
+## 2.107.1 (2020-06-03)
 
 * The `distinctCounts` feature (also known as `counts: true` for `piecesFilters`) is now compatible with the `apostrophe-db-mongo-3-driver` module, when in use. Note that there is little benefit to that module now that `emulate-mongo-2-driver` is standard in Apostrophe and employs the MongoDB 3.x driver under the hood but provides a 2.x-compatible API. However those who strongly prefer the 3.x driver APIs for direct MongoDB queries may use `apostrophe-db-mongo-3-driver` with more confidence given this fix.
 
