@@ -458,4 +458,60 @@ describe('Pages', function() {
     assert(page.body.items[0].content.match(/I @ syntax/));
   });
 
+  it('Can use $position to insert a widget at the beginning of the area', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        $push: {
+          'body.items': {
+            $each: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: 'Oh in the beginning'
+              }
+            ],
+            $position: 0
+          }
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/Oh in the beginning/));
+    assert(page.body.items[1]);
+    assert(page.body.items[1].content.match(/I @ syntax/));
+    assert(!page.body.items[2]);
+  });
+
+  it('Can use $position to insert a widget in the middle of the area', async () => {
+    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+      body: {
+        $push: {
+          'body.items': {
+            $each: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: "Why don't you meet me in the middle"
+              }
+            ],
+            $position: 1
+          }
+        }
+      },
+      jar
+    });
+    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    assert(page.body.items[0]);
+    assert(page.body.items[0].content.match(/Oh in the beginning/));
+    assert(page.body.items[1]);
+    assert(page.body.items[1].content.match(/middle/));
+    assert(page.body.items[2]);
+    assert(page.body.items[2].content.match(/I @ syntax/));
+    assert(!page.body.items[3]);
+  });
+
 });
