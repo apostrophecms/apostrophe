@@ -43,7 +43,7 @@ export default {
       await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         body: {
           $move: {
-            `@{this._id}`: {
+            [`@{this._id}`]: {
               $item: this.next[i].widget._id,
               $before: this.next[i - 1].widget._id
             }
@@ -54,11 +54,11 @@ export default {
       Vue.set(this.next, i - 1, this.next[i]);
       Vue.set(this.next, i, temp);
     },
-    down(i) {
+    async down(i) {
       await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         body: {
           $move: {
-            `@{this._id}`: {
+            [`@{this._id}`]: {
               $item: this.next[i].widget._id,
               $after: this.next[i + 1].widget._id
             }
@@ -69,11 +69,11 @@ export default {
       Vue.set(this.next, i + 1, this.next[i]);
       Vue.set(this.next, i, temp);
     },
-    remove(i) {
+    async remove(i) {
       await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         body: {
           $pullAllById: {
-            `@{this._id}`: [ this.next[i].widget._id ]
+            [`@{this._id}`]: [ this.next[i].widget._id ]
           }
         }
       });
@@ -82,7 +82,7 @@ export default {
     edit(i) {
       Vue.set(this.editing, this.next[i].widget._id, !this.editing[this.next[i].widget._id]);
     },
-    insert($event) {
+    async insert($event) {
       const push = {
         $each: [ $event.widget ]
       };
@@ -92,7 +92,7 @@ export default {
       await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         body: {
           $push: {
-            `@{this._id}`: push
+            [`@{this._id}`]: push
           }
         }
       });
