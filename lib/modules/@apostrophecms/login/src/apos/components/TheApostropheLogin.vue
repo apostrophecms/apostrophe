@@ -33,9 +33,11 @@ export default {
       const self = this;
       self.error = false;
       try {
-        await apos.utils.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
-          username: self.username,
-          password: self.password
+        await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
+          body: {
+            username: self.username,
+            password: self.password
+          }
         });
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
