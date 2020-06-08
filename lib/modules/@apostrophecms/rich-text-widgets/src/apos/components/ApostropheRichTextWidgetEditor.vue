@@ -47,7 +47,9 @@ export default {
   props: {
     type: String,
     options: Object,
-    value: Object
+    value: Object,
+    _docId: String,
+    _id: String
   },
   computed: {
     moduleOptions() {
@@ -86,12 +88,16 @@ export default {
     this.editor.destroy()
   },
   methods: {
-    update() {
+    async update() {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
 
-      this.$emit('input', this.widgetInfo.data);
+      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        body: {
+          [`@${this._id}`]: this.widgetInfo.data
+        }
+      });
     },
     command(name, options) {
       this.commands[name](options);

@@ -4,7 +4,7 @@
     <div v-if="dropdown" class="apos-area-add-widget-menu-dropdown">
       <button v-for="choice in choices" @click="add(choice.name)">{{ choice.label }}</button>
     </div>
-    <component :is="addWidgetEditor" v-if="adding" v-model="widget" :type="addWidgetType" @close="close()" @save="insert()" :options="addWidgetOptions" />
+    <component :is="addWidgetEditor" v-if="adding" v-model="widget" :type="addWidgetType" @close="close()" @insert="insert" :options="addWidgetOptions" :_docId="_docId" />
   </div>
 </template>
 
@@ -17,7 +17,8 @@ export default {
   props: {
     choices: Array,
     index: Number,
-    widgetOptions: Object
+    widgetOptions: Object,
+    _docId: String
   },
   data() {
     return {
@@ -32,12 +33,11 @@ export default {
   methods: {
     add(name) {
       if (this.widgetIsContextual(name)) {
-        this.widget = {
+        return this.insert({
           _id: cuid(),
           type: name,
           ...this.contextualWidgetDefaultData(name)
-        };
-        return this.insert();
+        });
       } else {
         this.adding = !this.adding;
         if (this.adding) {
@@ -56,12 +56,11 @@ export default {
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
-    insert() {
+    insert(widget) {
       this.$emit('widgetAdded', {
         index: this.index,
-        widget: this.widget
+        widget
       });
-      this.widget = null;
       this.close();
     },
     close() {

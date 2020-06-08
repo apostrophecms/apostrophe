@@ -1,6 +1,6 @@
 <template>
   <div class="apos-area">
-    <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" />
+    <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :_docId="_docId" />
     <div class="apos-areas-widgets-list">
       <div class="apoa-area-widget-wrapper" v-for="(wrapped, i) in next" :key="wrapped.widget._id">
         <div class="apos-area-controls">
@@ -9,9 +9,9 @@
           <button @click="remove(i)">Remove</button>
           <button @click="edit(i)">Edit</button>
         </div>
-        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" />
-        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :_docId="wrapped.widget._docId" :areaFieldId="fieldId" :value="wrapped.widget" @edit="edit(i)" />
-        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" />
+        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :_docId="_docId" :_id="wrapped.widget._id" />
+        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :_docId="_docId" :_id="wrapped.widget._id" :areaFieldId="fieldId" :value="wrapped.widget" @edit="edit(i)" />
+        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" :_docId="_docId" />
       </div>
     </div>
   </div>
@@ -84,6 +84,9 @@ export default {
       Vue.set(this.editing, this.next[i].widget._id, !this.editing[this.next[i].widget._id]);
     },
     async insert($event) {
+      if (!$event.widget._id) {
+        $event.widget._id = cuid();
+      }
       const push = {
         $each: [ $event.widget ]
       };

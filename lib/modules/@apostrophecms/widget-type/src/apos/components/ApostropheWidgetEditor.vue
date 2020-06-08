@@ -29,7 +29,9 @@ export default {
   props: {
     type: String,
     options: Object,
-    value: Object
+    value: Object,
+    _docId: String,
+    _id: String
   },
   computed: {
     schema() {
@@ -51,16 +53,21 @@ export default {
     };
   },
   methods: {
-    save() {
+    async save() {
       const widget = this.widgetInfo.data;
-      if (!widget._id) {
-        widget._id = cuid();
-      }
       if (!widget.type) {
         widget.type = this.type;
       }
-      this.$emit('input', this.widgetInfo.data);
-      this.$emit('save');
+      if (!widget._id) {
+        widget._id = cuid();
+        this.$emit('insert', widget);
+      } else {
+        await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+          body: {
+            [`@${this._id}`]: this.widgetInfo.data
+          }
+        });
+      }
     }
   }
 };
