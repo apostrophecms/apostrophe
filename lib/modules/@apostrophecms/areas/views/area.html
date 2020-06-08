@@ -3,7 +3,7 @@
 {%- set canEdit = data.area._edit and data.options.edit != false -%}
 {%- set isSingleton = data.options.limit == 1 and data.options.type -%}
 
-<div class="apos-area" {%- if canEdit %} data-test data-apos-area-newly-editable data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' data-schema-id='{{ data.field._id | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data='{{ data.area | jsonAttribute({ single: true }) }}' data-choices='{{ data.choices | jsonAttribute({ single: true }) }}'{% endif %}>
+<div class="apos-area" {%- if canEdit %} data-test data-apos-area-newly-editable data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' data-field-id='{{ data.field._id | jsonAttribute({ single: true }) }}' data-options='{{ apos.utils.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data='{{ data.area | jsonAttribute({ single: true }) }}' data-choices='{{ data.choices | jsonAttribute({ single: true }) }}'{% endif %}>
   {%- if not canEdit -%}
     {%- for item in data.area.items -%}
       {%- set widgetOptions = data.options.widgets[item.type] or {} -%}

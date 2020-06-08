@@ -18,9 +18,6 @@
 
 <script>
 
-import axios from 'axios';
-import cookies from 'js-cookie';
-
 export default {
   name: 'ApostrophePiecesManagerModal',
   props: {
@@ -63,19 +60,14 @@ export default {
     async update() {
       apos.bus.$emit('busy', true);
       try {
-        this.pieces = (await axios.create({
-          headers: {
-            'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-          }
-        }).post(
-          this.options.action + '/list',
-          {
-            filters: {
+        this.pieces = (await apos.http.get(
+          this.options.action, {
+            qs: {
               ...this.filterValues,
               page: this.currentPage
             }
           }
-        )).data.pieces;
+        )).pieces;
       } finally {
         apos.bus.$emit('busy', false);
       }

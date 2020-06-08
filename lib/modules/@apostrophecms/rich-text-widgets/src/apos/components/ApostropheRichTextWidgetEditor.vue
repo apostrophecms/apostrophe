@@ -1,20 +1,19 @@
 <template>
-  <vddl-nodrag class="nodrag">
-    <div class="apos-richtext-editor">
-      <editor-menu-bar :editor="editor">
-        <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
-          <component v-for="item in toolbar"
-            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
-            :name="item"
-            :tool="tools[item]"
-            :options="options"
-            :editor="editor"
-          />
-        </div>
-      </editor-menu-bar>
-      <editor-content :editor="editor" />
-    </div>
-  </vddl-nodrag>
+  <div class="apos-richtext-editor">
+    <editor-menu-bar :editor="editor">
+      <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
+        <component v-for="item in toolbar"
+          v-bind:key="item"
+          :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
+          :name="item"
+          :tool="tools[item]"
+          :options="options"
+          :editor="editor"
+        />
+      </div>
+    </editor-menu-bar>
+    <editor-content :editor="editor" />
+  </div>
 </template>
 
 <script>

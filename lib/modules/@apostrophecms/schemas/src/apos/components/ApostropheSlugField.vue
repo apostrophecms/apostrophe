@@ -11,8 +11,6 @@
 import ApostropheFieldMixin from '../mixins/ApostropheFieldMixin.js';
 import slugify from 'sluggo';
 import debounce from 'debounce-async';
-import axios from 'axios';
-import cookies from 'js-cookie';
 
 export default {
   mixins: [ ApostropheFieldMixin ],
@@ -98,35 +96,35 @@ export default {
         return true;
       }
     },
-    deduplicate() {
+    async deduplicate() {
       if (!this.debouncedDeduplicate) {
         this.debouncedDeduplicate = debounce(body, 250);
       }
       // No await here because we want this to happen
       // in the background, we can use catch() old-school
       // to prevent an uncaught rejection error
-      this.debouncedDeduplicate().catch(function(e) {
+      try {
+        await this.debouncedDeduplicate();
+      } catch (e) {
         if (e === 'canceled') {
           // debouncer canceled it, no worries
           return;
         }
         console.error(e);
-      });
+      }
 
       async function body() {
-        const result = await axios.create({
-          headers: {
-            'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-          }
-        }).post(
-          window.apos.docs.action + '/deduplicate-slug',
+        const result = await apos.http.post(
+          `${window.apos.docs.action}/deduplicate-slug`,
           {
-            slug: this.next,
-            _id: this.context._id
+            body: {
+              slug: this.next,
+              _id: this.context._id
+            }
           }
         );
-        if (result.data.slug !== this.next) {
-          this.next = result.data.slug;
+        if (result.slug !== this.next) {
+          this.next = result.slug;
         }
       }
     },
@@ -146,27 +144,30 @@ export default {
       });
       async function body() {
         const was = this.next;
-        const result = await axios.create({
-          headers: {
-            'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-          }
-        }).post(
-          window.apos.docs.action + '/slug-taken',
-          {
-            slug: this.next,
-            _id: this.context._id
-          }
-        );
-        if (this.next === was) {
-          if (result.data.status === 'taken') {
-            this.taken = true;
-          } else {
+        try {
+          const result = await apos.http.post(
+            `${apos.docs.action}/slug-taken`, {
+              body: {
+                slug: this.next,
+                _id: this.context._id
+              }
+            }
+          );
+          if (this.next === was) {
             this.taken = false;
+          } else {
+            this.checkTaken();
           }
-        } else {
-          // Input has changed again, response is not valid,
-          // but we should not drop the ball
-          this.checkTaken();
+        } catch (e) {
+          if (e.status === 409) {
+            if (this.next === was) {
+              this.taken = true;
+            } else {
+              this.checkTaken();
+            }      
+          } else {
+            console.error(e);
+          }
         }
       }
     },
@@ -192,7 +193,7 @@ function slugCompatible(slug, slugifies) {
     return true;
   } else {
     return false;
-  }  
+  }
 }
 
 </script>

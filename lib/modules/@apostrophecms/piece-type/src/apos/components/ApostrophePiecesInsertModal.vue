@@ -22,8 +22,6 @@
 
 <script>
 
-import axios from 'axios';
-import cookies from 'js-cookie';
 import _ from 'lodash';
 
 export default {
@@ -49,14 +47,9 @@ export default {
     async save() {
       apos.bus.$emit('busy', true);
       try {
-        await axios.create({
-          headers: {
-            'X-XSRF-TOKEN': cookies.get(window.apos.csrfCookieName)
-          }
-        }).post(
-          this.moduleOptions.action + '/insert',
-          this.pieceInfo.data
-        );
+        await apos.http.post(this.moduleOptions.action, {
+          body: this.pieceInfo.data
+        });
         $this.$emit('saved');
       } finally {
         apos.bus.$emit('busy', false);
