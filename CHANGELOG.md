@@ -1,6 +1,8 @@
 # Changelog
 
-## 2.108.0 (2020-06-17)
+## 2.108.0 (2020-06-07)
+
+* UX improvement: if a piece type has the `contextual: true` option set and workflow is present, do not default published to `false`. There is already a good opportunity to review before the public sees the piece afforded by workflow.
 
 * If called with a scalar argument, `apos.utils.clonePermanent` now returns scalars (strings, booleans, numbers) as-is. This makes it easier to use the method when the argument might or might not be an object that requires cloning.
 
