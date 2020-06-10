@@ -75,7 +75,6 @@ describe('Pages', function() {
   });
 
   it('parked trash can exists', async function() {
-    console.log(JSON.stringify(await apos.docs.db.find({ slug: /^\// }).project({ path: 1, rank: 1, slug: 1 }).toArray(), null, '  '));
     const trash = await apos.pages.find(apos.tasks.getReq(), { slug: '/trash' }).published(null).trash(null).toObject();
     assert(trash);
     assert(trash.slug === '/trash');

@@ -11,7 +11,6 @@ describe('bootstrap of Apostrophe core', function() {
   it('should merge the options and local.js correctly', async function() {
     let apos;
     try {
-      console.log('creating...');
       apos = await t.create({
         root: module,
         overrideTest: 'test', // overriden by data/local.js

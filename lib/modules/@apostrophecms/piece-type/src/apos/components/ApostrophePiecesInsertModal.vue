@@ -31,7 +31,6 @@ export default {
   },
   computed: {
     moduleOptions() {
-      console.log('I am in here');
       return window.apos.modules[this.moduleName];
     }
   },
@@ -50,7 +49,7 @@ export default {
         await apos.http.post(this.moduleOptions.action, {
           body: this.pieceInfo.data
         });
-        $this.$emit('saved');
+        this.$emit('saved');
       } finally {
         apos.bus.$emit('busy', false);
       }

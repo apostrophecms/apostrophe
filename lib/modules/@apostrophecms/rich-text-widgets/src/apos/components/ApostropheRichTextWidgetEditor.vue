@@ -57,7 +57,7 @@ export default {
     }
   },
   data() {
-    return {
+    const data = {
       tools: moduleOptionsBody(this.type).tools,
       toolbar: this.options.toolbar,
       editor: new Editor({
@@ -83,6 +83,7 @@ export default {
         hasErrors: false,
       }
     }
+    return data;
   },
   beforeDestroy() {
     this.editor.destroy()

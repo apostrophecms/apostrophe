@@ -2,7 +2,7 @@
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :_docId="_docId" />
     <div class="apos-areas-widgets-list">
-      <div class="apoa-area-widget-wrapper" v-for="(wrapped, i) in next" :key="wrapped.widget._id">
+      <div class="apos-area-widget-wrapper" v-for="(wrapped, i) in next" :key="wrapped.widget._id">
         <div class="apos-area-controls">
           <button v-if="i > 0" @click="up(i)">Up</button>
           <button v-if="i < next.length - 1" @click="down(i)">Down</button>
@@ -91,7 +91,7 @@ export default {
         $each: [ $event.widget ]
       };
       if ($event.index < this.next.length) {
-        push.$before = this.next[$event.index]._id;
+        push.$before = this.next[$event.index].widget._id;
       }
       await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
         body: {

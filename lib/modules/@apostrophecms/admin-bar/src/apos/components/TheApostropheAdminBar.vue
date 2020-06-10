@@ -33,7 +33,6 @@ export default {
       apos.bus.$emit('adminBarItem', name);
     },
     toggleDropdown: function () {
-      console.log(this);
     }
   }
 }

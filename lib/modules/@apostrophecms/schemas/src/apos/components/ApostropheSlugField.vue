@@ -26,12 +26,9 @@ export default {
     return data;
   },
   created() {
-    console.log('created');
     if (this.field.slugifies) {
-      console.log('slugifies ' + this.field.slugifies);
       const that = this;
       this.$watch(`context.${this.field.slugifies}`, function() {
-        console.log('updated');
         that.slugifiesUpdated();
       });
     }
