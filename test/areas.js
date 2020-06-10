@@ -15,27 +15,18 @@ describe('Areas', function() {
   /// ///
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          csrf: false
-        },
         'monkeys': {
-          extend: 'apostrophe-pieces',
-          name: 'monkey'
+          extend: '@apostrophecms/piece-type'
         },
         'monkeys-widgets': {
-          extend: 'apostrophe-pieces-widgets'
+          extend: '@apostrophecms/pieces-widget-type'
         }
       }
     });
-    assert(apos.modules['apostrophe-areas']);
+    assert(apos.modules['@apostrophecms/areas']);
     assert(apos.areas);
     // In tests this will be the name of the test file,
     // so override that in order to get apostrophe to
@@ -45,52 +36,61 @@ describe('Areas', function() {
 
   it('returns the rich text of an area via the richText method', function() {
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }) === '<h2>So cool</h2>\n<h2>Something else cool</h2>');
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }, { delimiter: '' }) === '<h2>So cool</h2><h2>Something else cool</h2>');
     assert(apos.areas.richText({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -99,35 +99,41 @@ describe('Areas', function() {
 
   it('returns the plaintext of an area via the plaintext method', function() {
     assert.strictEqual(apos.areas.plaintext({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
     }), 'So cool\nSomething else cool');
     assert.strictEqual(apos.areas.plaintext({
-      type: 'area',
+      metaType: 'area',
       items: [
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>So cool</h2>'
         },
         {
+          metaType: 'widget',
           type: 'something-else',
           content: '<h3>Do not return me</h3>'
         },
         {
-          type: 'apostrophe-rich-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
           content: '<h2>Something else cool</h2>'
         }
       ]
@@ -139,33 +145,36 @@ describe('Areas', function() {
       type: 'test',
       _id: 'test',
       body: {
-        type: 'area',
+        metaType: 'area',
         items: []
       },
       emptyText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: ''
           }
         ]
       },
       insignificantText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<h4> </h4>'
           }
         ]
       },
       insignificantPieces: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test3',
             type: 'monkeys',
             _pieces: []
@@ -186,39 +195,43 @@ describe('Areas', function() {
       type: 'test',
       _id: 'test',
       body: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-video',
+            type: '@apostrophecms/video',
             url: 'http://somewhere.com'
           }
         ]
       },
       emptyText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: ''
           }
         ]
       },
       fullText: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test2',
-            type: 'apostrophe-rich-text',
+            type: '@apostrophecms/rich-text',
             content: '<h4>Some text</h4>'
           }
         ]
       },
       significantPieces: {
-        type: 'area',
+        metaType: 'area',
         items: [
           {
+            metaType: 'widget',
             _id: 'test3',
             type: 'monkeys',
             _pieces: [

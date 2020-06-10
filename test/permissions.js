@@ -12,22 +12,10 @@ describe('Permissions', function() {
   });
 
   it('should have a permissions property', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        'apostrophe-express': {
-          session: {
-            secret: 'xxx'
-          },
-          port: 7900
-        }
-      }
+    apos = await t.create({
+      root: module
     });
-    assert(apos.permissions.__meta.name = 'apostrophe-permissions');
+    assert(apos.permissions.__meta.name = '@apostrophecms/permissions');
   });
 
   // mock up a request
@@ -87,10 +75,10 @@ describe('Permissions', function() {
       assert(!apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ] } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('permits edit-doc for individual with group id for managing and edit permission', function() {
-      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
+      assert(apos.permissions.can(req({ user: { _id: 1, groupIds: [ 1001, 1002 ], _permissions: { edit: true } } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
     it('forbids edit-doc for other person', function() {
-      assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'publish-1002' ] }));
+      assert(!apos.permissions.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
     });
   });
 });

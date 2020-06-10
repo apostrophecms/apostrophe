@@ -1,5 +1,7 @@
 module.exports = {
-  templateData: {
-    age: 30
+  options: {
+    templateData: {
+      age: 30
+    }
   }
 };

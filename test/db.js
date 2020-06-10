@@ -1,21 +1,20 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
+
+let apos, apos2;
 
 describe('Db', function() {
+
   after(async function () {
-    return t.destroy(apos);
+    await t.destroy(apos);
+    await t.destroy(apos2);
   });
 
   this.timeout(t.timeout);
 
   it('should exist on the apos object', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.db);
@@ -24,29 +23,21 @@ describe('Db', function() {
 
     assert(doc);
   });
-
   it('should be able to launch a second instance reusing the connection', async function() {
-    const apos2 = await require('../index.js')({
+    apos2 = await t.create({
       root: module,
-      shortName: 'test2',
-      argv: {
-        _: []
-      },
       modules: {
-        'apostrophe-express': {
-          port: 7777
-        },
-        'apostrophe-db': {
-          db: apos.db,
-          uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+        '@apostrophecms/db': {
+          options: {
+            client: apos.dbClient,
+            uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+          }
         }
       }
     });
 
-    const doc = await apos.docs.db.findOne();
+    const doc = await apos2.docs.db.findOne();
 
     assert(doc);
-
-    return t.destroy(apos2);
   });
 });

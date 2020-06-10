@@ -4,7 +4,7 @@ let apos;
 
 const mockImages = [
   {
-    type: 'apostrophe-image',
+    type: '@apostrophecms/image',
     slug: 'image-1',
     published: true,
     attachment: {
@@ -14,7 +14,7 @@ const mockImages = [
     }
   },
   {
-    type: 'apostrophe-image',
+    type: '@apostrophecms/image',
     slug: 'image-2',
     published: true,
     attachment: {
@@ -24,7 +24,7 @@ const mockImages = [
     }
   },
   {
-    type: 'apostrophe-image',
+    type: '@apostrophecms/image',
     slug: 'image-3',
     published: true,
     attachment: {
@@ -34,7 +34,7 @@ const mockImages = [
     }
   },
   {
-    type: 'apostrophe-image',
+    type: '@apostrophecms/image',
     slug: 'image-4',
     published: true,
     attachment: {
@@ -55,31 +55,18 @@ describe('Images', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        'apostrophe-express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'Porta'
-          }
-        }
-      }
+    apos = await t.create({
+      root: module
     });
 
     assert(apos.images);
-    assert(apos.images.__meta.name === 'apostrophe-images');
+    assert(apos.images.__meta.name === '@apostrophecms/images');
   });
 
   // Test pieces.list()
   it('should clean up any existing images for testing', async function() {
     try {
-      const response = await apos.docs.db.remove({ type: 'apostrophe-image' }
+      const response = await apos.docs.db.deleteMany({ type: '@apostrophecms/image' }
       );
       assert(response.result.ok === 1);
     } catch (e) {

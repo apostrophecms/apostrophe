@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const async = require('async');
 const Promise = require('bluebird');
 
 let apos;
@@ -17,58 +16,53 @@ describe('Locks', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        'apostrophe-express': {
-          port: 7900,
-          address: 'localhost',
-          session: {
-            secret: 'Vulputate'
-          }
-        },
         // Make some subclasses of the locks module. NORMALLY A BAD IDEA. But
         // we're doing it to deliberately force them to contend with each other,
         // rather than just throwing an error saying "hey you have this lock
         // now"
-        'apostrophe-locks-1': {
-          extend: 'apostrophe-locks',
-          alias: 'locks1'
+        '@apostrophecms/locks-1': {
+          extend: '@apostrophecms/locks',
+          options: {
+            alias: 'locks1'
+          }
         },
-        'apostrophe-locks-2': {
-          extend: 'apostrophe-locks',
-          alias: 'locks2'
+        '@apostrophecms/locks-2': {
+          extend: '@apostrophecms/locks',
+          options: {
+            alias: 'locks2'
+          }
         },
-        'apostrophe-locks-3': {
-          extend: 'apostrophe-locks',
-          alias: 'locks3'
+        '@apostrophecms/locks-3': {
+          extend: '@apostrophecms/locks',
+          options: {
+            alias: 'locks3'
+          }
         }
       }
     });
 
-    assert(apos.modules['apostrophe-locks']);
-    assert(apos.modules['apostrophe-locks-1']);
-    assert(apos.modules['apostrophe-locks-2']);
-    assert(apos.modules['apostrophe-locks-3']);
+    assert(apos.modules['@apostrophecms/locks']);
+    assert(apos.modules['@apostrophecms/locks-1']);
+    assert(apos.modules['@apostrophecms/locks-2']);
+    assert(apos.modules['@apostrophecms/locks-3']);
   });
 
   it('cleanup', async function() {
-    await apos.locks.db.remove({});
+    await apos.locks.db.deleteMany({});
   });
 
   it('should allow a single lock without contention uneventfully', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     await locks.lock('test');
     await locks.unlock('test');
   });
 
   it('should allow two differently-named locks uneventfully', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     await locks.lock('test1');
     await locks.lock('test2');
@@ -77,7 +71,7 @@ describe('Locks', function() {
   });
 
   it('should flunk a second lock by the same module', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     await locks.lock('test');
 
@@ -99,10 +93,10 @@ describe('Locks', function() {
   });
 
   it('four parallel lock calls via the different modules should all succeed but not simultaneously', async function() {
-    const one = apos.modules['apostrophe-locks'];
-    const two = apos.modules['apostrophe-locks-1'];
-    const three = apos.modules['apostrophe-locks-2'];
-    const four = apos.modules['apostrophe-locks-3'];
+    const one = apos.modules['@apostrophecms/locks'];
+    const two = apos.modules['@apostrophecms/locks-1'];
+    const three = apos.modules['@apostrophecms/locks-2'];
+    const four = apos.modules['@apostrophecms/locks-3'];
 
     let active = 0;
     let successful = 0;
@@ -142,10 +136,10 @@ describe('Locks', function() {
   });
 
   it('four parallel lock calls via the different modules should all succeed but not simultaneously, even when the idleTimeout is short', async function() {
-    const one = apos.modules['apostrophe-locks'];
-    const two = apos.modules['apostrophe-locks-1'];
-    const three = apos.modules['apostrophe-locks-2'];
-    const four = apos.modules['apostrophe-locks-3'];
+    const one = apos.modules['@apostrophecms/locks'];
+    const two = apos.modules['@apostrophecms/locks-1'];
+    const three = apos.modules['@apostrophecms/locks-2'];
+    const four = apos.modules['@apostrophecms/locks-3'];
 
     let active = 0;
     let successful = 0;
@@ -184,7 +178,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should run a function inside a lock', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     const result = await locks.withLock('test-lock', async () => {
       await Promise.delay(50);
@@ -196,7 +190,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should be able to run again (lock released)', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     const result = await locks.withLock('test-lock', async () => {
       await Promise.delay(50);
@@ -207,7 +201,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should hold the lock (cannot relock within fn)', async function() {
-    const locks = apos.modules['apostrophe-locks'];
+    const locks = apos.modules['@apostrophecms/locks'];
 
     return locks.withLock('test-lock', async () => {
       await Promise.delay(50);

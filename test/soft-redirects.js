@@ -1,166 +1,133 @@
 let t = require('../test-lib/test.js');
 let assert = require('assert');
-let request = require('request');
-
 let apos;
 
 describe('Soft Redirects', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async () => {
+    return t.destroy(apos);
   });
 
-  it('should exist', function(done) {
-    apos = require('../index.js')({
+  it('should exist', async () => {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-
       modules: {
-        'apostrophe-express': {
-          port: 7900,
-          secret: 'test'
+        '@apostrophecms/pages': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-pages',
+                published: true
+              }
+            ]
+          }
         },
-        'apostrophe-pages': {
-          park: [
-            {
-              parkedId: 'child',
-              title: 'Child',
-              slug: '/child',
-              type: 'default',
-              published: true
-            }
-          ]
+        'default-pages': {
+          extend: '@apostrophecms/page-type'
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-soft-redirects']);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules['@apostrophecms/soft-redirects']);
   });
 
-  it('should be able to serve the /child page (which also populates historicUrls)', function(done) {
-    return request('http://localhost:7900/child', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/Default Page Template/));
-      return done();
+  it('should be able to serve the /child page (which also populates historicUrls)', async () => {
+    const body = await apos.http.get('/child');
+    // Did we get our page back?
+    assert(body.match(/Default Page Template/));
+  });
+
+  it('should be able to change the URL via db', async () => {
+    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+  });
+
+  it('should be able to serve the page at its new URL', async () => {
+    const body = await apos.http.get('/child-moved');
+    // Did we get our page back?
+    assert(body.match(/Default Page Template/));
+  });
+
+  it('should be able to serve the page at its old URL too, via redirect', async () => {
+    const response = await apos.http.get('/child', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
     });
-  });
-
-  it('should be able to change the URL via db', function() {
-    return apos.docs.db.update({ slug: '/child' }, { $set: { slug: '/child-moved' } });
-  });
-
-  it('should be able to serve the page at its new URL', function(done) {
-    return request('http://localhost:7900/child-moved', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/Default Page Template/));
-      return done();
-    });
-  });
-
-  it('should be able to serve the page at its old URL too, via redirect', function(done) {
-    return request({
-      url: 'http://localhost:7900/child',
-      followRedirect: false
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 302);
-      // Are we going to be redirected to our page?
-      assert.equal(response.headers['location'], '/child-moved');
-      return done();
-    });
+    // Is our status code good?
+    assert.equal(response.status, 302);
+    // Are we going to be redirected to our page?
+    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });
 
-describe('Soft Redirects - with `statusCode` option', function() {
+describe('Soft Redirects - with `statusCode` option', async() => {
 
-  this.timeout(t.timeout);
-
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async() => {
+    return t.destroy(apos);
   });
 
-  it('should exist', function(done) {
-    apos = require('../index.js')({
+  it('should exist', async () => {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
-          port: 7900,
-          secret: 'test'
+        '@apostrophecms/pages': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-pages',
+                published: true
+              }
+            ]
+          }
         },
-        'apostrophe-pages': {
-          park: [
-            {
-              parkedId: 'child',
-              title: 'Child',
-              slug: '/child',
-              type: 'default',
-              published: true
-            }
-          ]
+        '@apostrophecms/soft-redirects': {
+          options: {
+            statusCode: 301
+          }
         },
-        'apostrophe-soft-redirects': {
-          statusCode: 301
+        'default-pages': {
+          extend: '@apostrophecms/page-type'
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['apostrophe-soft-redirects']);
-        assert.equal(apos.modules['apostrophe-soft-redirects'].options.statusCode, 301);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules['@apostrophecms/soft-redirects']);
+    assert.equal(apos.modules['@apostrophecms/soft-redirects'].options.statusCode, 301);
   });
 
-  it('should be able to serve the /child page (which also populates historicUrls)', function(done) {
-    return request('http://localhost:7900/child', function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 200);
-      // Did we get our page back?
-      assert(body.match(/Default Page Template/));
-      return done();
+  it('should be able to serve the /child page (which also populates historicUrls)', async () => {
+    const body = await apos.http.get('/child');
+    // Did we get our page back?
+    assert(body.match(/Default Page Template/));
+  });
+
+  it('should be able to change the URL via db', async () => {
+    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+  });
+
+  it('should be able to serve the page at its new URL', async () => {
+    const body = await apos.http.get('/child-moved');
+    // Did we get our page back?
+    assert(body.match(/Default Page Template/));
+  });
+
+  it('should be able to serve the page at its old URL too, via redirect', async () => {
+    const response = await apos.http.get('/child', {
+      fullResponse: true,
+      redirect: 'manual'
     });
-  });
-
-  it('should be able to change the URL via db', function() {
-    return apos.docs.db.update({ slug: '/child' }, { $set: { slug: '/child-moved' } });
-  });
-
-  it('should be able to serve the page at its old URL too, via redirect', function(done) {
-    return request({
-      url: 'http://localhost:7900/child',
-      followRedirect: false
-    }, function(err, response, body) {
-      assert(!err);
-      // Is our status code good?
-      assert.equal(response.statusCode, 301);
-      // Are we going to be redirected to our page?
-      assert.equal(response.headers['location'], '/child-moved');
-      return done();
-    });
+    // Is our status code good?
+    assert.equal(response.status, 301);
+    // Are we going to be redirected to our page?
+    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });

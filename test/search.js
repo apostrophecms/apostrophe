@@ -8,65 +8,44 @@ describe('Search', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async () => {
+    return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should be a property of the apos object', function(done) {
-    apos = require('../index.js')({
+  it('should be a property of the apos object', async () => {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
-        },
         'events': {
-          extend: 'apostrophe-pieces',
-          name: 'event',
-          label: 'Event'
+          extend: '@apostrophecms/piece-type',
+          options: {
+            name: 'event',
+            label: 'Event'
+          }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.search);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.search);
   });
 
-  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', function(done) {
+  it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', async () => {
     let req = apos.tasks.getReq();
-    apos.docs.insert(req, {
+    await apos.docs.insert(req, {
       title: 'Testing Search Event',
       type: 'event',
-      tags: ['search', 'test', 'pizza'],
       slug: 'search-test-event',
       published: true
-    }, function(err) {
-      assert(!err);
-
-      apos.docs.find(req, { slug: 'search-test-event' }).toObject(function(err, doc) {
-        assert(!err);
-        assert(doc.highSearchText);
-        assert(doc.highSearchWords);
-        assert(doc.lowSearchText);
-        assert(doc.searchSummary !== undefined);
-
-        assert(doc.lowSearchText.match(/pizza/));
-        assert(doc.highSearchText.match(/testing/));
-        assert(_.includes(doc.highSearchWords, 'test', 'pizza', 'testing'));
-        done();
-      });
-
     });
-  });
 
+    const doc = await apos.docs.find(req, { slug: 'search-test-event' }).toObject();
+    assert(doc.highSearchText);
+    assert(doc.highSearchWords);
+    assert(doc.lowSearchText);
+    assert(doc.searchSummary !== undefined);
+
+    assert(doc.highSearchText.match(/testing/));
+    assert(_.includes(doc.highSearchWords, 'testing'));
+  });
 });

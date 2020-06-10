@@ -1,93 +1,140 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
-let async = require('async');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
+const cuid = require('cuid');
 
 let apos;
+let jar;
 
 describe('Pieces', function() {
 
   this.timeout(t.timeout);
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(async function () {
+    return t.destroy(apos);
   });
 
   /// ///
   // EXISTENCE
   /// ///
 
-  it('should initialize with a schema', function(done) {
-    apos = require('../index.js')({
+  it('should initialize with a schema', async () => {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
 
       modules: {
-        'apostrophe-express': {
-          secret: 'xxx',
-          port: 7900
-        },
         'things': {
-          extend: 'apostrophe-pieces',
-          name: 'thing',
-          label: 'Thing',
-          addFields: {
-            name: 'foo',
-            label: 'Foo',
-            type: 'string'
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'things',
+            name: 'thing',
+            label: 'Thing',
+            addFields: {
+              name: 'foo',
+              label: 'Foo',
+              type: 'string'
+            }
           }
         },
         'people': {
-          extend: 'apostrophe-pieces',
-          name: 'person',
-          label: 'Person',
-          addFields: {
-            name: '_things',
-            type: 'joinByArray'
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'people',
+            name: 'person',
+            label: 'Person',
+            addFields: {
+              name: '_things',
+              type: 'joinByArray'
+            }
+          }
+        },
+        'products': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              body: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {},
+                    '@apostrophecms/images': {}
+                  }
+                }
+              },
+              color: {
+                type: 'select',
+                choices: [
+                  {
+                    label: 'Red',
+                    value: 'red'
+                  },
+                  {
+                    label: 'Blue',
+                    value: 'blue'
+                  }
+                ]
+              },
+              photo: {
+                type: 'attachment',
+                group: 'images'
+              },
+              addresses: {
+                type: 'array',
+                schema: {
+                  street: {
+                    type: 'string'
+                  }
+                }
+              },
+              _articles: {
+                type: 'joinByArray',
+                withType: 'article',
+                filters: {
+                  projection: {
+                    title: 1,
+                    slug: 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        articles: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            name: 'article'
+          },
+          fields: {
+            add: {
+              name: {
+                type: 'string'
+              }
+            }
           }
         }
-      },
-      afterInit: function(callback) {
-        assert(apos.modules['things']);
-        assert(apos.modules['things'].schema);
-        apos.argv._ = [];
-        return callback(null);
-      },
-      afterListen: function(err) {
-        assert(!err);
-        done();
       }
     });
+    assert(apos.modules['things']);
+    assert(apos.modules['things'].schema);
   });
 
   // little test-helper function to get piece by id regardless of trash status
-  function findPiece(req, id, callback) {
-    return apos.modules['things'].find(req, { _id: id })
+  async function findPiece(req, id) {
+    const piece = apos.modules['things'].find(req, { _id: id })
       .permission('edit')
       .published(null)
       .trash(null)
-      .toObject(function(err, piece) {
-        if (err) {
-          return callback(err);
-        }
-        if (!piece) {
-          return callback('notfound');
-        }
-        return callback(err, piece);
-      }
-      );
-  };
+      .toObject();
+    if (!piece) {
+      throw apos.error('notfound');
+    }
+    return piece;
+  }
 
   let testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar'
-  };
-
-  let testThing2 = {
-    _id: 'testThing2',
-    title: 'hello2',
-    foo: 'bar2'
   };
 
   let additionalThings = [
@@ -117,20 +164,6 @@ describe('Pieces', function() {
     }
   ];
 
-  // Wipe the database so we can run this test suite independent of bootstrap
-  it('should make sure there is no test data hanging around from last time', function(done) {
-    // Attempt to purge the entire aposDocs collection
-    apos.docs.db.remove({}, function(err) {
-      assert(!err);
-      // Make sure it went away
-      apos.docs.db.findWithProjection({ _id: 'testThing' }).toArray(function(err, docs) {
-        assert(!err);
-        assert(docs.length === 0);
-        done();
-      });
-    });
-  });
-
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
     assert(apos.modules['things'].newInstance);
@@ -140,82 +173,33 @@ describe('Pieces', function() {
   });
 
   // Test pieces.insert()
-  it('should be able to insert a piece into the database', function(done) {
+  it('should be able to insert a piece into the database', async () => {
     assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      done();
-    });
+    await apos.modules['things'].insert(apos.tasks.getReq(), testThing);
   });
 
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].insert);
-    apos.modules['things'].insert(apos.tasks.getReq(), testThing2)
-      .then(function(piece2) {
-        assert(testThing2 === piece2);
-        done();
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
-  });
-
-  // Test pieces.requirePiece()
-  it('should be able to retrieve a piece by id from the database', function(done) {
-    assert(apos.modules['things'].requirePiece);
+  it('should be able to retrieve a piece by id from the database', async () => {
+    assert(apos.modules['things'].requireOneForEditing);
     let req = apos.tasks.getReq();
-    req.body = {};
-    req.body._id = "testThing";
-    apos.modules['things'].requirePiece(req, req.res, function() {
-      assert(req.piece);
-      assert(req.piece._id === 'testThing');
-      assert(req.piece.title === 'hello');
-      assert(req.piece.foo === 'bar');
-      done();
-    });
+    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing');
+    assert(req.piece.title === 'hello');
+    assert(req.piece.foo === 'bar');
   });
 
   // Test pieces.update()
-  it('should be able to update a piece in the database', function(done) {
+  it('should be able to update a piece in the database', async () => {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing, function(err, piece) {
-      assert(!err);
-      assert(testThing === piece);
-      // Now let's get the piece and check if it was updated
-      let req = apos.tasks.getReq();
-      req.body = {};
-      req.body._id = "testThing";
-      apos.modules['things'].requirePiece(req, req.res, function() {
-        assert(req.piece);
-        assert(req.piece._id === 'testThing');
-        assert(req.piece.foo === 'moo');
-        done();
-      });
-    });
-  });
-
-  it('same thing with promises', function(done) {
-    assert(apos.modules['things'].update);
-    testThing.foo = 'goo';
-    apos.modules['things'].update(apos.tasks.getReq(), testThing)
-      .then(function(piece) {
-        assert(testThing === piece);
-        // Now let's get the piece and check if it was updated
-        let req = apos.tasks.getReq();
-        req.body = {};
-        req.body._id = "testThing";
-        apos.modules['things'].requirePiece(req, req.res, function() {
-          assert(req.piece);
-          assert(req.piece._id === 'testThing');
-          assert(req.piece.foo === 'goo');
-          done();
-        });
-      })
-      .catch(function(err) {
-        assert(!err);
-      });
+    const piece = await apos.modules['things'].update(apos.tasks.getReq(), testThing);
+    assert(testThing === piece);
+    // Now let's get the piece and check if it was updated
+    let req = apos.tasks.getReq();
+    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(req.piece);
+    assert(req.piece._id === 'testThing');
+    assert(req.piece.foo === 'moo');
   });
 
   // Test pieces.addListFilters()
@@ -226,18 +210,16 @@ describe('Pieces', function() {
     // definitions that are safe for 'public' or 'manage' contexts
     let mockCursor = apos.docs.find(apos.tasks.getAnonReq());
     _.merge(mockCursor, {
-      filters: {
+      builders: {
         publicTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'public'
+          }
         },
         manageTest: {
           launder: function(s) {
             return 'laundered';
-          },
-          safeFor: 'manage'
+          }
         },
         unsafeTest: {}
       },
@@ -261,287 +243,76 @@ describe('Pieces', function() {
       fakeTest: 'notEvenReal'
     };
 
-    mockCursor.queryToFilters(filters);
+    mockCursor.applyBuildersSafely(filters);
     assert(publicTest === true);
     assert(manageTest === true);
   });
 
-  // Test pieces.list()
-  it('should add some more things for testing', function(done) {
-    assert(apos.modules['things'].insert);
-    async.each(additionalThings, function(thing, callback) {
-      apos.modules['things'].insert(apos.tasks.getReq(), thing, function(err) {
-        callback(err);
-      });
-    }, function(err) {
-      assert(!err);
-      done();
-    });
-  });
-
-  it('should list all the pieces if skip and limit are set to large enough values', function(done) {
-    assert(apos.modules['things'].list);
-    let req = apos.tasks.getReq();
-    let filters = {
-      limit: 10,
-      skip: 0
-    };
-    apos.modules['things'].list(req, filters, function(err, results) {
-      assert(!err);
-      assert(results.total === 5);
-      assert(results.limit === 10);
-      assert(results.skip === 0);
-      assert(results.pieces.length === 5);
-      done();
-    });
-  });
-
-  // pieces.trash()
-  it('should be able to trash a piece', function(done) {
-    assert(apos.modules['things'].trash);
-    assert(apos.modules['things'].requirePiece);
+  it('should be able to trash a piece with proper deduplication', async () => {
+    assert(apos.modules['things'].requireOneForEditing);
     let req = apos.tasks.getReq();
     let id = 'testThing';
-    req.body = {_id: id};
+    req.body = { _id: id };
     // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].trash(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is trashed
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(piece.trash === true);
-          done();
-        });
-      });
-    });
+    const piece = await findPiece(req, id);
+    assert(!piece.trash);
+    piece.trash = true;
+    await apos.modules['things'].update(req, piece);
+    // let's get the piece to make sure it is trashed
+    const piece2 = await findPiece(req, id);
+    assert(piece2);
+    assert(piece2.trash === true);
+    assert(piece2.aposWasTrash === true);
+    assert(piece2.slug === 'deduplicate-testThing-hello');
   });
 
-  // pieces.rescue()
-  it('should be able to rescue a trashed piece', function(done) {
-    assert(apos.modules['things'].rescue);
+  it('should be able to rescue a trashed piece with proper deduplication', async () => {
     let req = apos.tasks.getReq();
     let id = 'testThing';
-    req.body = {_id: id};
+    req.body = {
+      _id: id
+    };
     // let's make sure the piece is trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].rescue(req, id, function(err) {
-        assert(!err);
-        // let's get the piece to make sure it is rescued
-        findPiece(req, id, function(err, piece) {
-          assert(!err);
-          assert(piece);
-          assert(!piece.trash);
-          done();
-        });
-      });
-    });
+    const piece = await findPiece(req, id);
+    assert(piece.trash === true);
+    piece.trash = false;
+    await apos.modules['things'].update(req, piece);
+    const piece2 = await findPiece(req, id);
+    assert(piece2);
+    assert(!piece2.trash);
+    assert(!piece2.aposWasTrash);
+    assert(piece2.slug === 'hello');
   });
 
-  // pieces.apiResponse()
-  it('should pass through an error message if the error is passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    let errMsg = "Test Error";
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === errMsg);
-      assert(!response.data);
-      done();
-    };
+  it('should be able to insert test user', async function() {
+    assert(apos.users.newInstance);
+    const user = apos.users.newInstance();
+    assert(user);
 
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
+    user.firstName = 'ad';
+    user.lastName = 'min';
+    user.title = 'admin';
+    user.username = 'admin';
+    user.password = 'admin';
+    user.email = 'ad@min.com';
+    user.permissions = [ 'admin' ];
+
+    return apos.users.insert(apos.tasks.getReq(), user);
   });
 
-  it('should not pass through an error message if the error is not passed as a string', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    let errMsg = true;
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'error');
-      assert(!response.data);
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, errMsg, { foo: 'bar' });
-  });
-
-  it('should properly pass a result as a json if there is no error', function(done) {
-    assert(apos.modules['things'].apiResponse);
-    let res = apos.tasks.getAnonReq().res;
-    res.send = function(response) {
-      assert(response);
-      assert(response.status === 'ok');
-      assert(response.data);
-      assert(response.data.foo === 'bar');
-      done();
-    };
-
-    apos.modules['things'].apiResponse(res, null, { foo: 'bar' });
-  });
-
-  // done with api.js tests, now let's test routes
-  let routeThing = {
-    title: 'purple',
-    foo: 'bar'
-  };
-
-  let insertedRouteThing;
-
-  // routes.insert
-  it('should insert an item from the routes.insert method', function(done) {
-    assert(apos.modules['things'].routes.insert);
-
+  it('people can find things via a join', async () => {
     let req = apos.tasks.getReq();
-    req.body = routeThing;
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data);
-      assert(result.data._id);
-      insertedRouteThing = result.data;
-      done();
-    };
-
-    return apos.modules['things'].routes.insert(req, res);
-  });
-
-  // routes.retrieve
-  it('should get an item from the routes.retrieve method', function(done) {
-    assert(apos.modules['things'].routes.retrieve);
-
-    let req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.piece = insertedRouteThing;
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'purple');
-      done();
-    };
-
-    return apos.modules['things'].routes.retrieve(req, res);
-  });
-
-  // routes.list
-  it('should get a list of all the items from routes.list', function(done) {
-    assert(apos.modules['things'].routes.list);
-
-    let req = apos.tasks.getReq();
-    // note we set the req.piece here, because the middleware would do the query nd supply the piece
-    req.body = { limit: 10, skip: 0 };
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.total === 6);
-      assert(result.data.skip === 0);
-      assert(result.data.limit === 10);
-      assert(result.data.pieces.length === 6);
-      done();
-    };
-
-    return apos.modules['things'].routes.list(req, res);
-  });
-
-  // routes.update
-  it('should update an item in the database from route.update', function(done) {
-    assert(apos.modules['things'].routes.update);
-
-    // simulate that middleware first
-    assert(apos.modules['things'].requirePiece);
-    let req = apos.tasks.getReq();
-    req.body = insertedRouteThing;
-    // make a change to the thing we are inserting
-    req.body.title = "blue";
-    let res = req.res;
-    res.send = function(result) {
-      assert(result);
-      assert(result.status === 'ok');
-      assert(result.data.title === 'blue');
-      done();
-    };
-    apos.modules['things'].requirePiece(req, res, function() {
-      return apos.modules['things'].routes.update(req, res);
-    });
-  });
-
-  // routes.trash
-  it('should trash an item in the database from route.trash', function(done) {
-    assert(apos.modules['things'].routes.trash);
-    assert(apos.modules['things'].requirePiece);
-
-    let req = apos.tasks.getReq();
-    let id = insertedRouteThing._id;
-    req.body = {_id: id};
-    let res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it is trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(piece.trash === true);
-        done();
-      });
-    };
-    // let's make sure the piece is not trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(!piece.trash);
-      apos.modules['things'].routes.trash(req, res);
-    });
-
-  });
-
-  // routes.rescue
-  it('should rescue an item in the database from route.rescue', function(done) {
-    assert(apos.modules['things'].routes.rescue);
-    assert(apos.modules['things'].requirePiece);
-
-    let req = apos.tasks.getReq();
-    let id = insertedRouteThing._id;
-    req.body = {_id: id};
-    let res = req.res;
-    res.send = function(response) {
-      assert(response.status === 'ok');
-      // let's get the piece to make sure it no longer trashed
-      findPiece(req, id, function(err, piece) {
-        assert(!err);
-        assert(piece);
-        assert(!piece.trash);
-        done();
-      });
-    };
-    // let's make sure the piece trashed to start
-    findPiece(req, id, function(err, piece) {
-      assert(!err);
-      assert(piece.trash === true);
-      apos.modules['things'].routes.rescue(req, res);
-    });
-
-  });
-
-  it('people can find things via a join', function() {
-    let req = apos.tasks.getReq();
-    return apos.docs.db.insert(testPeople)
-      .then(function() {
-        return apos.docs.getManager('person').find(req, {}).toObject();
-      })
-      .then(function(person) {
-        assert(person);
-        assert(person.title === 'Bob');
-        assert(person._things);
-        assert(person._things.length === 2);
-      });
+    for (const person of testPeople) {
+      await apos.people.insert(req, person);
+    }
+    for (const thing of additionalThings) {
+      await apos.things.insert(req, thing);
+    }
+    const person = await apos.docs.getManager('person').find(req, {}).toObject();
+    assert(person);
+    assert(person.title === 'Bob');
+    assert(person._things);
+    assert(person._things.length === 2);
   });
 
   it('people cannot find things via a join with an inadequate projection', function() {
@@ -565,4 +336,365 @@ describe('Pieces', function() {
       });
   });
 
+  it('should be able to log in as admin', async () => {
+    jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('/', {
+      jar
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin'
+      },
+      jar
+    });
+
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('cannot POST a product without a session', async () => {
+    try {
+      await apos.http.post('/api/v1/products', {
+        body: {
+          title: 'Fake Product',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        }
+      });
+      // Should not get here
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
+
+  let updateProduct;
+
+  it('can POST products with a session, some published', async () => {
+    // range is exclusive at the top end, I want 10 things
+    for (let i = 1; (i <= 10); i++) {
+      const response = await apos.http.post('/api/v1/products', {
+        body: {
+          title: 'Cool Product #' + i,
+          published: !!(i & 1),
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is thing ' + i + '</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(response);
+      assert(response._id);
+      assert(response.body);
+      assert(response.title === 'Cool Product #' + i);
+      assert(response.slug === 'cool-product-' + i);
+      assert(response.type === 'products');
+      if (i === 1) {
+        updateProduct = response;
+      }
+    }
+  });
+
+  it('can GET five of those products without the user session', async () => {
+    const response = await apos.http.get('/api/v1/products');
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  it('can GET five of those products with a user session and no query parameters', async () => {
+    const response = await apos.http.get('/api/v1/products', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+  });
+
+  it('can GET all ten of those products with a user session and published=any', async () => {
+    const response = await apos.http.get('/api/v1/products?published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 10);
+  });
+
+  let firstId;
+
+  it('can GET only 5 if perPage is 5', async () => {
+    const response = await apos.http.get('/api/v1/products?perPage=5&published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    firstId = response.results[0]._id;
+    assert(response.pages === 2);
+  });
+
+  it('can GET a different 5 on page 2', async () => {
+    const response = await apos.http.get('/api/v1/products?perPage=5&page=2&published=any', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.results.length === 5);
+    assert(response.results[0]._id !== firstId);
+    assert(response.pages === 2);
+  });
+
+  it('can update a product with PUT', async () => {
+    const args = {
+      body: {
+        ...updateProduct,
+        title: 'I like cheese',
+        _id: 'should-not-change'
+      },
+      jar
+    };
+    const response = await apos.http.put(`/api/v1/products/${updateProduct._id}`, args);
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('fetch of updated product shows updated content', async () => {
+    const response = await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+      jar
+    });
+    assert(response);
+    assert(response._id === updateProduct._id);
+    assert(response.title === 'I like cheese');
+    assert(response.body.items.length);
+  });
+
+  it('can trash a product', async () => {
+    return apos.http.patch(`/api/v1/products/${updateProduct._id}`, {
+      body: {
+        trash: true
+      },
+      jar
+    });
+  });
+
+  it('cannot fetch a trashed product', async () => {
+    try {
+      await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+        jar
+      });
+      // Should have been a 404, 200 = test fails
+      assert(false);
+    } catch (e) {
+      assert(e.status === 404);
+    }
+  });
+
+  it('can fetch trashed product with trash=any and the right user', async () => {
+    const product = await apos.http.get(`/api/v1/products/${updateProduct._id}?trash=any`, {
+      jar
+    });
+    // Should have been a 404, 200 = test fails
+    assert(product.trash);
+  });
+
+  let joinedProductId;
+
+  it('can insert a product with joins', async () => {
+    let response = await apos.http.post('/api/v1/articles', {
+      body: {
+        title: 'First Article',
+        name: 'first-article'
+      },
+      jar
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await apos.http.post('/api/v1/products', {
+      body: {
+        title: 'Product Key Product With Join',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with join</p>'
+            }
+          ]
+        },
+        articlesIds: [articleId]
+      },
+      jar
+    });
+    assert(response._id);
+    assert(response.articlesIds[0] === articleId);
+    joinedProductId = response._id;
+  });
+
+  it('can GET a product with joins', async () => {
+    const response = await apos.http.get('/api/v1/products');
+    assert(response);
+    assert(response.results);
+    const product = _.find(response.results, { slug: 'product-key-product-with-join' });
+    assert(Array.isArray(product['_articles']));
+    assert(product['_articles'].length === 1);
+  });
+
+  it('can GET a single product with joins', async () => {
+    const response = await apos.http.get(`/api/v1/products/${joinedProductId}`);
+    assert(response);
+    assert(response._articles);
+    assert(response._articles.length === 1);
+  });
+
+  it('can GET results plus filter choices', async () => {
+    const response = await apos.http.get('/api/v1/products?choices=title,published,_articles,articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.choices);
+    assert(response.choices.title);
+    assert(response.choices.title[0].label.match(/Cool Product/));
+    assert(response.choices.published);
+    assert(response.choices.published[0].value === '0');
+    assert(response.choices.published[1].value === '1');
+    assert(response.choices._articles);
+    assert(response.choices._articles[0].label === 'First Article');
+    // an _id
+    assert(response.choices._articles[0].value.match(/^c/));
+    assert(response.choices.articles[0].label === 'First Article');
+    // a slug
+    assert(response.choices.articles[0].value === 'first-article');
+  });
+
+  it('can GET results plus filter counts', async () => {
+    const response = await apos.http.get('/api/v1/products?_edit=1&counts=title,published,_articles,articles', {
+      jar
+    });
+    assert(response);
+    assert(response.results);
+    assert(response.counts);
+    assert(response.counts.title);
+    assert(response.counts.title[0].label.match(/Cool Product/));
+    // Doesn't work for every field type, but does for this
+    assert(response.counts.title[0].count === 1);
+    assert(response.counts.published);
+    assert(response.counts.published[0].value === '0');
+    assert(response.counts.published[1].value === '1');
+    assert(response.counts._articles);
+    assert(response.counts._articles[0].label === 'First Article');
+    // an _id
+    assert(response.counts._articles[0].value.match(/^c/));
+    assert(response.counts.articles[0].label === 'First Article');
+    // a slug
+    assert(response.counts.articles[0].value === 'first-article');
+  });
+
+  it('can patch a join', async () => {
+    let response = await apos.http.post('/api/v1/articles', {
+      jar,
+      body: {
+        title: 'Join Article',
+        name: 'join-article'
+      }
+    });
+    const articleId = response._id;
+    assert(articleId);
+
+    response = await apos.http.post('/api/v1/products', {
+      jar,
+      body: {
+        title: 'Initially No Join Value',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product without initial join</p>'
+            }
+          ]
+        }
+      }
+    });
+
+    const product = response;
+    assert(product._id);
+    response = await apos.http.patch(`/api/v1/products/${product._id}`, {
+      body: {
+        articlesIds: [ articleId ]
+      },
+      jar
+    });
+    assert(response.title === 'Initially No Join Value');
+    assert(response.articlesIds);
+    assert(response.articlesIds[0] === articleId);
+  });
+
+  it('can log out to destroy a session', async () => {
+    return apos.http.post('/api/v1/@apostrophecms/login/logout', {
+      followAllRedirects: true,
+      jar
+    });
+  });
+
+  it('cannot POST a product with a logged-out cookie jar', async () => {
+    try {
+      await apos.http.post('/api/v1/products', {
+        body: {
+          title: 'Fake Product After Logout',
+          body: {
+            metaType: 'area',
+            items: [
+              {
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                id: cuid(),
+                content: '<p>This is fake</p>'
+              }
+            ]
+          }
+        },
+        jar
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 403);
+    }
+  });
 });

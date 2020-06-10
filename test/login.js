@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const request = require('request-promise');
 
 let apos;
 
@@ -15,30 +14,13 @@ describe('Login', function() {
   // EXISTENCE
 
   it('should initialize', async function() {
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
-      modules: {
-        'apostrophe-express': {
-          port: 7901,
-          csrf: false,
-          address: 'localhost',
-          session: {
-            secret: 'Cursus'
-          }
-        }
-      },
-      afterInit: function(callback) {
-        // return callback(null);
-      }
+    apos = await t.create({
+      root: module
     });
 
-    assert(apos.modules['apostrophe-login']);
+    assert(apos.modules['@apostrophecms/login']);
     assert(apos.users.safe.remove);
-    const response = await apos.users.safe.remove({});
+    const response = await apos.users.safe.removeMany({});
     assert(response.result.ok === 1);
   });
 
@@ -54,99 +36,126 @@ describe('Login', function() {
     user.password = 'crookshanks';
     user.email = 'hputter@aol.com';
 
-    assert(user.type === 'apostrophe-user');
+    assert(user.type === '@apostrophecms/user');
     assert(apos.users.insert);
     const doc = await apos.users.insert(apos.tasks.getReq(), user);
     assert(doc._id);
   });
 
-  it('should not see logout link yet', async function() {
+  it('should be able to login a user with their username', async function() {
+
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks'
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged in/));
+
     // otherwise logins are not remembered in a session
-    request.jar();
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/logout',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        jar
+      }
+    );
 
-    const response = await request({
-      uri: 'http://localhost:7901/',
-      resolveWithFullResponse: true
-    });
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // Did we get our page back?
-    assert(response.body.match(/login/));
-    assert(!response.body.match(/logout/));
-  });
-
-  const loginLogoutJar = request.jar();
-  const loginEmailLogoutJar = request.jar();
-
-  it('should be able to login a user', async function() {
-    // otherwise logins are not remembered in a session
-    const response = await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/login',
-      form: {
-        username: 'HarryPutter',
-        password: 'crookshanks'
-      },
-      jar: loginLogoutJar,
-      followAllRedirects: true,
-      json: true,
-      resolveWithFullResponse: true
-    });
-
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // Did we get our page back?
-    assert(response.body.match(/logout/));
+    // are we back to being able to log in?
+    assert(page.match(/logged out/));
   });
 
   it('should be able to login a user with their email', async function() {
-    // otherwise logins are not remembered in a session
-    const response = await request({
-      method: 'POST',
-      uri: 'http://localhost:7901/login',
-      form: {
-        username: 'hputter@aol.com',
-        password: 'crookshanks'
-      },
-      followAllRedirects: true,
-      jar: loginEmailLogoutJar,
-      resolveWithFullResponse: true
-    });
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
     // Did we get our page back?
-    assert(response.body.match(/logout/));
-  });
+    assert(page.match(/logged in/));
 
-  it('should be able to log out', async function() {
     // otherwise logins are not remembered in a session
-    const response = await request({
-      uri: 'http://localhost:7901/logout',
-      followAllRedirects: true,
-      jar: loginLogoutJar,
-      resolveWithFullResponse: true
-    });
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/logout',
+      {
+        body: {
+          username: 'hputter@aol.com',
+          password: 'crookshanks'
+        },
+        jar
+      }
+    );
 
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
     // are we back to being able to log in?
-    assert(response.body.match(/login/));
+    assert(page.match(/logged out/));
   });
 
-  it('should be able to log out after having logged in with email', async function() {
-    // otherwise logins are not remembered in a session
-    const response = await request({
-      uri: 'http://localhost:7901/logout',
-      followAllRedirects: true,
-      jar: loginEmailLogoutJar,
-      resolveWithFullResponse: true
-    });
-
-    // Is our status code good?
-    assert.strictEqual(response.statusCode, 200);
-    // are we back to being able to log in?
-    assert(response.body.match(/login/));
-  });
 });

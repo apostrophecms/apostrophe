@@ -2,7 +2,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', function() {
+describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() {
   this.timeout(50000);
 
   after(function() {
@@ -12,46 +12,48 @@ describe('Promisified Events: apostrophe-doc-type-manager:beforeInsert', functio
   let apos;
   let coreEventsWork = false;
 
-  it('should implement apostrophe-doc-type-manager:beforeInsert handlers properly', async function() {
-    apos = await require('../index.js')({
+  it('should implement @apostrophecms/doc-type:beforeInsert handlers properly', async function() {
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         'test1': {
-          alias: 'test1',
-          construct: function(self, options) {
-            self.on(
-              'apostrophe-doc-type-manager:beforeInsert', 'beforeInsertReverseTitle',
-              async function(req, doc, options) {
-                if (doc.type === 'default') {
-                  await Promise.delay(50);
-
-                  doc.title = doc.title.split('').reverse().join('');
+          options: {
+            alias: 'test1'
+          },
+          handlers(self) {
+            return {
+              '@apostrophecms/doc-type:beforeInsert': {
+                async beforeInsertReverseTitle(req, doc, options) {
+                  if (doc.type === 'default-pages') {
+                    await Promise.delay(50);
+                    doc.title = doc.title.split('').reverse().join('');
+                  }
+                }
+              },
+              'apostrophe:modulesReady': {
+                modulesReadyCoreEventsWork() {
+                  coreEventsWork = true;
                 }
               }
-            );
-
-            self.on(
-              'apostrophe:modulesReady', 'modulesReadyCoreEventsWork',
-              function() {
-                coreEventsWork = true;
-              }
-            );
+            };
           }
         },
-        'apostrophe-pages': {
-          park: [
-            {
-              type: 'default',
-              findMeAgain: true,
-              title: 'Test',
-              slug: '/test',
-              published: true
-            }
-          ]
+        'default-pages': {
+          extend: '@apostrophecms/page-type'
+        },
+        '@apostrophecms/pages': {
+          options: {
+            park: [
+              {
+                type: 'default-pages',
+                findMeAgain: true,
+                title: 'Test',
+                slug: '/test',
+                published: true,
+                parkedId: 'test'
+              }
+            ]
+          }
         }
       }
     });

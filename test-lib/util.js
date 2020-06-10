@@ -1,3 +1,5 @@
+const cuid = require('cuid');
+
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
 // Drops the collections, not the entire database, to avoid problems
@@ -7,6 +9,7 @@
 // If `apos` is null, no work is done.
 
 async function destroy(apos) {
+  const dbName = apos.db && apos.db.databaseName;
   if (apos) {
     await apos.destroy();
   }
@@ -15,10 +18,45 @@ async function destroy(apos) {
   // important principle here is that we should not have to have an apos
   // object to clean up the database, otherwise we have to get hold of one
   // when initialization failed and that's really not apostrophe's concern
-  require('child_process').execSync('mongo test --eval \'db.dropDatabase()\'');
+  if (dbName) {
+    const mongo = require('mongodb');
+    const client = await mongo.MongoClient.connect(`mongodb://localhost:27017/${dbName}`, {
+      useUnifiedTopology: true,
+      useNewUrlParser: true
+    });
+    const db = client.db(dbName);
+    await db.dropDatabase();
+    await client.close();
+  }
 };
 
+async function create(options) {
+  const config = {
+    shortName: `test-${cuid()}`,
+    argv: {
+      _: [],
+      'ignore-orphan-modules': true
+    },
+    ...options
+  };
+  // Automatically configure Express, but not if we're in a special
+  // environment where the default apostrophe modules don't initialize
+  if (!config.__testDefaults) {
+    config.modules = config.modules || {};
+    const express = config.modules['@apostrophecms/express'] || {};
+    express.options = express.options || {};
+    // Allow OS to choose open port
+    express.options.port = null;
+    express.options.address = express.options.address || 'localhost';
+    express.options.session = express.options.session || {};
+    express.options.session.secret = express.options.session.secret || 'test';
+    config.modules['@apostrophecms/express'] = express;
+  }
+  return require('../index.js')(config);
+}
+
 module.exports = {
-  destroy: destroy,
-  timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 5000
+  destroy,
+  create,
+  timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };

@@ -12,44 +12,38 @@ describe('Admin bar', function() {
   it('should allow a group reversing the current order', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        shortName: 'test',
-        argv: {
-          _: []
-        },
         modules: {
-          'apostrophe-express': {
-            secret: 'xxx',
-            csrf: false
-          },
-          'apostrophe-admin-bar': {
-            addGroups: [
-              {
-                label: 'Media',
-                items: [
-                  'apostrophe-images',
-                  'apostrophe-files'
-                ]
-              },
-              {
-                label: 'Content',
-                items: [
-                  'apostrophe-login-logout',
-                  'apostrophe-files',
-                  'apostrophe-images'
-                ]
-              }
-            ]
+          '@apostrophecms/admin-bar': {
+            options: {
+              addGroups: [
+                {
+                  label: 'Media',
+                  items: [
+                    '@apostrophecms/images',
+                    '@apostrophecms/files'
+                  ]
+                },
+                {
+                  label: 'Content',
+                  items: [
+                    '@apostrophecms/login-logout',
+                    '@apostrophecms/files',
+                    '@apostrophecms/images'
+                  ]
+                }
+              ]
+            }
           }
         }
       });
-      assert(apos.modules['apostrophe-admin-bar']);
+      assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[5].name === 'apostrophe-login-logout');
-      assert(apos.adminBar.items[6].name === 'apostrophe-files');
-      assert(apos.adminBar.items[7].name === 'apostrophe-images');
+      assert.equal(apos.adminBar.items.length, 7);
+      assert(apos.adminBar.items[4].name === '@apostrophecms/login-logout');
+      assert(apos.adminBar.items[5].name === '@apostrophecms/files');
+      assert(apos.adminBar.items[6].name === '@apostrophecms/images');
     } finally {
       t.destroy(apos);
     }
@@ -58,44 +52,37 @@ describe('Admin bar', function() {
   it('should allow a group obeying the current order', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
-        root: module,
-        shortName: 'test',
-        argv: {
-          _: []
-        },
+      apos = await t.create({
         modules: {
-          'apostrophe-express': {
-            secret: 'xxx',
-            csrf: false
-          },
-          'apostrophe-admin-bar': {
-            addGroups: [
-              {
-                label: 'Media',
-                items: [
-                  'apostrophe-images',
-                  'apostrophe-files'
-                ]
-              },
-              {
-                label: 'Content',
-                items: [
-                  'apostrophe-files',
-                  'apostrophe-images',
-                  'apostrophe-login-logout'
-                ]
-              }
-            ]
+          '@apostrophecms/admin-bar': {
+            options: {
+              addGroups: [
+                {
+                  label: 'Media',
+                  items: [
+                    '@apostrophecms/images',
+                    '@apostrophecms/files'
+                  ]
+                },
+                {
+                  label: 'Content',
+                  items: [
+                    '@apostrophecms/files',
+                    '@apostrophecms/images',
+                    '@apostrophecms/login-logout'
+                  ]
+                }
+              ]
+            }
           }
         }
       });
-      assert(apos.modules['apostrophe-admin-bar']);
+      assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 8);
-      assert(apos.adminBar.items[5].name === 'apostrophe-files');
-      assert(apos.adminBar.items[6].name === 'apostrophe-images');
-      assert(apos.adminBar.items[7].name === 'apostrophe-login-logout');
+      assert(apos.adminBar.items.length === 7);
+      assert(apos.adminBar.items[4].name === '@apostrophecms/files');
+      assert(apos.adminBar.items[5].name === '@apostrophecms/images');
+      assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
     } finally {
       t.destroy(apos);
     }

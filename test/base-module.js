@@ -11,17 +11,14 @@ describe('Base Module', function() {
   });
 
   it('should be subclassable', async function() {
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
         // will push an asset for us to look for later
-        'apostrophe-test-module-push': {},
+        '@apostrophecms/test-module-push': {},
         // test the getOption method of modules
-        'test-get-option': {}
+        'test-get-option': {},
+        'test-get-option-2': {}
       }
     });
     assert(apos.test && apos.test.color === 'red');
@@ -34,6 +31,7 @@ describe('Base Module', function() {
     assert.equal(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
     assert.equal(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
     let markup = await mod.render(req, 'test.html');
-    assert(markup.match(/^\s*20\s*$/));
+    assert(markup.match(/20/));
+    assert(markup.match(/yup/));
   });
 });

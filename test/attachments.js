@@ -35,19 +35,15 @@ describe('Attachment', function() {
       }
     }
 
-    return apos.db.collection(collectionName).remove({});
+    return apos.db.collection(collectionName).removeMany({});
   }
 
   it('should be a property of the apos object', async function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
-      root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      }
+    apos = await t.create({
+      root: module
     });
     assert(apos.attachments);
   });
@@ -58,9 +54,9 @@ describe('Attachment', function() {
     });
   });
 
-  describe('accept', async function() {
+  describe('insert', async function() {
 
-    async function accept(filename) {
+    async function insert(filename) {
       const info = await apos.attachments.insert(apos.tasks.getReq(), {
         name: filename,
         path: uploadSource + filename
@@ -78,11 +74,11 @@ describe('Attachment', function() {
     }
 
     it('should upload a text file using the attachments api when user', async function() {
-      return accept('upload_apos_api.txt');
+      return insert('upload_apos_api.txt');
     });
 
     it('should upload an image file using the attachments api when user', async function() {
-      return accept('upload_image.png');
+      return insert('upload_image.png');
     });
 
     it('should not upload an exe file', async function() {
@@ -99,8 +95,8 @@ describe('Attachment', function() {
       assert(good);
     });
 
-    it('should crop an image file when user', async function() {
-      let result = await accept('crop_image.png');
+    it('should crop an image file when requested', async function() {
+      let result = await insert('crop_image.png');
       let crop = { top: 10, left: 10, width: 80, height: 80 };
       await apos.attachments.crop(
         apos.tasks.getReq(),
@@ -160,7 +156,7 @@ describe('Attachment', function() {
       assert(url === '/uploads/attachments/test-test.pdf');
     });
 
-    it('should save and track docIds properly as part of an apostrophe-image', async function() {
+    it('should save and track docIds properly as part of an @apostrophecms/image', async function() {
       let image = apos.images.newInstance();
       let req = apos.tasks.getReq();
       let attachment = await apos.attachments.insert(apos.tasks.getReq(), {
@@ -187,7 +183,8 @@ describe('Attachment', function() {
       } catch (e) {
         assert(false);
       }
-      await apos.images.trash(req, image._id);
+      image.trash = true;
+      await apos.images.update(req, image);
       attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
       assert(attachment.trash);
       assert(attachment.docIds.length === 0);
@@ -201,7 +198,8 @@ describe('Attachment', function() {
       if (!good) {
         throw new Error('should not have been accessible');
       }
-      await apos.images.rescue(req, image._id);
+      image.trash = false;
+      await apos.images.update(req, image);
       attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
       assert(!attachment.trash);
       assert(attachment.docIds.length === 1);

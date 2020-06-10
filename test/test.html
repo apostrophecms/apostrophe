@@ -1,0 +1,22 @@
+// in lib/modules/custom-twitter-bridge/index.js
+
+components(self) {
+  return {
+    async feed(data) {
+			return {
+				// In real life you would definitely want to cache this and
+        // use the real official Twitter APIs to get the data
+				feed: await request(`https://some-twitter-api?${qs.stringify({ username: data.username })}`)
+      }
+		}
+	};
+}
+
+{# In lib/modules/custom-twitter-bridge/views/feed.html #}
+
+{% for tweet in data.feed.tweets %}
+  <h4>{{ tweet.text }}</h4>
+{% endfor %}
+
+{# Now we can invoke our component to pull a twitter feed into ANY template #}
+{% component 'custom-twitter-bridge:feed' with { username: 'cooltweeter' } %}

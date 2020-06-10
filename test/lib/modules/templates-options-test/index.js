@@ -1,8 +1,10 @@
 module.exports = {
-  'spiffiness': 'nifty',
-  construct: function(self, options) {
+  options: {
+    'spiffiness': 'nifty'
+  },
+  init(self, options) {
     self.addHelpers({
-      test: function(a) {
+      test(a) {
         return a * 2;
       }
     });

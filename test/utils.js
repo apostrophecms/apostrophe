@@ -8,20 +8,15 @@ describe('Utils', function() {
 
   let apos;
 
-  after(function(done) {
-    return t.destroy(apos, done);
+  after(() => {
+    return t.destroy(apos);
   });
 
-  it('should exist on the apos object', function(done) {
-    apos = require('../index.js')({
-      root: module,
-      shortName: 'test',
-
-      afterInit: function(callback) {
-        assert(apos.utils);
-        return done();
-      }
+  it('should exist on the apos object', async () => {
+    apos = await t.create({
+      root: module
     });
+    assert(apos.utils);
   });
 
   // UTIL METHODS ------------------------------------------------------- //
@@ -236,6 +231,142 @@ describe('Utils', function() {
     it('does not crash when apos.utils.profile is called with two arguments (no req arg)', function() {
       apos.utils.profile('this.is.a.path', 100);
       assert(true);
+    });
+
+    it('can get a top level property with utils.get', () => {
+      const data = {
+        age: 5
+      };
+      assert(apos.utils.get(data, 'age') === 5);
+    });
+
+    it('can set a top level property with utils.set', () => {
+      const data = {
+        age: 5
+      };
+      apos.utils.set(data, 'age', 7);
+      assert(data.age === 7);
+    });
+
+    it('can get a nested property with utils.get', () => {
+      const data = {
+        shoe: {
+          size: 5
+        }
+      };
+      assert(apos.utils.get(data, 'shoe.size') === 5);
+    });
+
+    it('can set a nested property with utils.set', () => {
+      const data = {
+        shoe: {
+          size: 5
+        }
+      };
+      apos.utils.set(data, 'shoe.size', 7);
+      assert(data.shoe.size === 7);
+    });
+
+    it('can get a nested property with utils.get', () => {
+      const data = {
+        shoe: {
+          size: 5
+        }
+      };
+      assert(apos.utils.get(data, 'shoe.size') === 5);
+    });
+
+    it('can get a nested array property with utils.get', () => {
+      const data = {
+        shoe: {
+          laces: [
+            'intact',
+            'busted'
+          ]
+        }
+      };
+      assert(apos.utils.get(data, 'shoe.laces.0', 'intact'));
+    });
+
+    it('can set a nested array property with utils.set', () => {
+      const data = {
+        shoe: {
+          laces: [
+            'intact',
+            'busted'
+          ]
+        }
+      };
+      apos.utils.set(data, 'shoe.laces.0', 'gnarly');
+      assert(data.shoe.laces[0] === 'gnarly');
+    });
+
+    it('can get a subobject with @ syntax', () => {
+      const data = {
+        shoes: [
+          {
+            _id: 'stylin'
+          },
+          {
+            _id: 'busted'
+          }
+        ]
+      };
+      assert(apos.utils.get(data, '@stylin')._id === 'stylin');
+    });
+
+    it('can update a subobject property with @ syntax', () => {
+      const data = {
+        shoes: [
+          {
+            _id: 'stylin',
+            size: 5
+          },
+          {
+            _id: 'busted',
+            size: 6
+          }
+        ]
+      };
+      apos.utils.set(data, '@stylin.size', 7);
+      assert(data.shoes[0]._id === 'stylin');
+      assert.equal(data.shoes[0].size, 7);
+    });
+
+    it('can get a subobject property with @ syntax', () => {
+      const data = {
+        shoes: [
+          {
+            _id: 'stylin',
+            size: 5
+          },
+          {
+            _id: 'busted',
+            size: 6
+          }
+        ]
+      };
+      assert(apos.utils.get(data, '@stylin.size') === 5);
+    });
+
+    it('can replace a subobject with @ syntax', () => {
+      const data = {
+        shoes: [
+          {
+            _id: 'stylin',
+            size: 5
+          },
+          {
+            _id: 'busted',
+            size: 6
+          }
+        ]
+      };
+      apos.utils.set(data, '@stylin', {
+        _id: 'stylin',
+        size: 8
+      });
+      assert(data.shoes[0].size === 8);
     });
 
   });

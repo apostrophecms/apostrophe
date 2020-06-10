@@ -1,1 +1,4 @@
-{{ module.getOption('flavors.grape.sweetness') }}
+{# Get an option from the module that rendered the template #}
+{{ getOption('flavors.grape.sweetness') }}
+{# Get an option from a different module #}
+{{ getOption('test-get-option-2:yup') }}

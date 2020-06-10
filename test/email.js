@@ -14,27 +14,22 @@ describe('Email', function() {
     this.timeout(t.timeout);
     this.slow(2000);
 
-    apos = await require('../index.js')({
+    apos = await t.create({
       root: module,
-      shortName: 'test',
-      argv: {
-        _: []
-      },
       modules: {
-        'apostrophe-express': {
-          port: 7900
-        },
-        'apostrophe-email': {
-          nodemailer: {
-            streamTransport: true,
-            buffer: true,
-            newline: 'unix'
+        '@apostrophecms/email': {
+          options: {
+            nodemailer: {
+              streamTransport: true,
+              buffer: true,
+              newline: 'unix'
+            }
           }
         },
         'email-test': {}
       }
     });
-    assert(apos.modules['apostrophe-email']);
+    assert(apos.modules['@apostrophecms/email']);
   });
 
   it('can send email on behalf of a module', async function() {

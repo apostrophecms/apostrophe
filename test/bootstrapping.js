@@ -2,7 +2,7 @@ let t = require('../test-lib/test.js');
 let assert = require('assert');
 let _ = require('lodash');
 
-describe('Apostrophe', function() {
+describe('bootstrap of Apostrophe core', function() {
 
   this.timeout(t.timeout);
 
@@ -11,19 +11,15 @@ describe('Apostrophe', function() {
   it('should merge the options and local.js correctly', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        shortName: 'test',
         overrideTest: 'test', // overriden by data/local.js
-        argv: {
-          _: []
-        },
         __testDefaults: {
           modules: {}
         }
       });
       assert(apos.options.overrideTest === 'foo');
-    } finally {  
+    } finally {
       await t.destroy(apos);
     }
   });
@@ -31,12 +27,8 @@ describe('Apostrophe', function() {
   it('should accept a `__localPath` option and invoke local.js as a function if it is provided as one', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        argv: {
-          _: []
-        },
-        shortName: 'test',
         overrideTest: 'test', // overriden by data/local_fn.js
 
         __localPath: '/data/local_fn.js',
@@ -53,18 +45,14 @@ describe('Apostrophe', function() {
   it('should invoke local.js as a function with the apos and config object', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        argv: {
-          _: []
-        },
-        shortName: 'test',
         overrideTest: 'test', // concated in local_fn_b.js
 
         __localPath: '/data/local_fn_b.js',
         __testDefaults: {
           modules: {}
-        },
+        }
       });
       assert(apos.options.overrideTest === 'test-foo');
     } finally {
@@ -75,20 +63,15 @@ describe('Apostrophe', function() {
   it('should accept a `__testDefaults` option and load the test modules correctly', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        argv: {
-          _: []
-        },
-        shortName: 'test',
-
         __testDefaults: {
           modules: {
-            'apostrophe-test-module': {}
+            '@apostrophecms/test-module': {}
           }
         }
       });
-      assert(apos.modules['apostrophe-test-module']);
+      assert(apos.modules['@apostrophecms/test-module']);
     } finally {
       await t.destroy(apos);
     }
@@ -97,19 +80,12 @@ describe('Apostrophe', function() {
   it('should create the modules and invoke the construct function correctly', async function() {
     let apos;
     try {
-      apos = await require('../index.js')({
+      apos = await t.create({
         root: module,
-        argv: {
-          _: []
-        },
-        shortName: 'test',
         __testDefaults: {
           modules: {
-            'apostrophe-test-module': {}
+            '@apostrophecms/test-module': {}
           }
-        },
-        afterInit: function(callback) {
-          return t.destroy(apos, done);
         }
       });
       assert(apos.test && apos.test.color === 'red');
@@ -123,12 +99,8 @@ describe('Apostrophe', function() {
     try {
       let defaultModules = require('../defaults.js').modules;
 
-      apos = await require('../index.js')({
-        root: module,
-        argv: {
-          _: []
-        },
-        shortName: 'test'
+      apos = await t.create({
+        root: module
       });
       // color = blue is inherited from our implicit subclass of the base module
       assert(apos.assets && apos.assets.color === 'blue');

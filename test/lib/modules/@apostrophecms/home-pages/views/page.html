@@ -1,0 +1,9 @@
+<h4>Home Page Template</h4>
+{# This is necessary to the login.js tests. -Tom #}
+{% if data.user %}
+  logged in
+{% else %}
+  logged out
+{% endif %}
+{# Necessary to the @apostrophecms/global tests. #}
+counts: {{ data.global.counts }}
