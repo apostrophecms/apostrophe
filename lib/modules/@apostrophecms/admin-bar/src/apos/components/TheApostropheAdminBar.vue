@@ -30,6 +30,7 @@ export default {
   components: { ApostropheLogo },
   methods: {
     emitEvent: function (name) {
+      console.log(name);
       apos.bus.$emit('adminBarItem', name);
     },
     toggleDropdown: function () {
