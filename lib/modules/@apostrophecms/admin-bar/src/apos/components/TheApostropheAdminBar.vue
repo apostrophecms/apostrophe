@@ -44,6 +44,16 @@ body {
   margin-top: 63px;
 }
 
+body.busy {
+  background: #e9e9e9;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.5;
+}
+
 .apos-admin-bar {
   position: fixed;
   top: 0;
