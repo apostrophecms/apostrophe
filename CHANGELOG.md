@@ -6,6 +6,10 @@
 
 * If called with a scalar argument, `apos.utils.clonePermanent` now returns scalars (strings, booleans, numbers) as-is. This makes it easier to use the method when the argument might or might not be an object that requires cloning.
 
+## 2.107.2 (2020-06-10)
+
+* Fixed a regression that caused difficulty saving array fields with `color` subfields in their schema. This regression was introduced in 2.107.0.
+
 ## 2.107.1 (2020-06-03)
 
 * The `distinctCounts` feature (also known as `counts: true` for `piecesFilters`) is now compatible with the `apostrophe-db-mongo-3-driver` module, when in use. Note that there is little benefit to that module now that `emulate-mongo-2-driver` is standard in Apostrophe and employs the MongoDB 3.x driver under the hood but provides a 2.x-compatible API. However those who strongly prefer the 3.x driver APIs for direct MongoDB queries may use `apostrophe-db-mongo-3-driver` with more confidence given this fix.
