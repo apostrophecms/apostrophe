@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.109.0 (2020-06-18)
+
+* Add [heic-to-jpeg-middleware](https://github.com/boutell/heic-to-jpeg-middleware) to support uploading `heic/heif` images (the standard format for recent iPhones/iPads).
+
 ## 2.108.0 (2020-06-07)
 
 * UX improvement: if a piece type has the `contextual: true` option set and workflow is present, do not default published to `false`. There is already a good opportunity to review before the public sees the piece afforded by workflow.
