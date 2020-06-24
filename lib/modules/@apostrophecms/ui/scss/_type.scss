@@ -1,0 +1,17 @@
+@mixin link-primary {
+  color: var(--a-primary);
+
+  &:hover,
+  &:focus {
+    color: var(--a-primary-button-hover);
+  }
+
+  &:active {
+    color: var(--a-primary-button-active);
+  }
+}
+
+.o-heading {
+  font-size: map-get($font-sizes, heading);
+  font-weight: 500;
+}

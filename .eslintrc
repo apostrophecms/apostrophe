@@ -3,6 +3,9 @@
     "apostrophe",
     "plugin:vue/vue3-recommended"
   ],
+  "globals": {
+    "apos": true
+  },
   "rules": {
     "no-var": "error",
     "no-console": 0,

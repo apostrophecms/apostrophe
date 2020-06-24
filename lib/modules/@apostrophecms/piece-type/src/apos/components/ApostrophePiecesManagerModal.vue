@@ -3,9 +3,10 @@
     <template #header>
       <!-- TODO i18n -->
       <p>Manage {{ options.pluralLabel }}</p>
-      <button @click="inserting = true">
-        New {{ options.label }}
-      </button>
+      <AposButton
+        :label="`New ${ options.label }`" type="primary"
+        @click="inserting = true"
+      />
     </template>
     <template #body>
       <component
