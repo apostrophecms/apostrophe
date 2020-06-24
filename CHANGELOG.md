@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.108.1 (2020-06-24)
+
+* The http response to dismissing a notification should not include any information about the mongodb connection. The response previously included relatively low-risk information, including the IP address of the MongoDB server but not enough to make an unauthorized connection when the MongoDB server and/or firewall are properly configured.
+
 ## 2.108.0 (2020-06-07)
 
 * UX improvement: if a piece type has the `contextual: true` option set and workflow is present, do not default published to `false`. There is already a good opportunity to review before the public sees the piece afforded by workflow.
