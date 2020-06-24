@@ -1,12 +1,12 @@
 <template>
-  <div class="apos-overlay">
+  <div class="apos-busy">
     <div v-if="busy" class="busy"></div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'TheApostropheOverlay',
+  name: 'TheApostropheBusy',
   data() {
     return {
       busy: false
