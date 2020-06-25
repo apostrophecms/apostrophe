@@ -32,7 +32,7 @@
 <script>
 
 export default {
-  name: 'ApostrophePiecesManagerModal',
+  name: 'AposPiecesManager',
   props: {
     moduleName: String
   },
