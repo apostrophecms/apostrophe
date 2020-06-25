@@ -3,7 +3,6 @@
     <div class="modal-mask">
       <div class="modal-wrapper">
         <div class="modal-container">
-
           <div class="modal-header">
             <slot name="header">
               default header
@@ -33,7 +32,7 @@
 <script>
 export default {
   name: 'ApostropheModal'
-}
+};
 </script>
 
 <style>

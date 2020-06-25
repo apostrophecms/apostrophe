@@ -1,14 +1,16 @@
 <template>
-  <ApostropheModal @close="$emit('close')">
-    <template #header>
-      <!-- TODO i18n -->
-      <p>Manage {{ options.pluralLabel }}</p>
+  <AposModal
+    :modal="modal"
+    @esc="cancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+  >
+    <template #primaryControls>
       <AposButton
         :label="`New ${ options.label }`" type="primary"
         @click="inserting = true"
       />
     </template>
-    <template #body>
+    <template #main>
       <component
         :module-name="moduleName" :is="options.components.filters"
         :filters="options.filters" v-model="filterValues"
@@ -17,16 +19,14 @@
         :module-name="moduleName" :is="options.components.list"
         :pieces="pieces"
       />
-    </template>
-    <template #footer>
-      <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
+      <!-- TODO: Trigger the piecesEditor another way. -->
       <component
         v-if="inserting" :module-name="moduleName"
         :is="options.components.insertModal" @close="inserting = false"
-        @saved="update(); inserting = false"
+        @saved="finishSaved"
       />
     </template>
-  </ApostropheModal>
+  </AposModal>
 </template>
 
 <script>
@@ -38,6 +38,12 @@ export default {
   },
   data() {
     return {
+      modal: {
+        title: `Manage ${this.moduleName}`,
+        active: false,
+        type: 'overlay',
+        showModal: false
+      },
       pieces: [],
       totalPages: 1,
       currentPage: 1,
@@ -67,11 +73,16 @@ export default {
     });
   },
   mounted() {
+    this.modal.active = true;
     this.update();
   },
   methods: {
+    cancel() {
+      this.modal.showModal = false;
+    },
     async update() {
       apos.bus.$emit('busy', true);
+
       try {
         this.pieces = (await apos.http.get(
           this.options.action, {
@@ -80,13 +91,15 @@ export default {
               page: this.currentPage
             }
           }
-        )).pieces;
+        )).results;
       } finally {
         apos.bus.$emit('busy', false);
       }
     },
-    insert() {
+    async finishSaved() {
+      await this.update();
 
+      this.inserting = false;
     }
   }
 };

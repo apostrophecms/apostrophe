@@ -153,7 +153,7 @@ export default {
   // NOTE: Transition timings below are set to match the wrapper transition
   // timing in the template to coordinate the inner and overlay animations.
   $spacing-base: 10px;
-  $spacing-double: $spacing-base * 2; // TODO: Remove once vars are available.
+  $spacing-double: $spacing-base * 2; // TEMP: Remove once vars are available.
   .apos-modal__inner {
     display: grid;
     position: fixed;
@@ -166,6 +166,7 @@ export default {
     height: calc(100vh - #{$spacing-double * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
+    background-color: #fff; // TEMP
     border: 1px solid var(--a-base-4);
     color: var(--a-text-primary);
 
@@ -224,6 +225,7 @@ export default {
     left: 0;
     display: block;
     background-color: var(--a-overlay);
+    background-color: rgba(0,0,0,0.5); // TEMP
 
     .apos-modal--slide & {
       transition: opacity .15s ease;
