@@ -29,10 +29,72 @@
           />
         </template>
         <template #bodyMain>
-          <component
+          <!-- <component
             :module-name="moduleName" :is="options.components.list"
             :pieces="pieces"
-          />
+          /> -->
+          <table class="apos-table" v-if="rows.length > 0">
+            <tbody>
+              <tr>
+                <th class="apos-table__header" />
+                <th
+                  v-for="header in headers" scope="col"
+                  class="apos-table__header" :key="header.label"
+                >
+                  <component
+                    :is="getEl(header)" @click="sort(header.action)"
+                    class="apos-table__header-label"
+                  >
+                    <component
+                      v-if="header.icon"
+                      :size="iconSize(header)"
+                      class="apos-table__header-icon"
+                      :is="icons[header.icon]"
+                    />
+                    {{ header.label }}
+                  </component>
+                </th>
+              </tr>
+              <tr
+                class="apos-table__row"
+                v-for="row in rows"
+                :key="row.id"
+                :class="{'is-selected': false }"
+              >
+                <td class="apos-table__cell">
+                  <AposCheckbox
+                    v-if="checkboxes[row.id]"
+                    :field="checkboxes[row.id].field"
+                    :value="checkboxes[row.id].value.data"
+                    :status="checkboxes[row.id].status"
+                    :choice="checkboxes[row.id].choice"
+                    :id="row.id"
+                    @toggle="toggleRowCheck($event, row.id)"
+                  />
+                </td>
+                <td
+                  class="apos-table__cell" v-for="header in headers"
+                  :key="row[header.name]"
+                >
+                  <a
+                    v-if="header.name === 'url'" class="apos-table__link"
+                    :href="row[header.name]"
+                  >
+                    <LinkIcon :size="12" />
+                  </a>
+                  <p
+                    v-else class="apos-table__cell-field"
+                    :class="`apos-table__cell-field--${header.name}`"
+                  >
+                    {{ row[header.name] }}
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="apos-pieces-manager__empty">
+            <AposEmptyState :empty-state="emptyDisplay" />
+          </div>
         </template>
       </AposModalBody>
       <!-- TODO: Trigger the piecesEditor another way. -->
@@ -92,12 +154,12 @@ export default {
       if (!this.pieces || !this.headers.length) {
         return [];
       }
-      console.log(this.pieces);
+
       this.pieces.forEach(piece => {
-        const data = [];
+        const data = {};
 
         this.headers.forEach(column => {
-          data.push(piece[column.name]);
+          data[column.name] = piece[column.name];
         });
         rows.push(data);
       });
