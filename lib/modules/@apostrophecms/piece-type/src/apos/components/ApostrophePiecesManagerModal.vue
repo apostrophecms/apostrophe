@@ -1,17 +1,30 @@
 <template>
   <ApostropheModal @close="$emit('close')">
-    <template slot="header">
+    <template #header>
       <!-- TODO i18n -->
       <p>Manage {{ options.pluralLabel }}</p>
-      <button @click="inserting = true">New {{ options.label }}</button>
+      <AposButton
+        :label="`New ${ options.label }`" type="primary"
+        @click="inserting = true"
+      />
     </template>
-    <template slot="body">
-      <component :moduleName="moduleName" :is="options.components.filters" :filters="options.filters" v-model="filterValues" />
-      <component :moduleName="moduleName" :is="options.components.list" :pieces="pieces" />
+    <template #body>
+      <component
+        :module-name="moduleName" :is="options.components.filters"
+        :filters="options.filters" v-model="filterValues"
+      />
+      <component
+        :module-name="moduleName" :is="options.components.list"
+        :pieces="pieces"
+      />
     </template>
-    <template slot="footer">
+    <template #footer>
       <!-- <component :is="options.components.pager" :totalPages="totalPages" v-model="currentPage" v-on/> -->
-     <component v-if="inserting" :moduleName="moduleName" :is="options.components.insertModal" @close="inserting = false" @saved="update(); inserting = false" />
+      <component
+        v-if="inserting" :module-name="moduleName"
+        :is="options.components.insertModal" @close="inserting = false"
+        @saved="update(); inserting = false"
+      />
     </template>
   </ApostropheModal>
 </template>
@@ -23,11 +36,6 @@ export default {
   props: {
     moduleName: String
   },
-  computed: {
-    options() {
-      return window.apos.modules[this.moduleName];
-    }
-  },
   data() {
     return {
       pieces: [],
@@ -37,10 +45,10 @@ export default {
       inserting: false
     };
   },
-  created() {
-    this.options.filters.forEach(filter => {
-      this.filterValues[filter.name] = filter.choices[0].value;
-    });
+  computed: {
+    options() {
+      return window.apos.modules[this.moduleName];
+    }
   },
   watch: {
     filterValues: {
@@ -52,6 +60,11 @@ export default {
     currentPage() {
       this.update();
     }
+  },
+  created() {
+    this.options.filters.forEach(filter => {
+      this.filterValues[filter.name] = filter.choices[0].value;
+    });
   },
   mounted() {
     this.update();

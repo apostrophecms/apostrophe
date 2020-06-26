@@ -1,0 +1,47 @@
+@mixin apos-transition ($what: all, $duration:0.1s, $ease: ease-in-out) {
+  transition: $what $duration $ease;
+}
+
+@mixin apos-p-reset () {
+  margin: 0;
+}
+
+@mixin apos-align-icon () {
+  display: flex;
+  align-items: center;
+}
+
+@mixin apos-list-reset () {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+@mixin apos-fieldset-reset () {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+@mixin apos-button-reset () {
+  border: none;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
+  text-align: inherit;
+  font: inherit;
+  line-height: normal;
+  -webkit-font-smoothing: inherit;
+  -moz-osx-font-smoothing: inherit;
+  -webkit-appearance: none;
+  &:hover {
+    cursor: pointer;
+  }
+  &::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+  }
+}

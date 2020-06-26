@@ -1,0 +1,113 @@
+$font-default: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+$font-families: (
+  default: $font-default
+);
+
+$font-weights: (
+  medium: 500,
+  bold: 700
+);
+
+$font-sizes: (
+  default: 12px,
+  meta: 10px,
+  input-label: 14px,
+  input: 12px,
+  input-hint: 12px,
+  heading: 22px,
+  modal: 12px,
+  rail-title: 14px
+);
+
+$spacing-base: 10px;
+$spacing-double: $spacing-base * 2;
+$spacing-triple: $spacing-base * 3;
+
+$input-padding: $spacing-base * 1.5;
+$boolean-padding: $spacing-double;
+
+@mixin apos-primary-mixin ($color) {
+  --a-primary: #{$color};
+  --a-primary-50: #{transparentize($color, 0.5)};
+  --a-primary-button-hover: #{mix(black, $color, 10%)};
+  --a-primary-button-active: #{mix(black, $color, 15%)};
+  --a-primary-button-disabled: #{mix(white, $color, 40%)};
+}
+
+body {
+  font-family: $font-default;
+  font-weight: map-get($font-weights, medium);
+  font-size: 10px;
+}
+
+:root, .apos-theme-light {
+
+  --a-danger: #EB443B;
+  --a-success: #00BF9A;
+  --a-warning: #ffce00;
+
+  .apos-theme--primary-purple { @include apos-primary-mixin(#6516DD); }
+
+  --a-danger-button-hover: #C00717;
+  --a-danger-button-active: #A10000;
+  --a-danger-button-disabled: #FF9D98;
+
+  --a-base-1: #5D5D5D;
+  --a-base-2: #6F6F6F;
+  --a-base-3: #818181;
+  --a-base-4: #939393;
+  --a-base-5: #A5A5A5;
+  --a-base-6: #B7B7B7;
+  --a-base-7: #C9C9C9;
+  --a-base-8: #DBDBDB;
+  --a-base-9: #EDEDED;
+  --a-base-10: #f4f4f4;
+
+  --a-text-primary: #000;
+
+  // Borders
+  --a-border-radius: 5px;
+  --a-box-shadow: 0 3px 13px 4px rgba(0,0,0,0.08);
+
+  // Backgrounds
+  --a-background-primary: #fff;
+  --a-background-inverted: #323232;
+  --a-overlay: #00000080;
+
+  // Universal
+  --a-white: #fff;
+
+  // Apostrophe brand
+  --a-brand-red: #EA433A;
+  --a-brand-gold: #CC9300;
+  --a-brand-magenta: #B327BF;
+  --a-brand-blue: #6666FF;
+  --a-brand-green: #00BF9A;
+}
+
+.apos-theme-dark {
+  .apos-theme--primary-blue { @include apos-primary-mixin(#0062ff); }
+  --a-base-1: #d1d3d5;
+  --a-base-2: #6B7C92;
+  --a-base-3: #607084;
+  --a-base-4: #566477;
+  --a-base-5: #4B5869;
+  --a-base-6: #414D5B;
+  --a-base-7: #36414D;
+  --a-base-8: #2C3540;
+  --a-base-9: #212932;
+  --a-base-10: #171D24;
+
+  --a-background-primary: #0b0b0c;
+  --a-overlay: #0b0b0c90;
+
+  --a-text-primary: #fff;
+}
+
+.apos-theme--primary-blue { @include apos-primary-mixin(#0062ff); }
+.apos-theme--primary-purple { @include apos-primary-mixin(rgb(2, 2, 2)); }
+.apos-theme--primary-orange { @include apos-primary-mixin(#e65100); }
+.apos-theme--primary-light-blue { @include apos-primary-mixin(#1EACC7); }
+.apos-theme--primary-sun { @include apos-primary-mixin(#f7a704); }
+.apos-theme--primary-money { @include apos-primary-mixin(#00b075); }
+.apos-theme--primary-pink { @include apos-primary-mixin(#FD9EC0); }

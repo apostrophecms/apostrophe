@@ -1,0 +1,26 @@
+// TODO: Need API documentation
+// @function color($key: null, $style: null) {
+//   @if $key and $style {
+//     @return map-get(map-get($colors, $key), $style);
+//   }
+//   // TODO: Need error handling.
+//   @return null;
+// }
+
+// TODO: Need API documentation
+@function family($key) {
+  @if map-has-key($font-families, $key) {
+    @return map-get($font-families, $key);
+  }
+  @warn 'Unknown `#{$key}` in $font-family.';
+  @return null;
+}
+
+// TODO: Need API documentation
+@function weight($key) {
+  @if map-has-key($font-weights, $key) {
+    @return map-get($font-weights, $key);
+  }
+  @warn 'Unknown `#{$key}` in $font-weight.';
+  @return null;
+}
