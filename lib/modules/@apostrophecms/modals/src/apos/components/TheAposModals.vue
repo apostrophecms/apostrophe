@@ -3,7 +3,7 @@
     <component
       v-for="modal in activeModals" :key="modal.itemName"
       :is="modal.componentName" :module-name="modal.itemName"
-      @close="setIsActive(modal.itemName, false)"
+      @safe-close="setIsActive(modal.itemName, false)"
     />
   </div>
 </template>
@@ -38,7 +38,11 @@ export default {
     setIsActive(itemName, state) {
       // https://vuejs.org/v2/guide/reactivity.html#Change-Detection-Caveats
       this.$set(this.active, itemName, state);
+    },
+    finishExit: function () {
+      this.active = false;
     }
+
   }
 };
 </script>

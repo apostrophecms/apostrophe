@@ -23,7 +23,7 @@
                 <slot name="secondaryControls" />
               </div>
               <h2 :id="id" class="apos-modal__heading o-heading">
-                {{ modal.title }}
+                {{ modalTitle }}
               </h2>
               <div
                 class="apos-modal__controls--primary" v-if="hasPrimaryControls"
@@ -70,13 +70,17 @@ export default {
     modal: {
       type: Object,
       required: true
+    },
+    modalTitle: {
+      type: String,
+      default: ''
     }
   },
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
       // replace everything not A-Za-z0-9_ with _
-      const title = this.modal.title.replace(/\W/g, '_');
+      const title = this.modalTitle.replace(/\W/g, '_');
       return `${title}-${rand}`;
     },
     transitionType: function () {

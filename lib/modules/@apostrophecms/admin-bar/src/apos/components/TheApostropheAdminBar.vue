@@ -4,13 +4,29 @@
       <ApostropheLogo />
     </div>
     <div v-for="item in items" class="apos-admin-bar__item">
-      <component v-if="item.options" :is="item.options.href ? 'a' : 'button'" class="apos-admin-bar__trigger" :href="item.options.href" v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }">
+      <component
+        v-if="item.options" :is="item.options.href ? 'a' : 'button'"
+        class="apos-admin-bar__trigger" :href="item.options.href"
+        v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+      >
         {{ item.label }}
       </component>
-      <button v-else-if="item.menu" class="apos-admin-bar__trigger" @click="toggleDropdown">{{ item.label }}</button>
-      <ul v-if="item.menu" class="apos-admin-bar__dropdown-items" data-apos-dropdown-items>
+      <button
+        v-else-if="item.menu" class="apos-admin-bar__trigger"
+        @click="toggleDropdown"
+      >
+        {{ item.label }}
+      </button>
+      <ul
+        v-if="item.menu" class="apos-admin-bar__dropdown-items"
+        data-apos-dropdown-items
+      >
         <li v-for="subItem in item.items" class="apos-admin-bar__dropdown-item">
-          <component v-if="subItem.options" :is="subItem.options.href ? 'a' : 'button'" class="apos-admin-bar__trigger" :href="subItem.options.href" v-on="subItem.options.href ? {} : { click: () => emitEvent(subItem.name) }">
+          <component
+            v-if="subItem.options" :is="subItem.options.href ? 'a' : 'button'"
+            class="apos-admin-bar__trigger" :href="subItem.options.href"
+            v-on="subItem.options.href ? {} : { click: () => emitEvent(subItem.name) }"
+          >
             {{ subItem.label }}
           </component>
         </li>
@@ -24,10 +40,10 @@ import ApostropheLogo from './svg/ApostropheLogo';
 
 export default {
   name: 'TheApostropheAdminBar',
+  components: { ApostropheLogo },
   props: {
     items: Array
   },
-  components: { ApostropheLogo },
   methods: {
     emitEvent: function (name) {
       console.log(name);
@@ -36,7 +52,7 @@ export default {
     toggleDropdown: function () {
     }
   }
-}
+};
 </script>
 
 <style>

@@ -3,12 +3,16 @@
     <table>
       <thead>
         <tr>
-          <th v-for="column in options.columns">{{ column.label }}</th>
+          <th v-for="column in options.columns">
+            {{ column.label }}
+          </th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="piece in pieces">
-          <td v-for="column in options.columns">{{ piece[column.name] }}</td>
+          <td v-for="column in options.columns">
+            {{ piece[column.name] }}
+          </td>
         </tr>
       </tbody>
     </table>
