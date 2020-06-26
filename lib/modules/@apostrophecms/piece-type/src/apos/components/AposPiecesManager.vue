@@ -147,10 +147,8 @@ export default {
     cancel() {
       this.modal.showModal = false;
     },
-    async update() {
-    },
     async finishSaved() {
-      await this.update();
+      await this.getPieces();
 
       this.inserting = false;
     },
