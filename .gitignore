@@ -9,6 +9,7 @@ npm-debug.log
 .nyc_output
 coverage
 node_modules
+.storybook/components.json
 test/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
