@@ -13,7 +13,7 @@ export default {
 </script>
 
 <style>
-  .apos-active {
-    background-color: red;
-  }
+.apos-active {
+  background-color: var(--a-danger);
+}
 </style>

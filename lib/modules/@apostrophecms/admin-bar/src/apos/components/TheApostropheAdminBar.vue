@@ -48,14 +48,17 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  height: 63px;
   width: 100%;
+  height: 63px;
   padding: 0 24px;
-  background: #1B232C;
-  font: 12px/1 'arial', sans-serif;
+  background: var(--a-background-inverted);
+  font-family: $font-default;
+  font-size: map-get($font-sizes, default);
+  line-height: 1;
 }
 
-.apos-admin-bar__logo, .apos-admin-bar__item {
+.apos-admin-bar__logo,
+.apos-admin-bar__item {
   position: relative;
   display: inline-block;
   vertical-align: middle;
@@ -70,14 +73,14 @@ body {
   margin: 0;
   padding: 25px;
   border: 0;
-  color: #F2F2F2;
+  color: var(--a-base-10);
   background: transparent;
   text-decoration: none;
   cursor: pointer;
 }
 
 .apos-admin-bar__trigger:hover {
-  background: #282F3F;
+  background: var(--a-base-1);
 }
 
 .apos-admin-bar__dropdown-items .apos-admin-bar__trigger {
@@ -86,9 +89,9 @@ body {
 
 .apos-admin-bar__dropdown-items {
   position: absolute;
-  background: #1B232C;
   list-style: none;
   margin: 0;
   padding: 0;
+  background: var(--a-base-10);
 }
 </style>

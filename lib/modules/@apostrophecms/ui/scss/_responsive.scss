@@ -8,7 +8,7 @@ $breakpoints: (
 );
 
 // We default to mobile first, but make a max-with option available as well.
-@mixin media-up ($bp) {
+@mixin media-up($bp) {
   $bpVal: map-get($breakpoints, $bp);
   @media screen and (min-width: $bpVal) {
     @content;
