@@ -33,7 +33,7 @@ export default {
 </script>
 
 <style>
-  .apos-active {
-    background-color: blue;
-  }
+.apos-active {
+  background-color: var(--a-brand-blue);
+}
 </style>

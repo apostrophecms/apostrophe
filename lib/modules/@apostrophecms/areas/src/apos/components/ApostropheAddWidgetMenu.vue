@@ -79,6 +79,6 @@ export default {
 <style>
 .apos-area-add-widget-menu {
   width: 100px;
-  border: 2px solid lightblue;
+  border: 2px solid var(--a-brand-blue);
 }
 </style>

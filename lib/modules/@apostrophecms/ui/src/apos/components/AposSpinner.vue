@@ -54,13 +54,13 @@ module.exports = {
 </script>
 
 <style lang="scss">
-  .apos-spinner {
-    position: relative;
-    width: 17px;
-    height: 17px;
-  }
-  .apos-spinner__svg {
-    max-width: 100%;
-    max-height: 100%;
-  }
+.apos-spinner {
+  position: relative;
+  width: 17px;
+  height: 17px;
+}
+.apos-spinner__svg {
+  max-width: 100%;
+  max-height: 100%;
+}
 </style>
