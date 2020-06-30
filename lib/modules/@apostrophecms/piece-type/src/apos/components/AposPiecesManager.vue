@@ -93,7 +93,7 @@
           </div>
         </template>
       </AposModalBody>
-      <!-- TODO: Trigger the piecesEditor another way. -->
+      <!-- The pieces editor modal. -->
       <component
         v-if="inserting" :module-name="moduleName"
         :is="options.components.insertModal" @close="inserting = false"
