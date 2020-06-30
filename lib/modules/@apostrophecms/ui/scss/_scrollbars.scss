@@ -1,39 +1,37 @@
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-button {
-    width: 12px;
-    height: 12px;
-    margin: 2px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--a-base-7);
-    border: 6px none var(--a-base-5);
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--a-base-4);
-  }
-  ::-webkit-scrollbar-thumb:active {
-    background: var(--a-base-2);
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--a-base-9);
-    border: 6px none var(--a-base-9);
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-track:hover {
-    background: var(--a-base-8);
-  }
-  ::-webkit-scrollbar-track:active {
-    background: var(--a-base-7);
-  }
-  ::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-button {
+  width: 12px;
+  height: 12px;
+  margin: 2px;
+}
+::-webkit-scrollbar-thumb {
+  border: 6px none var(--a-base-5);
+  background: var(--a-base-7);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--a-base-4);
+}
+::-webkit-scrollbar-thumb:active {
+  background: var(--a-base-2);
+}
+::-webkit-scrollbar-track {
+  border: 6px none var(--a-base-9);
+  background: var(--a-base-9);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track:hover {
+  background: var(--a-base-8);
+}
+::-webkit-scrollbar-track:active {
+  background: var(--a-base-7);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
 // variants
 .apos-primary-scrollbar {
@@ -46,8 +44,8 @@
     height: 12px;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--a-primary);
     border: 6px none var(--a-background-primary);
+    background: var(--a-primary);
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -57,8 +55,8 @@
     background: var(--a-primary-button-active);
   }
   ::-webkit-scrollbar-track {
-    background: var(--a-base-10);
     border: 6px none var(--a-base-10);
+    background: var(--a-base-10);
     border-radius: 10px;
   }
   ::-webkit-scrollbar-track:hover {
@@ -70,5 +68,4 @@
   ::-webkit-scrollbar-corner {
     background: transparent;
   }
-
 }
