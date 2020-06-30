@@ -29,10 +29,6 @@
           />
         </template>
         <template #bodyMain>
-          <!-- <component
-            :module-name="moduleName" :is="options.components.list"
-            :pieces="pieces"
-          /> -->
           <table class="apos-table" v-if="rows.length > 0">
             <tbody>
               <tr>
