@@ -8,14 +8,15 @@
       :value="choice.value" :name="field.name"
       :id="id" :aria-label="choice.label"
       :tabindex="tabindex" :disabled="status.disabled"
-      v-on="{ 'click': status.readOnly ? readOnly : toggle }" :checked="isChecked"
+      v-model="checkProxy"
+      @change="updateThis"
     >
     <span class="apos-input-indicator" aria-hidden="true">
       <component
         :is="`${
           choice.indeterminate ? 'MinusIcon' : 'CheckBoldIcon'
         }`"
-        :size="10" v-if="isChecked"
+        :size="10" v-if="checked && checked.includes(choice.value)"
       />
     </span>
     <span
@@ -36,17 +37,22 @@ export default {
     CheckBoldIcon,
     MinusIcon
   },
+  // Custom model to handle the v-model connection on the parent.
+  model: {
+    prop: 'checked',
+    event: 'change'
+  },
   props: {
+    checked: {
+      type: [Array, Boolean],
+      default: false
+    },
     choice: {
       type: Object,
       required: true
     },
     field: {
       type: Object,
-      required: true
-    },
-    value: {
-      type: Array,
       required: true
     },
     status: {
@@ -64,18 +70,26 @@ export default {
     };
   },
   computed: {
-    isChecked: function () {
-      return this.value.includes(this.choice.value);
+    // Handle the local check state within this component.
+    checkProxy: {
+      get() {
+        return this.checked;
+      },
+      set(val) {
+        // TODO: Move indeterminate to `status`
+        if (!this.choice.indeterminate) {
+          // Only update the model if the box was *not* indeterminate.
+          this.$emit('change', val);
+        }
+      }
     }
   },
   methods: {
-    readOnly(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      this.$emit('toggle', this.choice.value);
-    },
-    toggle(event) {
-      this.$emit('toggle', this.choice.value);
+    // This event is only necessary if the parent needs to do *more* than simply
+    // keep track of an array of checkbox values. For example, AposTagApply
+    // does extra work with indeterminate values.
+    updateThis($event) {
+      this.$emit('updated', $event);
     }
   }
 };
