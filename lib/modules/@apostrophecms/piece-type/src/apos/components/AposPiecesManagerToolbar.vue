@@ -7,7 +7,7 @@
         @click="$emit('select-click')" :icon-color="iconColor"
       />
       <AposTagApply :tags="applyTags" :apply-to="[]" />
-      <!-- TODO trash component needs to be worked out with confirm, maybe separate into its own component -->
+      <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
       <AposButton
         label="Delete" @click="$emit('trash-click')"
         :icon-only="true" icon="delete-icon"
@@ -20,7 +20,10 @@
       />
     </template>
     <template #rightControls>
-      <AposFilterMenu :menu="filterFields" @input="filter" />
+      <AposFilterMenu
+        :filters="filters"
+        @input="filter"
+      />
       <AposStringInput
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -39,6 +42,12 @@ export default {
       required: true
     },
     applyTags: {
+      type: Array,
+      default () {
+        return [];
+      }
+    },
+    filters: {
       type: Array,
       default () {
         return [];
@@ -69,46 +78,6 @@ export default {
         },
         status: {},
         value: { data: '' }
-      },
-      filterFields: {
-        published: {
-          field: {
-            name: 'published',
-            type: 'radio',
-            label: 'Published State',
-            choices: [
-              {
-                label: 'Published',
-                value: 'published'
-              },
-              {
-                label: 'Unpublished',
-                value: 'unpublished'
-              }
-            ]
-          },
-          value: { data: 'published' },
-          status: {}
-        },
-        trash: {
-          field: {
-            name: 'trash',
-            type: 'radio',
-            label: 'Trash',
-            choices: [
-              {
-                label: 'No',
-                value: 'false'
-              },
-              {
-                label: 'Yes',
-                value: 'true'
-              }
-            ]
-          },
-          value: { data: 'false' },
-          status: {}
-        }
       }
     };
   },
@@ -131,8 +100,8 @@ export default {
     }
   },
   methods: {
-    filter(value, field) {
-      this.$emit('filter', field, value.data);
+    filter(filter, value) {
+      this.$emit('filter', filter, value.data);
     },
     search(value) {
       this.$emit('search', value.data);

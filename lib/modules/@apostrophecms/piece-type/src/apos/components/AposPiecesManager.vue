@@ -18,11 +18,12 @@
       <AposModalBody>
         <template #bodyHeader>
           <AposPiecesManagerToolbar
-            v-if="rows.length > 0"
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
+            :filters="options.filters"
+            @filter="filter"
           />
         </template>
         <template #bodyMain>
@@ -121,10 +122,10 @@ export default {
       },
       pieces: [],
       lastSelected: null,
-      totalPages: 1, // TODO: Make use of these.
+      totalPages: 1, // TODO: Populate this from the `getPieces` method.
       currentPage: 1, // TODO: Make use of these.
-      filterValues: {}, // TODO: Make use of these.
-      inserting: false // TODO: Make use of these.
+      filterValues: {},
+      inserting: false
     };
   },
   computed: {
@@ -179,21 +180,15 @@ export default {
   },
   // TODO: Work these back into the toolbar.
   // watch: {
-  //   filterValues: {
-  //     deep: true,
-  //     handler() {
-  //       this.update();
-  //     }
-  //   },
   //   currentPage() {
   //     this.update();
   //   }
   // },
-  // created() {
-  //   this.options.filters.forEach(filter => {
-  //     this.filterValues[filter.name] = filter.choices[0].value;
-  //   });
-  // },
+  created() {
+    this.options.filters.forEach(filter => {
+      this.filterValues[filter.name] = filter.choices[0].value;
+    });
+  },
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
@@ -225,13 +220,22 @@ export default {
       }
     },
     // Toolbar handlers
-    // TODO stub
     trashClick() {
+      // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
     search(query) {
-      // TODO stub
+      // TODO: Update the `qs` object with search term in the `getPieces` call.
       this.$emit('search', query);
+    },
+    async filter(filter, value) {
+      if (this.filterValues[filter] === value) {
+        return;
+      }
+
+      this.filterValues[filter] = value;
+
+      this.getPieces();
     }
   }
 };

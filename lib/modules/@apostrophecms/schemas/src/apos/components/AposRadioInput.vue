@@ -37,6 +37,14 @@ export default {
   mixins: [ AposInputMixin ],
   methods: {
     getChoiceId(uid, value) {
+      // Convert any boolean values for this purpose.
+      if (typeof value !== 'string') {
+        value = !value && value === null ? 'null'
+          : !value ? 'undefined' : value.toString();
+      }
+
+      value = value.toString();
+      // Generate a choice ID, collapsing any whitespace in the value.
       return uid + value.replace(/\s/g, '');
     },
     validate(value) {

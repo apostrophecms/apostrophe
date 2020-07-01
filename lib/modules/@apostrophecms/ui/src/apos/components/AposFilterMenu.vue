@@ -5,7 +5,7 @@
   >
     <div class="apos-filters-menu">
       <div
-        v-for="(set, key) in menu" :key="key"
+        v-for="(set, key) in filterSets" :key="key"
         class="apos-filters-menu__set"
       >
         <component
@@ -24,8 +24,8 @@ import AposHelpers from '../mixins/AposHelpersMixin';
 export default {
   mixins: [AposHelpers],
   props: {
-    menu: {
-      type: Object,
+    filters: {
+      type: Array,
       required: true
     },
     button: {
@@ -56,9 +56,32 @@ export default {
       }
     };
   },
+  computed: {
+    filterSets() {
+      const sets = {};
+
+      this.filters.forEach(filter => {
+        sets[filter.name] = {
+          field: {
+            name: filter.name,
+            type: 'radio',
+            // TODO: Remove `|| filter.name.toUpperCase()` once filters include
+            // labels
+            label: filter.label || filter.name.toUpperCase(),
+            choices: filter.choices
+          },
+          value: {
+            data: filter.def
+          },
+          status: {}
+        };
+      });
+      return sets;
+    }
+  },
   methods: {
-    input(value, name) {
-      this.$emit('input', name, value);
+    input(value, filterName) {
+      this.$emit('input', filterName, value);
     }
   }
 };
