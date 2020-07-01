@@ -20,7 +20,7 @@
       />
     </template>
     <template #rightControls>
-      <!-- <AposFilterMenu :menu="filterFields" @input="filter" /> -->
+      <AposFilterMenu :menu="filterFields" @input="filter" />
       <AposStringInput
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"

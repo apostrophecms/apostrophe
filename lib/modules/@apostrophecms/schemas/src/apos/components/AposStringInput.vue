@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import AposInputMixin from '../mixins/AposInputMixin.js';
+import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
   name: 'AposStringInput',
