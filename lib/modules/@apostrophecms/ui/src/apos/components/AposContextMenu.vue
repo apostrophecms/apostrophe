@@ -39,17 +39,8 @@
 </template>
 
 <script>
-// import AposContextMenuItem from './AposContextMenuItem';
-// import AposContextMenuTip from './AposContextMenuTip';
-// import AposButton from './../button/AposButton';
-
 export default {
   name: 'AposContextMenu',
-  // components: {
-  //   AposContextMenuItem,
-  //   AposContextMenuTip,
-  //   AposButton
-  // },
   props: {
     menu: {
       type: Array,
