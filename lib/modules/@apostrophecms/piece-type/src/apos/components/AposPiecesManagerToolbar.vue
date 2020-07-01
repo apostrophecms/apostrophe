@@ -13,39 +13,32 @@
         :icon-only="true" icon="delete-icon"
         type="outline"
       />
-      <!-- <AposContextMenu
+      <AposContextMenu
         :button="more.button" :menu="more.menu"
         tip-alignment="right"
-      /> -->
+        @item-clicked="managerAction"
+      />
     </template>
     <template #rightControls>
       <!-- <AposFilterMenu :menu="filterFields" @input="filter" /> -->
-      <!-- <AposStringInput
+      <AposStringInput
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
-      /> -->
+      />
     </template>
   </AposModalToolbar>
 </template>
 
 <script>
-// import AposContextMenu from './../contextMenu/AposContextMenu.vue';
 // import AposFilterMenu from './../filterMenu/AposFilterMenu.vue';
 // import AposTagApply from './../tagApplyMenu/AposTagApply.vue';
-// import AposButton from './../button/AposButton.vue';
-// import AposStringInput from './../inputString/AposStringInput.vue';
-// import AposModalToolbar from './../modalToolbar/AposModalToolbar.vue';
 
 export default {
-  components: {
-    // AposButton,
-    // AposModalToolbar,
-    // AposStringInput,
-    // AposContextMenu,
-    // AposTagApply,
-    // AposFilterMenu
-  },
+  // components: {
+  //   AposTagApply,
+  //   AposFilterMenu
+  // },
   props: {
     selectedState: {
       type: String,
@@ -149,14 +142,16 @@ export default {
     },
     search(value) {
       this.$emit('search', value.data);
+    },
+    managerAction(action) {
+      // TODO: flesh this out.
+      console.info('ACTION: ', action);
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  @import '../../../../ui/scss/_mixins';
-
   .apos-pieces-manager-toolbar /deep/ .apos-field-search {
     width: 250px;
   }
