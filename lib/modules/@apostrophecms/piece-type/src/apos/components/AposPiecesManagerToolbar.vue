@@ -6,7 +6,7 @@
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')" :icon-color="iconColor"
       />
-      <!-- <AposTagApply :tags="applyTags" :apply-to="[]" /> -->
+      <AposTagApply :tags="applyTags" :apply-to="[]" />
       <!-- TODO trash component needs to be worked out with confirm, maybe separate into its own component -->
       <AposButton
         label="Delete" @click="$emit('trash-click')"
@@ -31,14 +31,8 @@
 </template>
 
 <script>
-// import AposFilterMenu from './../filterMenu/AposFilterMenu.vue';
-// import AposTagApply from './../tagApplyMenu/AposTagApply.vue';
 
 export default {
-  // components: {
-  //   AposTagApply,
-  //   AposFilterMenu
-  // },
   props: {
     selectedState: {
       type: String,
