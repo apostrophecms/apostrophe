@@ -35,9 +35,9 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
 .modal-mask {
-  z-index: $z-index-modal;
+  z-index: $z-index-modal-inner;
   position: fixed;
   top: 0;
   left: 0;

@@ -36,14 +36,14 @@ export default {
   }
 
   .apos-hint {
-    font-size: map-get($font-sizes, default);
+    margin: 0 0 10px;
     color: var(--a-primary-text);
+    font-size: map-get($font-sizes, default);
     text-align: center;
     line-height: 1.6;
-    margin: 0 0 10px;
   }
 
   .apos-emoji {
-    font-size: 42px;
+    font-size: 42px; // stylelint-disable-line
   }
 </style>

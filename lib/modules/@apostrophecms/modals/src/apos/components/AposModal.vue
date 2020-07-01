@@ -156,27 +156,24 @@ export default {
 <style lang="scss" scoped>
   // NOTE: Transition timings below are set to match the wrapper transition
   // timing in the template to coordinate the inner and overlay animations.
-  $spacing-base: 10px;
-  $spacing-double: $spacing-base * 2; // TEMP: Remove once vars are available.
   .apos-modal__inner {
-    display: grid;
+    z-index: $z-index-modal-inner;
     position: fixed;
-    grid-template-rows: auto 1fr auto;
-    z-index: 1001;
     top: $spacing-double;
     right: $spacing-double;
     bottom: $spacing-double;
     left: $spacing-double;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
     height: calc(100vh - #{$spacing-double * 2});
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
-    background-color: #fff; // TEMP
     border: 1px solid var(--a-base-4);
     color: var(--a-text-primary);
 
     .apos-modal--slide & {
       position: fixed;
-      transition: transform .15s ease;
+      transition: transform 0.15s ease;
       top: 0;
       right: 0;
       bottom: 0;
@@ -197,7 +194,7 @@ export default {
 
     .apos-modal--overlay & {
       transform: scale(1);
-      transition: opacity .15s ease, transform .15s ease;
+      transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
     &.fade-enter,
@@ -221,18 +218,17 @@ export default {
   }
 
   .apos-modal__overlay {
+    z-index: $z-index-modal-bg;
     position: fixed;
-    z-index: 1000;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
     display: block;
     background-color: var(--a-overlay);
-    background-color: rgba(0,0,0,0.5); // TEMP
 
     .apos-modal--slide & {
-      transition: opacity .15s ease;
+      transition: opacity 0.15s ease;
     }
 
     &.slide-enter,
@@ -241,7 +237,7 @@ export default {
     }
 
     .apos-modal--overlay & {
-      transition: opacity .15s ease;
+      transition: opacity 0.15s ease;
     }
 
     &.fade-enter,
@@ -251,15 +247,15 @@ export default {
   }
 
   .apos-modal__footer {
+    z-index: $z-index-base;
     position: relative;
-    z-index: 0;
 
     &::before {
       content: '';
+      z-index: $z-index-base;
       position: absolute;
-      z-index: 0;
-      left: 0;
       top: 0;
+      left: 0;
       display: block;
       width: 100%;
       height: 0;
@@ -283,8 +279,8 @@ export default {
   }
 
   .apos-modal__footer__inner {
+    z-index: $z-index-default;
     position: relative;
-    z-index: 1;
     justify-content: space-between;
     padding: 20px;
     background-color: var(--a-white);

@@ -8,12 +8,12 @@
 }
 
 .apos-table__header {
-  text-align: left;
   margin-bottom: 10px;
   padding: 12.5px 4.5px;
   border-bottom: 1px solid var(--a-base-8);
   font-weight: 500;
   color: var(--a-base-3);
+  text-align: left;
 }
 
 .apos-table__header-icon {
@@ -48,12 +48,12 @@ span.apos-table__header-label:hover {
 }
 
 .apos-table__row:hover {
-  box-shadow:  0 8px 12px -12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 12px -12px rgba(0, 0, 0, 0.3);
 }
 .apos-table__row:hover .apos-table__cell,
 .apos-table__row.is-selected .apos-table__cell {
   background-color: var(--a-base-10);
-  border-bottom: 1px solid var(--a-base-7)
+  border-bottom: 1px solid var(--a-base-7);
 }
 
 .apos-table__cell-field {
