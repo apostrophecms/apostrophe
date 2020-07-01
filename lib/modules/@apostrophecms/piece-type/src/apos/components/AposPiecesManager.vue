@@ -103,10 +103,11 @@
 
 <script>
 import AposTableMixin from '../../../../modals/mixins/AposTableMixin';
+import AposModalParentMixin from '../../../../modals/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposTableMixin ],
+  mixins: [ AposTableMixin, AposModalParentMixin ],
   props: {
     moduleName: {
       type: String,
@@ -195,9 +196,6 @@ export default {
     this.getPieces();
   },
   methods: {
-    cancel() {
-      this.modal.showModal = false;
-    },
     async finishSaved() {
       await this.getPieces();
 
