@@ -14,8 +14,6 @@
 <script>
 export default {
   name: 'AposModalBody',
-  props: {
-  },
   computed: {
     hasHeader() {
       return !!this.$slots.bodyHeader;

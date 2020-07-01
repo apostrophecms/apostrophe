@@ -16,16 +16,13 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader v-if="!!pieces.length">
-          <!-- <AposPiecesManagerToolbar
+        <template #bodyHeader>
+          <AposPiecesManagerToolbar
+            v-if="rows.length > 0"
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
-          /> -->
-          <component
-            :module-name="moduleName" :is="options.components.filters"
-            :filters="options.filters" v-model="filterValues"
           />
         </template>
         <template #bodyMain>
