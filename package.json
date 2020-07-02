@@ -6,7 +6,10 @@
   "scripts": {
     "pretest": "npm audit && npm run lint",
     "test": "nyc --reporter=html mocha",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build-storybook": "node ./.storybook/buildPreview.js && build-storybook -s ./public -o .out",
+    "storybook": "node ./.storybook/buildPreview.js && start-storybook -s ./public -p 9001 -c .storybook",
+    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out"
   },
   "repository": {
     "type": "git",
@@ -111,6 +114,7 @@
     "vue": "^2.6.11",
     "vue-eslint-parser": "^7.1.0",
     "vue-loader": "^15.9.2",
+    "vue-material-design-icons": "^4.7.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.11",
     "webpack": "^4.43.0",
@@ -119,7 +123,13 @@
     "yargs": "^3.32.0"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^5.3.19",
+    "@storybook/addon-contexts": "^5.3.19",
+    "@storybook/addon-knobs": "^5.3.19",
+    "@storybook/addon-storysource": "^5.3.19",
+    "@storybook/vue": "^5.3.19",
     "babel-eslint": "^10.1.0",
+    "babel-preset-vue": "^2.0.2",
     "eslint": "^6.8.0",
     "eslint-config-apostrophe": "^3.1.0",
     "eslint-config-standard": "^12.0.0",
@@ -130,7 +140,8 @@
     "eslint-plugin-standard": "^4.0.1",
     "eslint-plugin-vue": "^7.0.0-alpha.5",
     "mocha": "^7.1.2",
-    "nyc": "^15.0.1"
+    "nyc": "^15.0.1",
+    "style-loader": "^1.2.1"
   },
   "browserslist": [
     "ie >= 10"
