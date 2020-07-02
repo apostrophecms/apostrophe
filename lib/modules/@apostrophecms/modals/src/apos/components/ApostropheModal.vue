@@ -3,7 +3,6 @@
     <div class="modal-mask">
       <div class="modal-wrapper">
         <div class="modal-container">
-
           <div class="modal-header">
             <slot name="header">
               default header
@@ -33,12 +32,12 @@
 <script>
 export default {
   name: 'ApostropheModal'
-}
+};
 </script>
 
-<style>
+<style lang="scss">
 .modal-mask {
-  z-index: $z-index-modal;
+  z-index: $z-index-modal-inner;
   position: fixed;
   top: 0;
   left: 0;

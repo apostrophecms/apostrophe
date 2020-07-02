@@ -1,0 +1,68 @@
+@import '../theme';
+@import '../mixins';
+
+.apos-table {
+  width: 100%;
+  font-size: map-get($font-sizes, default);
+  border-collapse: collapse;
+}
+
+.apos-table__header {
+  margin-bottom: 10px;
+  padding: 12.5px 4.5px;
+  border-bottom: 1px solid var(--a-base-8);
+  font-weight: 500;
+  color: var(--a-base-3);
+  text-align: left;
+}
+
+.apos-table__header-icon {
+  @include apos-align-icon();
+  margin-right: 5px;
+}
+
+.apos-table__header-label {
+  @include apos-button-reset();
+  display: flex;
+  align-items: center;
+}
+span.apos-table__header-label:hover {
+  cursor: auto;
+}
+
+.apos-table /deep/ .apos-choice-label {
+  margin-top: 0;
+}
+
+.apos-table__cell,
+.apos-table__row {
+  @include apos-transition(all, 0.05s);
+}
+.apos-table__cell {
+  padding: 12.5px 4.5px;
+  border-bottom: 1px solid var(--a-base-9);
+}
+
+.apos-table__link {
+  color: var(--a-primary);
+}
+
+.apos-table__row:hover {
+  box-shadow: 0 8px 12px -12px rgba(0, 0, 0, 0.3);
+}
+.apos-table__row:hover .apos-table__cell,
+.apos-table__row.is-selected .apos-table__cell {
+  background-color: var(--a-base-10);
+  border-bottom: 1px solid var(--a-base-7);
+}
+
+.apos-table__cell-field {
+  margin: 0;
+}
+// might have to be expanded kinda magic
+.apos-table__cell-field--title {
+  max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
