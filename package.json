@@ -52,6 +52,7 @@
     "launder": "^1.1.1",
     "less": "^3.11.1",
     "less-middleware": "^3.1.0",
+    "memorystore": "^1.6.2",
     "minimatch": "^3.0.4",
     "mkdirp": "^1.0.3",
     "moment": "^2.23.0",
