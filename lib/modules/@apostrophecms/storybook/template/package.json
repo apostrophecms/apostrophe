@@ -1,0 +1,61 @@
+{
+  "name": "apostrophe-storybook",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Apostrophe Technologies, Inc.",
+  "scripts": {
+    "test:unit": "vue-cli-service test:unit",
+    "build-storybook": "build-storybook -s ./public -o .out",
+    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out",
+    "dev": "start-storybook -s ./public -p 9001 -c .storybook",
+    "storybook": "start-storybook -s ./public -p 9001 -c .storybook",
+    "test": "npx eslint . --ext .js,.vue"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "vue": "^2.6.11",
+    "vue-loader": "^15.9.1",
+    "vue-material-design-icons": "^3.4.0",
+    "vue-template-compiler": "^2.6.11",
+    "vuedraggable": "^2.23.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@storybook/addon-a11y": "^5.3.17",
+    "@storybook/addon-contexts": "^5.3.17",
+    "@storybook/addon-knobs": "^5.3.17",
+    "@storybook/addon-storysource": "^5.3.17",
+    "@storybook/storybook-deployer": "^2.8.6",
+    "@storybook/vue": "^5.3.17",
+    "@vue/cli-plugin-babel": "~4.4.0",
+    "@vue/cli-plugin-eslint": "~4.4.0",
+    "@vue/cli-plugin-unit-jest": "^4.4.4",
+    "@vue/cli-service": "~4.4.0",
+    "@vue/test-utils": "^1.0.3",
+    "babel-loader": "^8.0.6",
+    "babel-preset-vue": "^2.0.2",
+    "eslint": "^5.16.0",
+    "eslint-config-apostrophe": "^3.1.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-loader": "^2.2.1",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-vue": "^7.0.0-alpha.5",
+    "lorem-ipsum": "^2.0.3",
+    "node-sass": "^4.14.1",
+    "sass-loader": "^9.0.2",
+    "sass-resources-loader": "^2.0.1",
+    "underscore": "^1.10.2"
+  },
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe-storybook/issues"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe-storybook#readme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apostrophecms/apostrophe-storybook.git"
+  }
+}

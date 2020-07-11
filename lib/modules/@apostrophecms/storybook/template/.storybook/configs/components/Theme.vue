@@ -14,7 +14,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../lib/modules/@apostrophecms/ui/scss/_theme';
+@import 'apostrophe/@apostrophecms/ui/scss/_theme';
 .sb-theme {
   padding-top: 30px;
   padding-left: 30px;

@@ -91,7 +91,7 @@
     "resolve-from": "^5.0.0",
     "rimraf": "^2.7.1",
     "sanitize-html": "^1.23.0",
-    "sass-loader": "^8.0.2",
+    "sass-loader": "^9.0.2",
     "sass-resources-loader": "^2.0.3",
     "server-destroy": "^1.0.1",
     "sluggo": "^0.2.0",
