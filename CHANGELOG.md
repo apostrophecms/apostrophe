@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.109.0 (2020-06-18)
+## 2.109.0 (2020-07-15)
 
 * Add [heic-to-jpeg-middleware](https://github.com/boutell/heic-to-jpeg-middleware) to support uploading `heic/heif` images (the standard format for recent iPhones/iPads). Many thanks to Gabriel L. Maljkovich for their contributions to the underlying middleware as well as the integration with Apostrophe.
 
