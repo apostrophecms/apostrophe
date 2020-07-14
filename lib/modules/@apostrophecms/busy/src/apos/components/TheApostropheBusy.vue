@@ -13,7 +13,7 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('apos-busy', state => (this.busy = state));
+    apos.bus.$on('apos-busy', state => (this.busy = state.active));
   }
 };
 </script>
