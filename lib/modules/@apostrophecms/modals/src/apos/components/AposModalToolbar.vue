@@ -30,7 +30,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  @import 'Modules/@apostrophecms/ui/scss/_mixins';
   .apos-toolbar {
     display: flex;
     justify-content: space-between;
