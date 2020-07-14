@@ -47,8 +47,7 @@
     "node-sass": "^4.14.1",
     "sass-loader": "^9.0.2",
     "sass-resources-loader": "^2.0.1",
-    "underscore": "^1.10.2",
-    "prosemirror-tables": "^0.9.0"
+    "underscore": "^1.10.2"
   },
   "bugs": {
     "url": "https://github.com/apostrophecms/apostrophe-storybook/issues"
