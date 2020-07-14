@@ -113,8 +113,13 @@
     "vddl": "^0.7.1",
     "vue": "^2.6.11",
     "vue-eslint-parser": "^7.1.0",
+<<<<<<< HEAD
     "vue-loader": "^15.9.3",
     "vue-material-design-icons": "^4.7.1",
+=======
+    "vue-loader": "^15.9.2",
+    "vue-material-design-icons": "^3.4.0",
+>>>>>>> v3/ui-integration
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.11",
     "webpack": "^4.43.0",

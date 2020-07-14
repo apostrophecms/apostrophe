@@ -51,7 +51,7 @@
         "apos": true
       },
       "env": {
-        "browser": 1
+        "browser": true
       }
     },
     {
@@ -62,7 +62,7 @@
         "apos": true
       },
       "env": {
-        "browser": 1
+        "browser": true
       },
       "rules": {
         "no-var": 0
