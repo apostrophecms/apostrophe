@@ -34,6 +34,7 @@ export default {
       self.error = false;
       try {
         await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
+          busy: true,
           body: {
             username: self.username,
             password: self.password

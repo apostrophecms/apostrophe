@@ -47,6 +47,7 @@ export default {
       apos.bus.$emit('busy', true);
       try {
         await apos.http.post(this.moduleOptions.action, {
+          busy: true,
           body: this.pieceInfo.data
         });
         this.$emit('saved');

@@ -63,6 +63,7 @@ export default {
         this.$emit('insert', widget);
       } else {
         await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+          busy: true,
           body: {
             [`@${this._id}`]: this.widgetInfo.data
           }
