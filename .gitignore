@@ -7,6 +7,7 @@ npm-debug.log
 *.DS_Store
 *.npmignore
 .nyc_output
+.out
 coverage
 node_modules
 test/node_modules

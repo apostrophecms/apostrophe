@@ -125,6 +125,7 @@ export default {
 </script>
 
 <style lang="scss">
+
 .apos-button {
   position: relative;
   overflow: hidden;
