@@ -45,8 +45,10 @@ module.exports = {
     '@apostrophecms/groups': {},
     '@apostrophecms/users': {},
     '@apostrophecms/images': {},
+    '@apostrophecms/images-tags': {},
     '@apostrophecms/images-widgets': {},
     '@apostrophecms/files': {},
+    '@apostrophecms/files-tags': {},
     '@apostrophecms/files-widgets': {},
     '@apostrophecms/soft-redirects': {},
     '@apostrophecms/busy': {}
