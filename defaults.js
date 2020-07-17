@@ -48,6 +48,7 @@ module.exports = {
     '@apostrophecms/images-widgets': {},
     '@apostrophecms/files': {},
     '@apostrophecms/files-widgets': {},
-    '@apostrophecms/soft-redirects': {}
+    '@apostrophecms/soft-redirects': {},
+    '@apostrophecms/busy': {}
   }
 };
