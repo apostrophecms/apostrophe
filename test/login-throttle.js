@@ -55,9 +55,6 @@ describe('Login', function() {
         // return callback(null);
       },
       afterListen: function(err) {
-        if (err) {
-          console.error('* * * caught error ', err);
-        }
         assert(!err);
         done();
       }
@@ -105,23 +102,16 @@ describe('Login', function() {
       assert(false);
     } catch (e) {
       assert(e);
-      assert.notEqual(e, 'throttle');
+      assert.notEqual(e.message, 'throttle');
     }
     try {
       await verify(user, 'bad');
       assert(false);
     } catch (e) {
       assert(e);
-      assert.notEqual(e, 'throttle');
+      assert.notEqual(e.message, 'throttle');
     }
-    try {
-      await verify(user, 'bad');
-      assert(false);
-    } catch (e) {
-      assert(e);
-      assert.notEqual(e, 'throttle');
-    }
-    // fourth attempt is throttled
+    // third attempt triggers lockout
     try {
       await verify(user, 'bad');
       assert(false);
@@ -129,7 +119,15 @@ describe('Login', function() {
       assert(e);
       assert.equal(e.message, 'throttle');
     }
-    // ... even if the password is good
+    // fourth attempt is throttled (by lockout)
+    try {
+      await verify(user, 'bad');
+      assert(false);
+    } catch (e) {
+      assert(e);
+      assert.equal(e.message, 'throttle');
+    }
+    // still throttled even if the password is good
     try {
       await verify(user, 'crookshanks');
       assert(false);
