@@ -86,6 +86,7 @@ export default {
       default: 'left'
     }
   },
+  emits: ['create-tag', 'update'],
   data() {
     return {
       creating: false,
