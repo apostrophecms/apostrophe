@@ -24,7 +24,7 @@
 </template>
 
 <script>
-// A component designed to be used as a scaffold for AposStringInput and
+// A component designed to be used as a scaffold for AposInputString and
 // friends, which override the `body` slot
 export default {
   name: 'AposInputWrapper',

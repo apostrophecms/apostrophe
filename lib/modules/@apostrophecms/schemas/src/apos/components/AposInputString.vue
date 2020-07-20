@@ -36,8 +36,9 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposStringInput',
+  name: 'AposInputString',
   mixins: [ AposInputMixin ],
+  emits: ['return'],
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';

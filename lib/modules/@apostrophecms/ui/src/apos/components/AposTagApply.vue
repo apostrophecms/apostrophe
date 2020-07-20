@@ -4,7 +4,7 @@
     :tip-alignment="tipAlignment"
   >
     <div class="apos-apply-tag-menu__inner">
-      <AposStringInput
+      <AposInputString
         @input="updateSearchInput"
         @return="create"
         :field="searchField" :value="searchValue"

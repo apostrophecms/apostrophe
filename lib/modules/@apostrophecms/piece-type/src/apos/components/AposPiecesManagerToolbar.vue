@@ -24,7 +24,7 @@
         :filters="filters"
         @input="filter"
       />
-      <AposStringInput
+      <AposInputString
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"

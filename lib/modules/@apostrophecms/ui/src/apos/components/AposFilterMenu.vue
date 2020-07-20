@@ -51,7 +51,7 @@ export default {
   data() {
     return {
       map: {
-        radio: 'AposRadioInput',
+        radio: 'AposInputRadio',
         checkbox: 'AposCheckboxInput'
       }
     };

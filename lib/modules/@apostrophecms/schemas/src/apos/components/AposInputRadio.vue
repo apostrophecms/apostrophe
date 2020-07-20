@@ -33,7 +33,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposRadioInput',
+  name: 'AposInputRadio',
   mixins: [ AposInputMixin ],
   methods: {
     getChoiceId(uid, value) {

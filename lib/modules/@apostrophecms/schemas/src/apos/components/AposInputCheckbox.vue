@@ -22,7 +22,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposCheckboxInput',
+  name: 'AposInputCheckbox',
   mixins: [ AposInputMixin ],
   beforeMount: function () {
     this.value.data = Array.isArray(this.value.data) ? this.value.data : [];
