@@ -22,7 +22,9 @@ describe('Admin bar', function() {
                   label: 'Media',
                   items: [
                     '@apostrophecms/images',
-                    '@apostrophecms/files'
+                    '@apostrophecms/images-tags',
+                    '@apostrophecms/files',
+                    '@apostrophecms/files-tags'
                   ]
                 },
                 {
@@ -40,10 +42,10 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert.equal(apos.adminBar.items.length, 7);
-      assert(apos.adminBar.items[4].name === '@apostrophecms/login-logout');
-      assert(apos.adminBar.items[5].name === '@apostrophecms/files');
-      assert(apos.adminBar.items[6].name === '@apostrophecms/images');
+      assert.equal(apos.adminBar.items.length, 9);
+      assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
+      assert(apos.adminBar.items[7].name === '@apostrophecms/files');
+      assert(apos.adminBar.items[8].name === '@apostrophecms/images');
     } finally {
       t.destroy(apos);
     }
@@ -79,7 +81,7 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 7);
+      assert(apos.adminBar.items.length === 9);
       assert(apos.adminBar.items[4].name === '@apostrophecms/files');
       assert(apos.adminBar.items[5].name === '@apostrophecms/images');
       assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
