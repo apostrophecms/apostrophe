@@ -58,9 +58,9 @@ describe('Soft Redirects', function() {
       redirect: 'manual'
     });
     // Is our status code good?
-    assert.equal(response.status, 302);
+    assert.strictEqual(response.status, 302);
     // Are we going to be redirected to our page?
-    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
+    assert.strictEqual(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });
@@ -100,7 +100,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
       }
     });
     assert(apos.modules['@apostrophecms/soft-redirects']);
-    assert.equal(apos.modules['@apostrophecms/soft-redirects'].options.statusCode, 301);
+    assert.strictEqual(apos.modules['@apostrophecms/soft-redirects'].options.statusCode, 301);
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
@@ -125,9 +125,9 @@ describe('Soft Redirects - with `statusCode` option', async() => {
       redirect: 'manual'
     });
     // Is our status code good?
-    assert.equal(response.status, 301);
+    assert.strictEqual(response.status, 301);
     // Are we going to be redirected to our page?
-    assert.equal(response.headers['location'], `${apos.http.getBase()}/child-moved`);
+    assert.strictEqual(response.headers['location'], `${apos.http.getBase()}/child-moved`);
   });
 
 });

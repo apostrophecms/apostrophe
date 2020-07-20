@@ -42,7 +42,7 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert.equal(apos.adminBar.items.length, 9);
+      assert.strictEqual(apos.adminBar.items.length, 9);
       assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
       assert(apos.adminBar.items[7].name === '@apostrophecms/files');
       assert(apos.adminBar.items[8].name === '@apostrophecms/images');

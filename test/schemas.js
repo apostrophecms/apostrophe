@@ -40,119 +40,119 @@ let simpleFields = [
 ];
 
 let realWorldCase = {
-  "addFields": [
+  'addFields': [
     {
-      "type": "string",
-      "name": "title",
-      "label": "Title",
-      "required": true,
-      "sortify": true
+      'type': 'string',
+      'name': 'title',
+      'label': 'Title',
+      'required': true,
+      'sortify': true
     },
     {
-      "type": "slug",
-      "name": "slug",
-      "label": "Slug",
-      "required": true
+      'type': 'slug',
+      'name': 'slug',
+      'label': 'Slug',
+      'required': true
     },
     {
-      "type": "boolean",
-      "name": "published",
-      "label": "Published",
-      "def": true
+      'type': 'boolean',
+      'name': 'published',
+      'label': 'Published',
+      'def': true
     },
     {
-      "type": "boolean",
-      "name": "trash",
-      "label": "Trash",
-      "contextual": true,
-      "def": false
+      'type': 'boolean',
+      'name': 'trash',
+      'label': 'Trash',
+      'contextual': true,
+      'def': false
     },
     {
-      "type": "slug",
-      "name": "slug",
-      "label": "Old URL",
-      "required": true,
-      "page": true
+      'type': 'slug',
+      'name': 'slug',
+      'label': 'Old URL',
+      'required': true,
+      'page': true
     },
     {
-      "name": "title",
-      "label": "Description",
-      "type": "string",
-      "required": true
+      'name': 'title',
+      'label': 'Description',
+      'type': 'string',
+      'required': true
     },
     {
-      "type": "boolean",
-      "name": "published",
-      "label": "Published",
-      "required": true,
-      "def": true,
-      "contextual": true
+      'type': 'boolean',
+      'name': 'published',
+      'label': 'Published',
+      'required': true,
+      'def': true,
+      'contextual': true
     },
     {
-      "name": "urlType",
-      "label": "Link To",
-      "type": "select",
-      "choices": [
+      'name': 'urlType',
+      'label': 'Link To',
+      'type': 'select',
+      'choices': [
         {
-          "label": "Internal Page",
-          "value": "internal",
-          "showFields": [
-            "_newPage"
+          'label': 'Internal Page',
+          'value': 'internal',
+          'showFields': [
+            '_newPage'
           ]
         },
         {
-          "label": "External URL",
-          "value": "external",
-          "showFields": [
-            "externalUrl"
+          'label': 'External URL',
+          'value': 'external',
+          'showFields': [
+            'externalUrl'
           ]
         }
       ]
     },
     {
-      "name": "externalUrl",
-      "label": "URL",
-      "type": "url"
+      'name': 'externalUrl',
+      'label': 'URL',
+      'type': 'url'
     },
     {
-      "name": "_newPage",
-      "type": "joinByOne",
-      "withType": "@apostrophecms/page",
-      "label": "Page Title",
-      "idField": "pageId"
+      'name': '_newPage',
+      'type': 'joinByOne',
+      'withType': '@apostrophecms/page',
+      'label': 'Page Title',
+      'idField': 'pageId'
     }
   ],
-  "arrangeFields": [
+  'arrangeFields': [
     {
-      "name": "basics",
-      "label": "Basics",
-      "fields": [
-        "title",
-        "slug",
-        "published"
+      'name': 'basics',
+      'label': 'Basics',
+      'fields': [
+        'title',
+        'slug',
+        'published'
       ]
     },
     {
-      "name": "permissions",
-      "label": "Permissions",
-      "fields": [
-        "loginRequired",
-        "_viewUsers",
-        "_viewGroups",
-        "_editUsers",
-        "_editGroups"
+      'name': 'permissions',
+      'label': 'Permissions',
+      'fields': [
+        'loginRequired',
+        '_viewUsers',
+        '_viewGroups',
+        '_editUsers',
+        '_editGroups'
       ],
-      "last": true
+      'last': true
     },
     {
-      "name": "info",
-      "label": "Info",
-      "fields": [
-        "slug",
-        "urlType",
-        "_newPage",
-        "title",
-        "externalUrl"
+      'name': 'info',
+      'label': 'Info',
+      'fields': [
+        'slug',
+        'urlType',
+        '_newPage',
+        'title',
+        'externalUrl'
       ]
     }
   ]
@@ -1263,7 +1263,7 @@ describe('Schemas', function() {
     assert(result.body.items);
     assert(result.body.items[0]);
     assert(result.body.items[0].type === '@apostrophecms/rich-text');
-    assert.equal(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
+    assert.strictEqual(result.body.items[0].content, '<h4>This is <strong>a header.</strong></h4>');
   });
 
   it('should not accept a widget not in the widgets object of the area', async () => {
@@ -1316,7 +1316,7 @@ describe('Schemas', function() {
     };
     let result = {};
     await apos.schemas.convert(req, schema, input, result);
-    assert.equal(result.slug, '/wiggy/wacky/wobbly/whizzle');
+    assert.strictEqual(result.slug, '/wiggy/wacky/wobbly/whizzle');
   });
 
   it('retains trailing / on the home page', async () => {
@@ -1390,7 +1390,10 @@ describe('Schemas', function() {
       ]
     });
     let output = {};
-    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'shoeSize', age: '' }, output);
+    await apos.schemas.convert(req, schema, {
+      ageOrShoeSize: 'shoeSize',
+      age: ''
+    }, output);
     assert(output.ageOrShoeSize === 'shoeSize');
   });
 
@@ -1425,7 +1428,10 @@ describe('Schemas', function() {
         }
       ]
     });
-    await testSchemaError(schema, { ageOrShoeSize: 'age', age: '' }, 'age', 'required');
+    await testSchemaError(schema, {
+      ageOrShoeSize: 'age',
+      age: ''
+    }, 'age', 'required');
   });
 
   it('ignores required property for recursively hidden field', async () => {
@@ -1477,7 +1483,11 @@ describe('Schemas', function() {
       ]
     });
     let output = {};
-    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: '0', age: '' }, output);
+    await apos.schemas.convert(req, schema, {
+      ageOrShoeSize: 'age',
+      doWeCare: '0',
+      age: ''
+    }, output);
     assert(output.ageOrShoeSize === 'age');
   });
 
@@ -1528,7 +1538,11 @@ describe('Schemas', function() {
         }
       ]
     });
-    await testSchemaError(schema, { ageOrShoeSize: 'age', doWeCare: '1', age: '' }, 'age', 'required');
+    await testSchemaError(schema, {
+      ageOrShoeSize: 'age',
+      doWeCare: '1',
+      age: ''
+    }, 'age', 'required');
   });
 
   it('ignores required property for recursively hidden field with checkboxes', async () => {
@@ -1580,8 +1594,12 @@ describe('Schemas', function() {
       ]
     });
     let output = {};
-    await apos.schemas.convert(req, schema, { ageOrShoeSize: ['age'], doWeCare: ['0'], age: '' }, output);
-    assert.deepEqual(output.ageOrShoeSize, ['age']);
+    await apos.schemas.convert(req, schema, {
+      ageOrShoeSize: ['age'],
+      doWeCare: ['0'],
+      age: ''
+    }, output);
+    assert.deepStrictEqual(output.ageOrShoeSize, ['age']);
   });
 
   it('enforces required property for recursively shown field with checkboxes', async () => {
@@ -1631,7 +1649,11 @@ describe('Schemas', function() {
         }
       ]
     });
-    await testSchemaError(schema, { ageOrShoeSize: [ 'age', 'shoeSize' ], doWeCare: [ '1' ], age: '' }, 'age', 'required');
+    await testSchemaError(schema, {
+      ageOrShoeSize: [ 'age', 'shoeSize' ],
+      doWeCare: [ '1' ],
+      age: ''
+    }, 'age', 'required');
   });
 
   it('ignores required property for recursively hidden field with boolean', async () => {
@@ -1681,7 +1703,11 @@ describe('Schemas', function() {
       ]
     });
     let output = {};
-    await apos.schemas.convert(req, schema, { ageOrShoeSize: 'age', doWeCare: false, age: '' }, output);
+    await apos.schemas.convert(req, schema, {
+      ageOrShoeSize: 'age',
+      doWeCare: false,
+      age: ''
+    }, output);
     assert(output.ageOrShoeSize === 'age');
   });
 
@@ -1730,7 +1756,11 @@ describe('Schemas', function() {
         }
       ]
     });
-    await testSchemaError(schema, { ageOrShoeSize: [ 'age', 'shoeSize' ], doWeCare: true, age: '' }, 'age', 'required');
+    await testSchemaError(schema, {
+      ageOrShoeSize: [ 'age', 'shoeSize' ],
+      doWeCare: true,
+      age: ''
+    }, 'age', 'required');
   });
 });
 

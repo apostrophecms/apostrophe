@@ -252,7 +252,10 @@ describe('Docs', function() {
   });
 
   it('should be able to sort by multiple keys', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({ firstName: 1, age: 1 });
+    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({
+      firstName: 1,
+      age: 1
+    });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'carl');
@@ -281,7 +284,10 @@ describe('Docs', function() {
   });
 
   it('should be able to insert a new object into the docs collection in the database', async function() {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people', slug: 'one' });
+    const cursor = apos.docs.find(apos.tasks.getReq(), {
+      type: 'test-people',
+      slug: 'one'
+    });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'one');
@@ -420,7 +426,10 @@ describe('Docs', function() {
       type: 'test-people',
       slug: 'carl'
     }).toObject();
-    const trashed = await apos.docs.update(req, { ...doc, trash: true });
+    const trashed = await apos.docs.update(req, {
+      ...doc,
+      trash: true
+    });
 
     assert(trashed.trash === true);
   });
@@ -466,7 +475,10 @@ describe('Docs', function() {
       slug: 'deduplicate-carl-carl'
     }).trash(null).toObject();
 
-    await apos.docs.update(req, { ...doc, trash: false });
+    await apos.docs.update(req, {
+      ...doc,
+      trash: false
+    });
     const newDoc = await apos.docs.find(req, { slug: 'carl' }).toObject();
 
     // We should have a document.

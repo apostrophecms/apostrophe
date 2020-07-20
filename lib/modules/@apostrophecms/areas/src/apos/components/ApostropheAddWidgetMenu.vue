@@ -4,7 +4,7 @@
     <div v-if="dropdown" class="apos-area-add-widget-menu-dropdown">
       <button v-for="choice in choices" @click="add(choice.name)">{{ choice.label }}</button>
     </div>
-    <component :is="addWidgetEditor" v-if="adding" v-model="widget" :type="addWidgetType" @close="close()" @insert="insert" :options="addWidgetOptions" :_docId="_docId" />
+    <component :is="addWidgetEditor" v-if="adding" v-model="widget" :type="addWidgetType" @close="close()" @insert="insert" :options="addWidgetOptions" :docId="docId" />
   </div>
 </template>
 
@@ -18,7 +18,7 @@ export default {
     choices: Array,
     index: Number,
     widgetOptions: Object,
-    _docId: String
+    docId: String
   },
   data() {
     return {

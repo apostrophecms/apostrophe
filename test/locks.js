@@ -55,37 +55,31 @@ describe('Locks', function() {
   });
 
   it('should allow a single lock without contention uneventfully', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
-
-    await locks.lock('test');
-    await locks.unlock('test');
+    await apos.locks.lock('test');
+    await apos.locks.unlock('test');
   });
 
   it('should allow two differently-named locks uneventfully', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
-
-    await locks.lock('test1');
-    await locks.lock('test2');
-    await locks.unlock('test1');
-    await locks.unlock('test2');
+    await apos.locks.lock('test1');
+    await apos.locks.lock('test2');
+    await apos.locks.unlock('test1');
+    await apos.locks.unlock('test2');
   });
 
-  it('should flunk a second lock by the same module', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
-
-    await locks.lock('test');
+  it('should flunk a second lock by the same module with waitForSelf: false', async function() {
+    await apos.locks.lock('test');
 
     try {
-      await locks.lock('test');
+      await apos.locks.lock('test', { waitForSelf: false });
       assert(false);
     } catch (e) {
       assert(e);
     }
 
-    await locks.unlock('test');
+    await apos.locks.unlock('test');
 
     try {
-      await locks.unlock('test');
+      await apos.locks.unlock('test');
       assert(false);
     } catch (e) {
       assert(e);
@@ -111,7 +105,7 @@ describe('Locks', function() {
     assert(successful === 4);
 
     async function attempt(locks) {
-      await locks.lock('test');
+      await apos.locks.lock('test');
 
       active++;
       assert(active === 1);
@@ -119,14 +113,14 @@ describe('Locks', function() {
 
       async function release() {
         // We have to decrement this before we start the call to
-        // locks.unlock because otherwise the callback for one of our
+        // apos.locks.unlock because otherwise the callback for one of our
         // peers' insert attempts may succeed before the callback for
         // remove, leading to a false positive for test failure. -Tom
         active--;
 
         await Promise.delay(75 + Math.random() * 50);
 
-        await locks.unlock('test');
+        await apos.locks.unlock('test');
 
         successful++;
 
@@ -154,7 +148,7 @@ describe('Locks', function() {
     assert(successful === 4);
 
     async function attempt(locks) {
-      await locks.lock('test', { idleTimeout: 50 });
+      await apos.locks.lock('test', { idleTimeout: 50 });
 
       active++;
       assert(active === 1);
@@ -163,12 +157,12 @@ describe('Locks', function() {
 
       async function release() {
         // We have to decrement this before we start the call to
-        // locks.unlock because otherwise the callback for one of our
+        // apos.locks.unlock because otherwise the callback for one of our
         // peers' insert attempts may succeed before the callback for
         // remove, leading to a false positive for test failure. -Tom
         active--;
         await Promise.delay(75 + Math.random() * 50);
-        await locks.unlock('test');
+        await apos.locks.unlock('test');
 
         successful++;
 
@@ -178,9 +172,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should run a function inside a lock', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
-
-    const result = await locks.withLock('test-lock', async () => {
+    const result = await apos.locks.withLock('test-lock', async () => {
       await Promise.delay(50);
 
       return 'result';
@@ -190,9 +182,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should be able to run again (lock released)', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
-
-    const result = await locks.withLock('test-lock', async () => {
+    const result = await apos.locks.withLock('test-lock', async () => {
       await Promise.delay(50);
       return 'result';
     });
@@ -201,17 +191,29 @@ describe('Locks', function() {
   });
 
   it('withLock method should hold the lock (cannot relock within fn)', async function() {
-    const locks = apos.modules['@apostrophecms/locks'];
 
-    return locks.withLock('test-lock', async () => {
+    return apos.locks.withLock('test-lock', async () => {
       await Promise.delay(50);
 
       try {
-        await locks.lock('test-lock');
+        await apos.locks.lock('test-lock', { waitForSelf: false });
         assert(false);
       } catch (e) {
         assert(e);
       }
     });
   });
+
+  it('Second lock should wait for release of first one', async () => {
+    let timedOut = false;
+    await apos.locks.lock('test-lock');
+    setTimeout(async () => {
+      await apos.locks.unlock('test-lock');
+      timedOut = true;
+    });
+    await apos.locks.lock('test-lock');
+    assert(timedOut);
+    await apos.locks.unlock('test-lock');
+  });
+
 });

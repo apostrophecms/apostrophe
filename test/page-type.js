@@ -134,7 +134,8 @@ describe('page-type', function() {
   });
 
   it('should be able to insert a test page manually into the db', async function() {
-    const testItem = { _id: 'niftyPages1',
+    const testItem = {
+      _id: 'niftyPages1',
       type: 'nifty-pages',
       slug: '/niftyPages',
       published: true,

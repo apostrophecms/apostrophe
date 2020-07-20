@@ -27,9 +27,9 @@ describe('Base Module', function() {
   it('should produce correct responses via the getOption method', async function() {
     let mod = apos.modules['test-get-option'];
     let req = apos.tasks.getReq();
-    assert.equal(mod.getOption(req, 'flavors.grape.sweetness'), 20);
-    assert.equal(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
-    assert.equal(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
+    assert.strictEqual(mod.getOption(req, 'flavors.grape.sweetness'), 20);
+    assert.strictEqual(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
+    assert.strictEqual(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
     let markup = await mod.render(req, 'test.html');
     assert(markup.match(/20/));
     assert(markup.match(/yup/));
