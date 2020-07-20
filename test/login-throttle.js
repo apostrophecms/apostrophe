@@ -67,11 +67,11 @@ describe('Login', function() {
     assert(user);
 
     user.firstName = 'Lilith';
-    user.lastName = 'Lyapo';
-    user.title = 'Lilith Lyapo';
-    user.username = 'LilithLyapo';
+    user.lastName = 'Iyapo';
+    user.title = 'Lilith Iyapo';
+    user.username = 'LilithIyapo';
     user.password = 'nikanj';
-    user.email = 'hlyapo@example.com';
+    user.email = 'liyapo@example.com';
     user.groupIds = [ apos.users.options.groups[1]._id ];
 
     assert(user.type === 'apostrophe-user');
@@ -85,7 +85,7 @@ describe('Login', function() {
   it('should be able to verify a login', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'LilithLyapo'
+      username: 'LilithIyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
     await verify(user, 'nikanj');
@@ -94,7 +94,7 @@ describe('Login', function() {
   it('third failure in a row should cause a lockout', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'LilithLyapo'
+      username: 'LilithIyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
     try {
@@ -140,7 +140,7 @@ describe('Login', function() {
   it('should succeed after suitable pause', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'LilithLyapo'
+      username: 'LilithIyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
     this.timeout(60000);
