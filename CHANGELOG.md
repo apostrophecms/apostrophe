@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.110.0 (2020-07-29)
+
+* Security: added support for throttling login attempts. If you set the `throttle` option of `apostrophe-login` to `{ allowedAttempts: 3, perMinutes: 1, lockoutMinutes: 1 }`, a user will be locked out and unable to try again for 1 minute after three failed login attempts in 1 minute. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+
 ## 2.109.0 (2020-07-15)
 
 * Add [heic-to-jpeg-middleware](https://github.com/boutell/heic-to-jpeg-middleware) to support uploading `heic/heif` images (the standard format for recent iPhones/iPads). Many thanks to Gabriel L. Maljkovich for their contributions to the underlying middleware as well as the integration with Apostrophe.
