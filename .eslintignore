@@ -1,2 +1,3 @@
 **/vendor/**/*.js
 **/blueimp/**/*.js
+**/node_modules
