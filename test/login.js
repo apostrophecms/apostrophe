@@ -64,12 +64,12 @@ describe('Login', function() {
     var user = apos.users.newInstance();
     assert(user);
 
-    user.firstName = 'Harry';
-    user.lastName = 'Putter';
-    user.title = 'Harry Putter';
-    user.username = 'HarryPutter';
-    user.password = 'crookshanks';
-    user.email = 'hputter@aol.com';
+    user.firstName = 'Lilith';
+    user.lastName = 'Iyapo';
+    user.title = 'Lilith Iyapo';
+    user.username = 'LilithIyapo';
+    user.password = 'nikanj';
+    user.email = 'liyapo@example.com';
     user.groupIds = [ apos.users.options.groups[1]._id ];
 
     assert(user.type === 'apostrophe-user');
@@ -101,7 +101,7 @@ describe('Login', function() {
   it('should be able to login a user', function(done) {
     // otherwise logins are not remembered in a session
     return request.post('http://localhost:7901/login', {
-      form: { username: 'HarryPutter', password: 'crookshanks' },
+      form: { username: 'LilithIyapo', password: 'nikanj' },
       followAllRedirects: true,
       jar: loginLogoutJar
     }, function(err, response, body) {
@@ -117,7 +117,7 @@ describe('Login', function() {
   it('should be able to login a user with their email', function(done) {
     // otherwise logins are not remembered in a session
     return request.post('http://localhost:7901/login', {
-      form: { username: 'hputter@aol.com', password: 'crookshanks' },
+      form: { username: 'liyapo@example.com', password: 'nikanj' },
       followAllRedirects: true,
       jar: loginEmailLogoutJar
     }, function(err, response, body) {
@@ -167,7 +167,7 @@ describe('Login', function() {
     user.lastName = 'Test';
     user.title = 'Random Test';
     user.username = 'random-test';
-    user.password = 'crookshanks';
+    user.password = 'nikanj';
     user.email = 'randomtest@aol.com';
     user.lastLogin = new Date();
     user.groupIds = [ apos.users.options.groups[0]._id ]; // guest group
@@ -175,7 +175,7 @@ describe('Login', function() {
     apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       return request.post('http://localhost:7901/login', {
-        form: { username: 'random-test', password: 'crookshanks' },
+        form: { username: 'random-test', password: 'nikanj' },
         followAllRedirects: true,
         jar: loginLogoutJar
       }, function(err, response, body) {
@@ -194,7 +194,7 @@ describe('Login', function() {
     user.lastName = 'Test';
     user.title = 'Admin Test';
     user.username = 'admin-test';
-    user.password = 'crookshanks';
+    user.password = 'nikanj';
     user.email = 'admintest@aol.com';
     user.lastLogin = new Date();
     user.groupIds = [ apos.users.options.groups[1]._id ]; // admin group
@@ -202,7 +202,7 @@ describe('Login', function() {
     apos.users.insert(apos.tasks.getReq(), user, function(err) {
       assert(!err);
       return request.post('http://localhost:7901/login', {
-        form: { username: 'admin-test', password: 'crookshanks' },
+        form: { username: 'admin-test', password: 'nikanj' },
         followAllRedirects: true,
         jar: loginLogoutJar
       }, function(err, response, body) {
@@ -257,7 +257,7 @@ describe('Login', function() {
         user.lastName = 'Test';
         user.title = 'Random Test';
         user.username = 'random-test';
-        user.password = 'crookshanks';
+        user.password = 'nikanj';
         user.email = 'randomtest@aol.com';
         user.lastLogin = lastLogin.setDate(lastLogin.getDate() - 3); // last login was 3 days ago
         user.groupIds = [ apos2.users.options.groups[0]._id ]; // guest group
@@ -265,7 +265,7 @@ describe('Login', function() {
         apos2.users.insert(apos2.tasks.getReq(), user, function(err) {
           assert(!err);
           return request.post('http://localhost:7902/login', {
-            form: { username: 'random-test', password: 'crookshanks' },
+            form: { username: 'random-test', password: 'nikanj' },
             followAllRedirects: true,
             jar: loginLogoutJar
           }, function(err, response, body) {
