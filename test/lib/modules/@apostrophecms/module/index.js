@@ -2,6 +2,6 @@
 module.exports = {
   init(self, options) {
     // Set property
-    self.color = "blue";
+    self.color = 'blue';
   }
 };

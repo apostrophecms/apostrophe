@@ -48,8 +48,8 @@ export default {
     type: String,
     options: Object,
     value: Object,
-    _docId: String,
-    _id: String
+    docId: String,
+    id: String
   },
   computed: {
     moduleOptions() {
@@ -94,10 +94,10 @@ export default {
       const widget = this.widgetInfo.data;
       widget.content = content;
 
-      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         busy: 'contextual',
         body: {
-          [`@${this._id}`]: this.widgetInfo.data
+          [`@${this.id}`]: this.widgetInfo.data
         }
       });
     },

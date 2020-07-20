@@ -83,20 +83,29 @@ describe('Pieces Pages', function() {
   });
 
   it('should populate the ._url property of pieces in any docs query', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }).toObject();
+    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+      type: 'event',
+      title: 'Event 001'
+    }).toObject();
     assert(piece);
     assert(piece._url);
     assert(piece._url === '/events/event-001');
   });
 
   it('should not correctly populate the ._url property of pieces in a docs query with an inadequate projection', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { type: 1 }).toObject();
+    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+      type: 'event',
+      title: 'Event 001'
+    }, { type: 1 }).toObject();
     assert(piece);
     assert((!piece._url) || (piece._url.match(/undefined/)));
   });
 
   it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), { type: 'event', title: 'Event 001' }, { _url: 1 }).toObject();
+    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+      type: 'event',
+      title: 'Event 001'
+    }, { _url: 1 }).toObject();
     assert(piece);
     assert(piece._url);
     assert(piece._url === '/events/event-001');

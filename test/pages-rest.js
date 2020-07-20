@@ -117,7 +117,8 @@ describe('Pages', function() {
 
   it('should be able to use db to insert documents', async function() {
     const testItems = [
-      { _id: 'parent',
+      {
+        _id: 'parent',
         type: 'test-pages',
         slug: '/parent',
         published: true,
@@ -343,7 +344,10 @@ describe('Pages', function() {
     assert(page);
     page.title = 'Changed Title';
     page.color = 'blue';
-    await apos.http.put('/api/v1/@apostrophecms/pages/sibling', { body: page, jar });
+    await apos.http.put('/api/v1/@apostrophecms/pages/sibling', {
+      body: page,
+      jar
+    });
     const page2 = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
     assert.strictEqual(page2.title, 'Changed Title');
     assert.strictEqual(page2.color, 'blue');
@@ -495,7 +499,7 @@ describe('Pages', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                content: "Why don't you meet me in the middle"
+                content: 'Why don\'t you meet me in the middle'
               }
             ],
             $position: 1
@@ -524,7 +528,7 @@ describe('Pages', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                content: "before"
+                content: 'before'
               }
             ],
             $before: page.body.items[1]._id
@@ -555,7 +559,7 @@ describe('Pages', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                content: "after"
+                content: 'after'
               }
             ],
             $after: page.body.items[0]._id

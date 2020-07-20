@@ -317,7 +317,7 @@ describe('Pieces', function() {
 
   it('people cannot find things via a join with an inadequate projection', function() {
     let req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, {title: 1}).toObject()
+    return apos.docs.getManager('person').find(req, {}, { title: 1 }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');
@@ -327,7 +327,10 @@ describe('Pieces', function() {
 
   it('people can find things via a join with a "projection" of the join name', function() {
     let req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, {title: 1, _things: 1}).toObject()
+    return apos.docs.getManager('person').find(req, {}, {
+      title: 1,
+      _things: 1
+    }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');

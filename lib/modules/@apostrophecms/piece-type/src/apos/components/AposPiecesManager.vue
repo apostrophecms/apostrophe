@@ -57,12 +57,12 @@
               >
                 <td class="apos-table__cell">
                   <AposCheckbox
-                    v-if="checkboxes[row.id]"
-                    :field="checkboxes[row.id].field"
-                    :value="checkboxes[row.id].value.data"
-                    :status="checkboxes[row.id].status"
-                    :choice="checkboxes[row.id].choice"
-                    :id="row.id"
+                    v-if="checkboxes[row._id]"
+                    :field="checkboxes[row._id].field"
+                    :value="checkboxes[row._id].value.data"
+                    :status="checkboxes[row._id].status"
+                    :choice="checkboxes[row._id].choice"
+                    :id="row._id"
                     v-model="checked"
                   />
                 </td>
@@ -155,7 +155,7 @@ export default {
 
         this.headers.forEach(column => {
           data[column.name] = piece[column.name];
-          data.id = piece._id;
+          data._id = piece._id;
         });
         rows.push(data);
       });

@@ -90,7 +90,8 @@ describe('Pages', function() {
 
   it('should be able to use db to insert documents', async function() {
     const testItems = [
-      { _id: 'parent',
+      {
+        _id: 'parent',
         type: 'test-pages',
         slug: '/parent',
         published: true,

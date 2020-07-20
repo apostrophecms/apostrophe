@@ -171,29 +171,29 @@ describe('Utils', function() {
 
     it('clonePermanent should not behave bizarrely with a test case from the punkave site', function() {
       let input = {
-        "attachment": {
-          "_id": "a205filea1media97",
-          "title": "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg",
-          "width": 225,
-          "height": 300,
-          "length": 22014,
-          "md5": 22014,
-          "extension": "jpg",
-          "group": "images",
-          "name": "http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg",
-          "landscape": false,
-          "portrait": true,
-          "a15Export": true,
-          "tags": [
-            "p'window",
-            "2009"
+        'attachment': {
+          '_id': 'a205filea1media97',
+          'title': 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
+          'width': 225,
+          'height': 300,
+          'length': 22014,
+          'md5': 22014,
+          'extension': 'jpg',
+          'group': 'images',
+          'name': 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
+          'landscape': false,
+          'portrait': true,
+          'a15Export': true,
+          'tags': [
+            'p\'window',
+            '2009'
           ],
-          "searchText": "http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg jpg",
-          "type": "attachment"
+          'searchText': 'http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg jpg',
+          'type': 'attachment'
         }
       };
       let clone = apos.utils.clonePermanent(input);
-      assert(clone.attachment._id === "a205filea1media97");
+      assert(clone.attachment._id === 'a205filea1media97');
     });
 
     it('gives sensible results for insensitiveSort', function() {
@@ -330,7 +330,7 @@ describe('Utils', function() {
       };
       apos.utils.set(data, '@stylin.size', 7);
       assert(data.shoes[0]._id === 'stylin');
-      assert.equal(data.shoes[0].size, 7);
+      assert.strictEqual(data.shoes[0].size, 7);
     });
 
     it('can get a subobject property with @ syntax', () => {
