@@ -335,7 +335,7 @@ describe('Docs', function() {
       slug: 'one',
       published: true,
       type: 'test-person',
-      firstName: 'Harry',
+      firstName: 'Lilith',
       lastName: 'Gerber',
       age: 29,
       alive: true

@@ -41,9 +41,9 @@ describe('Login', function() {
         },
         'apostrophe-login': {
           throttle: {
-            attempts: 3,
-            per: 0.25,
-            lockout: 0.25
+            allowedAttempts: 3,
+            perMinutes: 0.25,
+            lockoutMinutes: 0.25
           }
         }
       },
@@ -66,12 +66,12 @@ describe('Login', function() {
     const user = apos.users.newInstance();
     assert(user);
 
-    user.firstName = 'Harry';
-    user.lastName = 'Putter';
-    user.title = 'Harry Putter';
-    user.username = 'HarryPutter';
-    user.password = 'crookshanks';
-    user.email = 'hputter@aol.com';
+    user.firstName = 'Lilith';
+    user.lastName = 'Lyapo';
+    user.title = 'Lilith Lyapo';
+    user.username = 'LilithLyapo';
+    user.password = 'nikanj';
+    user.email = 'hlyapo@example.com';
     user.groupIds = [ apos.users.options.groups[1]._id ];
 
     assert(user.type === 'apostrophe-user');
@@ -85,16 +85,16 @@ describe('Login', function() {
   it('should be able to verify a login', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'HarryPutter'
+      username: 'LilithLyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
-    await verify(user, 'crookshanks');
+    await verify(user, 'nikanj');
   });
 
   it('third failure in a row should cause a lockout', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'HarryPutter'
+      username: 'LilithLyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
     try {
@@ -129,7 +129,7 @@ describe('Login', function() {
     }
     // still throttled even if the password is good
     try {
-      await verify(user, 'crookshanks');
+      await verify(user, 'nikanj');
       assert(false);
     } catch (e) {
       assert(e);
@@ -140,12 +140,12 @@ describe('Login', function() {
   it('should succeed after suitable pause', async function() {
     const req = apos.tasks.getReq();
     const user = await apos.users.find(req, {
-      username: 'HarryPutter'
+      username: 'LilithLyapo'
     }).toObject();
     const verify = Promise.promisify(apos.login.verifyPassword);
     this.timeout(60000);
     await Promise.delay(16000);
-    await verify(user, 'crookshanks');
+    await verify(user, 'nikanj');
   });
 
 });
