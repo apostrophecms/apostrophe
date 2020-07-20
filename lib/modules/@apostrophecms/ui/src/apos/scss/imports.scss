@@ -1,0 +1,14 @@
+/*
+  apostrophe-build uses this to prepend SCSS with globals.
+  Order here does matter, so make sure vars, mixins, functions are loaded first.
+*/
+
+@import './_theme';
+@import './_functions';
+@import './_mixins';
+@import './_inputs';
+@import './_responsive';
+@import './_scrollbars';
+@import './_type';
+@import './_utilities';
+@import './_zindex';

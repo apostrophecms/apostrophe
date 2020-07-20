@@ -1,0 +1,82 @@
+{
+  plugins: ['stylelint-order', 'stylelint-declaration-strict-value'],
+  rules: {
+    'color-hex-length': 'short',
+    'color-named': 'never',
+    'color-no-invalid-hex': true,
+    'declaration-property-unit-whitelist': { 'line-height': [] },
+    'font-family-no-duplicate-names': true,
+    'number-leading-zero': 'always',
+    'number-max-precision': 2,
+    'number-no-trailing-zeros': true,
+    'string-no-newline': true,
+    'length-zero-no-unit': true,
+    'unit-case': 'lower',
+    'unit-no-unknown': true,
+    'value-keyword-case': 'lower',
+    'value-list-comma-newline-after': 'always-multi-line',
+    'value-list-comma-space-after': 'always-single-line',
+    'value-list-comma-space-before': 'never',
+    'value-list-max-empty-lines': 0,
+    'shorthand-property-no-redundant-values': true,
+    'property-case': 'lower',
+    'property-no-unknown': true,
+    'property-no-vendor-prefix': true,
+    'declaration-no-important': true,
+    'declaration-colon-space-after': 'always-single-line',
+    'declaration-colon-space-before': 'never',
+    'declaration-block-no-duplicate-properties': true,
+    'declaration-block-no-redundant-longhand-properties': true,
+    'declaration-block-no-shorthand-property-overrides': true,
+    'declaration-block-semicolon-newline-after': 'always',
+    'declaration-block-semicolon-newline-before': 'never-multi-line',
+    'declaration-block-single-line-max-declarations': 1,
+    'declaration-block-trailing-semicolon': 'always',
+    'block-closing-brace-empty-line-before': 'never',
+    'block-closing-brace-newline-after': [
+      'always',
+      { ignoreAtRules: ['if', 'else'] }
+    ],
+    'block-closing-brace-newline-before': 'always-multi-line',
+    'block-no-empty': true,
+    indentation: 2,
+    'max-empty-lines': 1,
+    'max-nesting-depth': 2,
+    'selector-list-comma-newline-after': 'always-multi-line',
+    'string-quotes': 'single',
+    'time-min-milliseconds': 150,
+    'order/order': ['declarations', 'rules'],
+    'order/properties-order': [
+      'z-index',
+      'position',
+      'top',
+      'right',
+      'bottom',
+      'left',
+      'display',
+      'overflow',
+      'width',
+      'height',
+      'margin',
+      'padding',
+      'border',
+      'color',
+      'background',
+      'font-family',
+      'font-size',
+      'text-align'
+    ],
+    'scale-unlimited/declaration-strict-value': [
+      ['/color/', 'font', 'font-family', 'font-size', 'z-index'],
+      {
+        ignoreKeywords: [
+          'currentColor',
+          'inherit',
+          'initial',
+          'transparent',
+          'auto'
+        ]
+      }
+    ]
+  }
+}

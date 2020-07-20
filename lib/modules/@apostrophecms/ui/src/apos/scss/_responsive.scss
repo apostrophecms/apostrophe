@@ -1,0 +1,25 @@
+// For more on this naming system, search "ergonomic responsive breakpoints."
+$breakpoints: (
+  palm: 320px,
+  hands: 600px,
+  // hands-wide: 850px,
+  lap: 1200px,
+  desk: 1600px
+);
+
+// We default to mobile first, but make a max-with option available as well.
+@mixin media-up($bp) {
+  $bpVal: map-get($breakpoints, $bp);
+  @media screen and (min-width: $bpVal) {
+    @content;
+  }
+}
+// We should use the mixin above. In the unlikely case that a `max-width`
+// media query is needed, the mixin below should be used rather than
+// hand-rolling something.
+// @mixin media-down ($bp) {
+//   $bpVal: map-get($breakpoints, $bp);
+//   @media screen and (max-width: $bpVal - 1px) {
+//     @content;
+//   }
+// }

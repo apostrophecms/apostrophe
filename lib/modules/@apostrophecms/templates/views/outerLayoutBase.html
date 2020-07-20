@@ -13,7 +13,8 @@
     {% block extraHead %}
     {% endblock %}
   </head>
-  <body class="{{ data.aposBodyClasses }} {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
+  {# TODO: How does `apos-theme--primary-purple` get there? #}
+  <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     woo woo test
     {% component '@apostrophecms/templates:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}

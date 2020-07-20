@@ -43,6 +43,7 @@ module.exports = {
     '@apostrophecms/video-fields': {},
     '@apostrophecms/video-widgets': {},
     '@apostrophecms/groups': {},
+    '@apostrophecms/ui': {},
     '@apostrophecms/users': {},
     '@apostrophecms/images': {},
     '@apostrophecms/images-tags': {},
@@ -51,6 +52,7 @@ module.exports = {
     '@apostrophecms/files-tags': {},
     '@apostrophecms/files-widgets': {},
     '@apostrophecms/soft-redirects': {},
+    '@apostrophecms/storybook': {},
     '@apostrophecms/busy': {}
   }
 };

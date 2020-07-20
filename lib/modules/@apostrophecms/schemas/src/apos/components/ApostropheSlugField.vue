@@ -198,19 +198,19 @@ function slugCompatible(slug, slugifies) {
 </script>
 
 <style>
-/* TODO: scoping, i18n, parameters for min and max */;
+/* TODO: scoping, i18n, parameters for min and max */
 .apos-field-error label {
-  color: red;
+  color: var(--a-danger);
 }
 .apos-field-taken-error label::after {
   content: ' (already taken)';
 }
 .apos-required-error label::after {
   content: ' (required)';
-};
+}
 .apos-min-error label::after {
   content: ' (too low)';
-};
+}
 .apos-max-error label::after {
   content: ' (too high)';
 }

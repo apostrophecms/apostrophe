@@ -136,12 +136,12 @@ export default {
 
 
 <style>
-  .apos-area {
-    border: 2px solid green;
-    margin: 5px;
-    padding: 5px;
-  }
+.apos-area {
+  margin: 5px;
+  padding: 5px;
+  border: 2px solid var(--a-brand-green);
+}
 .apos-areas-widgets-list {
-    min-height: 64px;
-  }
+  min-height: 64px;
+}
 </style>

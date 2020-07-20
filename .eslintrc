@@ -1,30 +1,77 @@
 {
-  "extends": "apostrophe",
+  "extends": [
+    "apostrophe",
+    "plugin:vue/vue3-recommended"
+  ],
+  "globals": {
+    "apos": true
+  },
   "rules": {
-    "no-var": "error"
+    "no-var": "error",
+    "no-console": 0,
+    "vue/component-tags-order": [
+      "warn",
+      {
+        "order": [
+          "template",
+          "script",
+          "style"
+        ]
+      }
+    ],
+    "vue/max-attributes-per-line": [
+      "warn",
+      {
+        "singleline": 2,
+        "multiline": 2
+      }
+    ],
+    "vue/singleline-html-element-content-newline": [
+      "warn",
+      {
+        "ignoreWhenNoAttributes": true,
+        "ignoreWhenEmpty": true,
+        "ignores": [
+          "h1",
+          "h2",
+          "h3",
+          "pre",
+          "textarea"
+        ]
+      }
+    ],
+    "vue/attributes-order": 0
   },
   "overrides": [
     {
-      "files": [ "**/src/**/*.js" ],
+      "files": [
+        "**/src/**/*.js"
+      ],
       "globals": {
         "apos": true
       },
       "env": {
-        "browser": 1
+        "browser": true
       }
     },
     {
-      "files": [ "**/src/apos/always/*.js" ],
+      "files": [
+        "**/src/apos/always/*.js"
+      ],
       "globals": {
         "apos": true
       },
       "env": {
-        "browser": 1
+        "browser": true
       },
       "rules": {
         "no-var": 0
       }
     }
   ],
-  "parser": "babel-eslint"
+  "parser": "vue-eslint-parser",
+  "parserOptions": {
+    "parser": "babel-eslint",
+    "sourceType": "module"
+  }
 }
