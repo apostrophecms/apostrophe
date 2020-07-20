@@ -36,7 +36,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposStringInput',
+  name: 'AposInputString',
   mixins: [ AposInputMixin ],
   computed: {
     tabindex () {
