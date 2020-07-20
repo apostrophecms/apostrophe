@@ -175,11 +175,11 @@ describe('Express', function() {
     assert(user);
 
     user.firstName = 'Lilith';
-    user.lastName = 'Lyapo';
-    user.title = 'Lilith Lyapo';
-    user.username = 'LilithLyapo';
+    user.lastName = 'Iyapo';
+    user.title = 'Lilith Iyapo';
+    user.username = 'LilithIyapo';
     user.password = 'nikanj';
-    user.email = 'hlyapo@example.com';
+    user.email = 'liyapo@example.com';
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
@@ -192,7 +192,7 @@ describe('Express', function() {
   it('should be able to login a user', function(done) {
     sessionShouldBeEmpty = false;
     return request.post('http://localhost:7900/login', {
-      form: { username: 'LilithLyapo', password: 'nikanj' },
+      form: { username: 'LilithIyapo', password: 'nikanj' },
       followAllRedirects: true,
       jar: jar
     }, function(err, response, body) {

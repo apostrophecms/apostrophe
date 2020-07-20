@@ -65,11 +65,11 @@ describe('Login', function() {
     assert(user);
 
     user.firstName = 'Lilith';
-    user.lastName = 'Lyapo';
-    user.title = 'Lilith Lyapo';
-    user.username = 'LilithLyapo';
+    user.lastName = 'Iyapo';
+    user.title = 'Lilith Iyapo';
+    user.username = 'LilithIyapo';
     user.password = 'nikanj';
-    user.email = 'hlyapo@example.com';
+    user.email = 'liyapo@example.com';
     user.groupIds = [ apos.users.options.groups[1]._id ];
 
     assert(user.type === 'apostrophe-user');
@@ -101,7 +101,7 @@ describe('Login', function() {
   it('should be able to login a user', function(done) {
     // otherwise logins are not remembered in a session
     return request.post('http://localhost:7901/login', {
-      form: { username: 'LilithLyapo', password: 'nikanj' },
+      form: { username: 'LilithIyapo', password: 'nikanj' },
       followAllRedirects: true,
       jar: loginLogoutJar
     }, function(err, response, body) {
@@ -117,7 +117,7 @@ describe('Login', function() {
   it('should be able to login a user with their email', function(done) {
     // otherwise logins are not remembered in a session
     return request.post('http://localhost:7901/login', {
-      form: { username: 'hlyapo@example.com', password: 'nikanj' },
+      form: { username: 'liyapo@example.com', password: 'nikanj' },
       followAllRedirects: true,
       jar: loginEmailLogoutJar
     }, function(err, response, body) {
