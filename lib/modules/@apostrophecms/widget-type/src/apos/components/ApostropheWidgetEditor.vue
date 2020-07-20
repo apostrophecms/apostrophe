@@ -30,8 +30,8 @@ export default {
     type: String,
     options: Object,
     value: Object,
-    _docId: String,
-    _id: String
+    docId: String,
+    id: String
   },
   computed: {
     schema() {
@@ -62,10 +62,10 @@ export default {
         widget._id = cuid();
         this.$emit('insert', widget);
       } else {
-        await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
           busy: true,
           body: {
-            [`@${this._id}`]: this.widgetInfo.data
+            [`@${this.id}`]: this.widgetInfo.data
           }
         });
       }

@@ -12,8 +12,8 @@ describe('Attachment', function() {
 
   this.timeout(t.timeout);
 
-  let uploadSource = __dirname + "/data/upload_tests/";
-  let uploadTarget = __dirname + "/public/uploads/attachments/";
+  let uploadSource = __dirname + '/data/upload_tests/';
+  let uploadTarget = __dirname + '/public/uploads/attachments/';
   let collectionName = 'aposAttachments';
 
   async function wipeIt() {
@@ -24,7 +24,7 @@ describe('Attachment', function() {
       if (fs.existsSync(path)) {
         files = fs.readdirSync(path);
         files.forEach(function(file, index) {
-          let curPath = path + "/" + file;
+          let curPath = path + '/' + file;
           if (fs.lstatSync(curPath).isDirectory()) { // recurse
             deleteFolderRecursive(curPath);
           } else { // delete file
@@ -97,7 +97,12 @@ describe('Attachment', function() {
 
     it('should crop an image file when requested', async function() {
       let result = await insert('crop_image.png');
-      let crop = { top: 10, left: 10, width: 80, height: 80 };
+      let crop = {
+        top: 10,
+        left: 10,
+        width: 80,
+        height: 80
+      };
       await apos.attachments.crop(
         apos.tasks.getReq(),
         result._id,

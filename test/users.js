@@ -98,7 +98,10 @@ describe('Users', function() {
     const user = await apos.users.find(apos.tasks.getReq(), { _id: janeId }).toObject();
     user.trash = true;
     await apos.users.update(apos.tasks.getReq(), user);
-    const doc = await apos.docs.db.findOne({ _id: user._id, trash: true });
+    const doc = await apos.docs.db.findOne({
+      _id: user._id,
+      trash: true
+    });
     assert(doc);
   });
 
@@ -118,7 +121,10 @@ describe('Users', function() {
     const user = await apos.users.find(apos.tasks.getReq(), { _id: janeId }).trash(true).toObject();
     user.trash = false;
     await apos.users.update(apos.tasks.getReq(), user);
-    const doc = await apos.docs.db.findOne({ _id: user._id, trash: { $ne: true } });
+    const doc = await apos.docs.db.findOne({
+      _id: user._id,
+      trash: { $ne: true }
+    });
     assert(doc);
     assert(doc.username === 'JaneD');
     assert(doc.email.match(/deduplicate.*jane/));
@@ -136,7 +142,10 @@ describe('Users', function() {
     const user = await apos.users.find(apos.tasks.getReq(), { _id: janeId }).toObject();
     user.trash = true;
     await apos.users.update(apos.tasks.getReq(), user);
-    const doc = await apos.docs.db.findOne({ _id: user._id, trash: true });
+    const doc = await apos.docs.db.findOne({
+      _id: user._id,
+      trash: true
+    });
     assert(doc);
   });
 
@@ -156,7 +165,10 @@ describe('Users', function() {
     const user = await apos.users.find(apos.tasks.getReq(), { _id: janeId }).trash(true).toObject();
     user.trash = false;
     await apos.users.update(apos.tasks.getReq(), user);
-    const doc = await apos.docs.db.findOne({ _id: user._id, trash: { $ne: true } });
+    const doc = await apos.docs.db.findOne({
+      _id: user._id,
+      trash: { $ne: true }
+    });
     assert(doc);
     assert(doc.username.match(/deduplicate.*JaneD/));
     assert(doc.email.match(/deduplicate.*jane/));

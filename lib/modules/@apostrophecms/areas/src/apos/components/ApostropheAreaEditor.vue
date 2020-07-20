@@ -1,6 +1,6 @@
 <template>
   <div class="apos-area">
-    <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :_docId="_docId" />
+    <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
     <div class="apos-areas-widgets-list">
       <div class="apos-area-widget-wrapper" v-for="(wrapped, i) in next" :key="wrapped.widget._id">
         <div class="apos-area-controls">
@@ -9,9 +9,9 @@
           <button @click="remove(i)">Remove</button>
           <button @click="edit(i)">Edit</button>
         </div>
-        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :_docId="_docId" :_id="wrapped.widget._id" />
-        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :_docId="_docId" :_id="wrapped.widget._id" :areaFieldId="fieldId" :value="wrapped.widget" @edit="edit(i)" />
-        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" :_docId="_docId" />
+        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="docId" :id="wrapped.widget._id" />
+        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="docId" :id="wrapped.widget._id" :areaFieldId="fieldId" :value="wrapped.widget" @edit="edit(i)" />
+        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
       </div>
     </div>
   </div>
@@ -24,9 +24,9 @@ import Vue from 'apostrophe/vue';
 export default {
   name: 'ApostropheAreaEditor',
   props: {
-    _docId: String,
+    docId: String,
     docType: String,
-    _id: String,
+    id: String,
     fieldId: String,
     options: Object,
     items: Array,
@@ -39,13 +39,21 @@ export default {
       droppedItem : {}
     };
   },
+  computed: {
+    moduleOptions() {
+      return window.apos.areas;
+    },
+    types() {
+      return Object.keys(this.options.widgets);
+    }
+  },
   methods: {
     async up(i) {
-      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         busy: true,
         body: {
           $move: {
-            [`@${this._id}.items`]: {
+            [`@${this.id}.items`]: {
               $item: this.next[i].widget._id,
               $before: this.next[i - 1].widget._id
             }
@@ -57,11 +65,11 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async down(i) {
-      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         busy: true,
         body: {
           $move: {
-            [`@${this._id}.items`]: {
+            [`@${this.id}.items`]: {
               $item: this.next[i].widget._id,
               $after: this.next[i + 1].widget._id
             }
@@ -73,11 +81,11 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async remove(i) {
-      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         busy: true,
         body: {
           $pullAllById: {
-            [`@${this._id}.items`]: [ this.next[i].widget._id ]
+            [`@${this.id}.items`]: [ this.next[i].widget._id ]
           }
         }
       });
@@ -96,11 +104,11 @@ export default {
       if ($event.index < this.next.length) {
         push.$before = this.next[$event.index].widget._id;
       }
-      await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
         busy: true,
         body: {
           $push: {
-            [`@${this._id}.items`]: push
+            [`@${this.id}.items`]: push
           }
         }
       });
@@ -120,14 +128,6 @@ export default {
     },
     nextItems() {
       return this.next.map(wrapped => Object.assign({}, wrapped.widget));
-    },
-  },
-  computed: {
-    moduleOptions() {
-      return window.apos.areas;
-    },
-    types() {
-      return Object.keys(this.options.widgets);
     }
   }
 };
