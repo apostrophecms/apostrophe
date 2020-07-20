@@ -56,6 +56,7 @@ export default {
 
 <style>
 body {
+  /* TODO: tie this style to the precense of the admin bar. */
   margin-top: 63px;
 }
 
