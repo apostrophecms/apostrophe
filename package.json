@@ -24,10 +24,9 @@
     "apostrophecms",
     "cms",
     "content management",
-    "content management system",
-    "punkave"
+    "content management system"
   ],
-  "author": "P'unk Avenue LLC",
+  "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
     "@babel/core": "^7.10.4",
@@ -117,6 +116,7 @@
     "vue-material-design-icons": "^4.7.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.11",
+    "vuedraggable": "^2.24.0",
     "webpack": "^4.43.0",
     "webpack-merge": "^4.2.2",
     "xregexp": "^2.0.0",

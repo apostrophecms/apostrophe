@@ -14,7 +14,7 @@
     <span class="apos-input-indicator" aria-hidden="true">
       <component
         :is="`${
-          choice.indeterminate ? 'MinusIcon' : 'CheckBoldIcon'
+          choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
         :size="10" v-if="checked && checked.includes(choice.value)"
       />
@@ -29,14 +29,8 @@
 </template>
 
 <script>
-import CheckBoldIcon from 'vue-material-design-icons/CheckBold.vue';
-import MinusIcon from 'vue-material-design-icons/Minus.vue';
 
 export default {
-  components: {
-    CheckBoldIcon,
-    MinusIcon
-  },
   // Custom model to handle the v-model connection on the parent.
   model: {
     prop: 'checked',
@@ -64,6 +58,7 @@ export default {
       default: null
     }
   },
+  emits: ['change', 'updated'],
   data() {
     return {
       tabindex: this.field.disableFocus ? '-1' : '0'

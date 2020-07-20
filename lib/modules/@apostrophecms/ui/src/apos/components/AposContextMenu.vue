@@ -72,6 +72,7 @@ export default {
       default: 'below'
     }
   },
+  emits: ['open', 'item-clicked'],
   data() {
     return {
       open: false,
