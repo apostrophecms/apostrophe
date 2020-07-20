@@ -42,6 +42,7 @@ export default {
   methods: {
     async up(i) {
       await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        busy: true,
         body: {
           $move: {
             [`@${this._id}.items`]: {
@@ -57,6 +58,7 @@ export default {
     },
     async down(i) {
       await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        busy: true,
         body: {
           $move: {
             [`@${this._id}.items`]: {
@@ -72,6 +74,7 @@ export default {
     },
     async remove(i) {
       await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        busy: true,
         body: {
           $pullAllById: {
             [`@${this._id}.items`]: [ this.next[i].widget._id ]
@@ -94,6 +97,7 @@ export default {
         push.$before = this.next[$event.index].widget._id;
       }
       await apos.http.patch(`${apos.docs.action}/${this._docId}`, {
+        busy: true,
         body: {
           $push: {
             [`@${this._id}.items`]: push

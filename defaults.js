@@ -50,6 +50,7 @@ module.exports = {
     '@apostrophecms/files': {},
     '@apostrophecms/files-widgets': {},
     '@apostrophecms/soft-redirects': {},
-    '@apostrophecms/storybook': {}
+    '@apostrophecms/storybook': {},
+    '@apostrophecms/busy': {}
   }
 };

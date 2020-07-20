@@ -114,6 +114,7 @@ export default {
         const result = await apos.http.post(
           `${window.apos.docs.action}/deduplicate-slug`,
           {
+            busy: true,
             body: {
               slug: this.next,
               _id: this.context._id
@@ -144,6 +145,7 @@ export default {
         try {
           const result = await apos.http.post(
             `${apos.docs.action}/slug-taken`, {
+              busy: true,
               body: {
                 slug: this.next,
                 _id: this.context._id
@@ -161,7 +163,7 @@ export default {
               this.taken = true;
             } else {
               this.checkTaken();
-            }      
+            }
           } else {
             console.error(e);
           }
