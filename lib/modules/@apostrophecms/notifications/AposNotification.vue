@@ -1,5 +1,4 @@
 <template>
-  <!-- Move -->
   <div role="alert" :class="classList">
     <span class="apos-notification__indicator" v-if="type !== 'none'">
       <component

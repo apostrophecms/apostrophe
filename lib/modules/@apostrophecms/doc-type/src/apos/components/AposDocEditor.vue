@@ -1,6 +1,7 @@
 <template>
   <AposModal
     class="apos-doc-editor" :modal="modal"
+    :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
@@ -46,8 +47,8 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../../../../modals/mixins/AposModalParentMixin';
-import AposModalTabsMixin from '../../../../modals/mixins/AposModalTabsMixin';
+import AposModalParentMixin from '../../../../modals/src/apos/mixins/AposModalParentMixin';
+import AposModalTabsMixin from '../../../../modals/src/apos/mixins/AposModalTabsMixin';
 
 export default {
   name: 'AposDocEditor',
@@ -98,7 +99,6 @@ export default {
       tabs,
       myDoc: { ...this.doc },
       modal: {
-        title: `Edit ${this.typeLabel}`,
         active: false,
         type: 'overlay',
         showModal: false
@@ -107,6 +107,9 @@ export default {
   },
 
   computed: {
+    modalTitle () {
+      return `Edit ${this.typeLabel}`;
+    },
     currentFields: function() {
       const fields = [];
       if (this.currentTab) {
@@ -117,6 +120,10 @@ export default {
       }
       return fields;
     }
+  },
+  async mounted() {
+    // TODO: Get data here.
+    this.modal.active = true;
   },
   methods: {
     update(name, value) {

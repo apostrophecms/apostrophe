@@ -1,5 +1,4 @@
 <template>
-  <!-- Move -->
   <li class="apos-tag-list__item">
     <button
       :class="{'is-active' : active}" class="apos-tag-list__button"

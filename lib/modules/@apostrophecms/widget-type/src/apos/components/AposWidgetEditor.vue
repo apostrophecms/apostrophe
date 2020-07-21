@@ -1,5 +1,4 @@
 <template>
-  <!-- Move -->
   <AposModal
     class="apos-widget-editor"
     :modal="modal" :modal-title="moduleTitle"
@@ -35,7 +34,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../../../../modals/mixins/AposModalParentMixin';
+import AposModalParentMixin from '../../../../modals/src/apos/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposWidgetEditor',

@@ -1,5 +1,4 @@
 <template>
-  <!-- Move -->
   <div class="apos-tag-list">
     <div v-if="tags && tags.length" class="apos-tag-list__inner">
       <h3 class="apos-tag-list__title">{{ title }}</h3>
