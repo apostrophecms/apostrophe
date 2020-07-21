@@ -40,8 +40,8 @@ export default {
     return {
       // TODO: Complete this with other schema field types.
       fieldComponentMap: {
-        string: 'AposStringInput',
-        boolean: 'AposBooleanInput'
+        string: 'AposInputString',
+        boolean: 'AposInputBoolean'
       }
     };
   },
@@ -81,7 +81,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  @import '../../scss/_mixins';
   .apos-schema /deep/ .apos-field {
     margin-bottom: 30px;
   }
