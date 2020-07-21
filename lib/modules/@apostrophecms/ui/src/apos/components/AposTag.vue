@@ -32,7 +32,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// @import '../../scss/_mixins';
 .apos-tag {
   display: inline-flex;
   padding: 6px 12px;

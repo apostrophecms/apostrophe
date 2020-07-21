@@ -132,9 +132,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  // TODO: Remove commented if not necessary.
-  // @import '../../scss/_mixins';
-  // @import '../../scss/_inputs.scss';
   .apos-slat-list /deep/ .apos-slat {
     margin-bottom: 5px;
     transition: all 0.4s;
