@@ -181,8 +181,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// @import '../../scss/_mixins';
-
 .apos-area-menu {
   font-size: map-get($font-sizes, default);
 }

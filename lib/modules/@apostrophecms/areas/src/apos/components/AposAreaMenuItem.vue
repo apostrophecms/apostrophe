@@ -48,8 +48,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// @import '../../scss/_mixins';
-
 .apos-tag-list__button {
   @include apos-button-reset();
   display: flex;
