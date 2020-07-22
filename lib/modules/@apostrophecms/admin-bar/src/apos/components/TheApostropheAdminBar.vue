@@ -46,7 +46,7 @@ export default {
   },
   methods: {
     emitEvent: function (name) {
-      apos.bus.$emit('adminBarItem', name);
+      apos.bus.$emit('admin-menu-click', name);
     },
     toggleDropdown: function () {
     }

@@ -91,7 +91,9 @@ export default {
   methods: {
     emitEvent: function (name) {
       console.log(name);
-      // apos.bus.$emit('adminBarItem', name);
+      if (apos.bus) {
+        apos.bus.$emit('admin-menu-click', name);
+      }
     },
     openItem(index, isOpen) {
       console.log('📖', index, isOpen);
@@ -116,10 +118,10 @@ body {
 .apos-admin-bar {
   position: fixed;
   top: 0;
+  right: 0;
   left: 0;
   display: flex;
   align-items: center;
-  right: 0;
   height: $menu-height;
   padding: 0 30px 0 16px;
   border-bottom: 1px solid var(--a-base-9);
