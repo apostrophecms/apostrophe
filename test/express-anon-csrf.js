@@ -174,12 +174,12 @@ describe('Express', function() {
     var user = apos.users.newInstance();
     assert(user);
 
-    user.firstName = 'Harry';
-    user.lastName = 'Putter';
-    user.title = 'Harry Putter';
-    user.username = 'HarryPutter';
-    user.password = 'crookshanks';
-    user.email = 'hputter@aol.com';
+    user.firstName = 'Lilith';
+    user.lastName = 'Iyapo';
+    user.title = 'Lilith Iyapo';
+    user.username = 'LilithIyapo';
+    user.password = 'nikanj';
+    user.email = 'liyapo@example.com';
 
     assert(user.type === 'apostrophe-user');
     assert(apos.users.insert);
@@ -192,7 +192,7 @@ describe('Express', function() {
   it('should be able to login a user', function(done) {
     sessionShouldBeEmpty = false;
     return request.post('http://localhost:7900/login', {
-      form: { username: 'HarryPutter', password: 'crookshanks' },
+      form: { username: 'LilithIyapo', password: 'nikanj' },
       followAllRedirects: true,
       jar: jar
     }, function(err, response, body) {
