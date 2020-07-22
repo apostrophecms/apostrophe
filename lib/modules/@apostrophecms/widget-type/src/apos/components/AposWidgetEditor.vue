@@ -34,7 +34,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../../../../modals/src/apos/mixins/AposModalParentMixin';
+import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposWidgetEditor',
