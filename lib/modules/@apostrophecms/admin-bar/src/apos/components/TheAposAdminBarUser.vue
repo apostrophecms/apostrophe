@@ -5,6 +5,7 @@
   >
     <template #prebutton>
       <AposAvatar
+        v-if="avatarUrl"
         class="apos-admin-user__avatar"
         :src="avatarUrl"
         size="32px" alt=""
@@ -14,26 +15,23 @@
 </template>
 
 <script>
-import AposContextMenu from '../contextMenu/AposContextMenu.vue';
-import AposHelpers from '../../mixins/AposHelpersMixin';
-import AposAvatar from '../../components/avatar/AposAvatar';
+import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
-  components: {
-    AposContextMenu,
-    AposAvatar
-  },
   mixins: [AposHelpers],
   props: {
     user: {
       type: Object,
       required: true
+    },
+    avatarUrl: {
+      type: String,
+      default: ''
     }
   },
   emits: ['input'],
   data() {
     return {
-      avatarUrl: '',
       menu: [
         {
           label: 'My Profile',
@@ -58,13 +56,6 @@ export default {
       };
     }
   },
-  mounted() {
-    if (apos.user) {
-      // Get avatar URL via an async API call.
-    } else if (process.env.STORYBOOK_MODE) {
-      this.avatarUrl = require('./userData').userAvatar;
-    }
-  },
   methods: {
     input(value, name) {
       this.$emit('input', name, value);
@@ -74,7 +65,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-admin-user {
+.apos-admin-user.apos-context-menu {
   display: inline-flex;
   align-items: center;
 

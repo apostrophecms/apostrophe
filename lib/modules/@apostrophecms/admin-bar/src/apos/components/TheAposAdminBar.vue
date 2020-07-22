@@ -34,24 +34,17 @@
         />
       </li>
     </ul>
-    <TheAposAdminBarUser class="apos-admin-bar__user" :user="user" />
+    <TheAposAdminBarUser
+      class="apos-admin-bar__user"
+      :user="user" :avatar-url="userAvatar"
+    />
   </nav>
 </template>
 
 <script>
-import AposLogo from './AposLogo';
-import AposButton from '../button/AposButton';
-import TheAposAdminBarUser from './TheAposAdminBarUser';
-import AposContextMenu from '../contextMenu/AposContextMenu';
 
 export default {
   name: 'TheAposAdminBar',
-  components: {
-    AposLogo,
-    AposButton,
-    AposContextMenu,
-    TheAposAdminBarUser
-  },
   props: {
     items: {
       type: Array,
@@ -60,6 +53,7 @@ export default {
       }
     }
   },
+  emits: ['admin-menu-click'],
   data() {
     return {
       menuItems: [],
@@ -68,11 +62,21 @@ export default {
     };
   },
   computed: {
+    userAvatar() {
+      if (process.env.STORYBOOK_MODE === 'true') {
+        return require('./userData').userAvatar;
+      } else if (this.user._id) {
+        // Get the user avatar via an async API call.
+        return '';
+      }
+
+      return '';
+    }
   },
   mounted() {
     this.menuItems = [...this.items];
-    // This will need to be an async call to get pieces as well as the new page
-    // route.
+    // TODO: This will need to be an async call to get pieces as well as the
+    // new page route.
     this.createMenu = [
       {
         label: 'Sandwich',
@@ -90,15 +94,11 @@ export default {
   },
   methods: {
     emitEvent: function (name) {
-      console.log(name);
-      if (apos.bus) {
+      if (window.apos && window.apos.bus) {
         apos.bus.$emit('admin-menu-click', name);
+      } else if (process.env.STORYBOOK_MODE === 'true') {
+        this.$emit('admin-menu-click', name);
       }
-    },
-    openItem(index, isOpen) {
-      console.log('📖', index, isOpen);
-      this.menuItems[index].open = isOpen;
-      console.info(this.menuItems[index].open, this.menuItems[index].items);
     }
   }
 };
