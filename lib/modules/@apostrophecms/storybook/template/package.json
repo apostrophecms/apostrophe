@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "author": "Apostrophe Technologies, Inc.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "private": true,
   "main": "index.js",
   "dependencies": {
@@ -41,5 +44,14 @@
     "sass-loader": "^9.0.2",
     "sass-resources-loader": "^2.0.1",
     "underscore": "^1.10.2"
+  },
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe-storybook/issues"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe-storybook#readme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apostrophecms/apostrophe-storybook.git"
   }
 }
