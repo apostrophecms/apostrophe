@@ -3,6 +3,7 @@
 ## 2.110.0 (2020-07-29)
 
 * Security: added support for throttling login attempts. If you set the `throttle` option of `apostrophe-login` to `{ allowedAttempts: 3, perMinutes: 1, lockoutMinutes: 1 }`, a user will be locked out and unable to try again for 1 minute after three failed login attempts in 1 minute. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* Security: when requiring Google Authenticator or a similar app for login (TOTP), you may now limit the requirement to certain groups, by passing a setting like `totp: { groups: [ 'admin' ] }` to the `apostrophe-login` module rather than just `totp: true`. You may specify groups by slug or by title (name). In addition, the existing `totp` option has been added to the module documentation.
 
 ## 2.109.0 (2020-07-15)
 
