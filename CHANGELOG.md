@@ -3,6 +3,13 @@
 ## 2.110.0 (2020-07-29)
 
 * Security: added support for throttling login attempts. If you set the `throttle` option of `apostrophe-login` to `{ allowedAttempts: 3, perMinutes: 1, lockoutMinutes: 1 }`, a user will be locked out and unable to try again for 1 minute after three failed login attempts in 1 minute. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
+* Schemas: you may now set a regular expression to be used to validate any `string` schema field by setting the `pattern` property of the schema field. **Please note
+that `pattern` must be a string,** not a regular expression literal. Otherwise it
+will only be validated on the server side, causing confusion for the user when it
+is not reported on the browser side. You may also set `patternErrorMessage` to
+provide a clear explanation to the user when their input does not match. When
+setting `pattern` as a string always remember to escape the `\` character properly
+(you will often need two `\` characters, for instance `\\w`). To avoid Denial of Service attacks, take care to avoid [evil regular expressions](https://en.wikipedia.org/wiki/ReDoS).
 
 ## 2.109.0 (2020-07-15)
 
