@@ -3,14 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "author": "Apostrophe Technologies, Inc.",
-  "scripts": {
-    "test:unit": "vue-cli-service test:unit",
-    "build-storybook": "build-storybook -s ./public -o .out",
-    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out",
-    "dev": "start-storybook -s ./public -p 9001 -c .storybook",
-    "storybook": "start-storybook -s ./public -p 9001 -c .storybook",
-    "test": "npx eslint . --ext .js,.vue"
-  },
+  "private": true,
   "main": "index.js",
   "dependencies": {
     "vue": "^2.6.11",
@@ -48,14 +41,5 @@
     "sass-loader": "^9.0.2",
     "sass-resources-loader": "^2.0.1",
     "underscore": "^1.10.2"
-  },
-  "bugs": {
-    "url": "https://github.com/apostrophecms/apostrophe-storybook/issues"
-  },
-  "homepage": "https://github.com/apostrophecms/apostrophe-storybook#readme",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/apostrophecms/apostrophe-storybook.git"
   }
 }
