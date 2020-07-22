@@ -30,7 +30,7 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('adminBarItem', (itemName) => {
+    apos.bus.$on('admin-menu-click', (itemName) => {
       this.setIsActive(itemName, true);
     });
   },
