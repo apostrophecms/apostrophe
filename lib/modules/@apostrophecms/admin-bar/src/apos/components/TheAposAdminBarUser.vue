@@ -59,7 +59,11 @@ export default {
     }
   },
   mounted() {
-    this.avatarUrl = require('./userData').userAvatar;
+    if (apos.user) {
+      // Get avatar URL via an async API call.
+    } else if (process.env.STORYBOOK_MODE) {
+      this.avatarUrl = require('./userData').userAvatar;
+    }
   },
   methods: {
     input(value, name) {
