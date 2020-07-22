@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import AposHelpers from '../../../../ui/src/apos/mixins/AposHelpersMixin';
+import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue';
 
 export default {
