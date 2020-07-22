@@ -102,8 +102,8 @@
 </template>
 
 <script>
-import AposTableMixin from '../../../../modals/mixins/AposTableMixin';
-import AposModalParentMixin from '../../../../modals/mixins/AposModalParentMixin';
+import AposTableMixin from 'Modules/@apostrophecms/modals/mixins/AposTableMixin';
+import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposPiecesManager',
