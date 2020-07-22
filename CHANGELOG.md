@@ -3,7 +3,7 @@
 ## 2.110.0 (2020-07-29)
 
 * Security: added support for throttling login attempts. If you set the `throttle` option of `apostrophe-login` to `{ allowedAttempts: 3, perMinutes: 1, lockoutMinutes: 1 }`, a user will be locked out and unable to try again for 1 minute after three failed login attempts in 1 minute. Thanks to Michelin for making this work possible via [Apostrophe Enterprise Support](https://apostrophecms.org/support/enterprise-support).
-* Security: added a `beforeLoginAttempt` promise event which is emitted with `({ req })` before a login attempt is evaluated. If a handler throws a string as an error, that string is internationalized and displayed as a login error, otherwise login proceeds normally. This can be used to implement features like the new `apostrophe-login-recaptcha` module, which you can install separately.
+* Security: added an `apostrophe-login:before` promise event which is emitted with `({ req })` before a login attempt is evaluated. If a handler throws a string as an error, that string is internationalized and displayed as a login error, otherwise login proceeds normally. This can be used to implement features like the new `apostrophe-login-recaptcha` module, which you can install separately.
 * Security: to ease implementation of `apostrophe-login-recaptcha`, the login form now has `data-apos-login-form` and `data-apos-login-submit-button` attributes on the appropriate elements.
 
 ## 2.109.0 (2020-07-15)
