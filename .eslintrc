@@ -9,6 +9,7 @@
   "rules": {
     "no-var": "error",
     "no-console": 0,
+    "vue/no-deprecated-destroyed-lifecycle": 0,
     "vue/component-tags-order": [
       "warn",
       {
