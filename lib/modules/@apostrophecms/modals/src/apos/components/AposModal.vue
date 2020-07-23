@@ -76,6 +76,7 @@ export default {
       default: ''
     }
   },
+  emits: ['inactive', 'esc', 'show-modal', 'no-modal'],
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));

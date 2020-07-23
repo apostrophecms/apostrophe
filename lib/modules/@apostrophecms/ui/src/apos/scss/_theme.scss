@@ -17,6 +17,7 @@ $font-sizes: (
   input-label: 14px,
   input: 12px,
   input-hint: 12px,
+  menu-label: 14px,
   heading: 22px,
   modal: 12px,
   rail-title: 14px
@@ -50,6 +51,7 @@ body {
   --a-danger: #eb443b;
   --a-success: #00bf9a;
   --a-warning: #ffce00;
+  --a-progress-bg: #2c354d;
 
   .apos-theme--primary-purple {
     @include apos-primary-mixin(#6516dd);

@@ -3,8 +3,10 @@
     class="apos-context-menu" :class="classList"
     ref="component"
   >
+    <slot name="prebutton" />
     <!-- TODO refactor buttons to take a single config obj -->
     <AposButton
+      class="apos-context-menu__btn"
       @click="buttonClicked" :label="button.label"
       :type="button.type" :icon="button.icon"
       :icon-only="button.iconOnly" :state="buttonState"
