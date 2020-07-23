@@ -4,13 +4,10 @@
   "description": "",
   "author": "Apostrophe Technologies, Inc.",
   "scripts": {
-    "test:unit": "vue-cli-service test:unit",
-    "build-storybook": "build-storybook -s ./public -o .out",
-    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out",
-    "dev": "start-storybook -s ./public -p 9001 -c .storybook",
-    "storybook": "start-storybook -s ./public -p 9001 -c .storybook",
-    "test": "npx eslint . --ext .js,.vue"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-storybook": "build-storybook -s ./.storybook/public -o .out"
   },
+  "private": true,
   "main": "index.js",
   "dependencies": {
     "vue": "^2.6.11",
