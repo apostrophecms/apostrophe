@@ -3,9 +3,11 @@
     type="button" @click="click"
     class="apos-button"
     :class="modifierClass" :tabindex="tabindex"
-    :busy="busy" :disabled="isDisabled"
+    :disabled="isDisabled"
   >
-    <AposSpinner :color="spinnerColor" />
+    <transition name="fade">
+      <AposSpinner :color="spinnerColor" v-if="busy" />
+    </transition>
     <div class="apos-button__content">
       <component
         :size="15" class="apos-button__icon"
@@ -174,6 +176,13 @@ export default {
     bottom: 0;
     left: 0;
     margin: auto;
+  }
+
+  .apos-spinner.fade-enter-active, .fade-leave-active {
+    transition: all 0.2s ease;
+  }
+
+  .apos-spinner.fade-enter, .fade-leave-to {
     opacity: 0;
   }
 }
