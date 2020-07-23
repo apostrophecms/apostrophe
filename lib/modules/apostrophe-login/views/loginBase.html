@@ -10,7 +10,7 @@
       <div class="apos-ui apos-login">
         <div class="apos-login-title apos-text-title">{% block subHeading %}{{ __ns('apostrophe', 'Login') }}{% endblock %}</div>
         {% block form %}
-          <form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
+          <form data-apos-login-form action="{% block action %}{{ apos.prefix }}/login{% endblock %}" method="post">
             {% if data.errors and data.errors[0] %}
               <div class="apos-login-warning">
                 {{ data.errors | join(' ') }}
@@ -29,7 +29,7 @@
               </div>
             {% endblock %}
             <div class="apos-login-submit">
-              <input type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __ns('apostrophe', 'Log In') }}{% endblock %}" />
+              <input data-apos-login-submit-button type="submit" class="apos-button apos-button--major" value="{% block buttonLabel %}{{ __ns('apostrophe', 'Log In') }}{% endblock %}" />
             </div>
             {% block passwordReset %}
               {% if data.passwordReset %}
