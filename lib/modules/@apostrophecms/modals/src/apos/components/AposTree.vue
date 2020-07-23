@@ -264,7 +264,8 @@ export default {
   }
 
   .apos-tree__row__handle {
-    margin-top: -0.35em;
+    margin-top: -0.25em;
+    margin-right: 0.25em;
     line-height: 0;
   }
 

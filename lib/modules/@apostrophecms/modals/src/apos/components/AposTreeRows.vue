@@ -36,6 +36,7 @@
         >
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
+            size="20"
           />
           <component
             v-if="col.icon" :is="col.icon"
@@ -65,13 +66,11 @@
 
 <script>
 import VueDraggable from 'vuedraggable';
-import DragIcon from 'vue-material-design-icons/Drag.vue';
 
 export default {
   name: 'AposTreeRows',
   components: {
-    VueDraggable,
-    'drag-icon': DragIcon
+    VueDraggable
   },
   props: {
     headers: {
