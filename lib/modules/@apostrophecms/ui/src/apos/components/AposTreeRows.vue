@@ -36,7 +36,7 @@
         >
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
-            size="20"
+            :size="20"
           />
           <component
             v-if="col.icon" :is="col.icon"
