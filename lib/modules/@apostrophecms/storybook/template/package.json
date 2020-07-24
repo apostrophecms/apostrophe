@@ -4,8 +4,7 @@
   "description": "",
   "author": "Apostrophe Technologies, Inc.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build-storybook": "build-storybook -s ./.storybook/public -o .out"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "private": true,
   "main": "index.js",

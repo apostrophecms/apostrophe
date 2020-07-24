@@ -6,10 +6,7 @@
   "scripts": {
     "pretest": "npm audit && npm run lint",
     "test": "nyc --reporter=html mocha",
-    "lint": "eslint .",
-    "build-storybook": "node ./.storybook/buildPreview.js && build-storybook -s ./public -o .out",
-    "storybook": "node ./.storybook/buildPreview.js && start-storybook -s ./public -p 9001 -c .storybook",
-    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out"
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
