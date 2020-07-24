@@ -37,7 +37,13 @@ export default {
   },
   emits: ['input'],
   data() {
+    const piece = {
+      hasErrors: false,
+      data: {}
+    };
+
     return {
+      piece,
       // TODO: Complete this with other schema field types.
       fieldComponentMap: {
         string: 'AposInputString',
@@ -74,7 +80,10 @@ export default {
   },
   methods: {
     input(value, name) {
-      this.$emit('input', name, value);
+      if (value.data) {
+        this.piece.data[name] = value.data;
+      }
+      this.$emit('input', this.piece);
     }
   }
 };

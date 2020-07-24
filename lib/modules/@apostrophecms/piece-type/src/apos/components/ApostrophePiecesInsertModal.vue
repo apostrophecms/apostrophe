@@ -5,7 +5,7 @@
       <p>New {{ moduleOptions.label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="moduleOptions.schema" v-model="pieceInfo" />
+      <AposSchema :schema="moduleOptions.schema" v-model="pieceInfo" />
     </template>
     <template slot="footer">
       <slot name="footer">
