@@ -28,13 +28,13 @@ describe('Pages', function() {
                 label: 'Home'
               },
               {
-                name: 'test-pages',
+                name: 'test-page',
                 label: 'Test Page'
               }
             ]
           }
         },
-        'test-pages': {
+        'test-page': {
           extend: '@apostrophecms/page-type'
         }
       }
@@ -92,7 +92,7 @@ describe('Pages', function() {
     const testItems = [
       {
         _id: 'parent',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/parent',
         published: true,
         path: `${homeId}/parent`,
@@ -101,7 +101,7 @@ describe('Pages', function() {
       },
       {
         _id: 'child',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/child',
         published: true,
         path: `${homeId}/parent/child`,
@@ -110,7 +110,7 @@ describe('Pages', function() {
       },
       {
         _id: 'grandchild',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/grandchild',
         published: true,
         path: `${homeId}/parent/child/grandchild`,
@@ -119,7 +119,7 @@ describe('Pages', function() {
       },
       {
         _id: 'sibling',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/sibling',
         published: true,
         path: `${homeId}/parent/sibling`,
@@ -129,7 +129,7 @@ describe('Pages', function() {
       },
       {
         _id: 'cousin',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/cousin',
         published: true,
         path: `${homeId}/parent/sibling/cousin`,
@@ -138,7 +138,7 @@ describe('Pages', function() {
       },
       {
         _id: 'another-parent',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/another-parent',
         published: true,
         path: `${homeId}/another-parent`,
@@ -235,7 +235,7 @@ describe('Pages', function() {
     const newPage = {
       slug: '/new-page',
       published: true,
-      type: 'test-pages',
+      type: 'test-page',
       title: 'New Page'
     };
 

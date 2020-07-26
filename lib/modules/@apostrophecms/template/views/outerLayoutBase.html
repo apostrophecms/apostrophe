@@ -3,20 +3,20 @@
   <head>
     {% block startHead %}
     {% endblock %}
-    {% component '@apostrophecms/templates:inject' with { where: 'head', end: 'prepend' } %}
+    {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend' } %}
     <title>{% block title %}{% endblock %}</title>
-    {{ apos.assets.stylesheets(data.when) }}
+    {{ apos.asset.stylesheets(data.when) }}
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% endblock %}
-    {% component '@apostrophecms/templates:inject' with { where: 'head', end: 'append' } %}
+    {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append' } %}
     {% block extraHead %}
     {% endblock %}
   </head>
   {# TODO: How does `apos-theme--primary-purple` get there? #}
   <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     woo woo test
-    {% component '@apostrophecms/templates:inject' with { where: 'body', end: 'prepend' } %}
+    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}
       <div id="apos-busy"></div>
       <div id="apos-admin-bar"></div>
@@ -27,13 +27,13 @@
     <div class="apos-refreshable" data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
       {% block mainAnchor %}<a name="main"></a>{% endblock %}
-      {% component '@apostrophecms/templates:inject' with { where: 'main', end: 'prepend' } %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
       {% block main %}{% endblock %}
-      {% component '@apostrophecms/templates:inject' with { where: 'main', end: 'append' } %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
       {% block afterMain %}{% endblock %}
     </div>
-    {{ apos.assets.scripts(data.when) }}
-    {% component '@apostrophecms/templates:inject' with { where: 'body', end: 'append' } %}
+    {{ apos.asset.scripts(data.when) }}
+    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
     {% block extraBody %}{% endblock %}
     <div id="apos-modals"></div>
   </body>
