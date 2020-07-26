@@ -15,10 +15,10 @@ describe('Caches', function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.caches);
+    assert(apos.cache);
   });
   it('should give us a cache object', function() {
-    cache = apos.caches.get('testMonkeys');
+    cache = apos.cache.get('testMonkeys');
   });
   it('should not crash on clear', async function() {
     await cache.clear();

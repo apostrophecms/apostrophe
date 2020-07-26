@@ -16,7 +16,7 @@ describe('Utils', function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.utils);
+    assert(apos.util);
   });
 
   // UTIL METHODS ------------------------------------------------------- //
@@ -24,7 +24,7 @@ describe('Utils', function() {
   describe('methods', function() {
 
     it('generateId: should return a string of an number', function(done) {
-      let id = apos.utils.generateId();
+      let id = apos.util.generateId();
 
       assert((typeof id) === 'string');
       assert((typeof parseInt(id)) === 'number');
@@ -32,7 +32,7 @@ describe('Utils', function() {
     });
 
     it('globalReplace: should replace multiple instances of a string', function(done) {
-      let s = apos.utils.globalReplace('apostrophe is for cool kids. therefore apostrophe is cool.', 'apostrophe', 'comma');
+      let s = apos.util.globalReplace('apostrophe is for cool kids. therefore apostrophe is cool.', 'apostrophe', 'comma');
 
       assert(s.indexOf('apostrophe') < 0);
       assert(s.split('comma').length === 3);
@@ -40,35 +40,35 @@ describe('Utils', function() {
     });
 
     it('truncatePlaintext: should tuncate a message without cutting off a word', function(done) {
-      let s = apos.utils.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
+      let s = apos.util.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
 
       assert(s.indexOf('here') > 0);
       return done();
     });
 
     it('escapeHtml: should replace html tags with html string entites', function(done) {
-      let s = apos.utils.escapeHtml('<div>hello</div>');
+      let s = apos.util.escapeHtml('<div>hello</div>');
 
       assert(s.indexOf('<') < 0 && s.indexOf('&lt;') >= 0);
       return done();
     });
 
     it('htmlToPlaintext: should strip all html notation', function(done) {
-      let s = apos.utils.htmlToPlaintext('<div>hello</div>');
+      let s = apos.util.htmlToPlaintext('<div>hello</div>');
 
       assert(s.indexOf('<') < 0 && s.indexOf('hello') >= 0);
       return done();
     });
 
     it('capitalizeFirst: should capitalize the first letter', function(done) {
-      let s = apos.utils.capitalizeFirst('hello');
+      let s = apos.util.capitalizeFirst('hello');
 
       assert(s.indexOf('hello') < 0 && s.indexOf('H' === 0));
       return done();
     });
 
     it('cssName: should covert camelCase or underscore name formats to hyphenated css-style', function(done) {
-      let s = apos.utils.cssName('camelCase and under_score');
+      let s = apos.util.cssName('camelCase and under_score');
 
       assert(s.indexOf('C') < 0 && s.indexOf('_') < 0);
       assert(s.indexOf('camel-case') >= 0);
@@ -76,24 +76,24 @@ describe('Utils', function() {
     });
 
     it('cssName: should preserve double dash', function() {
-      let s = apos.utils.cssName('this-is--doubled');
+      let s = apos.util.cssName('this-is--doubled');
       assert(s === 'this-is--doubled');
     });
 
     it('cssName: should not preserve triple dash', function() {
-      let s = apos.utils.cssName('this-is---tripled');
+      let s = apos.util.cssName('this-is---tripled');
       assert(s === 'this-is--tripled');
     });
 
     it('camelName: should convert non digits or ASII characters to a capitalized version of the next character', function(done) {
-      let s = apos.utils.camelName('hello apostrophe');
+      let s = apos.util.camelName('hello apostrophe');
 
       assert(s.indexOf(' ') < 0 && s.indexOf('A') === 5);
       return done();
     });
 
     it('addSlashIfNeeded: should add a slash "/" to the end of a path if necessary', function(done) {
-      let s = apos.utils.addSlashIfNeeded('/my/path');
+      let s = apos.util.addSlashIfNeeded('/my/path');
 
       assert(s === '/my/path/');
       return done();
@@ -101,7 +101,7 @@ describe('Utils', function() {
 
     it('clonePermanent: should discard properties beginning with _ other than _id', function() {
       assert(_.isEqual(
-        apos.utils.clonePermanent({
+        apos.util.clonePermanent({
           tree: {
             branch: {
               leaf: true,
@@ -135,7 +135,7 @@ describe('Utils', function() {
 
     it('clonePermanent with keepScalars: should discard properties beginning with _ other than _id unless they are scalars (non-objects)', function() {
       assert(_.isEqual(
-        apos.utils.clonePermanent({
+        apos.util.clonePermanent({
           tree: {
             branch: {
               leaf: true,
@@ -192,7 +192,7 @@ describe('Utils', function() {
           'type': 'attachment'
         }
       };
-      let clone = apos.utils.clonePermanent(input);
+      let clone = apos.util.clonePermanent(input);
       assert(clone.attachment._id === 'a205filea1media97');
     });
 
@@ -204,7 +204,7 @@ describe('Utils', function() {
         10,
         'jane'
       ];
-      apos.utils.insensitiveSort(input);
+      apos.util.insensitiveSort(input);
       assert(input.length === 5);
       assert(input[0] === 5);
       assert(input[1] === 10);
@@ -213,23 +213,23 @@ describe('Utils', function() {
       assert(input[4] === 'jane');
     });
 
-    it('does not crash when apos.utils.profile is called with two arguments', function() {
-      apos.utils.profile(apos.tasks.getReq(), 'this.is.a.path')();
+    it('does not crash when apos.util.profile is called with two arguments', function() {
+      apos.util.profile(apos.task.getReq(), 'this.is.a.path')();
       assert(true);
     });
 
-    it('does not crash when apos.utils.profile is called with three arguments', function() {
-      apos.utils.profile(apos.tasks.getReq(), 'this.is.a.path', 100);
+    it('does not crash when apos.util.profile is called with three arguments', function() {
+      apos.util.profile(apos.task.getReq(), 'this.is.a.path', 100);
       assert(true);
     });
 
-    it('does not crash when apos.utils.profile is called with one argument (no req arg)', function() {
-      apos.utils.profile('this.is.a.path')();
+    it('does not crash when apos.util.profile is called with one argument (no req arg)', function() {
+      apos.util.profile('this.is.a.path')();
       assert(true);
     });
 
-    it('does not crash when apos.utils.profile is called with two arguments (no req arg)', function() {
-      apos.utils.profile('this.is.a.path', 100);
+    it('does not crash when apos.util.profile is called with two arguments (no req arg)', function() {
+      apos.util.profile('this.is.a.path', 100);
       assert(true);
     });
 
@@ -237,14 +237,14 @@ describe('Utils', function() {
       const data = {
         age: 5
       };
-      assert(apos.utils.get(data, 'age') === 5);
+      assert(apos.util.get(data, 'age') === 5);
     });
 
     it('can set a top level property with utils.set', () => {
       const data = {
         age: 5
       };
-      apos.utils.set(data, 'age', 7);
+      apos.util.set(data, 'age', 7);
       assert(data.age === 7);
     });
 
@@ -254,7 +254,7 @@ describe('Utils', function() {
           size: 5
         }
       };
-      assert(apos.utils.get(data, 'shoe.size') === 5);
+      assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
     it('can set a nested property with utils.set', () => {
@@ -263,7 +263,7 @@ describe('Utils', function() {
           size: 5
         }
       };
-      apos.utils.set(data, 'shoe.size', 7);
+      apos.util.set(data, 'shoe.size', 7);
       assert(data.shoe.size === 7);
     });
 
@@ -273,7 +273,7 @@ describe('Utils', function() {
           size: 5
         }
       };
-      assert(apos.utils.get(data, 'shoe.size') === 5);
+      assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
     it('can get a nested array property with utils.get', () => {
@@ -285,7 +285,7 @@ describe('Utils', function() {
           ]
         }
       };
-      assert(apos.utils.get(data, 'shoe.laces.0', 'intact'));
+      assert(apos.util.get(data, 'shoe.laces.0', 'intact'));
     });
 
     it('can set a nested array property with utils.set', () => {
@@ -297,7 +297,7 @@ describe('Utils', function() {
           ]
         }
       };
-      apos.utils.set(data, 'shoe.laces.0', 'gnarly');
+      apos.util.set(data, 'shoe.laces.0', 'gnarly');
       assert(data.shoe.laces[0] === 'gnarly');
     });
 
@@ -312,7 +312,7 @@ describe('Utils', function() {
           }
         ]
       };
-      assert(apos.utils.get(data, '@stylin')._id === 'stylin');
+      assert(apos.util.get(data, '@stylin')._id === 'stylin');
     });
 
     it('can update a subobject property with @ syntax', () => {
@@ -328,7 +328,7 @@ describe('Utils', function() {
           }
         ]
       };
-      apos.utils.set(data, '@stylin.size', 7);
+      apos.util.set(data, '@stylin.size', 7);
       assert(data.shoes[0]._id === 'stylin');
       assert.strictEqual(data.shoes[0].size, 7);
     });
@@ -346,7 +346,7 @@ describe('Utils', function() {
           }
         ]
       };
-      assert(apos.utils.get(data, '@stylin.size') === 5);
+      assert(apos.util.get(data, '@stylin.size') === 5);
     });
 
     it('can replace a subobject with @ syntax', () => {
@@ -362,7 +362,7 @@ describe('Utils', function() {
           }
         ]
       };
-      apos.utils.set(data, '@stylin', {
+      apos.util.set(data, '@stylin', {
         _id: 'stylin',
         size: 8
       });

@@ -70,7 +70,7 @@ export default {
   },
   computed: {
     options() {
-      return window.apos.schemas;
+      return window.apos.schema;
     }
   }
 };

@@ -41,7 +41,7 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return window.apos.areas;
+      return window.apos.area;
     },
     types() {
       return Object.keys(this.options.widgets);
@@ -49,7 +49,7 @@ export default {
   },
   methods: {
     async up(i) {
-      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
         busy: true,
         body: {
           $move: {
@@ -65,7 +65,7 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async down(i) {
-      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
         busy: true,
         body: {
           $move: {
@@ -81,7 +81,7 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async remove(i) {
-      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
         busy: true,
         body: {
           $pullAllById: {
@@ -104,7 +104,7 @@ export default {
       if ($event.index < this.next.length) {
         push.$before = this.next[$event.index].widget._id;
       }
-      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
         busy: true,
         body: {
           $push: {

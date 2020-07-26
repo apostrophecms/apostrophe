@@ -67,17 +67,40 @@ for ([ oldName, newName ] of Object.entries(rename)) {
   console.log(`${oldName} -> ${newName}`);
   const oldFilename = `lib/modules/@apostrophecms/${oldName}`;
   const newFilename = `lib/modules/@apostrophecms/${newName}`;
-  if (fs.existsSync(oldFilename)) {
-    fs.renameSync(oldFilename, newFilename);
-  }
-  replace.sync({
-    files: `${newFilename}/index.js`,
-    from: `alias: '${oldName}'`,
-    to: `alias: '${newName}'`
-  });
-  replace.sync({
-    files: 'lib/modules/**/*.js',
-    from: new RegExp(quote(`apos.${oldName}`) + '(?=;|,|$)', 'g'),
-    to: `apos.${newName}`
-  });
+  // fs.renameSync(oldFilename, newFilename);
+  // replace.sync({
+  //   files: `${newFilename}/index.js`,
+  //   from: `alias: '${oldName}'`,
+  //   to: `alias: '${newName}'`
+  // });
+  // replace.sync({
+  //   files: 'lib/**/*.js',
+  //   from: new RegExp(quote(`apos.${oldName}`), 'g'),
+  //   to: `apos.${newName}`
+  // });
+  // replace.sync({
+  //   files: 'test/*.js',
+  //   from: new RegExp(quote(`apos.${oldName}`), 'g'),
+  //   to: `apos.${newName}`
+  // });
+  // replace.sync({
+  //   files: 'lib/**/*.vue',
+  //   from: new RegExp(quote(`apos.${oldName}`), 'g'),
+  //   to: `apos.${newName}`
+  // });
+  // replace.sync({
+  //   files: 'lib/**/*.js',
+  //   from: new RegExp(quote(`@apostrophecms/${oldName}`), 'g'),
+  //   to: `@apostrophecms/${newName}`
+  // });
+  // replace.sync({
+  //   files: 'test/**/*.js',
+  //   from: new RegExp(quote(`@apostrophecms/${oldName}`), 'g'),
+  //   to: `@apostrophecms/${newName}`
+  // });
+  // replace.sync({
+  //   files: 'defaults.js',
+  //   from: new RegExp(quote(`@apostrophecms/${oldName}`), 'g'),
+  //   to: `@apostrophecms/${newName}`
+  // });
 }

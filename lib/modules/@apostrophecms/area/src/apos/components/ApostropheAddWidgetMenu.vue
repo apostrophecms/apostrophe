@@ -70,7 +70,7 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return window.apos.areas;
+      return window.apos.area;
     }
   }
 };

@@ -11,7 +11,7 @@ export default {
   name: 'ApostropheRichTextWidget',
   methods: {
     clicked(e) {
-      const link = apos.utils.closest(e.target, 'a');
+      const link = apos.util.closest(e.target, 'a');
       if (link) {
         return;
       }

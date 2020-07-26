@@ -112,7 +112,7 @@ export default {
 
       async function body() {
         const result = await apos.http.post(
-          `${window.apos.docs.action}/deduplicate-slug`,
+          `${window.apos.doc.action}/deduplicate-slug`,
           {
             busy: true,
             body: {
@@ -144,7 +144,7 @@ export default {
         const was = this.next;
         try {
           const result = await apos.http.post(
-            `${apos.docs.action}/slug-taken`, {
+            `${apos.doc.action}/slug-taken`, {
               busy: true,
               body: {
                 slug: this.next,

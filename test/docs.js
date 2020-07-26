@@ -34,12 +34,12 @@ describe('Docs', function() {
       }
     });
 
-    assert(apos.docs);
+    assert(apos.doc);
 
   });
 
   it('should have a db property', function() {
-    assert(apos.docs.db);
+    assert(apos.doc.db);
   });
 
   /// ///
@@ -55,7 +55,7 @@ describe('Docs', function() {
     ];
     const actualIndexes = [];
 
-    const info = await apos.docs.db.indexInformation();
+    const info = await apos.doc.db.indexInformation();
     // Extract the actual index info we care about.
     _.forEach(info, function(index) {
       actualIndexes.push(index[0][0]);
@@ -72,10 +72,10 @@ describe('Docs', function() {
 
   it('should make sure there is no test data hanging around from last time', async function() {
     // Attempt to purge the entire aposDocs collection
-    await apos.docs.db.deleteMany({});
+    await apos.doc.db.deleteMany({});
 
     // Make sure it went away
-    const docs = await apos.docs.db.find({ slug: 'larry' }).toArray();
+    const docs = await apos.doc.db.find({ slug: 'larry' }).toArray();
 
     assert(docs.length === 0);
   });
@@ -115,15 +115,15 @@ describe('Docs', function() {
       }
     ];
 
-    const response = await apos.docs.db.insertMany(testItems);
+    const response = await apos.doc.db.insertMany(testItems);
 
     assert(response.result.ok === 1);
     assert(response.insertedCount === 3);
   });
 
   it('should be able to carry out schema joins', async function() {
-    const manager = apos.docs.getManager('test-people');
-    const req = apos.tasks.getAnonReq();
+    const manager = apos.doc.getManager('test-people');
+    const req = apos.task.getAnonReq();
 
     assert(manager);
     assert(manager.find);
@@ -146,7 +146,7 @@ describe('Docs', function() {
 
   it('should fail if you try to insert a document with the same unique key twice', async function() {
     try {
-      await apos.docs.db.insertMany([
+      await apos.doc.db.insertMany([
         {
           type: 'test-people',
           published: false,
@@ -172,13 +172,13 @@ describe('Docs', function() {
   /// ///
 
   it('should have a find method on docs that returns a cursor', function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq());
+    const cursor = apos.doc.find(apos.task.getAnonReq());
     assert(cursor);
     assert(cursor.toArray);
   });
 
   it('should be able to find all PUBLISHED test documents and output them as an array', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' });
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
 
     const docs = await cursor.toArray();
 
@@ -193,7 +193,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to specify which fields to get by passing a projection object', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }, { age: 1 });
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }, { age: 1 });
     const docs = await cursor.toArray();
 
     // There SHOULD be an age
@@ -207,7 +207,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be that non-admins DO NOT get unpublished docs by default', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' });
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
     const docs = await cursor.toArray();
 
     _.forEach(docs, function(doc) {
@@ -219,14 +219,14 @@ describe('Docs', function() {
   });
 
   it('should be that non-admins do not get unpublished docs, even if they ask for them', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).published(false);
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).published(false);
 
     const docs = await cursor.toArray();
     assert(docs.length === 0);
   });
 
   it('should be that admins can get unpublished docs if they ask for them', async function () {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people' }).published(false);
+    const cursor = apos.doc.find(apos.task.getReq(), { type: 'test-people' }).published(false);
     const docs = await cursor.toArray();
 
     assert(docs.length === 1);
@@ -234,7 +234,7 @@ describe('Docs', function() {
   });
 
   it('should be that admins can get a mixture of unpublished docs and published docs if they ask', async function() {
-    const cursor = apos.docs.find(apos.tasks.getReq(), { type: 'test-people' }).published(null);
+    const cursor = apos.doc.find(apos.task.getReq(), { type: 'test-people' }).published(null);
     const docs = await cursor.toArray();
 
     assert(docs.length === 4);
@@ -245,14 +245,14 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to sort', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
     const docs = await cursor.toArray();
 
     assert(docs[0].slug === 'larry');
   });
 
   it('should be able to sort by multiple keys', async function () {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), { type: 'test-people' }).sort({
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({
       firstName: 1,
       age: 1
     });
@@ -277,14 +277,14 @@ describe('Docs', function() {
       alive: true
     };
 
-    const response = await apos.docs.insert(apos.tasks.getReq(), object);
+    const response = await apos.doc.insert(apos.task.getReq(), object);
 
     assert(response);
     assert(response._id);
   });
 
   it('should be able to insert a new object into the docs collection in the database', async function() {
-    const cursor = apos.docs.find(apos.tasks.getReq(), {
+    const cursor = apos.doc.find(apos.task.getReq(), {
       type: 'test-people',
       slug: 'one'
     });
@@ -304,7 +304,7 @@ describe('Docs', function() {
       alive: true
     };
 
-    const doc = await apos.docs.insert(apos.tasks.getReq(), object);
+    const doc = await apos.doc.insert(apos.task.getReq(), object);
 
     assert(doc);
     assert(doc.slug.match(/^one\d+$/));
@@ -322,7 +322,7 @@ describe('Docs', function() {
     };
 
     try {
-      await apos.docs.insert(apos.tasks.getAnonReq(), object);
+      await apos.doc.insert(apos.task.getAnonReq(), object);
       assert(false);
     } catch (e) {
       assert(e);
@@ -334,8 +334,8 @@ describe('Docs', function() {
   /// ///
 
   it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', async function() {
-    const req = apos.tasks.getReq();
-    const docs = await apos.docs.find(req, { slug: 'one' }).toArray();
+    const req = apos.task.getReq();
+    const docs = await apos.doc.find(req, { slug: 'one' }).toArray();
 
     // We should have one document in our results.
     assert(docs);
@@ -345,7 +345,7 @@ describe('Docs', function() {
     const object = docs[0];
     object.alive = false;
 
-    const updated = await apos.docs.update(apos.tasks.getReq(), object);
+    const updated = await apos.doc.update(apos.task.getReq(), object);
 
     // Has the property been updated?
     assert(updated);
@@ -353,8 +353,8 @@ describe('Docs', function() {
   });
 
   it('should append an updated slug with a numeral if the updated slug already exists', async function() {
-    const req = apos.tasks.getReq();
-    const cursor = apos.docs.find(req, {
+    const req = apos.task.getReq();
+    const cursor = apos.doc.find(req, {
       type: 'test-people',
       slug: 'one'
     });
@@ -364,14 +364,14 @@ describe('Docs', function() {
 
     doc.slug = 'peter';
 
-    const updated = await apos.docs.update(req, doc);
+    const updated = await apos.doc.update(req, doc);
     assert(updated);
     // Has the updated slug been appended?
     assert(updated.slug.match(/^peter\d+$/));
   });
 
   it('should be able to fetch all unique firstNames with toDistinct', async function() {
-    const firstNames = await apos.docs.find(apos.tasks.getReq(), {
+    const firstNames = await apos.doc.find(apos.task.getReq(), {
       type: 'test-people'
     }).toDistinct('firstName');
 
@@ -381,8 +381,8 @@ describe('Docs', function() {
   });
 
   it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
-    const req = apos.tasks.getReq();
-    const cursor = apos.docs.find(req, {
+    const req = apos.task.getReq();
+    const cursor = apos.doc.find(req, {
       type: 'test-people'
     }).distinctCounts(true);
     const firstNames = await cursor.toDistinct('firstName');
@@ -398,7 +398,7 @@ describe('Docs', function() {
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {
-    const cursor = apos.docs.find(apos.tasks.getAnonReq(), {
+    const cursor = apos.doc.find(apos.task.getAnonReq(), {
       type: 'test-people',
       slug: 'lori'
     });
@@ -409,7 +409,7 @@ describe('Docs', function() {
     doc.slug = 'laurie';
 
     try {
-      await apos.docs.update(apos.tasks.getAnonReq(), doc);
+      await apos.doc.update(apos.task.getAnonReq(), doc);
       assert(false);
     } catch (e) {
       assert(e);
@@ -421,12 +421,12 @@ describe('Docs', function() {
   /// ///
 
   it('should trash docs by updating them', async function() {
-    const req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
       type: 'test-people',
       slug: 'carl'
     }).toObject();
-    const trashed = await apos.docs.update(req, {
+    const trashed = await apos.doc.update(req, {
       ...doc,
       trash: true
     });
@@ -435,8 +435,8 @@ describe('Docs', function() {
   });
 
   it('should not be able to find the trashed object', async function() {
-    const req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
       slug: 'carl'
     }).toObject();
 
@@ -445,7 +445,7 @@ describe('Docs', function() {
 
   it('should not allow you to call the trash method if you are not an admin', async function() {
     try {
-      await apos.docs.trash(apos.tasks.getAnonReq(), {
+      await apos.doc.trash(apos.task.getAnonReq(), {
         slug: 'lori'
       });
       assert(false);
@@ -456,7 +456,7 @@ describe('Docs', function() {
 
   it('should be able to find the trashed object when using the "trash" method on find()', async function() {
     // Look for the trashed doc with the `deduplicate-` + its `_id` + its `name` properties.
-    const doc = await apos.docs.find(apos.tasks.getReq(), {
+    const doc = await apos.doc.find(apos.task.getReq(), {
       slug: 'deduplicate-carl-carl'
     }).trash(true).toObject();
 
@@ -469,17 +469,17 @@ describe('Docs', function() {
   /// ///
 
   it('should rescue a doc by updating the "trash" property from an object', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
-    const doc = await apos.docs.find(req, {
+    const doc = await apos.doc.find(req, {
       slug: 'deduplicate-carl-carl'
     }).trash(null).toObject();
 
-    await apos.docs.update(req, {
+    await apos.doc.update(req, {
       ...doc,
       trash: false
     });
-    const newDoc = await apos.docs.find(req, { slug: 'carl' }).toObject();
+    const newDoc = await apos.doc.find(req, { slug: 'carl' }).toObject();
 
     // We should have a document.
     assert(newDoc);
@@ -489,7 +489,7 @@ describe('Docs', function() {
 
   it('should not allow you to call the rescue method if you are not an admin', async function() {
     try {
-      await apos.docs.rescue(apos.tasks.getAnonReq(), {
+      await apos.doc.rescue(apos.task.getAnonReq(), {
         slug: 'carl'
       });
       assert(false);
@@ -500,7 +500,7 @@ describe('Docs', function() {
 
   it('should throw an exception on find() if you fail to pass req as the first argument', async function() {
     try {
-      await apos.docs.find({ slug: 'larry' });
+      await apos.doc.find({ slug: 'larry' });
       assert(false);
     } catch (e) {
       assert(e);
@@ -521,9 +521,9 @@ describe('Docs', function() {
       });
     }
 
-    await apos.docs.db.insertMany(testItems);
+    await apos.doc.db.insertMany(testItems);
 
-    const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
+    const docs = await apos.doc.find(apos.task.getAnonReq(), {})
       .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray();
 
     assert(docs[0]._id === 'i7');
@@ -535,7 +535,7 @@ describe('Docs', function() {
 
   it('should respect explicitOrder with skip and limit', async function() {
     // Relies on test data of previous test
-    const docs = await apos.docs.find(apos.tasks.getAnonReq(), {})
+    const docs = await apos.doc.find(apos.task.getAnonReq(), {})
       .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray();
 
     assert(docs[0]._id === 'i27');
@@ -544,20 +544,20 @@ describe('Docs', function() {
   });
 
   it('should be able to lock a document', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     try {
-      await apos.docs.lock(req, 'i27', 'abc');
+      await apos.doc.lock(req, 'i27', 'abc');
     } catch (e) {
       assert(!e);
     }
   });
 
   it('should not be able to lock a document with a different contextId', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     try {
-      await apos.docs.lock(req, 'i27', 'def');
+      await apos.doc.lock(req, 'i27', 'def');
     } catch (e) {
       assert(e);
       assert(e.name === 'locked');
@@ -565,30 +565,30 @@ describe('Docs', function() {
   });
 
   it('should be able to unlock a document', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     try {
-      await apos.docs.unlock(req, 'i27', 'abc');
+      await apos.doc.unlock(req, 'i27', 'abc');
     } catch (e) {
       assert(false);
     }
   });
 
   it('should be able to re-lock an unlocked document', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     try {
-      await apos.docs.lock(req, 'i27', 'def');
+      await apos.doc.lock(req, 'i27', 'def');
     } catch (e) {
       assert(false);
     }
   });
 
   it('should be able to lock a locked document with force: true', async function() {
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     try {
-      await apos.docs.lock(req, 'i27', 'abc', { force: true });
+      await apos.doc.lock(req, 'i27', 'abc', { force: true });
     } catch (e) {
       assert(false);
     }

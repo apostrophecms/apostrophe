@@ -35,7 +35,7 @@ import {
 // Here because we cannot access computed inside data
 
 function moduleOptionsBody(type) {
-  return apos.modules[apos.areas.widgetManagers[type]];
+  return apos.modules[apos.area.widgetManagers[type]];
 }
 
 export default {
@@ -94,7 +94,7 @@ export default {
       const widget = this.widgetInfo.data;
       widget.content = content;
 
-      await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
         busy: 'contextual',
         body: {
           [`@${this.id}`]: this.widgetInfo.data

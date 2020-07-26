@@ -19,12 +19,12 @@ describe('Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [],
             types: [
               {
-                name: '@apostrophecms/home-pages',
+                name: '@apostrophecms/home-page',
                 label: 'Home'
               },
               {
@@ -57,12 +57,12 @@ describe('Pages', function() {
       }
     });
 
-    assert(apos.pages.__meta.name === '@apostrophecms/pages');
+    assert(apos.page.__meta.name === '@apostrophecms/page');
   });
 
   it('should be able to insert test user', async function() {
-    assert(apos.users.newInstance);
-    const user = apos.users.newInstance();
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
     assert(user);
 
     user.firstName = 'ad';
@@ -73,7 +73,7 @@ describe('Pages', function() {
     user.email = 'ad@min.com';
     user.permissions = [ 'admin' ];
 
-    return apos.users.insert(apos.tasks.getReq(), user);
+    return apos.user.insert(apos.task.getReq(), user);
   });
 
   it('REST: should be able to log in as admin', async () => {
@@ -105,7 +105,7 @@ describe('Pages', function() {
   });
 
   it('can GET the home page without session', async () => {
-    const home = await apos.http.get('/api/v1/@apostrophecms/pages', {});
+    const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
     assert(home);
     assert(home.slug === '/');
     // make sure new style paths used
@@ -174,7 +174,7 @@ describe('Pages', function() {
       }
     ];
 
-    const items = await apos.docs.db.insertMany(testItems);
+    const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);
     assert(items.insertedCount === 6);
@@ -189,7 +189,7 @@ describe('Pages', function() {
       title: 'New Tab'
     };
 
-    const page = await apos.http.post('/api/v1/@apostrophecms/pages', {
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
       body,
       jar
     });
@@ -212,7 +212,7 @@ describe('Pages', function() {
       _position: 'lastChild'
     };
 
-    const page = await apos.http.post('/api/v1/@apostrophecms/pages', {
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
       body,
       jar
     });
@@ -233,7 +233,7 @@ describe('Pages', function() {
       title: 'New Tab'
     };
     try {
-      await apos.http.post('/api/v1/@apostrophecms/pages', {
+      await apos.http.post('/api/v1/@apostrophecms/page', {
         body
       });
       assert(false);
@@ -243,7 +243,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page with ancestors', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/pages/child');
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/child');
 
     assert(page);
     assert(page.path === `${homeId}/parent/child`);
@@ -261,7 +261,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page with children', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/pages/parent');
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/parent');
 
     assert(page);
     assert(page.path === `${homeId}/parent`);
@@ -279,7 +279,7 @@ describe('Pages', function() {
   });
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'parent',
         _position: 'after'
@@ -296,7 +296,7 @@ describe('Pages', function() {
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'child',
         _position: 'before'
@@ -311,7 +311,7 @@ describe('Pages', function() {
   });
 
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'sibling',
         _position: 'firstChild'
@@ -326,51 +326,51 @@ describe('Pages', function() {
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.http.patch('/api/v1/@apostrophecms/pages/parent', {
+    await apos.http.patch('/api/v1/@apostrophecms/page/parent', {
       body: {
         _targetId: 'another-parent',
         _position: 'firstChild'
       },
       jar
     });
-    const page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
 
     // Is the grandchild's path correct?
     assert.strictEqual(page.path, `${homeId}/another-parent/parent/sibling`);
   });
 
   it('can use PUT to modify a page', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page);
     page.title = 'Changed Title';
     page.color = 'blue';
-    await apos.http.put('/api/v1/@apostrophecms/pages/sibling', {
+    await apos.http.put('/api/v1/@apostrophecms/page/sibling', {
       body: page,
       jar
     });
-    const page2 = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert.strictEqual(page2.title, 'Changed Title');
     assert.strictEqual(page2.color, 'blue');
   });
 
   it('can use PATCH to modify one property of a page', async function() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page);
     page.title = 'Changed Title';
-    await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         title: 'New Title'
       },
       jar
     });
-    const page2 = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    const page2 = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert.strictEqual(page2.title, 'New Title');
     // Did not modify this
     assert.strictEqual(page2.color, 'blue');
   });
 
   it('can use PATCH to move a page beneath the home page with _targetId: _home', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: '_home',
         _position: 'firstChild'
@@ -384,7 +384,7 @@ describe('Pages', function() {
   });
 
   it('can use PATCH to move a page into the trash using _trash as _targetId', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/pages/cousin', {
+    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: '_trash',
         _position: 'firstChild'
@@ -392,7 +392,7 @@ describe('Pages', function() {
       jar
     });
     assert(page._id);
-    const trash = await apos.http.get('/api/v1/@apostrophecms/pages/_trash?trash=1', {
+    const trash = await apos.http.get('/api/v1/@apostrophecms/page/_trash?trash=1', {
       jar
     });
     assert(trash);
@@ -402,15 +402,15 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId}/${trash._id}/${page._id}`);
     assert.strictEqual(page.level, 2);
     assert.strictEqual(page.rank, 0);
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/cousin?_edit=1&trash=1', {
+    page = await apos.http.get('/api/v1/@apostrophecms/page/cousin?_edit=1&trash=1', {
       jar
     });
     assert(page.trash);
   });
 
   it('Can use PATCH to add a widget to an area by path', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         $push: {
           'body.items': {
@@ -422,14 +422,14 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/<b>Bold<\/b>/));
   });
 
   it('Can use PATCH to update a widget by path', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         'body.items.0': {
           metaType: 'widget',
@@ -439,15 +439,15 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/normal/));
   });
 
   it('Can use PATCH to update a widget via @ syntax', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     const _id = `@${page.body.items[0]._id}`;
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         [_id]: {
           metaType: 'widget',
@@ -457,14 +457,14 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/I @ syntax/));
   });
 
   it('Can use $position to insert a widget at the beginning of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         $push: {
           'body.items': {
@@ -481,7 +481,7 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -490,8 +490,8 @@ describe('Pages', function() {
   });
 
   it('Can use $position to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         $push: {
           'body.items': {
@@ -508,7 +508,7 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -519,8 +519,8 @@ describe('Pages', function() {
   });
 
   it('Can use $before to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         $push: {
           'body.items': {
@@ -537,7 +537,7 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);
@@ -550,8 +550,8 @@ describe('Pages', function() {
   });
 
   it('Can use $after to insert a widget in the middle of the area', async () => {
-    let page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
-    page = await apos.http.patch('/api/v1/@apostrophecms/pages/sibling', {
+    let page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    page = await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
       body: {
         $push: {
           'body.items': {
@@ -568,7 +568,7 @@ describe('Pages', function() {
       },
       jar
     });
-    page = await apos.http.get('/api/v1/@apostrophecms/pages/sibling', { jar });
+    page = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     assert(page.body.items[0]);
     assert(page.body.items[0].content.match(/Oh in the beginning/));
     assert(page.body.items[1]);

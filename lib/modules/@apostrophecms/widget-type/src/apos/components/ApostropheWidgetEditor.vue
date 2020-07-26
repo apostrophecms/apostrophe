@@ -41,7 +41,7 @@ export default {
       return this.moduleOptions.label;
     },
     moduleOptions() {
-      return apos.modules[apos.areas.widgetManagers[this.type]];
+      return apos.modules[apos.area.widgetManagers[this.type]];
     }
   },
   data() {
@@ -62,7 +62,7 @@ export default {
         widget._id = cuid();
         this.$emit('insert', widget);
       } else {
-        await apos.http.patch(`${apos.docs.action}/${this.docId}`, {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
           busy: true,
           body: {
             [`@${this.id}`]: this.widgetInfo.data

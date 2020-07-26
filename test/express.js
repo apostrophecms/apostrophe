@@ -164,7 +164,7 @@ describe('Express', function() {
     assert(apos.baseUrl);
     assert(apos.baseUrl === 'https://example.com');
 
-    const req = apos.tasks.getReq({ url: '/test' });
+    const req = apos.task.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.absoluteUrl === 'https://example.com/test');
 
@@ -186,7 +186,7 @@ describe('Express', function() {
     assert(apos.baseUrl);
     assert(apos.baseUrl === 'https://example.com');
     assert(apos.prefix === '/subdir');
-    const req = apos.tasks.getReq({ url: '/test' });
+    const req = apos.task.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
     assert(req.absoluteUrl === 'https://example.com/subdir/test');
