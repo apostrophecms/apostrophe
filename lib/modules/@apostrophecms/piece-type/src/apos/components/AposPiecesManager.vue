@@ -203,20 +203,15 @@ export default {
       this.inserting = false;
     },
     async getPieces () {
-      apos.bus.$emit('busy', true);
-
-      try {
-        this.pieces = (await apos.http.get(
-          this.options.action, {
-            qs: {
-              ...this.filterValues,
-              page: this.currentPage
-            }
+      this.pieces = (await apos.http.get(
+        this.options.action, {
+          busy: true,
+          qs: {
+            ...this.filterValues,
+            page: this.currentPage
           }
-        )).results;
-      } finally {
-        apos.bus.$emit('busy', false);
-      }
+        }
+      )).results;
     },
     // Toolbar handlers
     trashClick() {

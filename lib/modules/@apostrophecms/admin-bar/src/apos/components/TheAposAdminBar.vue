@@ -63,14 +63,9 @@ export default {
   },
   computed: {
     userAvatar() {
-      if (process.env.STORYBOOK_MODE === 'true') {
-        return require('./userData').userAvatar;
-      } else if (this.user._id) {
-        // Get the user avatar via an async API call.
-        return '';
-      }
-
-      return '';
+      // TODO: get the user avatar via an async API call
+      // when this.user._id is truthy
+      return require('./userData').userAvatar;
     }
   },
   mounted() {
@@ -94,11 +89,7 @@ export default {
   },
   methods: {
     emitEvent: function (name) {
-      if (window.apos && window.apos.bus) {
-        apos.bus.$emit('admin-menu-click', name);
-      } else if (process.env.STORYBOOK_MODE === 'true') {
-        this.$emit('admin-menu-click', name);
-      }
+      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };

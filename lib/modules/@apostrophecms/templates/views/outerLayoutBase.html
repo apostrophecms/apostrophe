@@ -33,12 +33,6 @@
       {% block afterMain %}{% endblock %}
     </div>
     {{ apos.assets.scripts(data.when) }}
-    {% block jsCalls %}
-      <script type="text/javascript">
-        {{ data.js.globalCalls }}
-        {{ data.js.reqCalls }}
-      </script>
-    {% endblock %}
     {% component '@apostrophecms/templates:inject' with { where: 'body', end: 'append' } %}
     {% block extraBody %}{% endblock %}
     <div id="apos-modals"></div>
