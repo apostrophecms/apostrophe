@@ -37,18 +37,12 @@ export default {
   },
   emits: ['input'],
   data() {
-    const piece = {
-      hasErrors: false,
-      data: {}
-    };
-
     return {
-      piece,
-      // TODO: Complete this with other schema field types.
-      fieldComponentMap: {
-        string: 'AposInputString',
-        boolean: 'AposInputBoolean'
-      }
+      piece: {
+        hasErrors: false,
+        data: {}
+      },
+      fieldComponentMap: window.apos.schemas.components.fields || {}
     };
   },
   computed: {

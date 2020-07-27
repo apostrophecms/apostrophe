@@ -135,7 +135,6 @@ export default {
       return window.apos.modules[this.moduleName];
     },
     moduleLabels() {
-      console.info(this.options);
       return {
         singular: this.options.label,
         plural: this.options.pluralLabel
