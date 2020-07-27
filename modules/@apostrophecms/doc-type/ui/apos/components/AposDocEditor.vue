@@ -47,8 +47,8 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
-import AposModalTabsMixin from 'Modules/@apostrophecms/modals/mixins/AposModalTabsMixin';
+import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 
 export default {
   name: 'AposDocEditor',

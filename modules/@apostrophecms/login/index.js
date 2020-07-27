@@ -45,7 +45,7 @@ module.exports = {
   options: {
     alias: 'login',
     localLogin: true,
-    scene: 'user'
+    scene: 'apos'
   },
   init(self, options) {
     self.passport = new Passport();
@@ -95,7 +95,7 @@ module.exports = {
     return {
       get: {
         [self.login()]: async (req) => {
-          req.scene = 'user';
+          req.scene = 'apos';
           await self.sendPage(req, 'login', {});
         }
       }

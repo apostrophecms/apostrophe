@@ -23,7 +23,7 @@ module.exports = ({ importFile, modulesDir }, apos) => {
     devtool: 'eval-source-map',
     output: {
       path: `${apos.rootDir}/public/apos-frontend`,
-      filename: 'user-only-bundle.js'
+      filename: 'apos-only-bundle.js'
     },
     // we could extend this with aliases for other apostrophe modules
     // at a later date if needed

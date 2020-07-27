@@ -11,7 +11,7 @@
         {{ buttons.inGroup('', { icon: 'arrows', action: 'sort-item', value: choice._id}) }}
         {{ buttons.inGroup('', { icon: 'arrow-up', action: 'raise-item', value: choice._id}) }}
         {{ buttons.inGroup('', { icon: 'arrow-down', action: 'lower-item', value: choice._id }) }}
-        {%- if data.relationship and (apos.utils.filterEmpty(data.relationship, 'inline').length) -%}
+        {%- if data.relationship and (apos.util.filterEmpty(data.relationship, 'inline').length) -%}
           {{ buttons.inGroup('', { icon: 'list', action: 'relate-item' , value: choice._id}) }}
         {%- endif -%}
         {%- if item._edit or item.item._edit -%}

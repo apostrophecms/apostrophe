@@ -72,7 +72,7 @@
 
 <script>
 // TODO: Set up Storybook story for this component
-import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
+import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
   mixins: [AposModalParentMixin],

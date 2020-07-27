@@ -1,5 +1,5 @@
 {%- import '@apostrophecms/ui:components/buttons.html' as buttons -%}
-{% set groups = apos.areas.widgetControlGroups(data.widget, data.options) %}
+{% set groups = apos.area.widgetControlGroups(data.widget, data.options) %}
 {% if groups.length %}
   <div class="apos-ui" data-apos-widget-controls>
     <div class="apos-buttons apos-area-widget-controls apos-area-widget-controls--context

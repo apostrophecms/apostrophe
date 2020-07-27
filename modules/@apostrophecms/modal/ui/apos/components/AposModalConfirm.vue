@@ -45,19 +45,9 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../../mixins/AposModalParentMixin';
-import AposModal from '../modal/AposModal.vue';
-import AposModalBody from './../modal/AposModalBody.vue';
-import AposButton from '../button/AposButton.vue';
-import AposLogo from './AposLogo.vue';
+import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  components: {
-    AposModal,
-    AposModalBody,
-    AposButton,
-    AposLogo
-  },
   mixins: [AposModalParentMixin],
   props: {
     confirmContent: {

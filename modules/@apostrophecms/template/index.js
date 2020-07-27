@@ -595,7 +595,7 @@ module.exports = {
       async renderPageForModule(req, template, data, module) {
 
         let content;
-        let scene = req.user ? 'user' : 'anon';
+        let scene = req.user ? 'apos' : 'public';
         if (req.scene) {
           scene = req.scene;
         }

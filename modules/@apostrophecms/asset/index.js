@@ -32,8 +32,8 @@ module.exports = {
       await fs.remove(bundleDir);
       await fs.mkdir(bundleDir);
       await moduleOverrides();
-      anon();
-      await user();
+      buildPublicBundle();
+      await buildAposBundle();
       merge();
 
       async function moduleOverrides() {
@@ -57,7 +57,7 @@ module.exports = {
         for (let name of names) {
           const moduleDir = `${modulesDir}/${name}`;
           for (let dir of directories[name]) {
-            const srcDir = `${dir}/src/apos`;
+            const srcDir = `${dir}/ui/apos`;
             if (fs.existsSync(srcDir)) {
               await fs.copy(srcDir, moduleDir);
             }
@@ -65,31 +65,31 @@ module.exports = {
         }
       }
 
-      function anon() {
+      function buildPublicBundle() {
         // We do not use an import file here because import is not
         // an ES5 feature and it is contrary to the spirit of ES5 code
         // to force-fit that type of code. We do not mandate ES6 in
-        // "always" code (loaded for logged-out users who might have
+        // "public" code (loaded for logged-out users who might have
         // old browsers).
         //
-        // Of course, developers can push an "always" asset that is
+        // Of course, developers can push an "public" asset that is
         // the output of an ES6 pipeline.
-        const alwaysImports = getImports('always', '*.js', { });
-        fs.writeFileSync(`${apos.rootDir}/public/apos-frontend/anon-bundle.js`,
+        const publicImports = getImports('public', '*.js', { });
+        fs.writeFileSync(`${apos.rootDir}/public/apos-frontend/public-bundle.js`,
           `
 window.apos = window.apos || {};
 Object.assign(window.apos, JSON.parse((document.body && document.body.getAttribute('data-apos')) || '{}'));
           ` +
-        alwaysImports.paths.map(path => {
+        publicImports.paths.map(path => {
           return fs.readFileSync(path);
         }).join('\n')); // TODO: use webpack just to minify at the end.
       }
 
-      async function user() {
+      async function buildAposBundle() {
         const iconImports = getIcons();
-        const componentImports = getImports('components', '*.vue', { registerComponents: true });
-        const tiptapExtensionImports = getImports('tiptap-extensions', '*.js', { registerTiptapExtensions: true });
-        const appImports = getImports('apps', '*.js', { invokeApps: true });
+        const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
+        const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
+        const appImports = getImports('apos/apps', '*.js', { invokeApps: true });
         const importFile = `${buildDir}/import.js`;
 
         fs.writeFileSync(importFile, `
@@ -151,7 +151,7 @@ ${appImports.invokeCode}
       }
 
       function merge() {
-        fs.writeFileSync(`${apos.rootDir}/public/apos-frontend/user-bundle.js`, fs.readFileSync(`${apos.rootDir}/public/apos-frontend/anon-bundle.js`) + fs.readFileSync(`${apos.rootDir}/public/apos-frontend/user-only-bundle.js`));
+        fs.writeFileSync(`${apos.rootDir}/public/apos-frontend/apos-bundle.js`, fs.readFileSync(`${apos.rootDir}/public/apos-frontend/public-bundle.js`) + fs.readFileSync(`${apos.rootDir}/public/apos-frontend/apos-only-bundle.js`));
       }
 
       function getImports(folder, pattern, options) {
@@ -162,7 +162,7 @@ ${appImports.invokeCode}
             if (seen[entry.dirname]) {
               return;
             }
-            components = components.concat(glob.sync(`${entry.dirname}/src/apos/${folder}/${pattern}`));
+            components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`));
             seen[entry.dirname] = true;
           });
         });
@@ -213,7 +213,7 @@ apos.tiptapExtensions.push(${name});
     return {
       scriptsHelper(when) {
         // TODO we still need an asset generation identifier
-        const bundle = when === 'user' ? '<script src="/apos-frontend/user-bundle.js"></script>' : '<script src="/apos-frontend/anon-bundle.js"></script>';
+        const bundle = (when === 'apos') ? '<script src="/apos-frontend/apos-bundle.js"></script>' : '<script src="/apos-frontend/public-bundle.js"></script>';
         return self.apos.template.safe(`
 ${bundle}
 `);
@@ -223,6 +223,7 @@ ${bundle}
   helpers(self, options) {
     return {
       stylesheets: function (when) {
+        // Stylesheets are part of the js bundle
       },
       scripts: function (when) {
         return self.scriptsHelper(when);

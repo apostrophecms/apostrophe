@@ -103,4 +103,10 @@ for ([ oldName, newName ] of Object.entries(rename)) {
   //   from: new RegExp(quote(`@apostrophecms/${oldName}`), 'g'),
   //   to: `@apostrophecms/${newName}`
   // });
+  if (fs.existsSync(`${newFilename}/src`)) {
+    fs.renameSync(`${newFilename}/src`, `${newFilename}/ui`);
+    if (fs.existsSync(`${newFilename}/ui/always`)) {
+      fs.renameSync(`${newFilename}/ui/always`, `${newFilename}/ui/public`);
+    }
+  }
 }
