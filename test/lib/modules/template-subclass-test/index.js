@@ -1,3 +1,3 @@
 module.exports = {
-  extend: 'templates-test'
+  extend: 'template-test'
 };

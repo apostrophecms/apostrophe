@@ -12,8 +12,8 @@ describe('Express', function() {
       root: module,
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.express);
@@ -117,8 +117,8 @@ describe('Express', function() {
       prefix: '/prefix',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.prefix);
@@ -157,8 +157,8 @@ describe('Express', function() {
       baseUrl: 'https://example.com',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.baseUrl);
@@ -179,8 +179,8 @@ describe('Express', function() {
       prefix: '/subdir',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.baseUrl);
