@@ -103,7 +103,7 @@ describe('bootstrap of Apostrophe core', function() {
         root: module
       });
       // color = blue is inherited from our implicit subclass of the base module
-      assert(apos.assets && apos.assets.color === 'blue');
+      assert(apos.asset && apos.asset.color === 'blue');
       // make sure that our modules match what is specifed in defaults.js
       assert(_.difference(_.keys(defaultModules), _.keys(apos.modules)).length === 0);
     } finally {

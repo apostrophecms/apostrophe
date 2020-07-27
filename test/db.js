@@ -19,7 +19,7 @@ describe('Db', function() {
 
     assert(apos.db);
     // Verify a normal, boring connection to localhost without the db option worked
-    const doc = await apos.docs.db.findOne();
+    const doc = await apos.doc.db.findOne();
 
     assert(doc);
   });
@@ -36,7 +36,7 @@ describe('Db', function() {
       }
     });
 
-    const doc = await apos2.docs.db.findOne();
+    const doc = await apos2.doc.db.findOne();
 
     assert(doc);
   });

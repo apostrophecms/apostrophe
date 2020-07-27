@@ -21,18 +21,18 @@ describe('Admin bar', function() {
                 {
                   label: 'Media',
                   items: [
-                    '@apostrophecms/images',
-                    '@apostrophecms/images-tags',
-                    '@apostrophecms/files',
-                    '@apostrophecms/files-tags'
+                    '@apostrophecms/image',
+                    '@apostrophecms/image-tags',
+                    '@apostrophecms/file',
+                    '@apostrophecms/file-tags'
                   ]
                 },
                 {
                   label: 'Content',
                   items: [
                     '@apostrophecms/login-logout',
-                    '@apostrophecms/files',
-                    '@apostrophecms/images'
+                    '@apostrophecms/file',
+                    '@apostrophecms/image'
                   ]
                 }
               ]
@@ -44,8 +44,8 @@ describe('Admin bar', function() {
       assert(apos.adminBar);
       assert.strictEqual(apos.adminBar.items.length, 9);
       assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
-      assert(apos.adminBar.items[7].name === '@apostrophecms/files');
-      assert(apos.adminBar.items[8].name === '@apostrophecms/images');
+      assert(apos.adminBar.items[7].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[8].name === '@apostrophecms/image');
     } finally {
       t.destroy(apos);
     }
@@ -62,15 +62,15 @@ describe('Admin bar', function() {
                 {
                   label: 'Media',
                   items: [
-                    '@apostrophecms/images',
-                    '@apostrophecms/files'
+                    '@apostrophecms/image',
+                    '@apostrophecms/file'
                   ]
                 },
                 {
                   label: 'Content',
                   items: [
-                    '@apostrophecms/files',
-                    '@apostrophecms/images',
+                    '@apostrophecms/file',
+                    '@apostrophecms/image',
                     '@apostrophecms/login-logout'
                   ]
                 }
@@ -82,8 +82,8 @@ describe('Admin bar', function() {
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
       assert(apos.adminBar.items.length === 9);
-      assert(apos.adminBar.items[4].name === '@apostrophecms/files');
-      assert(apos.adminBar.items[5].name === '@apostrophecms/images');
+      assert(apos.adminBar.items[4].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[5].name === '@apostrophecms/image');
       assert(apos.adminBar.items[6].name === '@apostrophecms/login-logout');
     } finally {
       t.destroy(apos);

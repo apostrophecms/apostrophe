@@ -26,7 +26,7 @@ describe('Pieces Pages', function() {
           }
         },
         'events-pages': {
-          extend: '@apostrophecms/pieces-page-type',
+          extend: '@apostrophecms/piece-page-type',
           options: {
             name: 'events',
             label: 'Events',
@@ -34,7 +34,7 @@ describe('Pieces Pages', function() {
             perPage: 10
           }
         },
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [
               {
@@ -67,7 +67,7 @@ describe('Pieces Pages', function() {
         titleSortified: 'event ' + paddedInt,
         body: {
           metaType: 'area',
-          _id: apos.utils.generateId(),
+          _id: apos.util.generateId(),
           items: [
             {
               metaType: 'widget',
@@ -79,11 +79,11 @@ describe('Pieces Pages', function() {
       });
     }
 
-    return apos.docs.db.insertMany(testItems);
+    return apos.doc.db.insertMany(testItems);
   });
 
   it('should populate the ._url property of pieces in any docs query', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+    const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
       title: 'Event 001'
     }).toObject();
@@ -93,7 +93,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should not correctly populate the ._url property of pieces in a docs query with an inadequate projection', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+    const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
       title: 'Event 001'
     }, { type: 1 }).toObject();
@@ -102,7 +102,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should correctly populate the ._url property of pieces in a docs query if _url itself is "projected"', async function() {
-    const piece = await apos.docs.find(apos.tasks.getAnonReq(), {
+    const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
       title: 'Event 001'
     }, { _url: 1 }).toObject();

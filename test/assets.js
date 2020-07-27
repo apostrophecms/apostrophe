@@ -14,7 +14,7 @@ describe('Assets', function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.assets);
+    assert(apos.asset);
   });
 
   it('should serve static files', async function() {

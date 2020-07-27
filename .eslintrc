@@ -46,7 +46,7 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.js"
+        "**/ui/**/*.js"
       ],
       "globals": {
         "apos": true
@@ -57,7 +57,7 @@
     },
     {
       "files": [
-        "**/src/apos/always/*.js"
+        "**/ui/public/*.js"
       ],
       "globals": {
         "apos": true

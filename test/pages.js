@@ -19,28 +19,28 @@ describe('Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [],
             types: [
               {
-                name: '@apostrophecms/home-pages',
+                name: '@apostrophecms/home-page',
                 label: 'Home'
               },
               {
-                name: 'test-pages',
+                name: 'test-page',
                 label: 'Test Page'
               }
             ]
           }
         },
-        'test-pages': {
+        'test-page': {
           extend: '@apostrophecms/page-type'
         }
       }
     });
 
-    assert(apos.pages.__meta.name === '@apostrophecms/pages');
+    assert(apos.page.__meta.name === '@apostrophecms/page');
   });
 
   // SETUP
@@ -49,7 +49,7 @@ describe('Pages', function() {
     const expectedIndexes = ['path'];
     const actualIndexes = [];
 
-    const info = await apos.docs.db.indexInformation();
+    const info = await apos.doc.db.indexInformation();
 
     // Extract the actual index info we care about
     _.each(info, function(index) {
@@ -63,19 +63,19 @@ describe('Pages', function() {
   });
 
   it('parked homepage exists', async function() {
-    const home = await apos.pages.find(apos.tasks.getAnonReq(), { level: 0 }).toObject();
+    const home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
 
     assert(home);
     homeId = home._id;
     assert(home.slug === '/');
     assert(home.path === home._id);
-    assert(home.type === '@apostrophecms/home-pages');
+    assert(home.type === '@apostrophecms/home-page');
     assert(home.parked);
     assert(home.published);
   });
 
   it('parked trash can exists', async function() {
-    const trash = await apos.pages.find(apos.tasks.getReq(), { slug: '/trash' }).published(null).trash(null).toObject();
+    const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).published(null).trash(null).toObject();
     assert(trash);
     assert(trash.slug === '/trash');
     assert(trash.path === `${homeId}/${trash._id}`);
@@ -92,7 +92,7 @@ describe('Pages', function() {
     const testItems = [
       {
         _id: 'parent',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/parent',
         published: true,
         path: `${homeId}/parent`,
@@ -101,7 +101,7 @@ describe('Pages', function() {
       },
       {
         _id: 'child',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/child',
         published: true,
         path: `${homeId}/parent/child`,
@@ -110,7 +110,7 @@ describe('Pages', function() {
       },
       {
         _id: 'grandchild',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/grandchild',
         published: true,
         path: `${homeId}/parent/child/grandchild`,
@@ -119,7 +119,7 @@ describe('Pages', function() {
       },
       {
         _id: 'sibling',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/sibling',
         published: true,
         path: `${homeId}/parent/sibling`,
@@ -129,7 +129,7 @@ describe('Pages', function() {
       },
       {
         _id: 'cousin',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/cousin',
         published: true,
         path: `${homeId}/parent/sibling/cousin`,
@@ -138,7 +138,7 @@ describe('Pages', function() {
       },
       {
         _id: 'another-parent',
-        type: 'test-pages',
+        type: 'test-page',
         slug: '/another-parent',
         published: true,
         path: `${homeId}/another-parent`,
@@ -147,7 +147,7 @@ describe('Pages', function() {
       }
     ];
 
-    const items = await apos.docs.db.insertMany(testItems);
+    const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);
     assert(items.insertedCount === 6);
@@ -156,12 +156,12 @@ describe('Pages', function() {
   // FINDING
 
   it('should have a find method on pages that returns a cursor', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq());
+    const cursor = apos.page.find(apos.task.getAnonReq());
     assert(cursor);
   });
 
   it('should be able to find the parked homepage', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/' });
 
     const page = await cursor.toObject();
 
@@ -172,7 +172,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find just a single page', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
 
     const page = await cursor.toObject();
 
@@ -183,7 +183,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the ancestors of a page', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
 
     const page = await cursor.ancestors(true).toObject();
 
@@ -198,7 +198,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include just one ancestor of a page, i.e. the parent', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
 
     const page = await cursor.ancestors({ depth: 1 }).toObject();
 
@@ -211,7 +211,7 @@ describe('Pages', function() {
   });
 
   it('should be able to include the children of the ancestors of a page', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/child' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/child' });
 
     const page = await cursor.ancestors({ children: 1 }).toObject();
 
@@ -235,18 +235,18 @@ describe('Pages', function() {
     const newPage = {
       slug: '/new-page',
       published: true,
-      type: 'test-pages',
+      type: 'test-page',
       title: 'New Page'
     };
 
-    const page = await apos.pages.insert(apos.tasks.getReq(), parentId, 'lastChild', newPage);
+    const page = await apos.page.insert(apos.task.getReq(), parentId, 'lastChild', newPage);
 
     // Is the path generally correct?
     assert.strictEqual(page.path, `${homeId}/parent/${page._id}`);
   });
 
   it('is able to insert a new page in the correct order', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), {
+    const cursor = apos.page.find(apos.task.getAnonReq(), {
       slug: '/new-page'
     });
 
@@ -259,9 +259,9 @@ describe('Pages', function() {
   // MOVING
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    await apos.pages.move(apos.tasks.getReq(), 'cousin', 'parent', 'after');
+    await apos.page.move(apos.task.getReq(), 'cousin', 'parent', 'after');
 
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
 
     const page = await cursor.toObject();
 
@@ -275,8 +275,8 @@ describe('Pages', function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
 
-    await apos.pages.move(apos.tasks.getReq(), 'cousin', 'child', 'before');
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
+    await apos.page.move(apos.task.getReq(), 'cousin', 'child', 'before');
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
     const page = await cursor.toObject();
 
     // Is the new path correct?
@@ -286,9 +286,9 @@ describe('Pages', function() {
   });
 
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    await apos.pages.move(apos.tasks.getReq(), 'cousin', 'sibling', 'firstChild');
+    await apos.page.move(apos.task.getReq(), 'cousin', 'sibling', 'firstChild');
 
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'cousin' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'cousin' });
     const page = await cursor.toObject();
 
     // Is the new path correct?
@@ -298,9 +298,9 @@ describe('Pages', function() {
   });
 
   it('moving /parent into /another-parent should also move /parent/sibling', async function() {
-    await apos.pages.move(apos.tasks.getReq(), 'parent', 'another-parent', 'firstChild');
+    await apos.page.move(apos.task.getReq(), 'parent', 'another-parent', 'firstChild');
 
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'sibling' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'sibling' });
     const page = await cursor.toObject();
 
     // Is the grandchild's path correct?
@@ -339,20 +339,20 @@ describe('Pages', function() {
   it('should detect that the home page is an ancestor of any page except itself', function() {
     assert(
       // actual paths are made up of _ids in 3.x
-      apos.pages.isAncestorOf({
+      apos.page.isAncestorOf({
         path: 'home'
       }, {
         path: 'home/about'
       })
     );
     assert(
-      apos.pages.isAncestorOf({
+      apos.page.isAncestorOf({
         path: 'home'
       }, {
         path: 'home/about/grandkid'
       })
     );
-    assert(!apos.pages.isAncestorOf({
+    assert(!apos.page.isAncestorOf({
       path: 'home'
     }, {
       path: 'home'
@@ -361,7 +361,7 @@ describe('Pages', function() {
 
   it('should detect a tab as the ancestor of its great grandchild but not someone else\'s', function() {
     assert(
-      apos.pages.isAncestorOf({
+      apos.page.isAncestorOf({
         path: 'home/about'
       }, {
         path: 'home/about/test/thing'
@@ -369,7 +369,7 @@ describe('Pages', function() {
     );
 
     assert(
-      !apos.pages.isAncestorOf({
+      !apos.page.isAncestorOf({
         path: 'home/about'
       }, {
         path: 'home/wiggy/test/thing'
@@ -379,16 +379,16 @@ describe('Pages', function() {
   });
 
   it('is able to move parent to the trash', async function() {
-    await apos.pages.moveToTrash(apos.tasks.getReq(), 'parent');
+    await apos.page.moveToTrash(apos.task.getReq(), 'parent');
 
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { _id: 'parent' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { _id: 'parent' });
     const page = await cursor.toObject();
 
     assert(!page);
 
-    const req = apos.tasks.getReq();
-    const trash = await apos.pages.findOneForEditing(req, { parkedId: 'trash' });
-    const trashed = await apos.pages.findOneForEditing(req, {
+    const req = apos.task.getReq();
+    const trash = await apos.page.findOneForEditing(req, { parkedId: 'trash' });
+    const trashed = await apos.page.findOneForEditing(req, {
       _id: 'parent'
     });
     assert.strictEqual(trashed.path, `${homeId}/${trash._id}/${trashed._id}`);
@@ -397,7 +397,7 @@ describe('Pages', function() {
   });
 
   it('should be able to find the parked homepage', async function() {
-    const cursor = apos.pages.find(apos.tasks.getAnonReq(), { slug: '/' });
+    const cursor = apos.page.find(apos.task.getAnonReq(), { slug: '/' });
 
     const page = await cursor.toObject();
 
@@ -408,7 +408,7 @@ describe('Pages', function() {
   });
 
   it('can GET the home page without session', async () => {
-    const home = await apos.http.get('/api/v1/@apostrophecms/pages', {});
+    const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
     assert(home);
     assert(home.slug === '/');
     // make sure new style paths used

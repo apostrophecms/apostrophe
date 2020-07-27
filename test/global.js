@@ -30,7 +30,7 @@ describe('Global', function() {
   });
 
   it('should be able to add a test property', async function() {
-    return apos.docs.db.updateOne({
+    return apos.doc.db.updateOne({
       slug: 'global'
     }, {
       $set: {
@@ -40,7 +40,7 @@ describe('Global', function() {
   });
 
   it('should populate when global.addGlobalToData is awaited', async function() {
-    let req = apos.tasks.getAnonReq();
+    let req = apos.task.getAnonReq();
     await apos.global.addGlobalToData(req);
     assert(req.data.global);
     assert(req.data.global.type === '@apostrophecms/global');

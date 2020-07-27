@@ -24,7 +24,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
             return {
               '@apostrophecms/doc-type:beforeInsert': {
                 async beforeInsertReverseTitle(req, doc, options) {
-                  if (doc.type === 'default-pages') {
+                  if (doc.type === 'default-page') {
                     await Promise.delay(50);
                     doc.title = doc.title.split('').reverse().join('');
                   }
@@ -38,14 +38,14 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
             };
           }
         },
-        'default-pages': {
+        'default-page': {
           extend: '@apostrophecms/page-type'
         },
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [
               {
-                type: 'default-pages',
+                type: 'default-page',
                 findMeAgain: true,
                 title: 'Test',
                 slug: '/test',
@@ -60,7 +60,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
   });
 
   it('should find the results', async function() {
-    const doc = await apos.docs.db.findOne({ findMeAgain: true });
+    const doc = await apos.doc.db.findOne({ findMeAgain: true });
 
     assert(doc);
     assert.strictEqual(doc.title, 'tseT');
