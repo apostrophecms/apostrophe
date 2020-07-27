@@ -59,14 +59,14 @@ describe('Images', function() {
       root: module
     });
 
-    assert(apos.images);
-    assert(apos.images.__meta.name === '@apostrophecms/images');
+    assert(apos.image);
+    assert(apos.image.__meta.name === '@apostrophecms/image');
   });
 
   // Test pieces.list()
   it('should clean up any existing images for testing', async function() {
     try {
-      const response = await apos.docs.db.deleteMany({ type: '@apostrophecms/image' }
+      const response = await apos.doc.db.deleteMany({ type: '@apostrophecms/image' }
       );
       assert(response.result.ok === 1);
     } catch (e) {
@@ -75,12 +75,12 @@ describe('Images', function() {
   });
 
   it('should add images for testing', async function() {
-    assert(apos.images.insert);
+    assert(apos.image.insert);
 
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
 
     const insertPromises = mockImages.map(async (image) => {
-      return apos.images.insert(req, image);
+      return apos.image.insert(req, image);
     });
 
     const inserted = await Promise.all(insertPromises);
@@ -90,21 +90,21 @@ describe('Images', function() {
   });
 
   it('should respect minSize filter (svg is always OK)', async function() {
-    const req = apos.tasks.getAnonReq();
-    const images = await apos.images.find(req).minSize([ 200, 200 ]).toArray();
+    const req = apos.task.getAnonReq();
+    const images = await apos.image.find(req).minSize([ 200, 200 ]).toArray();
 
     assert(images.length === 3);
   });
 
   it('should respect minSize filter in toCount, which uses a cloned cursor', async function() {
-    const req = apos.tasks.getAnonReq();
-    const count = await apos.images.find(req).minSize([ 200, 200 ]).toCount();
+    const req = apos.task.getAnonReq();
+    const count = await apos.image.find(req).minSize([ 200, 200 ]).toCount();
 
     assert(count === 3);
   });
 
   it('should generate a srcset string for an image', function() {
-    const srcset = apos.images.srcset({
+    const srcset = apos.image.srcset({
       name: 'test',
       _id: 'test',
       extension: 'jpg',
@@ -121,7 +121,7 @@ describe('Images', function() {
   });
 
   it('should not generate a srcset string for an SVG image', function() {
-    const srcset = apos.images.srcset({
+    const srcset = apos.image.srcset({
       name: 'test',
       _id: 'test',
       extension: 'svg',
