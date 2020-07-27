@@ -52,6 +52,7 @@
             }"
             :status="{}"
             :choice="{ value: row.id }"
+            v-model="checkedProxy"
           />
           <component
             v-if="col.icon" :is="col.icon"
@@ -75,6 +76,7 @@
         :selectable="selectable"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
+        v-model="checkedProxy"
       />
     </li>
   </VueDraggable>
@@ -88,6 +90,11 @@ export default {
   components: {
     VueDraggable
   },
+  // Custom model to handle the v-model connection on the parent.
+  model: {
+    prop: 'checked',
+    event: 'change'
+  },
   props: {
     headers: {
       type: Array,
@@ -96,6 +103,13 @@ export default {
     rows: {
       type: Array,
       required: true
+    },
+    checked: {
+      type: Array,
+      default() {
+        // If this is not provided, we don't need to initiate an array.
+        return null;
+      }
     },
     colWidths: {
       type: Object,
@@ -128,13 +142,22 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update'],
+  emits: ['busy', 'update', 'change'],
   data () {
     return {
       myRows: this.rows
     };
   },
   computed: {
+    // Handle the local check state within this component.
+    checkedProxy: {
+      get() {
+        return this.checked;
+      },
+      set(val) {
+        this.$emit('change', val);
+      }
+    },
     isOpen() {
       return true;
     }

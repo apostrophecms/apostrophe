@@ -7,6 +7,7 @@
     <AposTreeHeader :headers="data.headers" :col-widths="colWidths" />
     <AposTreeRows
       :rows="data.rows"
+      v-model="checked"
       :headers="data.headers"
       :col-widths="colWidths"
       :level="1"
@@ -47,7 +48,8 @@ export default {
       // Copy the `data` property to mutate with VueDraggable.
       nested: false,
       colWidths: null,
-      treeId: this.generateId()
+      treeId: this.generateId(),
+      checked: []
     };
   },
   computed: {
