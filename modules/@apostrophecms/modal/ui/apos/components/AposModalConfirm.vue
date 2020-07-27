@@ -66,6 +66,10 @@ export default {
       }
     };
   },
+  async mounted() {
+    // Get the data. This will be more complex in actuality.
+    this.modal.active = true;
+  },
   methods: {
     confirm() {
       this.modal.showModal = false;
