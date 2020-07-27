@@ -205,7 +205,7 @@ module.exports = {
       },
 
       // Render a template. Template overrides are respected; the
-      // project level lib/modules/modulename/views folder wins if
+      // project level modules/modulename/views folder wins if
       // it has such a template, followed by the npm module,
       // followed by its parent classes. If you subclass a module,
       // your version wins if it exists.

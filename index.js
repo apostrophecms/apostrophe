@@ -41,7 +41,7 @@ module.exports = async function(options) {
     // promise event emitter code
     self.apos = self;
 
-    Object.assign(self, require('./lib/modules/@apostrophecms/module/lib/events.js')(self, options));
+    Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self, options));
 
     // Determine root module and root directory
     self.root = options.root || getRoot();
@@ -281,7 +281,7 @@ module.exports = async function(options) {
   function defineModules() {
     // Set moog-require up to create our module manager objects
 
-    self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/lib/modules');
+    self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/modules');
     const synth = require('./lib/moog-require')({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
@@ -370,5 +370,5 @@ const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widget-type',
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
-  directory: 'lib/modules'
+  directory: 'modules'
 };

@@ -14,9 +14,9 @@ test/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
 */public/css/*.css
-lib/modules/*/public/css/*.css
+modules/*/public/css/*.css
 */public/css/*.css
-lib/modules/*/public/css/*.css
+modules/*/public/css/*.css
 # Never commit a CSS map file, anywhere
 *.css.map
 

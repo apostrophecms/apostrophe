@@ -65,8 +65,8 @@ let oldName, newName;
 
 for ([ oldName, newName ] of Object.entries(rename)) {
   console.log(`${oldName} -> ${newName}`);
-  const oldFilename = `lib/modules/@apostrophecms/${oldName}`;
-  const newFilename = `lib/modules/@apostrophecms/${newName}`;
+  const oldFilename = `modules/@apostrophecms/${oldName}`;
+  const newFilename = `modules/@apostrophecms/${newName}`;
   // fs.renameSync(oldFilename, newFilename);
   // replace.sync({
   //   files: `${newFilename}/index.js`,

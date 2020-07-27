@@ -39,7 +39,7 @@
 // also access `apos.dbClient` if you need the MongoClient object.
 //
 // If you need to change the way MongoDB connections are made,
-// override `connectToMongo` in `lib/modules/@apostrophecms/db/index.js`
+// override `connectToMongo` in `modules/@apostrophecms/db/index.js`
 // in your project. However you may find it easier to just use the
 // `client` option.
 
