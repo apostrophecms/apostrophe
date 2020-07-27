@@ -45,19 +45,9 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../../mixins/AposModalParentMixin';
-import AposModal from '../modal/AposModal.vue';
-import AposModalBody from './../modal/AposModalBody.vue';
-import AposButton from '../button/AposButton.vue';
-import AposLogo from './AposLogo.vue';
+import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
 
 export default {
-  components: {
-    AposModal,
-    AposModalBody,
-    AposButton,
-    AposLogo
-  },
   mixins: [AposModalParentMixin],
   props: {
     confirmContent: {
@@ -75,6 +65,10 @@ export default {
         showModal: false
       }
     };
+  },
+  async mounted() {
+    // Get the data. This will be more complex in actuality.
+    this.modal.active = true;
   },
   methods: {
     confirm() {
