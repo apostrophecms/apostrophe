@@ -15,6 +15,7 @@
       @update="update"
       list-id="root"
       :draggable="draggable"
+      :selectable="selectable"
       :tree-id="treeId"
     />
   </div>
@@ -32,6 +33,10 @@ export default {
       required: true
     },
     draggable: {
+      type: Boolean,
+      default: false
+    },
+    selectable: {
       type: Boolean,
       default: false
     }
@@ -261,12 +266,6 @@ export default {
 
   .apos-tree__row--parent {
     position: relative;
-  }
-
-  .apos-tree__row__handle {
-    margin-top: -0.25em;
-    margin-right: 0.25em;
-    line-height: 0;
   }
 
   .apos-tree__row__toggle {
