@@ -51,8 +51,13 @@ export default {
       }
     },
     classes () {
-      const classes = ['apos-input'];
-      classes.push(`apos-input--${this.type}`);
+      const classes = ['apos-input', `apos-input--${this.type}`];
+      if (this.modifiers.includes('dark')) {
+        classes.push('apos-theme-dark');
+      }
+      if (this.modifiers.includes('short')) {
+        classes.push('apos-input--short');
+      }
       return classes;
     },
     icon () {
@@ -115,5 +120,9 @@ export default {
   .apos-field--small .apos-input--date,
   .apos-field--small .apos-input--time {
     height: 33px;
+  }
+
+  .apos-input--short {
+    width: 322px;
   }
 </style>
