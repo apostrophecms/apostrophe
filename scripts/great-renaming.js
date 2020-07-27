@@ -1,5 +1,7 @@
 const fs = require('fs-extra');
+// eslint-disable-next-line no-unused-vars
 const replace = require('replace-in-file');
+// eslint-disable-next-line no-unused-vars
 const quote = require('regexp-quote');
 
 const rename = {
@@ -65,7 +67,9 @@ let oldName, newName;
 
 for ([ oldName, newName ] of Object.entries(rename)) {
   console.log(`${oldName} -> ${newName}`);
+  // eslint-disable-next-line no-unused-vars
   const oldFilename = `modules/@apostrophecms/${oldName}`;
+  // eslint-disable-next-line no-unused-vars
   const newFilename = `modules/@apostrophecms/${newName}`;
   // fs.renameSync(oldFilename, newFilename);
   // replace.sync({
