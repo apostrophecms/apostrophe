@@ -20,7 +20,7 @@
           {{ num }}
         </option>
       </select>
-      <MenuSwap :size="24" class="apos-input-icon" />
+      <menu-swap-icon :size="24" class="apos-input-icon" />
     </div>
     <AposButton
       :disabled="currentPage >= totalPages"
@@ -33,14 +33,12 @@
 </template>
 
 <script>
-import AposButton from '../button/AposButton';
-import MenuSwap from "vue-material-design-icons/MenuSwap.vue";
+import MenuSwap from 'vue-material-design-icons/MenuSwap.vue';
 
 export default {
   name: 'AposPager',
   components: {
-    AposButton,
-    MenuSwap
+    'menu-swap-icon': MenuSwap
   },
   props: {
     currentPage: {
@@ -52,6 +50,7 @@ export default {
       required: true
     }
   },
+  emits: ['change', 'click'],
   computed: {
     prevButtonLabel () {
       return this.currentPage > 1 ? `Go to page ${this.currentPage - 1}`
