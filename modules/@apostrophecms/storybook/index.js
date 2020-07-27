@@ -81,7 +81,7 @@ module.exports = {
         const main = mainTemplate
           .replace(STORIES_PLACEHOLDER, storiesCode);
         fs.writeFileSync(mainFile, main);
-        fs.copyFileSync(`${self.apos.rootDir}/public/apos-frontend/anon-bundle.js`, `${buildDir}/public/apos-frontend/anon-bundle.js`);
+        fs.copyFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.js`, `${buildDir}/public/apos-frontend/public-bundle.js`);
 
         childProcess.execSync(`cd ${buildDir} && npm install`);
         return buildDir;
