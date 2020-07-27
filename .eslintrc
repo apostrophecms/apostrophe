@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "apostrophe",
-    "plugin:vue/vue3-recommended"
-  ],
+  "extends": ["apostrophe", "plugin:vue/vue3-recommended"],
   "globals": {
     "apos": true
   },
@@ -13,11 +10,7 @@
     "vue/component-tags-order": [
       "warn",
       {
-        "order": [
-          "template",
-          "script",
-          "style"
-        ]
+        "order": ["template", "script", "style"]
       }
     ],
     "vue/max-attributes-per-line": [
@@ -32,22 +25,14 @@
       {
         "ignoreWhenNoAttributes": true,
         "ignoreWhenEmpty": true,
-        "ignores": [
-          "h1",
-          "h2",
-          "h3",
-          "pre",
-          "textarea"
-        ]
+        "ignores": ["h1", "h2", "h3", "pre", "textarea"]
       }
     ],
     "vue/attributes-order": 0
   },
   "overrides": [
     {
-      "files": [
-        "**/src/**/*.js"
-      ],
+      "files": ["**/src/**/*.js"],
       "globals": {
         "apos": true
       },
@@ -56,9 +41,7 @@
       }
     },
     {
-      "files": [
-        "**/src/apos/always/*.js"
-      ],
+      "files": ["**/src/apos/always/*.js"],
       "globals": {
         "apos": true
       },
@@ -67,6 +50,19 @@
       },
       "rules": {
         "no-var": 0
+      }
+    },
+    {
+      "files": ["test/**/*.spec.js"],
+      "globals": {
+        "describe": true,
+        "expect": true,
+        "it": true,
+        "after": true,
+        "before": true
+      },
+      "rules": {
+        "no-console": 0
       }
     }
   ],

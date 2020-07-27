@@ -6,6 +6,7 @@
   "scripts": {
     "pretest": "npm audit && npm run lint",
     "test": "nyc --reporter=html mocha",
+    "test:unit": "vue-cli-service test:unit",
     "lint": "eslint ."
   },
   "repository": {
@@ -126,7 +127,11 @@
     "@storybook/addon-storysource": "^5.3.19",
     "@storybook/theming": "^5.3.19",
     "@storybook/vue": "^5.3.19",
+    "@vue/cli-plugin-unit-jest": "^4.4.6",
+    "@vue/cli-service": "~4.4.6",
+    "@vue/test-utils": "^1.0.3",
     "babel-eslint": "^10.1.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-vue": "^2.0.2",
     "eslint": "^6.8.0",
     "eslint-config-apostrophe": "^3.1.0",
