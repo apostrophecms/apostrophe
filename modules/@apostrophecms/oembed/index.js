@@ -80,16 +80,13 @@ module.exports = {
         if (!options) {
           options = {};
         }
-        if (!self.cache) {
-          self.cache = self.apos.cache.get('oembed');
-        }
         // Tolerant URL handling
         url = self.apos.launder.url(url);
         if (!url) {
           throw new Error('Video URL invalid');
         }
         const key = url + ':' + JSON.stringify(options);
-        let response = await self.cache.get(key);
+        let response = await apos.cache.get('@apostrophecms/oembed', key);
         if (response !== undefined) {
           return response;
         }
@@ -117,7 +114,7 @@ module.exports = {
           response.html = makeProtocolRelative(response.html);
         }
         // cache oembed responses for one hour
-        await self.cache.set(key, response, self.options.cacheLifetime);
+        await self.apos.cache.set('@apostrophecms/oembed', key, response, self.options.cacheLifetime);
         return response;
       },
       // Given a URL, return a nice oembed response for it

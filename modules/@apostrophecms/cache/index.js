@@ -18,135 +18,66 @@ module.exports = {
   },
   methods(self, options) {
     return {
-      // **SLOW DOWN - READ CAREFULLY!**
-      //
-      // THIS IS NOT THE METHOD YOU CALL TO GET A VALUE - THIS IS
-      // THE METHOD YOU CALL TO **GET A CACHE IN WHICH YOU CAN GET AND SET
-      // VALUES.** Call it with a name that uniquely identifies
-      // your **entire cache**, like `weather-data` or similar. The
-      // object it **returns** has `get` and `set` methods for actual data,
-      // **as described below**.
-      //
-      // `get('cachename')` returns a cache object to store things in
-      // temporarily. If you call `get` many times with the same cache name,
-      // you get the same cache object each time.
-      //
-      // CACHES MUST NEVER BE RELIED UPON TO STORE INFORMATION. They are a
-      // performance enhancement ONLY and data may DISAPPEAR at any time.
-      //
-      // HOW TO ACTUALLY CACHE DATA: **Every cache object has async `.get(key)` and
-      // `.set(key, value, lifetime)` methods to get
-      // and store values in the cache.** Don't forget to use the
-      // `await` keyword.
-      //
-      // Example:
-      //
-      // ```
-      // // Get a cache for weather data, keyed by zip code
-      // const myCache = self.apos.cache.get('weather-data');
-      //
-      // // Store something in the cache
-      // await myCache.set('19147', { clouds: 'cumulus' }, 86400);
-      //
-      // // Get a value from the cache
-      // await myCache.get('19147');
-      // ```
-      //
-      // The data to be stored must be representable as JSON for compatibility with
-      // different implementations. You do NOT have to stringify it yourself.
-      //
-      // The `.get` method of each cache object returns the cached value.
-      // If the key does not exist in the cache, `value`
-      // is `undefined`. This is *not* considered an error and does
-      // not throw an exception.
-      //
-      // The `lifetime` argument of `.set` is in seconds and may be omitted
-      // entirely, in which case data is kept indefinitely (but NOT forever,
-      // remember that caches can be erased at ANY time, they are not for permanent data storage).
-      //
-      // The default implementation is a single MongoDB collection with a
-      // `name` property to keep the caches separate, but this
-      // can be swapped out by overriding the `get` method.
-      //
-      // Caches also have a `clear()` method to clear the cache.
-      // Don't forget to use `await`.
-      //
-      // CACHES MUST NEVER BE RELIED UPON TO STORE INFORMATION. They are a
-      // performance enhancement ONLY and data may DISAPPEAR at any time.
 
-      get(name) {
-        if (!self.caches) {
-          self.caches = {};
+      // Get the cached value associated with the specified key from the specified
+      // namespace. Returns undefined if not found. Be sure to use `await`.
+
+      async get(namespace, key) {
+        const item = await self.cacheCollection.findOne({
+          namespace,
+          key
+        });
+        if (!item) {
+          return undefined;
         }
-        if (!self.caches[name]) {
-          self.caches[name] = self.constructCache(name);
+        // MongoDB's expireAfterSeconds mechanism isn't instantaneous, so we
+        // should still enforce this at get() time
+        if (item.expires && item.expires < new Date()) {
+          return undefined;
         }
-        return self.caches[name];
+        return item.value;
       },
 
-      constructCache(name) {
-        return {
-          // Fetch an item from the cache. Returns the item,
-          // or `undefined` if it is not in the cache.
-          // Be sure to use `await`.
-          get: async function (key) {
-            const item = await self.cacheCollection.findOne({
-              name: name,
-              key: key
-            });
-            if (!item) {
-              return undefined;
-            }
-            // MongoDB's expireAfterSeconds mechanism isn't instantaneous, so we
-            // should still enforce this at get() time
-            if (item.expires && item.expires < new Date()) {
-              return undefined;
-            }
-            return item.value;
-          },
+      // Cache a value under with the given key in the given namespace.
+      // `value` may be any JSON-friendly value, including an object.
+      // `lifetime` is in seconds. If zero or unspecified, there is no
+      // time limit, however you must always assume the cache could be
+      // cleared at some point. It is not for primary storage.
+      //
+      // Be sure to use `await`.
+      //
+      // The data you store should be JSON-friendly.
+      // You DO NOT have to stringify it yourself.
 
-          // Store an item in the cache. `value` may be any JSON-friendly
-          // value, including an object. `lifetime` is in seconds.
-          //
-          // You may also call with just two arguments:
-          // `key`, `value`. In that case there is no hard limit
-          // on the lifetime, however NEVER use a cache for PERMANENT
-          // storage of data. It might be cleared at any time.
-          //
-          // Be sure to use `await`.
-          //
-          // The data you store should be JSON-friendly.
-          // You DO NOT have to stringify it yourself.
-
-          set: async function (key, value, lifetime) {
-            if (arguments.length === 2) {
-              lifetime = 0;
-            }
-            const action = {};
-            const set = {
-              name: name,
-              key: key,
-              value: value
-            };
-            action.$set = set;
-            const unset = {};
-            if (lifetime) {
-              set.expires = new Date(new Date().getTime() + lifetime * 1000);
-            } else {
-              unset.expires = 1;
-              action.$unset = unset;
-            }
-            await self.cacheCollection.updateOne({
-              name: name,
-              key: key
-            }, action, { upsert: true });
-          },
-
-          // Empty the cache. Be sure to use `await`.
-          clear: async function () {
-            return self.cacheCollection.removeMany({ name: name });
-          }
+      set: async function (namespace, key, value, lifetime) {
+        if (arguments.length === 2) {
+          lifetime = 0;
+        }
+        const action = {};
+        const set = {
+          namespace,
+          key,
+          value
         };
+        action.$set = set;
+        const unset = {};
+        if (lifetime) {
+          set.expires = new Date(new Date().getTime() + lifetime * 1000);
+        } else {
+          unset.expires = 1;
+          action.$unset = unset;
+        }
+        await self.cacheCollection.updateOne({
+          namespace,
+          key
+        }, action, { upsert: true });
+      },
+
+      // Clear the cache of all keys and values in the given namespace.
+      // Be sure to use `await`.
+
+      async clear(namespace) {
+        return self.cacheCollection.removeMany({ namespace });
       },
 
       // Establish the collection that will store all of the caches and
@@ -155,26 +86,26 @@ module.exports = {
       async enableCollection() {
         self.cacheCollection = await self.apos.db.collection('aposCache');
         await self.cacheCollection.createIndex({
-          key: 1,
-          cache: 1
+          namespace: 1,
+          key: 1
         }, { unique: true });
         await self.cacheCollection.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
       },
 
-      // Command line task to clear a cache or caches by name.
+      // Command line task to clear all values in a namespace.
 
       async clearCacheTask(argv) {
-        let cacheNames = argv._.slice(1);
-        if (!cacheNames.length) {
-          throw new Error('A cache name or names must be given.');
+        let namespaces = argv._.slice(1);
+        if (!namespaces.length) {
+          throw new Error('A namespace or namespaces must be given.');
         }
-        for (let name of cacheNames) {
-          await self.get(name).clear();
+        for (let namespace of namespaces) {
+          await self.clear(namespace);
         }
       },
 
       addClearCacheTask() {
-        self.apos.task.add('@apostrophecms/cache', 'clear', 'Usage: node app @apostrophecms/cache:clear cachename cachename2...\n\n' + 'Clears caches by name. If you are using apos.cache in your own code you will\n' + 'know the cache name. Standard caches include "@apostrophecms/migration",\n' + '"minify" and "oembed". Normally it is not necessary to clear them.', async function (apos, argv) {
+        self.apos.task.add('@apostrophecms/cache', 'clear', 'Usage: node app @apostrophecms/cache:clear namespace1 namespace2...\n\n' + 'Clears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\n' + 'know the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.', async function (apos, argv) {
           return self.clearCacheTask(argv);
         });
       }
