@@ -156,6 +156,20 @@ $box-width: 12px;
   }
 }
 
+.apos-input--select {
+  // stylelint-disable property-no-vendor-prefix
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  // stylelint-enable property-no-vendor-prefix
+  background-repeat: no-repeat, repeat;
+  &:hover {
+    cursor: pointer;
+  }
+  &:hover ~ .apos-input-icon, &:active ~ .apos-input-icon {
+    color: var(--a-primary);
+  }
+}
+
 .apos-input-icon svg {
   // little bit better centering
   display: flex;

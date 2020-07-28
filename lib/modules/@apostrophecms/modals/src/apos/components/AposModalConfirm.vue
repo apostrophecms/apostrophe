@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from '../mixins/AposModalParentMixin';
+import AposModalParentMixin from 'Modules/@apostrophecms/modals/mixins/AposModalParentMixin';
 
 export default {
   mixins: [AposModalParentMixin],
@@ -65,6 +65,10 @@ export default {
         showModal: false
       }
     };
+  },
+  async mounted() {
+    // Get the data. This will be more complex in actuality.
+    this.modal.active = true;
   },
   methods: {
     confirm() {
