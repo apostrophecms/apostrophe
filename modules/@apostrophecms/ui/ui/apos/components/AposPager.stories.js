@@ -4,7 +4,7 @@ export default {
   title: 'Pagination'
 };
 
-export const buttons = () => ({
+export const pagination = () => ({
   components: { AposPager },
   data() {
     return {
