@@ -121,8 +121,4 @@ export default {
   .apos-field--small .apos-input--time {
     height: 33px;
   }
-
-  .apos-input--short {
-    width: 322px;
-  }
 </style>

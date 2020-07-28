@@ -120,7 +120,7 @@ export default {
 <style lang="scss">
   .apos-field {
     border-width: 0;
-    padding: $spacing-base;
+    padding: 0;
     [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
       cursor: not-allowed;
     }
