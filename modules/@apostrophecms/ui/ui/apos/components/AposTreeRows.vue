@@ -21,6 +21,7 @@
           v-if="row.children && row.children.length > 0"
           class="apos-tree__row__toggle"
           aria-label="Toggle section"
+          @click="toggleSection($event)"
         >
           <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
         </button>
@@ -36,7 +37,7 @@
         >
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
-            size="20"
+            :size="20"
           />
           <component
             v-if="col.icon" :is="col.icon"
@@ -49,6 +50,7 @@
       </div>
       <AposTreeRows
         v-if="row.children"
+        data-apos-tree-branch
         :rows="row.children"
         :headers="headers"
         :col-widths="colWidths"
@@ -119,12 +121,38 @@ export default {
       return true;
     }
   },
+  mounted() {
+    // Use $nextTick to make sure attributes like `clientHeight` are settled.
+    this.$nextTick(() => {
+      const branches = this.$el.querySelectorAll('[data-apos-tree-branch]');
+
+      branches.forEach(branch => {
+        // Add padding to the max-height to avoid needing a `resize`
+        // event listener updating values.
+        const height = branch.clientHeight + 20;
+        branch.setAttribute('data-apos-tree-branch', `${height}px`);
+        branch.style.maxHeight = `${height}px`;
+      });
+    });
+  },
   methods: {
     startDrag() {
       this.$emit('busy', true);
     },
     endDrag(event) {
       this.$emit('update', event);
+    },
+    toggleSection(event) {
+      const row = event.target.closest('.apos-tree__row');
+      const rowList = row.querySelector('[data-apos-tree-branch]');
+
+      if (rowList && rowList.style.maxHeight === '0px') {
+        rowList.style.maxHeight = rowList.getAttribute('data-apos-tree-branch');
+        row.classList.remove('is-collapsed');
+      } else if (rowList) {
+        rowList.style.maxHeight = 0;
+        row.classList.add('is-collapsed');
+      }
     },
     getCellClasses(col, row) {
       const classes = ['apos-tree__cell'];
@@ -156,4 +184,19 @@ export default {
 </script>
 
 <style lang="scss">
+  .apos-tree__list {
+    transition: max-height 0.3s ease;
+
+    .apos-tree__row.is-collapsed & {
+      overflow-y: auto;
+    }
+  }
+
+  .apos-tree__row__toggle-icon {
+    transition: transform 0.3s ease;
+
+    .apos-tree__row.is-collapsed & {
+      transform: rotate(-90deg) translateY(0.25em);
+    }
+  }
 </style>

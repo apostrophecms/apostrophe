@@ -161,21 +161,6 @@ export default {
     margin-bottom: 0;
     padding-left: 0;
     list-style-type: none;
-
-    .apos-tree__row--parent > & {
-      position: relative;
-
-      &::before {
-        position: absolute;
-        top: -12px;
-        bottom: 0;
-        left: -$row-nested-h-padding / 2;
-        display: block;
-        content: '';
-        background-color: var(--a-base-8);
-        width: 1px;
-      }
-    }
   }
 
   .apos-tree__row-data {
@@ -261,6 +246,22 @@ export default {
 
   .apos-tree__row--parent {
     position: relative;
+
+    &::before {
+      position: absolute;
+      top: 24px;
+      bottom: 0;
+      left: $row-nested-h-padding / 2;
+      display: block;
+      content: '';
+      background-color: var(--a-base-8);
+      width: 1px;
+      transition: background-color 0.3s ease;
+    }
+
+    &.is-collapsed::before {
+      background-color: transparent;
+    }
   }
 
   .apos-tree__row__handle {
@@ -274,6 +275,7 @@ export default {
     position: absolute;
     top: 50%;
     left: -$row-nested-h-padding / 2;
+    background-color: var(--a-background-primary);
     transform: translate(-50%, -50%);
   }
 
