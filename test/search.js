@@ -31,15 +31,15 @@ describe('Search', function() {
   });
 
   it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', async () => {
-    let req = apos.tasks.getReq();
-    await apos.docs.insert(req, {
+    let req = apos.task.getReq();
+    await apos.doc.insert(req, {
       title: 'Testing Search Event',
       type: 'event',
       slug: 'search-test-event',
       published: true
     });
 
-    const doc = await apos.docs.find(req, { slug: 'search-test-event' }).toObject();
+    const doc = await apos.doc.find(req, { slug: 'search-test-event' }).toObject();
     assert(doc.highSearchText);
     assert(doc.highSearchWords);
     assert(doc.lowSearchText);

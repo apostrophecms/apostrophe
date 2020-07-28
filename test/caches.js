@@ -10,34 +10,27 @@ describe('Caches', function() {
   this.timeout(t.timeout);
 
   let apos;
-  let cache;
   it('should exist on the apos object', async function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.caches);
-  });
-  it('should give us a cache object', function() {
-    cache = apos.caches.get('testMonkeys');
-  });
-  it('should not crash on clear', async function() {
-    await cache.clear();
+    assert(apos.cache);
   });
   it('should not contain capuchin yet', async function() {
-    assert(!(await cache.get('capuchin')));
+    assert(!(await apos.cache.get('test', 'capuchin')));
   });
   it('should allow us to store capuchin', async function() {
-    await cache.set('capuchin', { message: 'eek eek' });
+    await apos.cache.set('test', 'capuchin', { message: 'eek eek' });
   });
   it('should now contain capuchin', async function() {
-    const monkey = await cache.get('capuchin');
+    const monkey = await apos.cache.get('test', 'capuchin');
     assert(monkey);
     assert(monkey.message === 'eek eek');
   });
   it('should not crash on clear #2', async function() {
-    await cache.clear();
+    await apos.cache.clear('test');
   });
   it('should not contain capuchin anymore', async function() {
-    assert(!(await cache.get('capuchin')));
+    assert(!(await apos.cache.get('test', 'capuchin')));
   });
 });

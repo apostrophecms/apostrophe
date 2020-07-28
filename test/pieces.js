@@ -57,7 +57,7 @@ describe('Pieces', function() {
                 options: {
                   widgets: {
                     '@apostrophecms/rich-text': {},
-                    '@apostrophecms/images': {}
+                    '@apostrophecms/image': {}
                   }
                 }
               },
@@ -175,12 +175,12 @@ describe('Pieces', function() {
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
     assert(apos.modules['things'].insert);
-    await apos.modules['things'].insert(apos.tasks.getReq(), testThing);
+    await apos.modules['things'].insert(apos.task.getReq(), testThing);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
     assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
@@ -192,10 +192,10 @@ describe('Pieces', function() {
   it('should be able to update a piece in the database', async () => {
     assert(apos.modules['things'].update);
     testThing.foo = 'moo';
-    const piece = await apos.modules['things'].update(apos.tasks.getReq(), testThing);
+    const piece = await apos.modules['things'].update(apos.task.getReq(), testThing);
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
@@ -208,7 +208,7 @@ describe('Pieces', function() {
     let manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    let mockCursor = apos.docs.find(apos.tasks.getAnonReq());
+    let mockCursor = apos.doc.find(apos.task.getAnonReq());
     _.merge(mockCursor, {
       builders: {
         publicTest: {
@@ -250,7 +250,7 @@ describe('Pieces', function() {
 
   it('should be able to trash a piece with proper deduplication', async () => {
     assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     let id = 'testThing';
     req.body = { _id: id };
     // let's make sure the piece is not trashed to start
@@ -267,7 +267,7 @@ describe('Pieces', function() {
   });
 
   it('should be able to rescue a trashed piece with proper deduplication', async () => {
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     let id = 'testThing';
     req.body = {
       _id: id
@@ -285,8 +285,8 @@ describe('Pieces', function() {
   });
 
   it('should be able to insert test user', async function() {
-    assert(apos.users.newInstance);
-    const user = apos.users.newInstance();
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
     assert(user);
 
     user.firstName = 'ad';
@@ -297,18 +297,18 @@ describe('Pieces', function() {
     user.email = 'ad@min.com';
     user.permissions = [ 'admin' ];
 
-    return apos.users.insert(apos.tasks.getReq(), user);
+    return apos.user.insert(apos.task.getReq(), user);
   });
 
   it('people can find things via a join', async () => {
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     for (const person of testPeople) {
       await apos.people.insert(req, person);
     }
     for (const thing of additionalThings) {
       await apos.things.insert(req, thing);
     }
-    const person = await apos.docs.getManager('person').find(req, {}).toObject();
+    const person = await apos.doc.getManager('person').find(req, {}).toObject();
     assert(person);
     assert(person.title === 'Bob');
     assert(person._things);
@@ -316,8 +316,8 @@ describe('Pieces', function() {
   });
 
   it('people cannot find things via a join with an inadequate projection', function() {
-    let req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, { title: 1 }).toObject()
+    let req = apos.task.getReq();
+    return apos.doc.getManager('person').find(req, {}, { title: 1 }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');
@@ -326,8 +326,8 @@ describe('Pieces', function() {
   });
 
   it('people can find things via a join with a "projection" of the join name', function() {
-    let req = apos.tasks.getReq();
-    return apos.docs.getManager('person').find(req, {}, {
+    let req = apos.task.getReq();
+    return apos.doc.getManager('person').find(req, {}, {
       title: 1,
       _things: 1
     }).toObject()

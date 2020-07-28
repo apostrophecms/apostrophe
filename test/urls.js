@@ -17,26 +17,26 @@ describe('Urls', function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.urls);
+    assert(apos.url);
   });
 
   // URLS METHODS ------------------------------------------------------- //
 
   describe('methods', function() {
-    describe('test apos.urls.build', function() {
+    describe('test apos.url.build', function() {
       it('returns a URL unmodified', function() {
         start = (new Date()).getTime();
-        assert(apos.urls.build('/events') === '/events');
+        assert(apos.url.build('/events') === '/events');
       });
       it('returns the URL "#" unmodified', function() {
         try {
-          assert(apos.urls.build('#') === '#');
+          assert(apos.url.build('#') === '#');
         } catch (e) {
           console.error(e.stack);
         }
       });
       it('adds a single parameter to a queryless URL', function() {
-        assert(apos.urls.build('/events', { tag: 'blue' }) === '/events?tag=blue');
+        assert(apos.url.build('/events', { tag: 'blue' }) === '/events?tag=blue');
       });
       it('appends a parameter to a URL with a query', function() {
         // Neither of these is wrong
@@ -44,36 +44,36 @@ describe('Urls', function() {
           '/events?tag=blue&page=5',
           '/events?page=5&tag=blue'
         ];
-        assert(_.includes(options, apos.urls.build('/events?page=5', { tag: 'blue' })));
+        assert(_.includes(options, apos.url.build('/events?page=5', { tag: 'blue' })));
       });
       it('replaces parameters in the URL', function() {
-        assert(apos.urls.build('/events?tag=blue', { tag: 'red' }) === '/events?tag=red');
+        assert(apos.url.build('/events?tag=blue', { tag: 'red' }) === '/events?tag=red');
       });
       it('removes parameters', function() {
-        assert(apos.urls.build('/events?tag=blue', { tag: null }) === '/events');
+        assert(apos.url.build('/events?tag=blue', { tag: null }) === '/events');
       });
       it('correctly allows the last data object to win', function() {
-        assert(apos.urls.build('/events', { tag: 'red' }, { tag: 'blue' }) === '/events?tag=blue');
+        assert(apos.url.build('/events', { tag: 'red' }, { tag: 'blue' }) === '/events?tag=blue');
       });
       it('places path properties in the path', function() {
-        assert(apos.urls.build('/events', [ 'year', 'month' ], {
+        assert(apos.url.build('/events', [ 'year', 'month' ], {
           year: '2013',
           month: '05',
           tag: 'red'
         }) === '/events/2013/05?tag=red');
       });
       it('switches to placing path properties in the query if it encounters a non-slugify-compliant property', function() {
-        assert(apos.urls.build('/events', [ 'year', 'month' ], {
+        assert(apos.url.build('/events', [ 'year', 'month' ], {
           year: '2013!@#@',
           month: '05',
           tag: 'red'
         }) === '/events?year=2013%21%40%23%40&month=05&tag=red');
       });
       it('does the right thing for a case that crashed once', function() {
-        assert(apos.urls.build('/events', ['year', 'month'], {}, {}) === '/events');
+        assert(apos.url.build('/events', ['year', 'month'], {}, {}) === '/events');
       });
       it('correctly allows the last data object to win for a path property', function() {
-        assert(apos.urls.build('/events', ['year', 'month'], {
+        assert(apos.url.build('/events', ['year', 'month'], {
           year: '2013',
           month: '01',
           tag: 'dance'
@@ -83,7 +83,7 @@ describe('Urls', function() {
         }) === '/events/2012/12?tag=dance');
       });
       it('DR use case #1', function() {
-        assert(apos.urls.build('/events',
+        assert(apos.url.build('/events',
           [ 'year', 'month' ],
           {
             year: '2013',
@@ -93,7 +93,7 @@ describe('Urls', function() {
           { tag: 'tour' }) === '/events/2013/05?tag=tour');
       });
       it('DR use case #2', function() {
-        let result = apos.urls.build('/events',
+        let result = apos.url.build('/events',
           [ 'year', 'month' ],
           {
             year: '2013',
@@ -104,7 +104,7 @@ describe('Urls', function() {
         assert(result === '/events/2013/05?tag=dance&page=2');
       });
       it('DR use case #3', function() {
-        let result = apos.urls.build('/events',
+        let result = apos.url.build('/events',
           [ 'year', 'month' ],
           {
             year: '2013',
@@ -115,7 +115,7 @@ describe('Urls', function() {
         assert(result === '/events/2013/05?tag=dance');
       });
       it('IH use case #1: later objects can prevent path properties from being added', function() {
-        let result = apos.urls.build('/calendar',
+        let result = apos.url.build('/calendar',
           [ 'year', 'month' ],
           {
             year: '2014',
@@ -129,7 +129,7 @@ describe('Urls', function() {
         assert(result === '/calendar');
       });
       it('Preserves hashes', function() {
-        let result = apos.urls.build('/calendar#skipdown',
+        let result = apos.url.build('/calendar#skipdown',
           [ 'year', 'month' ],
           {
             year: '2014',
@@ -140,7 +140,7 @@ describe('Urls', function() {
         assert(result === '/calendar/2014/01?tag=blue#skipdown');
       });
       it('Adds an array when $addToSet is used', function() {
-        let result = apos.urls.build('/events', {
+        let result = apos.url.build('/events', {
           colors: {
             $addToSet: 'blue'
           }
@@ -148,7 +148,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=blue');
       });
       it('Adds to existing query string array when $addToSet is used', function() {
-        let result = apos.urls.build('/events?colors[]=purple&colors[]=red', {
+        let result = apos.url.build('/events?colors[]=purple&colors[]=red', {
           colors: {
             $addToSet: 'blue'
           }
@@ -156,7 +156,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue');
       });
       it('Adds to existing URI encoded query string array when $addToSet is used', function() {
-        let result = apos.urls.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
+        let result = apos.url.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
           colors: {
             $addToSet: 'green'
           }
@@ -164,7 +164,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue&colors%5B3%5D=green');
       });
       it('Does not create duplicates when $addToSet is used', function() {
-        let result = apos.urls.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
+        let result = apos.url.build('/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue', {
           colors: {
             $addToSet: 'blue'
           }
@@ -172,7 +172,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=purple&colors%5B1%5D=red&colors%5B2%5D=blue');
       });
       it('Treats numbers and strings the same when preventing duplicates', function() {
-        let result = apos.urls.build('/events?colors[]=4&colors[]=5', {
+        let result = apos.url.build('/events?colors[]=4&colors[]=5', {
           colors: {
             $addToSet: 5
           }
@@ -180,7 +180,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=4&colors%5B1%5D=5');
       });
       it('Removes from existing query string array when $pull is used', function() {
-        let result = apos.urls.build('/events?colors[]=purple&colors[]=red', {
+        let result = apos.url.build('/events?colors[]=purple&colors[]=red', {
           colors: {
             $pull: 'red'
           }
@@ -188,7 +188,7 @@ describe('Urls', function() {
         assert(result === '/events?colors%5B0%5D=purple');
       });
       it('Removes array entirely when $pull removes last item', function() {
-        let result = apos.urls.build('/events?colors[]=purple', {
+        let result = apos.url.build('/events?colors[]=purple', {
           colors: {
             $pull: 'purple'
           }
@@ -196,7 +196,7 @@ describe('Urls', function() {
         assert(result === '/events');
       });
       it('Behaves reasonably when a nonexistent item is removed', function() {
-        let result = apos.urls.build('/events?colors[]=purple', {
+        let result = apos.url.build('/events?colors[]=purple', {
           colors: {
             $pull: 'blue'
           }
