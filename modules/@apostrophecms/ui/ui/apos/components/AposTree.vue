@@ -6,8 +6,8 @@
     />
     <AposTreeHeader :headers="data.headers" :col-widths="colWidths" />
     <AposTreeRows
+      v-model="checkedProxy"
       :rows="data.rows"
-      v-model="checked"
       :headers="data.headers"
       :col-widths="colWidths"
       :level="1"
@@ -28,10 +28,21 @@ import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 export default {
   name: 'AposTree',
   mixins: [AposHelpers],
+  model: {
+    prop: 'checked',
+    event: 'change'
+  },
   props: {
     data: {
       type: Object,
       required: true
+    },
+    checked: {
+      type: Array,
+      default() {
+        // If this is not provided, we don't need to initiate an array.
+        return null;
+      }
     },
     draggable: {
       type: Boolean,
@@ -42,17 +53,25 @@ export default {
       default: false
     }
   },
-  emits: ['busy', 'update'],
+  emits: ['busy', 'update', 'change'],
   data() {
     return {
       // Copy the `data` property to mutate with VueDraggable.
       nested: false,
       colWidths: null,
-      treeId: this.generateId(),
-      checked: []
+      treeId: this.generateId()
     };
   },
   computed: {
+    // Handle the local check state within this component.
+    checkedProxy: {
+      get() {
+        return this.checked;
+      },
+      set(val) {
+        this.$emit('change', val);
+      }
+    },
     spacingRow() {
       let spacingRow = {};
       // Combine the header with the rows, the limit to a reasonable 50 rows.

@@ -12,7 +12,10 @@ export default {
 export const Tree = () => ({
   components: { AposTree },
   data() {
-    return { data };
+    return {
+      data,
+      checked: []
+    };
   },
   methods: {
     setBusy(val) {
@@ -27,6 +30,7 @@ export const Tree = () => ({
     <AposTree
       :data="data" :draggable="data.draggable"
       :selectable="data.selectable"
+      v-model="checked"
       @update="update" @busy="setBusy"
     />
   `
