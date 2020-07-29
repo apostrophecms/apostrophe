@@ -1,5 +1,6 @@
 <template>
-  <div class="apos-login apos-theme-dark">
+  <div class="apos-login__loader" v-if="contextLoading">Loading<AposSpinner /></div>
+  <div class="apos-login apos-theme-dark" v-else>
     <div class="apos-login__overlay"></div>
     <div class="apos-login__menu-overlay"></div>
     <AposLoginBackground />
@@ -7,11 +8,11 @@
     <div class="apos-login__header">
       <label
         class="apos-login__project apos-login__project-env"
-        :class="[`apos-login__project-env--${env}`]"
+        :class="[`apos-login__project-env--${context.env}`]"
       >
-        {{ env }}
+        {{ context.env }}
       </label>
-      <label class="apos-login__project apos-login__project-name">{{ projectName }}</label>
+      <label class="apos-login__project apos-login__project-name">{{ context.name }}</label>
       <label class="apos-login--error">{{ error }}</label>
     </div>
 
@@ -48,7 +49,7 @@
     <div class="apos-login__footer">
       <AposLogo class="apos-login__logo"/>
       <label class="apos-login__logo-name">ApostropheCMS</label>
-      <label class="apos-login__project-version">Version {{ version }}</label>
+      <label class="apos-login__project-version">Version {{ context.version }}</label>
     </div>
   </div>
 </template>
@@ -81,10 +82,19 @@ export default {
         status: {},
         value: { data: '' }
       },
-      env: apos.context.env,
-      version: apos.context.version,
-      projectName: apos.context.name.replace(/-/g, ' ')
+      context: {},
+      contextLoading: true
     };
+  },
+  async beforeCreate () {
+    try {
+      const context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {});
+      this.context = JSON.parse(context);
+    } catch (e) {
+      this.error = 'An error occurred. Please try again.';
+    } finally {
+      this.contextLoading = false;
+    }
   },
   methods: {
     fill(value, field) {
@@ -137,6 +147,23 @@ export default {
       width: 100%;
       height: 100%;
       background: linear-gradient(38.7deg, rgba(179, 39, 191, 0.3), rgba(30, 30, 76, 0.3), rgba(0, 192, 154, 0.3));
+    }
+
+    &__loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      font-size: map-get($font-sizes, heading);
+      font-weight: lighter;
+
+      .apos-spinner {
+        width: 38px;
+        height: 38px;
+        margin-top: 20px;
+      }
     }
 
     &__overlay {
