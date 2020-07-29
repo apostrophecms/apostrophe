@@ -6,7 +6,6 @@
 
     <div class="apos-login__header">
       <label
-        v-if="env"
         class="apos-login__project apos-login__project-env"
         :class="[`apos-login__project-env--${env}`]"
       >
@@ -222,8 +221,9 @@ export default {
       }
 
       .apos-login__link {
-        align-self: end;
         margin-top: 10px;
+        margin-left: auto;
+        margin-right: 0;
         color: var(--a-base-5);
         font-size: map-get($font-sizes, input-label);
         font-weight: normal;
