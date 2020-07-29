@@ -40,6 +40,8 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      // Pull in methods also imported by browser-side code
+      ...require('../../../lib/shared-util.js'),
       // generate a unique identifier for a new page or other object.
       // IDs are generated with the cuid module which prevents
       // collisions and easy guessing of another's ID.
@@ -297,65 +299,7 @@ module.exports = {
         q = new RegExp(q);
         return q;
       },
-      // Clone the given object recursively, discarding all
-      // properties whose names begin with `_` except
-      // for `_id`. Returns the clone.
-      //
-      // This removes the output of joins and
-      // other dynamic loaders, so that dynamically available
-      // content is not stored redundantly in MongoDB.
-      //
-      // If the object is an array, the clone is also an array.
-      //
-      // Date objects are cloned as such. All other non-JSON
-      // objects are cloned as plain JSON objects.
-      //
-      // If `keepScalars` is true, properties beginning with `_`
-      // are kept as long as they are not objects. This is useful
-      // when using `clonePermanent` to limit JSON inserted into
-      // browser attributes, rather than filtering for the database.
-      // Preserving simple string properties like `._url` is usually
-      // a good thing in the former case.
-      //
-      // Arrays are cloned as such only if they are true arrays
-      // (Array.isArray returns true). Otherwise all objects with
-      // a length property would be treated as arrays, which is
-      // an unrealistic restriction on apostrophe doc schemas.
-      clonePermanent(o, keepScalars) {
-        let c;
-        let isArray = Array.isArray(o);
-        if (isArray) {
-          c = [];
-        } else {
-          c = {};
-        }
-        function iterator(val, key) {
-          // careful, don't crash on numeric keys
-          if (typeof key === 'string') {
-            if (key.charAt(0) === '_' && key !== '_id') {
-              if (!keepScalars || typeof val === 'object') {
-                return;
-              }
-            }
-          }
-          if (val === null || val === undefined) {
-            // typeof(null) is object, sigh
-            c[key] = null;
-          } else if (typeof val !== 'object') {
-            c[key] = val;
-          } else if (val instanceof Date) {
-            c[key] = new Date(val);
-          } else {
-            c[key] = self.clonePermanent(val, keepScalars);
-          }
-        }
-        if (isArray) {
-          _.each(o, iterator);
-        } else {
-          _.forOwn(o, iterator);
-        }
-        return c;
-      },
+
       // `ids` should be an array of mongodb IDs. The elements of the `items` array, which
       // should be the result of a mongodb query, are returned in the order specified by `ids`.
       // This is useful after performing an `$in` query with MongoDB (note that `$in` does NOT sort its
@@ -434,60 +378,7 @@ module.exports = {
           return 0;
         }
       },
-      // Within the given object (typically a doc or widget),
-      // find a subobject with the given `_id` property.
-      // Can be nested at any depth.
-      //
-      // Useful to locate a specific widget within a doc.
-      findNestedObjectById(object, _id) {
-        let key;
-        let val;
-        let result;
-        for (key in object) {
-          val = object[key];
-          if (val && typeof val === 'object') {
-            if (val._id === _id) {
-              return val;
-            }
-            result = self.findNestedObjectById(val, _id);
-            if (result) {
-              return result;
-            }
-          }
-        }
-      },
-      // Within the given object (typically a doc or widget),
-      // find a subobject with the given `_id` property.
-      // Can be nested at any depth.
-      //
-      // Useful to locate a specific widget within a doc.
-      //
-      // Returns an object like this: `{ object: { ... }, dotPath: 'dot.path.of.object' }`
-      //
-      // Ignore the `_dotPath` argument to this method; it is used for recursion.
-      findNestedObjectAndDotPathById(object, id, _dotPath) {
-        let key;
-        let val;
-        let result;
-        let subPath;
-        _dotPath = _dotPath || [];
-        for (key in object) {
-          val = object[key];
-          if (val && typeof val === 'object') {
-            subPath = _dotPath.concat(key);
-            if (val._id === id) {
-              return {
-                object: val,
-                dotPath: subPath.join('.')
-              };
-            }
-            result = self.findNestedObjectAndDotPathById(val, id, subPath);
-            if (result) {
-              return result;
-            }
-          }
-        }
-      },
+      findNestedObjectById: require('../../../lib/shared-util/findNestedObjectById'),
       enableLogger() {
         self.logger = self.options.logger ? self.options.logger(self.apos) : require('./lib/logger.js')(self.apos);
       },
@@ -644,85 +535,6 @@ module.exports = {
         } else {
           throw new Error('Unsupported metaType in getManagerOf:', object);
         }
-      },
-      // fetch the value at the given path from the object or
-      // array `o`. `path` supports dot notation like MongoDB, and
-      // in addition if the first component begins with `@xyz` the
-      // sub-object within `o` with an `_id` property equal to `xyz`.
-      // is found and returned, no matter how deeply nested it is.
-      get(o, path) {
-        let i;
-        path = path.split('.');
-        for (i = 0; (i < path.length); i++) {
-          let p = path[i];
-          if ((i === 0) && (p.charAt(0) === '@')) {
-            o = self.apos.util.findNestedObjectById(o, p.substring(1));
-          } else {
-            o = o[p];
-          }
-        }
-        return o;
-      },
-
-      // Returns `path` with any @ reference present resolved to a full
-      // dot path. If the reference cannot be resolved the @ reference
-      // remains in the returned value.
-      resolveAtReference(o, path) {
-        path = path.split('.');
-        if (path[0] && (path[0].charAt(0) === '@')) {
-          const info = self.apos.util.findNestedObjectAndDotPathById(o, path[0].substring(1));
-          if (!info) {
-            return path.join('.');
-          }
-          if (path.length > 1) {
-            return info.dotPath + '.' + (path.slice(1).join('.'));
-          } else {
-            return info.dotPath;
-          }
-        } else {
-          return path.join('.');
-        }
-      },
-
-      // set the value at the given path within the object or
-      // array `o`. `path` supports dot notation like MongoDB. In
-      // addition if the first component begins with `@xyz` the
-      // sub-object within `o` with an `_id` property equal to `xyz`.
-      // is located, no matter how deeply nested it is. If that is
-      // the only component of the path the sub-object is replaced
-      // with v. If there are further components via dot notation,
-      // they are honored to locate the final location for `v`.
-      //
-      // The `@` syntax works only for locating sub-objects. You may
-      // not pass `@abc` where `abc` is the `_id` of `o` itself.
-      set(o, path, v) {
-        let i;
-        let p;
-        let matches;
-        if (path.charAt(0) === '@') {
-          matches = path.match(/^@([^.]+)(.*)$/);
-          if (!matches) {
-            throw new Error(`@ syntax used without an id: ${path}`);
-          }
-          let found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1]);
-          if (found) {
-            if (matches[2].length) {
-              o = found.object;
-              path = matches[2].substring(1);
-            } else {
-              path = found.dotPath;
-            }
-          } else {
-            return;
-          }
-        }
-        path = path.split('.');
-        for (i = 0; (i < (path.length - 1)); i++) {
-          p = path[i];
-          o = o[p];
-        }
-        p = path[i];
-        o[p] = v;
       }
     };
   },

@@ -525,11 +525,13 @@ module.exports = {
 
       async convertPatchAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
-          const piece = await self.findOneForEditing(req, { _id });
+          // Skip widget loaders and joins on the first fetch because they
+          // just slow down the patch operation with too much stuff to clone
+          const piece = await self.findForEditing(req, { _id }).areas(false).joins(false).toObject();
           if (!piece) {
             throw self.apos.error('notfound');
           }
-          self.apos.schema.implementPatchOperators(input, piece);
+          self.apos.utils.applyPatchOperators(input, piece);
           const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
           await self.apos.schema.convert(req, schema, input, piece);
           await self.emit('afterConvert', req, input, piece);
