@@ -9,60 +9,64 @@
     :data-list-id="listId"
     :disabled="!draggable"
     handle=".apos-tree__row__handle"
+    ghost-class="is-dragging"
+    :emptyInsertThreshold="30"
   >
-    <li
-      class="apos-tree__row"
-      :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
-      v-for="row in myRows" :key="row.id"
-      :data-row-id="row.id"
-    >
-      <div class="apos-tree__row-data">
-        <button
-          v-if="row.children && row.children.length > 0"
-          class="apos-tree__row__toggle"
-          aria-label="Toggle section"
-          @click="toggleSection($event)"
-        >
-          <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
-        </button>
-        <component
-          v-for="(col, index) in headers"
-          :key="`${index}-${col.name}`"
-          :is="col.name === 'url' ? 'a' : 'span'"
-          :href="col.name === 'url' ? row[col.name] : false"
-          :target="col.name === 'url' ? '_blank' : false"
-          :class="getCellClasses(col, row)"
-          :data-col="col.name"
-          :style="getCellStyles(col.name, index)"
-        >
-          <drag-icon
-            v-if="draggable && index === 0" class="apos-tree__row__handle"
-            :size="20"
-          />
+    <transition-group type="transition" name="flip-list">
+      <li
+        class="apos-tree__row"
+        :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
+        v-for="row in myRows" :key="row.id"
+        :data-row-id="row.id"
+      >
+        <div class="apos-tree__row-data">
+          <button
+            v-if="row.children && row.children.length > 0"
+            class="apos-tree__row__toggle"
+            aria-label="Toggle section"
+            @click="toggleSection($event)"
+          >
+            <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
+          </button>
           <component
-            v-if="col.icon" :is="col.icon"
-            class="apos-tree__cell__icon"
-          />
-          <span v-show="!col.iconOnly">
-            {{ row[col.name] }}
-          </span>
-        </component>
-      </div>
-      <AposTreeRows
-        v-if="row.children"
-        data-apos-tree-branch
-        :rows="row.children"
-        :headers="headers"
-        :col-widths="colWidths"
-        :level="level + 1"
-        :nested="nested"
-        :list-id="row.id"
-        :tree-id="treeId"
-        :draggable="draggable"
-        @busy="$emit('busy', $event)"
-        @update="$emit('update', $event)"
-      />
-    </li>
+            v-for="(col, index) in headers"
+            :key="`${index}-${col.name}`"
+            :is="col.name === 'url' ? 'a' : 'span'"
+            :href="col.name === 'url' ? row[col.name] : false"
+            :target="col.name === 'url' ? '_blank' : false"
+            :class="getCellClasses(col, row)"
+            :data-col="col.name"
+            :style="getCellStyles(col.name, index)"
+          >
+            <drag-icon
+              v-if="draggable && index === 0" class="apos-tree__row__handle"
+              :size="16"
+            />
+            <component
+              v-if="col.icon" :is="col.icon"
+              class="apos-tree__cell__icon"
+            />
+            <span v-show="!col.iconOnly">
+              {{ row[col.name] }}
+            </span>
+          </component>
+        </div>
+        <AposTreeRows
+          v-if="row.children"
+          data-apos-tree-branch
+          :rows="row.children"
+          :headers="headers"
+          :col-widths="colWidths"
+          :level="level + 1"
+          :nested="nested"
+          :list-id="row.id"
+          :tree-id="treeId"
+          :draggable="draggable"
+          @busy="$emit('busy', $event)"
+          @update="$emit('update', $event)"
+        />
+      </li>
+    </transition-group>
   </VueDraggable>
 </template>
 
@@ -124,6 +128,18 @@ export default {
   mounted() {
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
+      this.setHeights();
+    });
+  },
+  methods: {
+    startDrag() {
+      this.$emit('busy', true);
+    },
+    endDrag(event) {
+      this.$emit('update', event);
+      this.setHeights();
+    },
+    setHeights() {
       const branches = this.$el.querySelectorAll('[data-apos-tree-branch]');
 
       branches.forEach(branch => {
@@ -133,14 +149,6 @@ export default {
         branch.setAttribute('data-apos-tree-branch', `${height}px`);
         branch.style.maxHeight = `${height}px`;
       });
-    });
-  },
-  methods: {
-    startDrag() {
-      this.$emit('busy', true);
-    },
-    endDrag(event) {
-      this.$emit('update', event);
     },
     toggleSection(event) {
       const row = event.target.closest('.apos-tree__row');
@@ -184,6 +192,9 @@ export default {
 </script>
 
 <style lang="scss">
+  .flip-list-move {
+    transition: transform 0.5s;
+  }
   .apos-tree__list {
     transition: max-height 0.3s ease;
 

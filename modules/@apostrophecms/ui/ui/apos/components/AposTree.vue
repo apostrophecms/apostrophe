@@ -147,8 +147,8 @@ export default {
 </script>
 
 <style lang="scss">
-  $row-nested-h-padding: 24px;
-  $cell-padding: 16px;
+  $row-nested-h-padding: 12px;
+  $cell-padding: 8px;
 
   .apos-tree {
     color: var(--a-text-primary);
@@ -163,18 +163,27 @@ export default {
     list-style-type: none;
   }
 
+  .apos-tree__list.is-dragging {
+    opacity: 0.5;
+  }
+
   .apos-tree__row-data {
     position: relative;
     display: flex;
     width: 100%;
-
+    background-color: var(--a-background-primary);
+    padding: $cell-padding $cell-padding / 2;
+    &:hover {
+      color: var(--a-primary);
+      cursor: grab;
+    }
     .apos-tree__row--parent .apos-tree__row & {
       &::before {
         position: absolute;
         top: 50%;
         left: -$row-nested-h-padding * 1.5;
         display: block;
-        width: 24px;
+        width: 20px;
         height: 1px;
         content: '';
         background-color: var(--a-base-8);
@@ -191,8 +200,6 @@ export default {
   .apos-tree__cell {
     display: inline-flex;
     flex-shrink: 2;
-    padding: $cell-padding;
-    border-bottom: 1px solid var(--a-base-8);
     box-sizing: border-box;
 
     // Let the first cell column (usually "title") grow. We're assuming the first
@@ -242,6 +249,18 @@ export default {
     .apos-tree--nested & {
       padding-left: $row-nested-h-padding;
     }
+    &.sortable-chosen {
+      .apos-tree__row-data {
+        background-color: var(--a-primary);
+        border-radius: 2px;
+      }
+      .apos-tree__cell {
+        color: var(--a-white);
+      }
+      .apos-tree__row__toggle {
+        background-color: transparent;
+      }
+    }
   }
 
   .apos-tree__row--parent {
@@ -250,7 +269,7 @@ export default {
     &::before {
       position: absolute;
       top: 24px;
-      bottom: 0;
+      bottom: $cell-padding * 2;
       left: $row-nested-h-padding / 2;
       display: block;
       content: '';
@@ -265,7 +284,7 @@ export default {
   }
 
   .apos-tree__row__handle {
-    margin-top: -0.25em;
+    margin-top: 0.12em;
     margin-right: 0.25em;
     line-height: 0;
   }
