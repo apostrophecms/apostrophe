@@ -10,9 +10,9 @@
     :disabled="!draggable"
     handle=".apos-tree__row__handle"
     ghost-class="is-dragging"
-    :emptyInsertThreshold="30"
+    :empty-insert-threshold="30"
   >
-    <transition-group type="transition" name="flip-list">
+    <transition-group type="transition" name="apos-rowshift">
       <li
         class="apos-tree__row"
         :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
@@ -192,7 +192,7 @@ export default {
 </script>
 
 <style lang="scss">
-  .flip-list-move {
+  .apos-rowshift-move {
     transition: transform 0.5s;
   }
   .apos-tree__list {
