@@ -2,9 +2,11 @@
   <div class="apos-login apos-theme-dark">
     <div class="apos-login__overlay"></div>
     <div class="apos-login__menu-overlay"></div>
-    <img :src="loginImg" />
+    <AposLoginBackground />
     <h2 class="apos-login--error" v-if="error">{{ error }}</h2>
-    <label class="apos-login__project-name">{{ projectName }}</label>
+    <label v-if="env" class="apos-login__project apos-login__project-env" :class="[`apos-login__project-env--${env}`]">{{ env }}</label>
+    <label class="apos-login__project apos-login__project-name">{{ projectName }}</label>
+    <label class="apos-login__project apos-login__project-version">{{ version }}</label>
     <form>
       <AposInputString
         @input="fill($event, 'usernameField')"
@@ -41,7 +43,6 @@ import loginImg from '../assets/login.jpg'
 export default {
   name: 'TheApostropheLogin',
   data() {
-    console.log('apos.csrfCookieName ====> ', apos.csrfCookieName)
     return {
       error: false,
       busy: false,
@@ -67,7 +68,9 @@ export default {
         value: { data: '' }
       },
       loginImg: '/apos-frontend/' + loginImg,
-      projectName: apos.csrfCookieName.replace(/-/g, ' ').replace('.csrf', '')
+      env: apos.context.env,
+      version: apos.context.version,
+      projectName: apos.context.name.replace(/-/g, ' ')
     };
   },
   methods: {
@@ -145,21 +148,34 @@ export default {
       opacity: 0.6;
     }
 
-    &__project-name {
+    &__project {
       z-index: $z-index-manager-display;
+      width: max-content;
+      max-width: 320px;
       color: var(--a-text-primary);
-      font-size: map-get($font-sizes, project-title);
       letter-spacing: 1px;
       margin-left: 32px;
       text-transform: capitalize;
     }
 
-    img {
-      z-index: $z-index-base;
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100vh;
+    &__project-name {
+      font-size: map-get($font-sizes, project-title);
+    }
+
+    &__project-env {
+      padding: 5px 10px;
+      background: var(--a-success);
+      font-size: map-get($font-sizes, default);
+      border-radius: 5px;
+      margin-bottom: 15px;
+
+      &--development {
+        background: var(--a-danger);
+      }
+
+      &--success {
+        background: var(--a-warning);
+      }
     }
 
     form {
