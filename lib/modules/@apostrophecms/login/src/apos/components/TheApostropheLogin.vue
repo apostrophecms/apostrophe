@@ -3,48 +3,63 @@
     <div class="apos-login__overlay"></div>
     <div class="apos-login__menu-overlay"></div>
     <AposLoginBackground />
-    <h2 class="apos-login--error" v-if="error">{{ error }}</h2>
-    <label v-if="env" class="apos-login__project apos-login__project-env" :class="[`apos-login__project-env--${env}`]">{{ env }}</label>
-    <label class="apos-login__project apos-login__project-name">{{ projectName }}</label>
-    <label class="apos-login__project apos-login__project-version">{{ version }}</label>
-    <form>
-      <AposInputString
-        @input="fill($event, 'usernameField')"
-        :field="usernameField.field"
-        :status="usernameField.status"
-        :value="usernameField.value"
-        :modifiers="['dark']"
-      />
-     <AposInputString
-        @input="fill($event, 'passwordField')"
-        :field="passwordField.field"
-        :type="passwordField.type"
-        :status="passwordField.status"
-        :value="passwordField.value"
-        :modifiers="['dark']"
-      />
-      <a href="#" class="apos-login__link">Forgot Password</a>
-      <AposButton
-        class="apos-field--short"
-        :busy="busy"
-        :disabled="busy"
-        type="primary"
-        label="Login"
-        :modifiers="['gradient-on-hover']"
-        @click="submit"
-      />
-    </form>
+
+    <div class="apos-login__header">
+      <label
+        v-if="env"
+        class="apos-login__project apos-login__project-env"
+        :class="[`apos-login__project-env--${env}`]"
+      >
+        {{ env }}
+      </label>
+      <label class="apos-login__project apos-login__project-name">{{ projectName }}</label>
+      <label class="apos-login--error">{{ error }}</label>
+    </div>
+
+    <div class="apos-login__body">
+      <form>
+        <AposInputString
+          @input="fill($event, 'usernameField')"
+          :field="usernameField.field"
+          :status="usernameField.status"
+          :value="usernameField.value"
+          :modifiers="['dark']"
+        />
+        <AposInputString
+          @input="fill($event, 'passwordField')"
+          :field="passwordField.field"
+          :type="passwordField.type"
+          :status="passwordField.status"
+          :value="passwordField.value"
+          :modifiers="['dark']"
+        />
+        <a href="#" class="apos-login__link">Forgot Password</a>
+        <AposButton
+          class="apos-field--short"
+          :busy="busy"
+          :disabled="busy"
+          type="primary"
+          label="Login"
+          :modifiers="['gradient-on-hover']"
+          @click="submit"
+        />
+      </form>
+    </div>
+
+    <div class="apos-login__footer">
+      <AposLogo class="apos-login__logo"/>
+      <label class="apos-login__logo-name">ApostropheCMS</label>
+      <label class="apos-login__project-version">Version {{ version }}</label>
+    </div>
   </div>
 </template>
 
 <script>
-import loginImg from '../assets/login.jpg'
-
 export default {
   name: 'TheApostropheLogin',
   data() {
     return {
-      error: false,
+      error: '',
       busy: false,
       usernameField: {
         field: {
@@ -67,7 +82,6 @@ export default {
         status: {},
         value: { data: '' }
       },
-      loginImg: '/apos-frontend/' + loginImg,
       env: apos.context.env,
       version: apos.context.version,
       projectName: apos.context.name.replace(/-/g, ' ')
@@ -148,13 +162,20 @@ export default {
       opacity: 0.6;
     }
 
-    &__project {
+    &__header {
       z-index: $z-index-manager-display;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: start;
       width: max-content;
       max-width: 320px;
+      margin-left: 32px;
+    }
+
+    &__project {
       color: var(--a-text-primary);
       letter-spacing: 1px;
-      margin-left: 32px;
       text-transform: capitalize;
     }
 
@@ -178,6 +199,15 @@ export default {
       }
     }
 
+    &--error {
+      color: var(--a-danger);
+      font-size: map-get($font-sizes, meta);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 20px;
+      margin-bottom: 15px;
+    }
+
     form {
       z-index: $z-index-manager-toolbar;
       position: relative;
@@ -196,6 +226,7 @@ export default {
         margin-top: 10px;
         color: var(--a-base-5);
         font-size: map-get($font-sizes, input-label);
+        font-weight: normal;
         letter-spacing: 1px;
         text-decoration-line: underline;
       }
@@ -204,12 +235,31 @@ export default {
         letter-spacing: 0.5px;
         margin-top: 40px;
       }
+    }
 
-      .apos-login--error {
-        color: var(--a-danger);
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-      }
+    &__footer {
+      z-index: $z-index-manager-display;
+      position: fixed;
+      bottom: 32px;
+      left: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      width: 320px;
+      letter-spacing: 1px;
+      font-size: map-get($font-sizes, input-label);
+    }
+
+    &__logo-name {
+      color: var(--a-text-primary);
+      margin-left: 10px;
+    }
+
+    &__project-version {
+      color: var(--a-base-5);
+      margin-right: 0;
+      margin-left: auto;
+      font-weight: normal;
     }
   }
 </style>
