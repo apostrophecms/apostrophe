@@ -187,6 +187,49 @@
           '_edit': true
         }
       ]
+    },
+    '/api/v1/@apostrophecms/page?all=1': {
+      'results': {
+        'title': 'Home',
+        'slug': '/',
+        '_id': 'ckd4y2m7j00074k9kbrxs0bat',
+        'type': '@apostrophecms/home-page',
+        'metaType': 'doc',
+        '_url': '/',
+        '_children': [{
+          'title': 'Pellentesque Nullam Purus',
+          'slug': '/second',
+          '_id': 'ckd96fndy0004fo9kbusxz2kf',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/second',
+          '_children': [],
+          'published': true,
+          'updatedAt': '2020-07-29T19:14:15.719Z'
+        }, {
+          'title': 'Sem Pellentesque Etiam Bibendum Porta',
+          'slug': '/third',
+          '_id': 'ckd96fneg0007fo9k6adjs0o9',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/third',
+          '_children': [],
+          'published': false,
+          'updatedAt': '2020-07-30T19:14:15.737Z'
+        }, {
+          'title': 'Elit Parturient Euismod',
+          'slug': '/third/fourth',
+          '_id': 'ckd96fneu000afo9k53bzhvah',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/third/fourth',
+          '_children': [],
+          'published': true,
+          'updatedAt': '2020-07-30T19:14:15.750Z'
+        }],
+        'published': true,
+        'updatedAt': '2020-07-27T20:09:06.031Z'
+      }
     }
   };
 

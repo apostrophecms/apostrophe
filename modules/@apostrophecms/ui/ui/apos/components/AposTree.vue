@@ -4,10 +4,10 @@
       :headers="spacingRow" :spacer-only="true"
       @calculated="setWidths"
     />
-    <AposTreeHeader :headers="data.headers" :col-widths="colWidths" />
+    <AposTreeHeader :headers="headers" :col-widths="colWidths" />
     <AposTreeRows
-      :rows="data.rows"
-      :headers="data.headers"
+      :rows="rows"
+      :headers="headers"
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
@@ -27,8 +27,16 @@ export default {
   name: 'AposTree',
   mixins: [AposHelpers],
   props: {
-    data: {
-      type: Object,
+    // data: {
+    //   type: Object,
+    //   required: true
+    // },
+    headers: {
+      type: Array,
+      required: true
+    },
+    rows: {
+      type: Array,
       required: true
     },
     draggable: {
@@ -50,15 +58,15 @@ export default {
       let spacingRow = {};
       // Combine the header with the rows, the limit to a reasonable 50 rows.
       const headers = {};
-      if (this.data.headers) {
-        this.data.headers.forEach(header => {
+      if (this.headers) {
+        this.headers.forEach(header => {
           headers[header.name] = header.label;
         });
       }
 
       let completeRows = [headers];
       // Add child rows into `completeRows`.
-      this.data.rows.forEach(row => {
+      this.rows.forEach(row => {
         completeRows.push(row);
 
         if (row.children && row.children.length > 0) {
@@ -76,7 +84,7 @@ export default {
           return;
         }
 
-        this.data.headers.forEach(col => {
+        this.headers.forEach(col => {
           const key = col.name;
           if (
             !spacingRow[key] ||
@@ -90,9 +98,9 @@ export default {
       // Place that largest value on that key of the spacingRow object.
       // Put that array in the DOM, and generate styles to be passed down based on its layout. Give the first column any leftover space.
       const finalRow = [];
-      this.data.headers.forEach(col => {
+      this.headers.forEach(col => {
         let obj;
-        const foundIndex = this.data.headers.findIndex(o => {
+        const foundIndex = this.headers.findIndex(o => {
           return o.name === col.name;
         });
         const spacerInfo = {
@@ -102,7 +110,7 @@ export default {
 
         if (foundIndex > -1) {
           // Deep copy the original header column to capture all options.
-          const foundObj = JSON.parse(JSON.stringify(this.data.headers[foundIndex]));
+          const foundObj = JSON.parse(JSON.stringify(this.headers[foundIndex]));
 
           if (foundObj.iconOnly) {
             // If the "column" will only show icons, let the "column header"
