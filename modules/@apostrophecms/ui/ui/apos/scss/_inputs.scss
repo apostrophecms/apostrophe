@@ -61,8 +61,7 @@ $input-max-width: 580px;
   &--time,
   &--textarea,
   &--date,
-  &--select ,
-  &--password {
+  &--select {
     padding: $input-padding;
     padding-right: $input-padding * 2;
   }
@@ -87,8 +86,7 @@ $input-max-width: 580px;
     &--text,
     &--textarea,
     &--date,
-    &--select,
-    &--password {
+    &--select {
       padding-top: 10px;
       padding-bottom: 10px;
     }

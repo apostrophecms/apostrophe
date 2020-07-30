@@ -1,21 +1,15 @@
 <template>
-  <div class="apos-login apos-theme-dark">
+  <div class="apos-login">
     <form @submit.prevent="submit">
-      <img :src="loginImg" />
       <h2 v-if="error">{{ error }}</h2>
-      <AposInputString
-        :field="usernameField.field"
-        :status="usernameField.status"
-        :value="usernameField.value"
-        :modifiers="['dark', 'short']"
-      />
-     <AposInputString
-        :field="passwordField.field"
-        :type="passwordField.type"
-        :status="passwordField.status"
-        :value="passwordField.value"
-        :modifiers="['dark', 'short']"
-      />
+      <fieldset>
+        <label>Username</label>
+        <input v-model="username" required />
+      </fieldset>
+      <fieldset>
+        <label>Password</label>
+        <input v-model="password" required type="password" />
+      </fieldset>
       <fieldset>
         <button type="submit">Log In</button>
       </fieldset>
@@ -24,36 +18,14 @@
 </template>
 
 <script>
-import loginImg from '../assets/login.jpg'
 
 export default {
   name: 'TheApostropheLogin',
   data() {
     return {
+      username: '',
       password: '',
-      error: false,
-      usernameField: {
-        field: {
-          name: 'username',
-          placeholder: 'Enter username',
-          label: 'Username',
-          required: true
-        },
-        status: {},
-        value: { data: '' }
-      },
-      passwordField: {
-        field: {
-          name: 'password',
-          type: 'password',
-          placeholder: 'Enter password',
-          label: 'Password',
-          required: true
-        },
-        status: {},
-        value: { data: '' }
-      },
-      loginImg: '/apos-frontend/' + loginImg
+      error: false
     };
   },
   methods: {
@@ -81,22 +53,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-  .apos-login {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 25vw;
-    min-width: 400px;
-    height: 100vh;
-    background: var(--a-base-10);
-    opacity: 0.6;
-    mix-blend-mode: normal;
-
-    img {
-      position: absolute;
-      width: 100vw;
-    }
-  }
-</style>

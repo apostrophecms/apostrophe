@@ -55,17 +55,10 @@ export default {
     };
   },
   computed: {
-    type () {
-      if (this.field.type) {
-        return this.field.type;
-      } else {
-        return 'text';
-      }
-    },
     classList: function () {
       const classes = [
         'apos-field',
-        `apos-field-${this.type}`,
+        `apos-field-${this.field.type}`,
         `apos-field-${this.field.name}`
       ];
       if (this.field.classes) {
@@ -109,7 +102,7 @@ export default {
     }
   },
   mounted: function () {
-    if (this.type === 'radio' || this.type === 'checkbox') {
+    if (this.field.type === 'radio' || this.field.type === 'checkbox') {
       this.wrapEl = 'fieldset';
       this.labelEl = 'legend';
     }
@@ -120,7 +113,7 @@ export default {
 <style lang="scss">
   .apos-field {
     border-width: 0;
-    padding: $spacing-base;
+    padding: 0;
     [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
       cursor: not-allowed;
     }
