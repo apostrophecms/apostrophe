@@ -14,25 +14,25 @@ describe('Soft Redirects', function() {
     apos = await t.create({
       root: module,
       modules: {
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [
               {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default-pages',
+                type: 'default-page',
                 published: true
               }
             ]
           }
         },
-        'default-pages': {
+        'default-page': {
           extend: '@apostrophecms/page-type'
         }
       }
     });
-    assert(apos.modules['@apostrophecms/soft-redirects']);
+    assert(apos.modules['@apostrophecms/soft-redirect']);
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
@@ -42,7 +42,7 @@ describe('Soft Redirects', function() {
   });
 
   it('should be able to change the URL via db', async () => {
-    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+    return apos.doc.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
   });
 
   it('should be able to serve the page at its new URL', async () => {
@@ -76,31 +76,31 @@ describe('Soft Redirects - with `statusCode` option', async() => {
       root: module,
 
       modules: {
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             park: [
               {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default-pages',
+                type: 'default-page',
                 published: true
               }
             ]
           }
         },
-        '@apostrophecms/soft-redirects': {
+        '@apostrophecms/soft-redirect': {
           options: {
             statusCode: 301
           }
         },
-        'default-pages': {
+        'default-page': {
           extend: '@apostrophecms/page-type'
         }
       }
     });
-    assert(apos.modules['@apostrophecms/soft-redirects']);
-    assert.strictEqual(apos.modules['@apostrophecms/soft-redirects'].options.statusCode, 301);
+    assert(apos.modules['@apostrophecms/soft-redirect']);
+    assert.strictEqual(apos.modules['@apostrophecms/soft-redirect'].options.statusCode, 301);
   });
 
   it('should be able to serve the /child page (which also populates historicUrls)', async () => {
@@ -110,7 +110,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
   });
 
   it('should be able to change the URL via db', async () => {
-    return apos.docs.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
+    return apos.doc.db.updateOne({ slug: '/child' }, { $set: { slug: '/child-moved' } });
   });
 
   it('should be able to serve the page at its new URL', async () => {

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="{% block locale %}en{% endblock %}" {% block extraHtml %}{% endblock %}>
+  <head>
+    {% block startHead %}
+    {% endblock %}
+    {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend' } %}
+    <title>{% block title %}{% endblock %}</title>
+    {{ apos.asset.stylesheets(data.when) }}
+    {% block standardHead %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% endblock %}
+    {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append' } %}
+    {% block extraHead %}
+    {% endblock %}
+  </head>
+  {# TODO: How does `apos-theme--primary-purple` get there? #}
+  <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
+    woo woo test
+    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'prepend' } %}
+    {% block apostropheMenu %}
+      <div id="apos-busy"></div>
+      <div id="apos-admin-bar"></div>
+    {% endblock %}
+    {% block apostropheContextMenu %}
+      <div id="apos-context-menu"></div>
+    {% endblock %}
+    <div class="apos-refreshable" data-apos-refreshable>
+      {% block beforeMain %}{% endblock %}
+      {% block mainAnchor %}<a name="main"></a>{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
+      {% block main %}{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
+      {% block afterMain %}{% endblock %}
+    </div>
+    {{ apos.asset.scripts(data.when) }}
+    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
+    {% block extraBody %}{% endblock %}
+    <div id="apos-modals"></div>
+  </body>
+</html>

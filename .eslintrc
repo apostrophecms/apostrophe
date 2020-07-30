@@ -9,6 +9,7 @@
   "rules": {
     "no-var": "error",
     "no-console": 0,
+    "vue/no-deprecated-destroyed-lifecycle": 0,
     "vue/component-tags-order": [
       "warn",
       {
@@ -45,7 +46,7 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.js"
+        "**/ui/**/*.js"
       ],
       "globals": {
         "apos": true
@@ -56,7 +57,7 @@
     },
     {
       "files": [
-        "**/src/apos/always/*.js"
+        "**/ui/public/*.js"
       ],
       "globals": {
         "apos": true

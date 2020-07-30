@@ -6,10 +6,7 @@
   "scripts": {
     "pretest": "npm audit && npm run lint",
     "test": "nyc --reporter=html mocha",
-    "lint": "eslint .",
-    "build-storybook": "node ./.storybook/buildPreview.js && build-storybook -s ./public -o .out",
-    "storybook": "node ./.storybook/buildPreview.js && start-storybook -s ./public -p 9001 -c .storybook",
-    "deploy-storybook": "npm run build-storybook && storybook-to-ghpages -- --out=.out && rm -rf .out"
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -140,8 +137,11 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "eslint-plugin-vue": "^7.0.0-alpha.5",
+    "file-loader": "^6.0.0",
+    "lorem-ipsum": "^2.0.3",
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
+    "replace-in-file": "^6.1.0",
     "style-loader": "^1.2.1"
   },
   "browserslist": [

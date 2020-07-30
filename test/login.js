@@ -19,14 +19,14 @@ describe('Login', function() {
     });
 
     assert(apos.modules['@apostrophecms/login']);
-    assert(apos.users.safe.remove);
-    const response = await apos.users.safe.removeMany({});
+    assert(apos.user.safe.remove);
+    const response = await apos.user.safe.removeMany({});
     assert(response.result.ok === 1);
   });
 
   it('should be able to insert test user', async function() {
-    assert(apos.users.newInstance);
-    const user = apos.users.newInstance();
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
     assert(user);
 
     user.firstName = 'Harry';
@@ -37,8 +37,8 @@ describe('Login', function() {
     user.email = 'hputter@aol.com';
 
     assert(user.type === '@apostrophecms/user');
-    assert(apos.users.insert);
-    const doc = await apos.users.insert(apos.tasks.getReq(), user);
+    assert(apos.user.insert);
+    const doc = await apos.user.insert(apos.task.getReq(), user);
     assert(doc._id);
   });
 

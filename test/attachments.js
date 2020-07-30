@@ -45,7 +45,7 @@ describe('Attachment', function() {
     apos = await t.create({
       root: module
     });
-    assert(apos.attachments);
+    assert(apos.attachment);
   });
 
   describe('wipe', function() {
@@ -57,7 +57,7 @@ describe('Attachment', function() {
   describe('insert', async function() {
 
     async function insert(filename) {
-      const info = await apos.attachments.insert(apos.tasks.getReq(), {
+      const info = await apos.attachment.insert(apos.task.getReq(), {
         name: filename,
         path: uploadSource + filename
       });
@@ -85,7 +85,7 @@ describe('Attachment', function() {
       let filename = 'bad_file.exe';
       let good = false;
       try {
-        await apos.attachments.insert(apos.tasks.getReq(), {
+        await apos.attachment.insert(apos.task.getReq(), {
           name: filename,
           path: uploadSource + filename
         });
@@ -103,8 +103,8 @@ describe('Attachment', function() {
         width: 80,
         height: 80
       };
-      await apos.attachments.crop(
-        apos.tasks.getReq(),
+      await apos.attachment.crop(
+        apos.task.getReq(),
         result._id,
         crop
       );
@@ -118,7 +118,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the "full" URL when no size specified for image', function() {
-      let url = apos.attachments.url({
+      let url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -128,7 +128,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the "one-half" URL when one-half size specified for image', function() {
-      let url = apos.attachments.url({
+      let url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -140,7 +140,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when "original" size specified for image', function() {
-      let url = apos.attachments.url({
+      let url = apos.attachment.url({
         group: 'images',
         name: 'test',
         extension: 'jpg',
@@ -152,7 +152,7 @@ describe('Attachment', function() {
     });
 
     it('should generate the original URL when no size specified for pdf', function() {
-      let url = apos.attachments.url({
+      let url = apos.attachment.url({
         group: 'office',
         name: 'test',
         extension: 'pdf',
@@ -162,18 +162,18 @@ describe('Attachment', function() {
     });
 
     it('should save and track docIds properly as part of an @apostrophecms/image', async function() {
-      let image = apos.images.newInstance();
-      let req = apos.tasks.getReq();
-      let attachment = await apos.attachments.insert(apos.tasks.getReq(), {
+      let image = apos.image.newInstance();
+      let req = apos.task.getReq();
+      let attachment = await apos.attachment.insert(apos.task.getReq(), {
         name: 'upload_image.png',
         path: uploadSource + 'upload_image.png'
       });
       assert(attachment);
       image.title = 'Test Image';
       image.attachment = attachment;
-      image = await apos.images.insert(req, image);
+      image = await apos.image.insert(req, image);
       assert(image);
-      attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(attachment);
       assert(attachment.trash === false);
       assert(attachment.docIds);
@@ -182,21 +182,21 @@ describe('Attachment', function() {
       assert(attachment.trashDocIds);
       assert(attachment.trashDocIds.length === 0);
       try {
-        let fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+        let fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
         fs.closeSync(fd);
       } catch (e) {
         assert(false);
       }
       image.trash = true;
-      await apos.images.update(req, image);
-      attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
+      await apos.image.update(req, image);
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(attachment.trash);
       assert(attachment.docIds.length === 0);
       assert(attachment.trashDocIds.length === 1);
       let good = false;
       try {
-        fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+        fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
       } catch (e) {
         good = true;
       }
@@ -204,13 +204,13 @@ describe('Attachment', function() {
         throw new Error('should not have been accessible');
       }
       image.trash = false;
-      await apos.images.update(req, image);
-      attachment = await apos.attachments.db.findOne({ _id: image.attachment._id });
+      await apos.image.update(req, image);
+      attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(!attachment.trash);
       assert(attachment.docIds.length === 1);
       assert(attachment.trashDocIds.length === 0);
       try {
-        let fd = fs.openSync(apos.rootDir + '/public' + apos.attachments.url(attachment, { size: 'original' }), 'r');
+        let fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
         fs.closeSync(fd);
       } catch (e) {

@@ -490,7 +490,7 @@ Regression tests passing.
 
 * Do not send X-XSRF-TOKEN headers in an OPTIONS request. This change was mistakenly left out of the 2.52.0 release.
 * The named anchor `main` can now be overridden via the `mainAnchor` nunjucks block.
-* The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `lib/modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
+* The `npmRootDir` option can be used to cause Apostrophe's module loading mechanism to seek npm modules in a location other than that specified by `rootDir` (or the project root). The new `localesDir` option of `apostrophe-i18n` does the same for localization. This makes it possible to use `rootDir` to specify an alternate location for everything else, i.e. the parent of `public`, `data`, `modules`, etc. A necessary accommodation for the evolving `apostrophe-multisite` module.
 * Raw HTML widgets now offer help text out of the box.
 * The `express.static` middleware now runs before the `apostrophe-global` middleware and other "standard" Apostrophe middleware. 
 * Your own module-level `expressMiddleware` object can specify `{ when: 'beforeRequired', middleware: function(req, res, next) { ... })` to run before the required middleware as well. Note that this means no sessions, no users and no body parser. Most of the time you'll want those things.
@@ -538,7 +538,7 @@ Unit tests passing.
 Regression tests passing.
 
 * Clone button for widgets in areas, to save time when editing.
-* New features for displaying the titles of array items when editing fields of type `array`. `titleField` may now use dot notation. In addition, if that isn't enough, you may use `listItemTemplate` to point to an alternative to the standard `arrayListItem.html` template, which you may use as a reference. In addition, both `titleField` dot notation and the custom `listItemTemplate` have full access to joins. Be sure to use cross-module include syntax if you don't want to put the template in `lib/modules/apostrophe-schemas/views`. For instance, you may write `listItemTemplate: 'my-module-name:listItemTemplate.html'`.
+* New features for displaying the titles of array items when editing fields of type `array`. `titleField` may now use dot notation. In addition, if that isn't enough, you may use `listItemTemplate` to point to an alternative to the standard `arrayListItem.html` template, which you may use as a reference. In addition, both `titleField` dot notation and the custom `listItemTemplate` have full access to joins. Be sure to use cross-module include syntax if you don't want to put the template in `modules/apostrophe-schemas/views`. For instance, you may write `listItemTemplate: 'my-module-name:listItemTemplate.html'`.
 * Bug fix: modals are the right height when jQuery 3 is in use.
 * CSS class added to the `h4` that displays the title in an `apostrophe-images` widget, for your CSS styling convenience. Thanks to Gareth Cooper.
 
@@ -560,7 +560,7 @@ Regression tests passing.
 
 * New `color` and `range` schema field types. `color` provides a color picker field allowing values compatible with CSS, etc. `range` provides an `<input type="range">` element and respects `min` and `max` options.
 * New `apos.utils.log`, `apos.utils.info`, `apos.utils.debug`, `apos.utils.warn` and `apos.utils.error` methods. These are now used consistently throughout Apostrophe core, both in the server and in the browser. On the server, these methods wrap the corresponding methods of a `logger` object and you can inject your own via the `logger` option of the `apostrophe-utils` module. By default a logger object that wraps the `console` object is created. For convenience, if your logger has no `log` method, `apos.utils.log` will call `logger.info`. This allows many popular loggers like `winston` to be used without modification "out of the box."
-* `modulesSubdir` option to specify subdir where local modules come from, overriding `lib/modules`. Useful when more than one `apos` object exists in a project.
+* `modulesSubdir` option to specify subdir where local modules come from, overriding `modules`. Useful when more than one `apos` object exists in a project.
 * Major speedup to parked pages. Also eliminates spurious warnings about inefficient joins at startup.
 * Refactored autocollapse behavior of admin bar into its own method for easier overrides.
 * CSS fixes for improved usability.
@@ -583,7 +583,7 @@ Regression tests passing.
 
 * The `apos.utils.cssName` helper now preserves double dashes, as they are a common feature in modern CSS frameworks.
 
-* There is now an `apostrophe-areas:widgetBase.html` file which can be extended block by block in a project-level `lib/modules/apostrophe-areas/views/widget.html` file. New overrideable methods have also been added to simplify adding custom classes programmatically to the wrapper and the widget itself without overriding any templates.
+* There is now an `apostrophe-areas:widgetBase.html` file which can be extended block by block in a project-level `modules/apostrophe-areas/views/widget.html` file. New overrideable methods have also been added to simplify adding custom classes programmatically to the wrapper and the widget itself without overriding any templates.
 
 * It is now possible to configure select elements (we do not recommend more than one) to be displayed inline with the other widget controls, i.e. up, down, delete, etc. The back end of this is left to the developer, however you can check out the still-evolving [apostrophe-personas](https://github.com/apostrophecms/apostrophe-personas) module for an example. This feature is primarily meant for modules like `apostrophe-personas` that impact all widgets in a general way.
 
@@ -605,7 +605,7 @@ Regression tests passing.
 
 * It is now possible to secure widget properties so that they are not visible to end users if you do not choose to output them in the markup. To do that, set the `playerData` option of your widget module to `false`, or to an array of properties that **should** be visible in the `data` JSON attribute so that they are passed to the `play()` method. Normally widget properties are public information, intended for display, but this technique is useful if you have a `username` and `password` for use in fetching an external feed in a server-side `load` method, for instance. **Note that to allow widget editing to function, everything is still passed in `data` if the user has editing privileges for the widget.** So if you seek to verify this feature, be sure to check as a logged-out user, or a user without editing permissions for that content.
 
-* It is now easy to override the `fieldset` markup for Apostrophe schemas. Just copy `lib/modules/apostrophe-schemas/views/fieldset.html` to your project-level version of that path and edit it. However, please note that you must continue to have an outer wrapper element with the given attributes.
+* It is now easy to override the `fieldset` markup for Apostrophe schemas. Just copy `modules/apostrophe-schemas/views/fieldset.html` to your project-level version of that path and edit it. However, please note that you must continue to have an outer wrapper element with the given attributes.
 
 * Apostrophe's codebase now passes `eslint`. In the process many cases of callback errors being ignored were fixed, as well as global variable leaks.
 

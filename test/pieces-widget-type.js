@@ -17,19 +17,19 @@ describe('Pieces Widgets', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'events': {
+        'event': {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
-            alias: 'events',
+            alias: 'event',
             sort: { title: 1 }
           }
         },
-        'events-widgets': {
-          extend: '@apostrophecms/pieces-widget-type'
+        'event-widget': {
+          extend: '@apostrophecms/piece-widget-type'
         },
-        'default-pages': {
+        'default-page': {
           extend: '@apostrophecms/page-type',
           fields: {
             add: {
@@ -37,22 +37,22 @@ describe('Pieces Widgets', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    'events': {}
+                    'event': {}
                   }
                 }
               }
             }
           }
         },
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             types: [
               {
-                name: '@apostrophecms/home-pages',
+                name: '@apostrophecms/home-page',
                 label: 'Home'
               },
               {
-                name: 'default-pages',
+                name: 'default-page',
                 label: 'Default'
               }
             ],
@@ -60,16 +60,16 @@ describe('Pieces Widgets', function() {
               {
                 title: 'Page With Events Widget',
                 metaType: 'doc',
-                type: 'default-pages',
+                type: 'default-page',
                 slug: '/page-with-events',
-                parkedId: 'page-with-events-widget',
+                parkedId: 'page-with-event-widget',
                 published: true,
                 body: {
                   metaType: 'area',
                   items: [
                     {
                       metaType: 'widget',
-                      type: 'events',
+                      type: 'event',
                       by: 'id',
                       pieceIds: [
                         'wevent012', 'wevent011', 'wevent010'
@@ -77,7 +77,7 @@ describe('Pieces Widgets', function() {
                     },
                     {
                       metaType: 'widget',
-                      type: 'events',
+                      type: 'event',
                       by: 'all',
                       limitAll: 5
                     }
@@ -92,7 +92,7 @@ describe('Pieces Widgets', function() {
   });
 
   it('should be able to use db to insert test pieces', async function() {
-    assert(apos.modules['events-widgets']);
+    assert(apos.modules['event-widget']);
     let testItems = [];
     let total = 100;
     for (let i = 1; (i <= total); i++) {
@@ -133,8 +133,8 @@ describe('Pieces Widgets', function() {
       title: title,
       // fake highSearchText and highSearchWords until the
       // search module is finished
-      highSearchText: apos.utils.sortify(title),
-      highSearchWords: apos.utils.sortify(title).split(/ /),
+      highSearchText: apos.util.sortify(title),
+      highSearchWords: apos.util.sortify(title).split(/ /),
       body: {
         metaType: 'area',
         items: [
@@ -146,9 +146,9 @@ describe('Pieces Widgets', function() {
         ]
       }
     });
-    const req = apos.tasks.getReq();
+    const req = apos.task.getReq();
     for (const item of testItems) {
-      await apos.docs.insert(req, item);
+      await apos.doc.insert(req, item);
     }
   });
 
@@ -195,17 +195,17 @@ describe('Pieces Widget With Extra Join', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'events': {
+        'event': {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
-            alias: 'events',
+            alias: 'event',
             sort: { title: 1 }
           }
         },
-        'events-widgets': {
-          extend: '@apostrophecms/pieces-widget-type',
+        'event-widget': {
+          extend: '@apostrophecms/piece-widget-type',
           fields: {
             add: {
               _featured: {
@@ -215,31 +215,31 @@ describe('Pieces Widget With Extra Join', function() {
             }
           }
         },
-        '@apostrophecms/pages': {
+        '@apostrophecms/page': {
           options: {
             types: [
               {
-                name: '@apostrophecms/home-pages',
+                name: '@apostrophecms/home-page',
                 label: 'Home'
               },
               {
-                name: 'default-pages',
+                name: 'default-page',
                 label: 'Default'
               }
             ],
             park: [
               {
                 title: 'Page With Events Widget',
-                type: 'default-pages',
+                type: 'default-page',
                 slug: '/page-with-events',
                 published: true,
-                parkedId: 'page-with-events-widget',
+                parkedId: 'page-with-event-widget',
                 body: {
                   metaType: 'area',
                   items: [
                     {
                       metaType: 'widget',
-                      type: 'events',
+                      type: 'event',
                       by: 'id',
                       pieceIds: [
                         'wevent012', 'wevent011', 'wevent010'
@@ -250,7 +250,7 @@ describe('Pieces Widget With Extra Join', function() {
                     },
                     {
                       metaType: 'widget',
-                      type: 'events',
+                      type: 'event',
                       by: 'all',
                       limitByAll: 5
                     }
@@ -260,7 +260,7 @@ describe('Pieces Widget With Extra Join', function() {
             ]
           }
         },
-        'default-pages': {
+        'default-page': {
           extend: '@apostrophecms/page-type',
           fields: {
             add: {
@@ -268,7 +268,7 @@ describe('Pieces Widget With Extra Join', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    'events': {}
+                    'event': {}
                   }
                 }
               }
@@ -280,7 +280,7 @@ describe('Pieces Widget With Extra Join', function() {
   });
 
   it('should be able to use db to insert test pieces', async function() {
-    assert(apos.modules['events-widgets']);
+    assert(apos.modules['event-widget']);
     let testItems = [];
     let total = 100;
     for (let i = 1; (i <= total); i++) {
@@ -319,8 +319,8 @@ describe('Pieces Widget With Extra Join', function() {
       title: title,
       // fake highSearchText and highSearchWords until the
       // search module is finished
-      highSearchText: apos.utils.sortify(title),
-      highSearchWords: apos.utils.sortify(title).split(/ /),
+      highSearchText: apos.util.sortify(title),
+      highSearchWords: apos.util.sortify(title).split(/ /),
       body: {
         metaType: 'area',
         items: [
@@ -332,9 +332,9 @@ describe('Pieces Widget With Extra Join', function() {
         ]
       }
     });
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     for (const item of testItems) {
-      await apos.docs.insert(req, item);
+      await apos.doc.insert(req, item);
     }
   });
 
