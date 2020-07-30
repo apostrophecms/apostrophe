@@ -141,6 +141,7 @@
     "lorem-ipsum": "^2.0.3",
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
+    "replace-in-file": "^6.1.0",
     "style-loader": "^1.2.1"
   },
   "browserslist": [

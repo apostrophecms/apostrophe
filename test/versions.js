@@ -72,12 +72,12 @@ describe('Versions', function() {
         }
       }
     });
-    assert(apos.versions);
-    assert(apos.versions.db);
+    assert(apos.version);
+    assert(apos.version.db);
   });
 
   it('should accept a direct mongo insert of poems for join test purposes', async () => {
-    return apos.docs.db.insertMany([
+    return apos.doc.db.insertMany([
       {
         title: 'Poem ABC',
         slug: 'poem-abc',
@@ -114,12 +114,12 @@ describe('Versions', function() {
       alive: true
     };
 
-    const object2 = await apos.docs.insert(apos.tasks.getReq(), object);
+    const object2 = await apos.doc.insert(apos.task.getReq(), object);
     assert(object2);
     assert(object2._id);
     let docId = object2._id;
     // did the versions module kick in?
-    const versions = await apos.versions.db.find({ docId: docId }).toArray();
+    const versions = await apos.version.db.find({ docId: docId }).toArray();
     // we should have a document
     assert(versions);
     // there should be only one document in our results
@@ -129,7 +129,7 @@ describe('Versions', function() {
   });
 
   it('should be able to update', async () => {
-    const docs = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toArray();
+    const docs = await apos.doc.find(apos.task.getReq(), { slug: 'one' }).toArray();
     // we should have a document
     assert(docs);
     // there should be only one document in our results
@@ -140,13 +140,13 @@ describe('Versions', function() {
     // we want update the alive property
     object.alive = false;
 
-    const object2 = await apos.docs.update(apos.tasks.getReq(), object);
+    const object2 = await apos.doc.update(apos.task.getReq(), object);
     assert(object2);
     // has the property been updated?
     assert(object2.alive === false);
 
     // did the versions module kick in?
-    const versions = await apos.versions.db.find({ docId: object._id }).sort({ createdAt: -1 }).toArray();
+    const versions = await apos.version.db.find({ docId: object._id }).sort({ createdAt: -1 }).toArray();
     // we should have a document
     assert(versions);
     // there should be two documents now in our results
@@ -157,31 +157,31 @@ describe('Versions', function() {
   });
 
   it('should be able to revert to a previous version', async () => {
-    const doc = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject();
-    const versions = await apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {});
+    const doc = await apos.doc.find(apos.task.getReq(), { slug: 'one' }).toObject();
+    const versions = await apos.version.find(apos.task.getReq(), { docId: doc._id }, {});
     assert(versions.length === 2);
-    await apos.versions.revert(apos.tasks.getReq(), versions[1]);
+    await apos.version.revert(apos.task.getReq(), versions[1]);
     // make sure the change propagated to the database
-    const doc2 = await apos.docs.find(apos.tasks.getReq(), { slug: 'one' }).toObject();
+    const doc2 = await apos.doc.find(apos.task.getReq(), { slug: 'one' }).toObject();
     assert(doc2);
     assert(doc2.alive === true);
   });
 
   it('should be able to fetch all versions in proper order', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
-    const versions = await apos.versions.find(apos.tasks.getReq(), { docId: doc._id }, {});
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
+    const versions = await apos.version.find(apos.task.getReq(), { docId: doc._id }, {});
     assert(versions.length === 3);
     assert(versions[0].createdAt > versions[1].createdAt);
     assert(versions[1].createdAt > versions[2].createdAt);
   });
 
   it('should be able to compare versions and spot a simple field change', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
-    const versions = await apos.versions.find(req, { docId: doc._id }, {});
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
+    const versions = await apos.version.find(req, { docId: doc._id }, {});
     assert(versions.length === 3);
-    const changes = await apos.versions.compare(req, doc, versions[1], versions[0]);
+    const changes = await apos.version.compare(req, doc, versions[1], versions[0]);
     assert(changes.length === 1);
     assert(changes[0].action === 'change');
     assert(changes[0].old === false);
@@ -191,11 +191,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget addition', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -246,11 +246,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget removal', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -301,11 +301,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with areas and spot a widget change', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -366,11 +366,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an addition', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -410,11 +410,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an item removal', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -453,11 +453,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with arrays and spot an item change', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',
@@ -504,11 +504,11 @@ describe('Versions', function() {
   });
 
   it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', async () => {
-    let req = apos.tasks.getReq();
-    const doc = await apos.docs.find(req, { slug: 'one' }).toObject();
+    let req = apos.task.getReq();
+    const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);
     // compare mock versions
-    const changes = await apos.versions.compare(req, doc, {
+    const changes = await apos.version.compare(req, doc, {
       doc: {
         title: 'whatever',
         slug: 'whatever',

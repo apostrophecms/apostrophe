@@ -18,7 +18,7 @@ describe('page-type', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'nifty-pages': {
+        'nifty-page': {
           extend: '@apostrophecms/page-type'
         }
       }
@@ -28,59 +28,59 @@ describe('page-type', function() {
   });
 
   it('should fire a dispatch route for its homepage', async function() {
-    const niftyPages = apos.modules['nifty-pages'];
+    const niftyPages = apos.modules['nifty-page'];
     niftyPages.dispatch('/', async function(req) {
       req.handlerInvoked = true;
       niftyPages.setTemplate(req, 'index');
     });
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-pages'
+          type: 'nifty-page'
         }
       },
       remainder: '/'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(req.handlerInvoked);
   });
 
   it('should fire a dispatch route matching a second, longer URL', async function() {
-    const niftyPages = apos.modules['nifty-pages'];
+    const niftyPages = apos.modules['nifty-page'];
     niftyPages.dispatch('/foo', async function(req) {
       req.handlerInvoked = true;
       niftyPages.setTemplate(req, 'foo');
     });
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-pages'
+          type: 'nifty-page'
         }
       },
       remainder: '/foo'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(req.handlerInvoked);
   });
 
   it('should fire a dispatch route with parameters', async function() {
-    const niftyPages = apos.modules['nifty-pages'];
+    const niftyPages = apos.modules['nifty-page'];
     niftyPages.dispatch('/bar/:bizzle/:kapow/*', async function(req) {
       req.barInvoked = true;
       niftyPages.setTemplate(req, 'bar');
     });
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-pages'
+          type: 'nifty-page'
         }
       },
       remainder: '/bar/wacky/wonky/wibble/skip'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(req.barInvoked);
     assert(req.params.bizzle === 'wacky');
     assert(req.params.kapow === 'wonky');
@@ -88,28 +88,28 @@ describe('page-type', function() {
   });
 
   it('should allow a later call to dispatch to override an earlier dispatch route', async function() {
-    const niftyPages = apos.modules['nifty-pages'];
+    const niftyPages = apos.modules['nifty-page'];
     await niftyPages.dispatch('/foo', function(req) {
       req.foo2Invoked = true;
       niftyPages.setTemplate(req, 'foo2');
     });
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: {
-          type: 'nifty-pages'
+          type: 'nifty-page'
         }
       },
       remainder: '/foo'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(req.foo2Invoked);
     assert(!req.fooInvoked);
   });
 
   it('should not match when page type is wrong', async function() {
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: {
           type: 'wibble-page'
@@ -117,26 +117,26 @@ describe('page-type', function() {
       },
       remainder: '/foo'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(!req.foo2Invoked);
   });
 
   it('should not match when there is no bestPage', async function() {
     // Simulate a page request
-    const req = apos.tasks.getAnonReq({
+    const req = apos.task.getAnonReq({
       data: {
         bestPage: null
       },
       remainder: '/foo'
     });
-    await apos.pages.emit('serve', req);
+    await apos.page.emit('serve', req);
     assert(!req.foo2Invoked);
   });
 
   it('should be able to insert a test page manually into the db', async function() {
     const testItem = {
       _id: 'niftyPages1',
-      type: 'nifty-pages',
+      type: 'nifty-page',
       slug: '/niftyPages',
       published: true,
       path: '/niftyPages',
@@ -145,7 +145,7 @@ describe('page-type', function() {
       trash: false
     };
 
-    const response = await apos.docs.db.insertOne(testItem);
+    const response = await apos.doc.db.insertOne(testItem);
 
     assert(response.insertedCount === 1);
     assert(response.ops[0]._id === 'niftyPages1');

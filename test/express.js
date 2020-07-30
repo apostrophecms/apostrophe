@@ -12,8 +12,8 @@ describe('Express', function() {
       root: module,
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.express);
@@ -117,8 +117,8 @@ describe('Express', function() {
       prefix: '/prefix',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.prefix);
@@ -157,14 +157,14 @@ describe('Express', function() {
       baseUrl: 'https://example.com',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.baseUrl);
     assert(apos.baseUrl === 'https://example.com');
 
-    const req = apos.tasks.getReq({ url: '/test' });
+    const req = apos.task.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.absoluteUrl === 'https://example.com/test');
 
@@ -179,14 +179,14 @@ describe('Express', function() {
       prefix: '/subdir',
       modules: {
         'express-test': {},
-        'templates-test': {},
-        'templates-subclass-test': {}
+        'template-test': {},
+        'template-subclass-test': {}
       }
     });
     assert(apos.baseUrl);
     assert(apos.baseUrl === 'https://example.com');
     assert(apos.prefix === '/subdir');
-    const req = apos.tasks.getReq({ url: '/test' });
+    const req = apos.task.getReq({ url: '/test' });
     assert(req.baseUrl === 'https://example.com');
     assert(req.baseUrlWithPrefix === 'https://example.com/subdir');
     assert(req.absoluteUrl === 'https://example.com/subdir/test');

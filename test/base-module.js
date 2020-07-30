@@ -26,7 +26,7 @@ describe('Base Module', function() {
 
   it('should produce correct responses via the getOption method', async function() {
     let mod = apos.modules['test-get-option'];
-    let req = apos.tasks.getReq();
+    let req = apos.task.getReq();
     assert.strictEqual(mod.getOption(req, 'flavors.grape.sweetness'), 20);
     assert.strictEqual(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
     assert.strictEqual(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
