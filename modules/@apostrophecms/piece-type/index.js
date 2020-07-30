@@ -531,7 +531,7 @@ module.exports = {
           if (!piece) {
             throw self.apos.error('notfound');
           }
-          self.apos.utils.applyPatchOperators(input, piece);
+          self.apos.util.applyPatchOperators(input, piece);
           const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
           await self.apos.schema.convert(req, schema, input, piece);
           await self.emit('afterConvert', req, input, piece);

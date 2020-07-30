@@ -233,14 +233,14 @@ describe('Utils', function() {
       assert(true);
     });
 
-    it('can get a top level property with utils.get', () => {
+    it('can get a top level property with util.get', () => {
       const data = {
         age: 5
       };
       assert(apos.util.get(data, 'age') === 5);
     });
 
-    it('can set a top level property with utils.set', () => {
+    it('can set a top level property with util.set', () => {
       const data = {
         age: 5
       };
@@ -248,7 +248,7 @@ describe('Utils', function() {
       assert(data.age === 7);
     });
 
-    it('can get a nested property with utils.get', () => {
+    it('can get a nested property with util.get', () => {
       const data = {
         shoe: {
           size: 5
@@ -257,7 +257,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
-    it('can set a nested property with utils.set', () => {
+    it('can set a nested property with util.set', () => {
       const data = {
         shoe: {
           size: 5
@@ -267,7 +267,7 @@ describe('Utils', function() {
       assert(data.shoe.size === 7);
     });
 
-    it('can get a nested property with utils.get', () => {
+    it('can get a nested property with util.get', () => {
       const data = {
         shoe: {
           size: 5
@@ -276,7 +276,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.size') === 5);
     });
 
-    it('can get a nested array property with utils.get', () => {
+    it('can get a nested array property with util.get', () => {
       const data = {
         shoe: {
           laces: [
@@ -288,7 +288,7 @@ describe('Utils', function() {
       assert(apos.util.get(data, 'shoe.laces.0', 'intact'));
     });
 
-    it('can set a nested array property with utils.set', () => {
+    it('can set a nested array property with util.set', () => {
       const data = {
         shoe: {
           laces: [

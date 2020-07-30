@@ -350,8 +350,8 @@ module.exports = async function(options) {
         }
       }
       function warn(name, message) {
-        if (self.utils) {
-          self.utils.warnDevOnce(name, message);
+        if (self.util) {
+          self.util.warnDevOnce(name, message);
         } else {
           // apos.util not in play, this can be the case in our bootstrap tests
           if (self.argv[`ignore-${name}`]) {

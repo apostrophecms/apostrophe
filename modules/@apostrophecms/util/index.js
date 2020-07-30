@@ -378,7 +378,6 @@ module.exports = {
           return 0;
         }
       },
-      findNestedObjectById: require('../../../lib/shared-util/findNestedObjectById'),
       enableLogger() {
         self.logger = self.options.logger ? self.options.logger(self.apos) : require('./lib/logger.js')(self.apos);
       },
