@@ -18,22 +18,13 @@
 
     <div class="apos-login__body">
       <form>
-        <AposInputString
-          @input="fill($event, 'usernameField')"
-          :field="usernameField.field"
-          :status="usernameField.status"
-          :value="usernameField.value"
-          :modifiers="['dark']"
+        <AposSchema
+          :schema="schema"
+          :doc="doc"
+          @input="update"
         />
-        <AposInputString
-          @input="fill($event, 'passwordField')"
-          :field="passwordField.field"
-          :type="passwordField.type"
-          :status="passwordField.status"
-          :value="passwordField.value"
-          :modifiers="['dark']"
-        />
-        <a href="#" class="apos-login__link">Forgot Password</a>
+        <!-- TODO -->
+        <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
         <AposButton
           class="apos-field--short"
           :busy="busy"
@@ -61,27 +52,23 @@ export default {
     return {
       error: '',
       busy: false,
-      usernameField: {
-        field: {
+      doc: {},
+      schema: [
+        {
           name: 'username',
-          placeholder: 'Enter username',
           label: 'Username',
+          placeholder: 'Enter username',
+          type: 'string',
           required: true
         },
-        status: {},
-        value: { data: '' }
-      },
-      passwordField: {
-        field: {
+        {
           name: 'password',
-          type: 'password',
-          placeholder: 'Enter password',
           label: 'Password',
+          placeholder: 'Enter password',
+          type: 'string',
           required: true
-        },
-        status: {},
-        value: { data: '' }
-      },
+        }
+      ],
       context: {},
       contextLoading: true
     };
@@ -97,31 +84,24 @@ export default {
     }
   },
   methods: {
-    fill(value, field) {
-      this[field].value = value
+    update(name, value) {
+      this.doc[name] = value.data;
     },
     async submit() {
-      const self = this;
-      self.busy = true;
-      self.error = false;
+      this.busy = true;
+      this.error = '';
       try {
-        if (!self.usernameField.value.data || !self.passwordField.value.data) {
-          throw new Error('Username and password required.');
-        }
         await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
           busy: true,
-          body: {
-            username: self.usernameField.value.data,
-            password: self.passwordField.value.data
-          }
+          body: this.doc
         });
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
         window.location.href = `/${apos.prefix}`;
       } catch (e) {
-        self.error = e.message || 'An error occurred. Please try again.';
+        this.error = e.message || 'An error occurred. Please try again.';
       } finally {
-        self.busy = false;
+        this.busy = false;
       }
     },
     toggleDropdown: function () {
@@ -227,6 +207,7 @@ export default {
 
     &--error {
       color: var(--a-danger);
+      min-height: 13px;
       font-size: map-get($font-sizes, meta);
       letter-spacing: 1.5px;
       text-transform: uppercase;

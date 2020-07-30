@@ -51,14 +51,7 @@ export default {
       }
     },
     classes () {
-      const classes = ['apos-input', `apos-input--${this.type}`];
-      if (this.modifiers.includes('dark')) {
-        classes.push('apos-theme-dark');
-      }
-      if (this.modifiers.includes('short')) {
-        classes.push('apos-input--short');
-      }
-      return classes;
+      return ['apos-input', `apos-input--${this.type}`];
     },
     icon () {
       if (this.status.error) {
