@@ -251,7 +251,7 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'checkbox',
+      name: 'checkboxes',
       convert: async function (req, field, data, object) {
         if (typeof data[field.name] === 'string') {
           data[field.name] = self.apos.launder.string(data[field.name]).split(',');
