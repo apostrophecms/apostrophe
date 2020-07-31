@@ -63,7 +63,8 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false,
-        disableHeader: true
+        disableHeader: true,
+        trapFocus: true
       }
     };
   },

@@ -11,6 +11,7 @@
       role="dialog"
       aria-modal="true"
       :aria-labelledby="id"
+      ref="modalEl"
     >
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
@@ -91,6 +92,9 @@ export default {
         return 'fade';
       }
     },
+    modalReady () {
+      return this.modal.active;
+    },
     hasPrimaryControls: function () {
       return !!this.$slots.primaryControls;
     },
@@ -130,6 +134,15 @@ export default {
       return false;
     }
   },
+  watch: {
+    modalReady (newVal) {
+      this.$nextTick(() => {
+        if (newVal && this.modal.trapFocus && this.$refs.modalEl) {
+          this.trapFocus();
+        }
+      });
+    }
+  },
   methods: {
     esc (e) {
       if (e.keyCode === 27) {
@@ -149,6 +162,50 @@ export default {
     },
     removeEventListeners () {
       window.removeEventListener('keydown', this.esc);
+    },
+    trapFocus () {
+      // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
+      // All the elements inside modal which you want to make focusable.
+      const focusableElements = [
+        'button',
+        '[href]',
+        'input',
+        'select',
+        'textarea',
+        '[tabindex]:not([tabindex="-1"]'
+      ];
+      const focusableString = focusableElements.join(', ');
+      const modalEl = this.$refs.modalEl;
+      const focusables = modalEl.querySelectorAll(focusableString);
+      const firstFocusableElement = focusables[0];
+      const lastFocusableElement = focusables[focusables.length - 1];
+
+      modalEl.addEventListener('keydown', cycleFocusables);
+
+      firstFocusableElement.focus();
+
+      function cycleFocusables (e) {
+        const isTabPressed = e.key === 'Tab' || e.code === 'Tab';
+        if (!isTabPressed) {
+          return;
+        }
+
+        if (e.shiftKey) {
+          // If shift key pressed for shift + tab combination
+          if (document.activeElement === firstFocusableElement) {
+            // Add focus for the last focusable element
+            lastFocusableElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          // If tab key is pressed
+          if (document.activeElement === lastFocusableElement) {
+            // Add focus for the first focusable element
+            firstFocusableElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
     }
   }
 };
