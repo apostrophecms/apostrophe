@@ -2343,16 +2343,18 @@ module.exports = {
   extendMethods(self, options) {
     return {
       getBrowserData(_super, req) {
-        if (!req.user) {
+        if (req.scene !== 'apos') {
           return;
         }
-        const browserOptions = _super(req);
+
         const fields = {};
         for (const name in self.fieldTypes) {
           fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(name);
         }
-        browserOptions.components = { fields: fields };
-        return browserOptions;
+
+        return {
+          components: { fields }
+        };
       }
     };
   },
