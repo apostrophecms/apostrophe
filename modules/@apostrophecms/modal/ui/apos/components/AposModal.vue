@@ -17,7 +17,7 @@
           v-if="modal.showModal"
           class="apos-modal__inner" data-apos-modal-inner
         >
-          <header class="apos-modal__header">
+          <header class="apos-modal__header" v-if="!modal.disableHeader">
             <div class="apos-modal__header__main">
               <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
                 <slot name="secondaryControls" />
