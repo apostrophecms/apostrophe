@@ -2349,7 +2349,7 @@ module.exports = {
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {
-          fields[name] = 'Apostrophe' + self.apos.util.capitalizeFirst(name) + 'Field';
+          fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(name);
         }
         browserOptions.components = { fields: fields };
         return browserOptions;
