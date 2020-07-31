@@ -5,9 +5,10 @@
   <div class="apos-schema">
     <div v-for="field in schema" :key="field.name">
       <component
+        v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
         :status="fields[field.name].status" :value="fields[field.name].value"
-        @input="input($event, field.name)" :modifiers="fields[field.name].modifiers"
+        :modifiers="fields[field.name].modifiers"
       />
     </div>
   </div>
@@ -18,6 +19,12 @@
 export default {
   name: 'AposSchema',
   props: {
+    value: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     schema: {
       type: Array,
       required: true
@@ -37,12 +44,27 @@ export default {
   },
   emits: ['input'],
   data() {
+    const next = {
+      hasErrors: false,
+      data: {}
+    };
+
+    const fieldState = {};
+    this.schema.forEach(field => {
+      fieldState[field.name] = {
+        error: false,
+        data: this.doc[field.name]
+      };
+      next.data[field.name] = fieldState[field.name].data;
+    });
+    if (this.doc._id) {
+      next.data._id = this.doc._id;
+    }
+
     return {
-      // TODO: Complete this with other schema field types.
-      fieldComponentMap: {
-        string: 'AposInputString',
-        boolean: 'AposInputBoolean'
-      }
+      next,
+      fieldState,
+      fieldComponentMap: window.apos.schemas.components.fields || {}
     };
   },
   computed: {
@@ -72,10 +94,28 @@ export default {
       return fields;
     }
   },
-  methods: {
-    input(value, name) {
-      this.$emit('input', name, value);
+  mounted() {
+    this.updateNextAndEmit();
+  },
+  watch: {
+    fieldState: {
+      deep: true,
+      handler() {
+        this.updateNextAndEmit();
+      }
     }
+  },
+  methods: {
+    updateNextAndEmit() {
+      this.next.hasErrors = false;
+      this.schema.forEach(field => {
+        if (this.fieldState[field.name].error) {
+          this.next.hasErrors = true;
+        }
+        this.next.data[field.name] = this.fieldState[field.name].data;
+      });
+      this.$emit('input', this.next);
+    },
   }
 };
 </script>
