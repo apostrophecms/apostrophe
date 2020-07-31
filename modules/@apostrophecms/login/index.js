@@ -199,11 +199,11 @@ module.exports = {
       },
       get: {
         context () {
-          return JSON.stringify({
+          return {
             env: process.env.NODE_ENV || 'development',
             name: process.env.npm_package_name.replace(/-/g, ' ') || 'Apostrophe',
             version: process.env.npm_package_version || '1.0.0'
-          });
+          };
         }
       }
     };

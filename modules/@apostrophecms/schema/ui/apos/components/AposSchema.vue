@@ -64,7 +64,7 @@ export default {
     return {
       next,
       fieldState,
-      fieldComponentMap: window.apos.schemas.components.fields || {}
+      fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
   computed: {
