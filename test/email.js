@@ -33,7 +33,7 @@ describe('Email', function() {
   });
 
   it('can send email on behalf of a module', async function() {
-    const info = await apos.modules['email-test'].email(apos.tasks.getReq(),
+    const info = await apos.modules['email-test'].email(apos.task.getReq(),
       'welcome',
       {
         name: 'Fred Astaire'

@@ -18,16 +18,16 @@ describe('Areas', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'monkeys': {
+        'monkey': {
           extend: '@apostrophecms/piece-type'
         },
-        'monkeys-widgets': {
-          extend: '@apostrophecms/pieces-widget-type'
+        'monkey-widget': {
+          extend: '@apostrophecms/piece-widget-type'
         }
       }
     });
-    assert(apos.modules['@apostrophecms/areas']);
-    assert(apos.areas);
+    assert(apos.modules['@apostrophecms/area']);
+    assert(apos.area);
     // In tests this will be the name of the test file,
     // so override that in order to get apostrophe to
     // listen normally and not try to run a task. -Tom
@@ -35,7 +35,7 @@ describe('Areas', function() {
   });
 
   it('returns the rich text of an area via the richText method', function() {
-    assert(apos.areas.richText({
+    assert(apos.area.richText({
       metaType: 'area',
       items: [
         {
@@ -55,7 +55,7 @@ describe('Areas', function() {
         }
       ]
     }) === '<h2>So cool</h2>\n<h2>Something else cool</h2>');
-    assert(apos.areas.richText({
+    assert(apos.area.richText({
       metaType: 'area',
       items: [
         {
@@ -75,7 +75,7 @@ describe('Areas', function() {
         }
       ]
     }, { delimiter: '' }) === '<h2>So cool</h2><h2>Something else cool</h2>');
-    assert(apos.areas.richText({
+    assert(apos.area.richText({
       metaType: 'area',
       items: [
         {
@@ -98,7 +98,7 @@ describe('Areas', function() {
   });
 
   it('returns the plaintext of an area via the plaintext method', function() {
-    assert.strictEqual(apos.areas.plaintext({
+    assert.strictEqual(apos.area.plaintext({
       metaType: 'area',
       items: [
         {
@@ -118,7 +118,7 @@ describe('Areas', function() {
         }
       ]
     }), 'So cool\nSomething else cool');
-    assert.strictEqual(apos.areas.plaintext({
+    assert.strictEqual(apos.area.plaintext({
       metaType: 'area',
       items: [
         {
@@ -176,18 +176,18 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test3',
-            type: 'monkeys',
+            type: 'monkey',
             _pieces: []
           }
         ]
       }
     };
-    assert(apos.areas.isEmpty({ area: doc.body }));
-    assert(apos.areas.isEmpty(doc, 'body'));
-    assert(apos.areas.isEmpty(doc, 'nonexistent'));
-    assert(apos.areas.isEmpty(doc, 'emptyText'));
-    assert(apos.areas.isEmpty(doc, 'insignificantText'));
-    assert(apos.areas.isEmpty(doc, 'insignificantPieces'));
+    assert(apos.area.isEmpty({ area: doc.body }));
+    assert(apos.area.isEmpty(doc, 'body'));
+    assert(apos.area.isEmpty(doc, 'nonexistent'));
+    assert(apos.area.isEmpty(doc, 'emptyText'));
+    assert(apos.area.isEmpty(doc, 'insignificantText'));
+    assert(apos.area.isEmpty(doc, 'insignificantPieces'));
   });
 
   it('area not considered empty when it should not be', function() {
@@ -233,7 +233,7 @@ describe('Areas', function() {
           {
             metaType: 'widget',
             _id: 'test3',
-            type: 'monkeys',
+            type: 'monkey',
             _pieces: [
               {
                 type: 'monkey'
@@ -243,34 +243,34 @@ describe('Areas', function() {
         ]
       }
     };
-    assert(!apos.areas.isEmpty({ area: doc.body }));
-    assert(!apos.areas.isEmpty(doc, 'body'));
-    assert(!apos.areas.isEmpty(doc, 'fullText'));
-    assert(!apos.areas.isEmpty({ area: doc.fullText }));
-    assert(!apos.areas.isEmpty(doc, 'significantPieces'));
+    assert(!apos.area.isEmpty({ area: doc.body }));
+    assert(!apos.area.isEmpty(doc, 'body'));
+    assert(!apos.area.isEmpty(doc, 'fullText'));
+    assert(!apos.area.isEmpty({ area: doc.fullText }));
+    assert(!apos.area.isEmpty(doc, 'significantPieces'));
   });
 
   it('both isEmpty and legacy empty methods work on schema fields', function() {
     assert(
-      !apos.schemas.fieldTypes.boolean.isEmpty({
+      !apos.schema.fieldTypes.boolean.isEmpty({
         type: 'boolean',
         name: 'test'
       }, true)
     );
     assert(
-      apos.schemas.fieldTypes.boolean.isEmpty({
+      apos.schema.fieldTypes.boolean.isEmpty({
         type: 'boolean',
         name: 'test'
       }, false)
     );
     assert(
-      !apos.schemas.fieldTypes.boolean.empty({
+      !apos.schema.fieldTypes.boolean.empty({
         type: 'boolean',
         name: 'test'
       }, true)
     );
     assert(
-      apos.schemas.fieldTypes.boolean.empty({
+      apos.schema.fieldTypes.boolean.empty({
         type: 'boolean',
         name: 'test'
       }, false)

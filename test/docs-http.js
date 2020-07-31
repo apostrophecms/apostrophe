@@ -45,9 +45,9 @@ describe('Docs', function() {
         title: 'title: ' + i
       });
     }
-    await apos.docs.db.insertMany(testItems);
+    await apos.doc.db.insertMany(testItems);
 
-    const user = apos.users.newInstance();
+    const user = apos.user.newInstance();
     user.firstName = 'ad';
     user.lastName = 'min';
     user.title = 'admin';
@@ -55,7 +55,7 @@ describe('Docs', function() {
     user.password = 'admin';
     user.email = 'ad@min.com';
     user.permissions = [ 'admin' ];
-    await apos.users.insert(apos.tasks.getReq(), user);
+    await apos.user.insert(apos.task.getReq(), user);
 
     jar = apos.http.jar();
     // establish session
@@ -78,7 +78,7 @@ describe('Docs', function() {
   });
 
   it('should be able to lock a document', async function() {
-    return apos.http.post('/api/v1/@apostrophecms/docs/lock', {
+    return apos.http.post('/api/v1/@apostrophecms/doc/lock', {
       body: {
         _id: 'i27',
         htmlPageId: 'abc'
@@ -89,7 +89,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document when not logged in', async function() {
     try {
-      await apos.http.post('/api/v1/@apostrophecms/docs/lock', {
+      await apos.http.post('/api/v1/@apostrophecms/doc/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc'
@@ -104,7 +104,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document with a different contextId', async function() {
     try {
-      await apos.http.post('/api/v1/@apostrophecms/docs/lock', {
+      await apos.http.post('/api/v1/@apostrophecms/doc/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'def'
@@ -121,7 +121,7 @@ describe('Docs', function() {
 
   it('should be able to unlock a document', async function() {
     try {
-      await apos.http.post('/api/v1/@apostrophecms/docs/unlock', {
+      await apos.http.post('/api/v1/@apostrophecms/doc/unlock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc'
@@ -135,7 +135,7 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     try {
-      await apos.http.post('/api/v1/@apostrophecms/docs/lock', {
+      await apos.http.post('/api/v1/@apostrophecms/doc/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'def'
@@ -149,7 +149,7 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     try {
-      await apos.http.post('/api/v1/@apostrophecms/docs/lock', {
+      await apos.http.post('/api/v1/@apostrophecms/doc/lock', {
         body: {
           _id: 'i27',
           htmlPageId: 'abc',

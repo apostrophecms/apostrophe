@@ -23,20 +23,20 @@ describe('Locks', function() {
         // we're doing it to deliberately force them to contend with each other,
         // rather than just throwing an error saying "hey you have this lock
         // now"
-        '@apostrophecms/locks-1': {
-          extend: '@apostrophecms/locks',
+        '@apostrophecms/lock-1': {
+          extend: '@apostrophecms/lock',
           options: {
             alias: 'locks1'
           }
         },
-        '@apostrophecms/locks-2': {
-          extend: '@apostrophecms/locks',
+        '@apostrophecms/lock-2': {
+          extend: '@apostrophecms/lock',
           options: {
             alias: 'locks2'
           }
         },
-        '@apostrophecms/locks-3': {
-          extend: '@apostrophecms/locks',
+        '@apostrophecms/lock-3': {
+          extend: '@apostrophecms/lock',
           options: {
             alias: 'locks3'
           }
@@ -44,42 +44,42 @@ describe('Locks', function() {
       }
     });
 
-    assert(apos.modules['@apostrophecms/locks']);
-    assert(apos.modules['@apostrophecms/locks-1']);
-    assert(apos.modules['@apostrophecms/locks-2']);
-    assert(apos.modules['@apostrophecms/locks-3']);
+    assert(apos.modules['@apostrophecms/lock']);
+    assert(apos.modules['@apostrophecms/lock-1']);
+    assert(apos.modules['@apostrophecms/lock-2']);
+    assert(apos.modules['@apostrophecms/lock-3']);
   });
 
   it('cleanup', async function() {
-    await apos.locks.db.deleteMany({});
+    await apos.lock.db.deleteMany({});
   });
 
   it('should allow a single lock without contention uneventfully', async function() {
-    await apos.locks.lock('test');
-    await apos.locks.unlock('test');
+    await apos.lock.lock('test');
+    await apos.lock.unlock('test');
   });
 
   it('should allow two differently-named locks uneventfully', async function() {
-    await apos.locks.lock('test1');
-    await apos.locks.lock('test2');
-    await apos.locks.unlock('test1');
-    await apos.locks.unlock('test2');
+    await apos.lock.lock('test1');
+    await apos.lock.lock('test2');
+    await apos.lock.unlock('test1');
+    await apos.lock.unlock('test2');
   });
 
   it('should flunk a second lock by the same module with waitForSelf: false', async function() {
-    await apos.locks.lock('test');
+    await apos.lock.lock('test');
 
     try {
-      await apos.locks.lock('test', { waitForSelf: false });
+      await apos.lock.lock('test', { waitForSelf: false });
       assert(false);
     } catch (e) {
       assert(e);
     }
 
-    await apos.locks.unlock('test');
+    await apos.lock.unlock('test');
 
     try {
-      await apos.locks.unlock('test');
+      await apos.lock.unlock('test');
       assert(false);
     } catch (e) {
       assert(e);
@@ -87,10 +87,10 @@ describe('Locks', function() {
   });
 
   it('four parallel lock calls via the different modules should all succeed but not simultaneously', async function() {
-    const one = apos.modules['@apostrophecms/locks'];
-    const two = apos.modules['@apostrophecms/locks-1'];
-    const three = apos.modules['@apostrophecms/locks-2'];
-    const four = apos.modules['@apostrophecms/locks-3'];
+    const one = apos.modules['@apostrophecms/lock'];
+    const two = apos.modules['@apostrophecms/lock-1'];
+    const three = apos.modules['@apostrophecms/lock-2'];
+    const four = apos.modules['@apostrophecms/lock-3'];
 
     let active = 0;
     let successful = 0;
@@ -105,7 +105,7 @@ describe('Locks', function() {
     assert(successful === 4);
 
     async function attempt(locks) {
-      await apos.locks.lock('test');
+      await apos.lock.lock('test');
 
       active++;
       assert(active === 1);
@@ -113,14 +113,14 @@ describe('Locks', function() {
 
       async function release() {
         // We have to decrement this before we start the call to
-        // apos.locks.unlock because otherwise the callback for one of our
+        // apos.lock.unlock because otherwise the callback for one of our
         // peers' insert attempts may succeed before the callback for
         // remove, leading to a false positive for test failure. -Tom
         active--;
 
         await Promise.delay(75 + Math.random() * 50);
 
-        await apos.locks.unlock('test');
+        await apos.lock.unlock('test');
 
         successful++;
 
@@ -130,10 +130,10 @@ describe('Locks', function() {
   });
 
   it('four parallel lock calls via the different modules should all succeed but not simultaneously, even when the idleTimeout is short', async function() {
-    const one = apos.modules['@apostrophecms/locks'];
-    const two = apos.modules['@apostrophecms/locks-1'];
-    const three = apos.modules['@apostrophecms/locks-2'];
-    const four = apos.modules['@apostrophecms/locks-3'];
+    const one = apos.modules['@apostrophecms/lock'];
+    const two = apos.modules['@apostrophecms/lock-1'];
+    const three = apos.modules['@apostrophecms/lock-2'];
+    const four = apos.modules['@apostrophecms/lock-3'];
 
     let active = 0;
     let successful = 0;
@@ -148,7 +148,7 @@ describe('Locks', function() {
     assert(successful === 4);
 
     async function attempt(locks) {
-      await apos.locks.lock('test', { idleTimeout: 50 });
+      await apos.lock.lock('test', { idleTimeout: 50 });
 
       active++;
       assert(active === 1);
@@ -157,12 +157,12 @@ describe('Locks', function() {
 
       async function release() {
         // We have to decrement this before we start the call to
-        // apos.locks.unlock because otherwise the callback for one of our
+        // apos.lock.unlock because otherwise the callback for one of our
         // peers' insert attempts may succeed before the callback for
         // remove, leading to a false positive for test failure. -Tom
         active--;
         await Promise.delay(75 + Math.random() * 50);
-        await apos.locks.unlock('test');
+        await apos.lock.unlock('test');
 
         successful++;
 
@@ -172,7 +172,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should run a function inside a lock', async function() {
-    const result = await apos.locks.withLock('test-lock', async () => {
+    const result = await apos.lock.withLock('test-lock', async () => {
       await Promise.delay(50);
 
       return 'result';
@@ -182,7 +182,7 @@ describe('Locks', function() {
   });
 
   it('withLock method should be able to run again (lock released)', async function() {
-    const result = await apos.locks.withLock('test-lock', async () => {
+    const result = await apos.lock.withLock('test-lock', async () => {
       await Promise.delay(50);
       return 'result';
     });
@@ -192,11 +192,11 @@ describe('Locks', function() {
 
   it('withLock method should hold the lock (cannot relock within fn)', async function() {
 
-    return apos.locks.withLock('test-lock', async () => {
+    return apos.lock.withLock('test-lock', async () => {
       await Promise.delay(50);
 
       try {
-        await apos.locks.lock('test-lock', { waitForSelf: false });
+        await apos.lock.lock('test-lock', { waitForSelf: false });
         assert(false);
       } catch (e) {
         assert(e);
@@ -206,14 +206,14 @@ describe('Locks', function() {
 
   it('Second lock should wait for release of first one', async () => {
     let timedOut = false;
-    await apos.locks.lock('test-lock');
+    await apos.lock.lock('test-lock');
     setTimeout(async () => {
-      await apos.locks.unlock('test-lock');
+      await apos.lock.unlock('test-lock');
       timedOut = true;
     });
-    await apos.locks.lock('test-lock');
+    await apos.lock.lock('test-lock');
     assert(timedOut);
-    await apos.locks.unlock('test-lock');
+    await apos.lock.unlock('test-lock');
   });
 
 });
