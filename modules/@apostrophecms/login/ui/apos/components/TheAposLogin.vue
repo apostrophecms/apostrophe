@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-login apos-theme-dark" v-else>
+  <div class="apos-login apos-theme-dark">
     <div class="apos-login__overlay"></div>
     <div class="apos-login__menu-overlay"></div>
     <AposLoginBackground />
