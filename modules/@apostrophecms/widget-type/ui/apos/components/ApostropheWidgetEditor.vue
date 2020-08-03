@@ -5,7 +5,7 @@
       <p>{{ (value ? 'Edit ' : 'New ') + label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="schema" v-model="widgetInfo" />
+      <AposSchema :schema="schema" v-model="widgetInfo" />
     </template>
     <template slot="footer">
       <slot name="footer">
@@ -27,11 +27,36 @@ import cuid from 'cuid';
 export default {
   name: 'ApostropheWidgetEditor',
   props: {
-    type: String,
-    options: Object,
-    value: Object,
-    docId: String,
-    id: String
+    type: {
+      required: true,
+      type: String
+    },
+    options: {
+      required: true,
+      type: Object
+    },
+    value: {
+      required: false,
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    docId: {
+      type: String,
+      required: false,
+      default: null
+    }
+  },
+  data() {
+    console.log('starting up with ', this.value);
+    return {
+      id: this.value && this.value._id,
+      widgetInfo: {
+        data: this.value || {},
+        hasErrors: false
+      }
+    };
   },
   computed: {
     schema() {
@@ -44,30 +69,20 @@ export default {
       return apos.modules[apos.area.widgetManagers[this.type]];
     }
   },
-  data() {
-    return {
-      widgetInfo: {
-        data: this.value || {},
-        hasErrors: false
-      }
-    };
-  },
   methods: {
     async save() {
       const widget = this.widgetInfo.data;
       if (!widget.type) {
         widget.type = this.type;
       }
-      if (!widget._id) {
+      if (!this.id) {
         widget._id = cuid();
+        console.log('emitting insert');
         this.$emit('insert', widget);
       } else {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: true,
-          body: {
-            [`@${this.id}`]: this.widgetInfo.data
-          }
-        });
+        console.log('emitting update');
+        widget._id = this.id;
+        this.$emit('update', widget);
       }
     }
   }

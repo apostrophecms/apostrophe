@@ -43,8 +43,11 @@ export default {
         this.watchValue();
       }
     },
-    next (value) {
-      this.watchNext();
+    next: {
+      deep: true,
+      handler (value) {
+        this.watchNext();
+      }
     }
   },
   methods: {

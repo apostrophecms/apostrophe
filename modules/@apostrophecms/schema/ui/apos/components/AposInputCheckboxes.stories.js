@@ -25,14 +25,18 @@ const field = {
   ]
 };
 
-const baseTemplate = '<AposInputCheckboxes :field="field" :value="value" :status="status"/>';
+const field2 = {
+  ...field,
+  disabled: true
+};
+
+const baseTemplate = '<AposInputCheckboxes :field="field" :value="value" />';
 
 storiesOf('Inputs (Checkbox)', module)
   .add('Checkbox', () => ({
     data () {
       return {
         field,
-        status: {},
         value: {
           data: null
         }
@@ -43,10 +47,7 @@ storiesOf('Inputs (Checkbox)', module)
   .add('Checkbox (disabled)', () => ({
     data () {
       return {
-        field,
-        status: {
-          disabled: true
-        },
+        field: field2,
         value: {
           data: null
         }

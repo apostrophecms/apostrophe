@@ -2,15 +2,16 @@
   <div class="apos-area">
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
     <div class="apos-areas-widgets-list">
-      <div class="apos-area-widget-wrapper" v-for="(wrapped, i) in next" :key="wrapped.widget._id">
+      <div class="apos-area-widget-wrapper" v-for="(widget, i) in next" :key="widget._id">
+        {{ log(widget) }}
         <div class="apos-area-controls">
           <button v-if="i > 0" @click="up(i)">Up</button>
           <button v-if="i < next.length - 1" @click="down(i)">Down</button>
           <button @click="remove(i)">Remove</button>
           <button @click="edit(i)">Edit</button>
         </div>
-        <component v-if="editing[wrapped.widget._id]" @save="editing[wrapped.widget._id] = false" @close="editing[wrapped.widget._id] = false" :is="widgetEditorComponent(wrapped.widget.type)" v-model="wrapped.widget" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="docId" :id="wrapped.widget._id" />
-        <component v-if="(!editing[wrapped.widget._id]) || (!widgetIsContextual(wrapped.widget.type))" :is="widgetComponent(wrapped.widget.type)" :options="options.widgets[wrapped.widget.type]" :type="wrapped.widget.type" :docId="docId" :id="wrapped.widget._id" :areaFieldId="fieldId" :value="wrapped.widget" @edit="edit(i)" />
+        <component v-if="editing[widget._id]" @save="editing[widget._id] = false" @close="editing[widget._id] = false" :is="widgetEditorComponent(widget.type)" :value="widget" @update="update" :options="options.widgets[widget.type]" :type="widget.type" :docId="docId" />
+        <component v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))" :is="widgetComponent(widget.type)" :options="options.widgets[widget.type]" :type="widget.type" :docId="docId" :id="widget._id" :areaFieldId="fieldId" :value="widget" @edit="edit(i)" />
         <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
       </div>
     </div>
@@ -20,6 +21,7 @@
 <script>
 
 import Vue from 'apostrophe/vue';
+import cuid from 'cuid';
 
 export default {
   name: 'ApostropheAreaEditor',
@@ -34,9 +36,8 @@ export default {
   },
   data() {
     return {
-      next: this.items.map(widget => ({ widget })),
-      editing: {},
-      droppedItem : {}
+      next: this.items,
+      editing: {}
     };
   },
   computed: {
@@ -47,74 +48,129 @@ export default {
       return Object.keys(this.options.widgets);
     }
   },
+  watch: {
+    next() {
+      if (!this.docId) {
+        console.log('emitting', this.next);
+        this.$emit('changed', {
+          items: this.next
+        });
+      }
+    }
+  },
   methods: {
+    log(s) {
+      return JSON.stringify(s);
+    },
     async up(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-        busy: true,
-        body: {
-          $move: {
-            [`@${this.id}.items`]: {
-              $item: this.next[i].widget._id,
-              $before: this.next[i - 1].widget._id
+      if (this.docId) {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+          busy: true,
+          body: {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: this.next[i]._id,
+                $before: this.next[i - 1]._id
+              }
             }
           }
-        }
-      });
-      const temp = this.next[i - 1];
-      Vue.set(this.next, i - 1, this.next[i]);
-      Vue.set(this.next, i, temp);
+        });
+      }
+      this.next = [
+        ...this.next.slice(0, i - 1),
+        this.next[i],
+        this.next[i - 1],
+        ...this.next.slice(i + 1)
+      ];
     },
     async down(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-        busy: true,
-        body: {
-          $move: {
-            [`@${this.id}.items`]: {
-              $item: this.next[i].widget._id,
-              $after: this.next[i + 1].widget._id
+      if (this.docId) {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+          busy: true,
+          body: {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: this.next[i]._id,
+                $after: this.next[i + 1]._id
+              }
             }
           }
-        }
-      });
-      const temp = this.next[i + 1];
-      Vue.set(this.next, i + 1, this.next[i]);
-      Vue.set(this.next, i, temp);
+        });
+      }
+      this.next = [
+        ...this.next.slice(0, i),
+        this.next[i + 1],
+        this.next[i],
+        ...this.next.slice(i + 2)
+      ];
     },
     async remove(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-        busy: true,
-        body: {
-          $pullAllById: {
-            [`@${this.id}.items`]: [ this.next[i].widget._id ]
+      if (this.docId) {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+          busy: true,
+          body: {
+            $pullAllById: {
+              [`@${this.id}.items`]: [ this.next[i]._id ]
+            }
           }
-        }
-      });
-      this.next = this.next.slice(0, i).concat(this.next.slice(i + 1));
+        });
+      }
+      this.next = [
+        ...this.next.slice(0, i),
+        ...this.next.slice(i + 1)
+      ];
     },
     edit(i) {
-      Vue.set(this.editing, this.next[i].widget._id, !this.editing[this.next[i].widget._id]);
+      Vue.set(this.editing, this.next[i]._id, !this.editing[this.next[i]._id]);
     },
-    async insert($event) {
-      if (!$event.widget._id) {
-        $event.widget._id = cuid();
+    async update(widget) {
+      if (this.docId) {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+          busy: 'contextual',
+          body: {
+            [`@${widget._id}`]: widget
+          }
+        });
+      }
+      const index = this.next.findIndex(w => w._id === widget._id);
+      this.next = [
+        ...this.next.slice(0, index),
+        widget,
+        ...this.next.slice(index + 1)
+      ];
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
+    async insert(e) {
+      console.log('inserting', e);
+      const widget = e.widget;
+      if (!widget._id) {
+        widget._id = cuid();
       }
       const push = {
-        $each: [ $event.widget ]
+        $each: [ widget ]
       };
-      if ($event.index < this.next.length) {
-        push.$before = this.next[$event.index].widget._id;
+      if (e.index < this.next.length) {
+        push.$before = this.next[e.index]._id;
       }
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-        busy: true,
-        body: {
-          $push: {
-            [`@${this.id}.items`]: push
+      if (this.docId) {
+        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+          busy: true,
+          body: {
+            $push: {
+              [`@${this.id}.items`]: push
+            }
           }
-        }
-      });
-      this.next.splice($event.index, 0, { widget: $event.widget });
-      if (this.widgetIsContextual($event.widget.type)) {
-        this.edit($event.index);
+        });
+      }
+      this.next = [
+        ...this.next.slice(0, e.index),
+        widget,
+        ...this.next.slice(e.index)
+      ];
+      if (this.widgetIsContextual(widget.type)) {
+        this.edit(e.index);
       }
     },
     widgetComponent(type) {
@@ -125,9 +181,6 @@ export default {
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
-    },
-    nextItems() {
-      return this.next.map(wrapped => Object.assign({}, wrapped.widget));
     }
   }
 };

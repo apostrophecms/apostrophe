@@ -7,7 +7,7 @@
       type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
       :value="choice.value" :name="field.name"
       :id="id" :aria-label="choice.label"
-      :tabindex="tabindex" :disabled="status.disabled"
+      :tabindex="tabindex" :disabled="field.disabled"
       v-model="checkProxy"
       @change="updateThis"
     >

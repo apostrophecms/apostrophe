@@ -28,7 +28,12 @@ const field = {
   ]
 };
 
-const baseTemplate = '<AposInputRadio :field="field" :value="value" :status="status"/>';
+const field2 = {
+  ...field,
+  disabled: true
+}
+
+const baseTemplate = '<AposInputRadio :field="field" :value="value" />';
 
 storiesOf('Inputs (Radio)', module)
   .add('Radio', () => ({
@@ -36,7 +41,6 @@ storiesOf('Inputs (Radio)', module)
     data () {
       return {
         field,
-        status: {},
         value: {
           data: null
         }
@@ -48,10 +52,7 @@ storiesOf('Inputs (Radio)', module)
     components: { AposInputRadio },
     data () {
       return {
-        field,
-        status: {
-          disabled: true
-        },
+        field: field2,
         value: {
           data: null
         }

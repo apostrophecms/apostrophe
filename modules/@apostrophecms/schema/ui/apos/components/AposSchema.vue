@@ -4,6 +4,7 @@
 <template>
   <div class="apos-schema">
     <div v-for="field in schema" :key="field.name">
+      {{ log(field.name, fields[field.name].value) }}
       <component
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
@@ -29,12 +30,6 @@ export default {
       type: Array,
       required: true
     },
-    doc: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
     modifiers: {
       type: Array,
       default() {
@@ -44,6 +39,7 @@ export default {
   },
   emits: ['input'],
   data() {
+    console.log('***** value coming in is: ', JSON.stringify(this.value));
     const next = {
       hasErrors: false,
       data: {}
@@ -53,34 +49,29 @@ export default {
     this.schema.forEach(field => {
       fieldState[field.name] = {
         error: false,
-        data: this.doc[field.name]
+        data: this.value.data[field.name]
       };
       next.data[field.name] = fieldState[field.name].data;
     });
-    if (this.doc._id) {
-      next.data._id = this.doc._id;
-    }
+
+    console.log('*** fieldState will be:', JSON.stringify(fieldState));
 
     return {
       next,
       fieldState,
-      fieldComponentMap: window.apos.schemas.components.fields || {}
+      fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
   computed: {
-    fields: function() {
+    fields() {
       const fields = {};
       this.schema.forEach((item) => {
         fields[item.name] = {};
         fields[item.name].field = { ...item };
-        if (item.type === 'checkbox') {
-          // do array
-        } else {
-          // all other string value formats
-          fields[item.name].value = {
-            data: this.doc[item.name]
-          };
-        }
+        fields[item.name].value = {
+          data: this.value[item.name]
+        };
+        // What is this TODO supposed to be? We have error and value already. -Tom
         // TODO populate a dynamic status
         fields[item.name].status = {};
 
@@ -91,6 +82,7 @@ export default {
           fields[item.name].field.type = 'text';
         }
       });
+      console.log('*** fields will be:', JSON.stringify(fields));
       return fields;
     }
   },
@@ -106,6 +98,9 @@ export default {
     }
   },
   methods: {
+    log(...values) {
+      return JSON.stringify(values);
+    },
     updateNextAndEmit() {
       this.next.hasErrors = false;
       this.schema.forEach(field => {

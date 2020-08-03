@@ -37,16 +37,11 @@ export const stringInputs = () => {
   const hasError = boolean('Has Error?', false);
   const hasHelpText = boolean('Has Help Text?', false);
   const isRequired = boolean('Is Required?', false);
-  const value = {
-    data: ''
-  };
+  const isDisabled = boolean('Is Disabled?', false);
 
-  const status = {
-    disabled: boolean('Disabled', false),
-    error: hasError ? {
-      type: 'invalid',
-      message: 'Not valid'
-    } : false
+  const value = {
+    data: '',
+    error: hasError
   };
 
   const field = {
@@ -55,7 +50,8 @@ export const stringInputs = () => {
     placeholder: 'Enter the number.',
     help: hasHelpText ? 'Sing the Neverending Story theme song.' : false,
     icon: icon,
-    required: isRequired
+    required: isRequired,
+    disabled: isDisabled
   };
 
   field.type = type;
@@ -64,7 +60,6 @@ export const stringInputs = () => {
     components: { AposInputString },
     data () {
       return {
-        status,
         field,
         value,
         modifiers: options('Modifiers', {
@@ -81,7 +76,6 @@ export const stringInputs = () => {
       <AposInputString
         :field="field"
         :value="value"
-        :status="status"
         :modifiers="modifiers"
       />`
   };

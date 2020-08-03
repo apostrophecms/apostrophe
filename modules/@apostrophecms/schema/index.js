@@ -2351,6 +2351,7 @@ module.exports = {
         for (const name in self.fieldTypes) {
           fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(name);
         }
+        console.log(fields);
         browserOptions.components = { fields: fields };
         return browserOptions;
       }
