@@ -5,7 +5,7 @@
       <p>New {{ moduleOptions.label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="moduleOptions.schema" v-model="pieceInfo" />
+      <ApostropheSchemaEditor :fields="moduleOptions.schema" v-model="pieceInfo" :docId="virtualDocId" />
     </template>
     <template slot="footer">
       <slot name="footer">
@@ -21,29 +21,35 @@
 </template>
 
 <script>
+import patch from 'Modules/@apostrophecms/area/lib/patch';
 
 export default {
   name: 'ApostrophePiecesInsertModal',
   props: {
-    moduleName: String
+    moduleName: {
+      type: String,
+      required: true
+  },
+  data() {
+    const pieceInfo = {
+      data: {},
+      hasErrors: false
+    };
+    return {
+      pieceInfo,
+      virtualDocId: patch.memoryDoc(pieceInfo)
+    };
   },
   computed: {
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     }
   },
-  data() {
-    return {
-      pieceInfo: {
-        data: {},
-        hasErrors: false
-      }
-    };
-  },
   methods: {
     async save() {
       apos.bus.$emit('busy', true);
       try {
+        Object.assign(this.pieceInfo, )
         await apos.http.post(this.moduleOptions.action, {
           busy: true,
           body: this.pieceInfo.data

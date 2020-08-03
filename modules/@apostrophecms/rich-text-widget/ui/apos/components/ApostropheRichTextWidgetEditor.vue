@@ -31,6 +31,7 @@ import {
   CodeBlock,
   HorizontalRule
 } from 'tiptap-extensions';
+import patch from 'Modules/@apostrophecms/area/lib/patch';
 
 // Here because we cannot access computed inside data
 
@@ -94,7 +95,7 @@ export default {
       const widget = this.widgetInfo.data;
       widget.content = content;
 
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+      await patch.patch(this.docId, {
         busy: 'contextual',
         body: {
           [`@${this.id}`]: this.widgetInfo.data

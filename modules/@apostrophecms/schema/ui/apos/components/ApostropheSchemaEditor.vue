@@ -1,6 +1,6 @@
 <template>
   <div class="apos-schema">
-    <component v-for="field in fields" v-if="!field.contextual" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" :context="next.data" />
+    <component v-for="field in fields" v-if="!field.contextual" :is="options.components.fields[field.type]" v-model="fieldState[field.name]" :field="field" :context="next.data" :docId="docId" />
   </div>
 </template>
 
@@ -20,7 +20,10 @@ export default {
   name: 'ApostropheSchemaEditor',
   props: {
     value: Object,
-    fields: Array
+    fields: Array,
+    // Typically a virtual doc id, allowing area editors to use the patch interface.
+    // See ApostrophePiecesInsertModal
+    docId: String
   },
   data() {
     const next = {
@@ -54,7 +57,7 @@ export default {
       handler() {
         this.updateNextAndEmit();
       }
-    }    
+    }
   },
   methods: {
     updateNextAndEmit() {

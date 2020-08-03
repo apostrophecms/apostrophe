@@ -33,6 +33,15 @@ export default {
       default() {
         return [];
       }
+    },
+    // Required if ApostropheAreaField might be used, otherwise not.
+    // This is the actual database document _id, or a virtual document _id
+    // when working in a modal, not a widget _id
+    docId: {
+      type: String,
+      default() {
+        return null;
+      }
     }
   },
   emits: ['input'],

@@ -6,6 +6,9 @@ export default function() {
   window.apos.bus.$on('widget-rendered', function() {
     createAreaApps();
   });
+  window.apos.bus.$on('area-field-rendered', function() {
+    createAreaApps();
+  });
 
   function createAreaApps() {
     const els = document.querySelectorAll('[data-apos-area-newly-editable]');

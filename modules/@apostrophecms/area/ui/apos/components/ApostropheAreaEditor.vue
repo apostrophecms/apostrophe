@@ -20,12 +20,13 @@
 <script>
 
 import Vue from 'apostrophe/vue';
+import patch from 'Modules/@apostrophecms/area/lib/patch';
+import cuid from 'cuid';
 
 export default {
   name: 'ApostropheAreaEditor',
   props: {
     docId: String,
-    docType: String,
     id: String,
     fieldId: String,
     options: Object,
@@ -35,8 +36,7 @@ export default {
   data() {
     return {
       next: this.items.map(widget => ({ widget })),
-      editing: {},
-      droppedItem : {}
+      editing: {}
     };
   },
   computed: {
@@ -49,7 +49,7 @@ export default {
   },
   methods: {
     async up(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+      await patch.patch(this.docId, {
         busy: true,
         body: {
           $move: {
@@ -65,7 +65,7 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async down(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+      await patch.patch(this.docId, {
         busy: true,
         body: {
           $move: {
@@ -81,7 +81,7 @@ export default {
       Vue.set(this.next, i, temp);
     },
     async remove(i) {
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+      await patch.patch(this.docId, {
         busy: true,
         body: {
           $pullAllById: {
@@ -104,7 +104,7 @@ export default {
       if ($event.index < this.next.length) {
         push.$before = this.next[$event.index].widget._id;
       }
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+      await patch.patch(this.docId, {
         busy: true,
         body: {
           $push: {
@@ -133,7 +133,6 @@ export default {
 };
 
 </script>
-
 
 <style>
 .apos-area {

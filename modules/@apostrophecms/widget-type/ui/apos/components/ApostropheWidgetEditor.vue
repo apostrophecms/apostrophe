@@ -23,6 +23,7 @@
 <script>
 
 import cuid from 'cuid';
+import patch from 'Modules/@apostrophecms/area/lib/patch';
 
 export default {
   name: 'ApostropheWidgetEditor',
@@ -62,7 +63,7 @@ export default {
         widget._id = cuid();
         this.$emit('insert', widget);
       } else {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
+        await patch.patch(this.docId, {
           busy: true,
           body: {
             [`@${this.id}`]: this.widgetInfo.data
