@@ -49,7 +49,6 @@ export default {
     }
   },
   data() {
-    console.log('starting up with ', this.value);
     return {
       id: this.value && this.value._id,
       widgetInfo: {
@@ -77,10 +76,8 @@ export default {
       }
       if (!this.id) {
         widget._id = cuid();
-        console.log('emitting insert');
         this.$emit('insert', widget);
       } else {
-        console.log('emitting update');
         widget._id = this.id;
         this.$emit('update', widget);
       }

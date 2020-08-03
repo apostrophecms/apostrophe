@@ -3,7 +3,6 @@
     <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
     <div class="apos-areas-widgets-list">
       <div class="apos-area-widget-wrapper" v-for="(widget, i) in next" :key="widget._id">
-        {{ log(widget) }}
         <div class="apos-area-controls">
           <button v-if="i > 0" @click="up(i)">Up</button>
           <button v-if="i < next.length - 1" @click="down(i)">Down</button>
@@ -51,7 +50,6 @@ export default {
   watch: {
     next() {
       if (!this.docId) {
-        console.log('emitting', this.next);
         this.$emit('changed', {
           items: this.next
         });
@@ -59,9 +57,6 @@ export default {
     }
   },
   methods: {
-    log(s) {
-      return JSON.stringify(s);
-    },
     async up(i) {
       if (this.docId) {
         await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
@@ -143,7 +138,6 @@ export default {
       }
     },
     async insert(e) {
-      console.log('inserting', e);
       const widget = e.widget;
       if (!widget._id) {
         widget._id = cuid();

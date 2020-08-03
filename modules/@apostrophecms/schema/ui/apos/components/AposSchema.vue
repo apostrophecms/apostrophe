@@ -4,7 +4,6 @@
 <template>
   <div class="apos-schema">
     <div v-for="field in schema" :key="field.name">
-      {{ log(field.name, fields[field.name].value) }}
       <component
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
@@ -39,7 +38,6 @@ export default {
   },
   emits: ['input'],
   data() {
-    console.log('***** value coming in is: ', JSON.stringify(this.value));
     const next = {
       hasErrors: false,
       data: {}
@@ -53,8 +51,6 @@ export default {
       };
       next.data[field.name] = fieldState[field.name].data;
     });
-
-    console.log('*** fieldState will be:', JSON.stringify(fieldState));
 
     return {
       next,
@@ -82,7 +78,6 @@ export default {
           fields[item.name].field.type = 'text';
         }
       });
-      console.log('*** fields will be:', JSON.stringify(fields));
       return fields;
     }
   },
@@ -98,9 +93,6 @@ export default {
     }
   },
   methods: {
-    log(...values) {
-      return JSON.stringify(values);
-    },
     updateNextAndEmit() {
       this.next.hasErrors = false;
       this.schema.forEach(field => {
