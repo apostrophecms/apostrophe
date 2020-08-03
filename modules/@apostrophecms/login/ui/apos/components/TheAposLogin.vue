@@ -1,5 +1,4 @@
 <template>
-  <div class="apos-login__loader" v-if="contextLoading">Loading<AposSpinner /></div>
   <div class="apos-login apos-theme-dark" v-else>
     <div class="apos-login__overlay"></div>
     <div class="apos-login__menu-overlay"></div>
@@ -45,7 +44,7 @@
 
 <script>
 export default {
-  name: 'TheApostropheLogin',
+  name: 'TheAposLogin',
   data() {
     return {
       error: '',
@@ -70,17 +69,16 @@ export default {
           required: true
         }
       ],
-      context: {},
-      contextLoading: true
+      context: {}
     };
   },
   async beforeCreate () {
     try {
-      this.context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {});
+      this.context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {
+        busy: true
+      });
     } catch (e) {
       this.error = 'An error occurred. Please try again.';
-    } finally {
-      this.contextLoading = false;
     }
   },
   computed: {

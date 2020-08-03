@@ -393,7 +393,7 @@ module.exports = {
       // with editing privileges.
 
       getBrowserData(req) {
-        if (req.user) {
+        if (req.user || req.scene === 'apos') {
           self.options.browser = self.options.browser || {};
           return self.options.browser;
         }
