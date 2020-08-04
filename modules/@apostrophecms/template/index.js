@@ -598,6 +598,8 @@ module.exports = {
         let scene = req.user ? 'apos' : 'public';
         if (req.scene) {
           scene = req.scene;
+        } else {
+          req.scene = scene;
         }
 
         const aposBodyData = {

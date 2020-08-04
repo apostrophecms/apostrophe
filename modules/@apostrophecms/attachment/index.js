@@ -933,16 +933,14 @@ module.exports = {
         await Promise.promisify(self.uploadfs.migrateFromDisabledFileKey)();
       },
       getBrowserData(req) {
-        if (req.user) {
-          return {
-            action: self.action,
-            fileGroups: self.fileGroups,
-            name: self.name,
-            uploadsUrl: self.uploadfs.getUrl(),
-            croppable: self.croppable,
-            sized: self.sized
-          };
-        }
+        return {
+          action: self.action,
+          fileGroups: self.fileGroups,
+          name: self.name,
+          uploadsUrl: self.uploadfs.getUrl(),
+          croppable: self.croppable,
+          sized: self.sized
+        };
       },
       // Middleware method used when only those with attachment privileges should be allowed to do something
       canUpload(req, res, next) {
