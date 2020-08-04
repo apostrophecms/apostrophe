@@ -1,6 +1,6 @@
 <template>
   <transition name="fade-stage">
-    <div class="apos-login apos-theme-ssdark" v-show="loaded">
+    <div class="apos-login apos-theme-dark" v-show="loaded">
       <div class="apos-login__wrapper">
         <transition name="fade-body">
           <div class="apos-login__upper" v-show="loaded">
@@ -35,12 +35,14 @@
             </div>
           </div>
         </transition>
-        <div class="apos-login__footer">
+      </div>
+      <transition name="fade-footer">
+        <div class="apos-login__footer" v-show="loaded">
           <AposLogo class="apos-login__logo"/>
           <label class="apos-login__logo-name">ApostropheCMS</label>
           <label class="apos-login__project-version">Version {{ context.version }}</label>
         </div>
-      </div>
+      </transition>
     </div>
   </transition>
 </template>
@@ -121,11 +123,15 @@ export default {
     transition-delay: 0.3s;
   }
 
-  .fade-stage-enter-to {
+  .fade-stage-enter-to,
+  .fade-body-enter-to,
+  .fade-footer-enter-to {
     opacity: 1;
   }
 
-  .fade-stage-enter {
+  .fade-stage-enter,
+  .fade-body-enter,
+  .fade-footer-enter {
     opacity: 0;
   }
 
@@ -135,13 +141,16 @@ export default {
   }
 
   .fade-body-enter-to {
-    opacity: 1;
     transform: translateY(0);
   }
 
   .fade-body-enter {
-    opacity: 0;
     transform: translateY(4px);
+  }
+
+  .fade-footer-enter-active {
+    transition: opacity 0.4s linear;
+    transition-delay: 1s;
   }
 
   .apos-login {
@@ -149,10 +158,7 @@ export default {
     flex-direction: column;
     justify-content: center;
     height: 100vh;
-
-    &.apos-theme-dark {
-      background-color: var(--a-background-primary);
-    }
+    background-color: var(--a-background-primary);
 
     &__wrapper {
       width: 320px;
@@ -174,28 +180,6 @@ export default {
         height: 38px;
         margin-top: 20px;
       }
-    }
-
-    &__overlay {
-      z-index: $z-index-default;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: var(--a-base-10);
-      opacity: 0.3;
-    }
-
-    &__menu-overlay {
-      z-index: $z-index-manager-display;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 400px;
-      height: 100vh;
-      background: var(--a-base-10);
-      opacity: 0.6;
     }
 
     &__header {
@@ -245,7 +229,6 @@ export default {
     }
 
     form {
-      z-index: $z-index-manager-toolbar;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -273,13 +256,12 @@ export default {
     }
 
     &__footer {
-      z-index: $z-index-manager-display;
-      position: fixed;
+      position: absolute;
       right: 0;
       bottom: 32px;
       left: 0;
       display: flex;
-      width: fit-content;
+      width: 400px;
       margin: auto;
       align-items: center;
       justify-content: start;
