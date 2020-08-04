@@ -1,6 +1,6 @@
 export default {
   props: {
-    _docId: String,
+    docId: String,
     type: String,
     areaFieldId: String,
     value: Object
@@ -31,7 +31,7 @@ export default {
       this.rendered = await apos.http.post(`${apos.area.action}/render-widget`, {
         busy: true,
         body: {
-          _docId: this._docId,
+          _docId: this.docId,
           widget: this.value,
           areaFieldId: this.areaFieldId,
           type: this.type

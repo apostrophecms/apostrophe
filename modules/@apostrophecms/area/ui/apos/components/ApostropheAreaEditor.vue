@@ -50,10 +50,44 @@ export default {
   watch: {
     next() {
       if (!this.docId) {
+        // For the benefit of AposInputArea which is the
+        // direct parent when we are not editing on-page
         this.$emit('changed', {
           items: this.next
         });
+      } else {
+        // For the benefit of all other area editors on-page
+        // which may have this one as a sub-area in some way, and
+        // mistakenly think they know its contents have not changed
+        apos.bus.$emit('area-updated', {
+          _id: this.id,
+          items: this.next
+        });
       }
+    }
+  },
+  mounted() {
+    if (this.docId) {
+      this.areaUpdatedHandler = (area) => {
+        let patched = false;
+        for (const item of this.next) {
+          if (this.patchSubobject(item, area._id)) {
+            patched = true;
+            break;
+          }
+        }
+        if (patched) {
+          // Make sure our knowledge of the change is reflected
+          // everywhere via a refresh
+          this.next = this.next.slice();
+        }
+      };
+      apos.bus.$on('area-updated', this.areaUpdatedHandler);
+    }
+  },
+  beforeDestroy() {
+    if (this.areaUpdatedHandler) {
+      apos.bus.$off('area-updated', this.areaUpdatedHandler);
     }
   },
   methods: {
@@ -175,6 +209,27 @@ export default {
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
+    },
+    // Recursively seek `subObject` within `object`, based on whether
+    // its _id matches that of a sub-object of `object`. If found,
+    // replace that sub-object with `subObject` and return `true`.
+    patchSubobject(object, subObject) {
+      let key;
+      let val;
+      let result;
+      for (key in object) {
+        val = object[key];
+        if (val && typeof val === 'object') {
+          if (val._id === subObject._id) {
+            object[key] = subObject;
+            return true;
+          }
+          result = this.patchSubobject(val, subObject);
+          if (result) {
+            return result;
+          }
+        }
+      }
     }
   }
 };
