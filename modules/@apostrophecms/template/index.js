@@ -587,8 +587,6 @@ module.exports = {
       // * `query` (`req.query`)
       // * `permissions` (`req.user._permissions`)
       // * `refreshing` (true if we are refreshing the content area of the page without reloading)
-      // * `js.globalCalls` (javascript markup to insert all global pushed javascript calls)
-      // * `js.reqCalls` (javascript markup to insert all req-specific pushed javascript calls)
       //
       // async function.
 
