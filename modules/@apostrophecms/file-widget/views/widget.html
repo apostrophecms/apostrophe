@@ -1,5 +1,0 @@
-{%- for piece in data.widget._pieces -%}
-  {% if piece.attachment %}
-    <a href="{{ apos.attachments.url(piece.attachment) }}">{{ __(piece.title | d('')) }}</a>
-  {% endif %}
-{%- endfor -%}

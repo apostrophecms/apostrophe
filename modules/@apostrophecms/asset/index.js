@@ -79,6 +79,7 @@ module.exports = {
           `
 window.apos = window.apos || {};
 Object.assign(window.apos, JSON.parse((document.body && document.body.getAttribute('data-apos')) || '{}'));
+document.body.removeAttribute('data-apos');
           ` +
         publicImports.paths.map(path => {
           return fs.readFileSync(path);

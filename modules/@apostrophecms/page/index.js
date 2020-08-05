@@ -430,9 +430,6 @@ database.`);
         });
       },
       getBrowserData(req) {
-        if (!req.user) {
-          return false;
-        }
         const options = _.pick(self, 'action', 'schema', 'types');
         _.assign(options, _.pick(self.options, 'batchOperations'));
         if (req.data.bestPage) {

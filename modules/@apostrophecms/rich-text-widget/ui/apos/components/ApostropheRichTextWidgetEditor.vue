@@ -17,7 +17,12 @@
 </template>
 
 <script>
-import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
+import {
+  Editor,
+  EditorContent,
+  EditorMenuBar
+} from 'tiptap';
+
 import {
   HardBreak,
   ListItem,
@@ -45,19 +50,30 @@ export default {
     EditorContent
   },
   props: {
-    type: String,
-    options: Object,
-    value: Object,
-    docId: String,
-    id: String
-  },
-  computed: {
-    moduleOptions() {
-      return moduleOptionsBody(this.type);
+    type: {
+      type: String,
+      required: true
+    },
+    options: {
+      type: Object,
+      required: true
+    },
+    value: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    docId: {
+      type: String,
+      required: false,
+      default() {
+        return null;
+      }
     }
   },
   data() {
-    const data = {
+    return {
       tools: moduleOptionsBody(this.type).tools,
       toolbar: this.options.toolbar,
       editor: new Editor({
@@ -80,26 +96,24 @@ export default {
       }),
       widgetInfo: {
         data: this.value,
-        hasErrors: false,
+        hasErrors: false
       }
+    };
+  },
+  computed: {
+    moduleOptions() {
+      return moduleOptionsBody(this.type);
     }
-    return data;
   },
   beforeDestroy() {
-    this.editor.destroy()
+    this.editor.destroy();
   },
   methods: {
     async update() {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
-
-      await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-        busy: 'contextual',
-        body: {
-          [`@${this.id}`]: this.widgetInfo.data
-        }
-      });
+      this.$emit('update', widget);
     },
     command(name, options) {
       this.commands[name](options);

@@ -49,13 +49,11 @@ module.exports = {
         });
       },
       getBrowserData(req) {
-        if (req.user) {
-          return {
-            name: self.name,
-            action: self.action,
-            oembedType: self.options.oembedType
-          };
-        }
+        return {
+          name: self.name,
+          action: self.action,
+          oembedType: self.options.oembedType
+        };
       }
     };
   }
