@@ -40,7 +40,6 @@ const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
 const _ = require('lodash');
 const Promise = require('bluebird');
-const fs = require('fs-extra');
 
 module.exports = {
   options: {
@@ -199,10 +198,10 @@ module.exports = {
         } : {})
       },
       get: {
-        async context () {
+        context () {
           let aposPackage = {};
           try {
-            aposPackage = await fs.readJson('./node_modules/apostrophe/package.json');
+            aposPackage = require('../../../package.json');
           } catch (err) {
             self.apos.util.error(err);
           }
