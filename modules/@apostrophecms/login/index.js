@@ -196,6 +196,22 @@ module.exports = {
             return user;
           }
         } : {})
+      },
+      get: {
+        context () {
+          let aposPackage = {};
+          try {
+            aposPackage = require('../../../package.json');
+          } catch (err) {
+            self.apos.util.error(err);
+          }
+
+          return {
+            env: process.env.NODE_ENV || 'development',
+            name: process.env.npm_package_name.replace(/-/g, ' ') || 'Apostrophe',
+            version: aposPackage.version || '3'
+          };
+        }
       }
     };
   },
