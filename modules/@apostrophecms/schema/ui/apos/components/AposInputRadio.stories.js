@@ -31,7 +31,7 @@ const field = {
 const field2 = {
   ...field,
   disabled: true
-}
+};
 
 const baseTemplate = '<AposInputRadio :field="field" :value="value" />';
 
