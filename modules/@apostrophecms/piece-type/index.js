@@ -202,18 +202,22 @@ module.exports = {
       return doc;
     },
     async post(req) {
+      self.publicApiCheck(req);
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
+      self.publicApiCheck(req);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
     // In a CMS that usually leads to unhappy customers. To manipulate apostrophe's trash status for something, use
     // a `PATCH` call to modify the `trash` property and set it to `true` or `false`.
     async delete(req, _id) {
+      self.publicApiCheck(req);
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
+      self.publicApiCheck(req);
       return self.patch(req, _id);
     }
   }),
