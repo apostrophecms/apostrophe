@@ -13,6 +13,7 @@
     <li
       class="apos-tree__row"
       :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
+      data-apos-tree-row
       v-for="row in myRows" :key="row.id"
       :data-row-id="row.id"
     >
@@ -66,7 +67,8 @@
       </div>
       <AposTreeRows
         v-if="row.children"
-        data-apos-tree-branch
+        data-apos-branch-height
+        ref="tree-branches"
         :rows="row.children"
         :headers="headers"
         :col-widths="colWidths"
@@ -167,13 +169,15 @@ export default {
   mounted() {
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
-      const branches = this.$el.querySelectorAll('[data-apos-tree-branch]');
+      if (!this.$refs.treeBranches) {
+        return;
+      }
 
-      branches.forEach(branch => {
+      this.$refs.treeBranches.forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
         const height = branch.clientHeight + 20;
-        branch.setAttribute('data-apos-tree-branch', `${height}px`);
+        branch.setAttribute('data-apos-branch-height', `${height}px`);
         branch.style.maxHeight = `${height}px`;
       });
     });
@@ -186,11 +190,11 @@ export default {
       this.$emit('update', event);
     },
     toggleSection(event) {
-      const row = event.target.closest('.apos-tree__row');
-      const rowList = row.querySelector('[data-apos-tree-branch]');
+      const row = event.target.closest('[data-apos-tree-row]');
+      const rowList = row.querySelector('[data-apos-branch-height]');
 
       if (rowList && rowList.style.maxHeight === '0px') {
-        rowList.style.maxHeight = rowList.getAttribute('data-apos-tree-branch');
+        rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
         row.classList.remove('is-collapsed');
       } else if (rowList) {
         rowList.style.maxHeight = 0;
