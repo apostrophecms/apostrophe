@@ -169,16 +169,16 @@ export default {
   mounted() {
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
-      if (!this.$refs.treeBranches) {
+      if (!this.$refs['tree-branches']) {
         return;
       }
 
-      this.$refs.treeBranches.forEach(branch => {
+      this.$refs['tree-branches'].forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
-        const height = branch.clientHeight + 20;
-        branch.setAttribute('data-apos-branch-height', `${height}px`);
-        branch.style.maxHeight = `${height}px`;
+        const height = branch.$el.clientHeight + 20;
+        branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
+        branch.$el.style.maxHeight = `${height}px`;
       });
     });
   },
@@ -250,7 +250,11 @@ export default {
     margin-top: -0.25em;
     margin-right: 0.25em;
     line-height: 0;
-    cursor: move;
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
 
     .material-design-icon__svg {
       transition: fill 0.2s ease;
