@@ -13,7 +13,7 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" :doc="myDoc"
+              :schema="schema" :value="myDoc"
               @input="update"
             />
           </div>

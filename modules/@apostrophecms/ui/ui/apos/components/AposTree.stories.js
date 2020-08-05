@@ -12,7 +12,10 @@ export default {
 export const Tree = () => ({
   components: { AposTree },
   data() {
-    return { data };
+    return {
+      data,
+      checked: []
+    };
   },
   methods: {
     setBusy(val) {
@@ -25,13 +28,18 @@ export const Tree = () => ({
   },
   template: `
     <AposTree
-      :data="data" :draggable="data.draggable"
+      :headers="data.headers"
+      :rows="data.rows"
+      :draggable="data.draggable"
+      :selectable="data.selectable"
+      v-model="checked"
       @update="update" @busy="setBusy"
     />
   `
 });
 
 let draggable = false;
+let selectable = false;
 
 function getData () {
   const rows = generateRows(randomNumber());
@@ -63,7 +71,8 @@ function getData () {
       }
     ],
     rows,
-    draggable
+    draggable,
+    selectable
   };
 }
 
@@ -102,6 +111,7 @@ function generateRow(maxDepth = 5) {
 
   if (randomBoolean(0.3)) {
     draggable = true;
+    selectable = true;
     for (let i = 0; i < randomNumber(); i++) {
       if (maxDepth > i) {
         const child = generateRow(i);

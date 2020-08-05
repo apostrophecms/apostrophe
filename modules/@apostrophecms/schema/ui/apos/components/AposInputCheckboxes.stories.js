@@ -1,7 +1,5 @@
 import { storiesOf } from '@storybook/vue';
 
-import AposInputCheckbox from './AposInputCheckbox.vue';
-
 const field = {
   required: true,
   name: 'toppings',
@@ -27,15 +25,18 @@ const field = {
   ]
 };
 
-const baseTemplate = '<AposInputCheckbox :field="field" :value="value" :status="status"/>';
+const field2 = {
+  ...field,
+  disabled: true
+};
+
+const baseTemplate = '<AposInputCheckboxes :field="field" :value="value" />';
 
 storiesOf('Inputs (Checkbox)', module)
   .add('Checkbox', () => ({
-    components: { AposInputCheckbox },
     data () {
       return {
         field,
-        status: {},
         value: {
           data: null
         }
@@ -44,13 +45,9 @@ storiesOf('Inputs (Checkbox)', module)
     template: baseTemplate
   }))
   .add('Checkbox (disabled)', () => ({
-    components: { AposInputCheckbox },
     data () {
       return {
-        field,
-        status: {
-          disabled: true
-        },
+        field: field2,
         value: {
           data: null
         }

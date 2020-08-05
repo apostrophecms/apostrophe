@@ -26,7 +26,7 @@
         </button>
         <component
           v-for="(col, index) in headers"
-          :key="`${index}-${col.name}`"
+          :key="`${col.name}-${index}`"
           :is="col.name === 'url' ? 'a' : 'span'"
           :href="col.name === 'url' ? row[col.name] : false"
           :target="col.name === 'url' ? '_blank' : false"
@@ -37,6 +37,22 @@
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
             :size="20"
+            :fill-color="null"
+          />
+          <AposCheckbox
+            v-if="selectable && index === 0"
+            class="apos-tree__row__checkbox"
+            tabindex="-1"
+            :field="{
+              name: `${col.name}-${index}`,
+              type: 'checkbox',
+              hideLabel: true,
+              label: `Toggle selection of ${row.title}`,
+              disableFocus: true
+            }"
+            :status="{}"
+            :choice="{ value: row.id }"
+            v-model="checkedProxy"
           />
           <component
             v-if="col.icon" :is="col.icon"
@@ -57,8 +73,10 @@
         :list-id="row.id"
         :tree-id="treeId"
         :draggable="draggable"
+        :selectable="selectable"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
+        v-model="checkedProxy"
       />
     </li>
   </VueDraggable>
@@ -72,6 +90,11 @@ export default {
   components: {
     VueDraggable
   },
+  // Custom model to handle the v-model connection on the parent.
+  model: {
+    prop: 'checked',
+    event: 'change'
+  },
   props: {
     headers: {
       type: Array,
@@ -80,6 +103,13 @@ export default {
     rows: {
       type: Array,
       required: true
+    },
+    checked: {
+      type: Array,
+      default() {
+        // If this is not provided, we don't need to initiate an array.
+        return null;
+      }
     },
     colWidths: {
       type: Object,
@@ -99,6 +129,10 @@ export default {
       type: Boolean,
       required: true
     },
+    selectable: {
+      type: Boolean,
+      default: false
+    },
     listId: {
       type: String,
       required: true
@@ -108,10 +142,19 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update'],
+  emits: ['busy', 'update', 'change'],
   computed: {
     myRows() {
       return this.rows;
+    },
+    // Handle the local check state within this component.
+    checkedProxy: {
+      get() {
+        return this.checked;
+      },
+      set(val) {
+        this.$emit('change', val);
+      }
     },
     isOpen() {
       return true;
@@ -154,4 +197,25 @@ export default {
 </script>
 
 <style lang="scss">
+  .apos-tree__row__handle {
+    margin-top: -0.25em;
+    margin-right: 0.25em;
+    line-height: 0;
+    cursor: move;
+
+    .material-design-icon__svg {
+      transition: fill 0.2s ease;
+      fill: var(--a-base-8);
+    }
+
+    .sortable-chosen & .material-design-icon__svg,
+    &:hover .material-design-icon__svg {
+      fill: var(--a-base-2);
+    }
+  }
+
+  .apos-tree__row__checkbox.apos-choice-label {
+    align-items: flex-start;
+    margin-right: 0.5em;
+  }
 </style>

@@ -681,9 +681,6 @@ module.exports = {
         return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
       },
       getBrowserData(req) {
-        if (!req.user) {
-          return;
-        }
         const data = _.pick(options, 'name', 'label', 'pluralLabel');
         data.action = self.action;
         data.schema = self.allowedSchema(req);

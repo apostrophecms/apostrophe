@@ -47,10 +47,8 @@ module.exports = {
     '@apostrophecms/user': {},
     '@apostrophecms/image': {},
     '@apostrophecms/image-tag': {},
-    '@apostrophecms/image-widget': {},
     '@apostrophecms/file': {},
     '@apostrophecms/file-tag': {},
-    '@apostrophecms/file-widget': {},
     '@apostrophecms/soft-redirect': {},
     '@apostrophecms/storybook': {},
     '@apostrophecms/busy': {}

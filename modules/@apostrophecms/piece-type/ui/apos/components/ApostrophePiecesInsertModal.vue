@@ -5,7 +5,7 @@
       <p>New {{ moduleOptions.label }}</p>
     </template>
     <template slot="body">
-      <ApostropheSchemaEditor :fields="moduleOptions.schema" v-model="pieceInfo" />
+      <AposSchema :schema="moduleOptions.schema" v-model="pieceInfo" />
     </template>
     <template slot="footer">
       <slot name="footer">
@@ -33,6 +33,8 @@ export default {
     }
   },
   data() {
+    // TODO we should get the initial pieceInfo from the server's
+    // newInstance method so it has proper defaults etc.
     return {
       pieceInfo: {
         data: {},

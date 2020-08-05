@@ -5,9 +5,10 @@
   <div class="apos-schema">
     <div v-for="field in schema" :key="field.name">
       <component
+        v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
         :status="fields[field.name].status" :value="fields[field.name].value"
-        @input="input($event, field.name)" :modifiers="fields[field.name].modifiers"
+        :modifiers="fields[field.name].modifiers"
       />
     </div>
   </div>
@@ -18,15 +19,15 @@
 export default {
   name: 'AposSchema',
   props: {
-    schema: {
-      type: Array,
-      required: true
-    },
-    doc: {
+    value: {
       type: Object,
       default() {
         return {};
       }
+    },
+    schema: {
+      type: Array,
+      required: true
     },
     modifiers: {
       type: Array,
@@ -37,28 +38,36 @@ export default {
   },
   emits: ['input'],
   data() {
+    const next = {
+      hasErrors: false,
+      data: {}
+    };
+
+    const fieldState = {};
+    this.schema.forEach(field => {
+      fieldState[field.name] = {
+        error: false,
+        data: this.value.data[field.name]
+      };
+      next.data[field.name] = fieldState[field.name].data;
+    });
+
     return {
-      // TODO: Complete this with other schema field types.
-      fieldComponentMap: {
-        string: 'AposInputString',
-        boolean: 'AposInputBoolean'
-      }
+      next,
+      fieldState,
+      fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
   computed: {
-    fields: function() {
+    fields() {
       const fields = {};
       this.schema.forEach((item) => {
         fields[item.name] = {};
         fields[item.name].field = { ...item };
-        if (item.type === 'checkbox') {
-          // do array
-        } else {
-          // all other string value formats
-          fields[item.name].value = {
-            data: this.doc[item.name]
-          };
-        }
+        fields[item.name].value = {
+          data: this.value[item.name]
+        };
+        // What is this TODO supposed to be? We have error and value already. -Tom
         // TODO populate a dynamic status
         fields[item.name].status = {};
 
@@ -72,10 +81,28 @@ export default {
       return fields;
     }
   },
-  methods: {
-    input(value, name) {
-      this.$emit('input', name, value);
+  mounted() {
+    this.updateNextAndEmit();
+  },
+  watch: {
+    fieldState: {
+      deep: true,
+      handler() {
+        this.updateNextAndEmit();
+      }
     }
+  },
+  methods: {
+    updateNextAndEmit() {
+      this.next.hasErrors = false;
+      this.schema.forEach(field => {
+        if (this.fieldState[field.name].error) {
+          this.next.hasErrors = true;
+        }
+        this.next.data[field.name] = this.fieldState[field.name].data;
+      });
+      this.$emit('input', this.next);
+    },
   }
 };
 </script>
