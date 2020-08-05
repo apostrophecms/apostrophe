@@ -40,6 +40,7 @@ const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
 const _ = require('lodash');
 const Promise = require('bluebird');
+const fs = require('fs-extra');
 
 module.exports = {
   options: {
@@ -198,11 +199,18 @@ module.exports = {
         } : {})
       },
       get: {
-        context () {
+        async context () {
+          let aposPackage = {};
+          try {
+            aposPackage = await fs.readJson('./node_modules/apostrophe/package.json');
+          } catch (err) {
+            self.apos.util.error(err);
+          }
+
           return {
             env: process.env.NODE_ENV || 'development',
             name: process.env.npm_package_name.replace(/-/g, ' ') || 'Apostrophe',
-            version: process.env.npm_package_version || '1.0.0'
+            version: aposPackage.version || '3'
           };
         }
       }
