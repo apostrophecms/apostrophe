@@ -5,7 +5,7 @@ let apos;
 let homeId;
 let jar;
 
-describe('Pages', function() {
+describe('Pages REST', function() {
 
   this.timeout(t.timeout);
 

@@ -5,6 +5,12 @@ module.exports = {
   options: {
     manageViews: ['list'],
     perPage: 10
+    // By default there is no public REST API, but you can configure a
+    // projection to enable one:
+    // publicApiProjection: {
+    //   title: 1,
+    //   _url: 1,
+    // }
   },
   beforeSuperClass(self, options) {
     self.contextual = options.contextual;
@@ -166,6 +172,7 @@ module.exports = {
   },
   restApiRoutes: (self, options) => ({
     async getAll(req) {
+      self.publicApiCheck(req);
       const query = self.getRestQuery(req);
       if (!query.get('perPage')) {
         query.perPage(
@@ -187,6 +194,7 @@ module.exports = {
       return result;
     },
     async getOne(req, _id) {
+      self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -623,7 +631,29 @@ module.exports = {
         });
       },
       getRestQuery(req) {
-        return self.find(req).applyBuildersSafely(req.query);
+        const query = self.find(req);
+        query.applyBuildersSafely(req.query);
+        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.options.publicApiProjection) {
+            // Shouldn't be needed thanks to publicApiCheck, but be sure
+            query.and({
+              _id: '__iNeverMatch'
+            });
+          } else {
+            query.project(self.options.publicApiProjection);
+          }
+        }
+        return query;
+      },
+      // Throws a `notfound` exception if a public API projection is
+      // not specified and the user does not have editing permissions. Otherwise does
+      // nothing. Simplifies implementation of `getAll` and `getOne`.
+      publicApiCheck(req) {
+        if (!self.options.publicApiProjection) {
+          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+            throw self.apos.error('notfound');
+          }
+        }
       }
     };
   },

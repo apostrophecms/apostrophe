@@ -246,7 +246,7 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -282,7 +282,7 @@ module.exports = {
             const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
@@ -426,7 +426,7 @@ database.`);
             const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       getBrowserData(req) {
