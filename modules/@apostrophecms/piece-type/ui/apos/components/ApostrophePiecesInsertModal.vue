@@ -33,6 +33,8 @@ export default {
     }
   },
   data() {
+    // TODO we should get the initial pieceInfo from the server's
+    // newInstance method so it has proper defaults etc.
     return {
       pieceInfo: {
         data: {},

@@ -630,9 +630,6 @@ module.exports = {
   extendMethods(self, options) {
     return {
       getBrowserData(_super, req) {
-        if (!req.user) {
-          return;
-        }
         const browserOptions = _super(req);
         // Options specific to pieces and their manage modal
         browserOptions.filters = self.filters;

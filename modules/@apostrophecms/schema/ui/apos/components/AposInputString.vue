@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
-    :error="status.error" :uid="uid"
+    :error="error" :uid="uid"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -10,7 +10,7 @@
           v-if="field.textarea" rows="5"
           v-model="next" :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"
-          :disabled="status.disabled" :required="field.required"
+          :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -18,7 +18,7 @@
           v-model="next" :type="type"
           :placeholder="field.placeholder"
           @keydown.enter="$emit('return')"
-          :disabled="status.disabled" :required="field.required"
+          :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
         <component
@@ -54,7 +54,7 @@ export default {
       return ['apos-input', `apos-input--${this.type}`];
     },
     icon () {
-      if (this.status.error) {
+      if (this.error) {
         return 'circle-medium-icon';
       } else if (this.field.type === 'date') {
         return 'calendar-icon';

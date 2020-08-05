@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="status.error"
+    :field="field" :error="error"
     :uid="uid"
   >
     <template #body>
@@ -30,7 +30,7 @@ export default {
   mixins: [ AposInputMixin ],
   computed: {
     hasIcon: function () {
-      return this.status.error || (this.field.icon && this.field.icon !== null);
+      return this.error || (this.field.icon && this.field.icon !== null);
     }
   },
   methods: {

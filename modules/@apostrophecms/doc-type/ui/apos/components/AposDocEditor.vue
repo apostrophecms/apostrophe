@@ -24,8 +24,10 @@
         <template #bodyMain>
           <AposModalTabsBody>
             <div class="apos-doc-editor__body">
+              <!-- TODO This is still passing the value wrong since it
+                has both value and hasError subproperties -->
               <AposSchema
-                :schema="currentFields" :doc="myDoc"
+                :schema="currentFields" :value="myDoc"
                 @input="update"
               />
             </div>
@@ -36,8 +38,10 @@
     <template #rightRail>
       <AposModalRail type="right">
         <div class="apos-doc-editor__utility">
+          <!-- TODO This is still passing the value wrong since it
+            has both value and hasError subproperties -->
           <AposSchema
-            :schema="utility" :doc="myDoc"
+            :schema="utility" :value="myDoc"
             @input="update" :modifiers="['small', 'inverted']"
           />
         </div>
@@ -126,6 +130,7 @@ export default {
     this.modal.active = true;
   },
   methods: {
+    // TODO this is all gummed up should be using AposSchema to do it
     update(name, value) {
       this.myDoc[name] = value.data;
     },

@@ -2343,10 +2343,6 @@ module.exports = {
   extendMethods(self, options) {
     return {
       getBrowserData(_super, req) {
-        if (req.scene !== 'apos') {
-          return;
-        }
-
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {

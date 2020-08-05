@@ -26,37 +26,34 @@ storiesOf('Inputs (Boolean)', module)
     data () {
       return {
         field,
-        status: {},
         value: {
           data: null
         }
       };
     },
-    template: '<AposInputBoolean :field="field" :value="value" :status="status"/>'
+    template: '<AposInputBoolean :field="field" :value="value" />'
   }))
   .add('Boolean (prechecked)', () => ({
     components: { AposInputBoolean },
     data () {
       return {
         field,
-        status: {},
         value: {
           data: false
         }
       };
     },
-    template: '<AposInputBoolean :field="field" :value="value" :status="status"/>'
+    template: '<AposInputBoolean :field="field" :value="value" />'
   }))
   .add('Toggle', () => ({
     components: { AposInputBoolean },
     data () {
       return {
         field: toggleField,
-        status: {},
         value: {
           data: false
         }
       };
     },
-    template: '<AposInputBoolean :field="field" :value="value" :status="status"/>'
+    template: '<AposInputBoolean :field="field" :value="value" />'
   }));

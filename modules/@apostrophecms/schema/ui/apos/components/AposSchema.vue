@@ -29,12 +29,6 @@ export default {
       type: Array,
       required: true
     },
-    doc: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
     modifiers: {
       type: Array,
       default() {
@@ -53,13 +47,10 @@ export default {
     this.schema.forEach(field => {
       fieldState[field.name] = {
         error: false,
-        data: this.doc[field.name]
+        data: this.value.data[field.name]
       };
       next.data[field.name] = fieldState[field.name].data;
     });
-    if (this.doc._id) {
-      next.data._id = this.doc._id;
-    }
 
     return {
       next,
@@ -68,19 +59,15 @@ export default {
     };
   },
   computed: {
-    fields: function() {
+    fields() {
       const fields = {};
       this.schema.forEach((item) => {
         fields[item.name] = {};
         fields[item.name].field = { ...item };
-        if (item.type === 'checkbox') {
-          // do array
-        } else {
-          // all other string value formats
-          fields[item.name].value = {
-            data: this.doc[item.name]
-          };
-        }
+        fields[item.name].value = {
+          data: this.value[item.name]
+        };
+        // What is this TODO supposed to be? We have error and value already. -Tom
         // TODO populate a dynamic status
         fields[item.name].status = {};
 
