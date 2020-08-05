@@ -71,7 +71,7 @@ export default {
       this.areaUpdatedHandler = (area) => {
         let patched = false;
         for (const item of this.next) {
-          if (this.patchSubobject(item, area._id)) {
+          if (this.patchSubobject(item, area)) {
             patched = true;
             break;
           }
