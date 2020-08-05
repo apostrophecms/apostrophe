@@ -160,6 +160,8 @@
     }
   };
 
+  apos.http = {};
+
   apos.http.getResponses = {
     '/api/v1/products?published=true&trash=false&page=1': {
       'pages': 1,
