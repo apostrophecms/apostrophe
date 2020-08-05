@@ -375,17 +375,15 @@ module.exports = {
 
       getBrowserData(_super, req) {
         const result = _super(req);
-        if (req.user) {
-          const schema = self.allowedSchema(req);
-          _.defaults(result, {
-            name: self.name,
-            label: self.label,
-            action: self.action,
-            schema: schema,
-            contextual: self.options.contextual,
-            skipInitialModal: self.options.skipInitialModal
-          });
-        }
+        const schema = self.allowedSchema(req);
+        _.defaults(result, {
+          name: self.name,
+          label: self.label,
+          action: self.action,
+          schema: schema,
+          contextual: self.options.contextual,
+          skipInitialModal: self.options.skipInitialModal
+        });
         return result;
       }
     };

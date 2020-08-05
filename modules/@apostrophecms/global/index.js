@@ -129,9 +129,6 @@ module.exports = {
   extendMethods(self, options) {
     return {
       getBrowserData(_super, req) {
-        if (!req.user) {
-          return;
-        }
         const browserOptions = _super(req);
         // For compatibility with the workflow module try to get the _id
         // from the copy the middleware fetched for this specific request,

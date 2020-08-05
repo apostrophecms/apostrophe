@@ -368,12 +368,22 @@ module.exports = {
       },
 
       // Call from init once if this module implements the `getBrowserData` method.
+      // The data returned by `getBrowserData(req)` will then be available on
+      // `apos.modules['your-module-name']` in the browser.
+      //
+      // By default browser data is pushed only for the `apos` scene, so public
+      // site pages will not be cluttered with it, except on the /login page and
+      // other pages that opt into the `apos` scene. If `scene` is set to `public`
+      // then the data is available al the time.
+      //
+      // Be sure to use `extendMethods` when implementing `getBrowserData`
+      // as your base class may also implement `getBrowserData`.
 
-      enableBrowserData() {
-        self.enabledBrowserData = true;
+      enableBrowserData(scene = 'apos') {
+        self.enabledBrowserData = scene;
       },
 
-      // Override this method to return the appropriate browser data for
+      // Extend this method to return the appropriate browser data for
       // your module. If you want browser data for the given req, return
       // an object. That object is merged with the `browser` option passed
       // to your module, then assigned to `apos.modules['your-module-name']`
@@ -386,17 +396,14 @@ module.exports = {
       // Modules derived from pieces, etc. already implement this method,
       // so be sure to follow the super pattern if you want to add additional data.
       //
-      // For performance, this method will only be invoked if the `browserData` option is
-      // `true` for this module.
-      //
-      // Browser data created this way is visible only when a user is logged in
-      // with editing privileges.
+      // For performance, this method will only be invoked if `enableBrowserData`
+      // was called. See also `enableBrowserData` for more restrictions on when
+      // this method is called; if you want data for anonymous site visitors
+      // you must explicitly opt in.
 
       getBrowserData(req) {
-        if (req.user) {
-          self.options.browser = self.options.browser || {};
-          return self.options.browser;
-        }
+        self.options.browser = self.options.browser || {};
+        return self.options.browser;
       },
 
       // Transform a route name into a route URL. If the name begins with `/` it is understood to
@@ -577,7 +584,16 @@ module.exports = {
       ...self.enabledBrowserData && {
         '@apostrophecms/template:addBodyData': {
           addBrowserDataToBody(req, data) {
-            const myData = self.getBrowserData(req);
+            let myData;
+            if (self.enabledBrowserData === 'apos') {
+              if (req.scene === 'apos') {
+                // apos scene only
+                myData = self.getBrowserData(req);
+              }
+            } else {
+              // All the time
+              myData = self.getBrowserData(req);
+            }
             if (!myData) {
               return;
             }

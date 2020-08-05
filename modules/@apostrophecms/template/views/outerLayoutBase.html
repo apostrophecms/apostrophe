@@ -15,7 +15,6 @@
   </head>
   {# TODO: How does `apos-theme--primary-purple` get there? #}
   <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
-    woo woo test
     {% component '@apostrophecms/template:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}
       <div id="apos-busy"></div>

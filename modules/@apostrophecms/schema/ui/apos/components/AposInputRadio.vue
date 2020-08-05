@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="status.error"
+    :field="field" :error="error"
     :uid="uid"
   >
     <template #body>

@@ -709,11 +709,9 @@ module.exports = {
         ];
       },
       getBrowserData(req) {
-        if (req.user) {
-          return {
-            action: self.action
-          };
-        }
+        return {
+          action: self.action
+        };
       }
     };
   }
