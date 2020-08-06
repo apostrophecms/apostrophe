@@ -1,3 +1,4 @@
+// Alphabetical collection of globally available vue-material-design-icons.
 module.exports = {
   'alert-circle-icon': 'AlertCircle',
   'calendar-icon': 'Calendar',
