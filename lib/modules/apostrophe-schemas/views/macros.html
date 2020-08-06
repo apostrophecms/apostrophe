@@ -212,11 +212,6 @@
   {{ fieldset(field | merge({ attributes: 'data-editable' }), singletonBody) }}
 {%- endmacro -%}
 
-{%- macro areaBody(field) -%}
-  {# js adds this area to the dialog #}
-  <div data-{{ field.name }}-edit-view></div>
-{%- endmacro -%}
-
 {# Currently the join editors can use the same markup, so we have one #}
 {# body macro. -Tom #}
 
