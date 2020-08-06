@@ -21,6 +21,7 @@
           />
         </div>
         <AposSlatList @update="updated" :initial-items="listItems" />
+        <AposSearchList :visible="visibleSearchList" />
       </div>
     </template>
   </AposInputWrapper>
@@ -42,7 +43,8 @@ export default {
   },
   data () {
     return {
-      browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel
+      browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
+      visibleSearchList: false
     }
   },
   methods: {
@@ -58,11 +60,15 @@ export default {
       console.log(items);
     },
     async input () {
-      const list = await apos.http.get(`${apos.modules[this.field.withType].action}`, {
-        busy: true
-      });
-      console.log('list ====> ', list)
-      //TODO: create component for result list
+      if (this.next.length) {
+        const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
+          busy: true
+        });
+        if (list && list.results && list.results.length) {
+          this.visibleSearchList = true;
+        }
+        console.log('list ====> ', list)
+      }
     }
   }
 };
