@@ -235,6 +235,26 @@
     }
   };
 
+  // Adds query string data to url. Currently supports only one level
+  // of parameters (not nested structures)
+  apos.http.addQueryToUrl = function(url, data) {
+    let keys;
+    let i;
+    if ((data !== null) && ((typeof data) === 'object')) {
+      keys = Object.keys(data);
+      for (i = 0; (i < keys.length); i++) {
+        let key = keys[i];
+        if (i > 0) {
+          url += '&';
+        } else {
+          url += '?';
+        }
+        url += encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+      }
+    }
+    return url;
+  };
+
   apos.http.get = async (url, options) => {
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
