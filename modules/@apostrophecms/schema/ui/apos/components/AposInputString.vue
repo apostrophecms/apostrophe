@@ -51,9 +51,7 @@ export default {
       }
     },
     classes () {
-      const classes = ['apos-input'];
-      classes.push(`apos-input--${this.type}`);
-      return classes;
+      return ['apos-input', `apos-input--${this.type}`];
     },
     icon () {
       if (this.error) {

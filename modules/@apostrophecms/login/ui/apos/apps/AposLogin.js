@@ -5,8 +5,8 @@ export default function() {
   if (el) {
     return new Vue({
       el,
-      // TODO check apos.login.browser.components.theApostropheLogin for alternate name
-      template: '<component :is="`TheApostropheLogin`" />'
+      // TODO check apos.login.browser.components.theAposLogin for alternate name
+      template: '<component :is="`TheAposLogin`" />'
     });
   }
   apos.bus.$on('admin-menu-click', async (item) => {
