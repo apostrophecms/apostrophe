@@ -102,6 +102,7 @@ module.exports = {
       // also get a light version of the entire tree with ?all=1, for use in a
       // drag-and-drop UI.
       async getAll(req) {
+        self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
         const flat = self.apos.launder.boolean(req.query.flat);
         if (all) {
@@ -184,6 +185,7 @@ module.exports = {
       // _id may be a page _id, or the convenient shorthands
       // `_home` or `_trash`
       async getOne(req, _id) {
+        self.publicApiCheck(req);
         const criteria = (_id === '_home') ? {
           level: 0
         } : (_id === '_trash') ? {
@@ -213,6 +215,7 @@ module.exports = {
       //
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
+        self.publicApiCheck(req);
         const targetId = self.apos.launder.id(req.body._targetId);
         const position = self.apos.launder.string(req.body._position) || 'lastChild';
         const copyingId = self.apos.launder.id(req.body._copyingId);
@@ -246,7 +249,7 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -262,6 +265,7 @@ module.exports = {
       //
       // This call is atomic with respect to other REST write operations on pages.
       async put(req, _id) {
+        self.publicApiCheck(req);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {
@@ -282,7 +286,7 @@ module.exports = {
             const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
@@ -291,6 +295,7 @@ module.exports = {
       // confirmation on it. Future implementation must also consider whether attachments have zero remaining references not
       // fully deleted, which isn't the same as having references still in the trash.
       async delete(req, _id) {
+        self.publicApiCheck(req);
         throw self.apos.error('unimplemented');
       },
       // Patch some properties of the page.
@@ -299,6 +304,7 @@ module.exports = {
       // may be `before`, `after` or `inside`. To move a page into or out of the trash, set
       // `trash` to `true` or `false`.
       patch(req, _id) {
+        self.publicApiCheck(req);
         return self.patch(req, _id);
       }
     };
@@ -426,7 +432,7 @@ database.`);
             const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       getBrowserData(req) {
@@ -1831,7 +1837,18 @@ database.`);
         }
       },
       getRestQuery(req) {
-        return self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
+        const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
+        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.options.publicApiProjection) {
+            // Shouldn't be needed thanks to publicApiCheck, but be sure
+            query.and({
+              _id: '__iNeverMatch'
+            });
+          } else {
+            query.project(self.options.publicApiProjection);
+          }
+        }
+        return query;
       },
       // Returns a cursor that finds pages the current user can edit. Unlike
       // find(), this cursor defaults to including unpublished docs. Trash too because
@@ -1846,6 +1863,16 @@ database.`);
       },
       async findOneForEditing(req, criteria, projection, options) {
         return self.findForEditing(req, criteria, projection, options).toObject();
+      },
+      // Throws a `notfound` exception if a public API projection is
+      // not specified and the user does not have editing permissions. Otherwise does
+      // nothing. Simplifies implementation of `getAll` and `getOne`.
+      publicApiCheck(req) {
+        if (!self.options.publicApiProjection) {
+          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+            throw self.apos.error('notfound');
+          }
+        }
       }
     };
   },
