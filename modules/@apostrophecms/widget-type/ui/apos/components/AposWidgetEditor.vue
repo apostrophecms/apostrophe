@@ -13,8 +13,7 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" :value="myDoc"
-              @input="update"
+              :schema="schema" v-model="docInfo"
             />
           </div>
         </template>
@@ -62,7 +61,10 @@ export default {
   emits: ['safe-close', 'save'],
   data() {
     return {
-      myDoc: { ...this.doc },
+      docInfo: {
+        data: { ...this.doc },
+        hasErrors: false
+      },
       modal: {
         title: `Edit ${this.typeLabel}`,
         active: false,
@@ -87,11 +89,8 @@ export default {
     this.modal.active = true;
   },
   methods: {
-    update(name, value) {
-      this.myDoc[name] = value.data;
-    },
     save() {
-      this.$emit('save', this.myDoc);
+      this.$emit('save', this.docInfo.data);
     }
   }
 };
