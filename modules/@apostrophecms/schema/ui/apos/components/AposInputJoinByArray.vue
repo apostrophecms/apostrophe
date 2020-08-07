@@ -21,7 +21,7 @@
           />
         </div>
         <AposSlatList @update="updated" :initial-items="listItems" />
-        <AposSearchList :visible="visibleSearchList" />
+        <AposSearchList :list="searchList" />
       </div>
     </template>
   </AposInputWrapper>
@@ -44,7 +44,7 @@ export default {
   data () {
     return {
       browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
-      visibleSearchList: false
+      searchList: []
     }
   },
   methods: {
@@ -64,10 +64,9 @@ export default {
         const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
           busy: true
         });
-        if (list && list.results && list.results.length) {
-          this.visibleSearchList = true;
-        }
-        console.log('list ====> ', list)
+        this.searchList = list.results;
+      } else {
+        this.searchList = [];
       }
     }
   }
@@ -80,6 +79,7 @@ export default {
     align-items: center;
     margin-bottom: 10px;
   }
+
   .apos-button {
     position: absolute;
     right: 7.5px;
