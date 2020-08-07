@@ -5,6 +5,12 @@ module.exports = {
   options: {
     manageViews: ['list'],
     perPage: 10
+    // By default there is no public REST API, but you can configure a
+    // projection to enable one:
+    // publicApiProjection: {
+    //   title: 1,
+    //   _url: 1,
+    // }
   },
   beforeSuperClass(self, options) {
     self.contextual = options.contextual;
@@ -166,6 +172,7 @@ module.exports = {
   },
   restApiRoutes: (self, options) => ({
     async getAll(req) {
+      self.publicApiCheck(req);
       const query = self.getRestQuery(req);
       if (!query.get('perPage')) {
         query.perPage(
@@ -187,6 +194,7 @@ module.exports = {
       return result;
     },
     async getOne(req, _id) {
+      self.publicApiCheck(req);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -194,18 +202,22 @@ module.exports = {
       return doc;
     },
     async post(req) {
+      self.publicApiCheck(req);
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
+      self.publicApiCheck(req);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
     // In a CMS that usually leads to unhappy customers. To manipulate apostrophe's trash status for something, use
     // a `PATCH` call to modify the `trash` property and set it to `true` or `false`.
     async delete(req, _id) {
+      self.publicApiCheck(req);
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
+      self.publicApiCheck(req);
       return self.patch(req, _id);
     }
   }),
@@ -623,7 +635,29 @@ module.exports = {
         });
       },
       getRestQuery(req) {
-        return self.find(req).applyBuildersSafely(req.query);
+        const query = self.find(req);
+        query.applyBuildersSafely(req.query);
+        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.options.publicApiProjection) {
+            // Shouldn't be needed thanks to publicApiCheck, but be sure
+            query.and({
+              _id: '__iNeverMatch'
+            });
+          } else {
+            query.project(self.options.publicApiProjection);
+          }
+        }
+        return query;
+      },
+      // Throws a `notfound` exception if a public API projection is
+      // not specified and the user does not have editing permissions. Otherwise does
+      // nothing. Simplifies implementation of `getAll` and `getOne`.
+      publicApiCheck(req) {
+        if (!self.options.publicApiProjection) {
+          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+            throw self.apos.error('notfound');
+          }
+        }
       }
     };
   },

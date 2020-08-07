@@ -2,6 +2,37 @@
   // This code runs via a simple script tag, but you may assume
   // a modern browser because it runs only for our admin UI stories.
   apos.modules = {
+    schema: {
+      "components": {
+        "fields": {
+          "area": "AposInputArea",
+          "singleton": "AposInputSingleton",
+          "string": "AposInputString",
+          "slug": "AposInputSlug",
+          "boolean": "AposInputBoolean",
+          "checkboxes": "AposInputCheckboxes",
+          "select": "AposInputSelect",
+          "integer": "AposInputInteger",
+          "float": "AposInputFloat",
+          "color": "AposInputColor",
+          "range": "AposInputRange",
+          "url": "AposInputUrl",
+          "date": "AposInputDate",
+          "time": "AposInputTime",
+          "password": "AposInputPassword",
+          "group": "AposInputGroup",
+          "array": "AposInputArray",
+          "object": "AposInputObject",
+          "joinByOne": "AposInputJoinByOne",
+          "joinByOneReverse": "AposInputJoinByOneReverse",
+          "joinByArray": "AposInputJoinByArray",
+          "joinByArrayReverse": "AposInputJoinByArrayReverse",
+          "attachment": "AposInputAttachment",
+          "video": "AposInputVideo"
+        }
+      },
+      "alias": "schema"
+    },
     products: {
       'name': 'product',
       'label': 'Product',

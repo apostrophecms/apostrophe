@@ -77,10 +77,15 @@ module.exports = {
         const publicImports = getImports('public', '*.js', { });
         fs.writeFileSync(`${apos.rootDir}/public/apos-frontend/public-bundle.js`,
           `
-window.apos = window.apos || {};
-Object.assign(window.apos, JSON.parse((document.body && document.body.getAttribute('data-apos')) || '{}'));
-document.body.removeAttribute('data-apos');
-          ` +
+(function() {
+  window.apos = window.apos || {};
+  var data = document.body && document.body.getAttribute('data-apos');
+  Object.assign(window.apos, JSON.parse(data || '{}'));
+  if (data) {
+    document.body.removeAttribute('data-apos');
+  }
+})();
+` +
         publicImports.paths.map(path => {
           return fs.readFileSync(path);
         }).join('\n')); // TODO: use webpack just to minify at the end.

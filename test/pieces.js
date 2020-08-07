@@ -33,6 +33,10 @@ describe('Pieces', function() {
               name: 'foo',
               label: 'Foo',
               type: 'string'
+            },
+            publicApiProjection: {
+              title: 1,
+              _url: 1
             }
           }
         },
@@ -45,11 +49,22 @@ describe('Pieces', function() {
             addFields: {
               name: '_things',
               type: 'joinByArray'
+            },
+            publicApiProjection: {
+              title: 1,
+              _url: 1
             }
           }
         },
         'products': {
           extend: '@apostrophecms/piece-type',
+          options: {
+            publicApiProjection: {
+              title: 1,
+              _url: 1,
+              _articles: 1
+            }
+          },
           fields: {
             add: {
               body: {
@@ -102,7 +117,11 @@ describe('Pieces', function() {
         articles: {
           extend: '@apostrophecms/piece-type',
           options: {
-            name: 'article'
+            name: 'article',
+            publicApiProjection: {
+              title: 1,
+              _url: 1
+            }
           },
           fields: {
             add: {
