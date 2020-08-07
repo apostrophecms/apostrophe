@@ -293,7 +293,7 @@
       url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (apos.http.getResponses[url]) {
-      return apos.http.getResponses[url];
+      return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
     } else {
       throw {
         status: 404
