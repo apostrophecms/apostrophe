@@ -141,7 +141,8 @@
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
-    "style-loader": "^1.2.1"
+    "style-loader": "^1.2.1",
+    "webpack-bundle-analyzer": "^3.8.0"
   },
   "browserslist": [
     "ie >= 10"
