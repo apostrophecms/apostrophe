@@ -99,7 +99,7 @@ function generateRow(maxDepth = 5) {
   const id = title.toLowerCase().replace(' ', '-');
 
   const item = {
-    id,
+    _id: id,
     title,
     updatedAt: randomDay(),
     published: randomBoolean() ? 'Published' : 'Unpublished',

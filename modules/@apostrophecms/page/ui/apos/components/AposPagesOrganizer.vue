@@ -17,8 +17,9 @@
           <AposTree
             :rows="rows" :headers="headers"
             :draggable="true" :selectable="true"
+            v-model="checked"
+            @update="update" @busy="setBusy"
           />
-          <!-- @update="update" @busy="setBusy" -->
         </template>
       </AposModalBody>
     </template>
@@ -28,8 +29,6 @@
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
-// TODO: Replace moment with smaller utility.
-import moment from 'moment';
 
 export default {
   name: 'AposPagesOrganizer',
@@ -43,16 +42,12 @@ export default {
         showModal: false
       },
       pages: [],
+      checked: [],
       options: {
         columns: [
           {
             label: 'Page Title',
             name: 'title'
-          },
-          {
-            label: 'Updated',
-            name: 'updatedAt',
-            labelIcon: 'calendar-icon'
           },
           {
             label: 'Published',
@@ -82,7 +77,7 @@ export default {
 
         this.headers.forEach(column => {
           data[column.name] = page[column.name];
-          data.id = page._id;
+          data._id = page._id;
           data.children = page._children;
         });
         rows.push(data);
@@ -115,13 +110,19 @@ export default {
       this.pages = [pageTree];
 
       function formatPageDates(page) {
-        page.updatedAt = moment(page.updatedAt).format('MMM D, YYYY');
         page.published = page.published ? 'Published' : 'Unpublished';
 
         if (page._children) {
           page._children.forEach(formatPageDates);
         }
       }
+    },
+    update(obj) {
+      // We'll hit a route here to update the docs.
+      console.info('CHANGED ROW:', obj);
+    },
+    setBusy(val) {
+      console.info('Busy state is ', val);
     }
   }
 };

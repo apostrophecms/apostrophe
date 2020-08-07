@@ -14,7 +14,7 @@
       class="apos-tree__row"
       :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
       data-apos-tree-row
-      v-for="row in myRows" :key="row.id"
+      v-for="row in myRows" :key="row._id"
       :data-row-id="row.id"
     >
       <div class="apos-tree__row-data">
@@ -53,7 +53,7 @@
               disableFocus: true
             }"
             :status="{}"
-            :choice="{ value: row.id }"
+            :choice="{ value: row._id }"
             v-model="checkedProxy"
           />
           <component
@@ -74,7 +74,7 @@
         :col-widths="colWidths"
         :level="level + 1"
         :nested="nested"
-        :list-id="row.id"
+        :list-id="row._id"
         :tree-id="treeId"
         :draggable="draggable"
         :selectable="selectable"

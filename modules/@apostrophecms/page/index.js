@@ -166,7 +166,7 @@ module.exports = {
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
-                newNodes.push(_.pick(node, 'title', 'slug', '_id', 'type', 'metaType', '_url', '_children', 'published', 'updatedAt'));
+                newNodes.push(_.pick(node, 'title', 'slug', '_id', 'type', 'metaType', '_url', '_children', 'published'));
               }
             });
             return newNodes;
