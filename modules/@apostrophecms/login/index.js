@@ -208,7 +208,7 @@ module.exports = {
 
           return {
             env: process.env.NODE_ENV || 'development',
-            name: process.env.npm_package_name.replace(/-/g, ' ') || 'Apostrophe',
+            name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
             version: aposPackage.version || '3'
           };
         }
