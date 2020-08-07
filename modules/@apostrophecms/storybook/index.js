@@ -1,3 +1,12 @@
+// This module provides [storybook](https://storybook.js.org/) for Apostrophe admin UI components.
+//
+// ## Options
+//
+// ### `domain`
+//
+// A custom domain name for the storybook. Currently used only when deploying to github pages.
+// Passed automatically to github so you don't have to reset it in github after each deployment.
+
 const fs = require('fs-extra');
 const childProcess = require('child_process');
 
@@ -27,11 +36,17 @@ module.exports = {
       },
       async deploy(apos, argv) {
         const buildDir = await self.preBuild(argv);
+        const staticBuild = `${process.env.APOS_ROOT}/data/temp/storybook-static`;
+        let domain = '';
+        if (options.domain) {
+          domain = `echo '${options.domain}' > '${staticBuild}/CNAME' && `;
+        }
         require('child_process').execSync(`
           cd ${buildDir} &&
-          npx build-storybook -s ./public -c .storybook -o $APOS_ROOT/data/temp/storybook-static &&
-          npx storybook-to-ghpages -e $APOS_ROOT/data/temp/storybook-static &&
-          rm -rf $APOS_ROOT/data/temp/storybook-static
+          npx build-storybook -s ./public -c .storybook -o ${staticBuild} &&
+          ${domain}
+          npx storybook-to-ghpages -e ${staticBuild} &&
+          rm -rf ${staticBuild}
         `, { stdio: 'inherit' });
       },
       async preBuild(options) {
