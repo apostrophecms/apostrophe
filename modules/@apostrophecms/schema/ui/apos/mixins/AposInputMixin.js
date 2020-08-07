@@ -1,9 +1,19 @@
 export default {
   props: {
-    value: Object,
-    field: Object,
-    context: Object,
-    status: Object,
+    value: {
+      type: Object,
+      required: true
+    },
+    field: {
+      type: Object,
+      required: true
+    },
+    status: {
+      type: Object,
+      default () {
+        return {};
+      }
+    },
     modifiers: {
       default: function () {
         return [];

@@ -21,9 +21,7 @@ export default {
   props: {
     value: {
       type: Object,
-      default() {
-        return {};
-      }
+      required: true
     },
     schema: {
       type: Array,
@@ -81,9 +79,6 @@ export default {
       return fields;
     }
   },
-  mounted() {
-    this.updateNextAndEmit();
-  },
   watch: {
     fieldState: {
       deep: true,
@@ -91,6 +86,9 @@ export default {
         this.updateNextAndEmit();
       }
     }
+  },
+  mounted() {
+    this.updateNextAndEmit();
   },
   methods: {
     updateNextAndEmit() {
@@ -102,7 +100,7 @@ export default {
         this.next.data[field.name] = this.fieldState[field.name].data;
       });
       this.$emit('input', this.next);
-    },
+    }
   }
 };
 </script>
