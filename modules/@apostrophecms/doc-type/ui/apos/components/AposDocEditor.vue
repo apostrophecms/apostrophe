@@ -8,6 +8,7 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
+        :disabled="docInfo.hasErrors"
         @save="submit"
       />
     </template>
