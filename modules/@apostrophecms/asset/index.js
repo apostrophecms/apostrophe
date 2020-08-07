@@ -85,7 +85,7 @@ module.exports = {
     document.body.removeAttribute('data-apos');
   }
 })();
-          ` +
+` +
         publicImports.paths.map(path => {
           return fs.readFileSync(path);
         }).join('\n')); // TODO: use webpack just to minify at the end.
