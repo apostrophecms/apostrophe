@@ -1,4 +1,6 @@
 <template>
+<!-- TODO: handle joinByOne and joinByArray -->
+<!-- TODO: handle mulitple joined types -->
   <AposInputWrapper
     :field="field" :error="error"
     :uid="uid"
@@ -20,8 +22,8 @@
             type="input"
           />
         </div>
-        <AposSlatList @update="updated" :initial-items="listItems" />
-        <AposSearchList :list="searchList" />
+        <AposSlatList @update="updated" :initial-items="items" />
+        <AposSearchList :list="searchList" @select="selected" />
       </div>
     </template>
   </AposInputWrapper>
@@ -44,8 +46,14 @@ export default {
   data () {
     return {
       browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
-      searchList: []
+      searchList: [],
+      items: this.listItems
     }
+  },
+  async mounted () {
+    const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
+      busy: true
+    });
   },
   methods: {
     validate(value) {
@@ -58,6 +66,9 @@ export default {
     updated(items) {
       console.log('Heard update');
       console.log(items);
+    },
+    selected(items) {
+      this.items = items;
     },
     async input () {
       if (this.next.length) {
