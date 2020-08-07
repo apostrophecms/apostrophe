@@ -89,13 +89,14 @@ export default {
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    this.getPages();
+
+    await this.getPages();
   },
   methods: {
-    async finishSaved() {
-      await this.getPages();
-    },
     async getPages () {
+      apos.bus.$emit('busy', true);
+      this.pages = [];
+
       const pageTree = (await apos.http.get(
         '/api/v1/@apostrophecms/page', {
           busy: true,
@@ -105,24 +106,25 @@ export default {
         }
       )).results;
 
-      formatPageDates(pageTree);
+      formatPage(pageTree);
 
       this.pages = [pageTree];
 
-      function formatPageDates(page) {
+      function formatPage(page) {
         page.published = page.published ? 'Published' : 'Unpublished';
 
-        if (page._children) {
-          page._children.forEach(formatPageDates);
+        if (Array.isArray(page._children)) {
+          page._children.forEach(formatPage);
         }
       }
+      apos.bus.$emit('busy', false);
     },
     update(obj) {
       // We'll hit a route here to update the docs.
       console.info('CHANGED ROW:', obj);
     },
     setBusy(val) {
-      console.info('Busy state is ', val);
+      apos.bus.$emit('busy', val);
     }
   }
 };
