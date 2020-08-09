@@ -54,6 +54,40 @@
       &:hover { opacity: 1; }
     }
   }
+  .apos-widget-group {
+    max-height: ~"calc(1em + 40px)";
+    position: relative;
+    // So we can click the whole thing as a toggle
+    width: 100%;
+    ul {
+      display: none;
+    }
+    overflow: hidden;
+    .apos-widget-group-toggle::after {
+      display: block;
+      position: absolute;
+      right: 20px;
+      content: '►';
+    }
+    &.apos-widget-group--open {
+      ul {
+        display: block;
+        margin-top: 1em;
+        li {
+          padding: 15px;
+          &:hover {
+            background-color: @apos-mid;
+          }
+        }
+      }
+      max-height: none;
+      .apos-widget-group-toggle::after {
+        display: block;
+        float: right;
+        content: '▲';
+      }
+    }
+  }
 }
 
 // disable menu interactions while some windows are open
@@ -210,6 +244,9 @@
     margin-right: auto;
     max-width: 200px;
     .apos-rounded;
+    &.apos-widget-groups {
+      max-width: 300px;
+    }
   }
 }
 
