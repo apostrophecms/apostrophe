@@ -1,6 +1,4 @@
 <template>
-<!-- TODO: hide by default (currently, viisble box-shadow even when empty) -->
-<!-- TODO: hide when selection made and click outside the element -->
   <ul class="apos-search">
     <li class="apos-search__item item" v-for="item in list" :key="item._id" @click="select(item)">
       <div class="item__main">
@@ -19,22 +17,21 @@ export default {
   props: {
     list: {
       type: Array
+    },
+    selectedItems: {
+      type: Array
     }
   },
   emits: ['select'],
-  data () {
-    return {
-      selectedItems: []
-    }
-  },
   methods: {
     getTypeLabel(type) {
-      return apos.modules[type].label
+      return apos.modules[type].label;
     },
     select(item) {
-      if (!this.selectedItems.some(selectedItem => selectedItem._id === item._id)) {
-        this.selectedItems.push(item);
-        this.$emit('select', this.selectedItems);
+      const selectedItems = this.selectedItems;
+      if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
+        selectedItems.push(item);
+        this.$emit('select', selectedItems);
       }
     }
   }
@@ -46,7 +43,7 @@ export default {
   z-index: $z-index-default;
   position: absolute;
   top: 34px;
-  overflow: scroll;
+  overflow: auto;
   width: 100%;
   list-style: none;
   box-shadow: var(--a-box-shadow);
@@ -57,6 +54,10 @@ export default {
   border-bottom-right-radius: var(--a-border-radius);
   border: 1px solid var(--a-base-8);
   background: var(--a-background-primary);
+
+  &:empty {
+    display: none;
+  }
 }
 
 .item {

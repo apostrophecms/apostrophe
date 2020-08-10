@@ -80,13 +80,7 @@ export default {
       }
     },
     remove(focusNext) {
-      if (focusNext) {
-        if (this.engaged) {
-          this.$emit('remove', this.item, focusNext);
-        }
-      } else {
-        this.$emit('remove', this.item);
-      }
+      this.$emit('remove', this.item, focusNext);
     }
   }
 };
@@ -104,7 +98,8 @@ export default {
     color: var(--a-text-primary);
     @include apos-transition();
     &:hover:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-8);
+      color: var(--a-white);
+      background-color: var(--a-primary);
       cursor: grab;
     }
     &:active:not(.apos-slat-list__item--disabled) {
@@ -112,7 +107,7 @@ export default {
     }
     &:active:not(.apos-slat-list__item--disabled),
     &:focus:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-7);
+      background-color: var(--a-primary-button-hover);
     }
   }
 

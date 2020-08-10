@@ -1,17 +1,21 @@
 
 <template>
-<!-- TODO: change slat color when hovering/dragging it -->
   <div ref="root">
     <draggable
-      class="apos-slat-list" tag="ol"
-      :value="items" role="list"
-      v-bind="dragOptions" :move="onMove"
-      @start="isDragging=true" @end="isDragging=false"
+      class="apos-slat-list"
+      tag="ol"
+      role="list"
+      :list="items"
+      :move="onMove"
+      v-bind="dragOptions"
+      @start="isDragging=true"
+      @end="isDragging=false"
       :id="listId"
     >
       <transition-group type="transition" name="apos-slat-list-transition">
         <AposSlat
-          @remove="remove" class="apos-slat-list__item"
+          class="apos-slat-list__item"
+          @remove="remove"
           @engage="engage"
           @disengage="disengage"
           @move="move"
@@ -54,7 +58,7 @@ export default {
   },
   computed: {
     items() {
-      return this.initialItems
+      return this.initialItems;
     },
     listId() {
       return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
@@ -87,14 +91,14 @@ export default {
     },
     remove(item, focusNext) {
       const itemIndex = this.getIndex(item._id);
-      this.items = this.items.filter(i => item._id !== i._id);
-      this.$emit('update', this.items);
-      if (focusNext && this.items[itemIndex]) {
-        this.focusElement(this.items[itemIndex]._id);
+      const items = this.items.filter(i => item._id !== i._id);
+      this.$emit('update', items);
+      if (focusNext && items[itemIndex]) {
+        this.focusElement(items[itemIndex]._id);
         return;
       }
-      if (focusNext && this.items[itemIndex - 1]) {
-        this.focusElement(this.items[itemIndex - 1]._id);
+      if (focusNext && items[itemIndex - 1]) {
+        this.focusElement(items[itemIndex - 1]._id);
       }
     },
     move (id, dir) {
@@ -114,7 +118,6 @@ export default {
       });
       return i;
     },
-
     focusElement(id) {
       if (this.$refs.root.querySelector(`[data-id="${id}"]`)) {
         this.$nextTick(() => {
@@ -122,7 +125,6 @@ export default {
         });
       }
     },
-
     onMove({ relatedContext, draggedContext }) {
       const relatedElement = relatedContext.element;
       const draggedElement = draggedContext.element;
@@ -154,5 +156,4 @@ export default {
     min-height: 20px;
     max-width: $input-max-width * 0.75;
   }
-
 </style>

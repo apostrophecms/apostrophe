@@ -15,6 +15,9 @@
             :disabled="status.disabled" :required="field.required"
             :id="uid"
             @input="input"
+            @focus="handleFocus"
+            @focusout="handleFocusOut"
+            tabindex="0"
           >
           <AposButton
             :label="browseLabel"
@@ -23,7 +26,7 @@
           />
         </div>
         <AposSlatList @update="updated" :initial-items="items" />
-        <AposSearchList :list="searchList" @select="selected" />
+        <AposSearchList :list="searchList" @select="selected" :selected-items="items" />
       </div>
     </template>
   </AposInputWrapper>
@@ -33,6 +36,7 @@
 import AposInputMixin from '../mixins/AposInputMixin.js';
 
 export default {
+  //TODO: save array in db
   name: 'AposInputJoinByArray',
   mixins: [ AposInputMixin ],
   props: {
@@ -47,13 +51,9 @@ export default {
     return {
       browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
       searchList: [],
-      items: this.listItems
-    }
-  },
-  async mounted () {
-    const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
-      busy: true
-    });
+      items: this.listItems,
+      lastSearches: {}
+    };
   },
   methods: {
     validate(value) {
@@ -64,21 +64,38 @@ export default {
       return false;
     },
     updated(items) {
-      console.log('Heard update');
-      console.log(items);
+      this.items = items;
+      this.selected(items);
     },
     selected(items) {
       this.items = items;
     },
     async input () {
       if (this.next.length) {
-        const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
-          busy: true
-        });
-        this.searchList = list.results;
+        if (!this.lastSearches[this.next]) {
+          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
+            busy: true
+          });
+          this.searchList = list.results;
+          this.lastSearches[this.next] = list.results;
+        } else {
+          this.searchList = this.lastSearches[this.next];
+        }
       } else {
         this.searchList = [];
       }
+    },
+    handleFocus() {
+      if (this.next && this.lastSearches[this.next]) {
+        this.searchList = this.lastSearches[this.next];
+      }
+    },
+    handleFocusOut() {
+      // hide search list when click outside the input
+      // timeout to execute "@select" method before
+      setTimeout(() => {
+        this.searchList = [];
+      }, 200);
     }
   }
 };
