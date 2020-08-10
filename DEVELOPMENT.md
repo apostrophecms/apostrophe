@@ -12,7 +12,7 @@ We generally aim to follow [Vue best practices](https://vuejs.org/v2/style-guide
 It is possible to analyze the size of the admin UI webpack bundle:
 
 ```
-APOS_BUNDLE_ANALYZER=1 node app @apostrophecms/assets:build
+APOS_BUNDLE_ANALYZER=1 node app @apostrophecms/asset:build
 ```
 
 This will display a visualization in your browser.
