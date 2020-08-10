@@ -10,7 +10,7 @@
             <li class="apos-dropdown-item apos-widget-group" data-apos-widget-group>
               <span class="apos-widget-group-toggle"></span>
               {{ __ns('apostrophe', label) }}
-              <ul>
+              <ul class="apos-widget-group-widgets">
                 {%- for name in widgets -%}
                   {%- set options = data.options.widgets[name] -%}
                   <li class="apos-widget-group-widget" data-apos-add-item="{{ name }}">{{ options.addLabel or __ns('apostrophe', data.widgetManagers[name].label) }}</li>
