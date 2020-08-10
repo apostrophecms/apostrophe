@@ -1,6 +1,22 @@
 # Changelog
 
-## 2.110.1 (2020-08-12)
+## 2.111.0 (2020-08-12)
+
+* By popular request, "Add Widget" dropdown menus are better organized now, with support for categories of widgets. You can configure this optional feature like so:
+
+```
+apos.area(data.page, 'areaNameHere', {
+  widgets: { ... you must configure your widgets as usual ... }
+  widgetGroups: {
+    'Content': [ 'apostrophe-rich-text', 'apostrophe-images' ],
+    'Layout': [ 'one-column', 'two-column' ]
+  }
+}
+```
+
+Every widget type you specify for `widgetGroups` must still be configured in `widgets`.
+
+If `widgetGroups` is not present the "add widget" dropdown menu will appear as it always did.
 
 * Removes the `aposBody` template macro, which was unused.
 
