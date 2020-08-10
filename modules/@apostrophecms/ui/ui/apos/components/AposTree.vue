@@ -38,10 +38,6 @@ export default {
     event: 'change'
   },
   props: {
-    // data: {
-    //   type: Object,
-    //   required: true
-    // },
     headers: {
       type: Array,
       required: true
