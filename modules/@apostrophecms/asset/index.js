@@ -35,6 +35,12 @@ module.exports = {
       buildPublicBundle();
       await buildAposBundle();
       merge();
+      if (process.env.APOS_BUNDLE_ANALYZER) {
+        return new Promise((resolve, reject) => {
+          // Intentionally never resolve it, so the task never exits
+          // and the UI stays up
+        });
+      }
 
       async function moduleOverrides() {
         let names = {};
