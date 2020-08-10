@@ -25,7 +25,8 @@
 </template>
 
 <script>
-// TODO: Combine into a mixin with the pieces toolbar.
+// NOTE: This can probably be combined with the pieces toolbar when we switch
+// to Vue 3 using the composition API.
 export default {
   props: {
     selectedState: {
