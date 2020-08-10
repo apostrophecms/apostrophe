@@ -1,3 +1,6 @@
+// TODO: Reconcile the overlap in this mixin between the pages and pieces
+// managers. Does it need to be a mixin? This may be resolved when switching to
+// Vue 3 using the composition API. - AB
 export default {
   data() {
     return {
@@ -110,8 +113,8 @@ export default {
             label: `Toggle selection of ${row.title}`
           }
         };
-        this.checkboxes = checkboxes;
       });
+      this.checkboxes = checkboxes;
     }
   }
 };

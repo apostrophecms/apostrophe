@@ -9,7 +9,6 @@
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')" :icon-color="iconColor"
       />
-      <AposTagApply :tags="applyTags" :apply-to="[]" />
       <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
       <AposButton
         label="Delete" @click="$emit('trash-click')"

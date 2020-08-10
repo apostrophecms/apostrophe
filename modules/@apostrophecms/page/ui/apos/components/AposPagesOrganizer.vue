@@ -101,6 +101,17 @@ export default {
         return 'indeterminate';
       }
       return 'empty';
+    },
+    selectAllChoice() {
+      const checkLen = this.checked.length;
+      const rowLen = this.pagesFlat.length;
+
+      return checkLen > 0 && checkLen !== rowLen ? {
+        value: 'checked',
+        indeterminate: true
+      } : {
+        value: 'checked'
+      };
     }
   },
   async mounted() {
@@ -162,8 +173,8 @@ export default {
             label: `Toggle selection of ${row.title}`
           }
         };
-        this.checkboxes = checkboxes;
       });
+      this.checkboxes = checkboxes;
     },
     setBusy(val) {
       apos.bus.$emit('busy', val);

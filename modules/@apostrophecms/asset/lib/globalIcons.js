@@ -25,6 +25,7 @@ module.exports = {
   'magnify-icon': 'Magnify',
   'menu-down-icon': 'MenuDown',
   'minus-icon': 'Minus',
+  'minus-box-icon': 'MinusBox',
   'pencil-icon': 'Pencil',
   'plus-icon': 'Plus',
   'phone-icon': 'Phone',
