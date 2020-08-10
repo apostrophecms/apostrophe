@@ -132,7 +132,6 @@ export default {
   },
   methods: {
     async getPages () {
-      apos.bus.$emit('busy', true);
       this.pages = [];
       this.pagesFlat = [];
       const self = this;
@@ -161,7 +160,6 @@ export default {
           page._children.forEach(formatPage);
         }
       }
-      apos.bus.$emit('busy', false);
     },
     update(obj) {
       // We'll hit a route here to update the docs.
