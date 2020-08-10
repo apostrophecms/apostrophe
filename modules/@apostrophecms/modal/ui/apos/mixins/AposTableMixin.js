@@ -46,7 +46,7 @@ export default {
     selectAll(event) {
       if (!this.checked.length) {
         this.rows.forEach((row) => {
-          this.toggleRowCheck('checked', row.id);
+          this.toggleRowCheck('checked', row._id);
         });
         return;
       }
@@ -97,14 +97,14 @@ export default {
     generateCheckboxes () {
       const checkboxes = {};
       this.rows.forEach((row) => {
-        checkboxes[row.id] = {
+        checkboxes[row._id] = {
           status: {},
           value: {
             data: []
           },
-          choice: { value: row.id },
+          choice: { value: row._id },
           field: {
-            name: row.id,
+            name: row._id,
             type: 'checkbox',
             hideLabel: true,
             label: `Toggle selection of ${row.title}`

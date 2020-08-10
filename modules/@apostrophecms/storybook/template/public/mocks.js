@@ -203,18 +203,39 @@
           'published': true,
           'trash': false,
           'type': 'product',
-          'title': 'cool',
-          'slug': 'cool',
+          'title': 'Grape',
+          'slug': 'grape',
+          'price': null,
+          'metaType': 'doc',
+          'createdAt': '2020-07-22T02:11:19.005Z',
+          'titleSortified': 'grape',
+          'updatedAt': '2020-07-22T02:11:19.005Z',
+          'highSearchText': 'grape grape',
+          'highSearchWords': [
+            'grape'
+          ],
+          'lowSearchText': 'grape grape',
+          'searchSummary': '',
+          'docPermissions': [],
+          '_edit': true
+        },
+        {
+          '_id': 'htcuoykl9012j38ecrjghrn0c',
+          'published': true,
+          'trash': false,
+          'type': 'product',
+          'title': 'Strawberry',
+          'slug': 'strawberry',
           'price': null,
           'metaType': 'doc',
           'createdAt': '2020-07-20T15:56:19.005Z',
-          'titleSortified': 'cool',
+          'titleSortified': 'strawberry',
           'updatedAt': '2020-07-20T15:56:19.005Z',
-          'highSearchText': 'cool cool',
+          'highSearchText': 'strawberry strawberry',
           'highSearchWords': [
-            'cool'
+            'strawberry'
           ],
-          'lowSearchText': 'cool cool',
+          'lowSearchText': 'strawberry strawberry',
           'searchSummary': '',
           'docPermissions': [],
           '_edit': true
