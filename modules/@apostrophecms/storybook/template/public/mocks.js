@@ -314,6 +314,8 @@
       url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (apos.http.getResponses[url]) {
+      // Like responses from a real API, the returned object needs to be safe to
+      // change.
       return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
     } else {
       throw {
