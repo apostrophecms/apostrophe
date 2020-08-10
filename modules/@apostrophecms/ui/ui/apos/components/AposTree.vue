@@ -18,6 +18,7 @@
       :nested="nested"
       @busy="setBusy"
       @update="update"
+      @edit="$emit('edit', $event)"
       list-id="root"
       :draggable="draggable"
       :selectable="selectable"
@@ -71,7 +72,7 @@ export default {
       default: false
     }
   },
-  emits: ['busy', 'update', 'change'],
+  emits: ['busy', 'update', 'change', 'edit'],
   data() {
     return {
       // Copy the `data` property to mutate with VueDraggable.
@@ -238,13 +239,18 @@ export default {
     padding: $cell-padding;
     border-bottom: 1px solid var(--a-base-8);
     box-sizing: border-box;
+  }
 
-    // Let the first cell column (usually "title") grow. We're assuming the first
-    // cell is not a link since there are dedicated "edit" and "link" columns.
-    &:first-of-type:not(a) {
-      flex-grow: 1;
-      flex-shrink: 1;
-    }
+  button.apos-tree__cell {
+    @include apos-button-reset();
+    padding: $cell-padding;
+    border-bottom: 1px solid var(--a-base-8);
+  }
+
+  // Let the title cell column grow.
+  span.apos-tree__cell:first-of-type {
+    flex-grow: 1;
+    flex-shrink: 1;
   }
 
   .apos-tree__cell--published {

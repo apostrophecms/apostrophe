@@ -44,7 +44,6 @@ export default {
         this.checked.push(id);
         this.checkboxes[id].value.data = ['checked'];
       }
-      console.info(this.checkboxes[id].value.data);
     },
     selectAll(event) {
       if (!this.checked.length) {

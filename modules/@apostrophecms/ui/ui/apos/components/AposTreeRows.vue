@@ -29,12 +29,13 @@
         <component
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
-          :is="col.name === 'url' ? 'a' : 'span'"
-          :href="col.name === 'url' ? row[col.name] : false"
-          :target="col.name === 'url' ? '_blank' : false"
+          :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
+          :href="col.name === '_url' ? row[col.name] : false"
+          :target="col.name === '_url' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
+          @click="col.action ? $emit(col.action, row._id) : null"
         >
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
@@ -81,6 +82,7 @@
         :selectable="selectable"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
+        @edit="$emit('edit', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -153,7 +155,7 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update', 'change'],
+  emits: ['busy', 'update', 'change', 'edit'],
   computed: {
     myRows() {
       return this.rows;

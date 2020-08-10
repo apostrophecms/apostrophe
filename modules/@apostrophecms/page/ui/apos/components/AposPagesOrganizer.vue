@@ -26,6 +26,7 @@
             :draggable="true" :selectable="true"
             v-model="checked"
             @update="update" @busy="setBusy"
+            @edit="openEditor"
           />
         </template>
       </AposModalBody>
@@ -64,10 +65,19 @@ export default {
             icon: 'circle'
           },
           {
+            label: 'Edit',
+            name: '_id',
+            icon: 'pencil',
+            iconOnly: true,
+            type: 'button',
+            action: 'edit'
+          },
+          {
             label: 'Link',
             name: '_url',
             icon: 'link',
-            iconOnly: true
+            iconOnly: true,
+            type: 'link'
           }
         ]
       }
@@ -196,6 +206,9 @@ export default {
     trashClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
+    },
+    openEditor(page) {
+      console.info('📝 EDIT PAGE', page);
     }
   }
 };
