@@ -14,7 +14,7 @@
       class="apos-tree__row"
       :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
       data-apos-tree-row
-      v-for="row in myRows" :key="row.id"
+      v-for="row in myRows" :key="row._id"
       :data-row-id="row.id"
     >
       <div class="apos-tree__row-data">
@@ -29,12 +29,13 @@
         <component
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
-          :is="col.name === 'url' ? 'a' : 'span'"
-          :href="col.name === 'url' ? row[col.name] : false"
-          :target="col.name === 'url' ? '_blank' : false"
+          :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
+          :href="col.name === '_url' ? row[col.name] : false"
+          :target="col.name === '_url' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
+          @click="col.action ? $emit(col.action, row._id) : null"
         >
           <drag-icon
             v-if="draggable && index === 0" class="apos-tree__row__handle"
@@ -53,11 +54,11 @@
               disableFocus: true
             }"
             :status="{}"
-            :choice="{ value: row.id }"
+            :choice="{ value: row._id }"
             v-model="checkedProxy"
           />
           <component
-            v-if="col.icon" :is="col.icon"
+            v-if="col.icon" :is="icons[col.icon]"
             class="apos-tree__cell__icon"
           />
           <span v-show="!col.iconOnly">
@@ -71,15 +72,17 @@
         ref="tree-branches"
         :rows="row.children"
         :headers="headers"
+        :icons="icons"
         :col-widths="colWidths"
         :level="level + 1"
         :nested="nested"
-        :list-id="row.id"
+        :list-id="row._id"
         :tree-id="treeId"
         :draggable="draggable"
         :selectable="selectable"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
+        @edit="$emit('edit', $event)"
         v-model="checkedProxy"
       />
     </li>
@@ -103,6 +106,12 @@ export default {
     headers: {
       type: Array,
       required: true
+    },
+    icons: {
+      type: Object,
+      default () {
+        return {};
+      }
     },
     rows: {
       type: Array,
@@ -146,13 +155,11 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update', 'change'],
-  data () {
-    return {
-      myRows: this.rows
-    };
-  },
+  emits: ['busy', 'update', 'change', 'edit'],
   computed: {
+    myRows() {
+      return this.rows;
+    },
     // Handle the local check state within this component.
     checkedProxy: {
       get() {

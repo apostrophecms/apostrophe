@@ -109,7 +109,7 @@ module.exports = {
           if (!self.apos.permission.can(req, 'admin-@apostrophecms/page')) {
             throw self.apos.error('forbidden');
           }
-          const page = self.getRestQuery(req).and({ level: 0 }).children({
+          const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
             published: null,
             trash: false,
@@ -166,7 +166,7 @@ module.exports = {
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
-                newNodes.push(_.pick(node, 'title', 'slug', '_id', 'type', 'metaType', '_url', '_children'));
+                newNodes.push(_.pick(node, 'title', 'slug', '_id', 'type', 'metaType', '_url', '_children', 'published'));
               }
             });
             return newNodes;
@@ -180,6 +180,7 @@ module.exports = {
           _.each(children || [], function(child) {
             flatten(result, child);
           });
+
         }
       },
       // _id may be a page _id, or the convenient shorthands
