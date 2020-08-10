@@ -22,7 +22,7 @@ export const pagesOrganize = () => {
         <button type="button" class="apos-button" @click="toggleActive">
           Activate modal
         </button>
-        <AposPagesOrganizer
+        <AposPagesManager
           v-if="active" @safe-close="finishExit"
         />
       </div>

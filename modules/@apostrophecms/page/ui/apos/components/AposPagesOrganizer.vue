@@ -13,7 +13,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPagesOrganizerToolbar
+          <AposPagesManagerToolbar
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
@@ -39,7 +39,7 @@ import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalP
 import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
 
 export default {
-  name: 'AposPagesOrganizer',
+  name: 'AposPagesManager',
   mixins: [ AposModalParentMixin, AposTableMixin ],
   emits: ['trash', 'search', 'safe-close'],
   data() {
