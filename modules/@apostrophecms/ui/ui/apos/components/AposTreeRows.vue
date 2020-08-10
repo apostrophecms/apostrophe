@@ -57,7 +57,7 @@
             v-model="checkedProxy"
           />
           <component
-            v-if="col.icon" :is="col.icon"
+            v-if="col.icon" :is="icons[col.icon]"
             class="apos-tree__cell__icon"
           />
           <span v-show="!col.iconOnly">
@@ -71,6 +71,7 @@
         ref="tree-branches"
         :rows="row.children"
         :headers="headers"
+        :icons="icons"
         :col-widths="colWidths"
         :level="level + 1"
         :nested="nested"
@@ -103,6 +104,12 @@ export default {
     headers: {
       type: Array,
       required: true
+    },
+    icons: {
+      type: Object,
+      default () {
+        return {};
+      }
     },
     rows: {
       type: Array,

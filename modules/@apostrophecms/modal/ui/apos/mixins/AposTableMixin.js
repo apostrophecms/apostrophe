@@ -80,7 +80,11 @@ export default {
       this.$emit('sort', action);
     },
     generateUi () {
-    // fetch all icons used in table headers
+      this.generateIcons();
+      this.generateCheckboxes();
+    },
+    generateIcons () {
+      // fetch all icons used in table headers
       const icons = {};
       this.headers.forEach(h => {
         if (h.icon) {
@@ -89,7 +93,8 @@ export default {
       });
       this.icons = icons;
       // prep row checkbox fields
-
+    },
+    generateCheckboxes () {
       const checkboxes = {};
       this.rows.forEach((row) => {
         checkboxes[row.id] = {

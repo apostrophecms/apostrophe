@@ -12,10 +12,17 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader />
+        <template #bodyHeader>
+          <AposPagesOrganizerToolbar
+            :selected-state="selectAllState"
+            @select-click="selectAll"
+            @trash-click="trashClick"
+          />
+        </template>
         <template #bodyMain>
           <AposTree
-            :rows="rows" :headers="headers"
+            :rows="rows"
+            :headers="headers" :icons="icons"
             :draggable="true" :selectable="true"
             v-model="checked"
             @update="update" @busy="setBusy"
@@ -42,6 +49,7 @@ export default {
         showModal: false
       },
       pages: [],
+      pagesFlat: [],
       checked: [],
       options: {
         columns: [
@@ -52,13 +60,13 @@ export default {
           {
             label: 'Published',
             name: 'published',
-            labelIcon: 'circle-icon',
-            icon: 'circle-icon'
+            labelIcon: 'circle',
+            icon: 'circle'
           },
           {
             label: 'Link',
             name: '_url',
-            icon: 'link-icon',
+            icon: 'link',
             iconOnly: true
           }
         ]
@@ -84,6 +92,15 @@ export default {
       });
 
       return rows;
+    },
+    selectAllState() {
+      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
+        return 'checked';
+      }
+      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
+        return 'indeterminate';
+      }
+      return 'empty';
     }
   },
   async mounted() {
@@ -96,6 +113,8 @@ export default {
     async getPages () {
       apos.bus.$emit('busy', true);
       this.pages = [];
+      this.pagesFlat = [];
+      const self = this;
 
       const pageTree = (await apos.http.get(
         '/api/v1/@apostrophecms/page', {
@@ -112,6 +131,10 @@ export default {
 
       function formatPage(page) {
         page.published = page.published ? 'Published' : 'Unpublished';
+        self.pagesFlat.push({
+          title: page.title,
+          id: page._id
+        });
 
         if (Array.isArray(page._children)) {
           page._children.forEach(formatPage);
@@ -123,8 +146,45 @@ export default {
       // We'll hit a route here to update the docs.
       console.info('CHANGED ROW:', obj);
     },
+    generateCheckboxes () {
+      const checkboxes = {};
+      this.pagesFlat.forEach((row) => {
+        checkboxes[row.id] = {
+          status: {},
+          value: {
+            data: []
+          },
+          choice: { value: row.id },
+          field: {
+            name: row.id,
+            type: 'checkbox',
+            hideLabel: true,
+            label: `Toggle selection of ${row.title}`
+          }
+        };
+        this.checkboxes = checkboxes;
+      });
+    },
     setBusy(val) {
       apos.bus.$emit('busy', val);
+    },
+    selectAll(event) {
+      if (!this.checked.length) {
+        this.pagesFlat.forEach((row) => {
+          this.toggleRowCheck('checked', row.id);
+        });
+        return;
+      }
+
+      if (this.checked.length <= this.pagesFlat.length) {
+        this.checked.forEach((id) => {
+          this.toggleRowCheck('checked', id);
+        });
+      }
+    },
+    trashClick() {
+      // TODO: Trigger a confirmation modal and execute the deletion.
+      this.$emit('trash', this.selected);
     }
   }
 };

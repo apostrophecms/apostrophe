@@ -4,11 +4,15 @@
       :headers="spacingRow" :spacer-only="true"
       @calculated="setWidths"
     />
-    <AposTreeHeader :headers="headers" :col-widths="colWidths" />
+    <AposTreeHeader
+      :headers="headers" :icons="icons"
+      :col-widths="colWidths"
+    />
     <AposTreeRows
       v-model="checkedProxy"
       :rows="rows"
       :headers="headers"
+      :icons="icons"
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
@@ -40,6 +44,12 @@ export default {
     headers: {
       type: Array,
       required: true
+    },
+    icons: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     rows: {
       type: Array,

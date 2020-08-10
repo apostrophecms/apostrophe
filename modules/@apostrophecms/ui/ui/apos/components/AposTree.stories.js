@@ -29,6 +29,7 @@ export const Tree = () => ({
   template: `
     <AposTree
       :headers="data.headers"
+      :icons="data.icons"
       :rows="data.rows"
       :draggable="data.draggable"
       :selectable="data.selectable"
@@ -53,23 +54,28 @@ function getData () {
       {
         label: 'Last Updated',
         action: 'updated-at-desc',
-        labelIcon: 'calendar-icon',
+        labelIcon: 'calendar',
         name: 'updatedAt'
       },
       {
         label: 'Published',
         action: 'published-desc',
         name: 'published',
-        labelIcon: 'circle-icon',
-        icon: 'circle-icon'
+        labelIcon: 'circle',
+        icon: 'circle'
       },
       {
         label: 'Link',
         name: 'url',
-        icon: 'link-icon',
+        icon: 'link',
         iconOnly: true
       }
     ],
+    icons: {
+      calendar: 'calendar-icon',
+      circle: 'circle-icon',
+      link: 'link-icon'
+    },
     rows,
     draggable,
     selectable
