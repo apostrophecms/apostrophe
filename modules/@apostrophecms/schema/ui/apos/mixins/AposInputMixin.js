@@ -32,7 +32,10 @@ export default {
     };
   },
   mounted () {
-    this.validateAndEmit();
+    this.$el.addEventListener('focusout', this.validateAndEmit);
+  },
+  destroyed () {
+    this.$el.removeEventListener('focusout', this.validateAndEmit);
   },
   computed: {
     options () {
