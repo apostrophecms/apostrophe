@@ -124,7 +124,7 @@ export default {
       const versionsTree = [];
 
       versions.forEach(version => {
-        version.title = version._doc.title;
+        version.title = version.doc.title;
 
         const created = dayjs(version.createdAt);
         const matchIndex = versionsTree.findIndex(v => {
