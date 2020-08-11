@@ -15,7 +15,7 @@
 
 const joinr = require('./lib/joinr');
 const _ = require('lodash');
-const moment = require('moment');
+const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 
 module.exports = {
@@ -290,7 +290,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -303,7 +303,7 @@ module.exports = {
                 return self.apos.launder.select(v, field.choices, field.def);
               });
             } else {
-              return [self.apos.launder.select(value, field.choices, field.def)];
+              return [ self.apos.launder.select(value, field.choices, field.def) ];
             }
           },
           choices: async function () {
@@ -343,7 +343,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -360,7 +360,7 @@ module.exports = {
               if (value === null) {
                 return null;
               }
-              return [value];
+              return [ value ];
             }
           },
           choices: async function () {
@@ -545,17 +545,17 @@ module.exports = {
           launder: function (value) {
             if (Array.isArray(value) && value.length === 2) {
               if (value[0] instanceof Date) {
-                value[0] = moment(value[0]).format('YYYY-MM-DD');
+                value[0] = dayjs(value[0]).format('YYYY-MM-DD');
               }
               if (value[1] instanceof Date) {
-                value[1] = moment(value[1]).format('YYYY-MM-DD');
+                value[1] = dayjs(value[1]).format('YYYY-MM-DD');
               }
               value[0] = self.apos.launder.date(value[0]);
               value[1] = self.apos.launder.date(value[1]);
               return value;
             } else {
               if (value instanceof Date) {
-                value = moment(value).format('YYYY-MM-DD');
+                value = dayjs(value).format('YYYY-MM-DD');
               }
               return self.apos.launder.date(value, null);
             }
@@ -824,7 +824,7 @@ module.exports = {
           }
           // Make sure the other join has any missing fields auto-supplied before
           // trying to access them
-          self.validate([forwardJoin], {
+          self.validate([ forwardJoin ], {
             type: 'doc type',
             subtype: otherModule.name
           });
@@ -934,7 +934,7 @@ module.exports = {
                 clause[field.idsField + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsField] = { $in: [value] };
+                criteria[field.idsField] = { $in: [ value ] };
               }
               query.and(criteria);
             },
@@ -994,7 +994,7 @@ module.exports = {
       if (Array.isArray(v)) {
         return self.apos.launder.ids(v);
       } else if (typeof v === 'string' && v.length) {
-        return [self.apos.launder.id(v)];
+        return [ self.apos.launder.id(v) ];
       } else if (v === 'none') {
         return 'none';
       }
@@ -1044,7 +1044,7 @@ module.exports = {
           }
           // Make sure the other join has any missing fields auto-supplied before
           // trying to access them
-          self.validate([forwardJoin], {
+          self.validate([ forwardJoin ], {
             type: 'doc type',
             subtype: otherModule.name
           });
@@ -1155,11 +1155,11 @@ module.exports = {
 
         // always make sure there is a default group
         const defaultGroup = self.options.defaultGroup || {};
-        let groups = [{
+        let groups = [ {
           name: defaultGroup.name || 'default',
           label: defaultGroup.label || 'Info',
           fields: _.map(schema, 'name')
-        }];
+        } ];
 
         // if we are getting arrangeFields and it's not empty
         if (options.arrangeFields && options.arrangeFields.length > 0) {
@@ -1686,7 +1686,7 @@ module.exports = {
           return;
         }
 
-        const objects = _.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
+        const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
         if (!objects.length) {
           // Don't waste effort
           return;
@@ -2075,7 +2075,7 @@ module.exports = {
           if (Array.isArray(v)) {
             return self.apos.launder.strings(v);
           } else if (typeof v === 'string' && v.length) {
-            return [self.apos.launder.string(v)];
+            return [ self.apos.launder.string(v) ];
           } else if (v === 'none') {
             return 'none';
           }
