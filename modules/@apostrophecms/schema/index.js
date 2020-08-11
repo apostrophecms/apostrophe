@@ -856,11 +856,25 @@ module.exports = {
         if (!manager) {
           throw Error('join with type ' + field.withType + ' unrecognized');
         }
+
         if (_.has(data, field.name)) {
-          const titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
-          if (!titlesOrIds || titlesOrIds[0] === undefined) {
+          let titlesOrIds = [];
+
+          if (Array.isArray(data[field.name])) {
+            for (const datum of data[field.name]) {
+              const id = self.apos.launder.string(datum);
+              if (id) {
+                titlesOrIds.push(id);
+              }
+            }
+          } else {
+            titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
+          }
+
+          if (titlesOrIds[0] === undefined) {
             return;
           }
+
           let clauses = [];
           _.each(titlesOrIds, function (titleOrId) {
             clauses.push({ titleSortified: self.apos.util.sortify(titleOrId) });

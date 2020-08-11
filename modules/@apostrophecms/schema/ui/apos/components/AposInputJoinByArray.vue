@@ -36,7 +36,6 @@
 import AposInputMixin from '../mixins/AposInputMixin.js';
 
 export default {
-  //TODO: save array in db
   name: 'AposInputJoinByArray',
   mixins: [ AposInputMixin ],
   props: {
@@ -55,6 +54,14 @@ export default {
       lastSearches: {}
     };
   },
+  watch: {
+    next: function () {
+      // override method from mixin to avoid standard behavior
+    },
+    value: function () {
+      // override method from mixin to avoid standard behavior
+    }
+  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
@@ -69,6 +76,7 @@ export default {
     },
     selected(items) {
       this.items = items;
+      this.validateAndEmit();
     },
     async input () {
       if (this.next.length) {
@@ -96,6 +104,19 @@ export default {
       setTimeout(() => {
         this.searchList = [];
       }, 200);
+    },
+    validateAndEmit () {
+      // override method from mixin to avoid standard behavior
+      this.$emit('input', {
+        data: this.items.map(item => item._id),
+        error: this.validate(this.items)
+      });
+    },
+    watchValue () {
+      // override method from mixin to avoid standard behavior
+    },
+    watchNext () {
+      // override method from mixin to avoid standard behavior
     }
   }
 };
