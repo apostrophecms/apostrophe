@@ -27,6 +27,7 @@
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocHistory',
@@ -102,7 +103,7 @@ export default {
   },
   methods: {
     async getVersions () {
-      const docVersions = (await apos.http.post(
+      let docVersions = (await apos.http.post(
         '/api/v1/@apostrophecms/version/list', {
           busy: true,
           body: {
@@ -111,13 +112,35 @@ export default {
         }
       )).versions;
 
-      console.info('HISTORY: ', docVersions);
+      // console.info('FLAT HISTORY: ', docVersions);
+      docVersions = this.nestVersions(docVersions);
+      // console.info('NESTED HISTORY: ', docVersions);
+
       if (docVersions) {
         this.versions = docVersions;
       }
     },
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
+    },
+    nestVersions (versions) {
+      const versionsTree = [];
+
+      versions.forEach(version => {
+        const created = dayjs(version.createdAt);
+        const matchIndex = versionsTree.findIndex(v => {
+          return created.isSame(v.createdAt, 'day');
+        });
+
+        if (matchIndex > -1) {
+          versionsTree[matchIndex]._children.push(version);
+        } else {
+          version._children = [];
+          versionsTree.push(version);
+        }
+      });
+
+      return versionsTree;
     }
   }
 };
