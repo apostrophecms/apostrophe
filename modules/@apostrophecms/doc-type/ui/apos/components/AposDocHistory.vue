@@ -47,7 +47,7 @@ export default {
         type: 'slide',
         showModal: false
       },
-      pages: [],
+      versions: [],
       options: {
         columns: [
           {
@@ -56,13 +56,12 @@ export default {
           },
           {
             label: 'Edited on',
-            name: 'updatedAt',
-            icon: 'calendar'
+            name: 'editedAt',
+            labelIcon: 'calendar'
           },
           {
             label: 'Edited by',
-            name: 'author',
-            icon: 'pencil'
+            name: 'author'
           },
           {
             label: 'Link',
@@ -88,7 +87,7 @@ export default {
         this.headers.forEach(column => {
           data[column.name] = page[column.name];
           data._id = page._id;
-          data.children = page._children;
+          data.children = page.children;
         });
         rows.push(data);
       });
@@ -112,9 +111,7 @@ export default {
         }
       )).versions;
 
-      // console.info('FLAT HISTORY: ', docVersions);
-      docVersions = this.nestVersions(docVersions);
-      // console.info('NESTED HISTORY: ', docVersions);
+      docVersions = this.formatVersions(docVersions);
 
       if (docVersions) {
         this.versions = docVersions;
@@ -123,24 +120,32 @@ export default {
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
     },
-    nestVersions (versions) {
+    formatVersions (versions) {
       const versionsTree = [];
 
       versions.forEach(version => {
+        version.title = version._doc.title;
+
         const created = dayjs(version.createdAt);
         const matchIndex = versionsTree.findIndex(v => {
           return created.isSame(v.createdAt, 'day');
         });
 
+        version.editedAt = this.formatDate(version.createdAt);
+        version.author = version.author || '👻';
+
         if (matchIndex > -1) {
-          versionsTree[matchIndex]._children.push(version);
+          versionsTree[matchIndex].children.push(version);
         } else {
-          version._children = [];
+          version.children = [];
           versionsTree.push(version);
         }
       });
 
       return versionsTree;
+    },
+    formatDate(rawDate) {
+      return dayjs(rawDate).format('YYYY-MM-DD [at] H:mma');
     }
   }
 };
