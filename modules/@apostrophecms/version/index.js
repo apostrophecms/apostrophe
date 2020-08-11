@@ -337,7 +337,7 @@ module.exports = {
             } else if (field.type === 'joinByArray') {
               return compareArrays(joinByArrayIdentifier, joinByArrayDecoratorGenerator(field.withType), old, current);
             } else if (field.type === 'joinByOne') {
-              return compareArrays(joinByArrayIdentifier, joinByArrayDecoratorGenerator(field.withType), old ? [old] : [], current ? [current] : []);
+              return compareArrays(joinByArrayIdentifier, joinByArrayDecoratorGenerator(field.withType), old ? [ old ] : [], current ? [ current ] : []);
             } else {
               // Take advantage of Apostrophe's support for boiling fields
               // down to search text to generate a basis for a text diff.

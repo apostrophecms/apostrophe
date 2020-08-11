@@ -250,7 +250,7 @@
         'type': '@apostrophecms/home-page',
         'metaType': 'doc',
         '_url': '/',
-        '_children': [{
+        '_children': [ {
           'title': 'Pellentesque Nullam Purus',
           'slug': '/second',
           '_id': 'ckd96fndy0004fo9kbusxz2kf',
@@ -280,12 +280,14 @@
           '_children': [],
           'published': true,
           'updatedAt': '2020-07-30T19:14:15.750Z'
-        }],
+        } ],
         'published': true,
         'updatedAt': '2020-07-27T20:09:06.031Z'
       }
     }
   };
+
+  apos.http.postResponses = {};
 
   // Adds query string data to url. Currently supports only one level
   // of parameters (not nested structures)
@@ -317,6 +319,23 @@
       // Like responses from a real API, the returned object needs to be safe to
       // change.
       return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
+    } else {
+      throw {
+        status: 404
+      };
+    }
+  };
+
+  apos.http.post = async (url, options) => {
+    // variable async delay for realism
+    await delay(Math.random() * 100 + 100);
+    if (options.qs) {
+      url = apos.http.addQueryToUrl(url, options.qs);
+    }
+    if (apos.http.postResponses[url]) {
+      // Like responses from a real API, the returned object needs to be safe to
+      // change.
+      return JSON.parse(JSON.stringify(apos.http.postResponses[url]));
     } else {
       throw {
         status: 404
