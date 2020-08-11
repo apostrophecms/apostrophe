@@ -15,7 +15,7 @@
       :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
       data-apos-tree-row
       v-for="row in myRows" :key="row._id"
-      :data-row-id="row.id"
+      :data-row-id="row._id"
     >
       <div class="apos-tree__row-data">
         <button
@@ -155,7 +155,7 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update', 'change', 'edit'],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   computed: {
     myRows() {
       return this.rows;
@@ -209,7 +209,7 @@ export default {
       }
     },
     getCellClasses(col, row) {
-      const classes = ['apos-tree__cell'];
+      const classes = [ 'apos-tree__cell' ];
       classes.push(`apos-tree__cell--${col.name}`);
 
       if (col.iconOnly) {
