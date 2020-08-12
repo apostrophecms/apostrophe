@@ -1004,6 +1004,164 @@ module.exports = {
       }
     });
 
+    self.addFieldType({
+      name: 'join',
+      convert: async function (req, field, data, object) {
+        console.log('field', require('util').inspect(field, { colors: true, depth: 1 }))
+        console.log('data', require('util').inspect(data, { colors: true, depth: 1 }))
+        console.log('object', require('util').inspect(object, { colors: true, depth: 1 }))
+        let manager = self.apos.doc.getManager(field.withType);
+        if (!manager) {
+          throw Error('join with type ' + field.withType + ' unrecognized');
+        }
+
+        if (_.has(data, field.name)) {
+          let titlesOrIds = [];
+
+          if (Array.isArray(data[field.name])) {
+            for (const datum of data[field.name]) {
+              const id = self.apos.launder.string(datum);
+              if (id) {
+                titlesOrIds.push(id);
+              }
+            }
+          } else {
+            titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
+          }
+
+          if (titlesOrIds[0] === undefined) {
+            return;
+          }
+
+          let clauses = [];
+          _.each(titlesOrIds, function (titleOrId) {
+            clauses.push({ titleSortified: self.apos.util.sortify(titleOrId) });
+            clauses.push({ _id: titleOrId });
+          });
+          const results = await manager.find(req, { $or: clauses }, { _id: 1 }).joins(false).published(null).toArray();
+          object[field.idsField] = _.map(results, '_id');
+        } else {
+          object[field.idsField] = self.apos.launder.ids(data[field.idsField]);
+          if (!field.relationshipsField) {
+            return;
+          }
+          object[field.relationshipsField] = {};
+          if (field.removedIdsField) {
+            object[field.removedIdsField] = self.apos.launder.ids(data[field.removedIdsField]);
+          }
+          let allIds = object[field.idsField];
+          // We record relationships with things just removed to provide support
+          // for properties of the removal action itself. (This might not be
+          // essential now that we no longer implement a super-granular version
+          // of "apply to subpages." That feature was a UX nightmare.)
+          if (field.removedIdsField) {
+            allIds = allIds.concat(object[field.removedIdsField] || []);
+          }
+          for (let id of allIds) {
+            let e = data[field.relationshipsField] && data[field.relationshipsField][id];
+            if (!e) {
+              e = {};
+            }
+            // Validate the relationship (aw)
+            const validatedRelationship = {};
+            object[field.relationshipsField][id] = validatedRelationship;
+            await self.convert(req, field.relationship, e, validatedRelationship);
+          }
+        }
+      },
+      join: async function (req, field, objects, options) {
+        return self.joinDriver(req, joinr.byArray, false, objects, field.idsField, field.relationshipsField, field.name, options);
+      },
+      addQueryBuilder(field, query) {
+
+        addOperationQueryBuilder('', '$in');
+        addOperationQueryBuilder('And', '$all');
+        self.addJoinSlugQueryBuilder(field, query, '');
+        self.addJoinSlugQueryBuilder(field, query, 'And');
+
+        function addOperationQueryBuilder(suffix, operator) {
+          return query.addBuilder(field.name + suffix, {
+            finalize: function () {
+
+              if (!self.queryBuilderInterested(query, field.name + suffix)) {
+                return;
+              }
+
+              const value = query.get(field.name + suffix);
+              const criteria = {};
+              // Even programmers appreciate shortcuts, so it's not enough that the
+              // sanitizer (which doesn't apply to programmatic use) accepts these
+              if (Array.isArray(value)) {
+                criteria[field.idsField] = {};
+                criteria[field.idsField][operator] = value;
+              } else if (value === 'none') {
+                criteria.$or = [];
+                let clause = {};
+                clause[field.idsField] = null;
+                criteria.$or.push(clause);
+                clause = {};
+                clause[field.idsField] = { $exists: 0 };
+                criteria.$or.push(clause);
+                clause = {};
+                clause[field.idsField + '.0'] = { $exists: 0 };
+                criteria.$or.push(clause);
+              } else {
+                criteria[field.idsField] = { $in: [value] };
+              }
+              query.and(criteria);
+            },
+            choices: self.joinQueryBuilderChoices(field, query, '_id'),
+            launder: joinQueryBuilderLaunder
+          });
+        }
+      },
+      validate: function (field, options, warn, fail) {
+        if (!field.name.match(/^_/)) {
+          warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
+        }
+        if (!field.idsField) {
+          if (field.idField) {
+            fail('joinByArray takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
+          }
+          // Supply reasonable value
+          field.idsField = field.name.replace(/^_/, '') + 'Ids';
+        }
+        if (!field.withType) {
+          // Try to supply reasonable value based on join name. Join name will be plural,
+          // so consider that too
+          let withType = field.name.replace(/^_/, '').replace(/s$/, '');
+          if (!_.find(self.apos.doc.managers, { name: withType })) {
+            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
+          }
+          field.withType = withType;
+        }
+        if (!field.idsField) {
+          fail('idsField property is missing. Hint: joinByArray takes idsField, NOT idField.');
+        }
+        if (!field.withType) {
+          fail('withType property is missing. Hint: it must match the "name" property of a doc type.');
+        }
+        if (Array.isArray(field.withType)) {
+          _.each(field.withType, function (type) {
+            if (!_.find(self.apos.doc.managers, { name: type })) {
+              fail('withType property, ' + type + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
+            }
+          });
+        } else {
+          if (!_.find(self.apos.doc.managers, { name: field.withType })) {
+            fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
+          }
+        }
+        if (field.relationship && !field.relationshipsField) {
+          field.relationshipsField = field.name.replace(/^_/, '') + 'Relationships';
+        }
+        if (field.relationship && !Array.isArray(field.relationship)) {
+          // TODO more validation here
+          fail('relationship field should be an array if present');
+        }
+      }
+    });
+
     function joinQueryBuilderLaunder(v) {
       if (Array.isArray(v)) {
         return self.apos.launder.ids(v);

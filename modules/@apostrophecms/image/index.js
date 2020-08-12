@@ -56,10 +56,12 @@ module.exports = {
         label: 'Credit URL'
       },
       {
-        type: 'joinByArray',
+        type: 'join',
         name: '_tags',
         label: 'Tags',
-        withType: '@apostrophecms/image-tag'
+        withType: '@apostrophecms/image-tag',
+        min: 1,
+        max: 2
       }
     ].concat(options.addFields || []);
     options.arrangeFields = [
