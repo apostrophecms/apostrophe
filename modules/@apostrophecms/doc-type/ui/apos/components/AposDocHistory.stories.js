@@ -1,8 +1,8 @@
 export default {
-  title: 'Doc History'
+  title: 'Version History'
 };
 
-export const docHistory = () => {
+export const versionHistory = () => {
   return {
     methods: {
       toggleActive: function () {

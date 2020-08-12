@@ -30,9 +30,14 @@
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
           :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
-          :href="col.name === '_url' ? row[col.name] : false"
-          :target="col.name === '_url' ? '_blank' : false"
-          :class="getCellClasses(col, row)"
+          :href="col.type === 'link' ? row[col.name] : false"
+          :target="col.type === 'link' ? '_blank' : false"
+          :class="[
+            {
+              'apos-button': !!col.button
+            },
+            ...getCellClasses(col, row)
+          ]"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
           @click="col.action ? $emit(col.action, row._id) : null"
@@ -62,7 +67,7 @@
             class="apos-tree__cell__icon"
           />
           <span v-show="!col.iconOnly">
-            {{ row[col.name] }}
+            {{ getLabel(row, col) }}
           </span>
         </component>
       </div>
@@ -221,6 +226,11 @@ export default {
         classes.push('apos-tree__cell--disabled');
       }
 
+      if (col.button && col.button.style) {
+        classes.push('apos-button');
+        classes.push(`apos-button--${col.button.style}`);
+      }
+
       return classes;
     },
     getCellStyles(name, index) {
@@ -232,6 +242,13 @@ export default {
       }
 
       return styles;
+    },
+    getLabel(row, col) {
+      if (col.button && col.button.label) {
+        return col.button.label;
+      } else {
+        return row[col.name];
+      }
     }
   }
 };

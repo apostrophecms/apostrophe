@@ -68,9 +68,12 @@ export default {
           {
             label: 'Link',
             name: '_id',
-            icon: 'link',
-            iconOnly: true,
-            type: 'button'
+            type: 'button',
+            button: {
+              style: 'primary',
+              action: 'restore',
+              label: 'Restore this version'
+            }
           }
         ]
       }
