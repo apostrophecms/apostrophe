@@ -250,7 +250,7 @@
         'type': '@apostrophecms/home-page',
         'metaType': 'doc',
         '_url': '/',
-        '_children': [{
+        '_children': [ {
           'title': 'Pellentesque Nullam Purus',
           'slug': '/second',
           '_id': 'ckd96fndy0004fo9kbusxz2kf',
@@ -280,7 +280,7 @@
           '_children': [],
           'published': true,
           'updatedAt': '2020-07-30T19:14:15.750Z'
-        }],
+        } ],
         'published': true,
         'updatedAt': '2020-07-27T20:09:06.031Z'
       }

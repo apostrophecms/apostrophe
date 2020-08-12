@@ -6,7 +6,7 @@ import { LoremIpsum } from 'lorem-ipsum';
 const data = getData();
 export default {
   title: 'Tree',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const Tree = () => ({
@@ -155,8 +155,8 @@ function randomDay() {
     'November',
     'December'
   ];
-  const days = [...Array(31).keys()];
-  const years = [2018, 2019, 2020, 2021];
+  const days = [ ...Array(31).keys() ];
+  const years = [ 2018, 2019, 2020, 2021 ];
   return `${weekdays[randomItem(weekdays)]}
     ${months[randomItem(months)]}
     ${days[randomItem(days)]},

@@ -41,7 +41,7 @@ import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
 export default {
   name: 'AposPagesManager',
   mixins: [ AposModalParentMixin, AposTableMixin ],
-  emits: ['trash', 'search', 'safe-close'],
+  emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
       modal: {
@@ -96,7 +96,7 @@ export default {
         this.headers.forEach(column => {
           data[column.name] = page[column.name];
           data._id = page._id;
-          data.children = page._children;
+          data.children = page.children;
         });
         rows.push(data);
       });
@@ -147,7 +147,7 @@ export default {
 
       formatPage(pageTree);
 
-      this.pages = [pageTree];
+      this.pages = [ pageTree ];
 
       function formatPage(page) {
         page.published = page.published ? 'Published' : 'Unpublished';
@@ -156,8 +156,11 @@ export default {
           id: page._id
         });
 
-        if (Array.isArray(page._children)) {
-          page._children.forEach(formatPage);
+        page.children = page._children;
+        delete page._children;
+
+        if (Array.isArray(page.children)) {
+          page.children.forEach(formatPage);
         }
       }
     },
