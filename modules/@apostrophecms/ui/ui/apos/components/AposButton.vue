@@ -1,9 +1,10 @@
 <template>
   <button
-    type="button" @click="click"
+    @click="click"
     class="apos-button"
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
+    :type="buttonType"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -57,7 +58,11 @@ export default {
         return [];
       }
     },
-    disableFocus: Boolean
+    disableFocus: Boolean,
+    buttonType: {
+      type: String,
+      default: ''
+    }
   },
   emits: ['click'],
   data() {

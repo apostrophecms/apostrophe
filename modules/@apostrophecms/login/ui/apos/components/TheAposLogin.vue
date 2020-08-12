@@ -16,7 +16,7 @@
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form>
+              <form ref="form" @submit="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
@@ -28,6 +28,7 @@
                   :disabled="disabled"
                   type="primary"
                   label="Login"
+                  buttonType="submit"
                   :modifiers="['gradient-on-hover']"
                   @click="submit"
                 />
@@ -71,7 +72,7 @@ export default {
           name: 'password',
           label: 'Password',
           placeholder: 'Enter password',
-          type: 'string',
+          type: 'password',
           required: true
         }
       ],
@@ -97,6 +98,7 @@ export default {
   },
   methods: {
     async submit() {
+      this.$refs.form.addEventListener('submit', evt => evt.preventDefault());
       this.busy = true;
       this.error = '';
       try {
