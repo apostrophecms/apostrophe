@@ -10,7 +10,7 @@
     />
     <AposTreeRows
       v-model="checkedProxy"
-      :rows="rows"
+      :rows="myRows"
       :headers="headers"
       :icons="icons"
       :col-widths="colWidths"
@@ -71,7 +71,8 @@ export default {
   emits: [ 'busy', 'update', 'change', 'edit' ],
   data() {
     return {
-      // Copy the `data` property to mutate with VueDraggable.
+      // Copy the `rows` property to mutate with VueDraggable.
+      myRows: [],
       nested: false,
       colWidths: null,
       treeId: this.generateId()
@@ -159,6 +160,11 @@ export default {
         finalRow.push(obj);
       });
       return finalRow;
+    }
+  },
+  watch: {
+    rows(array) {
+      this.myRows = array;
     }
   },
   methods: {

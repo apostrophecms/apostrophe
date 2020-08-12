@@ -37,6 +37,7 @@
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
@@ -90,7 +91,9 @@ export default {
         return [];
       }
 
-      this.pages.forEach(page => {
+      const pagesSet = klona(this.pages);
+
+      pagesSet.forEach(page => {
         const data = {};
 
         this.headers.forEach(column => {
