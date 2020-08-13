@@ -107,6 +107,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-schema /deep/ .apos-field {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
   }
 </style>

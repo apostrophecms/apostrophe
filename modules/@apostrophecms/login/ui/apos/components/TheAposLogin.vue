@@ -235,11 +235,6 @@ export default {
       display: flex;
       flex-direction: column;
 
-      .apos-field {
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      }
-
       .apos-login__link {
         margin-top: 10px;
         margin-left: auto;
@@ -252,8 +247,10 @@ export default {
       }
 
       button {
+        height: 47px;
+        font-size: map-get($font-sizes, input-label);
         letter-spacing: 0.5px;
-        margin-top: 40px;
+        margin-top: 20px;
       }
     }
 
