@@ -317,6 +317,8 @@
     return url;
   };
 
+  apos.http.postResponses = {};
+
   apos.http.get = async (url, options) => {
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
@@ -327,6 +329,23 @@
       // Like responses from a real API, the returned object needs to be safe to
       // change.
       return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
+    } else {
+      throw {
+        status: 404
+      };
+    }
+  };
+
+  apos.http.post = async (url, options) => {
+    // variable async delay for realism
+    await delay(Math.random() * 100 + 100);
+    if (options.qs) {
+      url = apos.http.addQueryToUrl(url, options.qs);
+    }
+    if (apos.http.postResponses[url]) {
+      // Like responses from a real API, the returned object needs to be safe to
+      // change.
+      return JSON.parse(JSON.stringify(apos.http.postResponses[url]));
     } else {
       throw {
         status: 404
