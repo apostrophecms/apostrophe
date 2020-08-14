@@ -11,7 +11,8 @@
         :choices="choices"
         :id="next._id"
         :field-id="field._id"
-        @changed="changed" />
+        @changed="changed"
+      />
     </template>
   </AposInputWrapper>
 </template>
@@ -43,7 +44,7 @@ export default {
     },
     choices() {
       const result = [];
-      for (const [name, options] of Object.entries(this.field.options.widgets)) {
+      for (const [ name, options ] of Object.entries(this.field.options.widgets)) {
         result.push({
           name,
           label: options.addLabel || apos.modules[`${name}-widget`].label
