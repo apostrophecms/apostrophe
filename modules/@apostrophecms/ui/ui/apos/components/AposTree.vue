@@ -10,7 +10,7 @@
     />
     <AposTreeRows
       v-model="checkedProxy"
-      :rows="rows"
+      :rows="myRows"
       :headers="headers"
       :icons="icons"
       :col-widths="colWidths"
@@ -32,7 +32,7 @@ import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
   name: 'AposTree',
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   model: {
     prop: 'checked',
     event: 'change'
@@ -68,10 +68,11 @@ export default {
       default: false
     }
   },
-  emits: ['busy', 'update', 'change', 'edit'],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   data() {
     return {
-      // Copy the `data` property to mutate with VueDraggable.
+      // Copy the `rows` property to mutate with VueDraggable.
+      myRows: [],
       nested: false,
       colWidths: null,
       treeId: this.generateId()
@@ -97,7 +98,7 @@ export default {
         });
       }
 
-      let completeRows = [headers];
+      let completeRows = [ headers ];
       // Add child rows into `completeRows`.
       this.rows.forEach(row => {
         completeRows.push(row);
@@ -159,6 +160,11 @@ export default {
         finalRow.push(obj);
       });
       return finalRow;
+    }
+  },
+  watch: {
+    rows(array) {
+      this.myRows = array;
     }
   },
   methods: {

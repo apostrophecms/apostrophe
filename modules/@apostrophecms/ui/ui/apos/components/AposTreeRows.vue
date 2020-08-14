@@ -15,7 +15,7 @@
       :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
       data-apos-tree-row
       v-for="row in myRows" :key="row._id"
-      :data-row-id="row.id"
+      :data-row-id="row._id"
     >
       <div class="apos-tree__row-data">
         <button
@@ -155,7 +155,7 @@ export default {
       required: true
     }
   },
-  emits: ['busy', 'update', 'change', 'edit'],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   computed: {
     myRows() {
       return this.rows;
@@ -179,7 +179,11 @@ export default {
       if (!this.$refs['tree-branches']) {
         return;
       }
-
+      this.setHeights();
+    });
+  },
+  methods: {
+    setHeights() {
       this.$refs['tree-branches'].forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
@@ -187,14 +191,13 @@ export default {
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
-    });
-  },
-  methods: {
+    },
     startDrag() {
       this.$emit('busy', true);
     },
     endDrag(event) {
       this.$emit('update', event);
+      this.setHeights();
     },
     toggleSection(event) {
       const row = event.target.closest('[data-apos-tree-row]');
@@ -209,7 +212,7 @@ export default {
       }
     },
     getCellClasses(col, row) {
-      const classes = ['apos-tree__cell'];
+      const classes = [ 'apos-tree__cell' ];
       classes.push(`apos-tree__cell--${col.name}`);
 
       if (col.iconOnly) {
