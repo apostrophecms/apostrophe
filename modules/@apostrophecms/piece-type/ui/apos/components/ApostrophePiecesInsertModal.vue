@@ -1,18 +1,21 @@
 <template>
   <ApostropheModal @close="$emit('close')">
-    <template slot="header">
+    <template #header>
       <!-- TODO i18n -->
       <p>New {{ moduleOptions.label }}</p>
     </template>
-    <template slot="body">
+    <template #body>
       <AposSchema :schema="moduleOptions.schema" v-model="pieceInfo" />
     </template>
-    <template slot="footer">
+    <template #footer>
       <slot name="footer">
         <button class="modal-default-button" @click="$emit('close')">
           Cancel
         </button>
-        <button v-if="!pieceInfo.hasErrors" class="modal-default-button" @click="save()">
+        <button
+          v-if="!pieceInfo.hasErrors" class="modal-default-button"
+          @click="save()"
+        >
           Save
         </button>
       </slot>
@@ -27,11 +30,6 @@ export default {
   props: {
     moduleName: String
   },
-  computed: {
-    moduleOptions() {
-      return window.apos.modules[this.moduleName];
-    }
-  },
   data() {
     // TODO we should get the initial pieceInfo from the server's
     // newInstance method so it has proper defaults etc.
@@ -41,6 +39,11 @@ export default {
         hasErrors: false
       }
     };
+  },
+  computed: {
+    moduleOptions() {
+      return window.apos.modules[this.moduleName];
+    }
   },
   methods: {
     async save() {
