@@ -20,7 +20,7 @@ storiesOf('Doc Editor', module)
         Activate modal
       </button>
       <AposDocEditor
-        v-if="active" @safe-close="finishExit"
+        v-if="active" @saved="finishExit"
         :module-name="moduleName" :docId="id"
       />
     </div>
