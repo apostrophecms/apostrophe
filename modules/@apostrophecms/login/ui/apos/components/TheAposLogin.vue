@@ -29,7 +29,7 @@
                   type="primary"
                   label="Login"
                   buttonType="submit"
-                  :modifiers="['gradient-on-hover']"
+                  :modifiers="['gradient-on-hover', 'block']"
                   @click="submit"
                 />
               </form>
@@ -247,7 +247,6 @@ export default {
       }
 
       button {
-        height: 47px;
         font-size: map-get($font-sizes, input-label);
         letter-spacing: 0.5px;
         margin-top: 20px;

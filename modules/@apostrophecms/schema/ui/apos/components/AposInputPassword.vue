@@ -16,12 +16,6 @@
           :tabindex="tabindex"
           @keydown.enter="$emit('return')"
         >
-        <component
-          v-if="icon"
-          :size="iconSize"
-          class="apos-input-icon"
-          :is="icon"
-        />
       </div>
     </template>
   </AposInputWrapper>
@@ -37,19 +31,6 @@ export default {
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
-    },
-    icon () {
-      if (this.error) {
-        return 'circle-medium-icon';
-      } else if (this.field.type === 'date') {
-        return 'calendar-icon';
-      } else if (this.field.type === 'time') {
-        return 'clock-icon';
-      } else if (this.field.icon) {
-        return this.field.icon;
-      } else {
-        return null;
-      }
     }
   },
   methods: {

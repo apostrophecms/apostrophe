@@ -282,6 +282,7 @@ export default {
 .apos-button--block {
   display: block;
   width: 100%;
+  height: 47px;
   max-width: 400px;
 }
 
