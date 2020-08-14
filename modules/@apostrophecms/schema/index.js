@@ -1372,6 +1372,9 @@ module.exports = {
           if (field.contextual) {
             return;
           }
+          if (field.name === 'title') {
+            console.info(field);
+          }
           if (!field.group) {
             field.group = {
               name: 'other',

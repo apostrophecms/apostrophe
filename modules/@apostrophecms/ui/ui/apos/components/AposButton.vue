@@ -59,7 +59,7 @@ export default {
     },
     disableFocus: Boolean
   },
-  emits: ['click'],
+  emits: [ 'click' ],
   data() {
     return {
       contextMenuOpen: true

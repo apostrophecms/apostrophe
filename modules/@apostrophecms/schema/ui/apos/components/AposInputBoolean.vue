@@ -9,7 +9,7 @@
           class="apos-sr-only"
           type="checkbox" :id="`${uid}-true`"
           :value="true" @change="setValue(true)"
-          :checked="value.data === true"
+          :checked="value && value.data === true"
           ref="true"
         >
         <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
@@ -23,7 +23,7 @@
           class="apos-sr-only apos-boolean__input--false"
           type="checkbox" :id="`${uid}-false`"
           :value="false" @change="setValue(false)"
-          :checked="value.data === false"
+          :checked="value && value.data === false"
           ref="false"
         >
         <label :for="`${uid}-false`" class="apos-boolean__label apos-input">
@@ -42,7 +42,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposBooleanField',
+  name: 'AposInputBoolean',
   mixins: [ AposInputMixin ],
   computed: {
     classList: function () {

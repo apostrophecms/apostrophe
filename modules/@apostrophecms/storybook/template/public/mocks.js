@@ -58,8 +58,8 @@
           'required': true,
           'slugifies': 'title',
           'group': {
-            'name': 'basics',
-            'label': 'Basics'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': '9a9f62aa7b35bdc4044b885d0806297e'
         },
@@ -69,8 +69,8 @@
           'label': 'Published',
           'def': true,
           'group': {
-            'name': 'basics',
-            'label': 'Basics'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': 'e146d8acff60cc41f257d010b61e277b'
         },
@@ -90,11 +90,21 @@
           'name': 'price',
           'type': 'string',
           'group': {
-            'name': 'other',
-            'label': 'Other'
+            'name': 'priceFields',
+            'label': 'Price Fields'
           },
           'label': 'Price',
           '_id': 'ab97e004c2d4457bb3034d03ef96689f'
+        },
+        {
+          'name': 'taxes',
+          'type': 'string',
+          'group': {
+            'name': 'priceFields',
+            'label': 'Price Fields'
+          },
+          'label': 'Taxes',
+          '_id': 'cs12e00sc2d4457bb3034d03ef96689f'
         }
       ],
       'filters': [

@@ -8,13 +8,14 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
-        :disabled="docInfo.hasErrors"
-        @save="submit"
+        :disabled="doc.hasErrors"
+        @click="submit"
       />
     </template>
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
+          v-if="tabs.length > 0"
           :current="currentTab" :tabs="tabs"
           @select-tab="switchPane"
         />
@@ -26,7 +27,8 @@
           <AposModalTabsBody>
             <div class="apos-doc-editor__body">
               <AposSchema
-                :schema="currentFields" v-model="docInfo"
+                :schema="schema" :current-fields="currentFields"
+                v-model="doc"
               />
             </div>
           </AposModalTabsBody>
@@ -37,7 +39,8 @@
       <AposModalRail type="right">
         <div class="apos-doc-editor__utility">
           <AposSchema
-            :schema="utility" v-model="docInfo"
+            :schema="schema" :current-fields="utilityFields"
+            v-model="doc"
             :modifiers="['small', 'inverted']"
           />
         </div>
@@ -57,50 +60,20 @@ export default {
     AposModalParentMixin
   ],
   props: {
-    typeLabel: {
+    moduleName: {
       type: String,
       required: true
     },
-    doc: {
-      type: Object,
-      required: true
-    },
-    schema: {
-      type: Array,
-      required: true
-    },
-    groups: {
-      type: Object,
-      default() {
-        return {};
-      }
+    docId: {
+      type: String,
+      default: null
     }
   },
-  emits: ['save', 'safe-close'],
+  emits: [ 'saved', 'safe-close' ],
   data() {
-    const tabs = [];
-    for (const key in this.groups) {
-      if (key !== 'utility') {
-        const temp = { ...this.groups[key] };
-        temp.name = key;
-        tabs.push(temp);
-      }
-    };
-
-    const utility = [];
-    if (this.groups.utility && this.groups.utility.fields) {
-      this.groups.utility.fields.forEach((field) => {
-        utility.push(this.schema.find(item => item.name === field));
-      });
-    }
-
     return {
-      utility,
-      tabs,
-      docInfo: {
-        data: {
-          ...this.doc
-        },
+      doc: {
+        data: {},
         hasErrors: false
       },
       modal: {
@@ -112,27 +85,92 @@ export default {
   },
 
   computed: {
+    moduleOptions() {
+      return window.apos.modules[this.moduleName] || {};
+    },
+    schema() {
+      return this.moduleOptions.schema || [];
+    },
+    groups() {
+      const groupSet = {
+        basics: {
+          label: 'Basics',
+          fields: []
+        }
+      };
+
+      this.schema.forEach(field => {
+        if (field.group && !groupSet[field.group.name]) {
+          groupSet[field.group.name] = {
+            label: field.group.label,
+            fields: [ field.name ]
+          };
+        } else if (field.group) {
+          groupSet[field.group.name].fields.push(field.name);
+        } else {
+          groupSet.basics.fields.push(field.name);
+        }
+      });
+
+      return groupSet;
+    },
+    utilityFields() {
+      if (this.groups.utility && this.groups.utility.fields) {
+        return this.groups.utility.fields;
+      }
+      return [];
+    },
+    tabs() {
+      const tabs = [];
+      for (const key in this.groups) {
+        if (key !== 'utility') {
+          const temp = { ...this.groups[key] };
+          temp.name = key;
+          tabs.push(temp);
+        }
+      };
+      return tabs;
+    },
     modalTitle () {
-      return `Edit ${this.typeLabel}`;
+      return `Edit ${this.moduleOptions.pluralLabel}`;
     },
     currentFields: function() {
-      const fields = [];
       if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => item.name === this.currentTab);
-        tabFields.fields.forEach((field) => {
-          fields.push(this.schema.find(item => field === item.name));
+        const tabFields = this.tabs.find((item) => {
+          return item.name === this.currentTab;
         });
+
+        return tabFields.fields;
+      } else {
+        return [];
       }
-      return fields;
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
+
+    if (this.docId) {
+      // TODO: Get data here.
+    } else {
+      this.$nextTick(() => {
+        this.schema.forEach(field => {
+          this.doc.data[field.name] = {};
+        });
+      });
+    }
   },
   methods: {
-    submit() {
-      this.$emit('save', this.docInfo.data);
+    async submit() {
+      apos.bus.$emit('busy', true);
+      try {
+        await apos.http.post(this.moduleOptions.action, {
+          busy: true,
+          body: this.doc.data
+        });
+        this.$emit('saved');
+      } finally {
+        apos.bus.$emit('busy', false);
+      }
     }
   }
 };
