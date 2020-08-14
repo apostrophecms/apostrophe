@@ -317,7 +317,11 @@
     return url;
   };
 
-  apos.http.postResponses = {};
+  apos.http.postResponses = {
+    '/api/v1/products': {
+      status: 200
+    }
+  };
 
   apos.http.get = async (url, options) => {
     // variable async delay for realism
