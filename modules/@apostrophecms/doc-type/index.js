@@ -97,9 +97,15 @@ module.exports = {
         name: 'basics',
         label: 'Basics',
         fields: [
-          'title',
-          'slug',
-          'published'
+          'title'
+        ]
+      },
+      {
+        name: 'utility',
+        label: 'Utilities',
+        fields: [
+          'published',
+          'slug'
         ]
       },
       {
@@ -182,15 +188,15 @@ module.exports = {
           const receptacle = {};
           // For purposes of previewing, it's OK to ignore readOnly so we can tell which
           // inputs are plausible
-          await self.apos.schema.convert(req, [_.omit(field, 'readOnly')], 'form', input, receptacle);
-          await self.apos.schema.join(req, [field], receptacle, true);
+          await self.apos.schema.convert(req, [ _.omit(field, 'readOnly') ], 'form', input, receptacle);
+          await self.apos.schema.join(req, [ field ], receptacle, true);
           const choiceTemplate = field.choiceTemplate || self.choiceTemplate || 'chooserChoice.html';
           const choicesTemplate = field.choicesTemplate || self.choicesTemplate || 'chooserChoices.html';
           let choices = receptacle[field.name];
           if (!Array.isArray(choices)) {
             // by one case
             if (choices) {
-              choices = [choices];
+              choices = [ choices ];
             } else {
               choices = [];
             }
@@ -1900,7 +1906,7 @@ module.exports = {
         // skipping all builders without a `launder` method. Never trust a browser.
 
         applyBuildersSafely(params) {
-          for (let [name, value] of Object.entries(params)) {
+          for (let [ name, value ] of Object.entries(params)) {
             if (!_.has(query.builders, name)) {
               continue;
             }
@@ -2082,7 +2088,7 @@ module.exports = {
           };
           if (direction === -1) {
             // Flip the sort, we need to look backwards
-            for (const [key, val] of sort) {
+            for (const [ key, val ] of sort) {
               if (typeof (val) === 'number') {
                 sort[key] = -val;
               }
@@ -2214,7 +2220,7 @@ module.exports = {
 };
 
 function wrap(context, extensions) {
-  for (const [name, fn] of extensions) {
+  for (const [ name, fn ] of extensions) {
     if ((typeof fn) !== 'function') {
       // Nested structure is allowed
       context[name] = context[name] || {};
