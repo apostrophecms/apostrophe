@@ -21,7 +21,7 @@
       <div class="apos-tree__row-data">
         <button
           v-if="row.children && row.children.length > 0"
-          class="apos-tree__row__toggle"
+          class="apos-tree__row__toggle" data-apos-tree-toggle
           aria-label="Toggle section"
           @click="toggleSection($event)"
         >
@@ -166,9 +166,6 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
-    },
-    isOpen() {
-      return true;
     }
   },
   mounted() {
@@ -200,24 +197,27 @@ export default {
     toggleSection(event) {
       const row = event.target.closest('[data-apos-tree-row]');
       const rowList = row.querySelector('[data-apos-branch-height]');
+      const toggle = event.target.closest('[data-apos-tree-toggle]');
 
       if (rowList && rowList.style.maxHeight === '0px') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
-        row.classList.remove('is-collapsed');
+        toggle.setAttribute('aria-expanded', true);
+        rowList.classList.remove('is-collapsed');
       } else if (rowList) {
         rowList.style.maxHeight = 0;
-        row.classList.add('is-collapsed');
+        toggle.setAttribute('aria-expanded', false);
+        rowList.classList.add('is-collapsed');
       }
     },
     selectRow(event) {
-      let rowId;
-      if (event.target.dataset.rowId) {
-        rowId = event.target.dataset.rowId;
-      } else {
-        const row = event.target.closest('[data-row-id]');
-        rowId = row.dataset.rowId;
+      const buttonParent = event.target.closest('[data-apos-tree-toggle]');
+
+      if (buttonParent) {
+        return;
       }
-      this.$emit('change', [ rowId ]);
+
+      const row = event.target.closest('[data-row-id]');
+      this.$emit('change', [ row.dataset.rowId ]);
     },
     getRowClasses(row) {
       return [
@@ -262,7 +262,7 @@ export default {
   .apos-tree__list {
     transition: max-height 0.3s ease;
 
-    .apos-tree__row.is-collapsed & {
+    &.is-collapsed {
       overflow-y: auto;
     }
   }
@@ -279,7 +279,7 @@ export default {
   .apos-tree__row__toggle-icon {
     transition: transform 0.3s ease;
 
-    .apos-tree__row.is-collapsed & {
+    [aria-expanded=false] > & {
       transform: rotate(-90deg) translateY(0.25em);
     }
   }
