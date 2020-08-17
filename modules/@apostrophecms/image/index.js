@@ -75,8 +75,8 @@ module.exports = {
         ]
       },
       {
-        name: 'info',
-        label: 'Info',
+        name: 'details',
+        label: 'Details',
         fields: [
           'description',
           'credit',
