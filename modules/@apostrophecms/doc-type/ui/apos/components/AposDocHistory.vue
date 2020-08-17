@@ -65,7 +65,8 @@ export default {
       },
       treeOptions: {
         hideHeader: true,
-        selectable: true
+        selectable: true,
+        startCollapsed: true
       }
     };
   },

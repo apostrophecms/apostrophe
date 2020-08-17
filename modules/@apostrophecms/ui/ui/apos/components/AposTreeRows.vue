@@ -19,10 +19,11 @@
       } : {}"
     >
       <div class="apos-tree__row-data">
+        <!-- {{ options.startCollapsed }} -->
         <button
           v-if="row.children && row.children.length > 0"
           class="apos-tree__row__toggle" data-apos-tree-toggle
-          aria-label="Toggle section"
+          aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
         >
           <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
@@ -80,6 +81,10 @@
         :list-id="row._id"
         :tree-id="treeId"
         :options="options"
+        :class="{ 'is-collapsed': options.startCollapsed }"
+        :style="{
+          'max-height': options.startCollapsed ? '0' : null
+        }"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
@@ -199,7 +204,7 @@ export default {
       const rowList = row.querySelector('[data-apos-branch-height]');
       const toggle = event.target.closest('[data-apos-tree-toggle]');
 
-      if (rowList && rowList.style.maxHeight === '0px') {
+      if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
         toggle.setAttribute('aria-expanded', true);
         rowList.classList.remove('is-collapsed');
@@ -278,9 +283,10 @@ export default {
 
   .apos-tree__row__toggle-icon {
     transition: transform 0.3s ease;
+    transform: rotate(-90deg) translateY(0.25em);
 
-    [aria-expanded=false] > & {
-      transform: rotate(-90deg) translateY(0.25em);
+    [aria-expanded=true] > & {
+      transform: none;
     }
   }
   .apos-tree__row__handle {
