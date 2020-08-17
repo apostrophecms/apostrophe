@@ -40,11 +40,12 @@ export default {
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
-      modalTitle: `${this.doc.title} Versions`,
+      modalTitle: 'Version History',
       modal: {
         active: false,
         type: 'slide',
-        showModal: false
+        showModal: false,
+        a11yTitle: this.doc.title
       },
       versions: [],
       options: {
