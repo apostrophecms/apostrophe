@@ -27,7 +27,6 @@
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
-import AccountBox from 'vue-material-design-icons/AccountBox.vue';
 import dayjs from 'dayjs';
 
 export default {
@@ -64,16 +63,6 @@ export default {
             label: 'Edited by',
             name: 'author',
             labelIcon: 'account-box'
-          },
-          {
-            label: 'Link',
-            name: '_id',
-            type: 'button',
-            button: {
-              style: 'primary',
-              action: 'restore',
-              label: 'Restore this version'
-            }
           }
         ]
       }

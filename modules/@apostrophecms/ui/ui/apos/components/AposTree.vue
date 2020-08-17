@@ -244,14 +244,10 @@ export default {
     box-sizing: border-box;
   }
 
-  button.apos-tree__cell:not(.apos-button) {
+  button.apos-tree__cell {
     @include apos-button-reset();
     padding: $cell-padding;
     border-bottom: 1px solid var(--a-base-8);
-  }
-
-  .apos-tree__cell.apos-button {
-    align-self: center;
   }
 
   // Let the title cell column grow.
