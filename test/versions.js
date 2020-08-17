@@ -45,7 +45,7 @@ describe('Versions', function() {
               },
               _poems: {
                 label: 'Poems',
-                type: 'joinByArray',
+                type: 'join',
                 withType: 'poem',
                 idsField: 'poemIds'
               },
@@ -503,7 +503,7 @@ describe('Versions', function() {
     assert(change.current.nickname === 'sarah');
   });
 
-  it('should be able to compare versions with joinByArray and spot an id change, providing the titles via a join', async () => {
+  it('should be able to compare versions with join and spot an id change, providing the titles via a join', async () => {
     let req = apos.task.getReq();
     const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);

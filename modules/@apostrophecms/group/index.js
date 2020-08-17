@@ -30,7 +30,7 @@ module.exports = {
     adminOnly: true,
     addFields: [
       {
-        type: 'joinByArrayReverse',
+        type: 'reverseJoin',
         name: '_users',
         label: 'Users',
         idsField: 'groupIds',

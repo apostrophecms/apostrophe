@@ -44,7 +44,7 @@ describe('Pieces', function() {
             label: 'Person',
             addFields: {
               name: '_things',
-              type: 'joinByArray'
+              type: 'join'
             }
           }
         },
@@ -87,7 +87,7 @@ describe('Pieces', function() {
                 }
               },
               _articles: {
-                type: 'joinByArray',
+                type: 'join',
                 withType: 'article',
                 filters: {
                   projection: {

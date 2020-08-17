@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :field="field" :error="error"
-    :uid="uid"
+    :uid="uid" :items="items"
   >
     <template #body>
       <div class="apos-input-wrapper apos-input-join">
@@ -63,7 +63,19 @@ export default {
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
-        return 'required';
+        return { message: 'required' };
+      }
+
+      if (this.field.max && this.field.max <= value.length) {
+        this.next = 'Limit reached!';
+        this.status.disabled = true;
+      } else {
+        this.next = '';
+        this.status.disabled = false;
+      }
+
+      if (this.field.min && this.field.min > value.length) {
+        return { message: `minimum of ${this.field.min} required` };
       }
 
       return false;
@@ -112,6 +124,7 @@ export default {
     },
     watchValue () {
       // override method from mixin to avoid standard behavior
+      this.error = this.value.error;
     },
     watchNext () {
       // override method from mixin to avoid standard behavior

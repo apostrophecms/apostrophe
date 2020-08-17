@@ -59,15 +59,16 @@ describe('Schema builders', function() {
             addFields: [
               {
                 name: '_cats',
-                type: 'joinByArray',
+                type: 'join',
                 idsField: 'catsIds',
                 label: 'Cats',
                 withType: 'cat'
               },
               {
                 name: '_favorite',
-                type: 'joinByOne',
-                idField: 'favoriteId',
+                type: 'join',
+                limit: 1,
+                idsField: 'favoriteId',
                 label: 'Favorite',
                 withType: 'cat'
               }
