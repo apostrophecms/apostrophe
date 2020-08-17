@@ -220,7 +220,8 @@ export default {
       }
     },
     keydownRow(event) {
-      if (event.keyCode === 32) {
+      if (event.key === ' ') {
+        event.preventDefault();
         this.selectRow(event);
       }
     },
