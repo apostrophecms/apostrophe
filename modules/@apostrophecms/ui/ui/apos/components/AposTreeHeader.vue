@@ -34,6 +34,10 @@ export default {
         return {};
       }
     },
+    hidden: {
+      type: Boolean,
+      default: false
+    },
     spacerOnly: {
       type: Boolean,
       default: false
@@ -48,7 +52,7 @@ export default {
   emits: [ 'calculated' ],
   computed: {
     headerClasses() {
-      if (this.spacerOnly) {
+      if (this.spacerOnly || this.hidden) {
         return 'apos-tree__header--hidden';
       }
       return '';

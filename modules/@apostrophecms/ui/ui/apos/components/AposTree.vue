@@ -7,7 +7,7 @@
     />
     <AposTreeHeader
       :headers="headers" :icons="icons"
-      :col-widths="colWidths"
+      :col-widths="colWidths" :hidden="hideHeader"
     />
     <AposTreeRows
       v-model="checkedProxy"
@@ -42,6 +42,10 @@ export default {
     headers: {
       type: Array,
       required: true
+    },
+    hideHeader: {
+      type: Boolean,
+      default: false
     },
     icons: {
       type: Object,

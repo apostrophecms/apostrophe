@@ -14,9 +14,8 @@
       <AposModalBody>
         <template #bodyMain>
           <AposTree
-            :rows="rows"
-            :headers="headers" :icons="icons"
-            @edit="openEditor"
+            :rows="rows" :headers="headers"
+            :icons="icons" :hide-header="true"
           />
         </template>
       </AposModalBody>
