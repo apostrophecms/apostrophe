@@ -7,7 +7,7 @@
     @start="startDrag"
     @end="endDrag"
     :data-list-id="listId"
-    :disabled="!draggable"
+    :disabled="!options.draggable"
     handle=".apos-tree__row__handle"
   >
     <li
@@ -38,12 +38,12 @@
           @click="col.action ? $emit(col.action, row._id) : null"
         >
           <drag-icon
-            v-if="draggable && index === 0" class="apos-tree__row__handle"
+            v-if="options.draggable && index === 0" class="apos-tree__row__handle"
             :size="20"
             :fill-color="null"
           />
           <AposCheckbox
-            v-if="selectable && index === 0"
+            v-if="options.bulkSelect && index === 0"
             class="apos-tree__row__checkbox"
             tabindex="-1"
             :field="{
@@ -78,8 +78,7 @@
         :nested="nested"
         :list-id="row._id"
         :tree-id="treeId"
-        :draggable="draggable"
-        :selectable="selectable"
+        :options="options"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
@@ -138,13 +137,11 @@ export default {
       type: Boolean,
       required: true
     },
-    draggable: {
-      type: Boolean,
-      required: true
-    },
-    selectable: {
-      type: Boolean,
-      default: false
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     },
     listId: {
       type: String,

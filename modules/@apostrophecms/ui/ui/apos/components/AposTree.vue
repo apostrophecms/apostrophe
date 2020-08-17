@@ -7,7 +7,7 @@
     />
     <AposTreeHeader
       :headers="headers" :icons="icons"
-      :col-widths="colWidths" :hidden="hideHeader"
+      :col-widths="colWidths" :hidden="options.hideHeader"
     />
     <AposTreeRows
       v-model="checkedProxy"
@@ -21,8 +21,7 @@
       @update="update"
       @edit="$emit('edit', $event)"
       list-id="root"
-      :draggable="draggable"
-      :selectable="selectable"
+      :options="options"
       :tree-id="treeId"
     />
   </div>
@@ -43,10 +42,6 @@ export default {
       type: Array,
       required: true
     },
-    hideHeader: {
-      type: Boolean,
-      default: false
-    },
     icons: {
       type: Object,
       default() {
@@ -64,13 +59,11 @@ export default {
         return null;
       }
     },
-    draggable: {
-      type: Boolean,
-      default: false
-    },
-    selectable: {
-      type: Boolean,
-      default: false
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     }
   },
   emits: [ 'busy', 'update', 'change', 'edit' ],

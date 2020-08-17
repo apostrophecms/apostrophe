@@ -15,7 +15,7 @@
         <template #bodyMain>
           <AposTree
             :rows="rows" :headers="headers"
-            :icons="icons" :hide-header="true"
+            :icons="icons" :options="treeOptions"
           />
         </template>
       </AposModalBody>
@@ -60,6 +60,9 @@ export default {
             labelIcon: 'account-box'
           }
         ]
+      },
+      treeOptions: {
+        hideHeader: true
       }
     };
   },
