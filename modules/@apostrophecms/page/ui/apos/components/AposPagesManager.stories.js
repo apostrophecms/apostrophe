@@ -1,8 +1,8 @@
 export default {
-  title: 'Pages Organize'
+  title: 'Pages Manager'
 };
 
-export const pagesOrganize = () => {
+export const pagesManager = () => {
   return {
     methods: {
       toggleActive: function () {
