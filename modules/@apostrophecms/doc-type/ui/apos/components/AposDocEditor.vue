@@ -93,8 +93,8 @@ export default {
     },
     groups() {
       const groupSet = {
-        basics: {
-          label: 'Basics',
+        'other': {
+          label: 'Other',
           fields: []
         }
       };
@@ -108,7 +108,7 @@ export default {
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
         } else {
-          groupSet.basics.fields.push(field.name);
+          groupSet.other.fields.push(field.name);
         }
       });
 
