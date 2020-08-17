@@ -1099,8 +1099,12 @@ module.exports = {
     };
   },
   methods(self, options) {
-    return {
+    const defaultGroup = self.options.defaultGroup || {
+      name: 'ungrouped',
+      label: 'Ungrouped'
+    };
 
+    return {
       // Compose a schema based on addFields, removeFields, orderFields
       // and, occasionally, alterFields options. This method is great for
       // merging the schema requirements of subclasses with the schema
@@ -1154,10 +1158,9 @@ module.exports = {
         }
 
         // always make sure there is a default group
-        const defaultGroup = self.options.defaultGroup || {};
         let groups = [ {
-          name: defaultGroup.name || 'other',
-          label: defaultGroup.label || 'Other',
+          name: defaultGroup.name,
+          label: defaultGroup.label,
           fields: _.map(schema, 'name')
         } ];
 
@@ -1273,9 +1276,9 @@ module.exports = {
         // before title etc.
 
         schema = _.filter(schema, function (field) {
-          return !(field.group && field.group.name === 'other');
+          return !(field.group && field.group.name === defaultGroup.name);
         }).concat(_.filter(schema, function (field) {
-          return field.group && field.group.name === 'other';
+          return field.group && field.group.name === defaultGroup.name;
         }));
 
         _.each(schema, function (field) {
@@ -1377,8 +1380,8 @@ module.exports = {
           }
           if (!field.group) {
             field.group = {
-              name: 'other',
-              label: 'Other'
+              name: defaultGroup.name,
+              label: defaultGroup.label
             };
           }
           // first group, or not the current group

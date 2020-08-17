@@ -92,12 +92,7 @@ export default {
       return this.moduleOptions.schema || [];
     },
     groups() {
-      const groupSet = {
-        'other': {
-          label: 'Other',
-          fields: []
-        }
-      };
+      const groupSet = {};
 
       this.schema.forEach(field => {
         if (field.group && !groupSet[field.group.name]) {
@@ -107,8 +102,6 @@ export default {
           };
         } else if (field.group) {
           groupSet[field.group.name].fields.push(field.name);
-        } else {
-          groupSet.other.fields.push(field.name);
         }
       });
 
@@ -153,9 +146,7 @@ export default {
       // TODO: Get data here.
     } else {
       this.$nextTick(() => {
-        this.schema.forEach(field => {
-          this.doc.data[field.name] = {};
-        });
+        this.poplateSchema();
       });
     }
   },
@@ -171,6 +162,11 @@ export default {
       } finally {
         apos.bus.$emit('busy', false);
       }
+    },
+    poplateSchema () {
+      this.schema.forEach(field => {
+        this.doc.data[field.name] = {};
+      });
     }
   }
 };

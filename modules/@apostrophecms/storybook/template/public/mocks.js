@@ -81,8 +81,8 @@
           'contextual': true,
           'def': false,
           'group': {
-            'name': 'other',
-            'label': 'Other'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': '781f8a0089bef9e079178670f4a7efaa'
         },
@@ -105,6 +105,26 @@
           },
           'label': 'Taxes',
           '_id': 'cs12e00sc2d4457bb3034d03ef96689f'
+        },
+        {
+          'name': 'nonsense',
+          'type': 'select',
+          'label': 'Why is this field ungrouped?',
+          '_id': 'tcw0100sc2d4457bb3034d03ef96mc05',
+          'choices': [
+            {
+              'value': 'confusion',
+              'label': 'Confusion'
+            },
+            {
+              'value': 'laziness',
+              'label': 'Laziness'
+            },
+            {
+              'value': 'cats',
+              'label': 'Interfering cats'
+            }
+          ]
         }
       ],
       'filters': [
