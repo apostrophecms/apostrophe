@@ -199,10 +199,12 @@ export default {
       this.$emit('update', event);
       this.setHeights();
     },
-    toggleSection(event) {
-      const row = event.target.closest('[data-apos-tree-row]');
+    toggleSection(event, data) {
+      const row = (data && data.row) ||
+        event.target.closest('[data-apos-tree-row]');
       const rowList = row.querySelector('[data-apos-branch-height]');
-      const toggle = event.target.closest('[data-apos-tree-toggle]');
+      const toggle = (data && data.toggle) ||
+        event.target.closest('[data-apos-tree-toggle]');
 
       if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
@@ -218,11 +220,21 @@ export default {
       const buttonParent = event.target.closest('[data-apos-tree-toggle]');
 
       if (buttonParent) {
+        // If we've clicked on the toggle, don't select the row.
         return;
       }
 
       const row = event.target.closest('[data-row-id]');
       this.$emit('change', [ row.dataset.rowId ]);
+
+      // Expand a row when the full parent row is selected.
+      const toggle = row.querySelector('[data-apos-tree-toggle]');
+      if (toggle && toggle.getAttribute('aria-expanded') !== 'true') {
+        this.toggleSection(null, {
+          row,
+          toggle
+        });
+      }
     },
     getRowClasses(row) {
       return [
