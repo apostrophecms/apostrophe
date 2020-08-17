@@ -59,6 +59,13 @@ export default {
         return null;
       }
     },
+    // Active options include:
+    // - hideHeader: The tree header row will be visibly hidden.
+    // - selectable: Rows can be individually selected one-at-a-time. Used
+    //   for version history selection.
+    // - bulkSelect: Rows can be bulk selected using checkboxes. Both this
+    //   and `selectable` use the same `checked` array.
+    // - draggable: Rows can be moved around within the tree.
     options: {
       type: Object,
       default () {

@@ -16,6 +16,7 @@
           <AposTree
             :rows="rows" :headers="headers"
             :icons="icons" :options="treeOptions"
+            v-model="selected"
           />
         </template>
       </AposModalBody>
@@ -47,6 +48,7 @@ export default {
         showModal: false
       },
       versions: [],
+      selected: [],
       options: {
         columns: [
           {
@@ -62,7 +64,8 @@ export default {
         ]
       },
       treeOptions: {
-        hideHeader: true
+        hideHeader: true,
+        selectable: true
       }
     };
   },

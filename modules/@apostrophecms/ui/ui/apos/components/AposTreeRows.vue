@@ -11,11 +11,12 @@
     handle=".apos-tree__row__handle"
   >
     <li
-      class="apos-tree__row"
-      :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
-      data-apos-tree-row
       v-for="row in myRows" :key="row._id"
-      :data-row-id="row._id"
+      :data-row-id="row._id" data-apos-tree-row
+      :class="getRowClasses(row)"
+      v-on="options.selectable ? {
+        'click': selectRow
+      } : {}"
     >
       <div class="apos-tree__row-data">
         <button
@@ -208,6 +209,26 @@ export default {
         row.classList.add('is-collapsed');
       }
     },
+    selectRow(event) {
+      let rowId;
+      if (event.target.dataset.rowId) {
+        rowId = event.target.dataset.rowId;
+      } else {
+        const row = event.target.closest('[data-row-id]');
+        rowId = row.dataset.rowId;
+      }
+      this.$emit('change', [ rowId ]);
+    },
+    getRowClasses(row) {
+      return [
+        'apos-tree__row',
+        {
+          'apos-tree__row--parent': row.children && row.children.length > 0,
+          'apos-tree__row--selectable': this.options.selectable,
+          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
+        }
+      ];
+    },
     getCellClasses(col, row) {
       const classes = [ 'apos-tree__cell' ];
       classes.push(`apos-tree__cell--${col.name}`);
@@ -243,6 +264,15 @@ export default {
 
     .apos-tree__row.is-collapsed & {
       overflow-y: auto;
+    }
+  }
+
+  .apos-tree__row--selectable {
+    cursor: pointer;
+  }
+  .apos-tree__row-data {
+    .apos-tree__row--selected > & {
+      background-color: var(--a-base-9);
     }
   }
 
