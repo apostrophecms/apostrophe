@@ -14,8 +14,11 @@
       v-for="row in myRows" :key="row._id"
       :data-row-id="row._id" data-apos-tree-row
       :class="getRowClasses(row)"
+      :aria-role="options.selectable ? 'button' : null"
+      :tabindex="options.selectable ? 0 : null"
       v-on="options.selectable ? {
-        'click': selectRow
+        'click': selectRow,
+        'keydown': keydownRow
       } : {}"
     >
       <div class="apos-tree__row-data">
@@ -214,6 +217,11 @@ export default {
         rowList.style.maxHeight = 0;
         toggle.setAttribute('aria-expanded', false);
         rowList.classList.add('is-collapsed');
+      }
+    },
+    keydownRow(event) {
+      if (event.keyCode === 32) {
+        this.selectRow(event);
       }
     },
     selectRow(event) {
