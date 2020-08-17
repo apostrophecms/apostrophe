@@ -3,7 +3,7 @@
     class="apos-tree__row-data apos-tree__header" :class="headerClasses"
     :aria-hidden="spacerOnly"
   >
-    <div
+    <span
       v-for="(col, index) in headers"
       :key="`${index}-${col.name}`"
       class="apos-tree__cell"
@@ -12,17 +12,11 @@
       :style="getCellStyles(col)"
     >
       <component
-        :is="isButton(col) ? 'button' : 'span'"
-        :class="buttonClasses(col)"
-      >
-        <component
-          v-if="col.labelIcon" :is="icons[col.labelIcon]"
-          class="apos-tree__cell__icon"
-        />
-        <!-- {{ col.label }} -->
-        {{ getLabel(col) }}
-      </component>
-    </div>
+        v-if="col.labelIcon" :is="icons[col.labelIcon]"
+        class="apos-tree__cell__icon"
+      />
+      {{ col.label }}
+    </span>
   </div>
 </template>
 
@@ -106,23 +100,6 @@ export default {
         styles.width = `${this.colWidths[cell.name]}px`;
       }
       return styles;
-    },
-    getLabel(col) {
-      if (this.spacerOnly && col.button && col.button.label) {
-        return col.button.label;
-      } else {
-        return col.label;
-      }
-    },
-    isButton (column) {
-      return this.spacerOnly && column.button && column.type === 'button';
-    },
-    buttonClasses(column) {
-      if (!this.isButton(column) || !(column.button && column.button.style)) {
-        return false;
-      } else {
-        return [ 'apos-button', `apos-button--${column.button.style}` ];
-      }
     }
   }
 };
@@ -157,13 +134,7 @@ function debounce(func, wait, immediate) {
 
 .apos-tree__header.apos-tree__header--hidden {
   display: block;
-  // height: 0;
-  // visibility: hidden;
-}
-
-.apos-button {
-  .apos-tree__header & {
-    margin: 0;
-  }
+  height: 0;
+  visibility: hidden;
 }
 </style>
