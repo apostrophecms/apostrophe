@@ -145,8 +145,8 @@ let realWorldCase = {
       'last': true
     },
     {
-      'name': 'info',
-      'label': 'Info',
+      'name': 'otherFields',
+      'label': 'Other fields',
       'fields': [
         'slug',
         'urlType',
@@ -285,10 +285,10 @@ describe('Schemas', function() {
     assert(schema);
     let externalUrl = _.find(schema, { name: 'externalUrl' });
     assert(externalUrl);
-    assert(externalUrl.group.name === 'info');
+    assert.strictEqual(externalUrl.group.name, 'otherFields');
     let _newPage = _.find(schema, { name: '_newPage' });
     assert(_newPage);
-    assert(_newPage.group.name === 'info');
+    assert.strictEqual(_newPage.group.name, 'otherFields');
   });
 
   it('should error if a field is required and an empty value is submitted for a string field type', async () => {
@@ -1595,11 +1595,11 @@ describe('Schemas', function() {
     });
     let output = {};
     await apos.schema.convert(req, schema, {
-      ageOrShoeSize: ['age'],
-      doWeCare: ['0'],
+      ageOrShoeSize: [ 'age' ],
+      doWeCare: [ '0' ],
       age: ''
     }, output);
-    assert.deepStrictEqual(output.ageOrShoeSize, ['age']);
+    assert.deepStrictEqual(output.ageOrShoeSize, [ 'age' ]);
   });
 
   it('enforces required property for recursively shown field with checkboxes', async () => {
