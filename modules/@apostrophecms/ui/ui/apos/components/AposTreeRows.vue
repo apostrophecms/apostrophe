@@ -184,7 +184,11 @@ export default {
       if (!this.$refs['tree-branches']) {
         return;
       }
-
+      this.setHeights();
+    });
+  },
+  methods: {
+    setHeights() {
       this.$refs['tree-branches'].forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
@@ -192,14 +196,13 @@ export default {
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
-    });
-  },
-  methods: {
+    },
     startDrag() {
       this.$emit('busy', true);
     },
     endDrag(event) {
       this.$emit('update', event);
+      this.setHeights();
     },
     toggleSection(event) {
       const row = event.target.closest('[data-apos-tree-row]');
