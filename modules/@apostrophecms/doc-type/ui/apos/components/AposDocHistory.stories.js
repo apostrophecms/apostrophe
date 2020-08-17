@@ -16,6 +16,7 @@ export const versionHistory = () => {
       return {
         active: true,
         doc: {
+          // This _id value is used in the mock version history.
           _id: 'ckdhjwh1c00071r9kfs5ddeem',
           title: 'Home'
         }

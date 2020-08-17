@@ -51,10 +51,6 @@ export default {
       options: {
         columns: [
           {
-            label: 'Page Title',
-            name: 'title'
-          },
-          {
             label: 'Edited on',
             name: 'editedAt',
             labelIcon: 'calendar'
