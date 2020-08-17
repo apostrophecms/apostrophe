@@ -104,7 +104,10 @@ describe('Docs', function() {
         firstName: 'Lori',
         lastName: 'Pizzaroni',
         age: 32,
-        alive: true
+        alive: true,
+        parentKey: {
+          subKey: true
+        }
       },
       {
         _id: 'larry',
@@ -113,8 +116,7 @@ describe('Docs', function() {
         type: 'test-person',
         firstName: 'Larry',
         lastName: 'Cherber',
-        age: 28,
-        alive: true
+        age: 28
       },
       {
         _id: 'carl',
@@ -711,6 +713,22 @@ describe('Docs', function() {
         });
       });
     });
+  });
+
+  it('should be able to execute a projection with both a key and its subkey regardless of mongodb version', async() => {
+
+    const manager = apos.docs.getManager('test-person');
+    const person = await manager.find(apos.tasks.getAnonReq(), { slug: 'lori' }, {
+      parentKey: 1,
+      'parentKey.subKey': 1
+    }).toObject();
+    assert(person);
+    // Projection did exclude unrelated things
+    assert(!_.has(person, 'slug'));
+    assert(!_.has(person, '_friend'));
+    // Projection did include wanted things
+    assert(person.parentKey);
+    assert(person.parentKey.subKey === true);
   });
 
 });

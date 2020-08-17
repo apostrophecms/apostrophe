@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.111.1 (2020-08-17)
+
+* Fixed an incompatibility between apostrophe-workflow and MongoDB 4.4. Prior to version 4.4, MongoDB allowed a projection to contain both a parent property and one of its children, for instance `workflowLastCommitted` and `workflowLastCommitted.at`. Beginning with version 4.4 this causes an error, breaking the list view of pieces when workflow is present. For backwards compatibility, version 2.111.1 of Apostrophe now checks all projections coming from Apostrophe's cursors for this issue and removes the projection for the sub-property on the fly. This does not cause any compatibility issues of its own because projecting the parent always gives you the sub-property anyway.
+
 ## 2.111.0 (2020-08-12)
 
 * By popular request, "Add Widget" dropdown menus are better organized now, with support for categories of widgets. You can configure this optional feature like so:
