@@ -407,14 +407,4 @@ describe('Pages', function() {
     assert(page.rank === 0);
   });
 
-  it('can GET the home page without session', async () => {
-    const home = await apos.http.get('/api/v1/@apostrophecms/page', {});
-    assert(home);
-    assert(home.slug === '/');
-    // make sure new style paths used
-    assert(home.path !== '/');
-    assert(home.path === home._id);
-    assert(home.level === 0);
-  });
-
 });

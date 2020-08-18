@@ -1,3 +1,4 @@
+// Alphabetical collection of globally available vue-material-design-icons.
 module.exports = {
   'alert-circle-icon': 'AlertCircle',
   'calendar-icon': 'Calendar',
@@ -24,6 +25,7 @@ module.exports = {
   'magnify-icon': 'Magnify',
   'menu-down-icon': 'MenuDown',
   'minus-icon': 'Minus',
+  'minus-box-icon': 'MinusBox',
   'pencil-icon': 'Pencil',
   'plus-icon': 'Plus',
   'phone-icon': 'Phone',

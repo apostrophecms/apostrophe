@@ -832,7 +832,7 @@ module.exports = {
 
         project: {
           finalize() {
-            let projection = query.get('projection') || {};
+            let projection = query.get('project') || {};
             // Keys beginning with `_` are computed values
             // (exception: `_id`). They do not make sense
             // in MongoDB projections. However Apostrophe
@@ -874,7 +874,7 @@ module.exports = {
               // MongoDB mandates this if we want to sort on search result quality
               projection.textScore = { $meta: 'textScore' };
             }
-            query.set('projection', projection);
+            query.set('project', projection);
           }
         },
 
@@ -1747,7 +1747,7 @@ module.exports = {
           if (query.get('log') || process.env.APOS_LOG_ALL_QUERIES) {
             self.apos.util.log(require('util').inspect(criteria, { depth: 20 }));
           }
-          return query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('projection'), {
+          return query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('project'), {
             skip: query.get('skip'),
             limit: query.get('limit'),
             sort: query.get('sortMongo')
@@ -1861,7 +1861,7 @@ module.exports = {
             query.set('criteria', criteria);
           }
           if (projection) {
-            query.set('projection', projection);
+            query.set('project', projection);
           }
         },
 

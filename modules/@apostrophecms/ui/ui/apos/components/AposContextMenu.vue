@@ -78,7 +78,6 @@ export default {
   data() {
     return {
       open: false,
-      vueId: this.$options._scopeId,
       position: ''
     };
   },
@@ -129,7 +128,7 @@ export default {
     },
     clicks (event) {
       // if user clicks outside menu component, close menu
-      if (!event.target.closest(`[${this.vueId}]`)) {
+      if (!this.$el.contains(event.target)) {
         this.open = false;
         this.unbind();
       }

@@ -4,16 +4,21 @@
       :headers="spacingRow" :spacer-only="true"
       @calculated="setWidths"
     />
-    <AposTreeHeader :headers="data.headers" :col-widths="colWidths" />
+    <AposTreeHeader
+      :headers="headers" :icons="icons"
+      :col-widths="colWidths"
+    />
     <AposTreeRows
       v-model="checkedProxy"
-      :rows="data.rows"
-      :headers="data.headers"
+      :rows="myRows"
+      :headers="headers"
+      :icons="icons"
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
       @busy="setBusy"
       @update="update"
+      @edit="$emit('edit', $event)"
       list-id="root"
       :draggable="draggable"
       :selectable="selectable"
@@ -27,14 +32,24 @@ import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
   name: 'AposTree',
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   model: {
     prop: 'checked',
     event: 'change'
   },
   props: {
-    data: {
+    headers: {
+      type: Array,
+      required: true
+    },
+    icons: {
       type: Object,
+      default() {
+        return {};
+      }
+    },
+    rows: {
+      type: Array,
       required: true
     },
     checked: {
@@ -53,10 +68,11 @@ export default {
       default: false
     }
   },
-  emits: ['busy', 'update', 'change'],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   data() {
     return {
-      // Copy the `data` property to mutate with VueDraggable.
+      // Copy the `rows` property to mutate with VueDraggable.
+      myRows: [],
       nested: false,
       colWidths: null,
       treeId: this.generateId()
@@ -76,15 +92,15 @@ export default {
       let spacingRow = {};
       // Combine the header with the rows, the limit to a reasonable 50 rows.
       const headers = {};
-      if (this.data.headers) {
-        this.data.headers.forEach(header => {
+      if (this.headers) {
+        this.headers.forEach(header => {
           headers[header.name] = header.label;
         });
       }
 
-      let completeRows = [headers];
+      let completeRows = [ headers ];
       // Add child rows into `completeRows`.
-      this.data.rows.forEach(row => {
+      this.rows.forEach(row => {
         completeRows.push(row);
 
         if (row.children && row.children.length > 0) {
@@ -102,7 +118,7 @@ export default {
           return;
         }
 
-        this.data.headers.forEach(col => {
+        this.headers.forEach(col => {
           const key = col.name;
           if (
             !spacingRow[key] ||
@@ -116,9 +132,9 @@ export default {
       // Place that largest value on that key of the spacingRow object.
       // Put that array in the DOM, and generate styles to be passed down based on its layout. Give the first column any leftover space.
       const finalRow = [];
-      this.data.headers.forEach(col => {
+      this.headers.forEach(col => {
         let obj;
-        const foundIndex = this.data.headers.findIndex(o => {
+        const foundIndex = this.headers.findIndex(o => {
           return o.name === col.name;
         });
         const spacerInfo = {
@@ -128,7 +144,7 @@ export default {
 
         if (foundIndex > -1) {
           // Deep copy the original header column to capture all options.
-          const foundObj = JSON.parse(JSON.stringify(this.data.headers[foundIndex]));
+          const foundObj = JSON.parse(JSON.stringify(this.headers[foundIndex]));
 
           if (foundObj.iconOnly) {
             // If the "column" will only show icons, let the "column header"
@@ -144,6 +160,11 @@ export default {
         finalRow.push(obj);
       });
       return finalRow;
+    }
+  },
+  watch: {
+    rows(array) {
+      this.myRows = array;
     }
   },
   methods: {
@@ -187,21 +208,6 @@ export default {
     margin-bottom: 0;
     padding-left: 0;
     list-style-type: none;
-
-    .apos-tree__row--parent > & {
-      position: relative;
-
-      &::before {
-        position: absolute;
-        top: -12px;
-        bottom: 0;
-        left: -$row-nested-h-padding / 2;
-        display: block;
-        content: '';
-        background-color: var(--a-base-8);
-        width: 1px;
-      }
-    }
   }
 
   .apos-tree__row-data {
@@ -235,13 +241,18 @@ export default {
     padding: $cell-padding;
     border-bottom: 1px solid var(--a-base-8);
     box-sizing: border-box;
+  }
 
-    // Let the first cell column (usually "title") grow. We're assuming the first
-    // cell is not a link since there are dedicated "edit" and "link" columns.
-    &:first-of-type:not(a) {
-      flex-grow: 1;
-      flex-shrink: 1;
-    }
+  button.apos-tree__cell {
+    @include apos-button-reset();
+    padding: $cell-padding;
+    border-bottom: 1px solid var(--a-base-8);
+  }
+
+  // Let the title cell column grow.
+  span.apos-tree__cell:first-of-type {
+    flex-grow: 1;
+    flex-shrink: 1;
   }
 
   .apos-tree__cell--published {
@@ -287,6 +298,22 @@ export default {
 
   .apos-tree__row--parent {
     position: relative;
+
+    &::before {
+      position: absolute;
+      top: 24px;
+      bottom: 0;
+      left: $row-nested-h-padding / 2;
+      display: block;
+      content: '';
+      background-color: var(--a-base-8);
+      width: 1px;
+      transition: background-color 0.3s ease;
+    }
+
+    &.is-collapsed::before {
+      background-color: transparent;
+    }
   }
 
   .apos-tree__row__toggle {
@@ -294,6 +321,7 @@ export default {
     position: absolute;
     top: 50%;
     left: -$row-nested-h-padding / 2;
+    background-color: var(--a-background-primary);
     transform: translate(-50%, -50%);
   }
 

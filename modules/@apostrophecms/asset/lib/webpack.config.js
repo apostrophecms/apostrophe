@@ -1,9 +1,12 @@
 const path = require('path');
-
 const merge = require('webpack-merge');
-
 const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
+let BundleAnalyzerPlugin;
+
+if (process.env.APOS_BUNDLE_ANALYZER) {
+  BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+}
 
 module.exports = ({ importFile, modulesDir }, apos) => {
   const tasks = [scss, vue].map(task =>
@@ -45,7 +48,8 @@ module.exports = ({ importFile, modulesDir }, apos) => {
         `${apos.rootDir}/node_modules`
       ]
     },
-    stats: 'verbose'
+    stats: 'verbose',
+    plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
   };
 
   return merge.smart(config, ...tasks);

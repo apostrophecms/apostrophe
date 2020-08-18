@@ -5,7 +5,7 @@ let apos;
 let homeId;
 let jar;
 
-describe('Pages', function() {
+describe('Pages REST', function() {
 
   this.timeout(t.timeout);
 
@@ -21,6 +21,13 @@ describe('Pages', function() {
       modules: {
         '@apostrophecms/page': {
           options: {
+            publicApiProjection: {
+              title: 1,
+              _url: 1,
+              path: 1,
+              level: 1,
+              rank: 1
+            },
             park: [],
             types: [
               {

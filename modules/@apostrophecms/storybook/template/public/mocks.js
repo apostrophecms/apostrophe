@@ -2,6 +2,37 @@
   // This code runs via a simple script tag, but you may assume
   // a modern browser because it runs only for our admin UI stories.
   apos.modules = {
+    schema: {
+      'components': {
+        'fields': {
+          'area': 'AposInputArea',
+          'singleton': 'AposInputSingleton',
+          'string': 'AposInputString',
+          'slug': 'AposInputSlug',
+          'boolean': 'AposInputBoolean',
+          'checkboxes': 'AposInputCheckboxes',
+          'select': 'AposInputSelect',
+          'integer': 'AposInputInteger',
+          'float': 'AposInputFloat',
+          'color': 'AposInputColor',
+          'range': 'AposInputRange',
+          'url': 'AposInputUrl',
+          'date': 'AposInputDate',
+          'time': 'AposInputTime',
+          'password': 'AposInputPassword',
+          'group': 'AposInputGroup',
+          'array': 'AposInputArray',
+          'object': 'AposInputObject',
+          'joinByOne': 'AposInputJoinByOne',
+          'joinByOneReverse': 'AposInputJoinByOneReverse',
+          'joinByArray': 'AposInputJoinByArray',
+          'joinByArrayReverse': 'AposInputJoinByArrayReverse',
+          'attachment': 'AposInputAttachment',
+          'video': 'AposInputVideo'
+        }
+      },
+      'alias': 'schema'
+    },
     products: {
       'name': 'product',
       'label': 'Product',
@@ -160,6 +191,8 @@
     }
   };
 
+  apos.http = {};
+
   apos.http.getResponses = {
     '/api/v1/products?published=true&trash=false&page=1': {
       'pages': 1,
@@ -170,24 +203,108 @@
           'published': true,
           'trash': false,
           'type': 'product',
-          'title': 'cool',
-          'slug': 'cool',
+          'title': 'Grape',
+          'slug': 'grape',
+          'price': null,
+          'metaType': 'doc',
+          'createdAt': '2020-07-22T02:11:19.005Z',
+          'titleSortified': 'grape',
+          'updatedAt': '2020-07-22T02:11:19.005Z',
+          'highSearchText': 'grape grape',
+          'highSearchWords': [
+            'grape'
+          ],
+          'lowSearchText': 'grape grape',
+          'searchSummary': '',
+          'docPermissions': [],
+          '_edit': true
+        },
+        {
+          '_id': 'htcuoykl9012j38ecrjghrn0c',
+          'published': true,
+          'trash': false,
+          'type': 'product',
+          'title': 'Strawberry',
+          'slug': 'strawberry',
           'price': null,
           'metaType': 'doc',
           'createdAt': '2020-07-20T15:56:19.005Z',
-          'titleSortified': 'cool',
+          'titleSortified': 'strawberry',
           'updatedAt': '2020-07-20T15:56:19.005Z',
-          'highSearchText': 'cool cool',
+          'highSearchText': 'strawberry strawberry',
           'highSearchWords': [
-            'cool'
+            'strawberry'
           ],
-          'lowSearchText': 'cool cool',
+          'lowSearchText': 'strawberry strawberry',
           'searchSummary': '',
           'docPermissions': [],
           '_edit': true
         }
       ]
+    },
+    '/api/v1/@apostrophecms/page?all=1': {
+      'results': {
+        'title': 'Home',
+        'slug': '/',
+        '_id': 'ckd4y2m7j00074k9kbrxs0bat',
+        'type': '@apostrophecms/home-page',
+        'metaType': 'doc',
+        '_url': '/',
+        '_children': [ {
+          'title': 'Pellentesque Nullam Purus',
+          'slug': '/second',
+          '_id': 'ckd96fndy0004fo9kbusxz2kf',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/second',
+          '_children': [],
+          'published': true,
+          'updatedAt': '2020-07-29T19:14:15.719Z'
+        }, {
+          'title': 'Sem Pellentesque Etiam Bibendum Porta',
+          'slug': '/third',
+          '_id': 'ckd96fneg0007fo9k6adjs0o9',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/third',
+          '_children': [],
+          'published': false,
+          'updatedAt': '2020-07-30T19:14:15.737Z'
+        }, {
+          'title': 'Elit Parturient Euismod',
+          'slug': '/third/fourth',
+          '_id': 'ckd96fneu000afo9k53bzhvah',
+          'type': '@apostrophecms/home-page',
+          'metaType': 'doc',
+          '_url': '/third/fourth',
+          '_children': [],
+          'published': true,
+          'updatedAt': '2020-07-30T19:14:15.750Z'
+        } ],
+        'published': true,
+        'updatedAt': '2020-07-27T20:09:06.031Z'
+      }
     }
+  };
+
+  // Adds query string data to url. Currently supports only one level
+  // of parameters (not nested structures)
+  apos.http.addQueryToUrl = function(url, data) {
+    let keys;
+    let i;
+    if ((data !== null) && ((typeof data) === 'object')) {
+      keys = Object.keys(data);
+      for (i = 0; (i < keys.length); i++) {
+        let key = keys[i];
+        if (i > 0) {
+          url += '&';
+        } else {
+          url += '?';
+        }
+        url += encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+      }
+    }
+    return url;
   };
 
   apos.http.get = async (url, options) => {
@@ -197,7 +314,9 @@
       url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (apos.http.getResponses[url]) {
-      return apos.http.getResponses[url];
+      // Like responses from a real API, the returned object needs to be safe to
+      // change.
+      return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
     } else {
       throw {
         status: 404

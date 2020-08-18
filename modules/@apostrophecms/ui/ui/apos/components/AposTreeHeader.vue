@@ -12,7 +12,7 @@
       :style="getCellStyles(col)"
     >
       <component
-        v-if="col.labelIcon" :is="col.labelIcon"
+        v-if="col.labelIcon" :is="icons[col.labelIcon]"
         class="apos-tree__cell__icon"
       />
       {{ col.label }}
@@ -27,6 +27,12 @@ export default {
     headers: {
       type: Array,
       required: true
+    },
+    icons: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     spacerOnly: {
       type: Boolean,

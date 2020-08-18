@@ -1,9 +1,19 @@
 export default {
   props: {
-    value: Object,
-    field: Object,
-    context: Object,
-    status: Object,
+    value: {
+      type: Object,
+      required: true
+    },
+    field: {
+      type: Object,
+      required: true
+    },
+    status: {
+      type: Object,
+      default () {
+        return {};
+      }
+    },
     modifiers: {
       default: function () {
         return [];
@@ -22,7 +32,10 @@ export default {
     };
   },
   mounted () {
-    this.validateAndEmit();
+    this.$el.addEventListener('focusout', this.validateAndEmit);
+  },
+  destroyed () {
+    this.$el.removeEventListener('focusout', this.validateAndEmit);
   },
   computed: {
     options () {

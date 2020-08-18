@@ -57,6 +57,7 @@
     "i18n": "^0.8.6",
     "import-fresh": "^3.2.1",
     "js-cookie": "^2.2.1",
+    "klona": "^1.1.2",
     "launder": "^1.2.0",
     "less": "^3.12.0",
     "less-middleware": "^3.0.1",
@@ -141,7 +142,8 @@
     "mocha": "^7.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
-    "style-loader": "^1.2.1"
+    "style-loader": "^1.2.1",
+    "webpack-bundle-analyzer": "^3.8.0"
   },
   "browserslist": [
     "ie >= 10"

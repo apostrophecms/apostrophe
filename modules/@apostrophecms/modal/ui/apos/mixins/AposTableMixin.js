@@ -1,3 +1,6 @@
+// TODO: Reconcile the overlap in this mixin between the pages and pieces
+// managers. Does it need to be a mixin? This may be resolved when switching to
+// Vue 3 using the composition API. - AB
 export default {
   data() {
     return {
@@ -41,12 +44,11 @@ export default {
         this.checked.push(id);
         this.checkboxes[id].value.data = ['checked'];
       }
-      console.info(this.checkboxes[id].value.data);
     },
     selectAll(event) {
       if (!this.checked.length) {
         this.rows.forEach((row) => {
-          this.toggleRowCheck('checked', row.id);
+          this.toggleRowCheck('checked', row._id);
         });
         return;
       }
@@ -80,7 +82,11 @@ export default {
       this.$emit('sort', action);
     },
     generateUi () {
-    // fetch all icons used in table headers
+      this.generateIcons();
+      this.generateCheckboxes();
+    },
+    generateIcons () {
+      // fetch all icons used in table headers
       const icons = {};
       this.headers.forEach(h => {
         if (h.icon) {
@@ -89,24 +95,25 @@ export default {
       });
       this.icons = icons;
       // prep row checkbox fields
-
+    },
+    generateCheckboxes () {
       const checkboxes = {};
       this.rows.forEach((row) => {
-        checkboxes[row.id] = {
+        checkboxes[row._id] = {
           status: {},
           value: {
             data: []
           },
-          choice: { value: row.id },
+          choice: { value: row._id },
           field: {
-            name: row.id,
+            name: row._id,
             type: 'checkbox',
             hideLabel: true,
             label: `Toggle selection of ${row.title}`
           }
         };
-        this.checkboxes = checkboxes;
       });
+      this.checkboxes = checkboxes;
     }
   }
 };

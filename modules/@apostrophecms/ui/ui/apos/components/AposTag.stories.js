@@ -17,5 +17,5 @@ export const tags = () => ({
       default: text('Slug', 'neighborhood')
     }
   },
-  template: '<AposTag :label="label" />'
+  template: '<AposTag :label="label" :slug="slug" />'
 });
