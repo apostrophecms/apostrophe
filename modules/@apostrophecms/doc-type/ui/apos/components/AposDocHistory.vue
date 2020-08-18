@@ -127,6 +127,7 @@ export default {
     },
     restore() {
       // TEMP: This will hit a POST or PATCH route in UI integration.
+      // After a confirmation step, this should also trigger `cancel`.
       console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
     openEditor(event) {
