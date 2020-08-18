@@ -106,9 +106,6 @@ export default {
         this.versions = docVersions;
       }
     },
-    openEditor(event) {
-      console.info('OPEN DOC TO EDIT', event);
-    },
     formatVersions (versions) {
       const versionsTree = [];
 
