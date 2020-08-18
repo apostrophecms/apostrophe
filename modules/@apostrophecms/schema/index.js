@@ -689,17 +689,17 @@ module.exports = {
     self.addFieldType({
       name: 'join',
       convert: async function (req, field, data, object) {
-        let manager = self.apos.doc.getManager(field.withType);
+        const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('join with type ' + field.withType + ' unrecognized');
         }
 
         if (_.has(data, field.name)) {
           if (field.min && field.min > data[field.name].length) {
-            throw new Error(`Minimum ${field.withType} required not reached.`);
+            throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
           }
           if (field.max && field.max < data[field.name].length) {
-            throw new Error(`Maximum ${field.withType} required reached.`);
+            throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
           }
           let titlesOrIds = [];
 
@@ -819,9 +819,6 @@ module.exports = {
             fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
-        }
-        if (!field.idsField) {
-          fail('idsField property is missing. Hint: join takes idsField, NOT idField.');
         }
         if (!field.withType) {
           fail('withType property is missing. Hint: it must match the "name" property of a doc type.');

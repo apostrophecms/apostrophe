@@ -98,7 +98,6 @@ module.exports = {
         type: 'join',
         name: '_pieces',
         label: byChoices.length > 1 ? 'Individually' : 'Select...',
-        idsField: 'pieceIds',
         withType: self.pieces.name
       });
     }
