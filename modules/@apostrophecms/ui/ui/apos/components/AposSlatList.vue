@@ -8,7 +8,7 @@
       @start="isDragging=true" @end="isDragging=false"
       :id="listId"
     >
-      <transition-group type="transition" name="apos-slat-list-transition">
+      <transition-group type="transition" name="apos-flip-list">
         <AposSlat
           @remove="remove" class="apos-slat-list__item"
           @engage="engage"
@@ -43,7 +43,7 @@ export default {
       default: true
     }
   },
-  emits: ['update'],
+  emits: [ 'update' ],
   data() {
     return {
       isDragging: false,
@@ -137,7 +137,7 @@ export default {
     transition: all 0.4s;
   }
 
-  .apos-slat-list-transition-leave-to {
+  .apos-flip-list-leave-to {
     opacity: 0;
   }
 
