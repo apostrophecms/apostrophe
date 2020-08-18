@@ -146,7 +146,7 @@ export default {
       // TODO: Get data here.
     } else {
       this.$nextTick(() => {
-        this.poplateSchema();
+        this.populateSchema();
       });
     }
   },
@@ -163,7 +163,7 @@ export default {
         apos.bus.$emit('busy', false);
       }
     },
-    poplateSchema () {
+    populateSchema () {
       this.schema.forEach(field => {
         this.doc.data[field.name] = {};
       });
