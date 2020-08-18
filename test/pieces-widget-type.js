@@ -209,7 +209,7 @@ describe('Pieces Widget With Extra Join', function() {
           fields: {
             add: {
               _featured: {
-                type: 'joinByArray',
+                type: 'join',
                 withType: 'event'
               }
             }

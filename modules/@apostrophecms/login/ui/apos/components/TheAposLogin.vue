@@ -16,7 +16,7 @@
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form>
+              <form @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
@@ -28,7 +28,8 @@
                   :disabled="disabled"
                   type="primary"
                   label="Login"
-                  :modifiers="['gradient-on-hover']"
+                  buttonType="submit"
+                  :modifiers="['gradient-on-hover', 'block']"
                   @click="submit"
                 />
               </form>
@@ -71,7 +72,7 @@ export default {
           name: 'password',
           label: 'Password',
           placeholder: 'Enter password',
-          type: 'string',
+          type: 'password',
           required: true
         }
       ],
@@ -233,11 +234,6 @@ export default {
       display: flex;
       flex-direction: column;
 
-      .apos-field {
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      }
-
       .apos-login__link {
         margin-top: 10px;
         margin-left: auto;
@@ -250,8 +246,9 @@ export default {
       }
 
       button {
+        font-size: map-get($font-sizes, input-label);
         letter-spacing: 0.5px;
-        margin-top: 40px;
+        margin-top: 20px;
       }
     }
 
