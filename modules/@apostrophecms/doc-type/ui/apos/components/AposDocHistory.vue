@@ -12,8 +12,8 @@
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Restore"
-        @click="restore"
+        type="primary" :label="restoreLabel"
+        @click="restore" :disabled="latestVersion === selected[0]"
       />
     </template>
     <template #main>
@@ -54,6 +54,7 @@ export default {
         showModal: false
       },
       versions: [],
+      latestVersion: '',
       selected: [],
       options: {
         columns: [
@@ -95,6 +96,9 @@ export default {
       });
 
       return rows;
+    },
+    restoreLabel() {
+      return this.latestVersion === this.selected[0] ? 'Current version' : 'Restore';
     }
   },
   async mounted() {
@@ -102,6 +106,7 @@ export default {
 
     await this.getVersions();
     this.selected = [ this.versions[0]._id ];
+    this.latestVersion = this.versions[0]._id;
   },
   methods: {
     async getVersions () {
@@ -121,6 +126,7 @@ export default {
       }
     },
     restore() {
+      // TEMP: This will hit a POST or PATCH route in UI integration.
       console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
     openEditor(event) {
