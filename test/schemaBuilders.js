@@ -59,16 +59,17 @@ describe('Schema builders', function() {
             addFields: [
               {
                 name: '_cats',
-                type: 'joinByArray',
+                type: 'join',
                 idsField: 'catsIds',
                 label: 'Cats',
                 withType: 'cat'
               },
               {
-                name: '_favorite',
-                type: 'joinByOne',
-                idField: 'favoriteId',
-                label: 'Favorite',
+                name: '_favorites',
+                type: 'join',
+                max: 1,
+                idsField: 'favoriteIds',
+                label: 'Favorites',
                 withType: 'cat'
               }
             ],
@@ -103,7 +104,7 @@ describe('Schema builders', function() {
     for (const person of people) {
       // person 10 has no favorite cat
       if (person.i < 10) {
-        person.favoriteId = cats[person.i]._id;
+        person.favoriteIds = [cats[person.i]._id];
       }
       person.catsIds = [];
       let i;
@@ -245,53 +246,53 @@ describe('Schema builders', function() {
     assert(cats[0].value === 'cat-0');
   });
 
-  it('builder for _favorite exists', function() {
+  it('builder for _favorites exists', function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    assert(query._favorite);
+    assert(query._favorites);
   });
 
-  it('builder for _favorite can select people with a specified favorite cat', async function() {
+  it('builder for _favorites can select people with a specified favorite cat', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
     // Only one person has each favorite
-    query._favorite(cats[3]._id);
+    query._favorites(cats[3]._id);
     const people = await query.toArray();
     assert(people.length === 1);
     assert(people[0].i === 3);
   });
 
-  it('builder for _favorite can use array syntax', async function() {
+  it('builder for _favorites can use array syntax', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    query._favorite([ cats[7]._id ]);
+    query._favorites([ cats[7]._id ]);
     const people = await query.toArray();
     // Only person 0 prefers the first cat
     assert(people.length === 1);
     assert(people[0].i === 7);
   });
 
-  it('builder for _favorite can select sad people who dislike cats', async function() {
+  it('builder for _favorites can select sad people who dislike cats', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    query._favorite('none');
+    query._favorites('none');
     const people = await query.toArray();
     // Only person 10 has no favorite cat
     assert(people.length === 1);
     assert(people[0].i === 10);
   });
 
-  it('when not used builder for _favorite has no effect', async function() {
+  it('when not used builder for _favorites has no effect', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
     const people = await query.toArray();
     assert(people.length === 11);
   });
 
-  it('can obtain choices for _favorite', async function() {
+  it('can obtain choices for _favorites', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    const cats = await query.toChoices('_favorite');
+    const cats = await query.toChoices('_favorites');
     // Only the cats that are actually someone's favorite come up
     assert(cats.length === 10);
     assert(cats[0].value);
@@ -302,14 +303,14 @@ describe('Schema builders', function() {
   it('builder for favorite (by slug) exists', function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    assert(query._favorite);
+    assert(query._favorites);
   });
 
   it('builder for favorite can select people with a specified favorite cat (by slug)', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
     // Only one person has each favorite
-    query.favorite(cats[3].slug);
+    query.favorites(cats[3].slug);
     const people = await query.toArray();
     assert(people.length === 1);
     assert(people[0].i === 3);
@@ -319,7 +320,7 @@ describe('Schema builders', function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
     // Only one person has each favorite
-    query.favorite(cats[3].slug);
+    query.favorites(cats[3].slug);
     const people = await query.search('person').toArray();
     assert(people.length === 1);
     assert(people[0].i === 3);
@@ -328,7 +329,7 @@ describe('Schema builders', function() {
   it('builder for favorite (by slug) can use array syntax', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    query.favorite([ cats[7].slug ]);
+    query.favorites([ cats[7].slug ]);
     const people = await query.toArray();
     // Only person 0 prefers the first cat
     assert(people.length === 1);
@@ -338,7 +339,7 @@ describe('Schema builders', function() {
   it('builder for favorite (by slug) can select sad people who dislike cats', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    query.favorite('none');
+    query.favorites('none');
     const people = await query.toArray();
     // Only person 10 has no favorite cat
     assert(people.length === 1);
@@ -355,7 +356,7 @@ describe('Schema builders', function() {
   it('can obtain choices for favorite (by slug)', async function() {
     let req = apos.task.getReq();
     let query = apos.people.find(req);
-    const cats = await query.toChoices('favorite');
+    const cats = await query.toChoices('favorites');
     // Only the cats that are actually someone's favorite come up
     assert(cats.length === 10);
     assert(cats[0].value);

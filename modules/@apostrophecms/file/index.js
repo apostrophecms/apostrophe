@@ -47,7 +47,7 @@ module.exports = {
         label: 'Credit URL'
       },
       {
-        type: 'joinByArray',
+        type: 'join',
         name: '_tags',
         label: 'Tags',
         withType: '@apostrophecms/file-tag'

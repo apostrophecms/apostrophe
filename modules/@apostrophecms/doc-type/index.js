@@ -29,21 +29,21 @@ module.exports = {
       },
       {
         name: '_viewUsers',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can View',
         idsField: 'viewUsersIds'
       },
       {
         name: '_viewGroups',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can View',
         idsField: 'viewGroupsIds'
       },
       {
         name: '_editUsers',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can Edit',
         idsField: 'editUsersIds',
@@ -52,7 +52,7 @@ module.exports = {
       },
       {
         name: '_editGroups',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can Edit',
         idsField: 'editGroupsIds',
@@ -1613,8 +1613,7 @@ module.exports = {
         // `label` and `value` properties suitable for
         // display as a `select` menu or use as an
         // autocomplete API response. Most field types
-        // support this well, including `joinByOne` and
-        // `joinByArray`.
+        // support this well, including `join`.
         //
         // If `options.counts` is truthy, then each result
         // in the array will also have a `count` property,
@@ -1759,8 +1758,7 @@ module.exports = {
         // begins with `_`), pushes the names of the necessary physical fields
         // to compute it onto `add` and returns `true` if able to do so.
         // Otherwise `false` is returned. The default implementation can
-        // handle `_url` and `joinByOne` or `joinByArray` fields
-        // (not reverse).
+        // handle `_url` and `join` fields (not reverse).
         //
         // This method is a good candidate to be extended via `extendQueryMethods`.
         //
@@ -1796,7 +1794,7 @@ module.exports = {
         // the join field named `key` onto the `add` array
         // and returns `true`.
         //
-        // If there is no such `joinByOne` or `joinByArray`
+        // If there is no such `join`
         // field this method returns `false and does nothing.
         //
         // Note that this mechanism will not work for a
@@ -1813,15 +1811,8 @@ module.exports = {
           schema = self.schema;
           field = _.find(schema, { name: key });
           if (field) {
-            if (field.type === 'joinByOne') {
-              // joins also don't work without type
-              add.push('type', field.idField);
-              return true;
-            } else if (field.type === 'joinByArray') {
-              // joins also don't work without type
-              add.push('type', field.idsField);
-              return true;
-            }
+            add.push('type', field.idsField);
+            return true;
           }
           return false;
         },

@@ -116,10 +116,11 @@ let realWorldCase = {
     },
     {
       'name': '_newPage',
-      'type': 'joinByOne',
+      'type': 'join',
+      limit: 1,
       'withType': '@apostrophecms/page',
       'label': 'Page Title',
-      'idField': 'pageId'
+      'idsField': 'pageId'
     }
   ],
   'arrangeFields': [
