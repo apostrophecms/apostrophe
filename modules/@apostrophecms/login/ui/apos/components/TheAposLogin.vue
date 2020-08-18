@@ -16,7 +16,7 @@
             </div>
 
             <div class="apos-login__body" v-show="loaded">
-              <form ref="form" @submit="submit">
+              <form @submit.prevent="submit">
                 <AposSchema
                   :schema="schema"
                   v-model="doc"
@@ -98,7 +98,6 @@ export default {
   },
   methods: {
     async submit() {
-      this.$refs.form.addEventListener('submit', evt => evt.preventDefault());
       this.busy = true;
       this.error = '';
       try {
