@@ -859,7 +859,7 @@ module.exports = {
     }
 
     self.addFieldType({
-      name: 'reverseJoin',
+      name: 'joinReverse',
       join: async function (req, field, objects, options) {
         return self.joinDriver(req, joinr.byArrayReverse, true, objects, field.idsField, field.relationshipsField, field.name, options);
       },
