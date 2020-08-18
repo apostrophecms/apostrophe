@@ -4,10 +4,16 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
+    <template #secondaryControls>
+      <AposButton
+        type="default" label="Exit"
+        @click="cancel"
+      />
+    </template>
     <template #primaryControls>
       <AposButton
-        type="default" label="Finished"
-        @click="cancel"
+        type="primary" label="Restore"
+        @click="restore"
       />
     </template>
     <template #main>
@@ -95,6 +101,7 @@ export default {
     this.modal.active = true;
 
     await this.getVersions();
+    this.selected = [ this.versions[0]._id ];
   },
   methods: {
     async getVersions () {
@@ -112,6 +119,9 @@ export default {
       if (docVersions) {
         this.versions = docVersions;
       }
+    },
+    restore() {
+      console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
