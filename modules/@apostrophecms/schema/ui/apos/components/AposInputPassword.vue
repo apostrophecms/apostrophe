@@ -37,17 +37,17 @@ export default {
     validate(value) {
       if (this.field.required) {
         if (!value.length) {
-          return 'required';
+          return { message: 'required' };
         }
       }
       if (this.field.min) {
         if (value.length && (value.length < this.field.min)) {
-          return 'min';
+          return { message: `Minimum of ${this.field.min} characters` };
         }
       }
       if (this.field.max) {
         if (value.length && (value.length > this.field.max)) {
-          return 'max';
+          return { message: `Maximum of ${this.field.max} characters` };
         }
       }
       return false;
