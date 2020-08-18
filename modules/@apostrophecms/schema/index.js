@@ -290,7 +290,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -303,7 +303,7 @@ module.exports = {
                 return self.apos.launder.select(v, field.choices, field.def);
               });
             } else {
-              return [self.apos.launder.select(value, field.choices, field.def)];
+              return [ self.apos.launder.select(value, field.choices, field.def) ];
             }
           },
           choices: async function () {
@@ -343,7 +343,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -360,7 +360,7 @@ module.exports = {
               if (value === null) {
                 return null;
               }
-              return [value];
+              return [ value ];
             }
           },
           choices: async function () {
@@ -791,7 +791,7 @@ module.exports = {
                 clause[field.idsField + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsField] = { $in: [value] };
+                criteria[field.idsField] = { $in: [ value ] };
               }
               query.and(criteria);
             },
@@ -848,7 +848,7 @@ module.exports = {
       if (Array.isArray(v)) {
         return self.apos.launder.ids(v);
       } else if (typeof v === 'string' && v.length) {
-        return [self.apos.launder.id(v)];
+        return [ self.apos.launder.id(v) ];
       } else if (v === 'none') {
         return 'none';
       }
@@ -898,7 +898,7 @@ module.exports = {
           }
           // Make sure the other join has any missing fields auto-supplied before
           // trying to access them
-          self.validate([forwardJoin], {
+          self.validate([ forwardJoin ], {
             type: 'doc type',
             subtype: otherModule.name
           });
@@ -950,8 +950,12 @@ module.exports = {
     };
   },
   methods(self, options) {
-    return {
+    const defaultGroup = self.options.defaultGroup || {
+      name: 'ungrouped',
+      label: 'Ungrouped'
+    };
 
+    return {
       // Compose a schema based on addFields, removeFields, orderFields
       // and, occasionally, alterFields options. This method is great for
       // merging the schema requirements of subclasses with the schema
@@ -1005,12 +1009,11 @@ module.exports = {
         }
 
         // always make sure there is a default group
-        const defaultGroup = self.options.defaultGroup || {};
-        let groups = [{
-          name: defaultGroup.name || 'default',
-          label: defaultGroup.label || 'Info',
+        let groups = [ {
+          name: defaultGroup.name,
+          label: defaultGroup.label,
           fields: _.map(schema, 'name')
-        }];
+        } ];
 
         // if we are getting arrangeFields and it's not empty
         if (options.arrangeFields && options.arrangeFields.length > 0) {
@@ -1119,14 +1122,14 @@ module.exports = {
         });
         schema = newSchema;
 
-        // Move the default group to the end, it's just too
+        // Move the leftover group to the end, it's just too
         // obnoxious otherwise with one-off fields popping up
         // before title etc.
 
         schema = _.filter(schema, function (field) {
-          return !(field.group && field.group.name === 'default');
+          return !(field.group && field.group.name === defaultGroup.name);
         }).concat(_.filter(schema, function (field) {
-          return field.group && field.group.name === 'default';
+          return field.group && field.group.name === defaultGroup.name;
         }));
 
         _.each(schema, function (field) {
@@ -1223,10 +1226,13 @@ module.exports = {
           if (field.contextual) {
             return;
           }
+          if (field.name === 'title') {
+            console.info(field);
+          }
           if (!field.group) {
             field.group = {
-              name: 'default',
-              label: 'info'
+              name: defaultGroup.name,
+              label: defaultGroup.label
             };
           }
           // first group, or not the current group
@@ -1537,7 +1543,7 @@ module.exports = {
           return;
         }
 
-        const objects = _.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
+        const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
         if (!objects.length) {
           // Don't waste effort
           return;
@@ -1921,7 +1927,7 @@ module.exports = {
           if (Array.isArray(v)) {
             return self.apos.launder.strings(v);
           } else if (typeof v === 'string' && v.length) {
-            return [self.apos.launder.string(v)];
+            return [ self.apos.launder.string(v) ];
           } else if (v === 'none') {
             return 'none';
           }

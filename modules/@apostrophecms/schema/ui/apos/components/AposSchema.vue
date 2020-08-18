@@ -3,11 +3,11 @@
 -->
 <template>
   <div class="apos-schema">
-    <div v-for="field in schema" :key="field.name">
+    <div v-for="field in currentSchema" :key="field.name">
       <component
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
-        :status="fields[field.name].status" :value="fields[field.name].value"
+        :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
       />
     </div>
@@ -27,6 +27,12 @@ export default {
       type: Array,
       required: true
     },
+    currentFields: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
     modifiers: {
       type: Array,
       default() {
@@ -34,7 +40,7 @@ export default {
       }
     }
   },
-  emits: ['input'],
+  emits: [ 'input' ],
   data() {
     const next = {
       hasErrors: false,
@@ -45,7 +51,7 @@ export default {
     this.schema.forEach(field => {
       fieldState[field.name] = {
         error: false,
-        data: this.value.data[field.name]
+        data: this.value.data[field.name] || field.def
       };
       next.data[field.name] = fieldState[field.name].data;
     });
@@ -57,9 +63,23 @@ export default {
     };
   },
   computed: {
+    currentSchema: function() {
+      if (this.currentFields.length === 0) {
+        return this.schema;
+      }
+
+      const fields = [];
+      this.currentFields.forEach((field) => {
+        fields.push(this.schema.find(item => {
+          return field === item.name;
+        }));
+      });
+
+      return fields;
+    },
     fields() {
       const fields = {};
-      this.schema.forEach((item) => {
+      this.currentSchema.forEach((item) => {
         fields[item.name] = {};
         fields[item.name].field = { ...item };
         fields[item.name].value = {

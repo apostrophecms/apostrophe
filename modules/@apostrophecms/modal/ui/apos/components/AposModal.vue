@@ -77,7 +77,7 @@ export default {
       default: ''
     }
   },
-  emits: ['inactive', 'esc', 'show-modal', 'no-modal'],
+  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -114,7 +114,7 @@ export default {
       return !!this.$slots.footer;
     },
     classes() {
-      const classes = ['apos-modal'];
+      const classes = [ 'apos-modal' ];
       classes.push(`apos-modal--${this.modal.type}`);
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
@@ -229,6 +229,15 @@ export default {
     border: 1px solid var(--a-base-4);
     color: var(--a-text-primary);
 
+    .apos-modal__inner {
+      // A nested modal should not have additional spacing around the modal.
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-width: 0;
+    }
+
     .apos-modal--slide & {
       position: fixed;
       transition: transform 0.15s ease;
@@ -284,6 +293,11 @@ export default {
     left: 0;
     display: block;
     background-color: var(--a-overlay);
+
+    .apos-modal__inner & {
+      // A nested modal doesn't need an overlay.
+      display: none;
+    }
 
     .apos-modal--slide & {
       transition: opacity 0.15s ease;

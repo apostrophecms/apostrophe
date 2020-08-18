@@ -42,7 +42,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposBooleanField',
+  name: 'AposInputBoolean',
   mixins: [ AposInputMixin ],
   computed: {
     classList: function () {

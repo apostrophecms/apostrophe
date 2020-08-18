@@ -64,7 +64,7 @@ export default {
       default: ''
     }
   },
-  emits: ['click'],
+  emits: [ 'click' ],
   data() {
     return {
       contextMenuOpen: true
