@@ -72,7 +72,7 @@ export default {
   data() {
     return {
       // Copy the `rows` property to mutate with VueDraggable.
-      myRows: [],
+      myRows: this.rows,
       nested: false,
       colWidths: null,
       treeId: this.generateId()
