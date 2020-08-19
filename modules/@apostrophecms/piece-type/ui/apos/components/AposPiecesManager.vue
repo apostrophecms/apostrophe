@@ -78,8 +78,7 @@
                   </a>
                   <button
                     v-else-if="header.name === 'title'"
-                    @click="openEditor"
-                    :data-apos-piece="row._id"
+                    @click="openEditor(row._id)"
                     class="apos-table__cell-field"
                     :class="`apos-table__cell-field--${header.name}`"
                   >
@@ -102,9 +101,10 @@
       </AposModalBody>
       <!-- The pieces editor modal. -->
       <component
-        v-if="editing" :module-name="moduleName"
-        :is="options.components.insertModal" @close="editing = false"
-        @saved="finishSaved"
+        v-if="editing"
+        :is="options.components.insertModal"
+        :module-name="moduleName" :doc-id="editingDocId"
+        @saved="finishSaved" @safe-close="closeEditor"
       />
     </template>
   </AposModal>
@@ -136,7 +136,8 @@ export default {
       totalPages: 1, // TODO: Populate this from the `getPieces` method.
       currentPage: 1, // TODO: Make use of these.
       filterValues: {},
-      editing: false
+      editing: false,
+      editingDocId: ''
     };
   },
   computed: {
@@ -220,8 +221,13 @@ export default {
         }
       )).results;
     },
-    openEditor(event) {
-      console.info('📝 EDIT PIECE', event.target.dataset.aposPiece);
+    openEditor(docId) {
+      this.editingDocId = docId;
+      this.editing = true;
+    },
+    closeEditor() {
+      this.editing = false;
+      this.editingDocId = '';
     },
     // Toolbar handlers
     trashClick() {

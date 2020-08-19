@@ -5,6 +5,12 @@
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
+    <template #secondaryControls>
+      <AposButton
+        type="default" label="Exit"
+        @click="cancel"
+      />
+    </template>
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
@@ -27,6 +33,7 @@
           <AposModalTabsBody>
             <div class="apos-doc-editor__body">
               <AposSchema
+                v-if="docReady"
                 :schema="schema" :current-fields="currentFields"
                 v-model="doc"
               />
@@ -76,6 +83,7 @@ export default {
         data: {},
         hasErrors: false
       },
+      docReady: false,
       modal: {
         active: false,
         type: 'overlay',
@@ -83,7 +91,6 @@ export default {
       }
     };
   },
-
   computed: {
     moduleOptions() {
       return window.apos.modules[this.moduleName] || {};
@@ -143,10 +150,20 @@ export default {
     this.modal.active = true;
 
     if (this.docId) {
-      // TODO: Get data here.
+      let docData;
+      try {
+        const getOnePath = `${this.moduleOptions.action}/${this.docId}`;
+        docData = await apos.http.get(getOnePath, {
+          busy: true
+        });
+      } finally {
+        this.doc.data = docData;
+        this.docReady = true;
+        apos.bus.$emit('busy', false);
+      }
     } else {
       this.$nextTick(() => {
-        this.populateSchema();
+        this.buildEmptyDoc();
       });
     }
   },
@@ -163,10 +180,11 @@ export default {
         apos.bus.$emit('busy', false);
       }
     },
-    populateSchema () {
+    buildEmptyDoc () {
       this.schema.forEach(field => {
-        this.doc.data[field.name] = {};
+        this.doc.data[field.name] = '';
       });
+      this.docReady = true;
     }
   }
 };
