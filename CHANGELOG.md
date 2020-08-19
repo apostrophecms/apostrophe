@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.111.2 (2020-09-19)
+
+* Fixed a conflict between `express.static` and apostrophe's automatic removal of trailing slashes from possible page URLs. Apostrophe's intent in using `express.static` is only to deliver static assets. So we have made that intent clear by disabling the `redirect` option of `express.static`, which attempts to add a trailing slash whenever a folder exists on disk by that name, resulting in an infinite redirect loop.
+
 ## 2.111.1 (2020-08-17)
 
 * Fixed an incompatibility between apostrophe-workflow and MongoDB 4.4. Prior to version 4.4, MongoDB allowed a projection to contain both a parent property and one of its children, for instance `workflowLastCommitted` and `workflowLastCommitted.at`. Beginning with version 4.4 this causes an error, breaking the list view of pieces when workflow is present. For backwards compatibility, version 2.111.1 of Apostrophe now checks all projections coming from Apostrophe's cursors for this issue and removes the projection for the sub-property on the fly. This does not cause any compatibility issues of its own because projecting the parent always gives you the sub-property anyway.
