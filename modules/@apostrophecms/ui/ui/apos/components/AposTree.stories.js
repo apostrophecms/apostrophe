@@ -31,8 +31,10 @@ export const Tree = () => ({
       :headers="data.headers"
       :icons="data.icons"
       :rows="data.rows"
-      :draggable="data.draggable"
-      :selectable="data.selectable"
+      :options="{
+        draggable: true,
+        bulkSelect: true
+      }"
       v-model="checked"
       @update="update" @busy="setBusy"
     />
@@ -40,7 +42,7 @@ export const Tree = () => ({
 });
 
 let draggable = false;
-let selectable = false;
+let bulkSelect = false;
 
 function getData () {
   const rows = generateRows(randomNumber());
@@ -78,7 +80,7 @@ function getData () {
     },
     rows,
     draggable,
-    selectable
+    bulkSelect
   };
 }
 
@@ -117,7 +119,7 @@ function generateRow(maxDepth = 5) {
 
   if (randomBoolean(0.3)) {
     draggable = true;
-    selectable = true;
+    bulkSelect = true;
     for (let i = 0; i < randomNumber(); i++) {
       if (maxDepth > i) {
         const child = generateRow(i);

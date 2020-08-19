@@ -14,7 +14,7 @@ export default {
       return this.options.columns ? this.options.columns : [];
     },
     selectAllValue() {
-      return this.checked.length > 0 ? { data: ['checked'] } : { data: [] };
+      return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
@@ -42,7 +42,7 @@ export default {
         this.checkboxes[id].value.data = [];
       } else {
         this.checked.push(id);
-        this.checkboxes[id].value.data = ['checked'];
+        this.checkboxes[id].value.data = [ 'checked' ];
       }
     },
     selectAll(event) {
@@ -91,6 +91,10 @@ export default {
       this.headers.forEach(h => {
         if (h.icon) {
           icons[h.icon] = `${h.icon.toLowerCase()}-icon`;
+        }
+
+        if (h.labelIcon && !icons[h.labelIcon]) {
+          icons[h.labelIcon] = `${h.labelIcon.toLowerCase()}-icon`;
         }
       });
       this.icons = icons;

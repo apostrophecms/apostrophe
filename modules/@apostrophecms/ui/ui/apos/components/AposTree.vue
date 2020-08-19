@@ -1,12 +1,13 @@
 <template>
   <div class="apos-tree" :class="{ 'apos-tree--nested': nested }">
     <AposTreeHeader
-      :headers="spacingRow" :spacer-only="true"
+      :headers="spacingRow" :icons="icons"
+      :spacer-only="true"
       @calculated="setWidths"
     />
     <AposTreeHeader
       :headers="headers" :icons="icons"
-      :col-widths="colWidths"
+      :col-widths="colWidths" :hidden="options.hideHeader"
     />
     <AposTreeRows
       v-model="checkedProxy"
@@ -20,8 +21,7 @@
       @update="update"
       @edit="$emit('edit', $event)"
       list-id="root"
-      :draggable="draggable"
-      :selectable="selectable"
+      :options="options"
       :tree-id="treeId"
     />
   </div>
@@ -59,13 +59,18 @@ export default {
         return null;
       }
     },
-    draggable: {
-      type: Boolean,
-      default: false
-    },
-    selectable: {
-      type: Boolean,
-      default: false
+    // Active options include:
+    // - hideHeader: The tree header row will be visibly hidden.
+    // - selectable: Rows can be individually selected one-at-a-time. Used
+    //   for version history selection.
+    // - bulkSelect: Rows can be bulk selected using checkboxes. Both this
+    //   and `selectable` use the same `checked` array.
+    // - draggable: Rows can be moved around within the tree.
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     }
   },
   emits: [ 'busy', 'update', 'change', 'edit' ],

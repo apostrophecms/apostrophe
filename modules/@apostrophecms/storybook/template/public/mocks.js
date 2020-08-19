@@ -317,6 +317,8 @@
     }
   };
 
+  apos.http.postResponses = {};
+
   // Adds query string data to url. Currently supports only one level
   // of parameters (not nested structures)
   apos.http.addQueryToUrl = function(url, data) {

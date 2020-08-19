@@ -25,6 +25,9 @@
               </div>
               <h2 :id="id" class="apos-modal__heading o-heading">
                 {{ modalTitle }}
+                <span v-if="modal.a11yTitle" class="apos-sr-only">
+                  : {{ modal.a11yTitle }}
+                </span>
               </h2>
               <div
                 class="apos-modal__controls--primary" v-if="hasPrimaryControls"
