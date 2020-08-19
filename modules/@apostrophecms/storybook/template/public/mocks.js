@@ -223,55 +223,63 @@
 
   apos.http = {};
 
+  const grape = {
+    '_id': 'ckcuoykl9000j38ecrjghrn0c',
+    'published': true,
+    'trash': false,
+    'type': 'product',
+    'title': 'Grape',
+    'slug': 'grape',
+    'price': '$100,000 AUD',
+    'taxes': '$42 AUD',
+    'metaType': 'doc',
+    'createdAt': '2020-07-22T02:11:19.005Z',
+    'titleSortified': 'grape',
+    'updatedAt': '2020-07-22T02:11:19.005Z',
+    'highSearchText': 'grape grape',
+    'highSearchWords': [
+      'grape'
+    ],
+    'lowSearchText': 'grape grape',
+    'searchSummary': '',
+    'docPermissions': [],
+    '_edit': true
+  };
+
+  const strawberry = {
+    '_id': 'htcuoykl9012j38ecrjghrn0c',
+    'published': true,
+    'trash': false,
+    'type': 'product',
+    'title': 'Strawberry',
+    'slug': 'strawberry',
+    'price': '$100,000 USD',
+    'taxes': '$42 USD',
+    'metaType': 'doc',
+    'createdAt': '2020-07-20T15:56:19.005Z',
+    'titleSortified': 'strawberry',
+    'updatedAt': '2020-07-20T15:56:19.005Z',
+    'highSearchText': 'strawberry strawberry',
+    'highSearchWords': [
+      'strawberry'
+    ],
+    'lowSearchText': 'strawberry strawberry',
+    'searchSummary': '',
+    'docPermissions': [],
+    '_edit': true
+  };
+
   apos.http.getResponses = {
     '/api/v1/products?published=true&trash=false&page=1': {
       'pages': 1,
       'currentPage': 1,
       'results': [
-        {
-          '_id': 'ckcuoykl9000j38ecrjghrn0c',
-          'published': true,
-          'trash': false,
-          'type': 'product',
-          'title': 'Grape',
-          'slug': 'grape',
-          'price': null,
-          'metaType': 'doc',
-          'createdAt': '2020-07-22T02:11:19.005Z',
-          'titleSortified': 'grape',
-          'updatedAt': '2020-07-22T02:11:19.005Z',
-          'highSearchText': 'grape grape',
-          'highSearchWords': [
-            'grape'
-          ],
-          'lowSearchText': 'grape grape',
-          'searchSummary': '',
-          'docPermissions': [],
-          '_edit': true
-        },
-        {
-          '_id': 'htcuoykl9012j38ecrjghrn0c',
-          'published': true,
-          'trash': false,
-          'type': 'product',
-          'title': 'Strawberry',
-          'slug': 'strawberry',
-          'price': null,
-          'metaType': 'doc',
-          'createdAt': '2020-07-20T15:56:19.005Z',
-          'titleSortified': 'strawberry',
-          'updatedAt': '2020-07-20T15:56:19.005Z',
-          'highSearchText': 'strawberry strawberry',
-          'highSearchWords': [
-            'strawberry'
-          ],
-          'lowSearchText': 'strawberry strawberry',
-          'searchSummary': '',
-          'docPermissions': [],
-          '_edit': true
-        }
+        grape,
+        strawberry
       ]
     },
+    [`/api/v1/products/${grape._id}`]: grape,
+    [`/api/v1/products/${strawberry._id}`]: strawberry,
     '/api/v1/@apostrophecms/page?all=1': {
       'results': {
         'title': 'Home',
@@ -343,6 +351,12 @@
     }
   };
 
+  apos.http.putResponses = {
+    '/api/v1/products': {
+      status: 200
+    }
+  };
+
   apos.http.get = async (url, options) => {
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
@@ -367,6 +381,23 @@
       url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (apos.http.postResponses[url]) {
+      // Like responses from a real API, the returned object needs to be safe to
+      // change.
+      return JSON.parse(JSON.stringify(apos.http.postResponses[url]));
+    } else {
+      throw {
+        status: 404
+      };
+    }
+  };
+
+  apos.http.put = async (url, options) => {
+    // variable async delay for realism
+    await delay(Math.random() * 100 + 100);
+    if (options.qs) {
+      url = apos.http.addQueryToUrl(url, options.qs);
+    }
+    if (apos.http.putResponses[url]) {
       // Like responses from a real API, the returned object needs to be safe to
       // change.
       return JSON.parse(JSON.stringify(apos.http.postResponses[url]));

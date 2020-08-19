@@ -46,6 +46,7 @@
       <AposModalRail type="right">
         <div class="apos-doc-editor__utility">
           <AposSchema
+            v-if="docReady"
             :schema="schema" :current-fields="utilityFields"
             v-model="doc"
             :modifiers="['small', 'inverted']"
