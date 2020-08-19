@@ -4,10 +4,16 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
+    <template #secondaryControls>
+      <AposButton
+        type="default" label="Exit"
+        @click="cancel"
+      />
+    </template>
     <template #primaryControls>
       <AposButton
-        type="default" label="Finished"
-        @click="cancel"
+        type="primary" :label="restoreLabel"
+        @click="restore" :disabled="latestVersion === selected[0]"
       />
     </template>
     <template #main>
@@ -48,6 +54,7 @@ export default {
         showModal: false
       },
       versions: [],
+      latestVersion: '',
       selected: [],
       options: {
         columns: [
@@ -89,12 +96,17 @@ export default {
       });
 
       return rows;
+    },
+    restoreLabel() {
+      return this.latestVersion === this.selected[0] ? 'Current version' : 'Restore';
     }
   },
   async mounted() {
     this.modal.active = true;
 
     await this.getVersions();
+    this.selected = [ this.versions[0]._id ];
+    this.latestVersion = this.versions[0]._id;
   },
   methods: {
     async getVersions () {
@@ -112,6 +124,11 @@ export default {
       if (docVersions) {
         this.versions = docVersions;
       }
+    },
+    restore() {
+      // TEMP: This will hit a POST or PATCH route in UI integration.
+      // After a confirmation step, this should also trigger `cancel`.
+      console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
