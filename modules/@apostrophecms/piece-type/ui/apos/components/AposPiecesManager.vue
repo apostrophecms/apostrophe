@@ -11,7 +11,7 @@
       />
       <AposButton
         :label="`New ${ options.label }`" type="primary"
-        @click="inserting = true"
+        @click="editing = true"
       />
     </template>
     <template #main>
@@ -102,8 +102,8 @@
       </AposModalBody>
       <!-- The pieces editor modal. -->
       <component
-        v-if="inserting" :module-name="moduleName"
-        :is="options.components.insertModal" @close="inserting = false"
+        v-if="editing" :module-name="moduleName"
+        :is="options.components.insertModal" @close="editing = false"
         @saved="finishSaved"
       />
     </template>
@@ -136,7 +136,7 @@ export default {
       totalPages: 1, // TODO: Populate this from the `getPieces` method.
       currentPage: 1, // TODO: Make use of these.
       filterValues: {},
-      inserting: false
+      editing: false
     };
   },
   computed: {
@@ -207,7 +207,7 @@ export default {
     async finishSaved() {
       await this.getPieces();
 
-      this.inserting = false;
+      this.editing = false;
     },
     async getPieces () {
       this.pieces = (await apos.http.get(
