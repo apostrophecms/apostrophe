@@ -25,6 +25,9 @@
               </div>
               <h2 :id="id" class="apos-modal__heading o-heading">
                 {{ modalTitle }}
+                <span v-if="modal.a11yTitle" class="apos-sr-only">
+                  : {{ modal.a11yTitle }}
+                </span>
               </h2>
               <div
                 class="apos-modal__controls--primary" v-if="hasPrimaryControls"
@@ -77,7 +80,7 @@ export default {
       default: ''
     }
   },
-  emits: ['inactive', 'esc', 'show-modal', 'no-modal'],
+  emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -114,7 +117,7 @@ export default {
       return !!this.$slots.footer;
     },
     classes() {
-      const classes = ['apos-modal'];
+      const classes = [ 'apos-modal' ];
       classes.push(`apos-modal--${this.modal.type}`);
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
