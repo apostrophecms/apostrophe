@@ -40,10 +40,10 @@
                     class="apos-table__header-label"
                   >
                     <component
-                      v-if="header.icon"
+                      v-if="header.labelIcon"
+                      :is="icons[header.labelIcon]"
                       :size="iconSize(header)"
                       class="apos-table__header-icon"
-                      :is="icons[header.icon]"
                     />
                     {{ header.label }}
                   </component>
@@ -76,6 +76,15 @@
                   >
                     <LinkIcon :size="12" />
                   </a>
+                  <button
+                    v-else-if="header.name === 'title'"
+                    @click="openEditor"
+                    :data-apos-piece="row._id"
+                    class="apos-table__cell-field"
+                    :class="`apos-table__cell-field--${header.name}`"
+                  >
+                    {{ row[header.name] }}
+                  </button>
                   <p
                     v-else class="apos-table__cell-field"
                     :class="`apos-table__cell-field--${header.name}`"
@@ -143,7 +152,6 @@ export default {
     moduleTitle () {
       return `Manage ${this.moduleLabels.plural}`;
     },
-    // headers:
     rows() {
       const rows = [];
       if (!this.pieces || !this.headers.length) {
@@ -211,6 +219,9 @@ export default {
           }
         }
       )).results;
+    },
+    openEditor(event) {
+      console.info('📝 EDIT PIECE', event.target.dataset.aposPiece);
     },
     // Toolbar handlers
     trashClick() {

@@ -59,6 +59,10 @@ span.apos-table__header-label:hover {
 .apos-table__cell-field {
   margin: 0;
 }
+
+button.apos-table__cell-field {
+  @include apos-button-reset();
+}
 // might have to be expanded kinda magic
 .apos-table__cell-field--title {
   max-width: 400px;

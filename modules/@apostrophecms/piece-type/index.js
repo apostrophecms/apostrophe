@@ -40,7 +40,7 @@ module.exports = {
       },
       {
         name: 'updatedAt',
-        label: 'Last Updated',
+        label: 'Edited on',
         partial: function (value) {
           if (!value) {
             // Don't crash if updatedAt is missing, for instance due to a dodgy import process
