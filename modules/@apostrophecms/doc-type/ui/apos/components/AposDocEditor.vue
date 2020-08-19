@@ -170,8 +170,19 @@ export default {
   methods: {
     async submit() {
       apos.bus.$emit('busy', true);
+
+      let route;
+      let requestMethod;
+      if (this.docId) {
+        route = `${this.moduleOptions.action}/${this.docId}`;
+        requestMethod = apos.http.put;
+      } else {
+        route = this.moduleOptions.action;
+        requestMethod = apos.http.post;
+      }
+
       try {
-        await apos.http.post(this.moduleOptions.action, {
+        await requestMethod(route, {
           busy: true,
           body: this.doc.data
         });
