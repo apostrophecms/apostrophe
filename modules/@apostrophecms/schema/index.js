@@ -15,7 +15,7 @@
 
 const joinr = require('./lib/joinr');
 const _ = require('lodash');
-const moment = require('moment');
+const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 
 module.exports = {
@@ -290,7 +290,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -303,7 +303,7 @@ module.exports = {
                 return self.apos.launder.select(v, field.choices, field.def);
               });
             } else {
-              return [self.apos.launder.select(value, field.choices, field.def)];
+              return [ self.apos.launder.select(value, field.choices, field.def) ];
             }
           },
           choices: async function () {
@@ -343,7 +343,7 @@ module.exports = {
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
-                v = [v];
+                v = [ v ];
               }
               criteria[field.name] = { $in: v };
               query.and(criteria);
@@ -360,7 +360,7 @@ module.exports = {
               if (value === null) {
                 return null;
               }
-              return [value];
+              return [ value ];
             }
           },
           choices: async function () {
@@ -545,17 +545,17 @@ module.exports = {
           launder: function (value) {
             if (Array.isArray(value) && value.length === 2) {
               if (value[0] instanceof Date) {
-                value[0] = moment(value[0]).format('YYYY-MM-DD');
+                value[0] = dayjs(value[0]).format('YYYY-MM-DD');
               }
               if (value[1] instanceof Date) {
-                value[1] = moment(value[1]).format('YYYY-MM-DD');
+                value[1] = dayjs(value[1]).format('YYYY-MM-DD');
               }
               value[0] = self.apos.launder.date(value[0]);
               value[1] = self.apos.launder.date(value[1]);
               return value;
             } else {
               if (value instanceof Date) {
-                value = moment(value).format('YYYY-MM-DD');
+                value = dayjs(value).format('YYYY-MM-DD');
               }
               return self.apos.launder.date(value, null);
             }
@@ -687,180 +687,37 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'joinByOne',
+      name: 'join',
       convert: async function (req, field, data, object) {
-
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('join with type ' + field.withType + ' unrecognized');
         }
+
         if (_.has(data, field.name)) {
-          let titleOrId = self.apos.launder.string(data[field.name]);
-          let criteria = {
-            $or: [
-              { titleSortified: self.apos.util.sortify(titleOrId) },
-              { _id: titleOrId }
-            ]
-          };
-          const result = await manager.find(req, criteria, { _id: 1 }).joins(false).published(null).toObject();
-          if (result) {
-            object[field.idField] = result._id;
+          if (field.min && field.min > data[field.name].length) {
+            throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
+          }
+          if (field.max && field.max < data[field.name].length) {
+            throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
+          }
+          let titlesOrIds = [];
+
+          if (Array.isArray(data[field.name])) {
+            for (const datum of data[field.name]) {
+              const id = self.apos.launder.string(datum);
+              if (id) {
+                titlesOrIds.push(id);
+              }
+            }
           } else {
-            delete object[field.idField];
+            titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
           }
-        } else if (_.has(data, field.idField)) {
-          object[field.idField] = self.apos.launder.id(data[field.idField]);
-        }
-      },
-      join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byOne, false, objects, field.idField, undefined, field.name, options);
-      },
-      addQueryBuilder(field, query) {
-        // for joinByOne only the "OR" case makes sense
-        query.addBuilder(field.name, {
-          finalize: function () {
-            if (!self.queryBuilderInterested(query, field.name)) {
-              return;
-            }
-            const value = query.get(field.name);
-            const criteria = {};
-            // Even programmers appreciate shortcuts, so it's not enough that the
-            // sanitizer (which doesn't apply to programmatic use) accepts these
-            if (Array.isArray(value)) {
-              criteria[field.idField] = { $in: value };
-            } else if (value === 'none') {
-              criteria.$or = [];
-              let clause = {};
-              clause[field.idField] = null;
-              criteria.$or.push(clause);
-              clause = {};
-              clause[field.idField] = { $exists: 0 };
-              criteria.$or.push(clause);
-            } else {
-              criteria[field.idField] = value;
-            }
-            query.and(criteria);
-          },
-          choices: self.joinQueryBuilderChoices(field, query, '_id'),
-          launder: joinQueryBuilderLaunder
-        });
 
-        self.addJoinSlugQueryBuilder(field, query, '');
-      },
-      validate: function (field, options, warn, fail) {
-        if (!field.name.match(/^_/)) {
-          warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
-        }
-        if (!field.idField) {
-          if (field.idsField) {
-            fail('joinByOne takes idField, not idsField. You can also omit it, in which case a reasonable value is supplied.');
-          }
-          // Supply reasonable value
-          field.idField = field.name.replace(/^_/, '') + 'Id';
-        }
-        if (!field.withType) {
-          // Try to supply reasonable value based on join name
-          const withType = field.name.replace(/^_/, '');
-          if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. If you are defining only one join, you can omit withType and give your join the same name as the other type, with a leading _.');
-          }
-          field.withType = withType;
-        }
-        if (Array.isArray(field.withType)) {
-          _.each(field.withType, function (type) {
-            if (!_.find(self.apos.doc.managers, { name: type })) {
-              fail('withType property, ' + type + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-            }
-          });
-        } else {
-          if (!_.find(self.apos.doc.managers, { name: field.withType })) {
-            fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-          }
-        }
-      }
-    });
-
-    self.addFieldType({
-      name: 'joinByOneReverse',
-      join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byOneReverse, true, objects, field.idField, undefined, field.name, options);
-      },
-      validate: function (field, options, warn, fail) {
-        let forwardJoin;
-        if (!field.name.match(/^_/)) {
-          warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
-        }
-        if (!field.withType) {
-          // Try to supply reasonable value based on join name
-          const withType = field.name.replace(/^_/, '').replace(/s$/, '');
-          if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type.  Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
-          }
-          field.withType = withType;
-        }
-        const otherModule = _.find(self.apos.doc.managers, { name: field.withType });
-        if (!otherModule) {
-          fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
-        }
-        if (!(field.reverseOf || field.idField)) {
-          // Look for a join with our type in the other type
-          // Mjust validate it first to add any implied fields there too
-          self.validate(otherModule.schema, {
-            type: 'doc type',
-            subtype: otherModule.name
-          });
-          forwardJoin = _.find(otherModule.schema, { withType: options.subtype });
-          if (forwardJoin) {
-            field.reverseOf = forwardJoin.name;
-          }
-        }
-        if (field.reverseOf) {
-          forwardJoin = _.find(otherModule.schema, {
-            type: 'joinByOne',
-            name: field.reverseOf
-          });
-          if (!forwardJoin) {
-            fail('reverseOf property does not match the name property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, "reverse" must match "name".');
-          }
-          // Make sure the other join has any missing fields auto-supplied before
-          // trying to access them
-          self.validate([forwardJoin], {
-            type: 'doc type',
-            subtype: otherModule.name
-          });
-          field.idField = forwardJoin.idField;
-        }
-        if (!field.idField) {
-          if (field.idsField) {
-            fail('joinByOneReverse takes idField, not idsField. Hint: just use reverseOf instead and specify the name of the join you are reversing.');
-          } else {
-            fail('joinByOneReverse requires either the reverseOf option or the idField option. Hint: just use reverseOf and specify the name of the join you are reversing.');
-          }
-        }
-        if (!forwardJoin) {
-          forwardJoin = _.find(otherModule.schema, {
-            type: 'joinByOne',
-            idField: field.idField
-          });
-          if (!forwardJoin) {
-            fail('idField property does not match the idField property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, your idField must be the same to find the data there.');
-          }
-        }
-      }
-    });
-
-    self.addFieldType({
-      name: 'joinByArray',
-      convert: async function (req, field, data, object) {
-        let manager = self.apos.doc.getManager(field.withType);
-        if (!manager) {
-          throw Error('join with type ' + field.withType + ' unrecognized');
-        }
-        if (_.has(data, field.name)) {
-          const titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
-          if (!titlesOrIds || titlesOrIds[0] === undefined) {
+          if (titlesOrIds[0] === undefined) {
             return;
           }
+
           let clauses = [];
           _.each(titlesOrIds, function (titleOrId) {
             clauses.push({ titleSortified: self.apos.util.sortify(titleOrId) });
@@ -934,7 +791,7 @@ module.exports = {
                 clause[field.idsField + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsField] = { $in: [value] };
+                criteria[field.idsField] = { $in: [ value ] };
               }
               query.and(criteria);
             },
@@ -949,7 +806,7 @@ module.exports = {
         }
         if (!field.idsField) {
           if (field.idField) {
-            fail('joinByArray takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
+            fail('join takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
           }
           // Supply reasonable value
           field.idsField = field.name.replace(/^_/, '') + 'Ids';
@@ -962,9 +819,6 @@ module.exports = {
             fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
-        }
-        if (!field.idsField) {
-          fail('idsField property is missing. Hint: joinByArray takes idsField, NOT idField.');
         }
         if (!field.withType) {
           fail('withType property is missing. Hint: it must match the "name" property of a doc type.');
@@ -994,7 +848,7 @@ module.exports = {
       if (Array.isArray(v)) {
         return self.apos.launder.ids(v);
       } else if (typeof v === 'string' && v.length) {
-        return [self.apos.launder.id(v)];
+        return [ self.apos.launder.id(v) ];
       } else if (v === 'none') {
         return 'none';
       }
@@ -1002,7 +856,7 @@ module.exports = {
     }
 
     self.addFieldType({
-      name: 'joinByArrayReverse',
+      name: 'joinReverse',
       join: async function (req, field, objects, options) {
         return self.joinDriver(req, joinr.byArrayReverse, true, objects, field.idsField, field.relationshipsField, field.name, options);
       },
@@ -1036,33 +890,30 @@ module.exports = {
         }
         if (field.reverseOf) {
           forwardJoin = _.find(otherModule.schema, {
-            type: 'joinByArray',
+            type: 'join',
             name: field.reverseOf
           });
           if (!forwardJoin) {
-            fail('reverseOf property does not match the name property of any joinByArray in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, "reverse" must match "name".');
+            fail('reverseOf property does not match the name property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, "reverse" must match "name".');
           }
           // Make sure the other join has any missing fields auto-supplied before
           // trying to access them
-          self.validate([forwardJoin], {
+          self.validate([ forwardJoin ], {
             type: 'doc type',
             subtype: otherModule.name
           });
           field.idsField = forwardJoin.idsField;
         }
         if (!field.idsField) {
-          if (field.idField) {
-            fail('joinByOne takes reverseOf or idsField, not idField. Hint: just use reverseOf instead and specify the name of the join you are reversing.');
-          }
           field.idsField = field.name.replace(/^_/, '') + 'Ids';
         }
         if (!forwardJoin) {
           forwardJoin = _.find(otherModule.schema, {
-            type: 'joinByArray',
+            type: 'join',
             idsField: field.idsField
           });
           if (!forwardJoin) {
-            fail('idsField property does not match the idsField property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, your idField must be the same to find the data there.');
+            fail('idsField property does not match the idsField property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, your idsField must be the same to find the data there.');
           }
         }
       }
@@ -1099,8 +950,12 @@ module.exports = {
     };
   },
   methods(self, options) {
-    return {
+    const defaultGroup = self.options.defaultGroup || {
+      name: 'ungrouped',
+      label: 'Ungrouped'
+    };
 
+    return {
       // Compose a schema based on addFields, removeFields, orderFields
       // and, occasionally, alterFields options. This method is great for
       // merging the schema requirements of subclasses with the schema
@@ -1154,12 +1009,11 @@ module.exports = {
         }
 
         // always make sure there is a default group
-        const defaultGroup = self.options.defaultGroup || {};
-        let groups = [{
-          name: defaultGroup.name || 'default',
-          label: defaultGroup.label || 'Info',
+        let groups = [ {
+          name: defaultGroup.name,
+          label: defaultGroup.label,
           fields: _.map(schema, 'name')
-        }];
+        } ];
 
         // if we are getting arrangeFields and it's not empty
         if (options.arrangeFields && options.arrangeFields.length > 0) {
@@ -1268,14 +1122,14 @@ module.exports = {
         });
         schema = newSchema;
 
-        // Move the default group to the end, it's just too
+        // Move the leftover group to the end, it's just too
         // obnoxious otherwise with one-off fields popping up
         // before title etc.
 
         schema = _.filter(schema, function (field) {
-          return !(field.group && field.group.name === 'default');
+          return !(field.group && field.group.name === defaultGroup.name);
         }).concat(_.filter(schema, function (field) {
-          return field.group && field.group.name === 'default';
+          return field.group && field.group.name === defaultGroup.name;
         }));
 
         _.each(schema, function (field) {
@@ -1372,10 +1226,13 @@ module.exports = {
           if (field.contextual) {
             return;
           }
+          if (field.name === 'title') {
+            console.info(field);
+          }
           if (!field.group) {
             field.group = {
-              name: 'default',
-              label: 'info'
+              name: defaultGroup.name,
+              label: defaultGroup.label
             };
           }
           // first group, or not the current group
@@ -1686,7 +1543,7 @@ module.exports = {
           return;
         }
 
-        const objects = _.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
+        const objects = _.isArray(objectOrArray) ? objectOrArray : [ objectOrArray ];
         if (!objects.length) {
           // Don't waste effort
           return;
@@ -1991,12 +1848,7 @@ module.exports = {
 
       joinQueryBuilderChoices(field, query, valueField) {
         return async function () {
-          let idsField;
-          if (field.type === 'joinByOne') {
-            idsField = field.idField;
-          } else {
-            idsField = field.idsField;
-          }
+          const idsField = field.idsField;
           const ids = await query.toDistinct(idsField);
           const manager = self.apos.doc.getManager(field.withType);
           const joinQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
@@ -2075,7 +1927,7 @@ module.exports = {
           if (Array.isArray(v)) {
             return self.apos.launder.strings(v);
           } else if (typeof v === 'string' && v.length) {
-            return [self.apos.launder.string(v)];
+            return [ self.apos.launder.string(v) ];
           } else if (v === 'none') {
             return 'none';
           }
@@ -2109,8 +1961,8 @@ module.exports = {
       // to stderr for bc.
       //
       // This method may also prevent errors by automatically supplying
-      // reasonable values for certain properties, such as the `idField` property
-      // of a `joinByOne` field, or the `label` property of anything.
+      // reasonable values for certain properties, such as the `idsField` property
+      // of a `join` field, or the `label` property of anything.
 
       validate(schema, options) {
         // Infinite recursion prevention
@@ -2320,8 +2172,8 @@ module.exports = {
       subsetSchemaForPatch(schema, patch) {
         const idFields = {};
         schema.forEach(function(field) {
-          if ((field.type === 'joinByOne') || (field.type === 'joinByArray')) {
-            idFields[field.idField || field.idsField] = field.name;
+          if (field.type === 'join') {
+            idFields[field.idsField] = field.name;
           }
         });
         return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idFieldToSchemaField));

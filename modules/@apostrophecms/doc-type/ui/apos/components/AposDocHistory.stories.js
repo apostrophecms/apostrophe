@@ -1,8 +1,8 @@
 export default {
-  title: 'Pages Manager'
+  title: 'Version History'
 };
 
-export const pagesManager = () => {
+export const versionHistory = () => {
   return {
     methods: {
       toggleActive: function () {
@@ -14,7 +14,12 @@ export const pagesManager = () => {
     },
     data () {
       return {
-        active: true
+        active: true,
+        doc: {
+          // This _id value is used in the mock version history.
+          _id: 'ckdhjwh1c00071r9kfs5ddeem',
+          title: 'Home'
+        }
       };
     },
     template: `
@@ -22,8 +27,8 @@ export const pagesManager = () => {
         <button type="button" class="apos-button" @click="toggleActive">
           Activate modal
         </button>
-        <AposPagesManager
-          v-if="active" @safe-close="finishExit"
+        <AposDocHistory
+          v-if="active" @safe-close="finishExit" :doc="doc"
         />
       </div>
     `

@@ -7,7 +7,7 @@
       <div :class="classList">
         <input
           class="apos-sr-only"
-          type="checkbox" :id="`${uid}-true`"
+          type="radio" :id="`${uid}-true`"
           :value="true" @change="setValue(true)"
           :checked="value.data === true"
           ref="true"
@@ -21,7 +21,7 @@
         </label>
         <input
           class="apos-sr-only apos-boolean__input--false"
-          type="checkbox" :id="`${uid}-false`"
+          type="radio" :id="`${uid}-false`"
           :value="false" @change="setValue(false)"
           :checked="value.data === false"
           ref="false"
@@ -42,7 +42,7 @@
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposBooleanField',
+  name: 'AposInputBoolean',
   mixins: [ AposInputMixin ],
   computed: {
     classList: function () {

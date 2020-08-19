@@ -22,11 +22,12 @@ describe('Docs', function() {
           extend: '@apostrophecms/doc-type',
           fields: {
             add: {
-              _friend: {
-                type: 'joinByOne',
+              _friends: {
+                type: 'join',
+                max: 1,
                 withType: 'test-people',
-                idField: 'friendId',
-                label: 'Friend'
+                idsField: 'friendIds',
+                label: 'Friends'
               }
             }
           }
@@ -111,7 +112,7 @@ describe('Docs', function() {
         lastName: 'Sagan',
         age: 62,
         alive: false,
-        friendId: 'larry'
+        friendIds: ['larry']
       }
     ];
 
@@ -133,11 +134,10 @@ describe('Docs', function() {
     assert(cursor);
 
     const person = await cursor.toObject();
-
     assert(person);
     assert(person.slug === 'carl');
-    assert(person._friend);
-    assert(person._friend.slug === 'larry');
+    assert(person._friends);
+    assert(person._friends[0].slug === 'larry');
   });
 
   /// ///
@@ -369,7 +369,6 @@ describe('Docs', function() {
     // Has the updated slug been appended?
     assert(updated.slug.match(/^peter\d+$/));
   });
-
   it('should be able to fetch all unique firstNames with toDistinct', async function() {
     const firstNames = await apos.doc.find(apos.task.getReq(), {
       type: 'test-people'

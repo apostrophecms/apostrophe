@@ -32,7 +32,7 @@ module.exports = function(self, query) {
 
       query.autocomplete(undefined);
 
-      const subquery = self.queryClone(query);
+      const subquery = query.clone();
 
       let clauses = [];
 

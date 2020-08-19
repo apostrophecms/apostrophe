@@ -20,9 +20,10 @@ describe('Docs', function() {
           fields: {
             add: {
               _friend: {
-                type: 'joinByOne',
+                type: 'join',
+                limit: 1,
                 withType: 'test-people',
-                idField: 'friendId',
+                idsField: 'friendId',
                 label: 'Friend'
               }
             }

@@ -23,8 +23,8 @@
           <AposTree
             :rows="rows"
             :headers="headers" :icons="icons"
-            :draggable="true" :selectable="true"
             v-model="checked"
+            :options="treeOptions"
             @update="update" @busy="setBusy"
             @edit="openEditor"
           />
@@ -81,6 +81,10 @@ export default {
             type: 'link'
           }
         ]
+      },
+      treeOptions: {
+        bulkSelect: true,
+        draggable: true
       }
     };
   },

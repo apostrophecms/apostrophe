@@ -29,21 +29,21 @@ module.exports = {
       },
       {
         name: '_viewUsers',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can View',
         idsField: 'viewUsersIds'
       },
       {
         name: '_viewGroups',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can View',
         idsField: 'viewGroupsIds'
       },
       {
         name: '_editUsers',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can Edit',
         idsField: 'editUsersIds',
@@ -52,7 +52,7 @@ module.exports = {
       },
       {
         name: '_editGroups',
-        type: 'joinByArray',
+        type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can Edit',
         idsField: 'editGroupsIds',
@@ -97,9 +97,15 @@ module.exports = {
         name: 'basics',
         label: 'Basics',
         fields: [
-          'title',
-          'slug',
-          'published'
+          'title'
+        ]
+      },
+      {
+        name: 'utility',
+        label: 'Utilities',
+        fields: [
+          'published',
+          'slug'
         ]
       },
       {
@@ -182,15 +188,15 @@ module.exports = {
           const receptacle = {};
           // For purposes of previewing, it's OK to ignore readOnly so we can tell which
           // inputs are plausible
-          await self.apos.schema.convert(req, [_.omit(field, 'readOnly')], 'form', input, receptacle);
-          await self.apos.schema.join(req, [field], receptacle, true);
+          await self.apos.schema.convert(req, [ _.omit(field, 'readOnly') ], 'form', input, receptacle);
+          await self.apos.schema.join(req, [ field ], receptacle, true);
           const choiceTemplate = field.choiceTemplate || self.choiceTemplate || 'chooserChoice.html';
           const choicesTemplate = field.choicesTemplate || self.choicesTemplate || 'chooserChoices.html';
           let choices = receptacle[field.name];
           if (!Array.isArray(choices)) {
             // by one case
             if (choices) {
-              choices = [choices];
+              choices = [ choices ];
             } else {
               choices = [];
             }
@@ -1613,8 +1619,7 @@ module.exports = {
         // `label` and `value` properties suitable for
         // display as a `select` menu or use as an
         // autocomplete API response. Most field types
-        // support this well, including `joinByOne` and
-        // `joinByArray`.
+        // support this well, including `join`.
         //
         // If `options.counts` is truthy, then each result
         // in the array will also have a `count` property,
@@ -1759,8 +1764,7 @@ module.exports = {
         // begins with `_`), pushes the names of the necessary physical fields
         // to compute it onto `add` and returns `true` if able to do so.
         // Otherwise `false` is returned. The default implementation can
-        // handle `_url` and `joinByOne` or `joinByArray` fields
-        // (not reverse).
+        // handle `_url` and `join` fields (not reverse).
         //
         // This method is a good candidate to be extended via `extendQueryMethods`.
         //
@@ -1796,7 +1800,7 @@ module.exports = {
         // the join field named `key` onto the `add` array
         // and returns `true`.
         //
-        // If there is no such `joinByOne` or `joinByArray`
+        // If there is no such `join`
         // field this method returns `false and does nothing.
         //
         // Note that this mechanism will not work for a
@@ -1813,15 +1817,8 @@ module.exports = {
           schema = self.schema;
           field = _.find(schema, { name: key });
           if (field) {
-            if (field.type === 'joinByOne') {
-              // joins also don't work without type
-              add.push('type', field.idField);
-              return true;
-            } else if (field.type === 'joinByArray') {
-              // joins also don't work without type
-              add.push('type', field.idsField);
-              return true;
-            }
+            add.push('type', field.idsField);
+            return true;
           }
           return false;
         },
@@ -1900,7 +1897,7 @@ module.exports = {
         // skipping all builders without a `launder` method. Never trust a browser.
 
         applyBuildersSafely(params) {
-          for (let [name, value] of Object.entries(params)) {
+          for (let [ name, value ] of Object.entries(params)) {
             if (!_.has(query.builders, name)) {
               continue;
             }
@@ -2082,7 +2079,7 @@ module.exports = {
           };
           if (direction === -1) {
             // Flip the sort, we need to look backwards
-            for (const [key, val] of sort) {
+            for (const [ key, val ] of sort) {
               if (typeof (val) === 'number') {
                 sort[key] = -val;
               }
@@ -2214,7 +2211,7 @@ module.exports = {
 };
 
 function wrap(context, extensions) {
-  for (const [name, fn] of extensions) {
+  for (const [ name, fn ] of extensions) {
     if ((typeof fn) !== 'function') {
       // Nested structure is allowed
       context[name] = context[name] || {};

@@ -56,7 +56,7 @@ module.exports = {
         label: 'Credit URL'
       },
       {
-        type: 'joinByArray',
+        type: 'join',
         name: '_tags',
         label: 'Tags',
         withType: '@apostrophecms/image-tag'
@@ -75,8 +75,8 @@ module.exports = {
         ]
       },
       {
-        name: 'info',
-        label: 'Info',
+        name: 'details',
+        label: 'Details',
         fields: [
           'description',
           'credit',

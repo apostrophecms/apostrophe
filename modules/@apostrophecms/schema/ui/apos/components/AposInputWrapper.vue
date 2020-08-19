@@ -15,6 +15,15 @@
     <p v-if="field.help" class="apos-field-help">
       {{ field.help }}
     </p>
+    <div v-if="field.min || field.max" class="apos-field-limit">
+      <span>{{ items.length }} selected</span>
+      <span v-if="field.min">
+        min: {{ field.min }}
+      </span>
+      <span v-if="field.max">
+        max: {{ field.max }}
+      </span>
+    </div>
     <slot name="body" />
     <!-- TODO i18n -->
     <div v-if="errorMessage" class="apos-field-error">
@@ -42,6 +51,12 @@ export default {
       required: true
     },
     modifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
+    items: {
       type: Array,
       default() {
         return [];
@@ -144,9 +159,20 @@ export default {
 
   .apos-field-error {
     color: var(--a-danger);
+    text-transform: uppercase;
   }
 
   .apos-field-required {
     color: var(--a-danger);
+  }
+
+  .apos-field-limit {
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 10px 0;
+
+    span {
+      margin-right: 10px;
+    }
   }
 </style>

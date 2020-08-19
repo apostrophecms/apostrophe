@@ -5,15 +5,13 @@ import {
   boolean,
   number
 } from '@storybook/addon-knobs';
-import AposNotification from './AposNotification.vue';
 
 export default {
-  title: 'All Notifications',
-  decorators: [withKnobs]
+  title: 'Notification Messages',
+  decorators: [ withKnobs ]
 };
 
 export const notifications = () => ({
-  components: { AposNotification },
   props: {
     label: {
       default: text('Label', 'Few can name a disguised punch that isnt a bunchy railway.')

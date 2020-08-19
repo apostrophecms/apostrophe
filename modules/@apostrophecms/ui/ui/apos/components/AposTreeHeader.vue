@@ -34,6 +34,10 @@ export default {
         return {};
       }
     },
+    hidden: {
+      type: Boolean,
+      default: false
+    },
     spacerOnly: {
       type: Boolean,
       default: false
@@ -45,13 +49,23 @@ export default {
       }
     }
   },
-  emits: ['calculated'],
+  emits: [ 'calculated' ],
   computed: {
     headerClasses() {
-      if (this.spacerOnly) {
+      if (this.spacerOnly || this.hidden) {
         return 'apos-tree__header--hidden';
       }
       return '';
+    }
+  },
+  watch: {
+    headers() {
+      if (this.spacerOnly) {
+        // Give this a moment to make sure we have the final widths.
+        this.$nextTick(() => {
+          this.calculateWidths();
+        });
+      }
     }
   },
   mounted() {
@@ -77,7 +91,9 @@ export default {
           return;
         }
 
-        colWidths[col.name] = ref.clientWidth;
+        // Set the column width to the spacer width plus 5 for extra wiggle
+        // room.
+        colWidths[col.name] = ref.clientWidth + 5;
       });
       this.$emit('calculated', colWidths);
     },
