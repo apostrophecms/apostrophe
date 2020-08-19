@@ -63,7 +63,6 @@ export default {
       if (this.spacerOnly) {
         // Give this a moment to make sure we have the final widths.
         this.$nextTick(() => {
-          console.info(this.headers);
           this.calculateWidths();
         });
       }
