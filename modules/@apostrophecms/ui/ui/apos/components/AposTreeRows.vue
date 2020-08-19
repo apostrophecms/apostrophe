@@ -181,7 +181,7 @@ export default {
       return {
         group: { name: this.treeId },
         dataListId: this.listId,
-        disabled: !this.draggable,
+        disabled: !this.options.draggable,
         handle: '.apos-tree__row__handle',
         ghostClass: 'is-dragging'
       };
