@@ -95,10 +95,9 @@ module.exports = {
 
     if (_.includes(by, 'id')) {
       addFields.push({
-        type: 'joinByArray',
+        type: 'join',
         name: '_pieces',
         label: byChoices.length > 1 ? 'Individually' : 'Select...',
-        idsField: 'pieceIds',
         withType: self.pieces.name
       });
     }

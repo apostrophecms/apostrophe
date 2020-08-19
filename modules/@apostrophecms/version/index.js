@@ -334,10 +334,8 @@ module.exports = {
               return compareArrays(schemaIdentifier, schemaDecoratorGenerator(field.schema), old, current);
             } else if (field.type === 'area' || field.type === 'singleton') {
               return compareAreas(old, current);
-            } else if (field.type === 'joinByArray') {
-              return compareArrays(joinByArrayIdentifier, joinByArrayDecoratorGenerator(field.withType), old, current);
-            } else if (field.type === 'joinByOne') {
-              return compareArrays(joinByArrayIdentifier, joinByArrayDecoratorGenerator(field.withType), old ? [ old ] : [], current ? [ current ] : []);
+            } else if (field.type === 'join') {
+              return compareArrays(joinIdentifier, joinDecoratorGenerator(field.withType), old, current);
             } else {
               // Take advantage of Apostrophe's support for boiling fields
               // down to search text to generate a basis for a text diff.
@@ -607,11 +605,11 @@ module.exports = {
             }
           };
         }
-        function joinByArrayIdentifier(item) {
+        function joinIdentifier(item) {
           // It's an id already
           return item;
         }
-        function joinByArrayDecoratorGenerator(withType) {
+        function joinDecoratorGenerator(withType) {
           return function (change) {
             change.docType = withType;
           };

@@ -3,7 +3,7 @@ let _ = require('lodash');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   options: {
-    manageViews: ['list'],
+    manageViews: [ 'list' ],
     perPage: 10
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
@@ -15,22 +15,22 @@ module.exports = {
   beforeSuperClass(self, options) {
     self.contextual = options.contextual;
 
-    options.addFields = [{
+    options.addFields = [ {
       type: 'slug',
       name: 'slug',
       label: 'Slug',
       required: true,
       slugifies: 'title'
-    }].concat(options.addFields || []);
+    } ].concat(options.addFields || []);
 
     if (self.contextual) {
       // If the piece is edited contextually, default the published state to false
-      options.addFields = [{
+      options.addFields = [ {
         type: 'boolean',
         name: 'published',
         label: 'Published',
         def: false
-      }].concat(options.addFields || []);
+      } ].concat(options.addFields || []);
     }
 
     options.defaultColumns = options.defaultColumns || [
@@ -235,8 +235,8 @@ module.exports = {
             // (leave it up to the developer to decide if anybody gets permission to
             // edit later).
             if (req.user) {
-              piece.editUsersIds = (piece.editUsersIds || []).concat([req.user._id]);
-              piece.docPermissions = (piece.docPermissions || []).concat(['edit-' + req.user._id]);
+              piece.editUsersIds = (piece.editUsersIds || []).concat([ req.user._id ]);
+              piece.docPermissions = (piece.docPermissions || []).concat([ 'edit-' + req.user._id ]);
             }
           }
         }
@@ -678,7 +678,7 @@ module.exports = {
           filters: 'ApostrophePiecesFilters',
           list: 'ApostrophePiecesList',
           pager: 'ApostrophePager',
-          insertModal: 'ApostrophePiecesInsertModal',
+          insertModal: 'AposDocEditor',
           managerModal: 'AposPiecesManager'
         });
         return browserOptions;

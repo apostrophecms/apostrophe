@@ -58,8 +58,8 @@
           'required': true,
           'slugifies': 'title',
           'group': {
-            'name': 'basics',
-            'label': 'Basics'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': '9a9f62aa7b35bdc4044b885d0806297e'
         },
@@ -69,8 +69,8 @@
           'label': 'Published',
           'def': true,
           'group': {
-            'name': 'basics',
-            'label': 'Basics'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': 'e146d8acff60cc41f257d010b61e277b'
         },
@@ -81,8 +81,8 @@
           'contextual': true,
           'def': false,
           'group': {
-            'name': 'default',
-            'label': 'Info'
+            'name': 'utility',
+            'label': 'Utility'
           },
           '_id': '781f8a0089bef9e079178670f4a7efaa'
         },
@@ -90,11 +90,41 @@
           'name': 'price',
           'type': 'string',
           'group': {
-            'name': 'default',
-            'label': 'Info'
+            'name': 'priceFields',
+            'label': 'Price Fields'
           },
           'label': 'Price',
           '_id': 'ab97e004c2d4457bb3034d03ef96689f'
+        },
+        {
+          'name': 'taxes',
+          'type': 'string',
+          'group': {
+            'name': 'priceFields',
+            'label': 'Price Fields'
+          },
+          'label': 'Taxes',
+          '_id': 'cs12e00sc2d4457bb3034d03ef96689f'
+        },
+        {
+          'name': 'nonsense',
+          'type': 'select',
+          'label': 'Why is this field ungrouped?',
+          '_id': 'tcw0100sc2d4457bb3034d03ef96mc05',
+          'choices': [
+            {
+              'value': 'confusion',
+              'label': 'Confusion'
+            },
+            {
+              'value': 'laziness',
+              'label': 'Laziness'
+            },
+            {
+              'value': 'cats',
+              'label': 'Interfering cats'
+            }
+          ]
         }
       ],
       'filters': [
@@ -185,7 +215,7 @@
         'filters': 'ApostrophePiecesFilters',
         'list': 'ApostrophePiecesList',
         'pager': 'ApostrophePager',
-        'insertModal': 'ApostrophePiecesInsertModal',
+        'insertModal': 'AposDocEditor',
         'managerModal': 'AposPiecesManager'
       }
     }
@@ -307,6 +337,12 @@
       }
     }
     return url;
+  };
+
+  apos.http.postResponses = {
+    '/api/v1/products': {
+      status: 200
+    }
   };
 
   apos.http.get = async (url, options) => {

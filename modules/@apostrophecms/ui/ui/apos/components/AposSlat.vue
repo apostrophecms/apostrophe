@@ -3,7 +3,7 @@
   <transition name="fade">
     <li
       class="apos-slat"
-      :data-id="item.id"
+      :data-id="item._id"
       tabindex="0"
       :class="{'is-engaged': engaged}"
       @keydown.prevent.space="toggleEngage"
@@ -19,7 +19,7 @@
       <div class="apos-slat__main">
         <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
         <div class="apos-slat__label">
-          {{ item.label }}
+          {{ item.title }}
         </div>
       </div>
       <div class="apos-slat__secondary">
@@ -65,28 +65,22 @@ export default {
       }
     },
     engage() {
-      this.$emit('engage', this.item.id);
+      this.$emit('engage', this.item._id);
     },
     disengage() {
-      this.$emit('disengage', this.item.id);
+      this.$emit('disengage', this.item._id);
     },
     move(dir) {
       if (this.engaged) {
         if (dir > 0) {
-          this.$emit('move', this.item.id, 1);
+          this.$emit('move', this.item._id, 1);
         } else {
-          this.$emit('move', this.item.id, -1);
+          this.$emit('move', this.item._id, -1);
         }
       }
     },
     remove(focusNext) {
-      if (focusNext) {
-        if (this.engaged) {
-          this.$emit('remove', this.item, focusNext);
-        }
-      } else {
-        this.$emit('remove', this.item);
-      }
+      this.$emit('remove', this.item, focusNext);
     }
   }
 };
@@ -104,7 +98,8 @@ export default {
     color: var(--a-text-primary);
     @include apos-transition();
     &:hover:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-8);
+      color: var(--a-white);
+      background-color: var(--a-primary);
       cursor: grab;
     }
     &:active:not(.apos-slat-list__item--disabled) {
@@ -112,7 +107,7 @@ export default {
     }
     &:active:not(.apos-slat-list__item--disabled),
     &:focus:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-7);
+      background-color: var(--a-primary-button-hover);
     }
   }
 

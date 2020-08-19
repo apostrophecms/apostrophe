@@ -118,7 +118,7 @@ module.exports = {
           choices: []
         },
         {
-          type: 'joinByArray',
+          type: 'join',
           name: '_groups',
           label: 'Groups',
           idsField: 'groupIds',
@@ -128,7 +128,7 @@ module.exports = {
       ]);
     } else {
       options.addFields = options.addFields.concat([{
-        type: 'joinByArray',
+        type: 'join',
         name: '_groups',
         label: 'Groups',
         idsField: 'groupIds',

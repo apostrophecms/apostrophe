@@ -2,22 +2,27 @@
 <template>
   <div ref="root">
     <draggable
-      class="apos-slat-list" tag="ol"
-      v-model="items" role="list"
-      v-bind="dragOptions" :move="onMove"
-      @start="isDragging=true" @end="isDragging=false"
+      class="apos-slat-list"
+      tag="ol"
+      role="list"
+      :list="items"
+      :move="onMove"
+      v-bind="dragOptions"
+      @start="isDragging=true"
+      @end="isDragging=false"
       :id="listId"
     >
       <transition-group type="transition" name="apos-slat-list-transition">
         <AposSlat
-          @remove="remove" class="apos-slat-list__item"
+          class="apos-slat-list__item"
+          @remove="remove"
           @engage="engage"
           @disengage="disengage"
           @move="move"
-          v-for="item in items" :key="item.id"
+          v-for="item in items" :key="item._id"
           :item="item"
           :class="{'apos-slat-list__item--disabled' : !editable}"
-          :engaged="engaged === item.id"
+          :engaged="engaged === item._id"
           :parent="listId"
         />
       </transition-group>
@@ -48,11 +53,13 @@ export default {
     return {
       isDragging: false,
       delayedDragging: false,
-      items: this.initialItems,
       engaged: null
     };
   },
   computed: {
+    items() {
+      return this.initialItems;
+    },
     listId() {
       return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
     },
@@ -83,15 +90,15 @@ export default {
       this.engaged = null;
     },
     remove(item, focusNext) {
-      const itemIndex = this.getIndex(item.id);
-      this.items = this.items.filter(i => item.id !== i.id);
-      this.$emit('update', this.items);
-      if (focusNext && this.items[itemIndex]) {
-        this.focusElement(this.items[itemIndex].id);
+      const itemIndex = this.getIndex(item._id);
+      const items = this.items.filter(i => item._id !== i._id);
+      this.$emit('update', items);
+      if (focusNext && items[itemIndex]) {
+        this.focusElement(items[itemIndex]._id);
         return;
       }
-      if (focusNext && this.items[itemIndex - 1]) {
-        this.focusElement(this.items[itemIndex - 1].id);
+      if (focusNext && items[itemIndex - 1]) {
+        this.focusElement(items[itemIndex - 1]._id);
       }
     },
     move (id, dir) {
@@ -105,13 +112,12 @@ export default {
     getIndex(id) {
       let i = null;
       this.items.forEach((item, index) => {
-        if (item.id === id) {
+        if (item._id === id) {
           i = index;
         }
       });
       return i;
     },
-
     focusElement(id) {
       if (this.$refs.root.querySelector(`[data-id="${id}"]`)) {
         this.$nextTick(() => {
@@ -119,7 +125,6 @@ export default {
         });
       }
     },
-
     onMove({ relatedContext, draggedContext }) {
       const relatedElement = relatedContext.element;
       const draggedElement = draggedContext.element;
@@ -151,5 +156,4 @@ export default {
     min-height: 20px;
     max-width: $input-max-width * 0.75;
   }
-
 </style>

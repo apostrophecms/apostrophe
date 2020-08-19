@@ -8,7 +8,7 @@ export default {
     };
   },
   mounted() {
-    this.currentTab = this.tabs[0].name;
+    this.currentTab = this.tabs[0] ? this.tabs[0].name : null;
   },
   methods: {
     switchPane(id) {

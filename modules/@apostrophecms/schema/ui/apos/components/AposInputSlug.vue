@@ -33,10 +33,13 @@
 </template>
 
 <script>
+// NOTE: This is a temporary component, copying AposInputString. Base modules
+// already have `type: 'slug'` fields, so this is needed to avoid distracting
+// errors.
 import AposInputMixin from '../mixins/AposInputMixin';
 
 export default {
-  name: 'AposInputString',
+  name: 'AposInputSlug',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
   computed: {
@@ -51,7 +54,7 @@ export default {
       }
     },
     classes () {
-      return [ 'apos-input', `apos-input--${this.type}` ];
+      return [ 'apos-input', 'apos-input--text' ];
     },
     icon () {
       if (this.error) {

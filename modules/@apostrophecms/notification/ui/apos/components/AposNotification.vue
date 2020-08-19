@@ -59,10 +59,10 @@ export default {
       default: null
     }
   },
-  emits: ['close'],
+  emits: [ 'close' ],
   computed: {
     classList() {
-      const classes = ['apos-notification'];
+      const classes = [ 'apos-notification' ];
       if (this.type && this.type !== 'none') {
         classes.push(`apos-notification--${this.type}`);
       }

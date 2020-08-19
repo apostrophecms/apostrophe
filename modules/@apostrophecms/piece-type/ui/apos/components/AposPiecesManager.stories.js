@@ -7,7 +7,7 @@ import {
 
 export default {
   title: 'Pieces Manager',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const piecesManager = () => {

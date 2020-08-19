@@ -232,6 +232,15 @@ export default {
     border: 1px solid var(--a-base-4);
     color: var(--a-text-primary);
 
+    .apos-modal__inner {
+      // A nested modal should not have additional spacing around the modal.
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-width: 0;
+    }
+
     .apos-modal--slide & {
       position: fixed;
       transition: transform 0.15s ease;
@@ -287,6 +296,11 @@ export default {
     left: 0;
     display: block;
     background-color: var(--a-overlay);
+
+    .apos-modal__inner & {
+      // A nested modal doesn't need an overlay.
+      display: none;
+    }
 
     .apos-modal--slide & {
       transition: opacity 0.15s ease;

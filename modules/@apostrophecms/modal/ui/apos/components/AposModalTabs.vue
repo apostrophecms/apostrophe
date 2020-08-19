@@ -30,7 +30,7 @@ export default {
       default: ''
     }
   },
-  emits: ['select-tab'],
+  emits: [ 'select-tab' ],
   computed: {
     currentTab() {
       return this.current || this.tabs[0].name;
