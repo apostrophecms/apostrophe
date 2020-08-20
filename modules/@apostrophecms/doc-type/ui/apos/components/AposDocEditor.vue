@@ -157,6 +157,11 @@ export default {
         docData = await apos.http.get(getOnePath, {
           busy: true
         });
+      } catch {
+        // TODO: Add error notification. No client API for this yet.
+        console.error('⁉️ The requested piece was not found.', this.docId);
+        apos.bus.$emit('busy', false);
+        this.cancel();
       } finally {
         this.doc.data = docData;
         this.docReady = true;
