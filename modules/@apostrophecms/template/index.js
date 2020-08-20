@@ -26,7 +26,7 @@
 // Often set to `__dirname + '/views'` in `app.js`.
 
 const _ = require('lodash');
-const moment = require('moment');
+const dayjs = require('dayjs');
 const qs = require('qs');
 const Promise = require('bluebird');
 
@@ -382,7 +382,7 @@ module.exports = {
           // Legacy glue to create a Nunjucks custom tag extension from our
           // async/await-friendly, simplified format
           const extension = {};
-          extension.tags = [name];
+          extension.tags = [ name ];
           extension.parse = function (parser, nodes, lexer) {
             const parse = config.parse ? config.parse : function (parser, nodes, lexer) {
               // Default parser gets comma separated arguments,
@@ -442,7 +442,7 @@ module.exports = {
           if (!date) {
             return '';
           }
-          let s = moment(date).format(format);
+          let s = dayjs(date).format(format);
           return s;
         });
 
@@ -675,7 +675,7 @@ module.exports = {
 
         function error(e, type) {
           let now = Date.now();
-          now = moment(now).format('YYYY-MM-DDTHH:mm:ssZZ');
+          now = dayjs(now).format('YYYY-MM-DDTHH:mm:ssZZ');
           self.apos.util.error(':: ' + now + ': ' + type + ' error at ' + req.url);
           self.apos.util.error('Current user: ' + (req.user ? req.user.username : 'none'));
           self.apos.util.error(e);

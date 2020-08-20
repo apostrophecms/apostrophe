@@ -7,21 +7,26 @@
     @start="startDrag"
     @end="endDrag"
     :data-list-id="listId"
-    :disabled="!draggable"
+    :disabled="!options.draggable"
     handle=".apos-tree__row__handle"
   >
     <li
-      class="apos-tree__row"
-      :class="{ 'apos-tree__row--parent': row.children && row.children.length > 0 }"
-      data-apos-tree-row
       v-for="row in myRows" :key="row._id"
-      :data-row-id="row._id"
+      :data-row-id="row._id" data-apos-tree-row
+      :class="getRowClasses(row)"
+      :aria-role="options.selectable ? 'button' : null"
+      :tabindex="options.selectable ? 0 : null"
+      v-on="options.selectable ? {
+        'click': selectRow,
+        'keydown': keydownRow
+      } : {}"
     >
       <div class="apos-tree__row-data">
+        <!-- {{ options.startCollapsed }} -->
         <button
           v-if="row.children && row.children.length > 0"
-          class="apos-tree__row__toggle"
-          aria-label="Toggle section"
+          class="apos-tree__row__toggle" data-apos-tree-toggle
+          aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
         >
           <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
@@ -30,20 +35,20 @@
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
           :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
-          :href="col.name === '_url' ? row[col.name] : false"
-          :target="col.name === '_url' ? '_blank' : false"
+          :href="col.type === 'link' ? row[col.name] : false"
+          :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
           @click="col.action ? $emit(col.action, row._id) : null"
         >
           <drag-icon
-            v-if="draggable && index === 0" class="apos-tree__row__handle"
+            v-if="options.draggable && index === 0" class="apos-tree__row__handle"
             :size="20"
             :fill-color="null"
           />
           <AposCheckbox
-            v-if="selectable && index === 0"
+            v-if="options.bulkSelect && index === 0"
             class="apos-tree__row__checkbox"
             tabindex="-1"
             :field="{
@@ -78,8 +83,11 @@
         :nested="nested"
         :list-id="row._id"
         :tree-id="treeId"
-        :draggable="draggable"
-        :selectable="selectable"
+        :options="options"
+        :class="{ 'is-collapsed': options.startCollapsed }"
+        :style="{
+          'max-height': options.startCollapsed ? '0' : null
+        }"
         @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
@@ -138,13 +146,11 @@ export default {
       type: Boolean,
       required: true
     },
-    draggable: {
-      type: Boolean,
-      required: true
-    },
-    selectable: {
-      type: Boolean,
-      default: false
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     },
     listId: {
       type: String,
@@ -168,9 +174,6 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
-    },
-    isOpen() {
-      return true;
     }
   },
   mounted() {
@@ -199,17 +202,58 @@ export default {
       this.$emit('update', event);
       this.setHeights();
     },
-    toggleSection(event) {
-      const row = event.target.closest('[data-apos-tree-row]');
+    toggleSection(event, data) {
+      const row = (data && data.row) ||
+        event.target.closest('[data-apos-tree-row]');
       const rowList = row.querySelector('[data-apos-branch-height]');
+      const toggle = (data && data.toggle) ||
+        event.target.closest('[data-apos-tree-toggle]');
 
-      if (rowList && rowList.style.maxHeight === '0px') {
+      if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
-        row.classList.remove('is-collapsed');
+        toggle.setAttribute('aria-expanded', true);
+        rowList.classList.remove('is-collapsed');
       } else if (rowList) {
         rowList.style.maxHeight = 0;
-        row.classList.add('is-collapsed');
+        toggle.setAttribute('aria-expanded', false);
+        rowList.classList.add('is-collapsed');
       }
+    },
+    keydownRow(event) {
+      if (event.key === ' ') {
+        event.preventDefault();
+        this.selectRow(event);
+      }
+    },
+    selectRow(event) {
+      const buttonParent = event.target.closest('[data-apos-tree-toggle]');
+
+      if (buttonParent) {
+        // If we've clicked on the toggle, don't select the row.
+        return;
+      }
+
+      const row = event.target.closest('[data-row-id]');
+      this.$emit('change', [ row.dataset.rowId ]);
+
+      // Expand a row when the full parent row is selected.
+      const toggle = row.querySelector('[data-apos-tree-toggle]');
+      if (toggle && toggle.getAttribute('aria-expanded') !== 'true') {
+        this.toggleSection(null, {
+          row,
+          toggle
+        });
+      }
+    },
+    getRowClasses(row) {
+      return [
+        'apos-tree__row',
+        {
+          'apos-tree__row--parent': row.children && row.children.length > 0,
+          'apos-tree__row--selectable': this.options.selectable,
+          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
+        }
+      ];
     },
     getCellClasses(col, row) {
       const classes = [ 'apos-tree__cell' ];
@@ -244,16 +288,26 @@ export default {
   .apos-tree__list {
     transition: max-height 0.3s ease;
 
-    .apos-tree__row.is-collapsed & {
+    &.is-collapsed {
       overflow-y: auto;
+    }
+  }
+
+  .apos-tree__row--selectable {
+    cursor: pointer;
+  }
+  .apos-tree__row-data {
+    .apos-tree__row--selected > & {
+      background-color: var(--a-base-9);
     }
   }
 
   .apos-tree__row__toggle-icon {
     transition: transform 0.3s ease;
+    transform: rotate(-90deg) translateY(0.25em);
 
-    .apos-tree__row.is-collapsed & {
-      transform: rotate(-90deg) translateY(0.25em);
+    [aria-expanded=true] > & {
+      transform: none;
     }
   }
   .apos-tree__row__handle {

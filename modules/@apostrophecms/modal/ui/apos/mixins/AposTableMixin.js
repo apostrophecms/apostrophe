@@ -92,6 +92,10 @@ export default {
         if (h.icon) {
           icons[h.icon] = `${h.icon.toLowerCase()}-icon`;
         }
+
+        if (h.labelIcon && !icons[h.labelIcon]) {
+          icons[h.labelIcon] = `${h.labelIcon.toLowerCase()}-icon`;
+        }
       });
       this.icons = icons;
       // prep row checkbox fields

@@ -15,7 +15,7 @@
 
 const joinr = require('./lib/joinr');
 const _ = require('lodash');
-const moment = require('moment');
+const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
 
 module.exports = {
@@ -545,17 +545,17 @@ module.exports = {
           launder: function (value) {
             if (Array.isArray(value) && value.length === 2) {
               if (value[0] instanceof Date) {
-                value[0] = moment(value[0]).format('YYYY-MM-DD');
+                value[0] = dayjs(value[0]).format('YYYY-MM-DD');
               }
               if (value[1] instanceof Date) {
-                value[1] = moment(value[1]).format('YYYY-MM-DD');
+                value[1] = dayjs(value[1]).format('YYYY-MM-DD');
               }
               value[0] = self.apos.launder.date(value[0]);
               value[1] = self.apos.launder.date(value[1]);
               return value;
             } else {
               if (value instanceof Date) {
-                value = moment(value).format('YYYY-MM-DD');
+                value = dayjs(value).format('YYYY-MM-DD');
               }
               return self.apos.launder.date(value, null);
             }
