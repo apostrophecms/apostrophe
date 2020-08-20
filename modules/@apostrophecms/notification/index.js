@@ -20,10 +20,15 @@ const Promise = require('bluebird');
 const _ = require('lodash');
 
 module.exports = {
+  options: {
+    // components: {},
+    alias: 'notification'
+  },
   extend: '@apostrophecms/module',
   async init(self, options) {
     self.apos.notify = self.trigger;
     await self.ensureCollection();
+    self.enableBrowserData();
   },
   restApiRoutes: (self, options) => ({
     getOne(req, _id) {
@@ -64,7 +69,11 @@ module.exports = {
   }),
   methods(self, options) {
     return {
-
+      getBrowserData(req) {
+        return {
+          action: self.action
+        };
+      },
       // Call with `req`, then a message, followed by any interpolated strings
       // which must correspond to %s placeholders in `message` (variable number
       // of arguments), followed by an `options` object if desired.
@@ -92,6 +101,7 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options) {
+        console.log('=================> notify <=================', message);
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
