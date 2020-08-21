@@ -1,9 +1,6 @@
 
 (function() {
   var apos = window.apos;
-  setTimeout(() => {
-    enableNotification();
-  }, 500);
 
   apos.notify = async function(message, options) {
     var strings = [];
@@ -51,46 +48,4 @@
       }
     });
   };
-
-  async function enableNotification() {
-    if (apos.scene !== 'apos') {
-      return;
-    }
-    var ids = [];
-    await poll();
-
-    async function poll() {
-      try {
-        var data = await apos.http.get(apos.notification.action, {
-          body: {
-            displayingIds: ids
-          }
-        });
-
-        _.each(data.notifications, function(notification) {
-          self.display(notification);
-        });
-
-        ids = ids.concat(_.pluck(data.notifications, '_id'));
-        ids = _.uniq(ids);
-
-        _.each(data.dismissed, function(id) {
-          var $notification = $('[data-apos-notification-id="' + id + '"]');
-          self.dismiss($notification, true);
-        });
-
-        // Long polling loop continues
-        poll();
-      } catch (err) {
-        console.error(err);
-        return retryLater();
-      }
-    }
-
-    function retryLater() {
-      setTimeout(poll, 5000);
-    }
-  }
 })();
-//TODO: create container in a Vue component in "apps" (maybe replacing a div as "busy" does)
-//TODO: display notif

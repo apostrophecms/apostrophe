@@ -21,7 +21,6 @@ const _ = require('lodash');
 
 module.exports = {
   options: {
-    // components: {},
     alias: 'notification'
   },
   extend: '@apostrophecms/module',
@@ -101,7 +100,6 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options) {
-        console.log('=================> notify <=================', message);
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
