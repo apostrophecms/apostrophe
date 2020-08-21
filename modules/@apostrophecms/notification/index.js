@@ -18,6 +18,7 @@
 
 const Promise = require('bluebird');
 const _ = require('lodash');
+const url = require('url');
 
 module.exports = {
   options: {
@@ -139,8 +140,8 @@ module.exports = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message: message,
-          strings: strings
+          message,
+          strings
         };
 
         if (options.dismiss === true) {
@@ -160,11 +161,15 @@ module.exports = {
 
       async find(req, options) {
         try {
-          const notifications = await self.db.find({ userId: req.user._id }).sort({ createdAt: 1 }).toArray();
+          const notifications = await self.db.find({
+            userId: req.user._id,
+            createdAt: { $gt: new Date(options.latest) },
+            modifiedSince: { $exists: false }
+          }).sort({ createdAt: 1 }).toArray();
           return {
             notifications: _.filter(notifications, function (notification) {
               if (options.displayingIds && options.displayingIds.length > 0) {
-                return _.includes(options.displayingIds || [], notification._id);
+                return !_.includes(options.displayingIds || [], notification._id);
               }
               return notification;
             }),
@@ -183,6 +188,14 @@ module.exports = {
             throw err;
           }
         }
+      },
+
+      async update(req, notifications) {
+        const ids = notifications.map(notification => notification._id);
+        await self.db.updateMany(
+          { userId: req.user._id, _id: { $in: ids } },
+          { $currentDate: { modifiedSince: { $type: 'timestamp' } } }
+        );
       },
 
       async ensureCollection() {
@@ -226,20 +239,22 @@ module.exports = {
         before: '@apostrophecms/global',
         middleware: async (req, res, next) => {
           let start;
-          let displayingIds;
+          let latest;
           try {
-            if (req.method.toUpperCase() !== 'GET' || req.url !== self.action) {
+            const pathname = url.parse(req.url).pathname; //TODO: replace by new URL
+            if (req.method.toUpperCase() !== 'GET' || pathname !== self.action) {
               return next();
             }
             if (!(req.user && req.user._id)) {
               throw self.apos.error('invalid');
             }
             start = Date.now();
-            displayingIds = self.apos.launder.ids(req.body.displayingIds);
+            latest = self.apos.launder.date(req.query.latest);
             await attempt();
           } catch (e) {
-            return self.apiRouteSendError(res, e);
+            return self.apos.error(res, e);
           }
+
           async function attempt() {
             if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
               return {
@@ -247,13 +262,16 @@ module.exports = {
                 dismissed: []
               };
             }
-            const result = await self.find(req, { displayingIds: displayingIds });
+            const result = await self.find(req, { latest });
             const notifications = result.notifications;
             const dismissed = result.dismissed;
+            await self.update(req, notifications);
+
             if (!notifications.length && !dismissed.length) {
               await Promise.delay(self.options.queryInterval || 1000);
               return attempt();
             }
+
             return res.send({
               notifications: notifications,
               dismissed: dismissed

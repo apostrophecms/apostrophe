@@ -1,4 +1,5 @@
 import Vue from 'apostrophe/vue';
+import { forEach } from 'lodash';
 
 export default function() {
   /* eslint-disable no-new */
@@ -7,7 +8,7 @@ export default function() {
     data () {
       return {
         notifications: [],
-        ids: []
+        latest: null
       };
     },
     computed: {
@@ -20,17 +21,23 @@ export default function() {
         return;
       }
 
+      this.notifications = await poll(this.latest);
+      this.latest = this.notifications
+        .map(notification => notification.createdAt)
+        .sort()
+        .reverse()[0];
       setInterval(async() => {
-        this.notifications = await poll(this.ids);
-        this.ids = new Set(this.notifications.map(elem => elem._id));
+        this.notifications = await poll(this.latest);
+        this.latest = this.notifications
+          .map(notification => notification.createdAt)
+          .sort()
+          .reverse()[0];
       }, 10000);
 
-      async function poll(ids) {
+      async function poll(latest) {
         try {
           const data = await apos.http.get(apos.notification.action, {
-            body: {
-              displayingIds: ids
-            }
+            qs: { latest }
           });
 
           return data.notifications || [];
