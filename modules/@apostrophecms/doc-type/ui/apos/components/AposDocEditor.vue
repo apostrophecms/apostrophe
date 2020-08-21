@@ -193,6 +193,8 @@ export default {
           body: this.doc.data
         });
         this.$emit('saved');
+
+        this.modal.showModal = false;
       } finally {
         apos.bus.$emit('busy', false);
       }

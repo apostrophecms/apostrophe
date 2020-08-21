@@ -207,8 +207,6 @@ export default {
   methods: {
     async finishSaved() {
       await this.getPieces();
-
-      this.editing = false;
     },
     async getPieces () {
       this.pieces = (await apos.http.get(
