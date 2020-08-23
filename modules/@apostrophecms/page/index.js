@@ -398,8 +398,8 @@ database.`);
   },
   methods(self, options) {
     return {
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, projection);
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
       },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route
@@ -446,8 +446,11 @@ database.`);
       },
       // Returns a cursor that finds pages the current user can edit
       // in a batch operation, including unpublished and trashed pages.
-      findForBatch(req, criteria, projection) {
-        let cursor = self.find(req, criteria, projection).permission('edit').published(null).trash(null);
+      // `req` determines what the user is eligible to edit, `criteria`
+      // is the MongoDB criteria object, and any properties of `options`
+      // are invoked as methods on the query with their values.
+      findForBatch(req, criteria = {}, options = {}) {
+        let cursor = self.find(req, criteria, options).permission('edit').published(null).trash(null);
         return cursor;
       },
       // Insert a page. `targetId` must be an existing page id, and
