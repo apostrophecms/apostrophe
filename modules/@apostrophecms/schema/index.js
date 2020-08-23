@@ -688,75 +688,103 @@ module.exports = {
 
     self.addFieldType({
       name: 'join',
+      // Validate a join field, copying from `data[field.name]` to
+      // `object[field.name]`. If the join is named `_product`, then
+      // `data._product` should be an array of product docs to be joined
+      // with. These doc objects must at least have an _id property.
+      //
+      // Alternatively, entries in `data._product` may simply be
+      // `_id` strings or `title` strings. Titles are compared in a
+      // tolerant manner. This is useful for CSV input. Strings may
+      // be mixed with actual joined docs in a single array.
+      //
+      // If the join field has a `relationship` option, then each
+      // doc object may also have a `_relationship` property which
+      // will be validated against the schema in `relationship`.
+      //
+      // The result in `object[field.name]` will always be an array
+      // of zero or more joined docs, containing only those that
+      // actually exist in the database and can be fetched by this user,
+      // in the same order specified in `data[field.name]`.
+
       convert: async function (req, field, data, object) {
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('join with type ' + field.withType + ' unrecognized');
         }
-
-        if (_.has(data, field.name)) {
-          if (field.min && field.min > data[field.name].length) {
-            throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
-          }
-          if (field.max && field.max < data[field.name].length) {
-            throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
-          }
-          let titlesOrIds = [];
-
-          if (Array.isArray(data[field.name])) {
-            for (const datum of data[field.name]) {
-              const id = self.apos.launder.string(datum);
-              if (id) {
-                titlesOrIds.push(id);
-              }
-            }
+        let input = data[field.name];
+        if (input == null) {
+          input = [];
+        }
+        if ((typeof input) === 'string') {
+          // Handy in CSV: allows titles or _ids
+          input = input.split('\s*,\s*');
+        }
+        if (field.min && field.min > input.length) {
+          throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
+        }
+        if (field.max && field.max < input.length) {
+          throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
+        }
+        let ids = [];
+        let titlesOrIds = [];
+        for (const item of input) {
+          if ((typeof item) === 'string') {
+            titlesOrIds.push(item);
           } else {
-            titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
-          }
-
-          if (titlesOrIds[0] === undefined) {
-            return;
-          }
-
-          let clauses = [];
-          _.each(titlesOrIds, function (titleOrId) {
-            clauses.push({ titleSortified: self.apos.util.sortify(titleOrId) });
-            clauses.push({ _id: titleOrId });
-          });
-          const results = await manager.find(req, { $or: clauses }, { _id: 1 }).joins(false).published(null).toArray();
-          object[field.idsField] = _.map(results, '_id');
-        } else {
-          object[field.idsField] = self.apos.launder.ids(data[field.idsField]);
-          if (!field.relationshipsField) {
-            return;
-          }
-          object[field.relationshipsField] = {};
-          if (field.removedIdsField) {
-            object[field.removedIdsField] = self.apos.launder.ids(data[field.removedIdsField]);
-          }
-          let allIds = object[field.idsField];
-          // We record relationships with things just removed to provide support
-          // for properties of the removal action itself. (This might not be
-          // essential now that we no longer implement a super-granular version
-          // of "apply to subpages." That feature was a UX nightmare.)
-          if (field.removedIdsField) {
-            allIds = allIds.concat(object[field.removedIdsField] || []);
-          }
-          for (let id of allIds) {
-            let e = data[field.relationshipsField] && data[field.relationshipsField][id];
-            if (!e) {
-              e = {};
+            if (item && ((typeof item._id) === 'string')) {
+              ids.push(item._id);
             }
-            // Validate the relationship (aw)
-            const validatedRelationship = {};
-            object[field.relationshipsField][id] = validatedRelationship;
-            await self.convert(req, field.relationship, e, validatedRelationship);
           }
         }
+        let clauses = [];
+        if (titlesOrIds.length) {
+          clauses.push({
+            titleSortified: {
+              $in: titlesOrIds.map(titleOrId => self.apos.util.sortify(titleOrId))
+            }
+          });
+        }
+        if (ids.length) {
+          clauses.push({
+            _id: {
+              $in: ids
+            }
+          });
+        }
+        if (!clauses.length) {
+          object[field.name] = [];
+          return;
+        }
+        const results = await manager.find(req, { $or: clauses }).joins(false).published(null).toArray();
+        // Must maintain input order. Also discard things not actually found in the db
+        let actualDocs = [];
+        for (const item of input) {
+          if ((typeof item) === 'string') {
+            const result = results.find(result => (result.title === item) || (result._id === item));
+            if (result) {
+              actualDocs.push(result);
+            }
+          } else if ((item && ((typeof item._id) === 'string'))) {
+            const result = results.find(doc => (doc._id === item._id));
+            if (result) {
+              if (field.relationship) {
+                result._relationship = {};
+                if (item && ((typeof item._relationship === 'object'))) {
+                  await self.convert(req, field.relationship, item._relationship || {}, result._relationship);
+                }
+              }
+              actualDocs.push(result);
+            }
+          }
+        }
+        object[field.name] = actualDocs;
       },
+
       join: async function (req, field, objects, options) {
         return self.joinDriver(req, joinr.byArray, false, objects, field.idsField, field.relationshipsField, field.name, options);
       },
+
       addQueryBuilder(field, query) {
 
         addOperationQueryBuilder('', '$in');
@@ -1733,6 +1761,70 @@ module.exports = {
             _objects = _objects.concat(object[array] || []);
           });
           return findObjectsInArrays(_objects, arrays.slice(1));
+        }
+      },
+
+      // In the given document, for any joins that are present in
+      // the data (such as `_products`), update the underlying
+      // idsField and relationshipsField (if appropriate) so that
+      // storage to the database can take place. This method is
+      // always invoked for you by @apostrophecms/doc-type in a
+      // beforeSave handler. This method also recursively invokes
+      // itself as needed for joins nested in widgets,
+      // array fields and object fields.
+      //
+      // If the join field is present by name (such as `_products`)
+      // in the document, that is taken as authoritative, and any
+      // existing values in the `idsField` and `relationshipsField`
+      // are overwritten. If the join field is not present, the
+      // existing values are left alone. This allows the developer
+      // to safely update a document that was fetched with
+      // `.joins(false)`, provided a projection was not also used.
+
+      joinsToStorage(doc) {
+        if (doc.metaType === 'doc') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          joinsToStorageForSchema(manager.schema, doc);
+        } else if (doc.metaType === 'widget') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          joinsToStorageForSchema(manager.schema, doc);
+        }
+        function joinsToStorageForSchema(schema, doc) {
+          for (const field of schema) {
+            if (field.type === 'area') {
+              if (doc[field.name] && doc[field.name].items) {
+                for (const widget of doc[field.name].items) {
+                  self.joinsToStorage(widget);
+                }
+              }
+            } else if (field.type === 'array') {
+              if (doc[field.name] && doc[field.name].items) {
+                doc[field.name].items.map(item => joinsToStorageForSchema(field.schema, item));
+              }
+            } else if (field.type === 'object') {
+              if (doc[field.name]) {
+                joinsToStorageForSchema(field.schema, doc[field.name]);
+              }
+            } else if (field.type === 'join') {
+              if (Array.isArray(doc[field.name])) {
+                doc[field.idsField] = doc[field.name].map(joinedDoc => joinedDoc._id);
+                if (field.relationshipsField) {
+                  doc[field.relationshipsField] = {};
+                  for (const joinedDoc of doc[field.name]) {
+                    if (joinedDoc._relationship) {
+                      doc[field.relationshipsField] = joinedDoc._relationship;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       },
 

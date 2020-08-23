@@ -560,9 +560,9 @@ describe('Pieces', function() {
       },
       jar
     });
-    const articleId = response._id;
-    assert(articleId);
-
+    const article = response;
+    assert(article);
+    assert(article.title === 'First Article');
     response = await apos.http.post('/api/v1/products', {
       body: {
         title: 'Product Key Product With Join',
@@ -577,12 +577,12 @@ describe('Pieces', function() {
             }
           ]
         },
-        articlesIds: [articleId]
+        _articles: [ article ]
       },
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
     joinedProductId = response._id;
   });
 
@@ -654,8 +654,9 @@ describe('Pieces', function() {
         name: 'join-article'
       }
     });
-    const articleId = response._id;
-    assert(articleId);
+    const article = response;
+    assert(article);
+    assert(article.title === 'Join Article');
 
     response = await apos.http.post('/api/v1/products', {
       jar,
@@ -679,13 +680,15 @@ describe('Pieces', function() {
     assert(product._id);
     response = await apos.http.patch(`/api/v1/products/${product._id}`, {
       body: {
-        articlesIds: [ articleId ]
+        _articles: [ article ]
       },
       jar
     });
     assert(response.title === 'Initially No Join Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
+    assert(response._articles);
+    assert(response._articles[0]._id === article._id);
   });
 
   it('can log out to destroy a session', async () => {
