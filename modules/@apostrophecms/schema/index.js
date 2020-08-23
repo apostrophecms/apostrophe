@@ -718,7 +718,7 @@ module.exports = {
         }
         if ((typeof input) === 'string') {
           // Handy in CSV: allows titles or _ids
-          input = input.split('\s*,\s*');
+          input = input.split(/\s*,\s*/);
         }
         if (field.min && field.min > input.length) {
           throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
@@ -1501,7 +1501,7 @@ module.exports = {
       //
       // All arguments must be present, however relationshipsField
       // may be undefined to indicate none is needed.
-      joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
+      async joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
         if (!options) {
           options = {};
         }
@@ -1516,7 +1516,7 @@ module.exports = {
             return realMethod(items, idField, objectField, getter);
           };
         }
-        return method(items, idField, relationshipsField, objectField, function (ids) {
+        await method(items, idField, relationshipsField, objectField, function (ids) {
           const idsCriteria = {};
           if (reverse) {
             idsCriteria[idField] = { $in: ids };
@@ -1780,47 +1780,50 @@ module.exports = {
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
       // `.joins(false)`, provided a projection was not also used.
+      //
+      // Currently `req` does not impact this, but that may change.
 
-      joinsToStorage(doc) {
+      prepareJoinsForStorage(req, doc) {
         if (doc.metaType === 'doc') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
             return;
           }
-          joinsToStorageForSchema(manager.schema, doc);
+          forSchema(manager.schema, doc);
         } else if (doc.metaType === 'widget') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
             return;
           }
-          joinsToStorageForSchema(manager.schema, doc);
+          forSchema(manager.schema, doc);
         }
-        function joinsToStorageForSchema(schema, doc) {
+        function forSchema(schema, doc) {
           for (const field of schema) {
             if (field.type === 'area') {
               if (doc[field.name] && doc[field.name].items) {
                 for (const widget of doc[field.name].items) {
-                  self.joinsToStorage(widget);
+                  self.prepareJoinsForStorage(req, widget);
                 }
               }
             } else if (field.type === 'array') {
               if (doc[field.name] && doc[field.name].items) {
-                doc[field.name].items.map(item => joinsToStorageForSchema(field.schema, item));
+                doc[field.name].items.map(item => forSchema(field.schema, item));
               }
             } else if (field.type === 'object') {
               if (doc[field.name]) {
-                joinsToStorageForSchema(field.schema, doc[field.name]);
+                forSchema(field.schema, doc[field.name]);
               }
             } else if (field.type === 'join') {
               if (Array.isArray(doc[field.name])) {
                 doc[field.idsField] = doc[field.name].map(joinedDoc => joinedDoc._id);
                 if (field.relationshipsField) {
-                  doc[field.relationshipsField] = {};
+                  const relationships = doc[field.relationshipsField] || {};
                   for (const joinedDoc of doc[field.name]) {
                     if (joinedDoc._relationship) {
-                      doc[field.relationshipsField] = joinedDoc._relationship;
+                      relationships[joinedDoc._id] = joinedDoc._relationship;
                     }
                   }
+                  doc[field.relationshipsField] = relationships;
                 }
               }
             }

@@ -186,7 +186,7 @@ const joinr = module.exports = {
             if (relationshipsField) {
               const relationships = joinr._get(item, relationshipsField) || {};
               item[objectsField].push({
-                ...item,
+                ...othersById[id],
                 _relationship: relationships[id] || {}
               });
             } else {

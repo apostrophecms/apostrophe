@@ -255,8 +255,8 @@ module.exports = {
   handlers(self, options) {
     return {
       beforeSave: {
-        async joinsToStorage(req, doc) {
-          self.apos.schema.joinsToStorage(doc);
+        async prepareJoinsForStorage(req, doc) {
+          self.apos.schema.prepareJoinsForStorage(req, doc);
         }
       },
       afterSave: {
