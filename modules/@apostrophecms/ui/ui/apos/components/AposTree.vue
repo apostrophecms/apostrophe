@@ -29,6 +29,7 @@
 
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
+import klona from 'klona';
 
 export default {
   name: 'AposTree',
@@ -77,7 +78,7 @@ export default {
   data() {
     return {
       // Copy the `rows` property to mutate with VueDraggable.
-      myRows: [],
+      myRows: klona(this.rows),
       nested: false,
       colWidths: null,
       treeId: this.generateId()
