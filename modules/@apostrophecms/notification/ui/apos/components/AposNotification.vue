@@ -42,6 +42,10 @@ export default {
   name: 'AposNotification',
   components: { Close },
   props: {
+    id: {
+      type: String,
+      default: null
+    },
     type: {
       type: String,
       default: null
@@ -57,9 +61,24 @@ export default {
     progress: {
       type: Object,
       default: null
+    },
+    dismiss: {
+      type: Number,
+      default: 0
+    },
+    pulse: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'close' ],
+  async mounted() {
+    if (this.dismiss) {
+      setTimeout(() => {
+        this.$emit('close', this.id);
+      }, 1000 * this.dismiss);
+    }
+  },
   computed: {
     classList() {
       const classes = [ 'apos-notification' ];
@@ -86,7 +105,7 @@ export default {
   },
   methods: {
     close () {
-      this.$emit('close', this);
+      this.$emit('close', this.id);
     }
   }
 };

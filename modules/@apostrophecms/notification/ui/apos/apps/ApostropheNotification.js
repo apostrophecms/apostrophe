@@ -1,5 +1,4 @@
 import Vue from 'apostrophe/vue';
-import { forEach } from 'lodash';
 
 export default function() {
   /* eslint-disable no-new */
@@ -7,8 +6,7 @@ export default function() {
     el: '#apos-notification',
     data () {
       return {
-        notifications: [],
-        latest: null
+        notifications: []
       };
     },
     computed: {
@@ -21,25 +19,19 @@ export default function() {
         return;
       }
 
-      this.notifications = await poll(this.latest);
-      this.latest = this.notifications
-        .map(notification => notification.createdAt)
-        .sort()
-        .reverse()[0];
+      this.notifications = await this.poll();
       setInterval(async() => {
-        this.notifications = await poll(this.latest);
-        this.latest = this.notifications
-          .map(notification => notification.createdAt)
-          .sort()
-          .reverse()[0];
+        this.notifications = await this.poll();
       }, 10000);
-
-      async function poll(latest) {
+    },
+    methods: {
+      async dismiss(notificationId) {
+        await apos.http.delete(`${apos.notification.action}/${notificationId}`, {});
+        this.notifications = await this.poll();
+      },
+      async poll() {
         try {
-          const data = await apos.http.get(apos.notification.action, {
-            qs: { latest }
-          });
-
+          const data = await apos.http.get(apos.notification.action, {});
           return data.notifications || [];
         } catch (err) {
           console.error(err);
@@ -54,6 +46,10 @@ export default function() {
           :key="notification._id"
           :label="notification.message"
           :type="notification.type"
+          :id="notification._id"
+          :dismiss="notification.dismiss"
+          :pulse="notification.pulse"
+          @close="dismiss"
           />
       </div>`
   });
