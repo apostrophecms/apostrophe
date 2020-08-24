@@ -124,7 +124,9 @@ export default {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
-        this.next.data[field.name] = this.fieldState[field.name].data;
+
+        this.next.data[field.name] = this.fieldState[field.name].data ||
+          this.value.data[field.name];
       });
       this.$emit('input', this.next);
     }
