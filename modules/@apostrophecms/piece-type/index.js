@@ -72,6 +72,7 @@ module.exports = {
 
     options.addFilters = [
       {
+        label: 'Published',
         name: 'published',
         choices: [
           {
@@ -92,6 +93,7 @@ module.exports = {
         style: 'pill'
       },
       {
+        label: 'Trash',
         name: 'trash',
         choices: [
           {

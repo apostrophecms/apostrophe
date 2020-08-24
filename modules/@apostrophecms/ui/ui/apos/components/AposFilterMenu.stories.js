@@ -29,11 +29,12 @@ function getData() {
     button: {
       label: 'Filter',
       icon: 'chevron-down-icon',
-      modifiers: ['icon-right'],
+      modifiers: [ 'icon-right' ],
       type: 'outline'
     },
     filters: [
       {
+        label: 'Published',
         'name': 'published',
         'choices': [
           {
@@ -50,6 +51,7 @@ function getData() {
         'def': true,
         'style': 'pill'
       }, {
+        label: 'Trash',
         'name': 'trash',
         'choices': [
           {
