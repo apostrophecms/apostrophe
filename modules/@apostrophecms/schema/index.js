@@ -381,6 +381,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'integer',
+      frontComponent: 'string',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
@@ -427,6 +428,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'float',
+      frontComponent: 'string',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
@@ -520,6 +522,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'date',
+      frontComponent: 'string',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.date(data[field.name], field.def);
       },
@@ -569,6 +572,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'time',
+      frontComponent: 'string',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.time(data[field.name], field.def);
       }
@@ -2198,7 +2202,8 @@ module.exports = {
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {
-          fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(name);
+          const type = self.fieldTypes[name].frontComponent || name;
+          fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(type);
         }
 
         browserOptions.components = { fields: fields };
