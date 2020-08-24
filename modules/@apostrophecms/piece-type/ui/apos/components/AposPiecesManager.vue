@@ -208,14 +208,24 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
-    async getPieces () {
+    async getPieces (params = {}) {
+      const qs = {
+        ...this.filterValues,
+        page: this.currentPage,
+        ...params
+      };
+
+      // Avoid undefined properties.
+      for (const prop in qs) {
+        if (qs[prop] === undefined) {
+          delete qs[prop];
+        };
+      }
+
       this.pieces = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs: {
-            ...this.filterValues,
-            page: this.currentPage
-          }
+          qs
         }
       )).results;
     },
@@ -232,9 +242,8 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    search(query) {
-      // TODO: Update the `qs` object with search term in the `getPieces` call.
-      this.$emit('search', query);
+    async search(query) {
+      await this.getPieces({ search: query });
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
