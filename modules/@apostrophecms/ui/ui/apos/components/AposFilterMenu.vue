@@ -66,7 +66,7 @@ export default {
           field: {
             name: filter.name,
             type: 'radio',
-            label: filter.label,
+            label: filter.label || filter.name,
             choices: filter.choices
           },
           value: {
