@@ -443,7 +443,10 @@ module.exports = {
       },
       // Returns a query that will only yield docs of the appropriate type
       // as determined by the `name` option of the module.
-      find(req, criteria, projection) {
+      // `criteria` is the MongoDB criteria object, and any properties of
+      // `options` are invoked as query builder methods on the query with
+      // their values.
+      find(req, criteria, options) {
         const query = {
           state: {},
           methods: {},
@@ -476,7 +479,7 @@ module.exports = {
         query.handleFindArguments({
           req,
           criteria,
-          projection
+          options
         });
         query.type(self.options.name);
         return query;
@@ -618,7 +621,7 @@ module.exports = {
       //
       // We don't launder the input here, see the 'autocomplete' route.
       async autocomplete(req, query) {
-        const _query = query.find(req, {}, {}).sort('search');
+        const _query = query.find(req, {}).sort('search');
         if (query.extendAutocompleteQuery) {
           query.extendAutocompleteQuery(_query);
         }
@@ -1855,7 +1858,7 @@ module.exports = {
         // Invoked by find() to handle its arguments
 
         handleFindArguments({
-          req, criteria, projection
+          req, criteria, options
         }) {
           if (!req || !req.res) {
             throw new Error('I think you forgot to pass req as the first argument to find()!');
@@ -1866,8 +1869,8 @@ module.exports = {
           if (criteria) {
             query.set('criteria', criteria);
           }
-          if (projection) {
-            query.set('project', projection);
+          if (options) {
+            query.applyBuilders(options);
           }
         },
 

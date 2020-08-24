@@ -151,10 +151,10 @@ module.exports = {
       },
 
       suggest(req, q) {
-        return self.apos.doc.find(req, {}, {
+        return self.apos.doc.find(req).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).project({
           _url: 1,
           title: 1
-        }).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).toArray();
+        }).toArray();
       },
 
       // This method implements the search results page. It populates `req.data.docs`
