@@ -40,7 +40,7 @@ module.exports = {
       },
       {
         name: 'updatedAt',
-        label: 'Last Updated',
+        label: 'Edited on',
         partial: function (value) {
           if (!value) {
             // Don't crash if updatedAt is missing, for instance due to a dodgy import process
@@ -72,6 +72,7 @@ module.exports = {
 
     options.addFilters = [
       {
+        label: 'Published',
         name: 'published',
         choices: [
           {
@@ -92,6 +93,7 @@ module.exports = {
         style: 'pill'
       },
       {
+        label: 'Trash',
         name: 'trash',
         choices: [
           {

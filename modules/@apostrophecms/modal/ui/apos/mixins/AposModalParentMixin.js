@@ -11,6 +11,12 @@ be destroyed however necessary.
 export default {
   methods: {
     cancel() {
+      if (this.editing) {
+        // If the modal is a manager with an open editor, close the editor and
+        // keep the manager open.
+        this.editing = false;
+        return;
+      }
       this.modal.showModal = false;
     }
   }

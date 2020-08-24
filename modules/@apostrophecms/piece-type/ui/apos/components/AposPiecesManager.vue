@@ -11,7 +11,7 @@
       />
       <AposButton
         :label="`New ${ options.label }`" type="primary"
-        @click="inserting = true"
+        @click="editing = true"
       />
     </template>
     <template #main>
@@ -40,10 +40,10 @@
                     class="apos-table__header-label"
                   >
                     <component
-                      v-if="header.icon"
+                      v-if="header.labelIcon"
+                      :is="icons[header.labelIcon]"
                       :size="iconSize(header)"
                       class="apos-table__header-icon"
-                      :is="icons[header.icon]"
                     />
                     {{ header.label }}
                   </component>
@@ -76,6 +76,14 @@
                   >
                     <LinkIcon :size="12" />
                   </a>
+                  <button
+                    v-else-if="header.name === 'title'"
+                    @click="openEditor(row._id)"
+                    class="apos-table__cell-field"
+                    :class="`apos-table__cell-field--${header.name}`"
+                  >
+                    {{ row[header.name] }}
+                  </button>
                   <p
                     v-else class="apos-table__cell-field"
                     :class="`apos-table__cell-field--${header.name}`"
@@ -93,9 +101,10 @@
       </AposModalBody>
       <!-- The pieces editor modal. -->
       <component
-        v-if="inserting" :module-name="moduleName"
-        :is="options.components.insertModal" @close="inserting = false"
-        @saved="finishSaved"
+        v-if="editing"
+        :is="options.components.insertModal"
+        :module-name="moduleName" :doc-id="editingDocId"
+        @saved="finishSaved" @safe-close="closeEditor"
       />
     </template>
   </AposModal>
@@ -127,7 +136,8 @@ export default {
       totalPages: 1, // TODO: Populate this from the `getPieces` method.
       currentPage: 1, // TODO: Make use of these.
       filterValues: {},
-      inserting: false
+      editing: false,
+      editingDocId: ''
     };
   },
   computed: {
@@ -143,7 +153,6 @@ export default {
     moduleTitle () {
       return `Manage ${this.moduleLabels.plural}`;
     },
-    // headers:
     rows() {
       const rows = [];
       if (!this.pieces || !this.headers.length) {
@@ -199,7 +208,7 @@ export default {
     async finishSaved() {
       await this.getPieces();
 
-      this.inserting = false;
+      this.editing = false;
     },
     async getPieces () {
       this.pieces = (await apos.http.get(
@@ -211,6 +220,14 @@ export default {
           }
         }
       )).results;
+    },
+    openEditor(docId) {
+      this.editingDocId = docId;
+      this.editing = true;
+    },
+    closeEditor() {
+      this.editing = false;
+      this.editingDocId = '';
     },
     // Toolbar handlers
     trashClick() {

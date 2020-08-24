@@ -179,8 +179,11 @@ module.exports = {
       getAdminPermissionName() {
         return 'admin-@apostrophecms/page';
       },
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, projection).type(self.name);
+      // `req` determines what the user is eligible to edit, `criteria`
+      // is the MongoDB criteria object, and any properties of `options`
+      // are invoked as methods on the query with their values.
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options).type(self.name);
       }
     };
   },

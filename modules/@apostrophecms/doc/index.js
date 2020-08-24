@@ -221,28 +221,30 @@ module.exports = {
         const params = self.getPathLevelIndexParams();
         return self.db.createIndex(params, {});
       },
+
       // Returns a query based on the permissions
-      // associated with the given request. The criteria
-      // and projection arguments are optional, you
-      // can also call the chainable .criteria() and
-      // .project() methods.
+      // associated with the given request. You can then
+      // invoke chainable query builders like `.project()`,
+      // `limit()`, etc. to alter the query before ending
+      // the chain with an awaitable method like `toArray()`
+      // to obtain documents.
       //
-      // If you do not provide criteria or call .criteria()
-      // you get every document in Apostrophe, which is
-      // too many.
-      //
-      // If you do not provide `projection` or call
-      // `.project()` you get all properties of
-      // the docs, which is fine.
+      // `req` determines what documents the user is allowed
+      // to see. `criteria` is a MongoDB criteria object,
+      // see the MongoDB documentation for basics on this.
+      // If an `options` object is present, query builder
+      // methods with the same name as each property are
+      // invoked, with the value of that property. This is
+      // an alternative to chaining methods.
       //
       // This method returns a query, not docs! You
       // need to chain it with toArray() or other
-      // query methods:
+      // query methods and await the result:
       //
       // await apos.doc.find(req, { type: 'foobar' }).toArray()
 
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, projection);
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, options);
       },
 
       // **Most often you will insert or update docs via the

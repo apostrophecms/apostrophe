@@ -27,7 +27,7 @@ export const versionHistory = () => {
         <button type="button" class="apos-button" @click="toggleActive">
           Activate modal
         </button>
-        <AposDocHistory
+        <AposDocVersions
           v-if="active" @safe-close="finishExit" :doc="doc"
         />
       </div>
