@@ -56,7 +56,7 @@ describe('Pieces', function() {
             }
           }
         },
-        'products': {
+        'product': {
           extend: '@apostrophecms/piece-type',
           options: {
             publicApiProjection: {
@@ -106,18 +106,25 @@ describe('Pieces', function() {
                 withType: 'article',
                 filters: {
                   projection: {
-                    title: 1,
-                    slug: 1
+                    _url: 1,
+                    title: 1
                   }
-                }
+                },
+                relationship: [
+                  {
+                    // Explains the relevance of the article to the
+                    // product in 1 sentence
+                    name: 'relevance',
+                    type: 'string'
+                  }
+                ]
               }
             }
           }
         },
-        articles: {
+        article: {
           extend: '@apostrophecms/piece-type',
           options: {
-            name: 'article',
             publicApiProjection: {
               title: 1,
               _url: 1
@@ -397,7 +404,7 @@ describe('Pieces', function() {
 
   it('cannot POST a product without a session', async () => {
     try {
-      await apos.http.post('/api/v1/products', {
+      await apos.http.post('/api/v1/product', {
         body: {
           title: 'Fake Product',
           body: {
@@ -425,7 +432,7 @@ describe('Pieces', function() {
   it('can POST products with a session, some published', async () => {
     // range is exclusive at the top end, I want 10 things
     for (let i = 1; (i <= 10); i++) {
-      const response = await apos.http.post('/api/v1/products', {
+      const response = await apos.http.post('/api/v1/product', {
         body: {
           title: 'Cool Product #' + i,
           published: !!(i & 1),
@@ -448,7 +455,7 @@ describe('Pieces', function() {
       assert(response.body);
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
-      assert(response.type === 'products');
+      assert(response.type === 'product');
       if (i === 1) {
         updateProduct = response;
       }
@@ -456,14 +463,14 @@ describe('Pieces', function() {
   });
 
   it('can GET five of those products without the user session', async () => {
-    const response = await apos.http.get('/api/v1/products');
+    const response = await apos.http.get('/api/v1/product');
     assert(response);
     assert(response.results);
     assert(response.results.length === 5);
   });
 
   it('can GET five of those products with a user session and no query parameters', async () => {
-    const response = await apos.http.get('/api/v1/products', {
+    const response = await apos.http.get('/api/v1/product', {
       jar
     });
     assert(response);
@@ -472,7 +479,7 @@ describe('Pieces', function() {
   });
 
   it('can GET all ten of those products with a user session and published=any', async () => {
-    const response = await apos.http.get('/api/v1/products?published=any', {
+    const response = await apos.http.get('/api/v1/product?published=any', {
       jar
     });
     assert(response);
@@ -483,7 +490,7 @@ describe('Pieces', function() {
   let firstId;
 
   it('can GET only 5 if perPage is 5', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5&published=any', {
       jar
     });
     assert(response);
@@ -494,7 +501,7 @@ describe('Pieces', function() {
   });
 
   it('can GET a different 5 on page 2', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&page=2&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5&page=2&published=any', {
       jar
     });
     assert(response);
@@ -513,7 +520,7 @@ describe('Pieces', function() {
       },
       jar
     };
-    const response = await apos.http.put(`/api/v1/products/${updateProduct._id}`, args);
+    const response = await apos.http.put(`/api/v1/product/${updateProduct._id}`, args);
     assert(response);
     assert(response._id === updateProduct._id);
     assert(response.title === 'I like cheese');
@@ -521,7 +528,7 @@ describe('Pieces', function() {
   });
 
   it('fetch of updated product shows updated content', async () => {
-    const response = await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+    const response = await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
       jar
     });
     assert(response);
@@ -531,7 +538,7 @@ describe('Pieces', function() {
   });
 
   it('can trash a product', async () => {
-    return apos.http.patch(`/api/v1/products/${updateProduct._id}`, {
+    return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
       body: {
         trash: true
       },
@@ -541,7 +548,7 @@ describe('Pieces', function() {
 
   it('cannot fetch a trashed product', async () => {
     try {
-      await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+      await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
         jar
       });
       // Should have been a 404, 200 = test fails
@@ -552,7 +559,7 @@ describe('Pieces', function() {
   });
 
   it('can fetch trashed product with trash=any and the right user', async () => {
-    const product = await apos.http.get(`/api/v1/products/${updateProduct._id}?trash=any`, {
+    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?trash=any`, {
       jar
     });
     // Should have been a 404, 200 = test fails
@@ -562,17 +569,20 @@ describe('Pieces', function() {
   let joinedProductId;
 
   it('can insert a product with joins', async () => {
-    let response = await apos.http.post('/api/v1/articles', {
+    let response = await apos.http.post('/api/v1/article', {
       body: {
         title: 'First Article',
         name: 'first-article'
       },
       jar
     });
-    const articleId = response._id;
-    assert(articleId);
-
-    response = await apos.http.post('/api/v1/products', {
+    const article = response;
+    assert(article);
+    assert(article.title === 'First Article');
+    article._relationship = {
+      relevance: 'The very first article that was ever published about this product'
+    };
+    response = await apos.http.post('/api/v1/product', {
       body: {
         title: 'Product Key Product With Join',
         body: {
@@ -586,17 +596,18 @@ describe('Pieces', function() {
             }
           ]
         },
-        articlesIds: [articleId]
+        _articles: [ article ]
       },
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
+    assert(response.articlesRelationships[article._id].relevance === 'The very first article that was ever published about this product');
     joinedProductId = response._id;
   });
 
   it('can GET a product with joins', async () => {
-    const response = await apos.http.get('/api/v1/products');
+    const response = await apos.http.get('/api/v1/product');
     assert(response);
     assert(response.results);
     const product = _.find(response.results, { slug: 'product-key-product-with-join' });
@@ -605,14 +616,14 @@ describe('Pieces', function() {
   });
 
   it('can GET a single product with joins', async () => {
-    const response = await apos.http.get(`/api/v1/products/${joinedProductId}`);
+    const response = await apos.http.get(`/api/v1/product/${joinedProductId}`);
     assert(response);
     assert(response._articles);
     assert(response._articles.length === 1);
   });
 
   it('can GET results plus filter choices', async () => {
-    const response = await apos.http.get('/api/v1/products?choices=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?choices=title,published,_articles,articles', {
       jar
     });
     assert(response);
@@ -633,7 +644,7 @@ describe('Pieces', function() {
   });
 
   it('can GET results plus filter counts', async () => {
-    const response = await apos.http.get('/api/v1/products?_edit=1&counts=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,published,_articles,articles', {
       jar
     });
     assert(response);
@@ -656,17 +667,18 @@ describe('Pieces', function() {
   });
 
   it('can patch a join', async () => {
-    let response = await apos.http.post('/api/v1/articles', {
+    let response = await apos.http.post('/api/v1/article', {
       jar,
       body: {
         title: 'Join Article',
         name: 'join-article'
       }
     });
-    const articleId = response._id;
-    assert(articleId);
+    const article = response;
+    assert(article);
+    assert(article.title === 'Join Article');
 
-    response = await apos.http.post('/api/v1/products', {
+    response = await apos.http.post('/api/v1/product', {
       jar,
       body: {
         title: 'Initially No Join Value',
@@ -686,15 +698,17 @@ describe('Pieces', function() {
 
     const product = response;
     assert(product._id);
-    response = await apos.http.patch(`/api/v1/products/${product._id}`, {
+    response = await apos.http.patch(`/api/v1/product/${product._id}`, {
       body: {
-        articlesIds: [ articleId ]
+        _articles: [ article ]
       },
       jar
     });
     assert(response.title === 'Initially No Join Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
+    assert(response._articles);
+    assert(response._articles[0]._id === article._id);
   });
 
   it('can log out to destroy a session', async () => {
@@ -706,7 +720,7 @@ describe('Pieces', function() {
 
   it('cannot POST a product with a logged-out cookie jar', async () => {
     try {
-      await apos.http.post('/api/v1/products', {
+      await apos.http.post('/api/v1/product', {
         body: {
           title: 'Fake Product After Logout',
           body: {

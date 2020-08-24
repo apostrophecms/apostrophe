@@ -254,6 +254,11 @@ module.exports = {
   },
   handlers(self, options) {
     return {
+      beforeSave: {
+        async prepareJoinsForStorage(req, doc) {
+          self.apos.schema.prepareJoinsForStorage(req, doc);
+        }
+      },
       afterSave: {
         async emitAfterTrashOrAfterRescue(req, doc) {
           if (doc.trash && (!doc.aposWasTrash)) {
