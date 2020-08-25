@@ -6,33 +6,89 @@ export default function() {
     el: '#apos-notification',
     data () {
       return {
-        notifications: []
+        notifications: [],
+        polling: null
       };
     },
-    computed: {
-      apos() {
-        return window.apos;
-      }
-    },
     async mounted() {
-      if (apos.scene !== 'apos') {
-        return;
-      }
+      apos.notify = async function(message, options) {
+        const strings = [];
+        let i = 1;
+        let index = 0;
+        while (true) {
+          index = message.indexOf('%s', index);
+          if (index === -1) {
+            break;
+          }
+          // Don't match the same one over and over
+          index += 2;
+          if ((i >= arguments.length) || ((typeof (arguments[i]) === 'object'))) {
+            throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
+          }
+          strings.push(arguments[i++]);
+        }
+        if ((i === (arguments.length - 1)) && (typeof (arguments[i]) === 'object')) {
+          options = arguments[i++];
+        } else {
+          options = {};
+        }
 
-      this.notifications = await this.poll();
-      setInterval(async() => {
-        this.notifications = await this.poll();
-      }, 10000);
+        if (i !== arguments.length) {
+          throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
+        }
+
+        if (options.dismiss === true) {
+          options.dismiss = 5;
+        }
+
+        // Send it to the server, which will send it back to us via
+        // the same long polling mechanism that allows it to reach
+        // other tabs, and allows server-sent notifications to
+        // reach us
+
+        await apos.http.post(apos.notification.action, {
+          body: {
+            message,
+            strings,
+            type: options.type,
+            dismiss: options.dismiss,
+            pulse: options.pulse,
+            id: options.id
+          }
+        });
+      };
+
+      await this.getNotifications();
+      this.poll();
+    },
+    beforeDestroy () {
+      clearInterval(this.polling);
     },
     methods: {
       async dismiss(notificationId) {
         await apos.http.delete(`${apos.notification.action}/${notificationId}`, {});
-        this.notifications = await this.poll();
+        this.notifications = this.notifications.reduce((acc, cur) => {
+          if (cur._id !== notificationId) {
+            acc.push(cur);
+          }
+          return acc;
+        }, []);
       },
-      async poll() {
+      poll() {
+        this.polling = setInterval(this.getNotifications, 5000);
+      },
+      async getNotifications() {
         try {
-          const data = await apos.http.get(apos.notification.action, {});
-          return data.notifications || [];
+          const latestTimestamp = this.notifications
+            .map(notification => notification.createdAt)
+            .sort()
+            .reverse()[0];
+
+          const data = await apos.http.get(apos.notification.action, {
+            ...(latestTimestamp && { qs: { modifiedOnOrSince: latestTimestamp } })
+          });
+
+          this.notifications = [...this.notifications, ...(data.notifications || [])];
         } catch (err) {
           console.error(err);
         }
@@ -50,7 +106,7 @@ export default function() {
           :dismiss="notification.dismiss"
           :pulse="notification.pulse"
           @close="dismiss"
-          />
+        />
       </div>`
   });
 };

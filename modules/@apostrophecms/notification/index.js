@@ -16,8 +16,6 @@
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
 
-const Promise = require('bluebird');
-const _ = require('lodash');
 const url = require('url');
 
 module.exports = {
@@ -156,22 +154,19 @@ module.exports = {
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
-      // If `options.displayingIds` is set, notifications
-      // whose `_id` properties appear in it are not returned.
+      // If `options.modifiedOnOrSince` is set, notifications
+      // greater than the timestamp are sent.
 
       async find(req, options) {
         try {
           const notifications = await self.db.find({
-            userId: req.user._id
+            userId: req.user._id,
+            ...(options.modifiedOnOrSince && { createdAt: { $gt: new Date(options.modifiedOnOrSince) } })
           }).sort({ createdAt: 1 }).toArray();
+
           return {
-            notifications: _.filter(notifications, function (notification) {
-              if (options.displayingIds && options.displayingIds.length > 0) {
-                return !_.includes(options.displayingIds || [], notification._id);
-              }
-              return notification;
-            }),
-            dismissed: _.difference(options.displayingIds || [], _.map(notifications, '_id'))
+            notifications,
+            dismissed: []
           };
         } catch (err) {
           if (self.apos.db.closed) {
@@ -229,18 +224,20 @@ module.exports = {
         before: '@apostrophecms/global',
         middleware: async (req, res, next) => {
           let start;
+          let modifiedOnOrSince;
           try {
-            const pathname = url.parse(req.url).pathname;
-            if (req.method.toUpperCase() !== 'GET' || pathname !== self.action) {
+            const reqUrl = new URL(req.url, req.baseUrl);
+            if (req.method.toUpperCase() !== 'GET' || reqUrl.pathname !== self.action) {
               return next();
             }
             if (!(req.user && req.user._id)) {
               throw self.apos.error('invalid');
             }
             start = Date.now();
+            modifiedOnOrSince = req.query.modifiedOnOrSince && self.apos.launder.date(req.query.modifiedOnOrSince);
             await attempt();
           } catch (e) {
-            return self.apos.error(res, e);
+            return self.routeSendError(req, e);
           }
 
           async function attempt() {
@@ -250,18 +247,11 @@ module.exports = {
                 dismissed: []
               };
             }
-            const result = await self.find(req, {});
-            const notifications = result.notifications;
-            const dismissed = result.dismissed;
-
-            if (!notifications.length && !dismissed.length) {
-              await Promise.delay(self.options.queryInterval || 1000);
-              return attempt();
-            }
+            const { notifications, dismissed } = await self.find(req, { modifiedOnOrSince });
 
             return res.send({
-              notifications: notifications,
-              dismissed: dismissed
+              notifications,
+              dismissed
             });
           }
         }
