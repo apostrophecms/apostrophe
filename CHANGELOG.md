@@ -2,7 +2,7 @@
 
 ## 2.111.3 (2020-08-26)
 
-* Adds the `trust proxy` option to `apostrophe-express` to set `apos.app.set('trust proxy', true);` on Apostrophe's Express app.
+* When Apostrophe is running behind a proxy server like nginx, you can now instruct it to trust the `X-Forwarded-*` headers by passing the `trustProxy: true` option to `apostrophe-express`. If Apostrophe is generating `http:` URLs when they should be `https:`, this is most likely what you need.
 
 ## 2.111.2 (2020-08-19)
 
