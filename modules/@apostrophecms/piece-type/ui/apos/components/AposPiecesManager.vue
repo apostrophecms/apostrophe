@@ -137,7 +137,8 @@ export default {
       currentPage: 1, // TODO: Make use of these.
       filterValues: {},
       editing: false,
-      editingDocId: ''
+      editingDocId: '',
+      holdQueries: false
     };
   },
   computed: {
@@ -209,6 +210,12 @@ export default {
       await this.getPieces();
     },
     async getPieces (params = {}) {
+      if (this.holdQueries) {
+        return;
+      }
+
+      this.holdQueries = true;
+
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -228,6 +235,8 @@ export default {
           qs
         }
       )).results;
+
+      this.holdQueries = false;
     },
     openEditor(docId) {
       this.editingDocId = docId;
