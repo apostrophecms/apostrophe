@@ -6,7 +6,7 @@ import AposModalConfirm from './AposModalConfirm.vue';
 
 export default {
   title: 'Confirmation Modal',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const confirmationModal = () => {
