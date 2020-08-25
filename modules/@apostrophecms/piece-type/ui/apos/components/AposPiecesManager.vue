@@ -138,6 +138,7 @@ export default {
       filterValues: {},
       editing: false,
       editingDocId: '',
+      queryExtras: {},
       holdQueries: false
     };
   },
@@ -209,7 +210,7 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
-    async getPieces (params = {}) {
+    async getPieces () {
       if (this.holdQueries) {
         return;
       }
@@ -219,7 +220,7 @@ export default {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
-        ...params
+        ...this.queryExtras
       };
 
       // Avoid undefined properties.
@@ -252,7 +253,14 @@ export default {
       this.$emit('trash', this.selected);
     },
     async search(query) {
-      await this.getPieces({ autocomplete: query });
+      if (query) {
+        this.queryExtras.autocomplete = query;
+      } else if ('autocomplete' in this.queryExtras) {
+        delete this.queryExtras.autocomplete;
+      } else {
+        return;
+      }
+      await this.getPieces();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
