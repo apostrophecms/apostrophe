@@ -18,11 +18,24 @@
     >
       <div class="apos-slat__main">
         <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <a
+          class="apos-slat__control apos-slat__control--view"
+          v-if="item.url"
+          :href="item.url"
+        >
+          <eye-icon :size="14" />
+        </a>
+        <div v-if="item.ext" class="apos-slat__extension-wrapper">
+          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.ext}`]">
+            {{ item.ext }}
+          </span>
+        </div>
         <div class="apos-slat__label">
           {{ item.title }}
         </div>
       </div>
       <div class="apos-slat__secondary">
+        <div class="apos-slat__size" v-if="item.size">{{ item.size }}</div>
         <close-icon
           @click="remove" class="apos-slat__control apos-slat__control--remove"
           :size="13"
@@ -51,7 +64,7 @@ export default {
       default: false
     }
   },
-  emits: ['engage', 'disengage', 'move', 'remove'],
+  emits: [ 'engage', 'disengage', 'move', 'remove' ],
   data() {
     return {
     };
@@ -129,8 +142,12 @@ export default {
   }
 
   .apos-slat__label {
+    overflow: hidden;
     font-size: map-get($font-sizes, meta);
     margin-left: 10px;
+    max-width: 220px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .apos-slat__control {
@@ -148,5 +165,56 @@ export default {
   }
   .fade-enter, .fade-leave-to {
     opacity: 0;
+  }
+
+  .apos-slat__secondary {
+    display: flex;
+  }
+
+  .apos-slat__size {
+    margin-right: 5px;
+  }
+
+  .apos-slat__control--view {
+    color: inherit;
+  }
+
+  .apos-slat__extension-wrapper {
+    width: 35px;
+  }
+  .apos-slat__extension {
+    display: inline-block;
+    padding: 1px 4px;
+    text-transform: uppercase;
+    background-color: var(--a-base-1);
+    color: var(--a-white);
+  }
+
+  // file types
+
+  // spreadsheets
+  .apos-slat__extension--xls,
+  .apos-slat__extension--xlsx,
+  .apos-slat__extension--xlsm,
+  .apos-slat__extension--numbers,
+  .apos-slat__extension--csv {
+    background-color: var(--a-spreadsheet);
+  }
+
+  .apos-slat__extension--key,
+  .apos-slat__extension--ppt,
+  .apos-slat__extension--pptx {
+    background-color: var(--a-presentation);
+    // color: var(--a-primary-text);
+  }
+
+  .apos-slat__extension--doc,
+  .apos-slat__extension--docx,
+  .apos-slat__extension--txt {
+    background-color: var(--a-document);
+  }
+
+  .apos-slat__extension--pdf {
+    background-color: var(--a-pdf);
   }
 </style>
