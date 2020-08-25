@@ -19,10 +19,11 @@
           @engage="engage"
           @disengage="disengage"
           @move="move"
-          v-for="item in items" :key="item._id"
+          v-for="item in items"
+          :key="item.id"
           :item="item"
           :class="{'apos-slat-list__item--disabled' : !editable}"
-          :engaged="engaged === item._id"
+          :engaged="engaged === item.id"
           :parent="listId"
         />
       </transition-group>
@@ -90,15 +91,15 @@ export default {
       this.engaged = null;
     },
     remove(item, focusNext) {
-      const itemIndex = this.getIndex(item._id);
-      const items = this.items.filter(i => item._id !== i._id);
+      const itemIndex = this.getIndex(item.id);
+      const items = this.items.filter(i => item.id !== i.id);
       this.$emit('update', items);
       if (focusNext && items[itemIndex]) {
-        this.focusElement(items[itemIndex]._id);
+        this.focusElement(items[itemIndex].id);
         return;
       }
       if (focusNext && items[itemIndex - 1]) {
-        this.focusElement(items[itemIndex - 1]._id);
+        this.focusElement(items[itemIndex - 1].id);
       }
     },
     move (id, dir) {
@@ -112,7 +113,7 @@ export default {
     getIndex(id) {
       let i = null;
       this.items.forEach((item, index) => {
-        if (item._id === id) {
+        if (item.id === id) {
           i = index;
         }
       });
