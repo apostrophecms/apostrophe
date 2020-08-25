@@ -243,7 +243,7 @@ export default {
       this.$emit('trash', this.selected);
     },
     async search(query) {
-      await this.getPieces({ search: query });
+      await this.getPieces({ autocomplete: query });
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
