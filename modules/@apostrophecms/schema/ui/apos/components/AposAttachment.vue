@@ -28,9 +28,6 @@ export default {
   },
   mixins: [ AposInputMixin ],
   computed: {
-    hasIcon () {
-      return this.error || (this.field.icon && this.field.icon !== null);
-    },
     limitReached () {
       return this.value.data.length >= this.field.limit;
     },

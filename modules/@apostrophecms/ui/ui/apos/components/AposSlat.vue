@@ -186,7 +186,7 @@ export default {
     display: inline-block;
     padding: 1px 4px;
     text-transform: uppercase;
-    background-color: var(--a-base-1);
+    background-color: var(--a-generic);
     color: var(--a-white);
   }
 

@@ -28,7 +28,6 @@ module.exports = {
   'menu-down-icon': 'MenuDown',
   'minus-icon': 'Minus',
   'minus-box-icon': 'MinusBox',
-  'paperclip-icon': 'Paperclip',
   'pencil-icon': 'Pencil',
   'plus-icon': 'Plus',
   'phone-icon': 'Phone',
