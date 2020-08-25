@@ -90,7 +90,7 @@ module.exports = {
         ],
         allowedInChooser: false,
         def: true,
-        style: 'pill'
+        inputType: 'radio'
       },
       {
         label: 'Trash',
@@ -107,7 +107,7 @@ module.exports = {
         ],
         allowedInChooser: false,
         def: false,
-        style: 'pill'
+        inputType: 'radio'
       }
     ].concat(options.addFilters || []);
 

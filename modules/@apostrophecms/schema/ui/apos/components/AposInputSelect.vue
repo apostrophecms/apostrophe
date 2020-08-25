@@ -16,7 +16,10 @@
             {{ choice.label }}
           </option>
         </select>
-        <menu-down-icon :size="24" class="apos-input-icon" />
+        <component
+          :is="icon" :size="24"
+          class="apos-input-icon"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -28,9 +31,10 @@ import AposInputMixin from '../mixins/AposInputMixin.js';
 export default {
   name: 'AposInputSelect',
   mixins: [ AposInputMixin ],
-  computed: {
-    hasIcon: function () {
-      return this.error || (this.field.icon && this.field.icon !== null);
+  props: {
+    icon: {
+      type: String,
+      default: 'menu-down-icon'
     }
   },
   methods: {
