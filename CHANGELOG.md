@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.111.2 (2020-09-19)
+## 2.111.2 (2020-08-19)
 
 * Fixed a conflict between `express.static` and apostrophe's automatic removal of trailing slashes from possible page URLs. Apostrophe's intent in using `express.static` is only to deliver static assets. So we have made that intent clear by disabling the `redirect` option of `express.static`, which attempts to add a trailing slash whenever a folder exists on disk by that name, resulting in an infinite redirect loop.
 
