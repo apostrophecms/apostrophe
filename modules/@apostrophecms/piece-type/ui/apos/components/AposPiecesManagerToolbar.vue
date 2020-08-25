@@ -20,6 +20,10 @@
       />
     </template>
     <template #rightControls>
+      <AposPager
+        @click="registerPageChange" @change="registerPageChange"
+        :total-pages="totalPages" :current-page="currentPage"
+      />
       <AposFilterMenu
         :filters="filters"
         @input="filter"
@@ -52,8 +56,17 @@ export default {
       default () {
         return [];
       }
+    },
+    totalPages: {
+      type: Number,
+      default: 1
+    },
+    currentPage: {
+      type: Number,
+      default: 1
     }
   },
+  emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],
   data() {
     return {
       more: {
@@ -109,6 +122,9 @@ export default {
     managerAction(action) {
       // TODO: flesh this out.
       console.info('ACTION: ', action);
+    },
+    registerPageChange(pageNum) {
+      this.$emit('page-change', pageNum);
     }
   }
 };

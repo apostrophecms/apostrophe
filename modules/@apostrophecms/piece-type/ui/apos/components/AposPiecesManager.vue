@@ -19,10 +19,12 @@
         <template #bodyHeader>
           <AposPiecesManagerToolbar
             :selected-state="selectAllState"
+            :total-pages="totalPages" :current-page="currentPage"
+            :filters="options.filters"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
-            :filters="options.filters"
+            @page-change="updatePage"
             @filter="filter"
           />
         </template>
@@ -133,8 +135,8 @@ export default {
       },
       pieces: [],
       lastSelected: null,
-      totalPages: 1, // TODO: Populate this from the `getPieces` method.
-      currentPage: 1, // TODO: Make use of these.
+      totalPages: 1,
+      currentPage: 1,
       filterValues: {},
       editing: false,
       editingDocId: ''
@@ -188,12 +190,6 @@ export default {
       return 'empty';
     }
   },
-  // TODO: Work these back into the toolbar.
-  // watch: {
-  //   currentPage() {
-  //     this.update();
-  //   }
-  // },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.choices[0].value;
@@ -209,7 +205,7 @@ export default {
       await this.getPieces();
     },
     async getPieces () {
-      this.pieces = (await apos.http.get(
+      const getResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
           qs: {
@@ -217,7 +213,17 @@ export default {
             page: this.currentPage
           }
         }
-      )).results;
+      ));
+
+      this.currentPage = getResponse.currentPage;
+      this.totalPages = getResponse.pages;
+      this.pieces = getResponse.results;
+    },
+    updatePage(num) {
+      if (num) {
+        this.currentPage = num;
+        this.getPieces();
+      }
     },
     openEditor(docId) {
       this.editingDocId = docId;
