@@ -6,8 +6,7 @@ export default function() {
     el: '#apos-notification',
     data () {
       return {
-        notifications: [],
-        polling: null
+        notifications: []
       };
     },
     async mounted() {
@@ -58,11 +57,7 @@ export default function() {
         });
       };
 
-      await this.getNotifications();
-      this.poll();
-    },
-    beforeDestroy () {
-      clearInterval(this.polling);
+      await this.poll();
     },
     methods: {
       async dismiss(notificationId) {
@@ -78,10 +73,7 @@ export default function() {
           return acc;
         }, []);
       },
-      poll() {
-        this.polling = setInterval(this.getNotifications, 5000);
-      },
-      async getNotifications() {
+      async poll() {
         try {
           const latestTimestamp = this.notifications
             .map(notification => notification.createdAt)
@@ -95,6 +87,8 @@ export default function() {
           this.notifications = [...this.notifications, ...(data.notifications || [])];
         } catch (err) {
           console.error(err);
+        } finally {
+          this.poll();
         }
       }
     },

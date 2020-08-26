@@ -16,8 +16,6 @@
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
 
-const url = require('url');
-
 module.exports = {
   options: {
     alias: 'notification'
@@ -253,12 +251,16 @@ module.exports = {
 
           async function attempt() {
             if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
-              return {
+              return res.send({
                 notifications: [],
                 dismissed: []
-              };
+              });
             }
+
             const { notifications, dismissed } = await self.find(req, { modifiedOnOrSince });
+            if (!notifications.length) {
+              return setTimeout(attempt, self.options.queryInterval || 1000);
+            }
 
             return res.send({
               notifications,
