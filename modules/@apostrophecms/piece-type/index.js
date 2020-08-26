@@ -351,15 +351,15 @@ module.exports = {
       },
       composeFilters() {
         self.filters = options.filters || [];
-        if (options.addFilters) {
+        if (Array.isArray(options.addFilters)) {
           _.each(options.addFilters, function (newFilter) {
             // remove it from the filters if we've already added it, last one wins
             self.filters = _.filter(self.filters, function (filter) {
               return filter.name !== newFilter.name;
             });
-            // add the new field to the filters
-            self.filters.push(newFilter);
           });
+          // add the new field to the filters
+          self.filters = options.addFilters.concat(self.filters);
         }
         if (options.removeFilters) {
           self.filters = _.filter(self.filters, function (filter) {
