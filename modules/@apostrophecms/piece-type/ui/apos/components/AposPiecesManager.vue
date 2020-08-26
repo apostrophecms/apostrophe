@@ -210,13 +210,9 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
-    async getPieces (reset) {
+    async getPieces () {
       if (this.holdQueries) {
         return;
-      }
-
-      if (reset) {
-        this.currentPage = 1;
       }
 
       this.holdQueries = true;
@@ -265,7 +261,9 @@ export default {
         return;
       }
 
-      await this.getPieces(true);
+      this.currentPage = 1;
+
+      await this.getPieces();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
