@@ -51,7 +51,6 @@ export default function() {
             strings,
             type: options.type,
             dismiss: options.dismiss,
-            pulse: options.pulse,
             id: options.id
           }
         });
@@ -76,19 +75,35 @@ export default function() {
       async poll() {
         try {
           const latestTimestamp = this.notifications
-            .map(notification => notification.createdAt)
+            .map(notification => notification.updatedAt)
             .sort()
             .reverse()[0];
 
-          const data = await apos.http.get(apos.notification.action, {
-            ...(latestTimestamp && { qs: { modifiedOnOrSince: latestTimestamp } })
+          const _id = this.notifications
+            .filter(notification => notification.updatedAt === latestTimestamp)
+            .map(notification => notification._id)
+            .join(',_id=');
+
+          const { notifications, dismissed } = await apos.http.get(apos.notification.action, {
+            ...(latestTimestamp && {
+              qs: {
+                modifiedOnOrSince: latestTimestamp,
+                _id
+              }
+            })
           });
 
-          this.notifications = [...this.notifications, ...(data.notifications || [])];
+          this.notifications = [...this.notifications, ...(notifications || [])];
+
+          if (dismissed.length) {
+            this.notifications = this.notifications.filter(notification => {
+              return !dismissed.some(element => notification._id === element);
+            });
+          }
         } catch (err) {
           console.error(err);
         } finally {
-          this.poll();
+          setTimeout(this.poll, 5000);
         }
       }
     },
@@ -102,7 +117,6 @@ export default function() {
           :type="notification.type"
           :id="notification._id"
           :dismiss="notification.dismiss"
-          :pulse="notification.pulse"
           @close="dismiss"
         />
       </div>`

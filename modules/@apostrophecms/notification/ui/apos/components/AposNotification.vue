@@ -65,10 +65,6 @@ export default {
     dismiss: {
       type: Number,
       default: 0
-    },
-    pulse: {
-      type: Boolean,
-      default: false
     }
   },
   emits: [ 'close' ],
@@ -118,13 +114,16 @@ export default {
     align-items: center;
     min-width: 200px;
     max-width: 400px;
-    margin-top: 8px;
     padding: 15px 35px 15px 15px;
     border: 1px solid var(--a-base-8);
     color: var(--a-text-primary);
     background: var(--a-background);
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
+
+    & + .apos-notification {
+      margin-top: 8px;
+    }
   }
 
   .apos-notification__indicator {

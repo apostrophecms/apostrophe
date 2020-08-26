@@ -40,7 +40,6 @@ module.exports = {
       const message = self.apos.launder.string(req.body.message);
       const strings = self.apos.launder.strings(req.body.strings);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
-      const pulse = self.apos.launder.boolean(req.body.pulse);
       const id = self.apos.launder.id(req.body.id);
       await self.trigger.apply(self, [
         req,
@@ -48,7 +47,6 @@ module.exports = {
       ].concat(strings).concat([{
         dismiss,
         type,
-        pulse,
         id
       }]));
       return self.trigger(req, req.body.message, req.body.options || {});
@@ -59,8 +57,10 @@ module.exports = {
     patch(req, _id) {
       return self.db.updateOne({ _id }, {
         $set: {
-          updatedAt: new Date(),
           ...req.body
+        },
+        $currentDate: {
+          updatedAt: true
         }
       });
     },
@@ -137,12 +137,9 @@ module.exports = {
           throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
         }
 
-        const date = new Date();
-
         let notification = {
           _id: self.apos.util.generateId(),
-          createdAt: date,
-          updatedAt: date,
+          createdAt: new Date(),
           userId: req.user._id,
           message,
           strings
@@ -154,7 +151,16 @@ module.exports = {
 
         Object.assign(notification, options);
 
-        return self.db.insertOne(notification);
+        return self.db.updateOne(
+          notification,
+          {
+            $set: notification,
+            $currentDate: {
+              updatedAt: true
+            }
+          }, {
+            upsert: true
+          });
       },
 
       // Resolves with an object with `notifications` and `dismissed`
@@ -167,11 +173,16 @@ module.exports = {
         try {
           const results = await self.db.find({
             userId: req.user._id,
-            ...(options.modifiedOnOrSince && { updatedAt: { $gt: new Date(options.modifiedOnOrSince) } })
+            ...(options.modifiedOnOrSince && { updatedAt: { $gte: new Date(options.modifiedOnOrSince) } }),
+            ...(options.seenIds && { _id: { $nin: options.seenIds } })
           }).sort({ createdAt: 1 }).toArray();
 
           const notifications = results.filter(result => !result.dismissed);
           const dismissed = results.filter(result => result.dismissed).map(result => result._id);
+          dismissed.forEach(element => {
+            // 5-minute delay before deleting
+            setTimeout(() => self.restApiRoutes.delete(req, element), 300000);
+          });
 
           return {
             notifications,
@@ -234,6 +245,7 @@ module.exports = {
         middleware: async (req, res, next) => {
           let start;
           let modifiedOnOrSince;
+          let seenIds;
           try {
             const reqUrl = new URL(req.url, req.baseUrl);
             if (req.method.toUpperCase() !== 'GET' || reqUrl.pathname !== self.action) {
@@ -244,6 +256,7 @@ module.exports = {
             }
             start = Date.now();
             modifiedOnOrSince = req.query.modifiedOnOrSince && self.apos.launder.date(req.query.modifiedOnOrSince);
+            seenIds = req.query._id && self.apos.launder.ids(req.query._id) && req.query._id.split(',_id=');
             await attempt();
           } catch (e) {
             return self.routeSendError(req, e);
@@ -257,8 +270,11 @@ module.exports = {
               });
             }
 
-            const { notifications, dismissed } = await self.find(req, { modifiedOnOrSince });
-            if (!notifications.length) {
+            const { notifications, dismissed } = await self.find(req, {
+              modifiedOnOrSince,
+              seenIds
+            });
+            if (!notifications.length && !dismissed.length) {
               return setTimeout(attempt, self.options.queryInterval || 1000);
             }
 
