@@ -137,7 +137,9 @@ export default {
       currentPage: 1, // TODO: Make use of these.
       filterValues: {},
       editing: false,
-      editingDocId: ''
+      editingDocId: '',
+      queryExtras: {},
+      holdQueries: false
     };
   },
   computed: {
@@ -209,15 +211,33 @@ export default {
       await this.getPieces();
     },
     async getPieces () {
+      if (this.holdQueries) {
+        return;
+      }
+
+      this.holdQueries = true;
+
+      const qs = {
+        ...this.filterValues,
+        page: this.currentPage,
+        ...this.queryExtras
+      };
+
+      // Avoid undefined properties.
+      for (const prop in qs) {
+        if (qs[prop] === undefined) {
+          delete qs[prop];
+        };
+      }
+
       this.pieces = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs: {
-            ...this.filterValues,
-            page: this.currentPage
-          }
+          qs
         }
       )).results;
+
+      this.holdQueries = false;
     },
     openEditor(docId) {
       this.editingDocId = docId;
@@ -232,9 +252,18 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    search(query) {
-      // TODO: Update the `qs` object with search term in the `getPieces` call.
-      this.$emit('search', query);
+    async search(query) {
+      if (query) {
+        this.queryExtras.autocomplete = query;
+      } else if ('autocomplete' in this.queryExtras) {
+        delete this.queryExtras.autocomplete;
+      } else {
+        return;
+      }
+
+      this.currentPage = 1;
+
+      await this.getPieces();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {

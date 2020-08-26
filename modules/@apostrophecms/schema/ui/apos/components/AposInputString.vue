@@ -9,7 +9,7 @@
           :class="classes"
           v-if="field.textarea" rows="5"
           v-model="next" :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
+          @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
         />
@@ -17,7 +17,7 @@
           v-else :class="classes"
           v-model="next" :type="type"
           :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
+          @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
         >
@@ -68,6 +68,18 @@ export default {
     }
   },
   methods: {
+    enterEmit() {
+      if (this.field.enterSubmittable) {
+        // Include the validated results in cases where an Enter keydown should
+        // act as submitting a form.
+        this.$emit('return', {
+          data: this.next,
+          error: this.validate(this.next)
+        });
+      } else {
+        this.$emit('return');
+      }
+    },
     validate(value) {
       if (this.field.required) {
         if (!value.length) {
