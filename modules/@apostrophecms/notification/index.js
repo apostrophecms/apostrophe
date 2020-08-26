@@ -59,7 +59,12 @@ module.exports = {
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
-      throw self.apos.error('unimplemented');
+      return self.db.updateOne({ _id }, {
+        $set: {
+          updatedAt: new Date(),
+          ...req.body
+        }
+      });
     },
     delete(req, _id) {
       return self.db.deleteMany({ _id });
@@ -134,9 +139,12 @@ module.exports = {
           throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
         }
 
+        const date = new Date();
+
         let notification = {
           _id: self.apos.util.generateId(),
-          createdAt: new Date(),
+          createdAt: date,
+          updatedAt: date,
           userId: req.user._id,
           message,
           strings
@@ -159,14 +167,17 @@ module.exports = {
 
       async find(req, options) {
         try {
-          const notifications = await self.db.find({
+          const results = await self.db.find({
             userId: req.user._id,
-            ...(options.modifiedOnOrSince && { createdAt: { $gt: new Date(options.modifiedOnOrSince) } })
+            ...(options.modifiedOnOrSince && { updatedAt: { $gt: new Date(options.modifiedOnOrSince) } })
           }).sort({ createdAt: 1 }).toArray();
+
+          const notifications = results.filter(result => !result.dismissed);
+          const dismissed = results.filter(result => result.dismissed).map(result => result._id);
 
           return {
             notifications,
-            dismissed: []
+            dismissed
           };
         } catch (err) {
           if (self.apos.db.closed) {

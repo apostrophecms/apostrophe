@@ -66,7 +66,11 @@ export default function() {
     },
     methods: {
       async dismiss(notificationId) {
-        await apos.http.delete(`${apos.notification.action}/${notificationId}`, {});
+        await apos.http.patch(`${apos.notification.action}/${notificationId}`, {
+          body: {
+            dismissed: true
+          }
+        });
         this.notifications = this.notifications.reduce((acc, cur) => {
           if (cur._id !== notificationId) {
             acc.push(cur);
