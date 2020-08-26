@@ -111,14 +111,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$menu-height: 68px;
+$menu-row-height: 68px;
 $menu-v-pad: 18px;
-$menu-item-height: $menu-height - (2 * $menu-v-pad);
+$menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
 
 body {
-  margin-top: $menu-height;
+  margin-top: $menu-row-height * 2;
 }
 
 .apos-admin-bar {
@@ -133,7 +133,7 @@ body {
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  height: $menu-height;
+  height: $menu-row-height;
   padding: 0 20px;
   border-bottom: 1px solid var(--a-base-9);
 }
@@ -164,7 +164,7 @@ body {
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn {
-  height: $menu-height;
+  height: $menu-row-height;
 
   &:hover,
   &:focus {
