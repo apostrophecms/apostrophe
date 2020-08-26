@@ -29,7 +29,8 @@
         @input="filter"
       />
       <AposInputString
-        @input="search" :field="searchField.field"
+        @input="search" @return="search($event, true)"
+        :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
       />
@@ -87,7 +88,8 @@ export default {
         field: {
           name: 'search',
           placeholder: 'Search Images',
-          icon: 'magnify-icon'
+          icon: 'magnify-icon',
+          enterSubmittable: true
         },
         status: {},
         value: { data: '' }
@@ -116,7 +118,16 @@ export default {
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
     },
-    search(value) {
+    search(value, force) {
+      if ((force && !value) || value.data === '') {
+        value = {
+          data: '',
+          error: false
+        };
+      } else if (!value || value.error || (!force && value.data.length < 3)) {
+        return;
+      }
+
       this.$emit('search', value.data);
     },
     managerAction(action) {
