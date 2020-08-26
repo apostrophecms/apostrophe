@@ -204,10 +204,7 @@ export default {
     async finishSaved() {
       await this.getPieces();
     },
-    async getPieces (reset) {
-      if (reset) {
-        this.currentPage = 1;
-      }
+    async getPieces () {
       const getResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
@@ -251,8 +248,9 @@ export default {
       }
 
       this.filterValues[filter] = value;
+      this.currentPage = 1;
 
-      this.getPieces(true);
+      this.getPieces();
     }
   }
 };
