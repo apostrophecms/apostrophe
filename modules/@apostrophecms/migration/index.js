@@ -1,5 +1,5 @@
-let broadband = require('broadband');
-let _ = require('lodash');
+const broadband = require('broadband');
+const _ = require('lodash');
 // Provide services for database migration. The `@apostrophecms/migration:migrate` task
 // carries out all migrations that have been registered with this module. Migrations
 // are used to make changes to the database at the time of a new code deployment,
@@ -111,14 +111,14 @@ module.exports = {
           limit = 1;
         }
         await self.eachDoc(criteria, limit, async function (doc) {
-          let areaInfos = [];
+          const areaInfos = [];
           self.apos.area.walk(doc, function (area, dotPath) {
             areaInfos.push({
               area: area,
               dotPath: dotPath
             });
           });
-          for (let areaInfo of areaInfos) {
+          for (const areaInfo of areaInfos) {
             await iterator(doc, areaInfo.area, areaInfo.dotPath);
           }
         });

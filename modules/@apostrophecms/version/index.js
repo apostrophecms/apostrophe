@@ -33,11 +33,11 @@ module.exports = {
       post: {
         async list(req) {
           const _id = self.apos.launder.id(req.body._id);
-          let doc = await self.apos.doc.find(req, { _id: _id }).published(null).permission('edit').toObject();
+          const doc = await self.apos.doc.find(req, { _id: _id }).published(null).permission('edit').toObject();
           if (!doc) {
             throw self.apos.error('notfound');
           }
-          let versions = await self.find(req, { docId: doc._id }, {});
+          const versions = await self.find(req, { docId: doc._id }, {});
           for (let i = 0; i < versions.length - 1; i++) {
             // Something to diff against
             versions[i]._previous = versions[i + 1];
@@ -50,8 +50,7 @@ module.exports = {
         async compare(req) {
           const oldId = self.apos.launder.id(req.body.oldId);
           const currentId = self.apos.launder.id(req.body.currentId);
-          let current;
-          let versions = await self.find(req, {
+          const versions = await self.find(req, {
             _id: {
               $in: [
                 oldId,
@@ -62,7 +61,7 @@ module.exports = {
           if (versions.length !== 2) {
             throw self.apos.error('notfound');
           }
-          current = versions[0];
+          const current = versions[0];
           return { version: current };
         },
         async revert(req) {
@@ -81,7 +80,7 @@ module.exports = {
       '@apostrophecms/doc-type:afterSave': {
         async addVersion(req, doc, options) {
           let pruned = self.apos.util.clonePermanent(doc);
-          let version = {
+          const version = {
             _id: self.apos.util.generateId(),
             docId: pruned._id,
             authorId: req.user && req.user._id,
@@ -90,7 +89,7 @@ module.exports = {
           };
           // Let all modules participate in pruning data before
           // it is stored as a version
-          let unversionedFields = [];
+          const unversionedFields = [];
           await self.emit('unversionedFields', req, doc, unversionedFields);
           pruned = _.omit(pruned, unversionedFields);
           version.doc = pruned;
@@ -120,9 +119,9 @@ module.exports = {
       // different authors we never discard them because
       // we don't want to create a false audit trail.
       async pruneOldVersions(doc) {
-        let now = new Date();
+        const now = new Date();
         let last = null;
-        let cursor = self.db.find({
+        const cursor = self.db.find({
           createdAt: { $lt: now },
           docId: doc._id
         }).project({
@@ -138,7 +137,7 @@ module.exports = {
             // We're done
             return;
           }
-          let age = now.getTime() - version.createdAt.getTime();
+          const age = now.getTime() - version.createdAt.getTime();
           let difference;
           let remove = false;
           if (last) {
@@ -160,10 +159,10 @@ module.exports = {
       // Revert to the specified version. The doc need not be passed
       // because it is already in version._doc.
       async revert(req, version) {
-        let unversionedFields = [];
-        let doc = version._doc;
+        const unversionedFields = [];
+        const doc = version._doc;
         await self.emit('unversionedFields', req, version._doc, unversionedFields);
-        let newDoc = _.pick(doc, unversionedFields);
+        const newDoc = _.pick(doc, unversionedFields);
         _.assign(newDoc, _.omit(version.doc, unversionedFields));
         return self.apos.doc.update(req, newDoc);
       },
@@ -192,7 +191,7 @@ module.exports = {
         }
         const versions = await cursor.toArray();
         if (versions.length) {
-          let docId = versions[0].docId;
+          const docId = versions[0].docId;
           for (let i = 1; i < versions.length; i++) {
             if (versions[i].docId !== docId) {
               // For security; could otherwise be used to sniff
@@ -237,15 +236,15 @@ module.exports = {
           // Document type is no longer valid, can't interpret schema
           return [];
         }
-        let schema = manager.schema;
-        let changes = compareObjects(schema, version1.doc, version2.doc);
-        let flatChanges = flatten(changes);
+        const schema = manager.schema;
+        const changes = compareObjects(schema, version1.doc, version2.doc);
+        const flatChanges = flatten(changes);
         // Some changes are best displayed by first fetching the docs they
         // refer to in order to get their title or another representation
-        let joined = _.filter(flatChanges, function (change) {
+        const joined = _.filter(flatChanges, function (change) {
           return change.docType;
         });
-        let docTypes = _.uniq(_.map(joined, 'docType'));
+        const docTypes = _.uniq(_.map(joined, 'docType'));
         for (const docType of docTypes) {
           const ids = _.map(_.filter(joined, { docType: docType }), function (change) {
             return change.current || change.old;
@@ -276,10 +275,10 @@ module.exports = {
         }
         // Invoked recursively as needed
         function compareObjects(schema, version1, version2) {
-          let changes = [];
+          const changes = [];
           _.each(version1, function (val, key) {
             let change;
-            let field = getField(schema, key, val);
+            const field = getField(schema, key, val);
             if (!field) {
               // Current schema can't describe this field
               return;
@@ -307,7 +306,7 @@ module.exports = {
           });
           _.each(version2, function (val, key) {
             let change;
-            let field = getField(schema, key, val);
+            const field = getField(schema, key, val);
             if (!field) {
               // Current schema can't describe this field
               return;
@@ -342,17 +341,17 @@ module.exports = {
               // If a special "diffable" function is available use it;
               // that allows us to compare things that don't make
               // good search text but are human readable, like URLs. -Tom
-              let oldLines = [];
+              const oldLines = [];
               let oldText = '';
-              let currentLines = [];
+              const currentLines = [];
               let currentText = '';
-              let fieldType = self.apos.schema.getFieldType(field.type);
-              let diffable = fieldType.diffable;
+              const fieldType = self.apos.schema.getFieldType(field.type);
+              const diffable = fieldType.diffable;
               if (diffable) {
                 oldText = diffable(old);
                 currentText = diffable(current);
               } else {
-                let indexer = fieldType.index;
+                const indexer = fieldType.index;
                 if (indexer) {
                   indexer(old, field, oldLines);
                   indexer(current, field, currentLines);
@@ -368,7 +367,7 @@ module.exports = {
               if (oldText !== undefined && currentText !== undefined) {
                 diff = jsDiff.diffSentences(oldText, currentText, { ignoreWhitespace: true });
               }
-              let changes = _.map(_.filter(diff, function (diffChange) {
+              const changes = _.map(_.filter(diff, function (diffChange) {
                 return diffChange.added || diffChange.removed;
               }), function (diffChange) {
                 // Convert a jsDiff change object to an
@@ -425,16 +424,16 @@ module.exports = {
             items: [],
             metaType: 'area'
           };
-          let changes = [];
+          const changes = [];
           let importantChanges = 0;
           _.each(version1.items, function (widget1) {
-            let manager = self.apos.area.getWidgetManager(widget1.type);
+            const manager = self.apos.area.getWidgetManager(widget1.type);
             if (!manager) {
               // No warning message here because it may have been removed deliberately
               // from a later version of the site
               return;
             }
-            let newVersion = _.find(version2.items, { _id: widget1._id });
+            const newVersion = _.find(version2.items, { _id: widget1._id });
             if (!newVersion) {
               changes.push({
                 action: 'remove',
@@ -446,7 +445,7 @@ module.exports = {
               return;
             }
             if (!_.isEqual(newVersion, widget1)) {
-              let change = {
+              const change = {
                 action: 'change',
                 old: widget1,
                 current: newVersion,
@@ -458,13 +457,13 @@ module.exports = {
             }
           });
           _.each(version2.items, function (widget2) {
-            let manager = self.apos.area.getWidgetManager(widget2.type);
+            const manager = self.apos.area.getWidgetManager(widget2.type);
             if (!manager) {
               // No warning message here because it may have been removed deliberately
               // from a later version of the site
               return;
             }
-            let oldVersion = _.find(version1.items, { _id: widget2._id });
+            const oldVersion = _.find(version1.items, { _id: widget2._id });
             if (!oldVersion) {
               changes.push({
                 action: 'add',
@@ -480,15 +479,15 @@ module.exports = {
           // widget changed position. The first one that changed position
           // is worth reporting as "moved"
           if (version1.items && version2.items && version1.items.length === version2.items.length && !importantChanges) {
-            let ranksById = {};
+            const ranksById = {};
             let i;
             let oldRank;
             let currentRank;
             for (i = 0; i < version1.items.length; i++) {
-              let item = version1.items[i];
+              const item = version1.items[i];
               ranksById[item._id] = i;
             }
-            let moved = _.find(version2.items, function (widget2, i) {
+            const moved = _.find(version2.items, function (widget2, i) {
               if (self.apos.area.getWidgetManager(widget2.type) && ranksById[widget2._id] !== i) {
                 oldRank = ranksById[widget2._id];
                 currentRank = i;
@@ -518,11 +517,11 @@ module.exports = {
         function compareArrays(identifier, decorator, version1, version2) {
           version1 = version1 || [];
           version2 = version2 || [];
-          let changes = [];
+          const changes = [];
           let importantChanges = 0;
           let change;
           _.each(version1, function (item1) {
-            let newVersion = _.find(version2, function (item2) {
+            const newVersion = _.find(version2, function (item2) {
               return identifier(item2) === identifier(item1);
             });
             if (!newVersion) {
@@ -547,7 +546,7 @@ module.exports = {
             }
           });
           _.each(version2, function (item2) {
-            let oldVersion = _.find(version1, function (item1) {
+            const oldVersion = _.find(version1, function (item1) {
               return identifier(item1) === identifier(item2);
             });
             if (!oldVersion) {
@@ -565,15 +564,15 @@ module.exports = {
           // item changed position. The first one that changed position
           // is worth reporting as "moved"
           if (version1.length === version2.length && !importantChanges) {
-            let ranksById = {};
+            const ranksById = {};
             let i;
             for (i = 0; i < version1.length; i++) {
-              let item = version1[i];
+              const item = version1[i];
               ranksById[identifier(item)] = i;
             }
             let oldRank;
             let currentRank;
-            let moved = _.find(version2, function (item2, i) {
+            const moved = _.find(version2, function (item2, i) {
               if (ranksById[identifier(item2)] !== i) {
                 oldRank = ranksById[identifier(item2)];
                 currentRank = i;

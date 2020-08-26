@@ -9,14 +9,14 @@
 // `localesDir`: if specified, the locale `.json` files are stored here, otherwise they
 // are stored in the `locales` subdirectory of the project root.
 
-let _ = require('lodash');
-let i18n = require('i18n');
+const _ = require('lodash');
+const i18n = require('i18n');
 
 module.exports = {
   init(self, options) {
-    let i18nOptions = self.options || {};
+    const i18nOptions = self.options || {};
     _.defaults(i18nOptions, {
-      locales: ['en'],
+      locales: [ 'en' ],
       cookie: 'apos_language',
       directory: self.options.localesDir || self.apos.rootDir + '/locales'
     });

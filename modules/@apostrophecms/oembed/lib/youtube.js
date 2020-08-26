@@ -19,7 +19,7 @@ module.exports = function(self, oembetter) {
       return setImmediate(cb);
     }
 
-    let maxResImage = response.thumbnail_url.replace('hqdefault.jpg', 'maxresdefault.jpg');
+    const maxResImage = response.thumbnail_url.replace('hqdefault.jpg', 'maxresdefault.jpg');
 
     try {
       const response = await self.apos.http.head(maxResImage);
@@ -40,15 +40,15 @@ module.exports = function(self, oembetter) {
     if (!url.match(/youtube.*?playlist/)) {
       return setImmediate(cb);
     }
-    let matches = url.match(/list=([^&]+)/);
+    const matches = url.match(/list=([^&]+)/);
     if (!matches) {
       return setImmediate(cb);
     }
-    let id = matches[1];
+    const id = matches[1];
     try {
       const body = await self.apos.http.get(url);
-      let $ = cheerio.load(body);
-      let $title = $('title');
+      const $ = cheerio.load(body);
+      const $title = $('title');
       let title = $title.text();
       if (title) {
         title = title.trim();
@@ -56,7 +56,7 @@ module.exports = function(self, oembetter) {
       // This is a terrible hack but it's effective for now
       // and means every single A2 developer doesn't need
       // their own API key
-      let firstVideoId = $('#pl-video-list [data-video-id]').attr('data-video-id');
+      const firstVideoId = $('#pl-video-list [data-video-id]').attr('data-video-id');
       if (!firstVideoId) {
         // Unable to continue without a thumbnail
         return cb(null);

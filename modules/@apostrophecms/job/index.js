@@ -42,7 +42,7 @@ module.exports = {
           }
         },
         async progress(req) {
-          let _id = self.apos.launder.id(req.body._id);
+          const _id = self.apos.launder.id(req.body._id);
           const job = await self.db.findOne({ _id: _id });
           if (!job) {
             throw self.apos.error('notfound');
@@ -101,7 +101,7 @@ module.exports = {
       async run(req, ids, change, options) {
         let job;
         let stopping = false;
-        let results = {};
+        const results = {};
         const res = req.res;
         try {
           // sends a response with a jobId to the browser
@@ -134,7 +134,7 @@ module.exports = {
         async function run() {
           let good = false;
           try {
-            for (let id of ids) {
+            for (const id of ids) {
               if (stopping) {
                 return;
               }
@@ -197,7 +197,7 @@ module.exports = {
       async runNonBatch(req, doTheWork, options) {
         const res = req.res;
         let job;
-        let canceling = false;
+        const canceling = false;
         try {
           const info = await startJob();
           run();
@@ -300,7 +300,7 @@ module.exports = {
       // All of these properties are optional and reasonable
       // defaults are supplied.
       async start(options) {
-        let job = {
+        const job = {
           _id: self.apos.util.generateId(),
           good: 0,
           bad: 0,
@@ -313,7 +313,7 @@ module.exports = {
           canCancel: !!options.cancel,
           canStop: !!options.stop
         };
-        let context = {
+        const context = {
           _id: job._id,
           options: options
         };

@@ -50,22 +50,22 @@ module.exports = {
       ];
     }
 
-    let addFields = [];
+    const addFields = [];
 
-    let byChoicesInfo = {
+    const byChoicesInfo = {
       id: {
         value: 'id',
         label: 'Individually',
-        showFields: ['_pieces']
+        showFields: [ '_pieces' ]
       },
       all: {
         value: 'all',
         label: options.byAllLabel || 'All',
-        showFields: ['limitByAll']
+        showFields: [ 'limitByAll' ]
       }
     };
 
-    let byChoices = _.map(_.filter(by, function (source) {
+    const byChoices = _.map(_.filter(by, function (source) {
       return _.has(byChoicesInfo, source);
     }), function (source) {
       return byChoicesInfo[source];
@@ -261,7 +261,7 @@ module.exports = {
         if (widget.by !== 'id') {
           return;
         }
-        let key = self.joinById.relationship ? 'item._id' : '_id';
+        const key = self.joinById.relationship ? 'item._id' : '_id';
         widget._pieces = self.apos.util.orderById(widget.pieceIds, widget._pieces, key);
       },
 

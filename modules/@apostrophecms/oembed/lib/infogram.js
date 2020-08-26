@@ -1,4 +1,4 @@
-let cheerio = require('cheerio');
+const cheerio = require('cheerio');
 
 module.exports = function(self, oembetter) {
   // Fake oembed for infogr.am

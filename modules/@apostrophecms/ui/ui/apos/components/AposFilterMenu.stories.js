@@ -35,35 +35,35 @@ function getData() {
     filters: [
       {
         label: 'Published',
-        'name': 'published',
-        'choices': [
+        name: 'published',
+        choices: [
           {
-            'value': true,
-            'label': 'Published'
+            value: true,
+            label: 'Published'
           }, {
-            'value': false,
-            'label': 'Draft'
+            value: false,
+            label: 'Draft'
           }, {
-            'value': null,
-            'label': 'Both'
+            value: null,
+            label: 'Both'
           }
         ],
-        'def': true,
-        'style': 'pill'
+        def: true,
+        style: 'pill'
       }, {
         label: 'Trash',
-        'name': 'trash',
-        'choices': [
+        name: 'trash',
+        choices: [
           {
-            'value': false,
-            'label': 'Live'
+            value: false,
+            label: 'Live'
           }, {
-            'value': true,
-            'label': 'Trash'
+            value: true,
+            label: 'Trash'
           }
         ],
-        'def': false,
-        'style': 'pill'
+        def: false,
+        style: 'pill'
       }
     ]
   };

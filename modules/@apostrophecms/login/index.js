@@ -59,7 +59,7 @@ module.exports = {
   },
   handlers(self, options) {
     return {
-      'deserialize': {
+      deserialize: {
         deserializePermissions(user) {
           user._permissions = {};
           _.each(user._groups, function (group) {
@@ -79,7 +79,7 @@ module.exports = {
           }
         }
       },
-      'apostrophe': {
+      apostrophe: {
         modulesReady() {
           // So this property is hashed and the hash kept in the safe,
           // rather than ever being stored literally
@@ -138,16 +138,15 @@ module.exports = {
         },
         ...(options.passwordReset ? {
           async resetRequest(req) {
-            let site = (req.headers['host'] || '').replace(/:\d+$/, '');
-            let username = self.apos.launder.string(req.body.username);
+            const site = (req.headers.host || '').replace(/:\d+$/, '');
+            const username = self.apos.launder.string(req.body.username);
             if (!username.length) {
               throw self.apos.error('invalid');
             }
-            let clauses = [];
+            const clauses = [];
             clauses.push({ username: username });
             clauses.push({ email: username });
-            let user;
-            user = await self.apos.user.find(req, { $or: clauses }).permission(false).toObject();
+            const user = await self.apos.user.find(req, { $or: clauses }).permission(false).toObject();
             if (!user) {
               throw self.apos.error('notfound');
             }
@@ -158,7 +157,7 @@ module.exports = {
             user.passwordReset = reset;
             user.passwordResetAt = new Date();
             await self.apos.user.update(req, user, { permissions: false });
-            let parsed = new URL(req.absoluteUrl);
+            const parsed = new URL(req.absoluteUrl);
             parsed.pathname = '/password-reset';
             parsed.search = '?';
             parsed.searchParams.append('reset', reset);

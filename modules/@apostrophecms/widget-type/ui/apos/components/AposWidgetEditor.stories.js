@@ -7,7 +7,7 @@ const data = getData();
 
 export default {
   title: 'Widget Editor ',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 const typeLabel = 'Marquee';
