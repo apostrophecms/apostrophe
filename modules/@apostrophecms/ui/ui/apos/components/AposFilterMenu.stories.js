@@ -48,8 +48,8 @@ function getData() {
             label: 'Both'
           }
         ],
-        'def': true,
-        'inputType': 'radio'
+        def: true,
+        inputType: 'radio'
       },
       {
         label: 'Trash',
@@ -63,44 +63,44 @@ function getData() {
             label: 'Trash'
           }
         ],
-        'def': false,
-        'inputType': 'radio'
+        def: false,
+        inputType: 'radio'
       },
       {
-        'label': 'Color',
-        'name': 'color',
-        'choices': [
+        label: 'Color',
+        name: 'color',
+        choices: [
           {
-            'value': 'red',
-            'label': 'Red'
+            value: 'red',
+            label: 'Red'
           },
           {
-            'value': 'orange',
-            'label': 'Orange'
+            value: 'orange',
+            label: 'Orange'
           },
           {
-            'value': 'yellow',
-            'label': 'Yellow'
+            value: 'yellow',
+            label: 'Yellow'
           },
           {
-            'value': 'green',
-            'label': 'Green'
+            value: 'green',
+            label: 'Green'
           },
           {
-            'value': 'blue',
-            'label': 'Blue'
+            value: 'blue',
+            label: 'Blue'
           },
           {
-            'value': 'indigo',
-            'label': 'Indigo'
+            value: 'indigo',
+            label: 'Indigo'
           },
           {
-            'value': 'violet',
-            'label': 'Violet'
+            value: 'violet',
+            label: 'Violet'
           }
         ],
-        'def': 'orange',
-        'inputType': 'select'
+        def: 'orange',
+        inputType: 'select'
       }
     ]
   };
