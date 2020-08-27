@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 let apos;
 
 describe('Base Module', function() {
@@ -25,12 +25,12 @@ describe('Base Module', function() {
   });
 
   it('should produce correct responses via the getOption method', async function() {
-    let mod = apos.modules['test-get-option'];
-    let req = apos.task.getReq();
+    const mod = apos.modules['test-get-option'];
+    const req = apos.task.getReq();
     assert.strictEqual(mod.getOption(req, 'flavors.grape.sweetness'), 20);
     assert.strictEqual(mod.getOption(req, 'flavors.cheese.swarthiness'), undefined);
     assert.strictEqual(mod.getOption(req, 'flavors.grape.ingredients.0'), 'chemicals');
-    let markup = await mod.render(req, 'test.html');
+    const markup = await mod.render(req, 'test.html');
     assert(markup.match(/20/));
     assert(markup.match(/yup/));
   });

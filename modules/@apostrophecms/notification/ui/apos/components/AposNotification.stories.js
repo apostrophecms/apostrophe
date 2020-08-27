@@ -39,8 +39,8 @@ export const notifications = () => ({
             Refresh: 'refresh-icon',
             Delete: 'delete-icon',
             'Double Check': 'check-all-icon',
-            'Check': 'check-bold-icon',
-            'X': 'close-icon',
+            Check: 'check-bold-icon',
+            X: 'close-icon',
             'Empty Checkbox': 'checkbox-blank-icon'
           },
           null

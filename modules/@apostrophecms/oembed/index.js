@@ -267,8 +267,8 @@ module.exports = {
       // by apos.oembed. A GET request because it is cache-friendly.
       get: {
         async query(req, res) {
-          let url = self.apos.launder.string(req.query.url);
-          let options = {
+          const url = self.apos.launder.string(req.query.url);
+          const options = {
             alwaysIframe: self.apos.launder.boolean(req.query.alwaysIframe),
             iframeHeight: self.apos.launder.integer(req.query.iframeHeight),
             neverOpenGraph: self.apos.launder.boolean(req.query.neverOpenGraph)

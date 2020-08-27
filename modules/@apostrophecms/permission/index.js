@@ -1,7 +1,7 @@
 const _ = require('lodash');
 // This module manages the permissions of docs in Apostrophe.
 
-let Promise = require('bluebird');
+const Promise = require('bluebird');
 
 module.exports = {
   options: { alias: 'permission' },
@@ -194,7 +194,7 @@ module.exports = {
           });
           if (!types.length) {
             // $in will crash with an empty list
-            types = ['_iNeverMatch'];
+            types = [ '_iNeverMatch' ];
           }
           return types;
         }
@@ -341,7 +341,7 @@ module.exports = {
         if (!user) {
           return [];
         }
-        names = Array.isArray(names) ? names : [names];
+        names = Array.isArray(names) ? names : [ names ];
         const groupIds = user && user.groupIds ? user.groupIds : [];
         _.each(names, function (name) {
           if (_.has(self.impliedBy, name)) {

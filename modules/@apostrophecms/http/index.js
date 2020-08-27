@@ -13,14 +13,14 @@ module.exports = {
     // Everything else comes through as a 500, you don't have to register that one, and
     // shouldn't because clients should never be given sensitive details about 500 errors
     self.errors = {
-      'invalid': 400,
-      'forbidden': 403,
-      'notfound': 404,
-      'required': 422,
-      'conflict': 409,
-      'locked': 409,
-      'unprocessable': 422,
-      'unimplemented': 501
+      invalid: 400,
+      forbidden: 403,
+      notfound: 404,
+      required: 422,
+      conflict: 409,
+      locked: 409,
+      unprocessable: 422,
+      unimplemented: 501
     };
     _.merge(self.errors, self.options.addErrors);
   },

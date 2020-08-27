@@ -69,7 +69,7 @@ module.exports = {
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
-            return manager.load(req, [widget]);
+            return manager.load(req, [ widget ]);
           }
           async function render() {
             return self.renderWidget(req, type, widget, options);
@@ -164,7 +164,7 @@ module.exports = {
         const errors = [];
         const widgetsOptions = options.widgets || {};
         for (let i = 0; i < items.length; i++) {
-          let item = items[i];
+          const item = items[i];
           if ((item == null) || typeof item !== 'object' || typeof item.type !== 'string') {
             continue;
           }
@@ -291,7 +291,7 @@ module.exports = {
       // for a particular area in the schema when working with
       // `@apostrophecms/piece-type` in a page template.
       getSchemaOptions(doc, name) {
-        let manager = self.apos.doc.getManager(doc.type);
+        const manager = self.apos.doc.getManager(doc.type);
         if (!manager) {
           // This happens if we try to find the schema options for an area in
           // a widget or something else that isn't a top level doc type, or
@@ -300,8 +300,8 @@ module.exports = {
           // TODO: a better solution to the entire option-forwarding problem? -Tom
           return {};
         }
-        let schema = manager.schema;
-        let field = _.find(schema, 'name', name);
+        const schema = manager.schema;
+        const field = _.find(schema, 'name', name);
         if (!(field && field.options)) {
           return {};
         }
@@ -332,7 +332,7 @@ module.exports = {
           }
           return true;
         }
-        let winners = [];
+        const winners = [];
         if (!within) {
           return '';
         }
@@ -346,7 +346,7 @@ module.exports = {
             return '<' + options.wrapper + '>' + winner.content + '</' + options.wrapper + '>';
           }).join('');
         }
-        let delimiter = options.delimiter !== undefined ? options.delimiter : '\n';
+        const delimiter = options.delimiter !== undefined ? options.delimiter : '\n';
         return _.map(winners, 'content').join(delimiter);
       },
       // Returns the plaintext contents  of all rich text widgets
@@ -373,7 +373,7 @@ module.exports = {
       // `getRichText` method.
       plaintext(within, options) {
         options = options || {};
-        let richText = self.richText(within, options);
+        const richText = self.richText(within, options);
         let plaintext = self.apos.util.htmlToPlaintext(richText).trim();
         plaintext = plaintext.replace(/\n+/g, '\n');
         if (!options.limit) {
@@ -389,7 +389,7 @@ module.exports = {
       // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area. null and
       // undefined are tolerated and converted to empty areas.
       fromPlaintext(plaintext) {
-        let area = {
+        const area = {
           metaType: 'area',
           items: []
         };
@@ -406,7 +406,7 @@ module.exports = {
       // Convert HTML to an area with one '@apostrophecms/rich-text' widget, otherwise
       // an empty area. null and undefined are tolerated and converted to empty areas.
       fromRichText(html) {
-        let area = {
+        const area = {
           metaType: 'area',
           items: []
         };
@@ -429,7 +429,7 @@ module.exports = {
           return;
         }
         req.loadingDeferredWidgets = true;
-        for (let type of _.keys(req.deferredWidgets)) {
+        for (const type of _.keys(req.deferredWidgets)) {
           const manager = self.getWidgetManager(type);
           if (!manager) {
             self.warnMissingWidgetType(type);
@@ -459,7 +459,7 @@ module.exports = {
           return true;
         }
         return !_.some(area.items, function (item) {
-          let manager = self.getWidgetManager(item.type);
+          const manager = self.getWidgetManager(item.type);
           if (manager && manager.isEmpty) {
             return !manager.isEmpty(item);
           } else {
@@ -622,8 +622,8 @@ module.exports = {
   customTags(self, options) {
     return {
       // 'singleton': require('./lib/custom-tags/singleton.js'),
-      'area': require('./lib/custom-tags/area.js')(self, options),
-      'widget': require('./lib/custom-tags/widget.js')(self, options)
+      area: require('./lib/custom-tags/area.js')(self, options),
+      widget: require('./lib/custom-tags/widget.js')(self, options)
     };
   }
 };

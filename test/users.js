@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 let apos;
 
 describe('Users', function() {
@@ -22,7 +22,7 @@ describe('Users', function() {
   // Test pieces.newInstance()
   it('should be able to insert a new user', async () => {
     assert(apos.user.newInstance);
-    let user = apos.user.newInstance();
+    const user = apos.user.newInstance();
     assert(user);
 
     user.firstName = 'Jane';
@@ -74,7 +74,7 @@ describe('Users', function() {
 
   it('should not be able to insert a new user if their email already exists', async () => {
     assert(apos.user.newInstance);
-    let user = apos.user.newInstance();
+    const user = apos.user.newInstance();
     assert(user);
 
     user.firstName = 'Dane';
@@ -106,7 +106,7 @@ describe('Users', function() {
   });
 
   it('should be able to insert a user with a previously used email if the other is in the trash', async () => {
-    let user = apos.user.newInstance();
+    const user = apos.user.newInstance();
 
     user.firstName = 'Dane';
     user.lastName = 'Joe';
@@ -150,7 +150,7 @@ describe('Users', function() {
   });
 
   it('should be able to insert a user with a previously used username if the other is in the trash', async () => {
-    let user = apos.user.newInstance();
+    const user = apos.user.newInstance();
 
     user.firstName = 'Dane';
     user.lastName = 'Joe';

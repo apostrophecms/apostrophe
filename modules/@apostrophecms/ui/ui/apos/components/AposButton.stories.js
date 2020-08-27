@@ -6,7 +6,7 @@ import AposButton from './AposButton.vue';
 
 export default {
   title: 'Buttons',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const buttons = () => ({
@@ -32,7 +32,7 @@ export const buttons = () => ({
     modifiers: {
       default: options('Modifiers', {
         'Danger on Hover': 'danger-on-hover',
-        'Block': 'block',
+        Block: 'block',
         'Gradient on Hover': 'gradient-on-hover'
       },
       [],
