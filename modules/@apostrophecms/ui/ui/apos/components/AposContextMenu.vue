@@ -1,6 +1,7 @@
 <template>
   <div
-    class="apos-context-menu" :class="classList"
+    class="apos-context-menu"
+    :class="classList"
     ref="component"
   >
     <slot name="prebutton" />
@@ -109,6 +110,9 @@ export default {
     }
   },
   methods: {
+    close() {
+      this.open = false;
+    },
     bind() {
       document.addEventListener('click', this.clicks);
       document.addEventListener('keydown', this.keyboard);
@@ -122,14 +126,14 @@ export default {
     keyboard(event) {
       // if user hits esc, close menu
       if (event.keyCode === 27) {
-        this.open = false;
+        this.close();
         this.unbind();
       }
     },
     clicks (event) {
       // if user clicks outside menu component, close menu
       if (!this.$el.contains(event.target)) {
-        this.open = false;
+        this.close();
         this.unbind();
       }
     },
@@ -143,6 +147,7 @@ export default {
     },
     menuItemClicked(action) {
       this.$emit('item-clicked', action);
+      this.close();
     },
     positionPopup() {
       this.position = this.calculatePosition();
