@@ -279,9 +279,9 @@
       ]
     },
     '/api/v1/product?published=true&trash=false&page=1': {
-      'pages': 1,
-      'currentPage': 1,
-      'results': [
+      pages: 1,
+      currentPage: 1,
+      results: [
         grape,
         strawberry
       ]
@@ -384,8 +384,7 @@
       // Like responses from a real API, the returned object needs to be safe to
       // change.
       return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
-    }
-    else if (apos.http.getResponses[url.split('?')[0]]) {
+    } else if (apos.http.getResponses[url.split('?')[0]]) {
       // try without querystrings
       return JSON.parse(JSON.stringify(apos.http.getResponses[url.split('?')[0]]));
     } else {

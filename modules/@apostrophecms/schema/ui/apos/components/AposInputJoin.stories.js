@@ -1,7 +1,6 @@
 import {
   withKnobs,
   select,
-  optionsKnob as options,
   boolean
 } from '@storybook/addon-knobs';
 
@@ -68,70 +67,70 @@ export const joinInput = () => {
 function getData(n) {
   const data = [
     {
-      '_id': 'htcuoykl9012j38ecrjghrn0c',
-      'published': true,
-      'trash': false,
-      'type': 'product',
-      'title': 'Strawberry',
-      'slug': 'strawberry',
-      'price': '$100,000 USD',
-      'taxes': '$42 USD',
-      'metaType': 'doc',
-      'createdAt': '2020-07-20T15:56:19.005Z',
-      'titleSortified': 'strawberry',
-      'updatedAt': '2020-07-20T15:56:19.005Z',
-      'highSearchText': 'strawberry strawberry',
-      'highSearchWords': [
+      _id: 'htcuoykl9012j38ecrjghrn0c',
+      published: true,
+      trash: false,
+      type: 'product',
+      title: 'Strawberry',
+      slug: 'strawberry',
+      price: '$100,000 USD',
+      taxes: '$42 USD',
+      metaType: 'doc',
+      createdAt: '2020-07-20T15:56:19.005Z',
+      titleSortified: 'strawberry',
+      updatedAt: '2020-07-20T15:56:19.005Z',
+      highSearchText: 'strawberry strawberry',
+      highSearchWords: [
         'strawberry'
       ],
-      'lowSearchText': 'strawberry strawberry',
-      'searchSummary': '',
-      'docPermissions': [],
-      '_edit': true
+      lowSearchText: 'strawberry strawberry',
+      searchSummary: '',
+      docPermissions: [],
+      _edit: true
     },
     {
-      '_id': 'htcuoykl9012j38ecrjgwefwefhrn0c',
-      'published': true,
-      'trash': false,
-      'type': 'product',
-      'title': 'Apple',
-      'slug': 'apple',
-      'price': '$100,000 USD',
-      'taxes': '$42 USD',
-      'metaType': 'doc',
-      'createdAt': '2020-07-20T15:56:19.005Z',
-      'titleSortified': 'apple',
-      'updatedAt': '2020-07-20T15:56:19.005Z',
-      'highSearchText': 'apple apple',
-      'highSearchWords': [
+      _id: 'htcuoykl9012j38ecrjgwefwefhrn0c',
+      published: true,
+      trash: false,
+      type: 'product',
+      title: 'Apple',
+      slug: 'apple',
+      price: '$100,000 USD',
+      taxes: '$42 USD',
+      metaType: 'doc',
+      createdAt: '2020-07-20T15:56:19.005Z',
+      titleSortified: 'apple',
+      updatedAt: '2020-07-20T15:56:19.005Z',
+      highSearchText: 'apple apple',
+      highSearchWords: [
         'apple'
       ],
-      'lowSearchText': 'apple apple',
-      'searchSummary': '',
-      'docPermissions': [],
-      '_edit': true
+      lowSearchText: 'apple apple',
+      searchSummary: '',
+      docPermissions: [],
+      _edit: true
     },
     {
-      '_id': 'htcuoykwefwefl9012j38ecrjghrn0c',
-      'published': true,
-      'trash': false,
-      'type': 'product',
-      'title': 'Mango',
-      'slug': 'mango',
-      'price': '$100,000 USD',
-      'taxes': '$42 USD',
-      'metaType': 'doc',
-      'createdAt': '2020-07-20T15:56:19.005Z',
-      'titleSortified': 'mango',
-      'updatedAt': '2020-07-20T15:56:19.005Z',
-      'highSearchText': 'mango mango',
-      'highSearchWords': [
+      _id: 'htcuoykwefwefl9012j38ecrjghrn0c',
+      published: true,
+      trash: false,
+      type: 'product',
+      title: 'Mango',
+      slug: 'mango',
+      price: '$100,000 USD',
+      taxes: '$42 USD',
+      metaType: 'doc',
+      createdAt: '2020-07-20T15:56:19.005Z',
+      titleSortified: 'mango',
+      updatedAt: '2020-07-20T15:56:19.005Z',
+      highSearchText: 'mango mango',
+      highSearchWords: [
         'mango'
       ],
-      'lowSearchText': 'mango mango',
-      'searchSummary': '',
-      'docPermissions': [],
-      '_edit': true
+      lowSearchText: 'mango mango',
+      searchSummary: '',
+      docPermissions: [],
+      _edit: true
     }
   ];
   return data.splice(0, n);
