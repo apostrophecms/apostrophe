@@ -1,6 +1,6 @@
-let nodemailer = require('nodemailer');
-let htmlToText = require('html-to-text');
-let _ = require('lodash');
+const nodemailer = require('nodemailer');
+const htmlToText = require('html-to-text');
+const _ = require('lodash');
 
 // ## Options
 //
@@ -29,8 +29,8 @@ module.exports = {
         const text = htmlToText.fromString(html, {
           format: {
             heading: function (elem, fn, options) {
-              let h = fn(elem.children, options);
-              let split = h.split(/(\[.*?\])/);
+              const h = fn(elem.children, options);
+              const split = h.split(/(\[.*?\])/);
               return split.map(function (s) {
                 if (s.match(/^\[.*\]$/)) {
                   return s;

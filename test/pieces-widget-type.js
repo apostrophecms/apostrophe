@@ -17,7 +17,7 @@ describe('Pieces Widgets', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'event': {
+        event: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
@@ -37,7 +37,7 @@ describe('Pieces Widgets', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    'event': {}
+                    event: {}
                   }
                 }
               }
@@ -93,11 +93,11 @@ describe('Pieces Widgets', function() {
 
   it('should be able to use db to insert test pieces', async function() {
     assert(apos.modules['event-widget']);
-    let testItems = [];
-    let total = 100;
+    const testItems = [];
+    const total = 100;
     for (let i = 1; (i <= total); i++) {
-      let paddedInt = apos.launder.padInteger(i, 3);
-      let title = 'Event ' + paddedInt;
+      const paddedInt = apos.launder.padInteger(i, 3);
+      const title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
@@ -161,9 +161,9 @@ describe('Pieces Widgets', function() {
     assert(body.match(/Event 012/));
 
     // Are they in the right order (reversed on purpose)?
-    let i5 = body.indexOf('Event 010');
-    let i6 = body.indexOf('Event 011');
-    let i7 = body.indexOf('Event 012');
+    const i5 = body.indexOf('Event 010');
+    const i6 = body.indexOf('Event 011');
+    const i7 = body.indexOf('Event 012');
     assert((i5 > i6) && (i6 > i7));
 
     // These are by all
@@ -195,7 +195,7 @@ describe('Pieces Widget With Extra Join', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'event': {
+        event: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
@@ -268,7 +268,7 @@ describe('Pieces Widget With Extra Join', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    'event': {}
+                    event: {}
                   }
                 }
               }
@@ -281,11 +281,11 @@ describe('Pieces Widget With Extra Join', function() {
 
   it('should be able to use db to insert test pieces', async function() {
     assert(apos.modules['event-widget']);
-    let testItems = [];
-    let total = 100;
+    const testItems = [];
+    const total = 100;
     for (let i = 1; (i <= total); i++) {
-      let paddedInt = apos.launder.padInteger(i, 3);
-      let title = 'Event ' + paddedInt;
+      const paddedInt = apos.launder.padInteger(i, 3);
+      const title = 'Event ' + paddedInt;
       testItems.push({
         _id: 'wevent' + paddedInt,
         slug: 'wevent-' + paddedInt,
@@ -332,7 +332,7 @@ describe('Pieces Widget With Extra Join', function() {
         ]
       }
     });
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     for (const item of testItems) {
       await apos.doc.insert(req, item);
     }
@@ -347,9 +347,9 @@ describe('Pieces Widget With Extra Join', function() {
     assert(body.match(/Event 012/));
 
     // Are they in the right order (reversed on purpose)?
-    let i10 = body.indexOf('Event 010');
-    let i11 = body.indexOf('Event 011');
-    let i12 = body.indexOf('Event 012');
+    const i10 = body.indexOf('Event 010');
+    const i11 = body.indexOf('Event 011');
+    const i12 = body.indexOf('Event 012');
     assert((i10 > i11) && (i11 > i12));
 
     // These are by all
@@ -368,8 +368,8 @@ describe('Pieces Widget With Extra Join', function() {
     // Does it contain the featured events in the extra join?
     assert(body.match(/Event 020/));
     assert(body.match(/Event 021/));
-    let i20 = body.indexOf('Event 020');
-    let i21 = body.indexOf('Event 021');
+    const i20 = body.indexOf('Event 020');
+    const i21 = body.indexOf('Event 021');
     // Are they in the right order and in the right place (before the regular stuff)?
     assert(i20 < i10);
     assert(i21 < i10);

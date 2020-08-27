@@ -8,15 +8,15 @@
 // of outerLayout.html, that will be loaded instead. This is
 // intentional.
 
-let fs = require('fs');
-let path = require('path');
-let _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
 
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
-  let self = this;
+  const self = this;
   options = options || {};
-  let extensions = options.extensions || [ 'njk', 'html' ];
+  const extensions = options.extensions || [ 'njk', 'html' ];
   self.moduleName = moduleName;
   self.templates = templates;
 
@@ -65,19 +65,16 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       return filename;
     }
     // relative to another module?
-    let matches = parentName.split(/:/);
+    const matches = parentName.split(/:/);
     if (!matches) {
       return filename;
     }
-    let resolvedTo = matches[0] + ':' + filename;
+    const resolvedTo = matches[0] + ':' + filename;
     return resolvedTo;
   };
 
   self.getSource = function(name) {
     let fullpath = null;
-
-    let moduleName;
-    let modulePath;
 
     let matches;
     let i, j;
@@ -91,15 +88,15 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
     if (matches.length !== 2) {
       throw new Error('Bad template path: ' + name + ' (format is module-name:filename');
     }
-    moduleName = matches[0];
-    modulePath = matches[1];
+    const moduleName = matches[0];
+    const modulePath = matches[1];
 
     // check if the module asked for exists
     if (!self.templates.apos.modules[moduleName]) {
       throw new Error('Module doesn\'t exist: ' + moduleName);
     }
 
-    let dirs = self.templates.getViewFolders(self.templates.apos.modules[moduleName]);
+    const dirs = self.templates.getViewFolders(self.templates.apos.modules[moduleName]);
     for (i = 0; (i < dirs.length); i++) {
       fullpath = dirs[i] + '/' + modulePath;
       matches = fullpath.match(/\.([^/.]+)$/);
@@ -143,7 +140,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
   };
 
   self.emit = function(name /*, arg1, arg2, ... */) {
-    let args = Array.prototype.slice.call(arguments, 1);
+    const args = Array.prototype.slice.call(arguments, 1);
 
     if (self.listeners && self.listeners[name]) {
       _.each(self.listeners[name], function(listener) {

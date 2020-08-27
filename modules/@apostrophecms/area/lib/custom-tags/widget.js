@@ -12,7 +12,7 @@ module.exports = function(self, options) {
       if (!options) {
         options = {};
       }
-      let manager = self.getWidgetManager(item.type);
+      const manager = self.getWidgetManager(item.type);
       if (!manager) {
         // Not configured in this project
         self.warnMissingWidgetType(item.type);

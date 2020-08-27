@@ -4,7 +4,7 @@ import AposTag from './AposTag.vue';
 
 export default {
   title: 'Tags',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const tags = () => ({

@@ -43,7 +43,7 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-let mongo = require('mongodb');
+const mongo = require('mongodb');
 
 module.exports = {
   async init(self, options) {
@@ -159,7 +159,7 @@ module.exports = {
             wrap('find');
             wrap('createIndex');
             function wrap(method) {
-              let superMethod = collection[method];
+              const superMethod = collection[method];
               collection[method] = function () {
                 /* eslint-disable-next-line no-console */
                 console.trace(method);
@@ -185,7 +185,7 @@ module.exports = {
       },
 
       async resetFromTask() {
-        let argv = self.apos.argv;
+        const argv = self.apos.argv;
         if (argv._.length !== 1) {
           throw new Error('Incorrect number of arguments.');
         }

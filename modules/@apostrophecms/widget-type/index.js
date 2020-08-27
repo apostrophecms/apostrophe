@@ -128,7 +128,7 @@
 // you are debugging a change and need to test all of the different ways a widget has
 // been used, or are wondering if you can safely remove one.
 
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   options: {
@@ -248,8 +248,8 @@ module.exports = {
         }
         // Make sure we get default values for contextual fields so
         // `by` doesn't go missing for `@apostrophecms/image-widget`
-        let output = self.apos.schema.newInstance(self.schema);
-        let schema = self.allowedSchema(req);
+        const output = self.apos.schema.newInstance(self.schema);
+        const schema = self.allowedSchema(req);
         output._id = self.apos.launder.id(input._id) || self.apos.util.generateId();
         await self.apos.schema.convert(req, schema, input, output);
         output.metaType = 'widget';
@@ -287,12 +287,12 @@ module.exports = {
       // (the default), all of the permanent properties are supplied.
 
       filterForDataAttribute(widget) {
-        let data = self.apos.util.clonePermanent(widget, true);
+        const data = self.apos.util.clonePermanent(widget, true);
         if (widget._edit || self.options.playerData === true) {
           return data;
         }
         if (self.options.playerData) {
-          let result = {};
+          const result = {};
           _.each(self.options.playerData, function (key) {
             result[key] = data[key];
           });

@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -7,9 +7,9 @@ module.exports = {
     return {
       post: {
         polymorphicChooserModal(req, res) {
-          let limit = self.apos.launder.integer(req.body.limit);
-          let field = req.body.field;
-          let types = _.map(field.withType, function (name) {
+          const limit = self.apos.launder.integer(req.body.limit);
+          const field = req.body.field;
+          const types = _.map(field.withType, function (name) {
             return self.apos.doc.getManager(name);
           });
           return self.send(req, 'chooserModal', {

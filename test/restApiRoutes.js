@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 
 describe('REST API routing', function() {
 

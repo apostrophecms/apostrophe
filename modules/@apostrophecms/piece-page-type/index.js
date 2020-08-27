@@ -63,11 +63,11 @@ module.exports = {
       }
     ];
 
-    self.publishMenu = options.publishMenu || [{
+    self.publishMenu = options.publishMenu || [ {
       action: 'publish-' + self.piecesCssName,
       label: 'Publish ' + self.pieces.label,
       value: true
-    }];
+    } ];
     self.enableAddUrlsToPieces();
   },
   methods(self, options) {

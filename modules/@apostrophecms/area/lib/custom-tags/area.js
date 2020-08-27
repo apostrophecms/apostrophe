@@ -13,7 +13,7 @@ module.exports = function(self, options) {
         // get the arguments before "with"
         const object = parser.parseExpression();
         args.addChild(object);
-        let w = parser.peekToken();
+        const w = parser.peekToken();
         if (!(w.type === 'comma')) {
           break;
         }

@@ -144,7 +144,7 @@ module.exports = {
           if (item.menuLeader === item.name && (items[i + 1] && items[i + 1].menuLeader === item.name)) {
             menu = {
               menu: true,
-              items: [item],
+              items: [ item ],
               leader: item,
               label: self.groupLabels[item.name] || item.label
             };
@@ -181,7 +181,7 @@ module.exports = {
         _.each(self.options.order || [], function (name) {
           const item = _.find(self.items, { name: name });
           if (item) {
-            self.items = [item].concat(_.filter(self.items, function (item) {
+            self.items = [ item ].concat(_.filter(self.items, function (item) {
               return item.name !== name;
             }));
           }
