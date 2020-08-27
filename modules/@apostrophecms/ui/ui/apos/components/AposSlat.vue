@@ -98,8 +98,7 @@ export default {
     color: var(--a-text-primary);
     @include apos-transition();
     &:hover:not(.apos-slat-list__item--disabled) {
-      color: var(--a-white);
-      background-color: var(--a-primary);
+      background-color: var(--a-base-7);
       cursor: grab;
     }
     &:active:not(.apos-slat-list__item--disabled) {
@@ -107,7 +106,7 @@ export default {
     }
     &:active:not(.apos-slat-list__item--disabled),
     &:focus:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-base-7);
     }
   }
 

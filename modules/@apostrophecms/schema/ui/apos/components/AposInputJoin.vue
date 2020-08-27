@@ -8,8 +8,9 @@
         <div class="apos-input-join__input-wrapper">
           <input
             class="apos-input apos-input--text apos-input--join"
-            v-model="next" type="text"
-            :placeholder="field.placeholder"
+            type="text"
+            v-model="searchInput"
+            :placeholder="placeholder"
             :disabled="status.disabled" :required="field.required"
             :id="uid"
             @input="input"
@@ -24,7 +25,11 @@
           />
         </div>
         <AposSlatList @update="updated" :initial-items="items" />
-        <AposSearchList :list="searchList" @select="selected" :selected-items="items" />
+        <AposSearchList
+          :list="searchList"
+          @select="selected"
+          :selected-items="items"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -36,29 +41,29 @@ import AposInputMixin from '../mixins/AposInputMixin.js';
 export default {
   name: 'AposInputJoin',
   mixins: [ AposInputMixin ],
-  props: {
-    listItems: {
-      type: Array,
-      default() {
-        return [];
-      }
-    }
-  },
+  emits: [ 'input' ],
   data () {
     return {
-      browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
       searchList: [],
-      items: this.listItems,
-      lastSearches: {}
+      items: this.value.data,
+      lastSearches: {},
+      searchInput: '',
+      originalDisabled: this.status.disabled
     };
   },
-  watch: {
-    next: function () {
-      // override method from mixin to avoid standard behavior
+  computed: {
+    pluralLabel() {
+      return apos.modules[this.field.withType].pluralLabel;
     },
-    value: function () {
-      // override method from mixin to avoid standard behavior
+    placeholder() {
+      return this.field.placeholder || `Search ${this.pluralLabel}`;
+    },
+    browseLabel() {
+      return `Browse ${this.pluralLabel}`;
     }
+  },
+  mounted() {
+    this.validate(this.items);
   },
   methods: {
     validate(value) {
@@ -66,11 +71,17 @@ export default {
         return { message: 'required' };
       }
 
+      // if the original status was disabled, no validation should change that
+      if (this.originalDisabled) {
+        this.status.disabled = true;
+        return;
+      }
+
       if (this.field.max && this.field.max <= value.length) {
-        this.next = 'Limit reached!';
+        this.searchInput = 'Limit reached!';
         this.status.disabled = true;
       } else {
-        this.next = '';
+        this.searchInput = '';
         this.status.disabled = false;
       }
 
@@ -89,15 +100,15 @@ export default {
       this.validateAndEmit();
     },
     async input () {
-      if (this.next.length) {
-        if (!this.lastSearches[this.next]) {
-          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
+      if (this.searchInput) {
+        if (!this.lastSearches[this.searchInput]) {
+          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchInput}`, {
             busy: true
           });
           this.searchList = list.results;
-          this.lastSearches[this.next] = list.results;
+          this.lastSearches[this.searchInput] = list.results;
         } else {
-          this.searchList = this.lastSearches[this.next];
+          this.searchList = this.lastSearches[this.searchInput];
         }
       } else {
         this.searchList = [];
@@ -121,13 +132,6 @@ export default {
         data: this.items.map(item => item._id),
         error: this.validate(this.items)
       });
-    },
-    watchValue () {
-      // override method from mixin to avoid standard behavior
-      this.error = this.value.error;
-    },
-    watchNext () {
-      // override method from mixin to avoid standard behavior
     }
   }
 };

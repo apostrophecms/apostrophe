@@ -5,7 +5,7 @@
         <div class="item__title">{{ item.title }}</div>
         <div class="item__slug">{{ item.slug }}</div>
       </div>
-      <div class="item__type">{{ getTypeLabel(item.type) }}</div>
+      <!-- <div class="item__type">{{ getTypeLabel(item.type) }}</div> -->
     </li>
   </ul>
 </template>
@@ -16,13 +16,19 @@ export default {
   name: 'AposSearchList',
   props: {
     list: {
-      type: Array
+      type: Array,
+      default() {
+        return [];
+      }
     },
     selectedItems: {
-      type: Array
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
-  emits: ['select'],
+  emits: [ 'select' ],
   methods: {
     getTypeLabel(type) {
       return apos.modules[type].label;
@@ -42,7 +48,7 @@ export default {
 .apos-search {
   z-index: $z-index-default;
   position: absolute;
-  top: 34px;
+  top: 37px;
   overflow: auto;
   width: 100%;
   list-style: none;
@@ -63,20 +69,21 @@ export default {
 .item {
   display: flex;
   justify-content: space-between;
+  margin: 10px;
   padding: 15px 25px;
   letter-spacing: 0.5px;
-
+  border-radius: 5px;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
   & * {
     pointer-events: none;
   }
 
   &:hover {
-    margin: 0 20px;
-    padding: 12px 6px;
+    padding: 14px 24px;
     border: 1px solid var(--a-base-5);
-    background: var(--a-base-10);
-    box-sizing: border-box;
-    border-radius: 5px;
+    background-color: var(--a-base-10);
+    cursor: pointer;
 
     .item__type {
       display: none;
@@ -91,18 +98,14 @@ export default {
   &__title {
     color: var(--a-text-primary);
     font-size: map-get($font-sizes, input-label);
+    margin-bottom: 3px;
   }
 
   &__slug {
     color: var(--a-base-2);
     font-size: map-get($font-sizes, default);
+    font-style: italic;
   }
 
-  &__type {
-    padding: 10px 20px;
-    border-radius: var(--a-border-radius);
-    color: var(--a-background-primary);
-    background: var(--a-primary);
-  }
 }
 </style>
