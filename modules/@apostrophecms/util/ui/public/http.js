@@ -242,7 +242,6 @@
   apos.http.addQueryToUrl = function(url, data) {
     var i;
     var flat;
-    var testUrl = url;
     if ((data != null) && ((typeof data) === 'object')) {
       flat = flatten('', data);
       for (i = 0; (i < flat.length); i++) {
