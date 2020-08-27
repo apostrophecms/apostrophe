@@ -17,7 +17,7 @@
         @click="cancel"
       />
     </template>
-    <template #leftRail v-if="!!media.length">
+    <template #leftRail>
       <AposModalRail>
         <AposTagList title="Filter by Tag" :tags="tagList" />
       </AposModalRail>
@@ -48,7 +48,7 @@
         </template>
       </AposModalBody>
     </template>
-    <template #rightRail v-if="!!media.length">
+    <template #rightRail>
       <AposModalRail type="right">
         <div
           class="apos-media-manager__sidebar"
@@ -75,28 +75,33 @@
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  mixins: [AposModalParentMixin],
+  mixins: [ AposModalParentMixin ],
   props: {
-    media: {
-      type: Array,
+    moduleName: {
+      type: String,
       required: true
-    },
-    tagList: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    applyTags: {
-      type: Array,
-      default() {
-        return [];
-      }
     }
+    // media: {
+    //   type: Array,
+    //   required: true
+    // },
+    // tagList: {
+    //   type: Array,
+    //   default() {
+    //     return [];
+    //   }
+    // },
+    // applyTags: {
+    //   type: Array,
+    //   default() {
+    //     return [];
+    //   }
+    // }
   },
-  emits: ['safe-close', 'trash', 'save', 'search'],
+  emits: [ 'safe-close', 'trash', 'save', 'search' ],
   data() {
     return {
+      media: [],
       modal: {
         active: false,
         type: 'overlay',
@@ -113,6 +118,9 @@ export default {
     };
   },
   computed: {
+    options() {
+      return window.apos.modules[this.moduleName];
+    },
     selected() {
       return this.media.filter(item => this.checked.includes(item.id));
     }
@@ -127,8 +135,40 @@ export default {
   async mounted() {
     // TODO: Get data here.
     this.modal.active = true;
+    await this.getMedia();
   },
   methods: {
+    async getMedia () {
+      // if (this.holdQueries) {
+      //   return;
+      // }
+
+      // this.holdQueries = true;
+
+      const qs = {
+        // ...this.filterValues,
+        // page: 1,
+        // ...this.queryExtras
+      };
+
+      // Avoid undefined properties.
+      for (const prop in qs) {
+        if (qs[prop] === undefined) {
+          delete qs[prop];
+        };
+      }
+      const getResponse = (await apos.http.get(
+        this.options.action, {
+          busy: true,
+          qs
+        }
+      ));
+      console.info(getResponse);
+      // this.currentPage = getResponse.currentPage;
+      // this.totalPages = getResponse.pages;
+      this.media = getResponse.results;
+      // this.holdQueries = false;
+    },
     clearSelected() {
       this.checked = [];
       this.editing = null;
@@ -142,7 +182,7 @@ export default {
       if (this.checked.includes(id)) {
         this.checked = [];
       } else {
-        this.checked = [id];
+        this.checked = [ id ];
       }
 
       this.updateEditing(id);
@@ -171,7 +211,7 @@ export default {
       const direction = beginIndex > endIndex ? -1 : 1;
 
       if (direction < 0) {
-        [beginIndex, endIndex] = [endIndex, beginIndex];
+        [ beginIndex, endIndex ] = [ endIndex, beginIndex ];
       } else {
         endIndex++;
       }

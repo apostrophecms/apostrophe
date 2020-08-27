@@ -21,7 +21,12 @@ module.exports = {
       'list'
     ],
     insertViaUpload: true,
-    searchable: false
+    searchable: false,
+    browser: {
+      components: {
+        managerModal: 'AposMediaManager'
+      }
+    }
   },
   beforeSuperClass(self, options) {
     options.addFields = [
@@ -203,6 +208,13 @@ module.exports = {
             self.apos.launder.integer(req.body.minSize[1])
           ];
         }
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposMediaManager'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },
