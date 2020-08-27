@@ -6,10 +6,11 @@
     <template #body>
       <div :class="classList">
         <input
-          class="apos-sr-only"
+          class="apos-sr-only apos-boolean__input apos-boolean__input--true"
           type="radio" :id="`${uid}-true`"
           :value="true" @change="setValue(true)"
           :checked="value.data === true"
+          :disabled="field.disabled"
           ref="true"
         >
         <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
@@ -20,10 +21,11 @@
           {{ trueLabel || 'Yes' }}
         </label>
         <input
-          class="apos-sr-only apos-boolean__input--false"
+          class="apos-sr-only apos-boolean__input apos-boolean__input--false"
           type="radio" :id="`${uid}-false`"
           :value="false" @change="setValue(false)"
           :checked="value.data === false"
+          :disabled="field.disabled"
           ref="false"
         >
         <label :for="`${uid}-false`" class="apos-boolean__label apos-input">
@@ -123,7 +125,7 @@ export default {
       z-index: $z-index-default;
     }
 
-    input:checked + & {
+    .apos-boolean__input:checked + & {
       background-color: var(--a-base-10);
 
       .apos-boolean__icon {
@@ -146,7 +148,7 @@ export default {
         border-color: var(--a-base-4);
       }
     }
-    input + & {
+    .apos-boolean__input + & {
       &:hover {
         cursor: pointer;
       }
@@ -157,7 +159,7 @@ export default {
       }
     }
 
-    input:checked.apos-boolean__input--false + & {
+    .apos-boolean__input:checked.apos-boolean__input--false + & {
       .apos-boolean__icon {
         color: var(--a-danger);
       }
@@ -173,8 +175,34 @@ export default {
       top: 1px;
     }
   }
-  input:focus + label {
+  .apos-boolean__input:focus + .apos-boolean__label {
     border-color: var(--a-base-2);
     box-shadow: 0 0 5px var(--a-base-6);
   }
+
+  .apos-boolean__input[disabled],
+  .apos-boolean__input[disabled]:checked {
+    & + .apos-boolean__label,
+    & + .apos-boolean__label:active {
+      color: var(--a-base-4);
+      background: var(--a-base-7);
+      border-color: var(--a-base-4);
+      &:hover {
+        cursor: not-allowed;
+        border-color: var(--a-base-4);
+      }
+    }
+  }
+
+  .apos-boolean__input[disabled] + .apos-boolean__label .apos-boolean__icon {
+    color: var(--a-base-5);
+  }
+
+  .apos-boolean--toggle .apos-boolean__input[disabled]:checked {
+    & + .apos-boolean__label:first-of-type,
+    & + .apos-boolean__label:last-of-type {
+      color: var(--a-base-8);
+    }
+  }
+
 </style>
