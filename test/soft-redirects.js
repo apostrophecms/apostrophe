@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 let apos;
 
 describe('Soft Redirects', function() {
@@ -60,7 +60,7 @@ describe('Soft Redirects', function() {
     // Is our status code good?
     assert.strictEqual(response.status, 302);
     // Are we going to be redirected to our page?
-    assert.strictEqual(response.headers['location'], `${apos.http.getBase()}/child-moved`);
+    assert.strictEqual(response.headers.location, `${apos.http.getBase()}/child-moved`);
   });
 
 });
@@ -127,7 +127,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
     // Is our status code good?
     assert.strictEqual(response.status, 301);
     // Are we going to be redirected to our page?
-    assert.strictEqual(response.headers['location'], `${apos.http.getBase()}/child-moved`);
+    assert.strictEqual(response.headers.location, `${apos.http.getBase()}/child-moved`);
   });
 
 });

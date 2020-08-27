@@ -8,7 +8,7 @@ const data = getData();
 
 export default {
   title: 'Area Menu',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const areaMenu = () => {

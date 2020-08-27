@@ -58,52 +58,52 @@ module.exports = {
         widget: 'ApostropheRichTextWidget'
       },
       tools: {
-        'styles': {
+        styles: {
           component: 'ApostropheTiptapStyles',
           label: 'Styles'
         },
         '|': { component: 'ApostropheTiptapDivider' },
-        'bold': {
+        bold: {
           component: 'ApostropheTiptapButton',
           label: 'Bold'
         },
-        'italic': {
+        italic: {
           component: 'ApostropheTiptapButton',
           label: 'Italic'
         },
-        'horizontal_rule': {
+        horizontal_rule: {
           component: 'ApostropheTiptapButton',
           label: 'Horizontal Rule'
         },
-        'link': {
+        link: {
           component: 'ApostropheTiptapLink',
           label: 'Link'
         },
-        'bullet_list': {
+        bullet_list: {
           component: 'ApostropheTiptapButton',
           label: 'Bullets'
         },
-        'ordered_list': {
+        ordered_list: {
           component: 'ApostropheTiptapButton',
           label: 'Ordered'
         },
-        'strike': {
+        strike: {
           component: 'ApostropheTiptapButton',
           label: 'Strike'
         },
-        'blockquote': {
+        blockquote: {
           component: 'ApostropheTiptapButton',
           label: 'Blockquote'
         },
-        'code_block': {
+        code_block: {
           component: 'ApostropheTiptapButton',
           label: 'Code Block'
         },
-        'undo': {
+        undo: {
           component: 'ApostropheTiptapButton',
           label: 'Undo'
         },
-        'redo': {
+        redo: {
           component: 'ApostropheTiptapButton',
           label: 'Redo'
         }
@@ -147,38 +147,38 @@ module.exports = {
           p: true
         };
         const simple = {
-          'bold': [
+          bold: [
             'b',
             'strong'
           ],
-          'italic': [
+          italic: [
             'i',
             'em'
           ],
-          'strike': ['s'],
-          'link': ['a'],
-          'horizontal_rule': ['hr'],
-          'bullet_list': [
+          strike: [ 's' ],
+          link: [ 'a' ],
+          horizontal_rule: [ 'hr' ],
+          bullet_list: [
             'ul',
             'li'
           ],
-          'ordered_list': [
+          ordered_list: [
             'ol',
             'li'
           ],
-          'blockquote': ['blockquote'],
-          'code_block': [
+          blockquote: [ 'blockquote' ],
+          code_block: [
             'pre',
             'code'
           ]
         };
-        for (let item of options.toolbar || []) {
+        for (const item of options.toolbar || []) {
           if (simple[item]) {
-            for (let tag of simple[item]) {
+            for (const tag of simple[item]) {
               allowedTags[tag] = true;
             }
           } else if (item === 'styles') {
-            for (let style of options.styles || []) {
+            for (const style of options.styles || []) {
               const tag = style.tag;
               allowedTags[tag] = true;
             }
@@ -190,7 +190,7 @@ module.exports = {
       toolbarToAllowedAttributes(options) {
         const allowedAttributes = {};
         const simple = {
-          'link': {
+          link: {
             tag: 'a',
             attributes: [
               'href',
@@ -200,9 +200,9 @@ module.exports = {
             ]
           }
         };
-        for (let item of options.toolbar || []) {
+        for (const item of options.toolbar || []) {
           if (simple[item]) {
-            for (let attribute of simple[item].attributes) {
+            for (const attribute of simple[item].attributes) {
               allowedAttributes[simple[item].tag] = allowedAttributes[simple[item].tag] || [];
               allowedAttributes[simple[item].tag].push(attribute);
             }
@@ -214,16 +214,16 @@ module.exports = {
       toolbarToAllowedClasses(options) {
         const allowedClasses = {};
         if ((options.toolbar || []).includes('styles')) {
-          for (let style of options.styles || []) {
+          for (const style of options.styles || []) {
             const tag = style.tag;
             const classes = self.getStyleClasses(style);
             allowedClasses[tag] = allowedClasses[tag] || {};
-            for (let c of classes) {
+            for (const c of classes) {
               allowedClasses[tag][c] = true;
             }
           }
         }
-        for (let tag of Object.keys(allowedClasses)) {
+        for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
         return allowedClasses;
@@ -290,10 +290,10 @@ module.exports = {
 
         if (!changes.length) {
           // Well, something changed! Presumably the formatting.
-          return [{
+          return [ {
             action: 'change',
             field: { label: 'Formatting' }
-          }];
+          } ];
         }
 
         return changes;

@@ -9,7 +9,7 @@ import AposInputString from './AposInputString.vue';
 
 export default {
   title: 'Inputs (String)',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const stringInputs = () => {
@@ -63,8 +63,8 @@ export const stringInputs = () => {
         field,
         value,
         modifiers: options('Modifiers', {
-          'Small': 'small',
-          'Inverted': 'inverted'
+          Small: 'small',
+          Inverted: 'inverted'
         },
         [],
         { display: 'multi-select' },

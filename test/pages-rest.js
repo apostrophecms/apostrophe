@@ -286,7 +286,7 @@ describe('Pages REST', function() {
   });
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'parent',
         _position: 'after'
@@ -303,7 +303,7 @@ describe('Pages REST', function() {
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341
-    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'child',
         _position: 'before'
@@ -318,7 +318,7 @@ describe('Pages REST', function() {
   });
 
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: 'sibling',
         _position: 'firstChild'
@@ -377,7 +377,7 @@ describe('Pages REST', function() {
   });
 
   it('can use PATCH to move a page beneath the home page with _targetId: _home', async function() {
-    let page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
         _targetId: '_home',
         _position: 'firstChild'

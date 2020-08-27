@@ -1,8 +1,8 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   beforeSuperClass(query, options) {
-    let permissionsFields = options.permissionsFields ? [
+    const permissionsFields = options.permissionsFields ? [
       {
         type: 'select',
         name: 'loginRequired',
@@ -326,10 +326,10 @@ module.exports = {
             // The primary trashcan itself should not deduplicate
             return;
           }
-          let deduplicateKey = doc._id;
-          let prefix = 'deduplicate-' + deduplicateKey + '-';
-          let suffix = '-deduplicate-' + deduplicateKey;
-          let $set = {};
+          const deduplicateKey = doc._id;
+          const prefix = 'deduplicate-' + deduplicateKey + '-';
+          const suffix = '-deduplicate-' + deduplicateKey;
+          const $set = {};
           _.each(self.trashPrefixFields, function (name) {
             if (typeof doc[name] !== 'string') {
               // Presumably a sparse index
@@ -368,7 +368,7 @@ module.exports = {
             }
           }
           async function update() {
-            let action = { $set: $set };
+            const action = { $set: $set };
             // So methods called later, or extending this method, see the change in docs
             _.assign(doc, $set);
             if (_.isEmpty($set)) {
@@ -634,7 +634,7 @@ module.exports = {
         // Try harder not to call autocomplete with something that doesn't
         // result in a search
         if (query.term && query.term.toString && query.term.toString().length) {
-          let term = self.apos.launder.string(query.term);
+          const term = self.apos.launder.string(query.term);
           _query.autocomplete(term);
         } else {
           return [];
@@ -761,7 +761,7 @@ module.exports = {
       // find(), this cursor defaults to including unpublished docs. Subclasses
       // of @apostrophecms/piece-type often extend this to remove more default filters
       findForEditing(req, criteria, projection) {
-        let cursor = self.find(req, criteria).permission('edit').published(null).trash(null);
+        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null);
         if (projection) {
           cursor.project(projection);
         }
@@ -1056,7 +1056,7 @@ module.exports = {
 
         permission: {
           finalize() {
-            let typeSuffix = '-' + (query.get('type') || 'doc');
+            const typeSuffix = '-' + (query.get('type') || 'doc');
             let permission = query.get('permission');
             if (permission !== false) {
               if (permission && (!permission.match(/-/))) {
@@ -1310,7 +1310,7 @@ module.exports = {
               return;
             }
             const resultsByType = _.groupBy(results, 'type');
-            for (let type of _.keys(resultsByType)) {
+            for (const type of _.keys(resultsByType)) {
               const manager = self.apos.doc.getManager(type);
               // Careful, there will be no manager if type was not part of the projection
               if (manager && manager.schema) {
@@ -1354,7 +1354,7 @@ module.exports = {
               const manager = self.apos.doc.getManager(type);
               return manager && manager.addUrls;
             });
-            for (let type of interesting) {
+            for (const type of interesting) {
               await self.apos.doc.getManager(type).addUrls(req, byType[type]);
             }
           }
@@ -1418,7 +1418,7 @@ module.exports = {
         areas: {
           def: true,
           async after(results) {
-            let setting = query.get('areas');
+            const setting = query.get('areas');
             if (!setting) {
               return;
             }
@@ -1452,8 +1452,8 @@ module.exports = {
                 }
                 req.areasLoadedFor[doc._id]++;
                 for (const info of areasInfo) {
-                  let area = info.area;
-                  let dotPath = info.dotPath;
+                  const area = info.area;
+                  const dotPath = info.dotPath;
                   if (setting && Array.isArray(setting)) {
                     if (!_.includes(setting, dotPath)) {
                       return;
@@ -1481,9 +1481,9 @@ module.exports = {
             }
 
             if (req.deferWidgetLoading && (!req.loadingDeferredWidgets)) {
-              let types = Object.keys(widgetsByType);
+              const types = Object.keys(widgetsByType);
               for (const type of types) {
-                let manager = self.apos.area.getWidgetManager(type);
+                const manager = self.apos.area.getWidgetManager(type);
                 if (!manager) {
                   self.apos.area.warnMissingWidgetType(type);
                 } else if (manager.options.defer) {
@@ -1495,7 +1495,7 @@ module.exports = {
             }
 
             for (const type of _.keys(widgetsByType)) {
-              let manager = self.apos.area.getWidgetManager(type);
+              const manager = self.apos.area.getWidgetManager(type);
               if (!manager) {
                 self.apos.area.warnMissingWidgetType(type);
               }
@@ -1700,7 +1700,7 @@ module.exports = {
         // Not chainable.
 
         async toObject() {
-          let limit = query.get('limit');
+          const limit = query.get('limit');
           query.set('limit', 1);
           const result = (await query.toArray())[0];
           query.set('limit', limit);
@@ -1790,8 +1790,8 @@ module.exports = {
         // `_url` onto the `add` array. Not chainable.
 
         projectUrlField(add) {
-          let type = query.get('type');
-          let manager = type && self.apos.doc.getManager(type);
+          const type = query.get('type');
+          const manager = type && self.apos.doc.getManager(type);
           let fields;
           if (manager) {
             fields = manager.getUrlFields();
@@ -1820,10 +1820,8 @@ module.exports = {
         // Not chainable.
 
         projectJoinField(key, add) {
-          let schema;
-          let field;
-          schema = self.schema;
-          field = _.find(schema, { name: key });
+          const schema = self.schema;
+          const field = _.find(schema, { name: key });
           if (field) {
             add.push('type', field.idsField);
             return true;
@@ -1950,19 +1948,19 @@ module.exports = {
             return;
           }
           const names = Object.keys(query.builders);
-          for (let name of names) {
+          for (const name of names) {
             if (query.get(name) === undefined) {
               const builder = query.builders[name];
               query.set(name, builder.def);
             }
           }
-          for (let name of names) {
+          for (const name of names) {
             const builder = query.builders[name];
             if (builder.prefinalize) {
               await builder.prefinalize();
             }
           }
-          for (let name of names) {
+          for (const name of names) {
             const builder = query.builders[name];
             if (builder.finalize) {
               await builder.finalize();
@@ -1989,9 +1987,9 @@ module.exports = {
           // Since "afters," in some cases, invoke query builders, we have to
           // set query._finalized to false so these invocations don't
           // throw an exception.
-          let originalFinalized = query._finalized;
+          const originalFinalized = query._finalized;
           query._finalized = false;
-          for (let name of _.keys(query.builders)) {
+          for (const name of _.keys(query.builders)) {
             const builder = query.builders[name];
             if (builder.after) {
               await builder.after(results);
@@ -2003,7 +2001,7 @@ module.exports = {
 
         // Implementation detail of the `previous` and `next` query builders
         nextOrPrevious(verb) {
-          let doc = query.get(verb);
+          const doc = query.get(verb);
           if (!doc) {
             return;
           }
@@ -2013,16 +2011,16 @@ module.exports = {
           if (!query.get('sortMongo')) {
             query.finalizeSort();
           }
-          let sort = query.get('sortMongo');
-          let direction = (verb === 'next') ? 1 : -1;
+          const sort = query.get('sortMongo');
+          const direction = (verb === 'next') ? 1 : -1;
           if (!sort) {
             return;
           }
-          let clauses = [];
-          let criteria = {
+          const clauses = [];
+          const criteria = {
             $or: clauses
           };
-          let leftHand = {};
+          const leftHand = {};
           // If sort is { lastName: 1, firstName: 1 } then
           // we are interested in cases where
           // { lastName: { $lte: doc.lastName } } OR
@@ -2166,12 +2164,12 @@ module.exports = {
             // has a manager thanks to @apostrophecms/any-page-type. Use that as a default
             // so that we always get a manager object
 
-            let manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/page');
+            const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/page');
             if (!(manager && manager.schema)) {
               return;
             }
 
-            let sortify = {};
+            const sortify = {};
             for (const field of manager.schema) {
               if (field.sortify) {
                 sortify[field.name] = true;

@@ -307,7 +307,7 @@ const joinr = module.exports = {
     let fn = accessor;
     if (typeof (accessor) === 'string') {
       fn = function(o) {
-        let keys = accessor.split(/\./);
+        const keys = accessor.split(/\./);
         for (const key of keys) {
           o = o[key];
         }

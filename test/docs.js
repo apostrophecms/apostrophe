@@ -112,7 +112,7 @@ describe('Docs', function() {
         lastName: 'Sagan',
         age: 62,
         alive: false,
-        friendIds: ['larry']
+        friendIds: [ 'larry' ]
       }
     ];
 
@@ -396,8 +396,8 @@ describe('Docs', function() {
 
     const counts = await cursor.get('distinctCounts');
 
-    assert(counts['Larry'] === 1);
-    assert(counts['Lori'] === 2);
+    assert(counts.Larry === 1);
+    assert(counts.Lori === 2);
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {

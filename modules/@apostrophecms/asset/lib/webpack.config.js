@@ -9,7 +9,7 @@ if (process.env.APOS_BUNDLE_ANALYZER) {
 }
 
 module.exports = ({ importFile, modulesDir }, apos) => {
-  const tasks = [scss, vue].map(task =>
+  const tasks = [ scss, vue ].map(task =>
     task(
       {
         importFile,
@@ -31,11 +31,11 @@ module.exports = ({ importFile, modulesDir }, apos) => {
     // we could extend this with aliases for other apostrophe modules
     // at a later date if needed
     resolveLoader: {
-      extensions: ['*', '.js', '.vue', '.json'],
-      modules: ['node_modules/apostrophe/node_modules', 'node_modules']
+      extensions: [ '*', '.js', '.vue', '.json' ],
+      modules: [ 'node_modules/apostrophe/node_modules', 'node_modules' ]
     },
     resolve: {
-      extensions: ['*', '.js', '.vue', '.json'],
+      extensions: [ '*', '.js', '.vue', '.json' ],
       alias: {
         'apostrophe/vue$': 'vue/dist/vue.esm.js',
         // resolve apostrophe modules
