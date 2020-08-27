@@ -1,6 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
 
 let apos;
 
@@ -18,7 +18,7 @@ describe('Search', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'events': {
+        events: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
@@ -31,7 +31,7 @@ describe('Search', function() {
   });
 
   it('should add highSearchText, highSearchWords, lowSearchText, searchSummary to all docs on insert', async () => {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     await apos.doc.insert(req, {
       title: 'Testing Search Event',
       type: 'event',

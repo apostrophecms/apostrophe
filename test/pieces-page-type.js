@@ -16,7 +16,7 @@ describe('Pieces Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'events': {
+        events: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',

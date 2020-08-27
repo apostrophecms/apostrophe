@@ -9,7 +9,7 @@ const tagListItems = getItems();
 
 export default {
   title: 'Tag List',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 export const tagList = () => ({

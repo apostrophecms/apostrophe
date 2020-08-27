@@ -27,7 +27,7 @@ module.exports = {
   },
   restApiRoutes: (self, options) => ({
     getOne(req, _id) {
-      return self.find(req, { displayingIds: [_id] });
+      return self.find(req, { displayingIds: [ _id ] });
     },
     async post(req) {
       const type = self.apos.launder.select(req.body.type, [
@@ -44,12 +44,12 @@ module.exports = {
       await self.trigger.apply(self, [
         req,
         message
-      ].concat(strings).concat([{
+      ].concat(strings).concat([ {
         dismiss,
         type,
         pulse,
         id
-      }]));
+      } ]));
       return self.trigger(req, req.body.message, req.body.options || {});
     },
     put(req, _id) {
@@ -102,7 +102,7 @@ module.exports = {
         if (!message) {
           throw self.apos.error('required');
         }
-        let strings = [];
+        const strings = [];
         let i = 2;
         let index = 0;
         while (true) {
@@ -127,7 +127,7 @@ module.exports = {
           throw new Error('Bad notification call: number of %s placeholders does not match number of string arguments after message');
         }
 
-        let notification = {
+        const notification = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,

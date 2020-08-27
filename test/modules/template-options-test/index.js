@@ -1,6 +1,6 @@
 module.exports = {
   options: {
-    'spiffiness': 'nifty'
+    spiffiness: 'nifty'
   },
   init(self, options) {
     self.addHelpers({

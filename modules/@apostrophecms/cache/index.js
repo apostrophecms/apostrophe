@@ -95,11 +95,11 @@ module.exports = {
       // Command line task to clear all values in a namespace.
 
       async clearCacheTask(argv) {
-        let namespaces = argv._.slice(1);
+        const namespaces = argv._.slice(1);
         if (!namespaces.length) {
           throw new Error('A namespace or namespaces must be given.');
         }
-        for (let namespace of namespaces) {
+        for (const namespace of namespaces) {
           await self.clear(namespace);
         }
       },

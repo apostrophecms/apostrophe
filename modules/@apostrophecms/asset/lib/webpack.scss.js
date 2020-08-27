@@ -6,7 +6,7 @@ module.exports = (options, apos) => {
       rules: [
         {
           test: /\.css$/,
-          use: ['vue-style-loader', 'css-loader']
+          use: [ 'vue-style-loader', 'css-loader' ]
         },
         {
           test: /\.s[ac]ss$/,
@@ -16,7 +16,7 @@ module.exports = (options, apos) => {
             {
               loader: 'postcss-loader',
               options: {
-                plugins: () => [require('autoprefixer')]
+                plugins: () => [ require('autoprefixer') ]
               }
             },
             {
@@ -33,7 +33,7 @@ module.exports = (options, apos) => {
     },
     plugins: [
       new StyleLintPlugin({
-        files: ['./node_modules/apostrophe/modules/**/*.{scss,vue}']
+        files: [ './node_modules/apostrophe/modules/**/*.{scss,vue}' ]
       })
     ]
   };
