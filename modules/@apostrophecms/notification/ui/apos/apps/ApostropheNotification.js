@@ -79,7 +79,7 @@ export default function() {
             .sort()
             .reverse()[0];
 
-          const _id = this.notifications
+          const seenIds = this.notifications
             .filter(notification => notification.updatedAt === latestTimestamp)
             .map(notification => notification._id)
             .join(',_id=');
@@ -88,7 +88,7 @@ export default function() {
             ...(latestTimestamp && {
               qs: {
                 modifiedOnOrSince: latestTimestamp,
-                _id
+                seenIds
               }
             })
           });

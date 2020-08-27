@@ -55,14 +55,17 @@ module.exports = {
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
-      return self.db.updateOne({ _id }, {
-        $set: {
-          ...req.body
-        },
-        $currentDate: {
-          updatedAt: true
-        }
-      });
+      const dismissed = self.apos.launder.boolean(req.body.dismissed);
+      if (dismissed) {
+        return self.db.updateOne({ _id }, {
+          $set: {
+            dismissed
+          },
+          $currentDate: {
+            updatedAt: true
+          }
+        });
+      }
     },
     delete(req, _id) {
       return self.db.deleteMany({ _id });
@@ -167,7 +170,8 @@ module.exports = {
       // properties.
       //
       // If `options.modifiedOnOrSince` is set, notifications
-      // greater than the timestamp are sent.
+      // greater than the timestamp are sent,
+      // minus any notifications whose IDs are in `options.seenIds`.
 
       async find(req, options) {
         try {
@@ -255,8 +259,8 @@ module.exports = {
               throw self.apos.error('invalid');
             }
             start = Date.now();
-            modifiedOnOrSince = req.query.modifiedOnOrSince && self.apos.launder.date(req.query.modifiedOnOrSince);
-            seenIds = req.query._id && self.apos.launder.ids(req.query._id) && req.query._id.split(',_id=');
+            modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+            seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds) && req.query._id.split(',_id=');
             await attempt();
           } catch (e) {
             return self.routeSendError(req, e);
