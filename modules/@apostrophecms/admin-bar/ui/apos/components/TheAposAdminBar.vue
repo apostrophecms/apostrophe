@@ -116,6 +116,7 @@ $menu-v-pad: 18px;
 $menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
+$admin-bar-h-pad: 20px;
 
 body {
   margin-top: $menu-row-height * 2;
@@ -134,7 +135,7 @@ body {
   display: flex;
   align-items: center;
   height: $menu-row-height;
-  padding: 0 20px;
+  padding: 0 $admin-bar-h-pad 0 0;
   border-bottom: 1px solid var(--a-base-9);
 }
 
@@ -142,6 +143,10 @@ body {
   display: flex;
   margin: 0;
   padding: 0;
+}
+
+.apos-admin-bar__logo {
+  margin-left: $admin-bar-h-pad;
 }
 
 .apos-admin-bar__logo {
