@@ -236,23 +236,49 @@
     }
   };
 
-  // Adds query string data to url. Currently supports only one level
-  // of parameters (not nested structures)
+  // Adds query string data to url. Supports nested structures with objects
+  // and arrays, in a way compatible with qs and most other parsers including
+  // those baked into PHP frameworks etc.
   apos.http.addQueryToUrl = function(url, data) {
-    var keys;
     var i;
-    if ((data !== null) && ((typeof data) === 'object')) {
-      keys = Object.keys(data);
-      for (i = 0; (i < keys.length); i++) {
-        var key = keys[i];
+    var flat;
+    var testUrl = url;
+    if ((data != null) && ((typeof data) === 'object')) {
+      flat = flatten('', data);
+      for (i = 0; (i < flat.length); i++) {
+        var key = flat[i][0];
+        var val = flat[i][1];
         if (i > 0) {
           url += '&';
         } else {
           url += '?';
         }
-        url += encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+        url += encodeURIComponent(key) + '=' + encodeURIComponent(val);
       }
     }
     return url;
+    function flatten(path, data) {
+      var flat = [];
+      var keys;
+      var i;
+      if (Array.isArray(data)) {
+        for (i = 0; (i < data.length); i++) {
+          insert('', data[i]);
+        }
+      } else {
+        keys = Object.keys(data);
+        for (i = 0; (i < keys.length); i++) {
+          insert(keys[i], data[keys[i]]);
+        }
+      }
+      return flat;
+      function insert(key, datum) {
+        if ((datum != null) && ((typeof datum) === 'object')) {
+          flat = flat.concat(flatten(path.length ? path + '[' + key + ']' : key, datum));
+        } else {
+          flat.push([ path.length ? path + '[' + key + ']' : key, datum ]);
+        }
+      }
+    }
   };
 })();
