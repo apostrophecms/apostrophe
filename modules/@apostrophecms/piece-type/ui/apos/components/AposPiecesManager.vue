@@ -20,7 +20,7 @@
           <AposPiecesManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
-            :filters="options.filters"
+            :filters="options.filters" :labels="moduleLabels"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"

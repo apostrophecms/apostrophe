@@ -65,6 +65,10 @@ export default {
     currentPage: {
       type: Number,
       default: 1
+    },
+    labels: {
+      type: Object,
+      required: true
     }
   },
   emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],
@@ -87,7 +91,7 @@ export default {
       searchField: {
         field: {
           name: 'search',
-          placeholder: 'Search Images',
+          placeholder: `Search ${this.labels.plural}`,
           icon: 'magnify-icon',
           enterSubmittable: true
         },
