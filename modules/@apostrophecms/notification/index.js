@@ -267,7 +267,7 @@ module.exports = {
             }
             seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
             if (seenIds) {
-              seenIds = req.query.seenIds.split(',_id=');
+              seenIds = req.query.seenIds.split(',');
             }
 
             await attempt();

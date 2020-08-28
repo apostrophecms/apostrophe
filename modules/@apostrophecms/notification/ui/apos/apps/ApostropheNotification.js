@@ -83,8 +83,7 @@ export default function() {
 
           const seenIds = allNotifications
             .filter(notification => notification.updatedAt === latestTimestamp)
-            .map(notification => notification._id)
-            .join(',_id=');
+            .map(notification => notification._id);
 
           const { notifications, dismissed } = await apos.http.get(apos.notification.action, {
             ...(latestTimestamp && {
