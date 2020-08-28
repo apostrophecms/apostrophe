@@ -182,10 +182,10 @@ module.exports = {
           }).sort({ createdAt: 1 }).toArray();
 
           const notifications = results.filter(result => !result.dismissed);
-          const dismissed = results.filter(result => result.dismissed).map(result => result._id);
+          const dismissed = results.filter(result => result.dismissed);
           dismissed.forEach(element => {
             // 5-minute delay before deleting
-            setTimeout(() => self.restApiRoutes.delete(req, element), 300000);
+            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000);
           });
 
           return {
@@ -259,8 +259,17 @@ module.exports = {
               throw self.apos.error('invalid');
             }
             start = Date.now();
-            modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
-            seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds) && req.query._id.split(',_id=');
+
+            try {
+              modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+            } catch (e) {
+              throw self.apos.error('invalid');
+            }
+            seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+            if (seenIds) {
+              seenIds = req.query.seenIds.split(',_id=');
+            }
+
             await attempt();
           } catch (e) {
             return self.routeSendError(req, e);

@@ -6,7 +6,8 @@ export default function() {
     el: '#apos-notification',
     data () {
       return {
-        notifications: []
+        notifications: [],
+        dismissed: []
       };
     },
     async mounted() {
@@ -74,12 +75,13 @@ export default function() {
       },
       async poll() {
         try {
-          const latestTimestamp = this.notifications
+          const allNotifications = [...this.notifications, ...this.dismissed];
+          const latestTimestamp = allNotifications
             .map(notification => notification.updatedAt)
             .sort()
             .reverse()[0];
 
-          const seenIds = this.notifications
+          const seenIds = allNotifications
             .filter(notification => notification.updatedAt === latestTimestamp)
             .map(notification => notification._id)
             .join(',_id=');
@@ -94,10 +96,11 @@ export default function() {
           });
 
           this.notifications = [...this.notifications, ...(notifications || [])];
+          this.dismissed = [...this.dismissed, ...(dismissed || [])];
 
           if (dismissed.length) {
             this.notifications = this.notifications.filter(notification => {
-              return !dismissed.some(element => notification._id === element);
+              return !dismissed.some(element => notification._id === element._id);
             });
           }
         } catch (err) {
