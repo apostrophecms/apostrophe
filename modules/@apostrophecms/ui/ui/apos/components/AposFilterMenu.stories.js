@@ -29,39 +29,41 @@ function getData() {
     button: {
       label: 'Filter',
       icon: 'chevron-down-icon',
-      modifiers: ['icon-right'],
+      modifiers: [ 'icon-right' ],
       type: 'outline'
     },
     filters: [
       {
-        'name': 'published',
-        'choices': [
+        label: 'Published',
+        name: 'published',
+        choices: [
           {
-            'value': true,
-            'label': 'Published'
+            value: true,
+            label: 'Published'
           }, {
-            'value': false,
-            'label': 'Draft'
+            value: false,
+            label: 'Draft'
           }, {
-            'value': null,
-            'label': 'Both'
+            value: null,
+            label: 'Both'
           }
         ],
-        'def': true,
-        'style': 'pill'
+        def: true,
+        style: 'pill'
       }, {
-        'name': 'trash',
-        'choices': [
+        label: 'Trash',
+        name: 'trash',
+        choices: [
           {
-            'value': false,
-            'label': 'Live'
+            value: false,
+            label: 'Live'
           }, {
-            'value': true,
-            'label': 'Trash'
+            value: true,
+            label: 'Trash'
           }
         ],
-        'def': false,
-        'style': 'pill'
+        def: false,
+        style: 'pill'
       }
     ]
   };

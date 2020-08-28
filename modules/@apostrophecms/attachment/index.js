@@ -2,8 +2,8 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Promise = require('bluebird');
-let uploadfs = require('uploadfs');
-let mkdirp = require('mkdirp');
+const uploadfs = require('uploadfs');
+const mkdirp = require('mkdirp');
 
 module.exports = {
   options: { alias: 'attachment' },
@@ -18,7 +18,7 @@ module.exports = {
           'gif',
           'jpg',
           'png'
-        ].concat(options.svgImages ? ['svg'] : []),
+        ].concat(options.svgImages ? [ 'svg' ] : []),
         extensionMaps: { jpeg: 'jpg' },
         // uploadfs should treat this as an image and create scaled versions
         image: true
@@ -99,7 +99,7 @@ module.exports = {
 
     self.sizeAvailableInTrash = options.sizeAvailableInTrash || 'one-sixth';
 
-    let uploadfsDefaultSettings = {
+    const uploadfsDefaultSettings = {
       backend: 'local',
       uploadsPath: self.apos.rootDir + '/public/uploads',
       uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
@@ -186,7 +186,7 @@ module.exports = {
         crop: [
           self.canUpload,
           async function (req) {
-            let _id = self.apos.launder.id(req.body._id);
+            const _id = self.apos.launder.id(req.body._id);
             let crop = req.body.crop;
             if (typeof crop !== 'object') {
               throw self.apos.error('invalid');
@@ -309,13 +309,13 @@ module.exports = {
         });
       },
       acceptableExtension(field, attachment) {
-        const groups = field.fileGroups || (field.fileGroup && [field.fileGroup]);
+        const groups = field.fileGroups || (field.fileGroup && [ field.fileGroup ]);
         let extensions;
         if (groups) {
           if (!_.includes(groups, attachment.group)) {
             extensions = [];
             _.each(groups, function (group) {
-              let groupInfo = _.find(self.options.fileGroups, { name: group });
+              const groupInfo = _.find(self.options.fileGroups, { name: group });
               if (!groupInfo) {
                 return;
               }
@@ -324,7 +324,7 @@ module.exports = {
             return false;
           }
         }
-        extensions = field.extensions || (field.extension && [field.extension]);
+        extensions = field.extensions || (field.extension && [ field.extension ]);
         if (extensions) {
           if (!_.includes(extensions, attachment.extension)) {
             return false;
@@ -357,7 +357,7 @@ module.exports = {
         }
         extension = extension.toLowerCase();
         // Do we accept this file extension?
-        let group = self.getFileGroup(extension);
+        const group = self.getFileGroup(extension);
         if (!group) {
           const accepted = _.union(_.map(self.fileGroups, 'extensions'));
           throw new Error('File extension not accepted. Acceptable extensions: ' + accepted.join(','));
@@ -457,7 +457,7 @@ module.exports = {
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
       getMissingAttachmentUrl() {
-        let defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
+        const defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
         self.apos.util.warn('Template warning: Impossible to retrieve the attachment url since it is missing, a default icon has been set. Please fix this ASAP!');
         return defaultIconUrl;
       },
@@ -607,7 +607,7 @@ module.exports = {
           }
           return true;
         }
-        let winners = [];
+        const winners = [];
         if (!within) {
           return [];
         }
@@ -620,7 +620,7 @@ module.exports = {
             // apos.attachment.url with the returned object
             let i;
             for (i = ancestors.length - 1; i >= 0; i--) {
-              let ancestor = ancestors[i];
+              const ancestor = ancestors[i];
               if (ancestor.relationships && ancestor.relationships[o._id]) {
                 // Clone it so that if two things have crops of the same image, we
                 // don't overwrite the value on subsequent calls
@@ -719,7 +719,7 @@ module.exports = {
         if (!self.hasFocalPoint(attachment)) {
           return 'center center';
         }
-        let point = self.getFocalPoint(attachment);
+        const point = self.getFocalPoint(attachment);
         return point.x + '% ' + point.y + '%';
       },
       // Returns an object with `x` and `y` properties containing the
@@ -729,8 +729,8 @@ module.exports = {
         if (!self.hasFocalPoint(attachment)) {
           return null;
         }
-        let x = attachment._focalPoint ? attachment._focalPoint.x : attachment.x;
-        let y = attachment._focalPoint ? attachment._focalPoint.y : attachment.y;
+        const x = attachment._focalPoint ? attachment._focalPoint.x : attachment.x;
+        const y = attachment._focalPoint ? attachment._focalPoint.y : attachment.y;
         return {
           x: x,
           y: y
@@ -760,12 +760,12 @@ module.exports = {
       // This method is invoked after any doc is inserted, updated, trashed
       // or rescued.
       async updateDocReferences(doc) {
-        let attachments = self.all(doc);
-        let ids = _.uniq(_.map(attachments, '_id'));
+        const attachments = self.all(doc);
+        const ids = _.uniq(_.map(attachments, '_id'));
         // Build an array of mongo commands to run. Each
         // entry in the array is a 2-element array. Element 0
         // is the criteria, element 1 is the command
-        let commands = [];
+        const commands = [];
         if (!doc.trash) {
           commands.push([
             { _id: { $in: ids } },
@@ -786,8 +786,8 @@ module.exports = {
         commands.push([
           {
             $or: [
-              { trashDocIds: { $in: [doc._id] } },
-              { docIds: { $in: [doc._id] } }
+              { trashDocIds: { $in: [ doc._id ] } },
+              { docIds: { $in: [ doc._id ] } }
             ],
             _id: { $nin: ids }
           },
@@ -801,7 +801,7 @@ module.exports = {
           { _id: { $in: ids } },
           { $set: { utilized: true } }
         ]);
-        for (let command of commands) {
+        for (const command of commands) {
           await self.db.updateMany(command[0], command[1]);
         }
         await self.updatePermissions();
@@ -828,7 +828,7 @@ module.exports = {
             'docIds.0': { $exists: 0 },
             trash: { $ne: true }
           }).toArray();
-          for (let attachment of attachments) {
+          for (const attachment of attachments) {
             await permissionsOne(attachment, true);
           }
         }
@@ -838,7 +838,7 @@ module.exports = {
             'docIds.0': { $exists: 1 },
             trash: { $ne: false }
           }).toArray();
-          for (let attachment of attachments) {
+          for (const attachment of attachments) {
             await permissionsOne(attachment, false);
           }
         }
@@ -872,11 +872,11 @@ module.exports = {
             'jpg',
             'png'
           ], attachment.extension)) {
-            sizes = [{ name: 'original' }];
+            sizes = [ { name: 'original' } ];
           } else {
-            sizes = self.imageSizes.concat([{ name: 'original' }]);
+            sizes = self.imageSizes.concat([ { name: 'original' } ]);
           }
-          for (let size of sizes) {
+          for (const size of sizes) {
             if (size.name === self.sizeAvailableInTrash) {
               // This size is always kept accessible for preview
               // in the media library
@@ -901,12 +901,12 @@ module.exports = {
             // skip extra API calls
             return;
           }
-          for (let crop of attachment.crops || []) {
+          for (const crop of attachment.crops || []) {
             await cropOne(crop);
           }
         }
         async function cropOne(crop) {
-          for (let size of self.imageSizes.concat([{ name: 'original' }])) {
+          for (const size of self.imageSizes.concat([ { name: 'original' } ])) {
             if (size.name === self.sizeAvailableInTrash) {
               // This size is always kept accessible for preview
               // in the media library

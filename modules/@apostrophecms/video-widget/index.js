@@ -13,11 +13,11 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: { label: 'Video' },
   beforeSuperClass(self, options) {
-    options.addFields = [{
+    options.addFields = [ {
       type: 'video',
       name: 'video',
       label: 'Video URL',
       required: true
-    }].concat(options.addFields || []);
+    } ].concat(options.addFields || []);
   }
 };

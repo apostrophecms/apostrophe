@@ -11,7 +11,7 @@
       />
       <AposButton
         :label="`New ${ options.label }`" type="primary"
-        @click="inserting = true"
+        @click="editing = true"
       />
     </template>
     <template #main>
@@ -19,10 +19,12 @@
         <template #bodyHeader>
           <AposPiecesManagerToolbar
             :selected-state="selectAllState"
+            :total-pages="totalPages" :current-page="currentPage"
+            :filters="options.filters"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
-            :filters="options.filters"
+            @page-change="updatePage"
             @filter="filter"
           />
         </template>
@@ -40,10 +42,10 @@
                     class="apos-table__header-label"
                   >
                     <component
-                      v-if="header.icon"
+                      v-if="header.labelIcon"
+                      :is="icons[header.labelIcon]"
                       :size="iconSize(header)"
                       class="apos-table__header-icon"
-                      :is="icons[header.icon]"
                     />
                     {{ header.label }}
                   </component>
@@ -76,6 +78,14 @@
                   >
                     <LinkIcon :size="12" />
                   </a>
+                  <button
+                    v-else-if="header.name === 'title'"
+                    @click="openEditor(row._id)"
+                    class="apos-table__cell-field"
+                    :class="`apos-table__cell-field--${header.name}`"
+                  >
+                    {{ row[header.name] }}
+                  </button>
                   <p
                     v-else class="apos-table__cell-field"
                     :class="`apos-table__cell-field--${header.name}`"
@@ -93,9 +103,10 @@
       </AposModalBody>
       <!-- The pieces editor modal. -->
       <component
-        v-if="inserting" :module-name="moduleName"
-        :is="options.components.insertModal" @close="inserting = false"
-        @saved="finishSaved"
+        v-if="editing"
+        :is="options.components.insertModal"
+        :module-name="moduleName" :doc-id="editingDocId"
+        @saved="finishSaved" @safe-close="closeEditor"
       />
     </template>
   </AposModal>
@@ -124,10 +135,13 @@ export default {
       },
       pieces: [],
       lastSelected: null,
-      totalPages: 1, // TODO: Populate this from the `getPieces` method.
-      currentPage: 1, // TODO: Make use of these.
+      totalPages: 1,
+      currentPage: 1,
       filterValues: {},
-      inserting: false
+      editing: false,
+      editingDocId: '',
+      queryExtras: {},
+      holdQueries: false
     };
   },
   computed: {
@@ -143,7 +157,6 @@ export default {
     moduleTitle () {
       return `Manage ${this.moduleLabels.plural}`;
     },
-    // headers:
     rows() {
       const rows = [];
       if (!this.pieces || !this.headers.length) {
@@ -179,12 +192,6 @@ export default {
       return 'empty';
     }
   },
-  // TODO: Work these back into the toolbar.
-  // watch: {
-  //   currentPage() {
-  //     this.update();
-  //   }
-  // },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.choices[0].value;
@@ -198,28 +205,70 @@ export default {
   methods: {
     async finishSaved() {
       await this.getPieces();
-
-      this.inserting = false;
     },
     async getPieces () {
-      this.pieces = (await apos.http.get(
+      if (this.holdQueries) {
+        return;
+      }
+
+      this.holdQueries = true;
+
+      const qs = {
+        ...this.filterValues,
+        page: this.currentPage,
+        ...this.queryExtras
+      };
+
+      // Avoid undefined properties.
+      for (const prop in qs) {
+        if (qs[prop] === undefined) {
+          delete qs[prop];
+        };
+      }
+
+      const getResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs: {
-            ...this.filterValues,
-            page: this.currentPage
-          }
+          qs
         }
-      )).results;
+      ));
+
+      this.currentPage = getResponse.currentPage;
+      this.totalPages = getResponse.pages;
+      this.pieces = getResponse.results;
+      this.holdQueries = false;
+    },
+    updatePage(num) {
+      if (num) {
+        this.currentPage = num;
+        this.getPieces();
+      }
+    },
+    openEditor(docId) {
+      this.editingDocId = docId;
+      this.editing = true;
+    },
+    closeEditor() {
+      this.editing = false;
+      this.editingDocId = '';
     },
     // Toolbar handlers
     trashClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    search(query) {
-      // TODO: Update the `qs` object with search term in the `getPieces` call.
-      this.$emit('search', query);
+    async search(query) {
+      if (query) {
+        this.queryExtras.autocomplete = query;
+      } else if ('autocomplete' in this.queryExtras) {
+        delete this.queryExtras.autocomplete;
+      } else {
+        return;
+      }
+
+      this.currentPage = 1;
+
+      await this.getPieces();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -227,6 +276,7 @@ export default {
       }
 
       this.filterValues[filter] = value;
+      this.currentPage = 1;
 
       this.getPieces();
     }

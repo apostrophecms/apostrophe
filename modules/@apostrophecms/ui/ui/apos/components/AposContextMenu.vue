@@ -74,7 +74,7 @@ export default {
       default: 'below'
     }
   },
-  emits: ['open', 'item-clicked'],
+  emits: [ 'open', 'item-clicked' ],
   data() {
     return {
       open: false,
@@ -97,7 +97,7 @@ export default {
       return classes.join(' ');
     },
     buttonState() {
-      return this.open ? ['active'] : null;
+      return this.open ? [ 'active' ] : null;
     }
   },
   watch: {

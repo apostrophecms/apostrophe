@@ -143,7 +143,7 @@ module.exports = {
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           self.ensureSlug(doc);
-          let manager = self.getManager(doc.type);
+          const manager = self.getManager(doc.type);
           _.each(manager.schema, function (field) {
             if (field.sortify) {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
@@ -152,7 +152,7 @@ module.exports = {
           doc.updatedAt = new Date();
         }
       },
-      'fixUniqueError': {
+      fixUniqueError: {
         async fixUniqueSlug(req, doc) {
           doc.slug += Math.floor(Math.random() * 10).toString();
         }
@@ -221,28 +221,30 @@ module.exports = {
         const params = self.getPathLevelIndexParams();
         return self.db.createIndex(params, {});
       },
+
       // Returns a query based on the permissions
-      // associated with the given request. The criteria
-      // and projection arguments are optional, you
-      // can also call the chainable .criteria() and
-      // .project() methods.
+      // associated with the given request. You can then
+      // invoke chainable query builders like `.project()`,
+      // `limit()`, etc. to alter the query before ending
+      // the chain with an awaitable method like `toArray()`
+      // to obtain documents.
       //
-      // If you do not provide criteria or call .criteria()
-      // you get every document in Apostrophe, which is
-      // too many.
-      //
-      // If you do not provide `projection` or call
-      // `.project()` you get all properties of
-      // the docs, which is fine.
+      // `req` determines what documents the user is allowed
+      // to see. `criteria` is a MongoDB criteria object,
+      // see the MongoDB documentation for basics on this.
+      // If an `options` object is present, query builder
+      // methods with the same name as each property are
+      // invoked, with the value of that property. This is
+      // an alternative to chaining methods.
       //
       // This method returns a query, not docs! You
       // need to chain it with toArray() or other
-      // query methods:
+      // query methods and await the result:
       //
       // await apos.doc.find(req, { type: 'foobar' }).toArray()
 
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, projection);
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, options);
       },
 
       // **Most often you will insert or update docs via the
@@ -285,7 +287,7 @@ module.exports = {
         await self.insertBody(req, doc, options);
         await m.emit('afterInsert', req, doc, options);
         await m.emit('afterSave', req, doc, options);
-        await m.emit('afterLoad', req, [doc]);
+        await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
       // Updates the given document. If the slug is not
@@ -324,7 +326,7 @@ module.exports = {
         await self.updateBody(req, doc, options);
         await m.emit('afterUpdate', req, doc, options);
         await m.emit('afterSave', req, doc, options);
-        await m.emit('afterLoad', req, [doc]);
+        await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
       // Apostrophe edits doc editing and viewing permissions via joins,
@@ -337,7 +339,7 @@ module.exports = {
       // The `options` object is for future extension and is passed on
       // to this method by `insert` and `update`.
       async denormalizePermissions(req, doc, options) {
-        let fields = {
+        const fields = {
           viewGroupsIds: 'view',
           viewUsersIds: 'view',
           editGroupsIds: 'edit',
@@ -396,10 +398,10 @@ module.exports = {
           _dotPath = '';
         }
         _ancestors = (_ancestors || []).concat(doc);
-        let remove = [];
-        for (let key in doc) {
+        const remove = [];
+        for (const key in doc) {
           const __dotPath = _dotPath + key.toString();
-          let ow = '_originalWidgets';
+          const ow = '_originalWidgets';
           if (__dotPath === ow || __dotPath.substring(0, ow.length) === ow + '.') {
             continue;
           }
@@ -408,11 +410,11 @@ module.exports = {
           } else {
             const val = doc[key];
             if (typeof val === 'object') {
-              self.walk(val, iterator, __dotPath, _ancestors.concat([doc]));
+              self.walk(val, iterator, __dotPath, _ancestors.concat([ doc ]));
             }
           }
         }
-        for (let key of remove) {
+        for (const key of remove) {
           delete doc[key];
         }
       },
@@ -608,7 +610,7 @@ module.exports = {
           if (!info) {
             throw self.apos.error('notfound');
           }
-          let ago = Math.ceil((now - info.advisoryLock.updatedAt.getTime()) / 1000 / 60);
+          const ago = Math.ceil((now - info.advisoryLock.updatedAt.getTime()) / 1000 / 60);
           if (!info.advisoryLock) {
             // Nobody else has a lock but you couldn't get one —
             // must be permissions

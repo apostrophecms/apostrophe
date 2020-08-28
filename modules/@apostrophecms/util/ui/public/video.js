@@ -27,9 +27,9 @@ apos.util.widgetPlayers['@apostrophecms/video'] = function(el, data, options) {
   }
 
   function play(el, result) {
-    let shaker = document.createElement('div');
+    const shaker = document.createElement('div');
     shaker.innerHTML = result.html;
-    let inner = shaker.firstChild;
+    const inner = shaker.firstChild;
     el.innerHTML = '';
     if (!inner) {
       return;

@@ -5,6 +5,7 @@
   <div class="apos-schema">
     <div v-for="field in currentSchema" :key="field.name">
       <component
+        v-if="fieldState[field.name]"
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
         :status="fields[field.name].status"
@@ -42,23 +43,12 @@ export default {
   },
   emits: [ 'input' ],
   data() {
-    const next = {
-      hasErrors: false,
-      data: {}
-    };
-
-    const fieldState = {};
-    this.schema.forEach(field => {
-      fieldState[field.name] = {
-        error: false,
-        data: this.value.data[field.name] || field.def
-      };
-      next.data[field.name] = fieldState[field.name].data;
-    });
-
     return {
-      next,
-      fieldState,
+      next: {
+        hasErrors: false,
+        data: {}
+      },
+      fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
@@ -108,16 +98,35 @@ export default {
     }
   },
   mounted() {
-    this.updateNextAndEmit();
+    this.populateDocData();
   },
   methods: {
+    populateDocData() {
+      const next = {
+        hasErrors: false,
+        data: {}
+      };
+
+      const fieldState = {};
+      this.schema.forEach(field => {
+        fieldState[field.name] = {
+          error: false,
+          data: this.value.data[field.name] || field.def
+        };
+        next.data[field.name] = fieldState[field.name].data;
+      });
+      this.next = next;
+      this.fieldState = fieldState;
+    },
     updateNextAndEmit() {
       this.next.hasErrors = false;
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
-        this.next.data[field.name] = this.fieldState[field.name].data;
+
+        this.next.data[field.name] = this.fieldState[field.name].data ||
+          this.value.data[field.name];
       });
       this.$emit('input', this.next);
     }

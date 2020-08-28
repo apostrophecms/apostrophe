@@ -3,97 +3,96 @@
     tag="ol"
     class="apos-tree__list"
     :list="myRows"
-    :group="{ name: treeId }"
+    v-bind="dragOptions"
     @start="startDrag"
     @end="endDrag"
-    :data-list-id="listId"
-    :disabled="!options.draggable"
-    handle=".apos-tree__row__handle"
   >
-    <li
-      v-for="row in myRows" :key="row._id"
-      :data-row-id="row._id" data-apos-tree-row
-      :class="getRowClasses(row)"
-      :aria-role="options.selectable ? 'button' : null"
-      :tabindex="options.selectable ? 0 : null"
-      v-on="options.selectable ? {
-        'click': selectRow,
-        'keydown': keydownRow
-      } : {}"
-    >
-      <div class="apos-tree__row-data">
-        <!-- {{ options.startCollapsed }} -->
-        <button
-          v-if="row.children && row.children.length > 0"
-          class="apos-tree__row__toggle" data-apos-tree-toggle
-          aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
-          @click="toggleSection($event)"
-        >
-          <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
-        </button>
-        <component
-          v-for="(col, index) in headers"
-          :key="`${col.name}-${index}`"
-          :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
-          :href="col.type === 'link' ? row[col.name] : false"
-          :target="col.type === 'link' ? '_blank' : false"
-          :class="getCellClasses(col, row)"
-          :data-col="col.name"
-          :style="getCellStyles(col.name, index)"
-          @click="col.action ? $emit(col.action, row._id) : null"
-        >
-          <drag-icon
-            v-if="options.draggable && index === 0" class="apos-tree__row__handle"
-            :size="20"
-            :fill-color="null"
-          />
-          <AposCheckbox
-            v-if="options.bulkSelect && index === 0"
-            class="apos-tree__row__checkbox"
-            tabindex="-1"
-            :field="{
-              name: `${col.name}-${index}`,
-              type: 'checkbox',
-              hideLabel: true,
-              label: `Toggle selection of ${row.title}`,
-              disableFocus: true
-            }"
-            :status="{}"
-            :choice="{ value: row._id }"
-            v-model="checkedProxy"
-          />
+    <transition-group name="apos-flip-list">
+      <li
+        v-for="row in myRows" :key="row._id"
+        :data-row-id="row._id" data-apos-tree-row
+        :class="getRowClasses(row)"
+        :aria-role="options.selectable ? 'button' : null"
+        :tabindex="options.selectable ? 0 : null"
+        v-on="options.selectable ? {
+          'click': selectRow,
+          'keydown': keydownRow
+        } : {}"
+      >
+        <div class="apos-tree__row-data">
+          <!-- {{ options.startCollapsed }} -->
+          <button
+            v-if="row.children && row.children.length > 0"
+            class="apos-tree__row__toggle" data-apos-tree-toggle
+            aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
+            @click="toggleSection($event)"
+          >
+            <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
+          </button>
           <component
-            v-if="col.icon" :is="icons[col.icon]"
-            class="apos-tree__cell__icon"
-          />
-          <span v-show="!col.iconOnly">
-            {{ row[col.name] }}
-          </span>
-        </component>
-      </div>
-      <AposTreeRows
-        v-if="row.children"
-        data-apos-branch-height
-        ref="tree-branches"
-        :rows="row.children"
-        :headers="headers"
-        :icons="icons"
-        :col-widths="colWidths"
-        :level="level + 1"
-        :nested="nested"
-        :list-id="row._id"
-        :tree-id="treeId"
-        :options="options"
-        :class="{ 'is-collapsed': options.startCollapsed }"
-        :style="{
-          'max-height': options.startCollapsed ? '0' : null
-        }"
-        @busy="$emit('busy', $event)"
-        @update="$emit('update', $event)"
-        @edit="$emit('edit', $event)"
-        v-model="checkedProxy"
-      />
-    </li>
+            v-for="(col, index) in headers"
+            :key="`${col.name}-${index}`"
+            :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
+            :href="col.type === 'link' ? row[col.name] : false"
+            :target="col.type === 'link' ? '_blank' : false"
+            :class="getCellClasses(col, row)"
+            :data-col="col.name"
+            :style="getCellStyles(col.name, index)"
+            @click="col.action ? $emit(col.action, row._id) : null"
+          >
+            <drag-icon
+              v-if="options.draggable && index === 0" class="apos-tree__row__handle"
+              :size="20"
+              :fill-color="null"
+            />
+            <AposCheckbox
+              v-if="options.bulkSelect && index === 0"
+              class="apos-tree__row__checkbox"
+              tabindex="-1"
+              :field="{
+                name: `${col.name}-${index}`,
+                type: 'checkbox',
+                hideLabel: true,
+                label: `Toggle selection of ${row.title}`,
+                disableFocus: true
+              }"
+              :status="{}"
+              :choice="{ value: row._id }"
+              v-model="checkedProxy"
+            />
+            <component
+              v-if="col.icon" :is="icons[col.icon]"
+              class="apos-tree__cell__icon"
+            />
+            <span v-show="!col.iconOnly">
+              {{ row[col.name] }}
+            </span>
+          </component>
+        </div>
+        <AposTreeRows
+          v-if="row.children"
+          data-apos-branch-height
+          ref="tree-branches"
+          :rows="row.children"
+          :headers="headers"
+          :icons="icons"
+          :col-widths="colWidths"
+          :level="level + 1"
+          :nested="nested"
+          :list-id="row._id"
+          :tree-id="treeId"
+          :options="options"
+          :class="{ 'is-collapsed': options.startCollapsed }"
+          :style="{
+            'max-height': options.startCollapsed ? '0' : null
+          }"
+          @busy="$emit('busy', $event)"
+          @update="$emit('update', $event)"
+          @edit="$emit('edit', $event)"
+          v-model="checkedProxy"
+        />
+      </li>
+    </transition-group>
   </VueDraggable>
 </template>
 
@@ -174,6 +173,18 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
+    },
+    isOpen() {
+      return true;
+    },
+    dragOptions() {
+      return {
+        group: { name: this.treeId },
+        dataListId: this.listId,
+        disabled: !this.options.draggable,
+        handle: '.apos-tree__row__handle',
+        ghostClass: 'is-dragging'
+      };
     }
   },
   mounted() {
@@ -285,6 +296,14 @@ export default {
 </script>
 
 <style lang="scss">
+  .apos-tree__row {
+    &.is-dragging {
+      opacity: 0.5;
+    }
+    &.apos-flip-list-move {
+      transition: transform 0.4s;
+    }
+  }
   .apos-tree__list {
     transition: max-height 0.3s ease;
 

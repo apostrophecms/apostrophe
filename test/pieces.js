@@ -23,7 +23,7 @@ describe('Pieces', function() {
       root: module,
 
       modules: {
-        'things': {
+        things: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'things',
@@ -40,7 +40,7 @@ describe('Pieces', function() {
             }
           }
         },
-        'people': {
+        people: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'people',
@@ -56,7 +56,7 @@ describe('Pieces', function() {
             }
           }
         },
-        'products': {
+        product: {
           extend: '@apostrophecms/piece-type',
           options: {
             publicApiProjection: {
@@ -106,18 +106,25 @@ describe('Pieces', function() {
                 withType: 'article',
                 filters: {
                   projection: {
-                    title: 1,
-                    slug: 1
+                    _url: 1,
+                    title: 1
                   }
-                }
+                },
+                relationship: [
+                  {
+                    // Explains the relevance of the article to the
+                    // product in 1 sentence
+                    name: 'relevance',
+                    type: 'string'
+                  }
+                ]
               }
             }
           }
         },
-        articles: {
+        article: {
           extend: '@apostrophecms/piece-type',
           options: {
-            name: 'article',
             publicApiProjection: {
               title: 1,
               _url: 1
@@ -133,13 +140,13 @@ describe('Pieces', function() {
         }
       }
     });
-    assert(apos.modules['things']);
-    assert(apos.modules['things'].schema);
+    assert(apos.modules.things);
+    assert(apos.modules.things.schema);
   });
 
   // little test-helper function to get piece by id regardless of trash status
   async function findPiece(req, id) {
-    const piece = apos.modules['things'].find(req, { _id: id })
+    const piece = apos.modules.things.find(req, { _id: id })
       .permission('edit')
       .published(null)
       .trash(null)
@@ -150,13 +157,13 @@ describe('Pieces', function() {
     return piece;
   }
 
-  let testThing = {
+  const testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar'
   };
 
-  let additionalThings = [
+  const additionalThings = [
     {
       _id: 'thing1',
       title: 'Red'
@@ -173,7 +180,7 @@ describe('Pieces', function() {
     }
   ];
 
-  let testPeople = [
+  const testPeople = [
     {
       _id: 'person1',
       title: 'Bob',
@@ -185,22 +192,22 @@ describe('Pieces', function() {
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
-    assert(apos.modules['things'].newInstance);
-    let thing = apos.modules['things'].newInstance();
+    assert(apos.modules.things.newInstance);
+    const thing = apos.modules.things.newInstance();
     assert(thing);
     assert(thing.type === 'thing');
   });
 
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
-    assert(apos.modules['things'].insert);
-    await apos.modules['things'].insert(apos.task.getReq(), testThing);
+    assert(apos.modules.things.insert);
+    await apos.modules.things.insert(apos.task.getReq(), testThing);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
-    assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.task.getReq();
-    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(apos.modules.things.requireOneForEditing);
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
     assert(req.piece.title === 'hello');
@@ -209,13 +216,13 @@ describe('Pieces', function() {
 
   // Test pieces.update()
   it('should be able to update a piece in the database', async () => {
-    assert(apos.modules['things'].update);
+    assert(apos.modules.things.update);
     testThing.foo = 'moo';
-    const piece = await apos.modules['things'].update(apos.task.getReq(), testThing);
+    const piece = await apos.modules.things.update(apos.task.getReq(), testThing);
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
-    let req = apos.task.getReq();
-    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
     assert(req.piece.foo === 'moo');
@@ -227,7 +234,7 @@ describe('Pieces', function() {
     let manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    let mockCursor = apos.doc.find(apos.task.getAnonReq());
+    const mockCursor = apos.doc.find(apos.task.getAnonReq());
     _.merge(mockCursor, {
       builders: {
         publicTest: {
@@ -255,7 +262,7 @@ describe('Pieces', function() {
       }
     });
 
-    let filters = {
+    const filters = {
       publicTest: 'foo',
       manageTest: 'bar',
       unsafeTest: 'nope',
@@ -268,15 +275,15 @@ describe('Pieces', function() {
   });
 
   it('should be able to trash a piece with proper deduplication', async () => {
-    assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.task.getReq();
-    let id = 'testThing';
+    assert(apos.modules.things.requireOneForEditing);
+    const req = apos.task.getReq();
+    const id = 'testThing';
     req.body = { _id: id };
     // let's make sure the piece is not trashed to start
     const piece = await findPiece(req, id);
     assert(!piece.trash);
     piece.trash = true;
-    await apos.modules['things'].update(req, piece);
+    await apos.modules.things.update(req, piece);
     // let's get the piece to make sure it is trashed
     const piece2 = await findPiece(req, id);
     assert(piece2);
@@ -286,8 +293,8 @@ describe('Pieces', function() {
   });
 
   it('should be able to rescue a trashed piece with proper deduplication', async () => {
-    let req = apos.task.getReq();
-    let id = 'testThing';
+    const req = apos.task.getReq();
+    const id = 'testThing';
     req.body = {
       _id: id
     };
@@ -295,7 +302,7 @@ describe('Pieces', function() {
     const piece = await findPiece(req, id);
     assert(piece.trash === true);
     piece.trash = false;
-    await apos.modules['things'].update(req, piece);
+    await apos.modules.things.update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
     assert(!piece2.trash);
@@ -320,7 +327,7 @@ describe('Pieces', function() {
   });
 
   it('people can find things via a join', async () => {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     for (const person of testPeople) {
       await apos.people.insert(req, person);
     }
@@ -335,20 +342,29 @@ describe('Pieces', function() {
   });
 
   it('people cannot find things via a join with an inadequate projection', function() {
-    let req = apos.task.getReq();
-    return apos.doc.getManager('person').find(req, {}, { title: 1 }).toObject()
+    const req = apos.task.getReq();
+    return apos.doc.getManager('person').find(req, {}, {
+      // Use the options object rather than a chainable method
+      project: {
+        title: 1
+      }
+    }).toObject()
       .then(function(person) {
         assert(person);
         assert(person.title === 'Bob');
+        // Verify projection
+        assert(!person.slug);
         assert((!person._things) || (person._things.length === 0));
       });
   });
 
   it('people can find things via a join with a "projection" of the join name', function() {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     return apos.doc.getManager('person').find(req, {}, {
-      title: 1,
-      _things: 1
+      project: {
+        title: 1,
+        _things: 1
+      }
     }).toObject()
       .then(function(person) {
         assert(person);
@@ -388,7 +404,7 @@ describe('Pieces', function() {
 
   it('cannot POST a product without a session', async () => {
     try {
-      await apos.http.post('/api/v1/products', {
+      await apos.http.post('/api/v1/product', {
         body: {
           title: 'Fake Product',
           body: {
@@ -416,7 +432,7 @@ describe('Pieces', function() {
   it('can POST products with a session, some published', async () => {
     // range is exclusive at the top end, I want 10 things
     for (let i = 1; (i <= 10); i++) {
-      const response = await apos.http.post('/api/v1/products', {
+      const response = await apos.http.post('/api/v1/product', {
         body: {
           title: 'Cool Product #' + i,
           published: !!(i & 1),
@@ -439,7 +455,7 @@ describe('Pieces', function() {
       assert(response.body);
       assert(response.title === 'Cool Product #' + i);
       assert(response.slug === 'cool-product-' + i);
-      assert(response.type === 'products');
+      assert(response.type === 'product');
       if (i === 1) {
         updateProduct = response;
       }
@@ -447,14 +463,14 @@ describe('Pieces', function() {
   });
 
   it('can GET five of those products without the user session', async () => {
-    const response = await apos.http.get('/api/v1/products');
+    const response = await apos.http.get('/api/v1/product');
     assert(response);
     assert(response.results);
     assert(response.results.length === 5);
   });
 
   it('can GET five of those products with a user session and no query parameters', async () => {
-    const response = await apos.http.get('/api/v1/products', {
+    const response = await apos.http.get('/api/v1/product', {
       jar
     });
     assert(response);
@@ -463,7 +479,7 @@ describe('Pieces', function() {
   });
 
   it('can GET all ten of those products with a user session and published=any', async () => {
-    const response = await apos.http.get('/api/v1/products?published=any', {
+    const response = await apos.http.get('/api/v1/product?published=any', {
       jar
     });
     assert(response);
@@ -474,7 +490,7 @@ describe('Pieces', function() {
   let firstId;
 
   it('can GET only 5 if perPage is 5', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5&published=any', {
       jar
     });
     assert(response);
@@ -485,7 +501,7 @@ describe('Pieces', function() {
   });
 
   it('can GET a different 5 on page 2', async () => {
-    const response = await apos.http.get('/api/v1/products?perPage=5&page=2&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5&page=2&published=any', {
       jar
     });
     assert(response);
@@ -504,7 +520,7 @@ describe('Pieces', function() {
       },
       jar
     };
-    const response = await apos.http.put(`/api/v1/products/${updateProduct._id}`, args);
+    const response = await apos.http.put(`/api/v1/product/${updateProduct._id}`, args);
     assert(response);
     assert(response._id === updateProduct._id);
     assert(response.title === 'I like cheese');
@@ -512,7 +528,7 @@ describe('Pieces', function() {
   });
 
   it('fetch of updated product shows updated content', async () => {
-    const response = await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+    const response = await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
       jar
     });
     assert(response);
@@ -522,7 +538,7 @@ describe('Pieces', function() {
   });
 
   it('can trash a product', async () => {
-    return apos.http.patch(`/api/v1/products/${updateProduct._id}`, {
+    return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
       body: {
         trash: true
       },
@@ -532,7 +548,7 @@ describe('Pieces', function() {
 
   it('cannot fetch a trashed product', async () => {
     try {
-      await apos.http.get(`/api/v1/products/${updateProduct._id}`, {
+      await apos.http.get(`/api/v1/product/${updateProduct._id}`, {
         jar
       });
       // Should have been a 404, 200 = test fails
@@ -543,7 +559,7 @@ describe('Pieces', function() {
   });
 
   it('can fetch trashed product with trash=any and the right user', async () => {
-    const product = await apos.http.get(`/api/v1/products/${updateProduct._id}?trash=any`, {
+    const product = await apos.http.get(`/api/v1/product/${updateProduct._id}?trash=any`, {
       jar
     });
     // Should have been a 404, 200 = test fails
@@ -553,17 +569,20 @@ describe('Pieces', function() {
   let joinedProductId;
 
   it('can insert a product with joins', async () => {
-    let response = await apos.http.post('/api/v1/articles', {
+    let response = await apos.http.post('/api/v1/article', {
       body: {
         title: 'First Article',
         name: 'first-article'
       },
       jar
     });
-    const articleId = response._id;
-    assert(articleId);
-
-    response = await apos.http.post('/api/v1/products', {
+    const article = response;
+    assert(article);
+    assert(article.title === 'First Article');
+    article._relationship = {
+      relevance: 'The very first article that was ever published about this product'
+    };
+    response = await apos.http.post('/api/v1/product', {
       body: {
         title: 'Product Key Product With Join',
         body: {
@@ -577,33 +596,34 @@ describe('Pieces', function() {
             }
           ]
         },
-        articlesIds: [articleId]
+        _articles: [ article ]
       },
       jar
     });
     assert(response._id);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
+    assert(response.articlesRelationships[article._id].relevance === 'The very first article that was ever published about this product');
     joinedProductId = response._id;
   });
 
   it('can GET a product with joins', async () => {
-    const response = await apos.http.get('/api/v1/products');
+    const response = await apos.http.get('/api/v1/product');
     assert(response);
     assert(response.results);
     const product = _.find(response.results, { slug: 'product-key-product-with-join' });
-    assert(Array.isArray(product['_articles']));
-    assert(product['_articles'].length === 1);
+    assert(Array.isArray(product._articles));
+    assert(product._articles.length === 1);
   });
 
   it('can GET a single product with joins', async () => {
-    const response = await apos.http.get(`/api/v1/products/${joinedProductId}`);
+    const response = await apos.http.get(`/api/v1/product/${joinedProductId}`);
     assert(response);
     assert(response._articles);
     assert(response._articles.length === 1);
   });
 
   it('can GET results plus filter choices', async () => {
-    const response = await apos.http.get('/api/v1/products?choices=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?choices=title,published,_articles,articles', {
       jar
     });
     assert(response);
@@ -624,7 +644,7 @@ describe('Pieces', function() {
   });
 
   it('can GET results plus filter counts', async () => {
-    const response = await apos.http.get('/api/v1/products?_edit=1&counts=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,published,_articles,articles', {
       jar
     });
     assert(response);
@@ -647,17 +667,18 @@ describe('Pieces', function() {
   });
 
   it('can patch a join', async () => {
-    let response = await apos.http.post('/api/v1/articles', {
+    let response = await apos.http.post('/api/v1/article', {
       jar,
       body: {
         title: 'Join Article',
         name: 'join-article'
       }
     });
-    const articleId = response._id;
-    assert(articleId);
+    const article = response;
+    assert(article);
+    assert(article.title === 'Join Article');
 
-    response = await apos.http.post('/api/v1/products', {
+    response = await apos.http.post('/api/v1/product', {
       jar,
       body: {
         title: 'Initially No Join Value',
@@ -677,15 +698,17 @@ describe('Pieces', function() {
 
     const product = response;
     assert(product._id);
-    response = await apos.http.patch(`/api/v1/products/${product._id}`, {
+    response = await apos.http.patch(`/api/v1/product/${product._id}`, {
       body: {
-        articlesIds: [ articleId ]
+        _articles: [ article ]
       },
       jar
     });
     assert(response.title === 'Initially No Join Value');
     assert(response.articlesIds);
-    assert(response.articlesIds[0] === articleId);
+    assert(response.articlesIds[0] === article._id);
+    assert(response._articles);
+    assert(response._articles[0]._id === article._id);
   });
 
   it('can log out to destroy a session', async () => {
@@ -697,7 +720,7 @@ describe('Pieces', function() {
 
   it('cannot POST a product with a logged-out cookie jar', async () => {
     try {
-      await apos.http.post('/api/v1/products', {
+      await apos.http.post('/api/v1/product', {
         body: {
           title: 'Fake Product After Logout',
           body: {

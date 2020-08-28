@@ -20,12 +20,17 @@
       />
     </template>
     <template #rightControls>
+      <AposPager
+        @click="registerPageChange" @change="registerPageChange"
+        :total-pages="totalPages" :current-page="currentPage"
+      />
       <AposFilterMenu
         :filters="filters"
         @input="filter"
       />
       <AposInputString
-        @input="search" :field="searchField.field"
+        @input="search" @return="search($event, true)"
+        :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
         :modifiers="['small']"
       />
@@ -52,8 +57,17 @@ export default {
       default () {
         return [];
       }
+    },
+    totalPages: {
+      type: Number,
+      default: 1
+    },
+    currentPage: {
+      type: Number,
+      default: 1
     }
   },
+  emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],
   data() {
     return {
       more: {
@@ -74,7 +88,8 @@ export default {
         field: {
           name: 'search',
           placeholder: 'Search Images',
-          icon: 'magnify-icon'
+          icon: 'magnify-icon',
+          enterSubmittable: true
         },
         status: {},
         value: { data: '' }
@@ -103,12 +118,24 @@ export default {
     filter(filter, value) {
       this.$emit('filter', filter, value.data);
     },
-    search(value) {
+    search(value, force) {
+      if ((force && !value) || value.data === '') {
+        value = {
+          data: '',
+          error: false
+        };
+      } else if (!value || value.error || (!force && value.data.length < 3)) {
+        return;
+      }
+
       this.$emit('search', value.data);
     },
     managerAction(action) {
       // TODO: flesh this out.
       console.info('ACTION: ', action);
+    },
+    registerPageChange(pageNum) {
+      this.$emit('page-change', pageNum);
     }
   }
 };

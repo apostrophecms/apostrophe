@@ -16,7 +16,7 @@ describe('Pieces Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'events': {
+        events: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
@@ -96,7 +96,11 @@ describe('Pieces Pages', function() {
     const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
       title: 'Event 001'
-    }, { type: 1 }).toObject();
+    }, {
+      project: {
+        type: 1
+      }
+    }).toObject();
     assert(piece);
     assert((!piece._url) || (piece._url.match(/undefined/)));
   });
@@ -105,7 +109,11 @@ describe('Pieces Pages', function() {
     const piece = await apos.doc.find(apos.task.getAnonReq(), {
       type: 'event',
       title: 'Event 001'
-    }, { _url: 1 }).toObject();
+    }, {
+      project: {
+        _url: 1
+      }
+    }).toObject();
     assert(piece);
     assert(piece._url);
     assert(piece._url === '/events/event-001');

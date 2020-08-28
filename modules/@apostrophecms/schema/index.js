@@ -125,7 +125,7 @@ module.exports = {
         }
       },
       index: function (value, field, texts) {
-        let silent = field.silent === undefined ? true : field.silent;
+        const silent = field.silent === undefined ? true : field.silent;
         texts.push({
           weight: field.weight || 15,
           text: value,
@@ -139,7 +139,7 @@ module.exports = {
         query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let criteria = {};
+              const criteria = {};
               criteria[field.name] = new RegExp(self.apos.util.regExpQuote(query.get(field.name)), 'i');
               query.and(criteria);
             }
@@ -182,7 +182,7 @@ module.exports = {
         query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let criteria = {};
+              const criteria = {};
               let slugifyOptions = {};
               if (field.page) {
                 slugifyOptions = { allow: '/' };
@@ -231,7 +231,7 @@ module.exports = {
           },
           choices: async function () {
             const values = query.toDistinct(field.name);
-            let choices = [];
+            const choices = [];
             if (_.includes(values, true)) {
               choices.push({
                 value: '1',
@@ -275,7 +275,7 @@ module.exports = {
         }
       },
       index: function (value, field, texts) {
-        let silent = field.silent === undefined ? true : field.silent;
+        const silent = field.silent === undefined ? true : field.silent;
         texts.push({
           weight: field.weight || 15,
           text: (value || []).join(' '),
@@ -286,7 +286,7 @@ module.exports = {
         return query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let criteria = {};
+              const criteria = {};
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
@@ -328,7 +328,7 @@ module.exports = {
         object[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
       },
       index: function (value, field, texts) {
-        let silent = field.silent === undefined ? true : field.silent;
+        const silent = field.silent === undefined ? true : field.silent;
         texts.push({
           weight: field.weight || 15,
           text: value,
@@ -339,7 +339,7 @@ module.exports = {
         return query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let criteria = {};
+              const criteria = {};
               let v = query.get(field.name);
               // Allow programmers to pass just one value too (sanitize doesn't apply to them)
               if (!Array.isArray(v)) {
@@ -381,6 +381,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'integer',
+      vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
@@ -400,7 +401,7 @@ module.exports = {
         return query.addBuilder(field.name, {
           finalize: function () {
             let criteria;
-            let value = query.get(field.name);
+            const value = query.get(field.name);
             if (value !== undefined && value !== null) {
               if (Array.isArray(value) && value.length === 2) {
                 criteria = {};
@@ -427,6 +428,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'float',
+      vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
         if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
@@ -443,7 +445,7 @@ module.exports = {
         return query.addBuilder(field.name, {
           finalize: function () {
             let criteria;
-            let value = query.get(field.name);
+            const value = query.get(field.name);
             if (value !== undefined && value !== null) {
               if (Array.isArray(value) && value.length === 2) {
                 criteria = {};
@@ -501,7 +503,7 @@ module.exports = {
         query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let criteria = {};
+              const criteria = {};
               criteria[field.name] = new RegExp(self.apos.util.regExpQuote(query.get(field.name)), 'i');
               query.and(criteria);
             }
@@ -520,6 +522,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'date',
+      vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.date(data[field.name], field.def);
       },
@@ -527,7 +530,7 @@ module.exports = {
         return query.addBuilder(field.name, {
           finalize: function () {
             if (self.queryBuilderInterested(query, field.name)) {
-              let value = query.get(field.name);
+              const value = query.get(field.name);
               let criteria;
               if (Array.isArray(value)) {
                 criteria = {};
@@ -569,6 +572,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'time',
+      vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.time(data[field.name], field.def);
       }
@@ -688,75 +692,103 @@ module.exports = {
 
     self.addFieldType({
       name: 'join',
+      // Validate a join field, copying from `data[field.name]` to
+      // `object[field.name]`. If the join is named `_product`, then
+      // `data._product` should be an array of product docs to be joined
+      // with. These doc objects must at least have an _id property.
+      //
+      // Alternatively, entries in `data._product` may simply be
+      // `_id` strings or `title` strings. Titles are compared in a
+      // tolerant manner. This is useful for CSV input. Strings may
+      // be mixed with actual joined docs in a single array.
+      //
+      // If the join field has a `relationship` option, then each
+      // doc object may also have a `_relationship` property which
+      // will be validated against the schema in `relationship`.
+      //
+      // The result in `object[field.name]` will always be an array
+      // of zero or more joined docs, containing only those that
+      // actually exist in the database and can be fetched by this user,
+      // in the same order specified in `data[field.name]`.
+
       convert: async function (req, field, data, object) {
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
           throw Error('join with type ' + field.withType + ' unrecognized');
         }
-
-        if (_.has(data, field.name)) {
-          if (field.min && field.min > data[field.name].length) {
-            throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
-          }
-          if (field.max && field.max < data[field.name].length) {
-            throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
-          }
-          let titlesOrIds = [];
-
-          if (Array.isArray(data[field.name])) {
-            for (const datum of data[field.name]) {
-              const id = self.apos.launder.string(datum);
-              if (id) {
-                titlesOrIds.push(id);
-              }
-            }
+        let input = data[field.name];
+        if (input == null) {
+          input = [];
+        }
+        if ((typeof input) === 'string') {
+          // Handy in CSV: allows titles or _ids
+          input = input.split(/\s*,\s*/);
+        }
+        if (field.min && field.min > input.length) {
+          throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
+        }
+        if (field.max && field.max < input.length) {
+          throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
+        }
+        const ids = [];
+        const titlesOrIds = [];
+        for (const item of input) {
+          if ((typeof item) === 'string') {
+            titlesOrIds.push(item);
           } else {
-            titlesOrIds = self.apos.launder.string(data[field.name]).split(/\s*,\s*/);
-          }
-
-          if (titlesOrIds[0] === undefined) {
-            return;
-          }
-
-          let clauses = [];
-          _.each(titlesOrIds, function (titleOrId) {
-            clauses.push({ titleSortified: self.apos.util.sortify(titleOrId) });
-            clauses.push({ _id: titleOrId });
-          });
-          const results = await manager.find(req, { $or: clauses }, { _id: 1 }).joins(false).published(null).toArray();
-          object[field.idsField] = _.map(results, '_id');
-        } else {
-          object[field.idsField] = self.apos.launder.ids(data[field.idsField]);
-          if (!field.relationshipsField) {
-            return;
-          }
-          object[field.relationshipsField] = {};
-          if (field.removedIdsField) {
-            object[field.removedIdsField] = self.apos.launder.ids(data[field.removedIdsField]);
-          }
-          let allIds = object[field.idsField];
-          // We record relationships with things just removed to provide support
-          // for properties of the removal action itself. (This might not be
-          // essential now that we no longer implement a super-granular version
-          // of "apply to subpages." That feature was a UX nightmare.)
-          if (field.removedIdsField) {
-            allIds = allIds.concat(object[field.removedIdsField] || []);
-          }
-          for (let id of allIds) {
-            let e = data[field.relationshipsField] && data[field.relationshipsField][id];
-            if (!e) {
-              e = {};
+            if (item && ((typeof item._id) === 'string')) {
+              ids.push(item._id);
             }
-            // Validate the relationship (aw)
-            const validatedRelationship = {};
-            object[field.relationshipsField][id] = validatedRelationship;
-            await self.convert(req, field.relationship, e, validatedRelationship);
           }
         }
+        const clauses = [];
+        if (titlesOrIds.length) {
+          clauses.push({
+            titleSortified: {
+              $in: titlesOrIds.map(titleOrId => self.apos.util.sortify(titleOrId))
+            }
+          });
+        }
+        if (ids.length) {
+          clauses.push({
+            _id: {
+              $in: ids
+            }
+          });
+        }
+        if (!clauses.length) {
+          object[field.name] = [];
+          return;
+        }
+        const results = await manager.find(req, { $or: clauses }).joins(false).published(null).toArray();
+        // Must maintain input order. Also discard things not actually found in the db
+        const actualDocs = [];
+        for (const item of input) {
+          if ((typeof item) === 'string') {
+            const result = results.find(result => (result.title === item) || (result._id === item));
+            if (result) {
+              actualDocs.push(result);
+            }
+          } else if ((item && ((typeof item._id) === 'string'))) {
+            const result = results.find(doc => (doc._id === item._id));
+            if (result) {
+              if (field.relationship) {
+                result._relationship = {};
+                if (item && ((typeof item._relationship === 'object'))) {
+                  await self.convert(req, field.relationship, item._relationship || {}, result._relationship);
+                }
+              }
+              actualDocs.push(result);
+            }
+          }
+        }
+        object[field.name] = actualDocs;
       },
+
       join: async function (req, field, objects, options) {
         return self.joinDriver(req, joinr.byArray, false, objects, field.idsField, field.relationshipsField, field.name, options);
       },
+
       addQueryBuilder(field, query) {
 
         addOperationQueryBuilder('', '$in');
@@ -814,7 +846,7 @@ module.exports = {
         if (!field.withType) {
           // Try to supply reasonable value based on join name. Join name will be plural,
           // so consider that too
-          let withType = field.name.replace(/^_/, '').replace(/s$/, '');
+          const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
             fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
           }
@@ -867,13 +899,13 @@ module.exports = {
         }
         if (!field.withType) {
           // Try to supply reasonable value based on join name
-          let withType = field.name.replace(/^_/, '').replace(/s$/, '');
+          const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
             fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
-        let otherModule = _.find(self.apos.doc.managers, { name: field.withType });
+        const otherModule = _.find(self.apos.doc.managers, { name: field.withType });
         if (!otherModule) {
           fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
         }
@@ -1043,7 +1075,7 @@ module.exports = {
 
         const newGroups = [];
         _.each(groups, function (group) {
-          let index = _.findIndex(newGroups, { name: group.name });
+          const index = _.findIndex(newGroups, { name: group.name });
           if (index !== -1) {
             newGroups.splice(index, 1);
           }
@@ -1071,7 +1103,7 @@ module.exports = {
             // make sure it exists
             if (f) {
               // set the group for this field
-              let g = _.clone(group, true);
+              const g = _.clone(group, true);
               delete g.fields;
               f.group = g;
 
@@ -1400,7 +1432,7 @@ module.exports = {
             if (Array.isArray(e)) {
               // Nested object or array will throw an array if it
               // encounters an error or errors in its subsidiary fields
-              for (let error of e) {
+              for (const error of e) {
                 errors.push({
                   path: field.name + '.' + error.path,
                   error: error.error
@@ -1473,7 +1505,7 @@ module.exports = {
       //
       // All arguments must be present, however relationshipsField
       // may be undefined to indicate none is needed.
-      joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
+      async joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
         if (!options) {
           options = {};
         }
@@ -1488,7 +1520,7 @@ module.exports = {
             return realMethod(items, idField, objectField, getter);
           };
         }
-        return method(items, idField, relationshipsField, objectField, function (ids) {
+        await method(items, idField, relationshipsField, objectField, function (ids) {
           const idsCriteria = {};
           if (reverse) {
             idsCriteria[idField] = { $in: ids };
@@ -1637,7 +1669,7 @@ module.exports = {
           }
           if (Array.isArray(join.withType)) {
             // Polymorphic join
-            for (let type of join.withType) {
+            for (const type of join.withType) {
               const manager = self.apos.doc.getManager(type);
               if (!manager) {
                 throw Error('I cannot find the instance type ' + type);
@@ -1736,6 +1768,73 @@ module.exports = {
         }
       },
 
+      // In the given document, for any joins that are present in
+      // the data (such as `_products`), update the underlying
+      // idsField and relationshipsField (if appropriate) so that
+      // storage to the database can take place. This method is
+      // always invoked for you by @apostrophecms/doc-type in a
+      // beforeSave handler. This method also recursively invokes
+      // itself as needed for joins nested in widgets,
+      // array fields and object fields.
+      //
+      // If the join field is present by name (such as `_products`)
+      // in the document, that is taken as authoritative, and any
+      // existing values in the `idsField` and `relationshipsField`
+      // are overwritten. If the join field is not present, the
+      // existing values are left alone. This allows the developer
+      // to safely update a document that was fetched with
+      // `.joins(false)`, provided a projection was not also used.
+      //
+      // Currently `req` does not impact this, but that may change.
+
+      prepareJoinsForStorage(req, doc) {
+        if (doc.metaType === 'doc') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          forSchema(manager.schema, doc);
+        } else if (doc.metaType === 'widget') {
+          const manager = self.apos.doc.getManager(doc.type);
+          if (!manager) {
+            return;
+          }
+          forSchema(manager.schema, doc);
+        }
+        function forSchema(schema, doc) {
+          for (const field of schema) {
+            if (field.type === 'area') {
+              if (doc[field.name] && doc[field.name].items) {
+                for (const widget of doc[field.name].items) {
+                  self.prepareJoinsForStorage(req, widget);
+                }
+              }
+            } else if (field.type === 'array') {
+              if (doc[field.name] && doc[field.name].items) {
+                doc[field.name].items.map(item => forSchema(field.schema, item));
+              }
+            } else if (field.type === 'object') {
+              if (doc[field.name]) {
+                forSchema(field.schema, doc[field.name]);
+              }
+            } else if (field.type === 'join') {
+              if (Array.isArray(doc[field.name])) {
+                doc[field.idsField] = doc[field.name].map(joinedDoc => joinedDoc._id);
+                if (field.relationshipsField) {
+                  const relationships = doc[field.relationshipsField] || {};
+                  for (const joinedDoc of doc[field.name]) {
+                    if (joinedDoc._relationship) {
+                      relationships[joinedDoc._id] = joinedDoc._relationship;
+                    }
+                  }
+                  doc[field.relationshipsField] = relationships;
+                }
+              }
+            }
+          }
+        }
+      },
+
       // Add a new field type. The `type` object may contain the following properties:
       //
       // ### `name`
@@ -1831,7 +1930,7 @@ module.exports = {
 
       addQueryBuilders(schema, query) {
         _.each(schema, function (field) {
-          let fieldType = self.fieldTypes[field.type];
+          const fieldType = self.fieldTypes[field.type];
           if (query[field.name]) {
             return;
           }
@@ -1882,7 +1981,7 @@ module.exports = {
       addJoinSlugQueryBuilder(field, query, suffix) {
 
         suffix = suffix || '';
-        let name = field.name.replace(/^_/, '');
+        const name = field.name.replace(/^_/, '');
 
         if (name === field.name) {
           // Nope, your join is not well-named
@@ -2101,10 +2200,10 @@ module.exports = {
             cloneOriginalBase(key);
             if (val && val.$each) {
               const each = Array.isArray(val.$each) ? val.$each : [];
-              let existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key) || [];
               if (!Array.isArray(existing)) {
                 throw self.apos.error('invalid', 'existing property is not an array', {
-                  'dotPath': key
+                  dotPath: key
                 });
               }
               let position;
@@ -2132,7 +2231,7 @@ module.exports = {
               const updated = existing.slice(0, position).concat(each).concat(existing.slice(position));
               self.apos.util.set(patch, key, updated);
             } else {
-              let existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key) || [];
               existing.push(val);
               self.apos.util.set(patch, key, existing);
             }
@@ -2198,7 +2297,7 @@ module.exports = {
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {
-          fields[name] = 'AposInput' + self.apos.util.capitalizeFirst(name);
+          fields[name] = self.fieldTypes[name].vueComponent || 'AposInput' + self.apos.util.capitalizeFirst(name);
         }
 
         browserOptions.components = { fields: fields };

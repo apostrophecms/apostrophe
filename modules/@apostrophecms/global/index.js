@@ -33,7 +33,7 @@
 //
 // `_id`: the MongoDB ID of the global doc. Available after `modulesReady`.
 
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',

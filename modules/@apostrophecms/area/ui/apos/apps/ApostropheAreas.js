@@ -9,7 +9,7 @@ export default function() {
 
   function createAreaApps() {
     const els = document.querySelectorAll('[data-apos-area-newly-editable]');
-    for (let el of els) {
+    for (const el of els) {
       createAreaApp(el);
     }
   }

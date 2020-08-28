@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 const path = require('path');
 
 module.exports = {
@@ -37,10 +37,10 @@ module.exports = {
         label: 'Reorganize'
       }
     ],
-    publishMenu: [{
+    publishMenu: [ {
       action: 'publish-page',
       label: 'Publish Page'
-    }]
+    } ]
   },
   beforeSuperClass(self, options) {
     options.batchOperations = [
@@ -65,7 +65,7 @@ module.exports = {
   },
   async init(self, options) {
     self.typeChoices = options.types || [];
-    self.parked = (self.options.minimumPark || [{
+    self.parked = (self.options.minimumPark || [ {
       slug: '/',
       parkedId: 'home',
       published: true,
@@ -73,7 +73,7 @@ module.exports = {
         title: 'Home',
         type: '@apostrophecms/home-page'
       },
-      _children: [{
+      _children: [ {
         slug: '/trash',
         parkedId: 'trash',
         type: '@apostrophecms/trash',
@@ -81,8 +81,8 @@ module.exports = {
         published: false,
         orphan: true,
         _defaults: { title: 'Trash' }
-      }]
-    }]).concat(self.options.park || []);
+      } ]
+    } ]).concat(self.options.park || []);
     self.apos.task.add('@apostrophecms/page', 'unpark', 'Usage: node app @apostrophecms/page:unpark /page/slug\n\n' + 'This unparks a page that was formerly locked in a specific\n' + 'position in the page tree.', async function (apos, argv) {
       // Wrapping a method makes it easy to override
       // that method
@@ -162,7 +162,7 @@ module.exports = {
             });
           }
           function prune(nodes) {
-            let newNodes = [];
+            const newNodes = [];
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
@@ -174,7 +174,7 @@ module.exports = {
 
         }
         function flatten(result, node) {
-          let children = node._children;
+          const children = node._children;
           node._children = _.map(node._children, '_id');
           result.push(node);
           _.each(children || [], function(child) {
@@ -312,7 +312,7 @@ module.exports = {
   },
   handlers(self, options) {
     return {
-      'beforeSend': {
+      beforeSend: {
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
           // The admin bar uses this to stay open if configured by the user
@@ -342,8 +342,8 @@ module.exports = {
           // expressly shut off:
           //
           // home: { children: false }
-          let builders = self.getServePageBuilders().ancestors || { children: !(self.options.home && self.options.home.children === false) };
-          let query = self.find(req, { level: 0 }).ancestorPerformanceRestrictions();
+          const builders = self.getServePageBuilders().ancestors || { children: !(self.options.home && self.options.home.children === false) };
+          const query = self.find(req, { level: 0 }).ancestorPerformanceRestrictions();
           _.each(builders, function (val, key) {
             query[key](val);
           });
@@ -388,8 +388,8 @@ database.`);
           self.apos.app.get('*', self.serve);
         },
         async implementParkAll() {
-          let req = self.apos.task.getReq();
-          for (let item of self.parked) {
+          const req = self.apos.task.getReq();
+          for (const item of self.parked) {
             await self.implementParkOne(req, item);
           }
         }
@@ -398,8 +398,8 @@ database.`);
   },
   methods(self, options) {
     return {
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, projection);
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
       },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route
@@ -446,8 +446,11 @@ database.`);
       },
       // Returns a cursor that finds pages the current user can edit
       // in a batch operation, including unpublished and trashed pages.
-      findForBatch(req, criteria, projection) {
-        let cursor = self.find(req, criteria, projection).permission('edit').published(null).trash(null);
+      // `req` determines what the user is eligible to edit, `criteria`
+      // is the MongoDB criteria object, and any properties of `options`
+      // are invoked as methods on the query with their values.
+      findForBatch(req, criteria = {}, options = {}) {
+        const cursor = self.find(req, criteria, options).permission('edit').published(null).trash(null);
         return cursor;
       },
       // Insert a page. `targetId` must be an existing page id, and
@@ -461,7 +464,6 @@ database.`);
       async insert(req, targetId, position, page, options = { permissions: true }) {
         return self.withLock(req, async () => {
           let peers;
-          let target;
           const query = self.findForEditing(req, { _id: targetId });
           if ((position === 'firstChild') || (position === 'lastChild')) {
             query.children({
@@ -472,7 +474,7 @@ database.`);
               permission: false
             });
           }
-          target = await query.toObject();
+          const target = await query.toObject();
           if (!target) {
             throw self.apos.error('notfound');
           }
@@ -620,7 +622,7 @@ database.`);
           return;
         }
         const admin = req.user && req.user._permissions.admin;
-        const allowed = ['view'];
+        const allowed = [ 'view' ];
         if (admin) {
           allowed.push('edit');
         }
@@ -906,7 +908,7 @@ database.`);
             // If the old slug wasn't customized, OR our new parent is
             // in the trash, update the slug as well as the path
             if (parent._id !== oldParent._id) {
-              let matchOldParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(self.apos.util.addSlashIfNeeded(oldParent.slug)));
+              const matchOldParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(self.apos.util.addSlashIfNeeded(oldParent.slug)));
               if (moved.slug.match(matchOldParentSlugPrefix)) {
                 let slugStem = parent.slug;
                 if (slugStem !== '/') {
@@ -939,15 +941,15 @@ database.`);
           }
           async function trashDescendants() {
             // Make sure our descendants have the same trash status
-            let matchParentPathPrefix = self.matchDescendants(moved);
-            let $set = {};
-            let $unset = {};
+            const matchParentPathPrefix = self.matchDescendants(moved);
+            const $set = {};
+            const $unset = {};
             if (moved.trash) {
               $set.trash = true;
             } else {
               $unset.trash = true;
             }
-            let action = {};
+            const action = {};
             if (!_.isEmpty($set)) {
               action.$set = $set;
             }
@@ -989,7 +991,7 @@ database.`);
           const oldSlug = page.slug;
           // This operation can change paths and slugs of pages, those changes need
           // rippling to their descendants
-          let descendants = _.filter(pages, function (descendant) {
+          const descendants = _.filter(pages, function (descendant) {
             return descendant.path.match(match);
           });
           for (const descendant of descendants) {
@@ -1083,8 +1085,7 @@ database.`);
       // See also the `park` option; typically invoked via
       // that option when configuring the module.
       park(pageOrPages) {
-        let pages;
-        pages = Array.isArray(pageOrPages) ? pageOrPages : [pageOrPages];
+        const pages = Array.isArray(pageOrPages) ? pageOrPages : [ pageOrPages ];
         self.parked = self.parked.concat(pages);
       },
       // Route that serves pages. See afterInit in
@@ -1216,7 +1217,7 @@ database.`);
           req.statusCode = 500;
           providePage = false;
         }
-        let args = {
+        const args = {
           edit: providePage ? req.data.bestPage._edit : null,
           slug: providePage ? req.data.bestPage.slug : null,
           page: providePage ? req.data.bestPage : null,
@@ -1290,7 +1291,7 @@ database.`);
       // the given slug or a path prefix of it, and to sort results
       // in favor of a more complete match
       matchPageAndPrefixes(query, slug) {
-        let slugs = [];
+        const slugs = [];
         let components;
         // Partial matches. Avoid an unnecessary OR of '/' and '/' for the
         // homepage by checking that slug.length > 1
@@ -1300,7 +1301,7 @@ database.`);
           slugs.unshift('/');
           components = slug.substr(1).split('/');
           for (let i = 0; i < components.length - 1; i++) {
-            let component = components[i];
+            const component = components[i];
             path = self.apos.util.addSlashIfNeeded(path) + component;
             slugs.unshift(path);
           }
@@ -1320,7 +1321,7 @@ database.`);
       // to implement features like dispatch, which powers the
       // "permalink" or "show" pages of `@apostrophecms/piece-page-type`
       evaluatePageMatch(req) {
-        let slug = req.params[0];
+        const slug = req.params[0];
         if (!req.data.bestPage) {
           return;
         }
@@ -1343,7 +1344,7 @@ database.`);
         await self.ensureLevelRankIndex();
       },
       async ensurePathIndex() {
-        let params = self.getPathIndexParams();
+        const params = self.getPathIndexParams();
         await self.apos.doc.db.createIndex(params, {
           unique: true,
           sparse: true
@@ -1353,7 +1354,7 @@ database.`);
         return { path: 1 };
       },
       async ensureLevelRankIndex() {
-        let params = self.getLevelRankIndexParams();
+        const params = self.getLevelRankIndexParams();
         await self.apos.doc.db.createIndex(params, {});
       },
       getLevelRankIndexParams() {
@@ -1383,7 +1384,7 @@ database.`);
       // Invoked via callForAll in the docs module
       docFixUniqueError(req, doc) {
         if (doc.path) {
-          let num = Math.floor(Math.random() * 10).toString();
+          const num = Math.floor(Math.random() * 10).toString();
           doc.path += num;
         }
       },
@@ -1403,15 +1404,15 @@ database.`);
         // there may be zillions of descendants and we don't want
         // to choke the server. We could use async.mapLimit, but
         // let's not get fancy just yet
-        let changed = [];
+        const changed = [];
         if (originalSlug === page.slug && originalPath === page.path) {
           return changed;
         }
-        let oldLevel = originalPath.split('/').length - 1;
-        let matchParentPathPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalPath + '/'));
-        let matchParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalSlug + '/'));
+        const oldLevel = originalPath.split('/').length - 1;
+        const matchParentPathPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalPath + '/'));
+        const matchParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(originalSlug + '/'));
         let done = false;
-        let query = self.apos.doc.db.find({ path: matchParentPathPrefix }).project({
+        const query = self.apos.doc.db.find({ path: matchParentPathPrefix }).project({
           slug: 1,
           path: 1,
           level: 1
@@ -1464,7 +1465,7 @@ database.`);
           item.rank = 0;
           item.level = 0;
         }
-        let existing = await findExisting();
+        const existing = await findExisting();
         if (existing) {
           await updateExisting();
         } else {
@@ -1492,7 +1493,7 @@ database.`);
           await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
         }
         async function insert() {
-          let defaults = item._defaults;
+          const defaults = item._defaults;
           if (defaults) {
             delete item._defaults;
             _.defaults(item, defaults);
@@ -1512,7 +1513,7 @@ database.`);
           if (!item._children) {
             return;
           }
-          for (let child of item._children) {
+          for (const child of item._children) {
             child.parent = item.slug;
             await self.implementParkOne(req, child);
           }
@@ -1522,7 +1523,7 @@ database.`);
         if (self.apos.argv._.length !== 2) {
           throw new Error('Wrong number of arguments');
         }
-        let slug = self.apos.argv._[1];
+        const slug = self.apos.argv._[1];
         const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
@@ -1598,7 +1599,7 @@ database.`);
       // schema fields. Called by the update routes (for new pages, there are
       // no subpages to apply things to yet). Returns a new schema
       addApplyToSubpagesToSchema(schema) {
-        let fields = [
+        const fields = [
           '_viewUsers',
           '_viewGroups',
           '_editUsers',
@@ -1606,7 +1607,7 @@ database.`);
         ];
         // Do only as much cloning as we have to to avoid modifying the original
         schema = _.clone(schema);
-        let index = _.findIndex(schema, { name: 'loginRequired' });
+        const index = _.findIndex(schema, { name: 'loginRequired' });
         if (index !== -1) {
           schema.splice(index + 1, 0, {
             type: 'boolean',
@@ -1616,20 +1617,20 @@ database.`);
           });
         }
         _.each(fields, function (name) {
-          let index = _.findIndex(schema, { name: name });
+          const index = _.findIndex(schema, { name: name });
           if (index === -1) {
             return;
           }
-          let field = _.clone(schema[index]);
-          let base = name.replace(/^_/, '');
+          const field = _.clone(schema[index]);
+          const base = name.replace(/^_/, '');
           field.removedIdsField = base + 'RemovedIds';
           field.relationshipsField = base + 'Relationships';
-          field.relationship = [{
+          field.relationship = [ {
             name: 'applyToSubpages',
             type: 'boolean',
             label: 'Apply to Subpages',
             inline: true
-          }];
+          } ];
           schema[index] = field;
         });
         return schema;
@@ -1716,11 +1717,11 @@ database.`);
         return schema;
       },
       getCreateControls(req) {
-        let controls = _.cloneDeep(self.createControls);
+        const controls = _.cloneDeep(self.createControls);
         return controls;
       },
       getEditControls(req) {
-        let controls = _.cloneDeep(self.editControls);
+        const controls = _.cloneDeep(self.editControls);
         return controls;
       },
       addToAdminBar() {
@@ -1767,9 +1768,9 @@ database.`);
       // To avoid RAM issues with very large selections, the current
       // implementation processes the pages in series.
       async batchSimpleRoute(req, name, change) {
-        let batchOperation = _.find(self.options.batchOperations, { name: name });
-        let schema = batchOperation.schema || [];
-        let data = self.apos.schema.newInstance(schema);
+        const batchOperation = _.find(self.options.batchOperations, { name: name });
+        const schema = batchOperation.schema || [];
+        const data = self.apos.schema.newInstance(schema);
         await self.apos.schema.convert(req, schema, 'form', req.body, data);
         let ids = self.apos.launder.ids(req.body.ids);
         if (!ids) {
@@ -1801,9 +1802,9 @@ database.`);
       // subpage types
       allowedSchema(req, page, parentPage) {
         let schema = self.apos.doc.getManager(page.type).allowedSchema(req);
-        let typeField = _.find(schema, { name: 'type' });
+        const typeField = _.find(schema, { name: 'type' });
         if (typeField) {
-          let allowed = self.allowedChildTypes(parentPage);
+          const allowed = self.allowedChildTypes(parentPage);
           // For a preexisting page, we can't forbid the type it currently has
           if (page._id && !_.includes(allowed, page.type)) {
             allowed.unshift(page.type);
@@ -1822,10 +1823,10 @@ database.`);
         }
         return schema;
         function getLabel(name) {
-          let choice = _.find(self.typeChoices, { name: name });
+          const choice = _.find(self.typeChoices, { name: name });
           let label = choice && choice.label;
           if (!label) {
-            let manager = self.apos.doc.getManager(name);
+            const manager = self.apos.doc.getManager(name);
             if (!manager) {
               throw new Error('There is no page type ' + name + ' but it is configured in allowedHomepageTypes or allowedSubpageTypes or is the type of an existing page, I give up');
             }
@@ -1856,7 +1857,7 @@ database.`);
       // trash is editable however we'll apply a filter from the UI.
       findForEditing(req, criteria, projection, options) {
         // Include ancestors to help with determining allowed types
-        let cursor = self.find(req, criteria).permission('edit').published(null).trash(null).ancestors(true);
+        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null).ancestors(true);
         if (projection) {
           cursor.project(projection);
         }

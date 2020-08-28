@@ -109,19 +109,19 @@ module.exports = {
             }
           });
 
-          let highTexts = _.filter(texts, function (text) {
+          const highTexts = _.filter(texts, function (text) {
             return text.weight > 10;
           });
 
-          let searchSummary = _.map(_.filter(texts, function (text) {
+          const searchSummary = _.map(_.filter(texts, function (text) {
             return !text.silent;
           }), function (text) {
             return text.text;
           }).join(' ');
-          let highText = self.boilTexts(highTexts);
-          let lowText = self.boilTexts(texts);
-          let titleSortified = self.apos.util.sortify(doc.title);
-          let highWords = _.uniq(highText.split(/ /));
+          const highText = self.boilTexts(highTexts);
+          const lowText = self.boilTexts(texts);
+          const titleSortified = self.apos.util.sortify(doc.title);
+          const highWords = _.uniq(highText.split(/ /));
 
           // merge our doc with its various search texts
           _.assign(doc, {
@@ -142,19 +142,19 @@ module.exports = {
         if (self.options.filters) {
           self.filters = self.options.filters;
           if (!_.find(self.filters, { name: '__else' })) {
-            self.filters = self.options.filters.concat([{
+            self.filters = self.options.filters.concat([ {
               label: 'Everything Else',
               name: '__else'
-            }]);
+            } ]);
           }
         }
       },
 
       suggest(req, q) {
-        return self.apos.doc.find(req, {}, {
+        return self.apos.doc.find(req).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).project({
           _url: 1,
           title: 1
-        }).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).toArray();
+        }).toArray();
       },
 
       // This method implements the search results page. It populates `req.data.docs`
@@ -176,7 +176,7 @@ module.exports = {
 
         const cursor = self.apos.doc.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
         if (self.filters) {
-          let filterTypes = _.filter(_.map(self.filters, 'name'), function (name) {
+          const filterTypes = _.filter(_.map(self.filters, 'name'), function (name) {
             return name !== '__else';
           });
           allowedTypes = _.filter(self.types, function (name) {
@@ -269,7 +269,7 @@ module.exports = {
       // every time a doc is saved
 
       async indexTask(apos, argv) {
-        let req = self.apos.task.getReq();
+        const req = self.apos.task.getReq();
         return self.apos.migration.eachDoc({}, _.partial(self.indexTaskOne, req));
       },
 
@@ -324,7 +324,7 @@ module.exports = {
             return;
           }
           _.each(area.items, function (item) {
-            let manager = self.apos.area.getWidgetManager(item.type);
+            const manager = self.apos.area.getWidgetManager(item.type);
             if (!manager) {
               self.apos.area.warnMissingWidgetType(item.type);
               return;

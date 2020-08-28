@@ -16,7 +16,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
     apos = await t.create({
       root: module,
       modules: {
-        'test1': {
+        test1: {
           options: {
             alias: 'test1'
           },

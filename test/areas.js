@@ -1,5 +1,5 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
 let apos;
 
 describe('Areas', function() {
@@ -18,7 +18,7 @@ describe('Areas', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'monkey': {
+        monkey: {
           extend: '@apostrophecms/piece-type'
         },
         'monkey-widget': {
@@ -141,7 +141,7 @@ describe('Areas', function() {
   });
 
   it('area considered empty when it should be', function() {
-    let doc = {
+    const doc = {
       type: 'test',
       _id: 'test',
       body: {
@@ -191,7 +191,7 @@ describe('Areas', function() {
   });
 
   it('area not considered empty when it should not be', function() {
-    let doc = {
+    const doc = {
       type: 'test',
       _id: 'test',
       body: {

@@ -225,7 +225,7 @@ module.exports = {
                 pagesByPath[page.path] = [];
               }
               pagesByPath[page.path].push(page);
-              let last = page.path.lastIndexOf('/');
+              const last = page.path.lastIndexOf('/');
               let parentPath = page.path.substr(0, last);
               if (parentPath === '') {
                 parentPath = '/';

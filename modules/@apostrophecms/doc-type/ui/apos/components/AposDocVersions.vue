@@ -36,7 +36,7 @@ import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
 import dayjs from 'dayjs';
 
 export default {
-  name: 'AposDocHistory',
+  name: 'AposDocVersions',
   mixins: [ AposModalParentMixin, AposTableMixin ],
   props: {
     doc: {

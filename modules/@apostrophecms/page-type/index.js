@@ -1,6 +1,6 @@
-let _ = require('lodash');
+const _ = require('lodash');
 // Same engine used by express to match paths
-let pathToRegexp = require('path-to-regexp');
+const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -43,7 +43,7 @@ module.exports = {
     };
   },
   init(self, options) {
-    self.removeTrashPrefixFields(['slug']);
+    self.removeTrashPrefixFields([ 'slug' ]);
     self.addTrashSuffixFields([
       'slug'
     ]);
@@ -179,15 +179,18 @@ module.exports = {
       getAdminPermissionName() {
         return 'admin-@apostrophecms/page';
       },
-      find(req, criteria, projection) {
-        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, projection).type(self.name);
+      // `req` determines what the user is eligible to edit, `criteria`
+      // is the MongoDB criteria object, and any properties of `options`
+      // are invoked as methods on the query with their values.
+      find(req, criteria = {}, options = {}) {
+        return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options).type(self.name);
       }
     };
   },
   extendMethods(self, options) {
     return {
       getAutocompleteProjection(_super, query) {
-        let projection = _super(query);
+        const projection = _super(query);
         projection.slug = 1;
         return projection;
       },

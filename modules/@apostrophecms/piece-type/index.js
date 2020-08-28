@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -40,7 +40,7 @@ module.exports = {
       },
       {
         name: 'updatedAt',
-        label: 'Last Updated',
+        label: 'Edited on',
         partial: function (value) {
           if (!value) {
             // Don't crash if updatedAt is missing, for instance due to a dodgy import process
@@ -72,6 +72,7 @@ module.exports = {
 
     options.addFilters = [
       {
+        label: 'Published',
         name: 'published',
         choices: [
           {
@@ -92,6 +93,7 @@ module.exports = {
         style: 'pill'
       },
       {
+        label: 'Trash',
         name: 'trash',
         choices: [
           {
@@ -223,7 +225,7 @@ module.exports = {
   }),
   handlers(self, options) {
     return {
-      'beforeInsert': {
+      beforeInsert: {
         ensureTypeAndCreatorPermissions(req, piece, options) {
           piece.type = self.name;
           if (options.permissions !== false && !self.apos.permission.can(req, 'admin-' + self.name)) {
@@ -448,9 +450,9 @@ module.exports = {
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
       async batchSimpleRoute(req, name, change) {
-        let batchOperation = _.find(self.options.batchOperations, { name: name });
-        let schema = batchOperation.schema || [];
-        let data = self.apos.schema.newInstance(schema);
+        const batchOperation = _.find(self.options.batchOperations, { name: name });
+        const schema = batchOperation.schema || [];
+        const data = self.apos.schema.newInstance(schema);
         await self.apos.schema.convert(req, schema, req.body, data);
         await self.apos.modules['@apostrophecms/job'].run(req, one, { labels: { title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label } });
         async function one(req, id) {
@@ -488,7 +490,7 @@ module.exports = {
       // If copying, the module also emits `copyExtras` with `(req, copyOf, input, piece)`.
 
       async convertInsertAndRefresh(req, input, options) {
-        let piece = self.newInstance();
+        const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
         await self.convert(req, input, piece, {
           onlyPresentFields: true,
@@ -551,11 +553,11 @@ module.exports = {
       },
 
       getCreateControls(req) {
-        let controls = _.cloneDeep(self.createControls);
+        const controls = _.cloneDeep(self.createControls);
         return controls;
       },
       getEditControls(req) {
-        let controls = _.cloneDeep(self.editControls);
+        const controls = _.cloneDeep(self.editControls);
         return controls;
       },
       getChooserControls(req) {
@@ -598,7 +600,7 @@ module.exports = {
       // for things like testing pagination, see the
       // `your-piece-type:generate` task.
       generate(i) {
-        let piece = self.newInstance();
+        const piece = self.newInstance();
         piece.title = 'Generated #' + (i + 1);
         piece.published = true;
         return piece;

@@ -22,7 +22,7 @@
 import AposHelpers from '../mixins/AposHelpersMixin';
 
 export default {
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   props: {
     filters: {
       type: Array,
@@ -34,7 +34,7 @@ export default {
         return {
           label: 'Filter',
           icon: 'chevron-down-icon',
-          modifiers: ['icon-right'],
+          modifiers: [ 'icon-right' ],
           type: 'outline'
         };
       }
@@ -48,6 +48,7 @@ export default {
       default: 'below'
     }
   },
+  emits: [ 'input' ],
   data() {
     return {
       map: {
@@ -65,9 +66,7 @@ export default {
           field: {
             name: filter.name,
             type: 'radio',
-            // TODO: Remove `|| filter.name.toUpperCase()` once filters include
-            // labels
-            label: filter.label || filter.name.toUpperCase(),
+            label: filter.label || filter.name,
             choices: filter.choices
           },
           value: {

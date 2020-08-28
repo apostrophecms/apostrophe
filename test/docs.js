@@ -112,7 +112,7 @@ describe('Docs', function() {
         lastName: 'Sagan',
         age: 62,
         alive: false,
-        friendIds: ['larry']
+        friendIds: [ 'larry' ]
       }
     ];
 
@@ -193,7 +193,11 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to specify which fields to get by passing a projection object', async function() {
-    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }, { age: 1 });
+    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }, {
+      project: {
+        age: 1
+      }
+    });
     const docs = await cursor.toArray();
 
     // There SHOULD be an age
@@ -392,8 +396,8 @@ describe('Docs', function() {
 
     const counts = await cursor.get('distinctCounts');
 
-    assert(counts['Larry'] === 1);
-    assert(counts['Lori'] === 2);
+    assert(counts.Larry === 1);
+    assert(counts.Lori === 2);
   });
 
   it('should not allow you to call the update method if you are not an admin', async function() {

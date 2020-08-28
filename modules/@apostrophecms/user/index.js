@@ -127,22 +127,22 @@ module.exports = {
         }
       ]);
     } else {
-      options.addFields = options.addFields.concat([{
+      options.addFields = options.addFields.concat([ {
         type: 'join',
         name: '_groups',
         label: 'Groups',
         idsField: 'groupIds',
         withType: '@apostrophecms/group'
-      }]);
+      } ]);
     }
 
     options.removeFields = (options.defaultRemoveFields || [
       'published'
     ]).concat(options.removeFields || []);
 
-    options.removeFilters = (options.defaultRemoveFilters || ['published']).concat(options.removeFilters || []);
+    options.removeFilters = (options.defaultRemoveFilters || [ 'published' ]).concat(options.removeFilters || []);
 
-    options.arrangeFields = [{
+    options.arrangeFields = [ {
       name: 'basics',
       label: 'Basics',
       fields: [
@@ -158,7 +158,7 @@ module.exports = {
         'disabled',
         'slug'
       ]
-    }].concat(options.arrangeFields || []);
+    } ].concat(options.arrangeFields || []);
   },
   async init(self, options) {
 
@@ -329,7 +329,7 @@ module.exports = {
       // handlers of this module.
 
       async hashSecrets(doc, safeUser) {
-        for (let secret of self.secrets) {
+        for (const secret of self.secrets) {
           await self.hashSecret(doc, safeUser, secret);
         }
       },
@@ -434,12 +434,12 @@ module.exports = {
           return;
         }
 
-        for (let group of options.groups) {
+        for (const group of options.groups) {
           await self.ensureGroup(group);
         }
-        let groupField = _.find(self.schema, { name: 'group' });
+        const groupField = _.find(self.schema, { name: 'group' });
 
-        for (let group of options.groups) {
+        for (const group of options.groups) {
           groupField.choices.push({
             label: group.title,
             value: group._id
@@ -517,7 +517,7 @@ module.exports = {
           password: result.password,
           title: username,
           firstName: username,
-          groupIds: [group._id]
+          groupIds: [ group._id ]
         });
       },
 

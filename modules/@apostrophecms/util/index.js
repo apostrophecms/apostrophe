@@ -56,7 +56,7 @@ module.exports = {
           if (!haystack.length) {
             return result;
           }
-          let index = haystack.indexOf(needle);
+          const index = haystack.indexOf(needle);
           if (index === -1) {
             result += haystack;
             return result;
@@ -84,8 +84,8 @@ module.exports = {
         }
         // XRegExp is different.
         // eslint-disable-next-line no-useless-escape
-        let r = '.(?=W*w*$)';
-        let regex = new XRegExp(r, 'g');
+        const r = '.(?=W*w*$)';
+        const regex = new XRegExp(r, 'g');
         function tmpl(c) {
           return c.toUpperCase() !== c.toLowerCase() ? 'A' : ' ';
         }
@@ -161,9 +161,9 @@ module.exports = {
         let dash = false;
         for (i = 0; i < camel.length; i++) {
           let c = camel.charAt(i);
-          let lower = c >= 'a' && c <= 'z';
-          let upper = c >= 'A' && c <= 'Z';
-          let digit = c >= '0' && c <= '9';
+          const lower = c >= 'a' && c <= 'z';
+          const upper = c >= 'A' && c <= 'Z';
+          const digit = c >= '0' && c <= '9';
           if (!(lower || upper || digit)) {
             dash = true;
             continue;
@@ -202,7 +202,7 @@ module.exports = {
         let n = '';
         let nextUp = false;
         for (i = 0; i < s.length; i++) {
-          let c = s.charAt(i);
+          const c = s.charAt(i);
           // If the next character is already uppercase, preserve that, unless
           // it is the first character
           if (i > 0 && c.match(/[A-Z]/)) {
@@ -229,15 +229,15 @@ module.exports = {
       },
       // Perform an md5 checksum on a string. Returns hex string.
       md5(s) {
-        let md5 = crypto.createHash('md5');
+        const md5 = crypto.createHash('md5');
         md5.update(s);
         return md5.digest('hex');
       },
       // perform an md5 checksum on a file. Async. Returns a hex string.
       async md5File(filename) {
         return new Promise(function (resolve, reject) {
-          let md5 = crypto.createHash('md5');
-          let s = fs.ReadStream(filename);
+          const md5 = crypto.createHash('md5');
+          const s = fs.ReadStream(filename);
           s.on('data', function (d) {
             md5.update(d);
           });
@@ -245,7 +245,7 @@ module.exports = {
             return reject(err);
           });
           s.on('end', function () {
-            let d = md5.digest('hex');
+            const d = md5.digest('hex');
             return resolve(d);
           });
         });
@@ -323,7 +323,7 @@ module.exports = {
       // an unrealistic restriction on apostrophe doc schemas.
       clonePermanent(o, keepScalars) {
         let c;
-        let isArray = Array.isArray(o);
+        const isArray = Array.isArray(o);
         if (isArray) {
           c = [];
         } else {
@@ -371,10 +371,10 @@ module.exports = {
         if (idProperty === undefined) {
           idProperty = '_id';
         }
-        let byId = {};
+        const byId = {};
         _.each(items, function (item) {
           let value = item;
-          let keys = idProperty.split('.');
+          const keys = idProperty.split('.');
           _.each(keys, function (key) {
             value = value[key];
           });
@@ -654,7 +654,7 @@ module.exports = {
         let i;
         path = path.split('.');
         for (i = 0; (i < path.length); i++) {
-          let p = path[i];
+          const p = path[i];
           if ((i === 0) && (p.charAt(0) === '@')) {
             o = self.apos.util.findNestedObjectById(o, p.substring(1));
           } else {
@@ -704,7 +704,7 @@ module.exports = {
           if (!matches) {
             throw new Error(`@ syntax used without an id: ${path}`);
           }
-          let found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1]);
+          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1]);
           if (found) {
             if (matches[2].length) {
               o = found.object;
@@ -763,7 +763,7 @@ module.exports = {
       // The events module utilizes this
 
       isCurrentYear: function(date) {
-        let now = new Date();
+        const now = new Date();
         return date.getYear() === now.getYear();
       },
 
@@ -798,7 +798,7 @@ module.exports = {
       contains: function(list, value) {
         if (_.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
-            let valueItem = value[i];
+            const valueItem = value[i];
             if (_.includes(list, valueItem)) {
               return true;
             }
@@ -838,7 +838,7 @@ module.exports = {
       beginsWith: function(list, value) {
         if (_.isArray(list)) {
           for (let i = 0; i < list.length; i++) {
-            let listItem = list[i];
+            const listItem = list[i];
             if (listItem.indexOf(value) === 0) {
               return true;
             }
@@ -984,7 +984,7 @@ module.exports = {
         return _.groupBy(items, key);
 
         function groupByArray(items, arrayName) {
-          let results = {};
+          const results = {};
           _.each(items, function(item) {
             _.each(item[arrayName] || [], function(inner) {
               if (!results[inner]) {
@@ -1007,7 +1007,7 @@ module.exports = {
       // a property whose name is unknown at the time the
       // template is written.
       object: function(/* key, value, ... */) {
-        let o = {};
+        const o = {};
         let i = 0;
         while (i < arguments.length) {
           o[arguments[i]] = arguments[i + 1];
