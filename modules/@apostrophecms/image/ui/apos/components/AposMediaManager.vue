@@ -98,6 +98,7 @@ export default {
   data() {
     return {
       media: [],
+      tagList: [],
       modal: {
         active: false,
         type: 'overlay',
