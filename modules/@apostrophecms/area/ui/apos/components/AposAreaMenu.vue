@@ -68,7 +68,6 @@
             :item="item"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
-            @close="close"
           />
         </li>
       </ul>
@@ -78,7 +77,7 @@
       v-if="adding"
       v-model="widget"
       :type="addWidgetType"
-      @close="close()"
+      @close="close"
       @insert="insert"
       :options="addWidgetOptions"
       :doc-id="docId"
