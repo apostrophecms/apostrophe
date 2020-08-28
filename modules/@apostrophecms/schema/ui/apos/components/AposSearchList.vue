@@ -49,7 +49,7 @@ export default {
       }
     }
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>
@@ -114,6 +114,5 @@ export default {
     font-size: map-get($font-sizes, default);
     font-style: italic;
   }
-
 }
 </style>
