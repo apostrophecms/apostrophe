@@ -68,30 +68,21 @@ function getData(n) {
   const data = [
     {
       '_id': 'htcuoykl9012j38ecrjghrn0c',
-      'published': true,
-      'trash': false,
       'type': 'product',
       'title': 'Strawberry',
-      'slug': 'strawberry',
-      'metaType': 'doc'
+      'slug': 'strawberry'
     },
     {
       '_id': 'htcuoykl9012j38ecrjgwefwefhrn0c',
-      'published': true,
-      'trash': false,
       'type': 'product',
       'title': 'Apple',
-      'slug': 'apple',
-      'metaType': 'doc'
+      'slug': 'apple'
     },
     {
       '_id': 'htcuoykwefwefl9012j38ecrjghrn0c',
-      'published': true,
-      'trash': false,
       'type': 'product',
       'title': 'Mango',
-      'slug': 'mango',
-      'metaType': 'doc'
+      'slug': 'mango'
     }
   ];
   return data.splice(0, n);
