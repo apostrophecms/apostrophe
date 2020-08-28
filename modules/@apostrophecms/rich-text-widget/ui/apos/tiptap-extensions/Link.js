@@ -38,11 +38,11 @@ export default class Link extends Mark {
           })
         }
       ],
-      toDOM: node => ['a', {
+      toDOM: node => [ 'a', {
         ...node.attrs
         // We are building a CMS, trust the links
         // rel: 'noopener noreferrer nofollow',
-      }, 0]
+      }, 0 ]
     };
   }
 

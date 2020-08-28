@@ -1,6 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
 
 describe('bootstrap of Apostrophe core', function() {
 
@@ -97,7 +97,7 @@ describe('bootstrap of Apostrophe core', function() {
   it('should load the default modules and implicitly subclass the base module correctly', async function() {
     let apos;
     try {
-      let defaultModules = require('../defaults.js').modules;
+      const defaultModules = require('../defaults.js').modules;
 
       apos = await t.create({
         root: module

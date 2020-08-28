@@ -25,7 +25,7 @@ module.exports = function(self, query) {
         return;
       }
 
-      let words = autocomplete.split(/ /);
+      const words = autocomplete.split(/ /);
       if (!words.length) {
         return;
       }

@@ -14,7 +14,7 @@ describe('Http', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'test': {
+        test: {
           apiRoutes: (self, options) => ({
             post: {
               '/csrf-test': (req) => {

@@ -290,7 +290,7 @@ module.exports = {
           // breaks if you have multiple instances of Apostrophe, such as
           // in our unit tests. -Tom
           self.apos.app.use(function (req, res, next) {
-            let superRedirect = res.redirect;
+            const superRedirect = res.redirect;
             res.redirect = function (status, url) {
               if (arguments.length === 1) {
                 url = status;
@@ -314,7 +314,7 @@ module.exports = {
           return self.sessionOptions;
         }
         let Store;
-        let sessionOptions = self.options.session || {};
+        const sessionOptions = self.options.session || {};
         _.defaults(sessionOptions, {
           // Do not save sesions until something is stored in them.
           // Greatly reduces aposSessions collection size
@@ -352,7 +352,7 @@ module.exports = {
           }
           // Some stores will flip out if you pass them a mongo db as an option,
           // but try to help all flavors of connect-mongo
-          let name = sessionOptions.store.name;
+          const name = sessionOptions.store.name;
           if (!name || name.match(/^connect-mongo/)) {
             if (!sessionOptions.store.options.client) {
               sessionOptions.store.options.client = self.apos.dbClient;

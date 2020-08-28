@@ -23,7 +23,7 @@ describe('Pieces', function() {
       root: module,
 
       modules: {
-        'things': {
+        things: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'things',
@@ -40,7 +40,7 @@ describe('Pieces', function() {
             }
           }
         },
-        'people': {
+        people: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'people',
@@ -56,7 +56,7 @@ describe('Pieces', function() {
             }
           }
         },
-        'product': {
+        product: {
           extend: '@apostrophecms/piece-type',
           options: {
             publicApiProjection: {
@@ -140,13 +140,13 @@ describe('Pieces', function() {
         }
       }
     });
-    assert(apos.modules['things']);
-    assert(apos.modules['things'].schema);
+    assert(apos.modules.things);
+    assert(apos.modules.things.schema);
   });
 
   // little test-helper function to get piece by id regardless of trash status
   async function findPiece(req, id) {
-    const piece = apos.modules['things'].find(req, { _id: id })
+    const piece = apos.modules.things.find(req, { _id: id })
       .permission('edit')
       .published(null)
       .trash(null)
@@ -157,13 +157,13 @@ describe('Pieces', function() {
     return piece;
   }
 
-  let testThing = {
+  const testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar'
   };
 
-  let additionalThings = [
+  const additionalThings = [
     {
       _id: 'thing1',
       title: 'Red'
@@ -180,7 +180,7 @@ describe('Pieces', function() {
     }
   ];
 
-  let testPeople = [
+  const testPeople = [
     {
       _id: 'person1',
       title: 'Bob',
@@ -192,22 +192,22 @@ describe('Pieces', function() {
 
   // Test pieces.newInstance()
   it('should be able to create a new piece', function() {
-    assert(apos.modules['things'].newInstance);
-    let thing = apos.modules['things'].newInstance();
+    assert(apos.modules.things.newInstance);
+    const thing = apos.modules.things.newInstance();
     assert(thing);
     assert(thing.type === 'thing');
   });
 
   // Test pieces.insert()
   it('should be able to insert a piece into the database', async () => {
-    assert(apos.modules['things'].insert);
-    await apos.modules['things'].insert(apos.task.getReq(), testThing);
+    assert(apos.modules.things.insert);
+    await apos.modules.things.insert(apos.task.getReq(), testThing);
   });
 
   it('should be able to retrieve a piece by id from the database', async () => {
-    assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.task.getReq();
-    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    assert(apos.modules.things.requireOneForEditing);
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
     assert(req.piece.title === 'hello');
@@ -216,13 +216,13 @@ describe('Pieces', function() {
 
   // Test pieces.update()
   it('should be able to update a piece in the database', async () => {
-    assert(apos.modules['things'].update);
+    assert(apos.modules.things.update);
     testThing.foo = 'moo';
-    const piece = await apos.modules['things'].update(apos.task.getReq(), testThing);
+    const piece = await apos.modules.things.update(apos.task.getReq(), testThing);
     assert(testThing === piece);
     // Now let's get the piece and check if it was updated
-    let req = apos.task.getReq();
-    req.piece = await apos.modules['things'].requireOneForEditing(req, { _id: 'testThing' });
+    const req = apos.task.getReq();
+    req.piece = await apos.modules.things.requireOneForEditing(req, { _id: 'testThing' });
     assert(req.piece);
     assert(req.piece._id === 'testThing');
     assert(req.piece.foo === 'moo');
@@ -234,7 +234,7 @@ describe('Pieces', function() {
     let manageTest = false;
     // addListFilters should execute launder and filters for filter
     // definitions that are safe for 'public' or 'manage' contexts
-    let mockCursor = apos.doc.find(apos.task.getAnonReq());
+    const mockCursor = apos.doc.find(apos.task.getAnonReq());
     _.merge(mockCursor, {
       builders: {
         publicTest: {
@@ -262,7 +262,7 @@ describe('Pieces', function() {
       }
     });
 
-    let filters = {
+    const filters = {
       publicTest: 'foo',
       manageTest: 'bar',
       unsafeTest: 'nope',
@@ -275,15 +275,15 @@ describe('Pieces', function() {
   });
 
   it('should be able to trash a piece with proper deduplication', async () => {
-    assert(apos.modules['things'].requireOneForEditing);
-    let req = apos.task.getReq();
-    let id = 'testThing';
+    assert(apos.modules.things.requireOneForEditing);
+    const req = apos.task.getReq();
+    const id = 'testThing';
     req.body = { _id: id };
     // let's make sure the piece is not trashed to start
     const piece = await findPiece(req, id);
     assert(!piece.trash);
     piece.trash = true;
-    await apos.modules['things'].update(req, piece);
+    await apos.modules.things.update(req, piece);
     // let's get the piece to make sure it is trashed
     const piece2 = await findPiece(req, id);
     assert(piece2);
@@ -293,8 +293,8 @@ describe('Pieces', function() {
   });
 
   it('should be able to rescue a trashed piece with proper deduplication', async () => {
-    let req = apos.task.getReq();
-    let id = 'testThing';
+    const req = apos.task.getReq();
+    const id = 'testThing';
     req.body = {
       _id: id
     };
@@ -302,7 +302,7 @@ describe('Pieces', function() {
     const piece = await findPiece(req, id);
     assert(piece.trash === true);
     piece.trash = false;
-    await apos.modules['things'].update(req, piece);
+    await apos.modules.things.update(req, piece);
     const piece2 = await findPiece(req, id);
     assert(piece2);
     assert(!piece2.trash);
@@ -327,7 +327,7 @@ describe('Pieces', function() {
   });
 
   it('people can find things via a join', async () => {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     for (const person of testPeople) {
       await apos.people.insert(req, person);
     }
@@ -342,7 +342,7 @@ describe('Pieces', function() {
   });
 
   it('people cannot find things via a join with an inadequate projection', function() {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     return apos.doc.getManager('person').find(req, {}, {
       // Use the options object rather than a chainable method
       project: {
@@ -359,7 +359,7 @@ describe('Pieces', function() {
   });
 
   it('people can find things via a join with a "projection" of the join name', function() {
-    let req = apos.task.getReq();
+    const req = apos.task.getReq();
     return apos.doc.getManager('person').find(req, {}, {
       project: {
         title: 1,
@@ -611,8 +611,8 @@ describe('Pieces', function() {
     assert(response);
     assert(response.results);
     const product = _.find(response.results, { slug: 'product-key-product-with-join' });
-    assert(Array.isArray(product['_articles']));
-    assert(product['_articles'].length === 1);
+    assert(Array.isArray(product._articles));
+    assert(product._articles.length === 1);
   });
 
   it('can GET a single product with joins', async () => {

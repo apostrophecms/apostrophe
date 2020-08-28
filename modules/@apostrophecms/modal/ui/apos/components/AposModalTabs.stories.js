@@ -13,7 +13,7 @@ import AposModalTabsMixin from '../mixins/AposModalTabsMixin';
 
 export default {
   title: 'Modal with Tabs',
-  decorators: [withKnobs]
+  decorators: [ withKnobs ]
 };
 
 const breadcrumbs = [

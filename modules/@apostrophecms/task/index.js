@@ -120,7 +120,7 @@ module.exports = {
           args.splice(0, 0, name);
         } else {
           options = args;
-          args = [name];
+          args = [ name ];
         }
         const task = self.find(name);
         const argv = {
@@ -232,7 +232,7 @@ module.exports = {
       // This allows testing of that mechanism by setting `req.url`.
 
       getReq(properties) {
-        let req = {
+        const req = {
           user: { _permissions: { admin: true } },
           res: {
             __: function (s) {
@@ -268,7 +268,7 @@ module.exports = {
       // This allows testing of that mechanism by setting `req.url`.
 
       getAnonReq(properties) {
-        let req = self.getReq();
+        const req = self.getReq();
         delete req.user;
         _.extend(req, properties || {});
         return req;

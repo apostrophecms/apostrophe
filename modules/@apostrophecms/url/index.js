@@ -3,8 +3,8 @@
 // as the `build` filter in Nunjucks. This is also the logical place
 // to add new utility methods relating to URLs.
 
-let _ = require('lodash');
-let qs = require('qs');
+const _ = require('lodash');
+const qs = require('qs');
 
 module.exports = {
   options: { alias: 'url' },
@@ -77,7 +77,7 @@ module.exports = {
 
         let hash;
         // Preserve hash separately
-        let matches = url.match(/^(.*)?#(.*)$/);
+        const matches = url.match(/^(.*)?#(.*)$/);
         if (matches) {
           url = matches[1];
           hash = matches[2];
@@ -91,12 +91,12 @@ module.exports = {
         // exposed to a SafeString object and throw an exception
         url = url.toString();
 
-        let qat = url.indexOf('?');
+        const qat = url.indexOf('?');
         let base = url;
-        let dataObjects = [];
+        const dataObjects = [];
         let pathKeys;
         let original;
-        let query = {};
+        const query = {};
         let i, j;
         let key;
 
@@ -120,7 +120,7 @@ module.exports = {
         if (original) {
           dataObjects.push(original);
         }
-        let done = {};
+        const done = {};
         let stop = false;
         let dataObject;
         let value;
@@ -148,7 +148,7 @@ module.exports = {
                 stop = true;
                 break;
               }
-              let s = dataObject[key].toString();
+              const s = dataObject[key].toString();
               if (s === self.apos.util.slugify(s)) {
                 // Don't append double /
                 if (base !== '/') {
@@ -179,12 +179,12 @@ module.exports = {
             }
             value = dataObject[key];
             if (value && value.$pull !== undefined) {
-              value = _.difference(query[key] || [], [value.$pull.toString()]);
+              value = _.difference(query[key] || [], [ value.$pull.toString() ]);
               if (!value.length) {
                 value = undefined;
               }
             } else if (value && value.$addToSet !== undefined) {
-              value = _.union(query[key] || [], [value.$addToSet.toString()]);
+              value = _.union(query[key] || [], [ value.$addToSet.toString() ]);
               if (!value.length) {
                 value = undefined;
               }

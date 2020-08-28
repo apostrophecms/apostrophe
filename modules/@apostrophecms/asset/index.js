@@ -45,14 +45,14 @@ module.exports = {
       async function moduleOverrides() {
         let names = {};
         const directories = {};
-        for (let name of Object.keys(self.apos.modules)) {
+        for (const name of Object.keys(self.apos.modules)) {
           const ancestorDirectories = [];
-          for (let entry of self.apos.modules[name].__meta.chain) {
+          for (const entry of self.apos.modules[name].__meta.chain) {
             const effectiveName = entry.name.replace(/^my-/, '');
             names[effectiveName] = true;
             ancestorDirectories.push(entry.dirname);
             directories[effectiveName] = directories[effectiveName] || [];
-            for (let dir of ancestorDirectories) {
+            for (const dir of ancestorDirectories) {
               if (!directories[effectiveName].includes(dir)) {
                 directories[effectiveName].push(dir);
               }
@@ -60,9 +60,9 @@ module.exports = {
           }
         }
         names = Object.keys(names);
-        for (let name of names) {
+        for (const name of names) {
           const moduleDir = `${modulesDir}/${name}`;
-          for (let dir of directories[name]) {
+          for (const dir of directories[name]) {
             const srcDir = `${dir}/ui/apos`;
             if (fs.existsSync(srcDir)) {
               await fs.copy(srcDir, moduleDir);

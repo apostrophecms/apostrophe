@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 // A subclass of `@apostrophecms/piece-type`, `@apostrophecms/file` establishes a library
 // of uploaded files, which may be of any type acceptable to the

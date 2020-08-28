@@ -1,9 +1,9 @@
-let cheerio = require('cheerio');
+const cheerio = require('cheerio');
 
 module.exports = function(self, oembetter) {
   // Fake oembed for wufoo
   oembetter.addBefore(async function(url, options, response, cb) {
-    let who, what, title;
+    let title;
     // If they used a pretty wufoo URL, we have to
     // fetch it and find the canonical URL in it first.
     let matches = url.match(/(\w+)\.wufoo\.com\/forms\/[\w]+-[\w-]+/);
@@ -20,11 +20,11 @@ module.exports = function(self, oembetter) {
       // None of our beeswax
       return cb(null);
     }
-    who = matches[1];
-    what = matches[2];
+    const who = matches[1];
+    const what = matches[2];
     const body = await self.apos.http.get(url);
-    let $ = cheerio.load(body);
-    let $title = $('title');
+    const $ = cheerio.load(body);
+    const $title = $('title');
     title = $title.text();
     if (title) {
       title = title.trim();

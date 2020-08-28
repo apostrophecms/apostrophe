@@ -1,6 +1,6 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
 
 describe('Utils', function() {
 
@@ -24,7 +24,7 @@ describe('Utils', function() {
   describe('methods', function() {
 
     it('generateId: should return a string of an number', function(done) {
-      let id = apos.util.generateId();
+      const id = apos.util.generateId();
 
       assert((typeof id) === 'string');
       assert((typeof parseInt(id)) === 'number');
@@ -32,7 +32,7 @@ describe('Utils', function() {
     });
 
     it('globalReplace: should replace multiple instances of a string', function(done) {
-      let s = apos.util.globalReplace('apostrophe is for cool kids. therefore apostrophe is cool.', 'apostrophe', 'comma');
+      const s = apos.util.globalReplace('apostrophe is for cool kids. therefore apostrophe is cool.', 'apostrophe', 'comma');
 
       assert(s.indexOf('apostrophe') < 0);
       assert(s.split('comma').length === 3);
@@ -40,35 +40,35 @@ describe('Utils', function() {
     });
 
     it('truncatePlaintext: should tuncate a message without cutting off a word', function(done) {
-      let s = apos.util.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
+      const s = apos.util.truncatePlaintext('I want to be cut off here. This is an extra sentance.', 25);
 
       assert(s.indexOf('here') > 0);
       return done();
     });
 
     it('escapeHtml: should replace html tags with html string entites', function(done) {
-      let s = apos.util.escapeHtml('<div>hello</div>');
+      const s = apos.util.escapeHtml('<div>hello</div>');
 
       assert(s.indexOf('<') < 0 && s.indexOf('&lt;') >= 0);
       return done();
     });
 
     it('htmlToPlaintext: should strip all html notation', function(done) {
-      let s = apos.util.htmlToPlaintext('<div>hello</div>');
+      const s = apos.util.htmlToPlaintext('<div>hello</div>');
 
       assert(s.indexOf('<') < 0 && s.indexOf('hello') >= 0);
       return done();
     });
 
     it('capitalizeFirst: should capitalize the first letter', function(done) {
-      let s = apos.util.capitalizeFirst('hello');
+      const s = apos.util.capitalizeFirst('hello');
 
       assert(s.indexOf('hello') < 0 && s.indexOf('H' === 0));
       return done();
     });
 
     it('cssName: should covert camelCase or underscore name formats to hyphenated css-style', function(done) {
-      let s = apos.util.cssName('camelCase and under_score');
+      const s = apos.util.cssName('camelCase and under_score');
 
       assert(s.indexOf('C') < 0 && s.indexOf('_') < 0);
       assert(s.indexOf('camel-case') >= 0);
@@ -76,24 +76,24 @@ describe('Utils', function() {
     });
 
     it('cssName: should preserve double dash', function() {
-      let s = apos.util.cssName('this-is--doubled');
+      const s = apos.util.cssName('this-is--doubled');
       assert(s === 'this-is--doubled');
     });
 
     it('cssName: should not preserve triple dash', function() {
-      let s = apos.util.cssName('this-is---tripled');
+      const s = apos.util.cssName('this-is---tripled');
       assert(s === 'this-is--tripled');
     });
 
     it('camelName: should convert non digits or ASII characters to a capitalized version of the next character', function(done) {
-      let s = apos.util.camelName('hello apostrophe');
+      const s = apos.util.camelName('hello apostrophe');
 
       assert(s.indexOf(' ') < 0 && s.indexOf('A') === 5);
       return done();
     });
 
     it('addSlashIfNeeded: should add a slash "/" to the end of a path if necessary', function(done) {
-      let s = apos.util.addSlashIfNeeded('/my/path');
+      const s = apos.util.addSlashIfNeeded('/my/path');
 
       assert(s === '/my/path/');
       return done();
@@ -170,34 +170,34 @@ describe('Utils', function() {
     });
 
     it('clonePermanent should not behave bizarrely with a test case from the punkave site', function() {
-      let input = {
-        'attachment': {
-          '_id': 'a205filea1media97',
-          'title': 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
-          'width': 225,
-          'height': 300,
-          'length': 22014,
-          'md5': 22014,
-          'extension': 'jpg',
-          'group': 'images',
-          'name': 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
-          'landscape': false,
-          'portrait': true,
-          'a15Export': true,
-          'tags': [
+      const input = {
+        attachment: {
+          _id: 'a205filea1media97',
+          title: 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
+          width: 225,
+          height: 300,
+          length: 22014,
+          md5: 22014,
+          extension: 'jpg',
+          group: 'images',
+          name: 'http-window-punkave-com-wp-content-uploads-2009-01-n56601994_30790014_5081-225x300-jpg',
+          landscape: false,
+          portrait: true,
+          a15Export: true,
+          tags: [
             'p\'window',
             '2009'
           ],
-          'searchText': 'http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg jpg',
-          'type': 'attachment'
+          searchText: 'http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg http window punkave com wp content uploads 2009 01 n56601994 30790014 5081 225x300 jpg jpg',
+          type: 'attachment'
         }
       };
-      let clone = apos.util.clonePermanent(input);
+      const clone = apos.util.clonePermanent(input);
       assert(clone.attachment._id === 'a205filea1media97');
     });
 
     it('gives sensible results for insensitiveSort', function() {
-      let input = [
+      const input = [
         'Fred',
         'dog',
         5,

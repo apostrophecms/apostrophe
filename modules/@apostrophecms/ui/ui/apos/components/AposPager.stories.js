@@ -14,8 +14,8 @@ export const pagination = () => ({
   },
   template: `
     <AposPager
-      @click="registerPageChange"  @change="registerPageChange"
-      :totalPages="totalPages" :currentPage="currentPage"
+      @click="registerPageChange" @change="registerPageChange"
+      :total-pages="totalPages" :current-page="currentPage"
     />
   `,
   methods: {

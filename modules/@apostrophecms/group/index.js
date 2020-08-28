@@ -17,7 +17,7 @@
 // This module is **not** intended to be extended with new subclass modules, although
 // you may implicitly subclass it at project level to change its behavior.
 
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -47,9 +47,9 @@ module.exports = {
     ]
   },
   beforeSuperClass(self, options) {
-    options.removeFields = (options.minimumRemoved || ['published']).concat(options.removeFields || []);
+    options.removeFields = (options.minimumRemoved || [ 'published' ]).concat(options.removeFields || []);
 
-    options.removeFilters = ['published'].concat(options.removeFilters || []);
+    options.removeFilters = [ 'published' ].concat(options.removeFilters || []);
   },
   init(self, options) {
     self.enableAddGroupTask();

@@ -40,7 +40,7 @@ export default {
   }
 
   .apos-toolbar__group--right > * {
-    margin-left: 7.5px;
+    margin-left: 20px;
   }
 
   .apos-toolbar__group {

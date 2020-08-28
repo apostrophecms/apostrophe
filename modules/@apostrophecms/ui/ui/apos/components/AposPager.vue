@@ -7,7 +7,6 @@
       :icon-only="true" icon="chevron-left-icon"
       :label="prevButtonLabel"
     />
-    Page
     <div class="apos-input-wrapper">
       <select
         class="apos-input apos-input--select"
@@ -17,10 +16,10 @@
           v-for="num in totalPages" :key="num"
           :value="num"
         >
-          {{ num }}
+          Page {{ num }}
         </option>
       </select>
-      <menu-swap-icon :size="24" class="apos-input-icon" />
+      <menu-swap-icon :size="18" class="apos-input-icon" />
     </div>
     <AposButton
       :disabled="currentPage >= totalPages"
@@ -50,7 +49,7 @@ export default {
       required: true
     }
   },
-  emits: ['change', 'click'],
+  emits: [ 'change', 'click' ],
   computed: {
     prevButtonLabel () {
       return this.currentPage > 1 ? `Go to page ${this.currentPage - 1}`
@@ -93,7 +92,6 @@ export default {
   .apos-input-wrapper {
     display: inline-flex;
     align-self: stretch;
-    margin-left: 0.5em;
   }
 
   .apos-input--select {
@@ -107,11 +105,11 @@ export default {
 
   .apos-pager__btn {
     &:first-child {
-      margin-right: $spacing-base;
+      margin-right: 5px;
     }
 
     &:last-child {
-      margin-left: $spacing-base;
+      margin-left: 5px;
     }
   }
 </style>

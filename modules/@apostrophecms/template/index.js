@@ -71,7 +71,7 @@ module.exports = {
         wrapHelpersForTemplateAposObject() {
           wrapFunctions(self.templateApos);
           _.each(self.templateApos.modules, function (helpers, moduleName) {
-            let alias = self.apos.modules[moduleName].options.alias;
+            const alias = self.apos.modules[moduleName].options.alias;
             if (alias) {
               if (_.has(self.templateApos, alias)) {
                 throw new Error('The module ' + moduleName + ' has the alias ' + alias + ' which conflicts with core functionality. Change the alias.');
@@ -122,9 +122,9 @@ module.exports = {
       // project-level developer (except for core modules).
 
       addHelpersForModule(module, object) {
-        let helpersForModules = self.templateApos.modules;
+        const helpersForModules = self.templateApos.modules;
         helpersForModules[module.__meta.name] = helpersForModules[module.__meta.name] || {};
-        let helpersForModule = helpersForModules[module.__meta.name];
+        const helpersForModule = helpersForModules[module.__meta.name];
         if (typeof object === 'string') {
           helpersForModule[arguments[1]] = arguments[2];
         } else {
@@ -247,13 +247,13 @@ module.exports = {
 
         let result;
 
-        let merged = {};
+        const merged = {};
 
         if (data) {
           _.defaults(merged, data);
         }
 
-        let args = {};
+        const args = {};
 
         args.data = merged;
         args.module = self.templateApos.modules[module.__meta.name];
@@ -288,7 +288,7 @@ module.exports = {
 
         args.data.locale = args.data.locale || req.locale;
 
-        let env = self.getEnv(req, module);
+        const env = self.getEnv(req, module);
 
         args.apos = self.templateApos;
         args.__ = req.res.__;
@@ -319,7 +319,7 @@ module.exports = {
       // this directly.
 
       getEnv(req, module) {
-        let name = module.__meta.name;
+        const name = module.__meta.name;
 
         req.envs = req.envs || {};
         // Cache for performance
@@ -331,7 +331,7 @@ module.exports = {
       },
 
       getViewFolders(module) {
-        let dirs = _.map(module.__meta.chain, function (entry) {
+        const dirs = _.map(module.__meta.chain, function (entry) {
           return entry.dirname + '/views';
         });
         // Final class should win
@@ -350,9 +350,9 @@ module.exports = {
 
       newEnv(req, moduleName, dirs) {
 
-        let loader = self.newLoader(moduleName, dirs, undefined, self);
+        const loader = self.newLoader(moduleName, dirs, undefined, self);
 
-        let env = new self.nunjucks.Environment(loader, {
+        const env = new self.nunjucks.Environment(loader, {
           autoescape: true,
           apos: self.apos,
           req
@@ -426,7 +426,7 @@ module.exports = {
       // will not need to call this directly.
 
       newLoader(moduleName, dirs) {
-        let NunjucksLoader = require('./lib/nunjucksLoader.js');
+        const NunjucksLoader = require('./lib/nunjucksLoader.js');
         return new NunjucksLoader(moduleName, dirs, undefined, self, self.options.loader);
       },
 
@@ -442,7 +442,7 @@ module.exports = {
           if (!date) {
             return '';
           }
-          let s = dayjs(date).format(format);
+          const s = dayjs(date).format(format);
           return s;
         });
 
@@ -483,8 +483,8 @@ module.exports = {
             // don't crash, nunjucks tolerates nulls
             return '';
           }
-          let parts = data.toString().split(/\n/);
-          let output = _.map(parts, function (part) {
+          const parts = data.toString().split(/\n/);
+          const output = _.map(parts, function (part) {
             return '<p>' + part + '</p>\n';
           }).join('');
           return output;
@@ -527,7 +527,7 @@ module.exports = {
         });
 
         env.addFilter('merge', function (data) {
-          let output = {};
+          const output = {};
           let i;
           for (i = 0; i < arguments.length; i++) {
             _.assign(output, arguments[i]);
@@ -629,7 +629,7 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        let decorate = !(req.query.apos_refresh || req.query.xhr || req.xhr || req.decorate === false);
+        const decorate = !(req.query.apos_refresh || req.query.xhr || req.xhr || req.decorate === false);
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
@@ -638,13 +638,13 @@ module.exports = {
 
         let dataUrl = req.url;
 
-        let parsed = new URL(req.absoluteUrl);
+        const parsed = new URL(req.absoluteUrl);
         if (parsed.query && parsed.searchParams.get('apos_refresh')) {
           parsed.searchParams.remove('apos_refresh');
           dataUrl = parsed.toString();
         }
 
-        let args = {
+        const args = {
           outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
           permissions: req.user && (req.user._permissions || {}),
           when: scene,
@@ -772,7 +772,7 @@ module.exports = {
       // Implementation detail of `apos.template.prepend` and `apos.template.append`.
 
       insert(end, location, componentName) {
-        let key = end + '-' + location;
+        const key = end + '-' + location;
         self.insertions[key] = self.insertions[key] || [];
         self.insertions[key].push(componentName);
       }
