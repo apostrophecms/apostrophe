@@ -69,7 +69,7 @@ export default {
   },
   props: {
     checked: {
-      type: [Array, Boolean],
+      type: [ Array, Boolean ],
       default: false
     },
     media: {

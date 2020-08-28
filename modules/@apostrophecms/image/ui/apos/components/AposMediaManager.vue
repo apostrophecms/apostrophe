@@ -34,7 +34,6 @@
         </template>
         <template #bodyMain>
           <AposMediaManagerDisplay
-            v-if="!!media.length"
             :media="media" ref="display"
             @edit="updateEditing"
             v-model="checked"
@@ -42,9 +41,6 @@
             @select-series="selectSeries"
             @select-another="selectAnother"
           />
-          <div v-else class="apos-media-manager__empty">
-            <AposEmptyState :empty-state="emptyDisplay" />
-          </div>
         </template>
       </AposModalBody>
     </template>
