@@ -77,22 +77,6 @@ export default {
       type: String,
       required: true
     }
-    // media: {
-    //   type: Array,
-    //   required: true
-    // },
-    // tagList: {
-    //   type: Array,
-    //   default() {
-    //     return [];
-    //   }
-    // },
-    // applyTags: {
-    //   type: Array,
-    //   default() {
-    //     return [];
-    //   }
-    // }
   },
   emits: [ 'safe-close', 'trash', 'save', 'search' ],
   data() {
@@ -136,17 +120,8 @@ export default {
   },
   methods: {
     async getMedia () {
-      // if (this.holdQueries) {
-      //   return;
-      // }
 
-      // this.holdQueries = true;
-
-      const qs = {
-        // ...this.filterValues,
-        // page: 1,
-        // ...this.queryExtras
-      };
+      const qs = {};
 
       // Avoid undefined properties.
       for (const prop in qs) {
@@ -161,10 +136,7 @@ export default {
         }
       ));
       console.info(getResponse);
-      // this.currentPage = getResponse.currentPage;
-      // this.totalPages = getResponse.pages;
       this.media = getResponse.results;
-      // this.holdQueries = false;
     },
     clearSelected() {
       this.checked = [];

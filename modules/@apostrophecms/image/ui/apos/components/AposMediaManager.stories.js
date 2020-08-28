@@ -1,7 +1,4 @@
 import AposMediaManager from './AposMediaManager.vue';
-// import mediaData from './data.js';
-// import tagListData from './../tagList/data.js';
-// import applyTagData from './../tagApplyMenu/data.js';
 
 export default {
   title: 'Media Manager'
@@ -25,10 +22,7 @@ export const mediaManager = () => {
     },
     data () {
       return {
-        // media: mediaData.media,
-        // tagList: tagListData,
         active: true
-        // applyTags: applyTagData.applyTo
       };
     },
     template: `
@@ -46,7 +40,3 @@ export const mediaManager = () => {
     `
   };
 };
-
-// :media="media"
-// :tagList="tagList"
-// :applyTags="applyTags"
