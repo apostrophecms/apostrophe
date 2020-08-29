@@ -430,6 +430,14 @@ export default {
   color: var(--a-danger);
 }
 
+.apos-button--round {
+  border-radius: 50%;
+}
+
+.apos-button--small {
+  padding: 3px;
+}
+
 @keyframes animateGradient {
   0% {
     background-position: 0% 50%;
