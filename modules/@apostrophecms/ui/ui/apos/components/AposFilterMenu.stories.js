@@ -12,7 +12,7 @@ export const filterContextMenu = () => ({
   },
   methods: {
     log(name, value) {
-      console.log(`log: ${name} = ${value.data}`);
+      console.info(`FILTER CHANGE: ${name} = ${value.data}`);
     }
   },
   data() {
@@ -49,8 +49,9 @@ function getData() {
           }
         ],
         def: true,
-        style: 'pill'
-      }, {
+        inputType: 'radio'
+      },
+      {
         label: 'Trash',
         name: 'trash',
         choices: [
@@ -63,7 +64,43 @@ function getData() {
           }
         ],
         def: false,
-        style: 'pill'
+        inputType: 'radio'
+      },
+      {
+        label: 'Color',
+        name: 'color',
+        choices: [
+          {
+            value: 'red',
+            label: 'Red'
+          },
+          {
+            value: 'orange',
+            label: 'Orange'
+          },
+          {
+            value: 'yellow',
+            label: 'Yellow'
+          },
+          {
+            value: 'green',
+            label: 'Green'
+          },
+          {
+            value: 'blue',
+            label: 'Blue'
+          },
+          {
+            value: 'indigo',
+            label: 'Indigo'
+          },
+          {
+            value: 'violet',
+            label: 'Violet'
+          }
+        ],
+        def: 'orange',
+        inputType: 'select'
       }
     ]
   };

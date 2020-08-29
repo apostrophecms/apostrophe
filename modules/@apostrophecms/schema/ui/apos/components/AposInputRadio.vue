@@ -39,8 +39,7 @@ export default {
     getChoiceId(uid, value) {
       // Convert any boolean values for this purpose.
       if (typeof value !== 'string') {
-        value = !value && value === null ? 'null'
-          : !value ? 'undefined' : value.toString();
+        value = !value ? 'undefined' : value.toString();
       }
 
       value = value.toString();
