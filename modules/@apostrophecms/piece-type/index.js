@@ -84,7 +84,7 @@ module.exports = {
             label: 'Draft'
           },
           {
-            value: null,
+            value: 'any',
             label: 'Both'
           }
         ],
