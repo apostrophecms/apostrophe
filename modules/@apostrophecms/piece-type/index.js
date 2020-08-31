@@ -205,6 +205,9 @@ module.exports = {
       return doc;
     },
     async post(req) {
+      if (Object.keys(req.body).length === 0) {
+        return self.newInstance();
+      }
       self.publicApiCheck(req);
       return self.convertInsertAndRefresh(req, req.body);
     },

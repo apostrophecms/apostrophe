@@ -199,10 +199,9 @@ export default {
         apos.bus.$emit('busy', false);
       }
     },
-    buildEmptyDoc () {
-      this.schema.forEach(field => {
-        this.doc.data[field.name] = '';
-      });
+    async buildEmptyDoc () {
+      const newInstance = await apos.http.post(this.moduleOptions.action, {});
+      this.doc.data = { ...this.schema, ...newInstance };
       this.docReady = true;
     }
   }
