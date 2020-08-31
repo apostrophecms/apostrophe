@@ -194,7 +194,7 @@ export default {
   },
   created() {
     this.options.filters.forEach(filter => {
-      this.filterValues[filter.name] = filter.choices[0].value;
+      this.filterValues[filter.name] = filter.def || filter.choices[0].value;
     });
   },
   async mounted() {
