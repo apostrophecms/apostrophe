@@ -43,12 +43,13 @@ export default {
     };
   },
   mounted() {
-    if (!this.field.choices.find(choice => {
+    // Add an empty option if there isn't one already or an "any" option.
+    if (!this.field.required && !this.field.choices.find(choice => {
       return !choice.value || choice.value === 'any';
     })) {
       this.choices.push({
-        label: 'Any',
-        value: 'any'
+        label: '',
+        value: ''
       });
     }
     this.choices = this.choices.concat(this.field.choices);
