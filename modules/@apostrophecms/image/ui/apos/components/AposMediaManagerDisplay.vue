@@ -15,7 +15,11 @@
             </p>
           </div>
         </div>
-        <input type="file" class="apos-sr-only">
+        <input
+          type="file" class="apos-sr-only"
+          ref="apos-upload-input"
+          @input="updateUpload"
+        >
       </label>
       <div
         class="apos-media-manager-display__cell" v-for="item in media"
@@ -95,6 +99,28 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
+    }
+  },
+  mounted() {
+    // Get the acceptable file types, if set.
+    const imageGroup = apos.modules['@apostrophecms/attachment'].fileGroups
+      .find(group => group.name === 'images');
+
+    if (imageGroup && this.$refs['apos-upload-input']) {
+      const acceptTypes = imageGroup.extensions.map(type => `.${type}`)
+        .join(',');
+      console.info(acceptTypes);
+      this.$refs['apos-upload-input'].setAttribute('accept', acceptTypes);
+    }
+  },
+  methods: {
+    async updateUpload (event) {
+      console.info('🆙', event.target.value);
+      // Make an async request to upload the image.
+      // While the upload is working, set an uploading animation.
+      // If uploading one image, when complete, load up the edit schema in the right rail.
+      // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
+      // When complete, refresh the image grid, with the new images at top.
     }
   }
 };
