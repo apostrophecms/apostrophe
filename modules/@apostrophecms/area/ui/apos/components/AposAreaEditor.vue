@@ -14,7 +14,8 @@
         v-for="(widget, i) in next"
         :key="widget._id"
       >
-        <div class="apos-area-controls">
+        <AposWidgetMove />
+        <!-- <div class="apos-area-controls">
           <button v-if="i > 0" @click="up(i)">
             Up
           </button>
@@ -27,7 +28,7 @@
           <button @click="edit(i)">
             Edit
           </button>
-        </div>
+        </div> -->
         <component
           v-if="editing[widget._id]"
           @save="editing[widget._id] = false"
