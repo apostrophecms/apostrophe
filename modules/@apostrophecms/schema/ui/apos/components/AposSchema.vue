@@ -127,7 +127,7 @@ export default {
 
         if (
           this.fieldState[field.name].data ||
-          this.fieldState[field.name].data === ''
+          this.fieldState[field.name].data !== undefined
         ) {
           this.next.data[field.name] = this.fieldState[field.name].data;
         } else {
