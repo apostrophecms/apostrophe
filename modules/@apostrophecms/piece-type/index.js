@@ -560,6 +560,7 @@ module.exports = {
         const controls = _.cloneDeep(self.editControls);
         return controls;
       },
+      // TODO: Remove this if deprecated. - ab
       getChooserControls(req) {
         return [
           {
@@ -580,6 +581,7 @@ module.exports = {
           }
         ];
       },
+      // TODO: Remove this if deprecated. - ab
       getManagerControls(req) {
         return [
           {

@@ -115,8 +115,23 @@ export default {
   },
   methods: {
     async updateUpload (event) {
-      console.info('🆙', event.target.value);
+      const file = event.target.files[0];
+      const formData = new FormData();
+
+      formData.append('file', file);
+
       // Make an async request to upload the image.
+      try {
+        await apos.http.post('/api/v1/image-upload-mock', {
+          busy: true,
+          headers: {
+            'content-type': 'multipart/form-data'
+          },
+          body: formData
+        });
+      } catch (err) {
+        console.error(err);
+      }
       // While the upload is working, set an uploading animation.
       // If uploading one image, when complete, load up the edit schema in the right rail.
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.

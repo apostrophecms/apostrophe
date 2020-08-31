@@ -609,6 +609,9 @@
   apos.http.postResponses = {
     '/api/v1/products': {
       status: 200
+    },
+    '/api/v1/image-upload-mock': {
+      status: 200
     }
   };
 
@@ -640,6 +643,7 @@
   };
 
   apos.http.post = async (url, options) => {
+    console.info('🧺', options);
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
     if (options.qs) {
