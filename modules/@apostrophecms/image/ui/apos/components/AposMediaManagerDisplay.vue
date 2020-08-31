@@ -1,7 +1,7 @@
 <template>
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
-      <button class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
+      <label class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
         <div class="apos-media-manager-display__media-drop__inner">
           <div class="apos-media-manager-display__media-drop__icon">
             <CloudUpload :size="64" />
@@ -15,7 +15,8 @@
             </p>
           </div>
         </div>
-      </button>
+        <input type="file" class="apos-sr-only">
+      </label>
       <div
         class="apos-media-manager-display__cell" v-for="item in media"
         :key="generateId(item.id)"
@@ -186,6 +187,7 @@ export default {
 
   .apos-media-manager-display__media-drop {
     @include apos-button-reset();
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
