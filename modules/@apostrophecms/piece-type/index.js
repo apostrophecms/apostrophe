@@ -14,100 +14,108 @@ module.exports = {
     // }
   },
   fields: {
-    slug: {
-      type: 'slug',
-      label: 'Slug',
-      required: true,
-      slugifies: 'title'
+    add: {
+      slug: {
+        type: 'slug',
+        label: 'Slug',
+        required: true,
+        slugifies: 'title'
+      }
     }
   },
   columns(self, options) {
     return {
-      title: {
-        label: 'Title'
-      },
-      updatedAt: {
-        label: 'Edited on'
-      },
-      published: {
-        label: 'Published'
-      },
-      ...(self.options.contextual ? {
-        _url: {
-          label: 'Link'
-        }
-      } : {})
+      add: {
+        title: {
+          label: 'Title'
+        },
+        updatedAt: {
+          label: 'Edited on'
+        },
+        published: {
+          label: 'Published'
+        },
+        ...(self.options.contextual ? {
+          _url: {
+            label: 'Link'
+          }
+        } : {})
+      }
     };
   },
   filters: {
-    published: {
-      label: 'Published',
-      inputType: 'radio',
-      choices: [
-        {
-          value: true,
-          label: 'Published'
-        },
-        {
-          value: false,
-          label: 'Draft'
-        },
-        {
-          value: 'any',
-          label: 'Both'
-        }
-      ],
-      allowedInChooser: false,
-      def: true
-    },
-    trash: {
-      label: 'Trash',
-      inputType: 'radio',
-      choices: [
-        {
-          value: false,
-          label: 'Live'
-        },
-        {
-          value: true,
-          label: 'Trash'
-        }
-      ],
-      allowedInChooser: false,
-      def: false
+    add: {
+      published: {
+        label: 'Published',
+        inputType: 'radio',
+        choices: [
+          {
+            value: true,
+            label: 'Published'
+          },
+          {
+            value: false,
+            label: 'Draft'
+          },
+          {
+            value: 'any',
+            label: 'Both'
+          }
+        ],
+        allowedInChooser: false,
+        def: true
+      },
+      trash: {
+        label: 'Trash',
+        inputType: 'radio',
+        choices: [
+          {
+            value: false,
+            label: 'Live'
+          },
+          {
+            value: true,
+            label: 'Trash'
+          }
+        ],
+        allowedInChooser: false,
+        def: false
+      }
     }
   },
   batchOperations: {
-    trash: {
-      name: 'trash',
-      label: 'Trash',
-      inputType: 'radio',
-      unlessFilter: {
-        trash: true
-      }
-    },
-    rescue: {
-      name: 'rescue',
-      label: 'Rescue',
-      unlessFilter: {
-        trash: false
-      }
-    },
-    publish: {
-      name: 'publish',
-      label: 'Publish',
-      unlessFilter: {
-        published: true
+    add: {
+      trash: {
+        name: 'trash',
+        label: 'Trash',
+        inputType: 'radio',
+        unlessFilter: {
+          trash: true
+        }
       },
-      requiredField: 'published'
-    },
-    unpublish: {
-      name: 'unpublish',
-      label: 'Unpublish',
-      unlessFilter: {
-        published: false
+      rescue: {
+        name: 'rescue',
+        label: 'Rescue',
+        unlessFilter: {
+          trash: false
+        }
       },
-      requiredField: 'published'
+      publish: {
+        name: 'publish',
+        label: 'Publish',
+        unlessFilter: {
+          published: true
+        },
+        requiredField: 'published'
+      },
+      unpublish: {
+        name: 'unpublish',
+        label: 'Unpublish',
+        unlessFilter: {
+          published: false
+        },
+        requiredField: 'published'
+      }
     }
   },
   init(self, options) {

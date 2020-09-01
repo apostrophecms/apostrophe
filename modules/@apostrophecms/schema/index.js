@@ -2288,6 +2288,37 @@ module.exports = {
         function idFieldToSchemaField(name) {
           return idFields[name] || name;
         }
+      },
+      groupsToArray(groups) {
+        return Object.keys(groups).map(name => ({
+          name,
+          ...groups[name]
+        }));
+      },
+      fieldsToArray(context, fields) {
+        const result = [];
+        for (const name of Object.keys(fields)) {
+          const field = {
+            name,
+            ...fields[name]
+          };
+          // TODO same for relationship schemas but they are being refactored in another PR
+          if ((field.type === 'object') || (field.type === 'array')) {
+            if (!field.fields) {
+              throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
+            }
+            if (!field.fields.add) {
+              if (Object.keys(field.fields).length) {
+                throw new Error(`${context}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
+              } else {
+                throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
+              }
+            }
+            field.schema = self.fieldsToArray(context, field.fields.add || {});
+          }
+          result.push(field);
+        }
+        return result;
       }
     };
   },

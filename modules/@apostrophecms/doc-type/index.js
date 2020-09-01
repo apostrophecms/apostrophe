@@ -555,11 +555,8 @@ module.exports = {
       },
       composeSchema() {
         self.schema = self.apos.schema.compose({
-          addFields: fieldsToArray(self.fields),
-          arrangeFields: Object.keys(self.fieldsGroups).map(name => ({
-            name,
-            ...self.fieldsGroups[name]
-          }))
+          addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
+          arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
         });
         // Extend `composeSchema` to flag the use of field names
         // that are forbidden or nonfunctional in all doc types, i.e.
@@ -580,27 +577,6 @@ module.exports = {
           }
         });
         self.patchAdminPermissionInSchema();
-
-        function fieldsToArray(fields) {
-          const result = [];
-          for (const name of Object.keys(fields)) {
-            const field = {
-              name,
-              ...fields[name]
-            };
-            // TODO same for relationships but they are being refactored in another PR
-            if ((field.type === 'object') || (field.type === 'array')) {
-              if (!field.fields.add) {
-                if (Object.keys(field.fields).length) {
-                  throw new Error(`Doc type ${self.name}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
-                }
-              }
-              field.schema = fieldsToArray(field.schema.add || {});
-            }
-            result.push(field);
-          }
-          return result;
-        }
       },
       // In the schema, `_editUsers` and `_editGroups` are
       // initially locked down to sitewide admins. Now that

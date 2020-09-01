@@ -44,13 +44,13 @@ module.exports = {
     pluralLabel: 'Global',
     searchable: false
   },
-  beforeSuperClass(self, options) {
-    options.removeFields = [
+  fields: {
+    remove: [
       'title',
       'slug',
       'published',
       'trash'
-    ].concat(options.removeFields || []);
+    ]
   },
   init(self, options) {
     self.slug = options.slug || 'global';

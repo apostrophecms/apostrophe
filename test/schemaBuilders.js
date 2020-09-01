@@ -24,14 +24,10 @@ describe('Schema builders', function() {
       modules: {
         cats: {
           extend: '@apostrophecms/piece-type',
-          options: {
-            name: 'cat',
-            label: 'Cat',
-            alias: 'cats',
-            addFields: [
-              {
+          fields: {
+            add: {
+              flavor: {
                 type: 'select',
-                name: 'flavor',
                 label: 'Flavor',
                 choices: [
                   {
@@ -48,7 +44,12 @@ describe('Schema builders', function() {
                   }
                 ]
               }
-            ]
+            }
+          },
+          options: {
+            name: 'cat',
+            label: 'Cat',
+            alias: 'cats',
           }
         },
         people: {
@@ -56,24 +57,24 @@ describe('Schema builders', function() {
           options: {
             name: 'person',
             label: 'Person',
-            addFields: [
-              {
-                name: '_cats',
+            alias: 'people'
+          },
+          fields: {
+            add: {
+              _cats: {
                 type: 'join',
                 idsField: 'catsIds',
                 label: 'Cats',
                 withType: 'cat'
               },
-              {
-                name: '_favorites',
+              _favorites: {
                 type: 'join',
                 max: 1,
                 idsField: 'favoriteIds',
                 label: 'Favorites',
                 withType: 'cat'
               }
-            ],
-            alias: 'people'
+            }
           }
         }
       }

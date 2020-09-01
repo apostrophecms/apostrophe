@@ -16,15 +16,7 @@ describe('Areas', function() {
 
   it('should initialize', async function() {
     apos = await t.create({
-      root: module,
-      modules: {
-        monkey: {
-          extend: '@apostrophecms/piece-type'
-        },
-        'monkey-widget': {
-          extend: '@apostrophecms/piece-widget-type'
-        }
-      }
+      root: module
     });
     assert(apos.modules['@apostrophecms/area']);
     assert(apos.area);
@@ -169,17 +161,6 @@ describe('Areas', function() {
             content: '<h4> </h4>'
           }
         ]
-      },
-      insignificantPieces: {
-        metaType: 'area',
-        items: [
-          {
-            metaType: 'widget',
-            _id: 'test3',
-            type: 'monkey',
-            _pieces: []
-          }
-        ]
       }
     };
     assert(apos.area.isEmpty({ area: doc.body }));
@@ -187,7 +168,6 @@ describe('Areas', function() {
     assert(apos.area.isEmpty(doc, 'nonexistent'));
     assert(apos.area.isEmpty(doc, 'emptyText'));
     assert(apos.area.isEmpty(doc, 'insignificantText'));
-    assert(apos.area.isEmpty(doc, 'insignificantPieces'));
   });
 
   it('area not considered empty when it should not be', function() {
@@ -226,28 +206,12 @@ describe('Areas', function() {
             content: '<h4>Some text</h4>'
           }
         ]
-      },
-      significantPieces: {
-        metaType: 'area',
-        items: [
-          {
-            metaType: 'widget',
-            _id: 'test3',
-            type: 'monkey',
-            _pieces: [
-              {
-                type: 'monkey'
-              }
-            ]
-          }
-        ]
       }
     };
     assert(!apos.area.isEmpty({ area: doc.body }));
     assert(!apos.area.isEmpty(doc, 'body'));
     assert(!apos.area.isEmpty(doc, 'fullText'));
     assert(!apos.area.isEmpty({ area: doc.fullText }));
-    assert(!apos.area.isEmpty(doc, 'significantPieces'));
   });
 
   it('both isEmpty and legacy empty methods work on schema fields', function() {
