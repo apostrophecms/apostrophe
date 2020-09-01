@@ -14,21 +14,16 @@
         v-for="(widget, i) in next"
         :key="widget._id"
       >
-        <AposWidgetMove />
-        <!-- <div class="apos-area-controls">
-          <button v-if="i > 0" @click="up(i)">
-            Up
-          </button>
-          <button v-if="i < next.length - 1" @click="down(i)">
-            Down
-          </button>
-          <button @click="remove(i)">
-            Remove
-          </button>
-          <button @click="edit(i)">
-            Edit
-          </button>
-        </div> -->
+        <AposWidgetMove
+          :first="i === 0"
+          :last="i === next.length - 1"
+          @up="up(i)"
+          @down="down(i)"
+        />
+        <AposWidgetModify
+          @remove="remove(i)"
+          @edit="edit(i)"
+        />
         <component
           v-if="editing[widget._id]"
           @save="editing[widget._id] = false"
@@ -309,14 +304,18 @@ export default {
 
 </script>
 
-
 <style>
 .apos-area {
   margin: 5px;
   padding: 5px;
   border: 2px solid var(--a-brand-green);
 }
+
 .apos-areas-widgets-list {
   min-height: 64px;
+}
+
+.apos-area-widget-wrapper {
+  position: relative;
 }
 </style>

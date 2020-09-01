@@ -279,6 +279,7 @@ export default {
     z-index: calc(#{$z-index-default} + 1);
   }
 }
+
 .apos-button--block {
   display: block;
   width: 100%;
@@ -391,6 +392,11 @@ export default {
   .apos-spinner__svg {
     color: var(--a-danger);
   }
+}
+
+.apos-button--group {
+  background-color: transparent;
+  border: none;
 }
 
 .apos-button--busy {
