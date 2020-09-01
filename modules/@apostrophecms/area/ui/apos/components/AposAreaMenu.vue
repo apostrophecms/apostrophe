@@ -126,7 +126,8 @@ export default {
         label: 'Add Content',
         iconOnly: true,
         icon: 'plus-icon',
-        type: 'outline'
+        type: 'primary',
+        modifiers: [ 'round', 'tiny' ]
       }
     };
   },
