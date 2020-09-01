@@ -31,6 +31,7 @@ module.exports = {
   'plus-icon': 'Plus',
   'phone-icon': 'Phone',
   'refresh-icon': 'Refresh',
+  'unfold-more-horizontal-icon': 'UnfoldMoreHorizontal',
   'video-icon': 'Video',
   'view-column-icon': 'ViewColumn',
   'web-icon': 'Web'
