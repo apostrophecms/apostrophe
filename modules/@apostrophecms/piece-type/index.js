@@ -206,6 +206,9 @@ module.exports = {
     },
     async post(req) {
       self.publicApiCheck(req);
+      if (req.body._newInstance) {
+        return self.newInstance();
+      }
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
