@@ -3,7 +3,11 @@ import { withKnobs } from '@storybook/addon-knobs';
 import AposTree from './AposTree.vue';
 import { LoremIpsum } from 'lorem-ipsum';
 
+let draggable = false;
+let bulkSelect = false;
+
 const data = getData();
+
 export default {
   title: 'Tree',
   decorators: [ withKnobs ]
@@ -40,9 +44,6 @@ export const Tree = () => ({
     />
   `
 });
-
-let draggable = false;
-let bulkSelect = false;
 
 function getData () {
   const rows = generateRows(randomNumber());
