@@ -205,10 +205,10 @@ module.exports = {
       return doc;
     },
     async post(req) {
-      if (Object.keys(req.body).length === 0) {
+      self.publicApiCheck(req);
+      if (req.body._newInstance) {
         return self.newInstance();
       }
-      self.publicApiCheck(req);
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {

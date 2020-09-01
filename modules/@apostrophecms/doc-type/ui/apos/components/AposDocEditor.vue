@@ -169,7 +169,7 @@ export default {
       }
     } else {
       this.$nextTick(() => {
-        this.buildEmptyDoc();
+        this.newInstance();
       });
     }
   },
@@ -199,9 +199,13 @@ export default {
         apos.bus.$emit('busy', false);
       }
     },
-    async buildEmptyDoc () {
-      const newInstance = await apos.http.post(this.moduleOptions.action, {});
-      this.doc.data = { ...this.schema, ...newInstance };
+    async newInstance () {
+      const newInstance = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          _newInstance: true
+        }
+      });
+      this.doc.data = newInstance;
       this.docReady = true;
     }
   }
