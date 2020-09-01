@@ -161,7 +161,7 @@ module.exports = {
               }
               return self.insert(req, file);
             } finally {
-              for (const file of (req.files || {})) {
+              for (const file of (req.files || [])) {
                 try {
                   fs.unlinkSync(file.path);
                 } catch (e) {
