@@ -197,7 +197,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
-      const doc = await self.getRestQuery(req).and({ _id }).toObject();
+      const doc = await self.getRestQuery(req).and({ _id }).published(null).trash(null).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
       }
