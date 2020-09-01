@@ -116,21 +116,22 @@ export default {
   methods: {
     async updateUpload (event) {
       const file = event.target.files[0];
-      const formData = new FormData();
+      const formData = new window.FormData();
 
       formData.append('file', file);
 
       // Make an async request to upload the image.
       try {
-        await apos.http.post('/api/v1/image-upload-mock', {
+        const attachmentObj = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
           busy: true,
-          headers: {
-            'content-type': 'multipart/form-data'
-          },
+          // headers: {
+          //   'content-type': 'multipart/form-data'
+          // },
           body: formData
         });
+        console.info('🧢', attachmentObj);
       } catch (err) {
-        console.error(err);
+        console.error('🎒', err);
       }
       // While the upload is working, set an uploading animation.
       // If uploading one image, when complete, load up the edit schema in the right rail.

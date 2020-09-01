@@ -135,7 +135,7 @@ export default {
           qs
         }
       ));
-      console.info(getResponse);
+
       this.media = getResponse.results;
     },
     clearSelected() {
