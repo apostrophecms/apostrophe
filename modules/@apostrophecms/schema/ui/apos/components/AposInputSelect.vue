@@ -10,7 +10,7 @@
           v-model="next"
         >
           <option
-            v-for="choice in field.choices" :key="choice.value"
+            v-for="choice in choices" :key="choice.value"
             :value="choice.value"
           >
             {{ choice.label }}
@@ -37,13 +37,30 @@ export default {
       default: 'menu-down-icon'
     }
   },
+  data() {
+    return {
+      choices: []
+    };
+  },
+  mounted() {
+    // Add an empty option if there isn't one already or an "any" option.
+    if (!this.field.required && !this.field.choices.find(choice => {
+      return !choice.value || choice.value === 'any';
+    })) {
+      this.choices.push({
+        label: '',
+        value: ''
+      });
+    }
+    this.choices = this.choices.concat(this.field.choices);
+  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
         return 'required';
       }
 
-      if (!this.field.choices.includes(value)) {
+      if (value && !this.field.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
 

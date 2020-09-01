@@ -370,11 +370,11 @@ module.exports = {
         self.filters.forEach(filter => {
           if (
             !filter.required &&
-            !filter.choices.find(choice => choice.value === null)
+            !filter.choices.find(choice => choice.value === 'any')
           ) {
-            filter.def = null;
+            filter.def = 'any';
             filter.choices.push({
-              value: null,
+              value: 'any',
               label: 'None'
             });
           }
