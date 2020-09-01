@@ -42,25 +42,17 @@ module.exports = {
       label: 'Publish Page'
     } ]
   },
-  beforeSuperClass(self, options) {
-    options.batchOperations = [
-      {
-        name: 'trash',
+  batchOperations: {
+    add: {
+      trash: {
         label: 'Trash'
       },
-      {
-        name: 'publish',
+      publish: {
         label: 'Publish'
       },
-      {
-        name: 'unpublish',
+      unpublish: {
         label: 'Unpublish'
       }
-    ].concat(options.addBatchOperations || []);
-    if (options.removeBatchOperations) {
-      options.batchOperations = _.filter(options.batchOperations, function (batchOperation) {
-        return !_.includes(options.removeBatchOperations, batchOperation.name);
-      });
     }
   },
   async init(self, options) {

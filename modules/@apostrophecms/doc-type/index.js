@@ -1,126 +1,116 @@
 const _ = require('lodash');
 
 module.exports = {
-  beforeSuperClass(query, options) {
-    const permissionsFields = options.permissionsFields ? [
-      {
-        type: 'select',
-        name: 'loginRequired',
-        label: 'Who can view this?',
-        def: '',
-        choices: [
-          {
-            value: '',
-            label: 'Public'
-          },
-          {
-            value: 'loginRequired',
-            label: 'Login Required'
-          },
-          {
-            value: 'certainUsers',
-            label: 'Certain People',
-            showFields: [
-              '_viewGroups',
-              '_viewUsers'
+  cascades: [ 'fields' ],
+  fields(self, options) {
+    return {
+      add: {
+        title: {
+          type: 'string',
+          label: 'Title',
+          required: true,
+          // Generate a titleSort property which can be sorted
+          // in a human-friendly way (case insensitive, ignores the
+          // same stuff slugs ignore)
+          sortify: true
+        },
+        slug: {
+          type: 'slug',
+          label: 'Slug',
+          required: true
+        },
+        published: {
+          type: 'boolean',
+          label: 'Published',
+          def: true
+        },
+        trash: {
+          type: 'boolean',
+          label: 'Trash',
+          contextual: true,
+          def: false
+        },
+        ...(options.permissionsFields ? {
+          loginRequired: {
+            type: 'select',
+            label: 'Who can view this?',
+            def: '',
+            choices: [
+              {
+                value: '',
+                label: 'Public'
+              },
+              {
+                value: 'loginRequired',
+                label: 'Login Required'
+              },
+              {
+                value: 'certainUsers',
+                label: 'Certain People',
+                showFields: [
+                  '_viewGroups',
+                  '_viewUsers'
+                ]
+              }
             ]
+          },
+          _viewUsers: {
+            type: 'join',
+            withType: '@apostrophecms/user',
+            label: 'These Users can View',
+            idsField: 'viewUsersIds'
+          },
+          _viewGroups: {
+            type: 'join',
+            withType: '@apostrophecms/group',
+            label: 'These Groups can View',
+            idsField: 'viewGroupsIds'
+          },
+          _editUsers: {
+            type: 'join',
+            withType: '@apostrophecms/user',
+            label: 'These Users can Edit',
+            idsField: 'editUsersIds',
+            // Gets patched after full initialization
+            permission: 'admin'
+          },
+          _editGroups: {
+            type: 'join',
+            withType: '@apostrophecms/group',
+            label: 'These Groups can Edit',
+            idsField: 'editGroupsIds',
+            // Gets patched after full initialization
+            permission: 'admin'
           }
-        ]
+        } : {})
       },
-      {
-        name: '_viewUsers',
-        type: 'join',
-        withType: '@apostrophecms/user',
-        label: 'These Users can View',
-        idsField: 'viewUsersIds'
-      },
-      {
-        name: '_viewGroups',
-        type: 'join',
-        withType: '@apostrophecms/group',
-        label: 'These Groups can View',
-        idsField: 'viewGroupsIds'
-      },
-      {
-        name: '_editUsers',
-        type: 'join',
-        withType: '@apostrophecms/user',
-        label: 'These Users can Edit',
-        idsField: 'editUsersIds',
-        // Gets patched after full initialization
-        permission: 'admin'
-      },
-      {
-        name: '_editGroups',
-        type: 'join',
-        withType: '@apostrophecms/group',
-        label: 'These Groups can Edit',
-        idsField: 'editGroupsIds',
-        // Gets patched after full initialization
-        permission: 'admin'
+      group: {
+        basics: {
+          label: 'Basics',
+          fields: [
+            'title'
+          ]
+        },
+        utility: {
+          label: 'Utilities',
+          fields: [
+            'published',
+            'slug'
+          ]
+        },
+        permissions: {
+          label: 'Permissions',
+          fields: [
+            'loginRequired',
+            '_viewUsers',
+            '_viewGroups',
+            '_editUsers',
+            '_editGroups'
+          ],
+          last: true
+        }
       }
-    ] : [];
-
-    options.addFields = [
-      {
-        type: 'string',
-        name: 'title',
-        label: 'Title',
-        required: true,
-        // Generate a titleSort property which can be sorted
-        // in a human-friendly way (case insensitive, ignores the
-        // same stuff slugs ignore)
-        sortify: true
-      },
-      {
-        type: 'slug',
-        name: 'slug',
-        label: 'Slug',
-        required: true
-      },
-      {
-        type: 'boolean',
-        name: 'published',
-        label: 'Published',
-        def: true
-      },
-      {
-        type: 'boolean',
-        name: 'trash',
-        label: 'Trash',
-        contextual: true,
-        def: false
-      }
-    ].concat(permissionsFields, options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
-        label: 'Basics',
-        fields: [
-          'title'
-        ]
-      },
-      {
-        name: 'utility',
-        label: 'Utilities',
-        fields: [
-          'published',
-          'slug'
-        ]
-      },
-      {
-        name: 'permissions',
-        label: 'Permissions',
-        fields: [
-          'loginRequired',
-          '_viewUsers',
-          '_viewGroups',
-          '_editUsers',
-          '_editGroups'
-        ],
-        last: true
-      }
-    ].concat(options.arrangeFields || []);
+    };
   },
   init(self, options) {
     if (!self.options.name) {
@@ -529,11 +519,8 @@ module.exports = {
         change.text = doc.title;
       },
       // Returns true if only admins are allowed to edit this type.
-      // Respected by the pieces module when deciding whether to
-      // enumerate more specific permissions as choices for this
-      // module.
       isAdminOnly() {
-        return false;
+        return self.options.adminOnly;
       },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `permission`
@@ -567,17 +554,13 @@ module.exports = {
         return schema;
       },
       composeSchema() {
-        // If a type is adminOnly remove the fields relating to permissions editing
-        if (self.isAdminOnly()) {
-          options.removeFields = (options.removeFields || []).concat([
-            'loginRequired',
-            '_viewUsers',
-            '_viewGroups',
-            '_editUsers',
-            '_editGroups'
-          ]);
-        }
-        self.schema = self.apos.schema.compose(self.options);
+        self.schema = self.apos.schema.compose({
+          addFields: fieldsToArray(self.fields),
+          arrangeFields: Object.keys(self.fieldsGroups).map(name => ({
+            name,
+            ...self.fieldsGroups[name]
+          }))
+        });
         // Extend `composeSchema` to flag the use of field names
         // that are forbidden or nonfunctional in all doc types, i.e.
         // properties that will be overwritten by non-schema-driven
@@ -597,6 +580,27 @@ module.exports = {
           }
         });
         self.patchAdminPermissionInSchema();
+
+        function fieldsToArray(fields) {
+          const result = [];
+          for (const name of Object.keys(fields)) {
+            const field = {
+              name,
+              ...fields[name]
+            };
+            // TODO same for relationships but they are being refactored in another PR
+            if ((field.type === 'object') || (field.type === 'array')) {
+              if (!field.fields.add) {
+                if (Object.keys(field.fields).length) {
+                  throw new Error(`Doc type ${self.name}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
+                }
+              }
+              field.schema = fieldsToArray(field.schema.add || {});
+            }
+            result.push(field);
+          }
+          return result;
+        }
       },
       // In the schema, `_editUsers` and `_editGroups` are
       // initially locked down to sitewide admins. Now that

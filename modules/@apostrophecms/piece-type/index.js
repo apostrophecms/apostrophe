@@ -2,6 +2,7 @@ const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
+  cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     manageViews: [ 'list' ],
     perPage: 10
@@ -12,136 +13,110 @@ module.exports = {
     //   _url: 1,
     // }
   },
-  beforeSuperClass(self, options) {
-    self.contextual = options.contextual;
-
-    options.addFields = [ {
+  fields: {
+    slug: {
       type: 'slug',
-      name: 'slug',
       label: 'Slug',
       required: true,
       slugifies: 'title'
-    } ].concat(options.addFields || []);
-
-    if (self.contextual) {
-      // If the piece is edited contextually, default the published state to false
-      options.addFields = [ {
-        type: 'boolean',
-        name: 'published',
-        label: 'Published',
-        def: false
-      } ].concat(options.addFields || []);
     }
-
-    options.defaultColumns = options.defaultColumns || [
-      {
-        name: 'title',
+  },
+  columns(self, options) {
+    return {
+      title: {
         label: 'Title'
       },
-      {
-        name: 'updatedAt',
-        label: 'Edited on',
-        partial: function (value) {
-          if (!value) {
-            // Don't crash if updatedAt is missing, for instance due to a dodgy import process
-            return '';
-          }
-          return self.partial('manageUpdatedAt.html', { value: value });
-        }
+      updatedAt: {
+        label: 'Edited on'
       },
-      {
-        name: 'published',
-        label: 'Published',
-        partial: function (value) {
-          return self.partial('managePublished', { value: value });
+      published: {
+        label: 'Published'
+      },
+      ...(self.options.contextual ? {
+        _url: {
+          label: 'Link'
         }
-      }
-    ];
-
-    if (self.contextual) {
-      options.defaultColumns.push({
-        name: '_url',
-        label: 'Link',
-        partial: function (value) {
-          return self.partial('manageLink', { value: value });
+      } : {})
+    };
+  },
+  filters: {
+    published: {
+      label: 'Published',
+      choices: [
+        {
+          value: true,
+          label: 'Published'
+        },
+        {
+          value: false,
+          label: 'Draft'
+        },
+        {
+          value: null,
+          label: 'Both'
         }
-      });
+      ],
+      allowedInChooser: false,
+      def: true
+    },
+    trash: {
+      label: 'Trash',
+      choices: [
+        {
+          value: false,
+          label: 'Live'
+        },
+        {
+          value: true,
+          label: 'Trash'
+        }
+      ],
+      allowedInChooser: false,
+      def: false
     }
-
-    options.addColumns = options.defaultColumns.concat(options.addColumns || []);
-
-    options.addFilters = [
-      {
-        label: 'Published',
-        name: 'published',
-        choices: [
-          {
-            value: true,
-            label: 'Published'
-          },
-          {
-            value: false,
-            label: 'Draft'
-          },
-          {
-            value: null,
-            label: 'Both'
-          }
-        ],
-        allowedInChooser: false,
-        def: true,
-        style: 'pill'
-      },
-      {
-        label: 'Trash',
-        name: 'trash',
-        choices: [
-          {
-            value: false,
-            label: 'Live'
-          },
-          {
-            value: true,
-            label: 'Trash'
-          }
-        ],
-        allowedInChooser: false,
-        def: false,
-        style: 'pill'
+  },
+  batchOperations: {
+    trash: {
+      name: 'trash',
+      label: 'Trash',
+      unlessFilter: {
+        trash: true
       }
-    ].concat(options.addFilters || []);
-
-    options.batchOperations = [
-      {
-        name: 'trash',
-        label: 'Trash',
-        unlessFilter: { trash: true }
-      },
-      {
-        name: 'rescue',
-        label: 'Rescue',
-        unlessFilter: { trash: false }
-      },
-      {
-        name: 'publish',
-        label: 'Publish',
-        unlessFilter: { published: true },
-        requiredField: 'published'
-      },
-      {
-        name: 'unpublish',
-        label: 'Unpublish',
-        unlessFilter: { published: false },
-        requiredField: 'published'
+    },
+    rescue: {
+      name: 'rescue',
+      label: 'Rescue',
+      unlessFilter: {
+        trash: false
       }
-    ].concat(options.addBatchOperations || []);
-    if (options.removeBatchOperations) {
-      options.batchOperations = _.filter(options.batchOperations, function (batchOperation) {
-        return !_.includes(options.removeBatchOperations, batchOperation.name);
-      });
+    },
+    publish: {
+      name: 'publish',
+      label: 'Publish',
+      unlessFilter: {
+        published: true
+      },
+      requiredField: 'published'
+    },
+    unpublish: {
+      name: 'unpublish',
+      label: 'Unpublish',
+      unlessFilter: {
+        published: false
+      },
+      requiredField: 'published'
     }
   },
   init(self, options) {
+    self.contextual = options.contextual;
+    if (self.contextual) {
+      // If the piece is edited contextually, default the published state to false
+      const published = self.schema.find(field => field.name === 'published');
+      if (published) {
+        published.def = false;
+      }
+    }
+
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
@@ -245,8 +220,10 @@ module.exports = {
       },
       'apostrophe:modulesReady': {
         composeBatchOperations() {
-          // We took care of addBatchOperations and removeBatchOperations in beforeConstruct
-          self.options.batchOperations = _.filter(self.options.batchOperations, function (batchOperation) {
+          self.batchOperations = Object.keys(self.batchOperations).map(key => ({
+            name: key,
+            ...self.batchOperations[key]
+          })).filter(batchOperation => {
             if (batchOperation.requiredField && !_.find(self.schema, { name: batchOperation.requiredField })) {
               return false;
             }
@@ -349,49 +326,22 @@ module.exports = {
         return self.apos.doc.update(req, piece, options);
       },
       composeFilters() {
-        self.filters = options.filters || [];
-        if (options.addFilters) {
-          _.each(options.addFilters, function (newFilter) {
-            // remove it from the filters if we've already added it, last one wins
-            self.filters = _.filter(self.filters, function (filter) {
-              return filter.name !== newFilter.name;
-            });
-            // add the new field to the filters
-            self.filters.push(newFilter);
-          });
-        }
-        if (options.removeFilters) {
-          self.filters = _.filter(self.filters, function (filter) {
-            return !_.includes(options.removeFilters, filter.name);
-          });
-        }
+        self.filters = Object.keys(self.filters).map(key => ({
+          name: key,
+          ...self.filters[key]
+        }));
       },
       composeColumns() {
-        self.columns = options.columns || [];
-        if (options.addColumns) {
-          _.each(options.addColumns, function (newColumn) {
-            // remove it from the columns if we've already added it, last one wins
-            self.columns = _.filter(self.columns, function (column) {
-              return column.name !== newColumn.name;
-            });
-            // add the new field to the columns
-            self.columns.push(newColumn);
-          });
-        }
-        if (options.removeColumns) {
-          self.columns = _.filter(self.columns, function (column) {
-            return !_.includes(options.removeColumns, column.name);
-          });
-        }
+        self.columns = Object.keys(self.columns).map(key => ({
+          name: key,
+          ...self.columns[key]
+        }));
       },
       // Enable inclusion of this type in sitewide search results
       searchDetermineTypes(types) {
         if (self.options.searchable !== false) {
           types.push(self.name);
         }
-      },
-      isAdminOnly() {
-        return self.options.adminOnly;
       },
       addPermissions() {
         if (!self.isAdminOnly()) {
@@ -450,7 +400,7 @@ module.exports = {
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
       async batchSimpleRoute(req, name, change) {
-        const batchOperation = _.find(self.options.batchOperations, { name: name });
+        const batchOperation = _.find(self.batchOperations, { name: name });
         const schema = batchOperation.schema || [];
         const data = self.apos.schema.newInstance(schema);
         await self.apos.schema.convert(req, schema, req.body, data);
@@ -671,7 +621,7 @@ module.exports = {
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
         browserOptions.contextual = self.contextual;
-        browserOptions.batchOperations = self.options.batchOperations;
+        browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         _.defaults(browserOptions, {
           components: {}

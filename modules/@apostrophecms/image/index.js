@@ -16,55 +16,44 @@ module.exports = {
     label: 'Image',
     alias: 'image',
     perPage: 20,
-    manageViews: [
-      'grid',
-      'list'
-    ],
     insertViaUpload: true,
     searchable: false
   },
-  beforeSuperClass(self, options) {
-    options.addFields = [
-      {
+  fields: {
+    add: {
+      slug: {
         type: 'slug',
-        name: 'slug',
         label: 'Slug',
         prefix: 'image',
         required: true
       },
-      {
+      attachment: {
         type: 'attachment',
-        name: 'attachment',
         label: 'Image File',
         fileGroup: 'images',
         required: true
       },
-      {
+      description: {
         type: 'string',
-        name: 'description',
         label: 'Description',
         textarea: true
       },
-      {
+      credit: {
         type: 'string',
-        name: 'credit',
         label: 'Credit'
       },
-      {
+      creditUrl: {
         type: 'url',
-        name: 'creditUrl',
         label: 'Credit URL'
       },
-      {
+      _tags: {
         type: 'join',
-        name: '_tags',
         label: 'Tags',
         withType: '@apostrophecms/image-tag'
       }
-    ].concat(options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
+    },
+    group: {
+      basics: {
         label: 'Basics',
         fields: [
           'attachment',
@@ -74,8 +63,7 @@ module.exports = {
           '_tags'
         ]
       },
-      {
-        name: 'details',
+      details: {
         label: 'Details',
         fields: [
           'description',
@@ -83,7 +71,7 @@ module.exports = {
           'creditUrl'
         ]
       }
-    ].concat(options.arrangeFields || []);
+    }
   },
   methods(self, options) {
     return {

@@ -7,6 +7,36 @@ const mkdirp = require('mkdirp');
 
 module.exports = {
   options: { alias: 'attachment' },
+  cascades: [ 'imageSizes' ],
+  imageSizes: {
+    add: {
+      max: {
+        width: 1600,
+        height: 1600
+      },
+      full: {
+        width: 1140,
+        height: 1140
+      },
+      'two-thirds': {
+        width: 760,
+        height: 760
+      },
+      'one-half': {
+        width: 570,
+        height: 700
+      },
+      'one-third': {
+        width: 380,
+        height: 700
+      },
+      'one-sixth': {
+        width: 190,
+        height: 350
+      }
+    }
+  },
+
   async init(self, options) {
     self.name = 'attachment';
 
@@ -63,40 +93,6 @@ module.exports = {
       png: true
     };
 
-    self.imageSizes = (options.imageSizes || [
-      {
-        name: 'max',
-        width: 1600,
-        height: 1600
-      },
-      {
-        name: 'full',
-        width: 1140,
-        height: 1140
-      },
-      {
-        name: 'two-thirds',
-        width: 760,
-        height: 760
-      },
-      {
-        name: 'one-half',
-        width: 570,
-        height: 700
-      },
-      {
-        name: 'one-third',
-        width: 380,
-        height: 700
-      },
-      // Handy for thumbnailing
-      {
-        name: 'one-sixth',
-        width: 190,
-        height: 350
-      }
-    ]).concat(options.addImageSizes || []);
-
     self.sizeAvailableInTrash = options.sizeAvailableInTrash || 'one-sixth';
 
     const uploadfsDefaultSettings = {
@@ -104,8 +100,6 @@ module.exports = {
       uploadsPath: self.apos.rootDir + '/public/uploads',
       uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
       tempPath: self.apos.rootDir + '/data/temp/uploadfs',
-      // Register Apostrophe's standard image sizes. Notice you could
-      // concatenate your own list of sizes if you had a need to
       imageSizes: self.imageSizes
     };
 
