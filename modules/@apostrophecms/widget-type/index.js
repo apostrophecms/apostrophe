@@ -1,6 +1,5 @@
 // The base class for all modules that implement a widget, such as
-// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html),
-// [@apostrophecms/piece-widget-type](../@apostrophecms/piece-widget-type/index.html) and
+// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html) and
 // [@apostrophecms/video-widget](../@apostrophecms/video-widget/index.html).
 //
 // All widgets have a [schema](../../tutorials/getting-started/schema-guide.html).
