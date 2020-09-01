@@ -11,7 +11,8 @@
             type="text"
             v-model="searchInput"
             :placeholder="placeholder"
-            :disabled="status.disabled" :required="field.required"
+            :disabled="status.disabled"
+            :required="field.required"
             :id="uid"
             @input="input"
             @focus="handleFocus"
@@ -24,10 +25,14 @@
             type="input"
           />
         </div>
-        <AposSlatList @update="updated" :initial-items="items" />
+        <AposSlatList 
+          v-if="items.length"
+          @update="updated"
+          :initial-items="items"
+        />
         <AposSearchList
           :list="searchList"
-          @select="selected"
+          @select="add"
           :selected-items="items"
         />
       </div>
@@ -45,8 +50,9 @@ export default {
   data () {
     return {
       searchList: [],
-      items: this.value.data,
-      lastSearches: {},
+      searching: false,
+      items: this.value.data || [],
+      // lastSearches: {},
       searchInput: '',
       originalDisabled: this.status.disabled
     };
@@ -60,6 +66,14 @@ export default {
     },
     browseLabel() {
       return `Browse ${this.pluralLabel}`;
+    }
+  },
+  watch: {
+    next: function () {
+      // override method from mixin to avoid standard behavior
+    },
+    value: function () {
+      // override method from mixin to avoid standard behavior
     }
   },
   mounted() {
@@ -93,31 +107,42 @@ export default {
     },
     updated(items) {
       this.items = items;
-      this.selected(items);
+      this.validateAndEmit();
     },
-    selected(items) {
-      this.items = items;
+    add(item) {
+      this.items.push(item);
       this.validateAndEmit();
     },
     async input () {
-      if (this.searchInput) {
-        if (!this.lastSearches[this.searchInput]) {
+      if (!this.searching) {
+        if (this.searchInput) {
+          // if (!this.lastSearches[this.searchInput]) {
+          this.searching = true;
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchInput}`, {
             busy: true
           });
-          this.searchList = list.results;
-          this.lastSearches[this.searchInput] = list.results;
+          // remove items already selected
+          this.searchList = list.results.filter(item => {
+            const ids = this.items.map(i => i._id);
+            return !ids.includes(item._id);
+          });
+          this.searching = false;
+          // this.lastSearches[this.searchInput] = list.results;
+          // } else {
+          //   this.searchList = this.lastSearches[this.searchInput];
+          // }
         } else {
-          this.searchList = this.lastSearches[this.searchInput];
+          this.searchList = [];
         }
-      } else {
-        this.searchList = [];
       }
     },
     handleFocus() {
-      if (this.next && this.lastSearches[this.next]) {
-        this.searchList = this.lastSearches[this.next];
+      if (this.searchInput) {
+        this.input();
       }
+      // if (this.next && this.lastSearches[this.next]) {
+      //   this.searchList = this.lastSearches[this.next];
+      // }
     },
     handleFocusOut() {
       // hide search list when click outside the input
@@ -128,10 +153,18 @@ export default {
     },
     validateAndEmit () {
       // override method from mixin to avoid standard behavior
+      this.next = this.items;
       this.$emit('input', {
         data: this.items.map(item => item._id),
         error: this.validate(this.items)
       });
+    },
+    watchValue () {
+      // override method from mixin to avoid standard behavior
+      this.error = this.value.error;
+    },
+    watchNext () {
+      // override method from mixin to avoid standard behavior
     }
   }
 };

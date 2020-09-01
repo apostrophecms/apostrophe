@@ -65,6 +65,7 @@ export default {
   },
   methods: {
     validateAndEmit () {
+
       this.$emit('input', {
         data: this.next,
         error: this.validate(this.next)

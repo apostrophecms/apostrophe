@@ -367,18 +367,15 @@
   };
 
   apos.http.get = async (url, options) => {
-    console.log('????');
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
-    if (options.qs.search || options.qs.search === '') {
+    if (options.qs && (options.qs.search || options.qs.search === '')) {
       console.info(`Mock searching for ${options.qs.search}...`);
       delete options.qs.search;
     }
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
-    console.log('hi stu');
-    console.log(url);
     if (apos.http.getResponses[url]) {
       // Like responses from a real API, the returned object needs to be safe to
       // change.

@@ -4,7 +4,7 @@
       class="apos-search__item item"
       v-for="item in list"
       :key="item._id"
-      @click="select(item)"
+      @click="$emit('select', item);"
     >
       <div class="item__main">
         <div class="item__title">
@@ -28,26 +28,27 @@ export default {
       default() {
         return [];
       }
-    },
-    selectedItems: {
-      type: Array,
-      default() {
-        return [];
-      }
     }
+    // selectedItems: {
+    //   type: Array,
+    //   default() {
+    //     return [];
+    //   }
+    // }
   },
   emits: [ 'select' ],
   methods: {
-    getTypeLabel(type) {
-      return apos.modules[type].label;
-    },
-    select(item) {
-      const selectedItems = this.selectedItems;
-      if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
-        selectedItems.push(item);
-        this.$emit('select', selectedItems);
-      }
-    }
+    // getTypeLabel(type) {
+    //   return apos.modules[type].label;
+    // },
+    // select(item) {
+    //   this.$emit('select', item);
+    //   const selectedItems = this.selectedItems;
+    //   if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
+    //     selectedItems.push(item);
+    //     this.$emit('select', item);
+    //   }
+    // }
   }
 };
 </script>

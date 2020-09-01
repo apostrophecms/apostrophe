@@ -48,7 +48,7 @@ export const joinInput = () => {
           max
         },
         value: {
-          data: getData(prepoulate)
+          // data: getData(prepoulate)
         },
         status: {
           disabled: isDisabled
