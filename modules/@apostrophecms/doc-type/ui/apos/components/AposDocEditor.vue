@@ -133,7 +133,7 @@ export default {
       return tabs;
     },
     modalTitle () {
-      return `Edit ${this.moduleOptions.pluralLabel}`;
+      return `Edit ${this.moduleOptions.label}`;
     },
     currentFields: function() {
       if (this.currentTab) {

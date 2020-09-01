@@ -129,6 +129,7 @@
       ],
       filters: [
         {
+          label: 'Published',
           name: 'published',
           choices: [
             {
@@ -146,9 +147,10 @@
           ],
           allowedInChooser: false,
           def: true,
-          style: 'pill'
+          inputType: 'radio'
         },
         {
+          label: 'Trash',
           name: 'trash',
           choices: [
             {
@@ -162,7 +164,7 @@
           ],
           allowedInChooser: false,
           def: false,
-          style: 'pill'
+          inputType: 'radio'
         }
       ],
       columns: [

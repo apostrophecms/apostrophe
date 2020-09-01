@@ -44,6 +44,8 @@ export default {
   }
 
   .apos-emoji {
-    font-size: 42px; // stylelint-disable-line
+    // Variable sizes are less important for icons.
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+    font-size: 42px;
   }
 </style>

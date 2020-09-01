@@ -42,6 +42,7 @@ module.exports = {
   filters: {
     published: {
       label: 'Published',
+      inputType: 'radio',
       choices: [
         {
           value: true,
@@ -52,7 +53,7 @@ module.exports = {
           label: 'Draft'
         },
         {
-          value: null,
+          value: 'any',
           label: 'Both'
         }
       ],
@@ -61,6 +62,7 @@ module.exports = {
     },
     trash: {
       label: 'Trash',
+      inputType: 'radio',
       choices: [
         {
           value: false,
@@ -79,6 +81,7 @@ module.exports = {
     trash: {
       name: 'trash',
       label: 'Trash',
+      inputType: 'radio',
       unlessFilter: {
         trash: true
       }
@@ -330,6 +333,19 @@ module.exports = {
           name: key,
           ...self.filters[key]
         }));
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach(filter => {
+          if (
+            !filter.required &&
+            !filter.choices.find(choice => choice.value === null)
+          ) {
+            filter.def = null;
+            filter.choices.push({
+              value: null,
+              label: 'None'
+            });
+          }
+        });
       },
       composeColumns() {
         self.columns = Object.keys(self.columns).map(key => ({

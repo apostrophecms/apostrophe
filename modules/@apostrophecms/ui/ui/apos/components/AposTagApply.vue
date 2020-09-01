@@ -60,7 +60,7 @@
 import AposHelpers from '../mixins/AposHelpersMixin';
 
 export default {
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   props: {
     primaryAction: {
       type: Object,
@@ -86,7 +86,7 @@ export default {
       default: 'left'
     }
   },
-  emits: ['create-tag', 'update'],
+  emits: [ 'create-tag', 'update' ],
   data() {
     return {
       creating: false,
@@ -95,7 +95,7 @@ export default {
       checkboxes: {},
       // `myTags` will be the canonical array of tags and matching doc IDs that
       // we will emit.
-      myTags: [...this.tags],
+      myTags: [ ...this.tags ],
       checked: [],
       searchInputValue: '',
       keyPrefix: this.generateId('key'), // used to keep checkboxes in sync w state
@@ -337,7 +337,7 @@ export default {
 
   .apos-apply-tag-menu__empty-icon {
     // Variable sizes are less important for icons.
-    // stylelint-disable-next-line scale-unlimited/declaration-strict-value
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     font-size: 32px;
   }
 
