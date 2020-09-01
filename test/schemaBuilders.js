@@ -49,7 +49,7 @@ describe('Schema builders', function() {
           options: {
             name: 'cat',
             label: 'Cat',
-            alias: 'cats',
+            alias: 'cats'
           }
         },
         people: {

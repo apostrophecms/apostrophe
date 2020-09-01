@@ -27,7 +27,7 @@ module.exports = {
     label: 'Group',
     pluralLabel: 'Groups',
     searchable: false,
-    adminOnly: true,
+    adminOnly: true
   },
   fields: {
     add: {
