@@ -95,6 +95,12 @@ module.exports = {
 
     self.sizeAvailableInTrash = options.sizeAvailableInTrash || 'one-sixth';
 
+    // uploadfs expects an array
+    self.imageSizes = Object.keys(self.imageSizes).map(name => ({
+      name,
+      ...self.imageSizes[name]
+    }));
+
     const uploadfsDefaultSettings = {
       backend: 'local',
       uploadsPath: self.apos.rootDir + '/public/uploads',
