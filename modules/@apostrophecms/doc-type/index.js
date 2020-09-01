@@ -1,11 +1,156 @@
 const _ = require('lodash');
 
 module.exports = {
-  beforeSuperClass(query, options) {
-    const permissionsFields = options.permissionsFields ? [
-      {
+  // beforeSuperClass(query, options) {
+    // const permissionsFields = options.permissionsFields ? [
+    //   {
+    //     type: 'select',
+    //     name: 'loginRequired',
+    //     label: 'Who can view this?',
+    //     def: '',
+    //     choices: [
+    //       {
+    //         value: '',
+    //         label: 'Public'
+    //       },
+    //       {
+    //         value: 'loginRequired',
+    //         label: 'Login Required'
+    //       },
+    //       {
+    //         value: 'certainUsers',
+    //         label: 'Certain People',
+    //         showFields: [
+    //           '_viewGroups',
+    //           '_viewUsers'
+    //         ]
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     name: '_viewUsers',
+    //     type: 'join',
+    //     withType: '@apostrophecms/user',
+    //     label: 'These Users can View',
+    //     idsField: 'viewUsersIds'
+    //   },
+    //   {
+    //     name: '_viewGroups',
+    //     type: 'join',
+    //     withType: '@apostrophecms/group',
+    //     label: 'These Groups can View',
+    //     idsField: 'viewGroupsIds'
+    //   },
+    //   {
+    //     name: '_editUsers',
+    //     type: 'join',
+    //     withType: '@apostrophecms/user',
+    //     label: 'These Users can Edit',
+    //     idsField: 'editUsersIds',
+    //     // Gets patched after full initialization
+    //     permission: 'admin'
+    //   },
+    //   {
+    //     name: '_editGroups',
+    //     type: 'join',
+    //     withType: '@apostrophecms/group',
+    //     label: 'These Groups can Edit',
+    //     idsField: 'editGroupsIds',
+    //     // Gets patched after full initialization
+    //     permission: 'admin'
+    //   }
+    // ] : [];
+
+    // options.addFields = [
+    //   {
+    //     type: 'string',
+    //     name: 'title',
+    //     label: 'Title',
+    //     required: true,
+    //     // Generate a titleSort property which can be sorted
+    //     // in a human-friendly way (case insensitive, ignores the
+    //     // same stuff slugs ignore)
+    //     sortify: true
+    //   },
+    //   {
+    //     type: 'slug',
+    //     name: 'slug',
+    //     label: 'Slug',
+    //     required: true
+    //   },
+    //   {
+    //     type: 'boolean',
+    //     name: 'published',
+    //     label: 'Published',
+    //     def: true
+    //   },
+    //   {
+    //     type: 'boolean',
+    //     name: 'trash',
+    //     label: 'Trash',
+    //     contextual: true,
+    //     def: false
+    //   }
+    // ].concat(permissionsFields, options.addFields || []);
+    // options.arrangeFields = [
+    //   {
+    //     name: 'basics',
+    //     label: 'Basics',
+    //     fields: [
+    //       'title'
+    //     ]
+    //   },
+    //   {
+    //     name: 'utility',
+    //     label: 'Utilities',
+    //     fields: [
+    //       'published',
+    //       'slug'
+    //     ]
+    //   },
+    //   {
+    //     name: 'permissions',
+    //     label: 'Permissions',
+    //     fields: [
+    //       'loginRequired',
+    //       '_viewUsers',
+    //       '_viewGroups',
+    //       '_editUsers',
+    //       '_editGroups'
+    //     ],
+    //     last: true
+    //   }
+    // ].concat(options.arrangeFields || []);
+  // },
+  fields: (self, options) => ({
+    add: {
+      title: {
+        type: 'string',
+        label: 'Title',
+        required: true,
+        // Generate a titleSort property which can be sorted
+        // in a human-friendly way (case insensitive, ignores the
+        // same stuff slugs ignore)
+        sortify: true
+      },
+      slug: {
+        type: 'slug',
+        label: 'Slug',
+        required: true
+      },
+      published: {
+        type: 'boolean',
+        label: 'Published',
+        def: true
+      },
+      trash: {
+        type: 'boolean',
+        label: 'Trash',
+        contextual: true,
+        def: false
+      },
+      loginRequired: {
         type: 'select',
-        name: 'loginRequired',
         label: 'Who can view this?',
         def: '',
         choices: [
@@ -27,22 +172,19 @@ module.exports = {
           }
         ]
       },
-      {
-        name: '_viewUsers',
+      _viewUsers: {
         type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can View',
         idsField: 'viewUsersIds'
       },
-      {
-        name: '_viewGroups',
+      _viewGroups: {
         type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can View',
         idsField: 'viewGroupsIds'
       },
-      {
-        name: '_editUsers',
+      _editUsers: {
         type: 'join',
         withType: '@apostrophecms/user',
         label: 'These Users can Edit',
@@ -50,8 +192,7 @@ module.exports = {
         // Gets patched after full initialization
         permission: 'admin'
       },
-      {
-        name: '_editGroups',
+      _editGroups: {
         type: 'join',
         withType: '@apostrophecms/group',
         label: 'These Groups can Edit',
@@ -59,57 +200,18 @@ module.exports = {
         // Gets patched after full initialization
         permission: 'admin'
       }
-    ] : [];
-
-    options.addFields = [
-      {
-        type: 'string',
-        name: 'title',
-        label: 'Title',
-        required: true,
-        // Generate a titleSort property which can be sorted
-        // in a human-friendly way (case insensitive, ignores the
-        // same stuff slugs ignore)
-        sortify: true
-      },
-      {
-        type: 'slug',
-        name: 'slug',
-        label: 'Slug',
-        required: true
-      },
-      {
-        type: 'boolean',
-        name: 'published',
-        label: 'Published',
-        def: true
-      },
-      {
-        type: 'boolean',
-        name: 'trash',
-        label: 'Trash',
-        contextual: true,
-        def: false
-      }
-    ].concat(permissionsFields, options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
+    },
+    remove: [ 'tags' ],
+    groups: {
+      basics: {
         label: 'Basics',
-        fields: [
-          'title'
-        ]
+        fields: [ 'title' ]
       },
-      {
-        name: 'utility',
+      utility: {
         label: 'Utilities',
-        fields: [
-          'published',
-          'slug'
-        ]
+        fields: [ 'published', 'slug' ]
       },
-      {
-        name: 'permissions',
+      permissions: {
         label: 'Permissions',
         fields: [
           'loginRequired',
@@ -120,8 +222,8 @@ module.exports = {
         ],
         last: true
       }
-    ].concat(options.arrangeFields || []);
-  },
+    }
+  }),
   init(self, options) {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
