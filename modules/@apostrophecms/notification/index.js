@@ -266,10 +266,6 @@ module.exports = {
               throw self.apos.error('invalid');
             }
             seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
-            if (seenIds) {
-              seenIds = req.query.seenIds.split(',');
-            }
-
             await attempt();
           } catch (e) {
             return self.routeSendError(req, e);
