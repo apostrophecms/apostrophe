@@ -434,7 +434,7 @@ export default {
   border-radius: 50%;
 }
 
-.apos-button--small {
+.apos-button--tiny {
   padding: 3px;
 }
 
