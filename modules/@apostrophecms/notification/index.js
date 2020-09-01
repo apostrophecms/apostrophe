@@ -16,14 +16,15 @@
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
 
-const Promise = require('bluebird');
-const _ = require('lodash');
-
 module.exports = {
+  options: {
+    alias: 'notification'
+  },
   extend: '@apostrophecms/module',
   async init(self, options) {
     self.apos.notify = self.trigger;
     await self.ensureCollection();
+    self.enableBrowserData();
   },
   restApiRoutes: (self, options) => ({
     getOne(req, _id) {
@@ -39,7 +40,6 @@ module.exports = {
       const message = self.apos.launder.string(req.body.message);
       const strings = self.apos.launder.strings(req.body.strings);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
-      const pulse = self.apos.launder.boolean(req.body.pulse);
       const id = self.apos.launder.id(req.body.id);
       await self.trigger.apply(self, [
         req,
@@ -47,7 +47,6 @@ module.exports = {
       ].concat(strings).concat([ {
         dismiss,
         type,
-        pulse,
         id
       } ]));
       return self.trigger(req, req.body.message, req.body.options || {});
@@ -56,7 +55,17 @@ module.exports = {
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
-      throw self.apos.error('unimplemented');
+      const dismissed = self.apos.launder.boolean(req.body.dismissed);
+      if (dismissed) {
+        return self.db.updateOne({ _id }, {
+          $set: {
+            dismissed
+          },
+          $currentDate: {
+            updatedAt: true
+          }
+        });
+      }
     },
     delete(req, _id) {
       return self.db.deleteMany({ _id });
@@ -64,7 +73,11 @@ module.exports = {
   }),
   methods(self, options) {
     return {
-
+      getBrowserData(req) {
+        return {
+          action: self.action
+        };
+      },
       // Call with `req`, then a message, followed by any interpolated strings
       // which must correspond to %s placeholders in `message` (variable number
       // of arguments), followed by an `options` object if desired.
@@ -131,8 +144,8 @@ module.exports = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message: message,
-          strings: strings
+          message,
+          strings
         };
 
         if (options.dismiss === true) {
@@ -141,26 +154,43 @@ module.exports = {
 
         Object.assign(notification, options);
 
-        return self.db.insertOne(notification);
+        return self.db.updateOne(
+          notification,
+          {
+            $set: notification,
+            $currentDate: {
+              updatedAt: true
+            }
+          }, {
+            upsert: true
+          });
       },
 
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
-      // If `options.displayingIds` is set, notifications
-      // whose `_id` properties appear in it are not returned.
+      // If `options.modifiedOnOrSince` is set, notifications
+      // greater than the timestamp are sent,
+      // minus any notifications whose IDs are in `options.seenIds`.
 
       async find(req, options) {
         try {
-          const notifications = await self.db.find({ userId: req.user._id }).sort({ createdAt: 1 }).toArray();
+          const results = await self.db.find({
+            userId: req.user._id,
+            ...(options.modifiedOnOrSince && { updatedAt: { $gte: new Date(options.modifiedOnOrSince) } }),
+            ...(options.seenIds && { _id: { $nin: options.seenIds } })
+          }).sort({ createdAt: 1 }).toArray();
+
+          const notifications = results.filter(result => !result.dismissed);
+          const dismissed = results.filter(result => result.dismissed);
+          dismissed.forEach(element => {
+            // 5-minute delay before deleting
+            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000);
+          });
+
           return {
-            notifications: _.filter(notifications, function (notification) {
-              if (options.displayingIds && options.displayingIds.length > 0) {
-                return _.includes(options.displayingIds || [], notification._id);
-              }
-              return notification;
-            }),
-            dismissed: _.difference(options.displayingIds || [], _.map(notifications, '_id'))
+            notifications,
+            dismissed
           };
         } catch (err) {
           if (self.apos.db.closed) {
@@ -218,37 +248,48 @@ module.exports = {
         before: '@apostrophecms/global',
         middleware: async (req, res, next) => {
           let start;
-          let displayingIds;
+          let modifiedOnOrSince;
+          let seenIds;
           try {
-            if (req.method.toUpperCase() !== 'GET' || req.url !== self.action) {
+            const reqUrl = new URL(req.url, req.baseUrl);
+            if (req.method.toUpperCase() !== 'GET' || reqUrl.pathname !== self.action) {
               return next();
             }
             if (!(req.user && req.user._id)) {
               throw self.apos.error('invalid');
             }
             start = Date.now();
-            displayingIds = self.apos.launder.ids(req.body.displayingIds);
+
+            try {
+              modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+            } catch (e) {
+              throw self.apos.error('invalid');
+            }
+            seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
             await attempt();
           } catch (e) {
-            return self.apiRouteSendError(res, e);
+            return self.routeSendError(req, e);
           }
+
           async function attempt() {
             if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
-              return {
+              return res.send({
                 notifications: [],
                 dismissed: []
-              };
+              });
             }
-            const result = await self.find(req, { displayingIds: displayingIds });
-            const notifications = result.notifications;
-            const dismissed = result.dismissed;
+
+            const { notifications, dismissed } = await self.find(req, {
+              modifiedOnOrSince,
+              seenIds
+            });
             if (!notifications.length && !dismissed.length) {
-              await Promise.delay(self.options.queryInterval || 1000);
-              return attempt();
+              return setTimeout(attempt, self.options.queryInterval || 1000);
             }
+
             return res.send({
-              notifications: notifications,
-              dismissed: dismissed
+              notifications,
+              dismissed
             });
           }
         }

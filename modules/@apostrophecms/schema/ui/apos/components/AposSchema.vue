@@ -125,8 +125,14 @@ export default {
           this.next.hasErrors = true;
         }
 
-        this.next.data[field.name] = this.fieldState[field.name].data ||
-          this.value.data[field.name];
+        if (
+          this.fieldState[field.name].data ||
+          this.fieldState[field.name].data !== undefined
+        ) {
+          this.next.data[field.name] = this.fieldState[field.name].data;
+        } else {
+          this.next.data[field.name] = this.value.data[field.name];
+        }
       });
       this.$emit('input', this.next);
     }
