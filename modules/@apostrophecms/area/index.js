@@ -482,7 +482,7 @@ module.exports = {
         });
         return {
           components: {
-            editor: 'ApostropheAreaEditor' || (options.browser && options.browser.components && options.browser.components.editor),
+            editor: 'AposAreaEditor' || (options.browser && options.browser.components && options.browser.components.editor),
             widgets,
             widgetEditors
           },

@@ -11,6 +11,7 @@
         <component
           :is="map[set.field.type]" :field="set.field"
           :value="set.value" :status="set.status"
+          :icon="set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''"
           @input="input($event, key)"
         />
       </div>
@@ -53,7 +54,8 @@ export default {
     return {
       map: {
         radio: 'AposInputRadio',
-        checkbox: 'AposInputCheckboxes'
+        checkbox: 'AposInputCheckboxes',
+        select: 'AposInputSelect'
       }
     };
   },
@@ -65,7 +67,7 @@ export default {
         sets[filter.name] = {
           field: {
             name: filter.name,
-            type: 'radio',
+            type: filter.inputType || 'radio',
             label: filter.label || filter.name,
             choices: filter.choices
           },
@@ -90,6 +92,13 @@ export default {
 <style lang="scss" scoped>
   .apos-filters-menu {
     min-width: 140px;
+
+    /deep/ .apos-input--select {
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background-color: var(--a-base-10);
+      font-style: italic;
+    }
   }
 
   .apos-filters-menu /deep/ .apos-field-label {

@@ -84,13 +84,13 @@ module.exports = {
             label: 'Draft'
           },
           {
-            value: null,
+            value: 'any',
             label: 'Both'
           }
         ],
         allowedInChooser: false,
         def: true,
-        style: 'pill'
+        inputType: 'radio'
       },
       {
         label: 'Trash',
@@ -105,9 +105,10 @@ module.exports = {
             label: 'Trash'
           }
         ],
+        required: true,
         allowedInChooser: false,
         def: false,
-        style: 'pill'
+        inputType: 'radio'
       }
     ].concat(options.addFilters || []);
 
@@ -205,6 +206,9 @@ module.exports = {
     },
     async post(req) {
       self.publicApiCheck(req);
+      if (req.body._newInstance) {
+        return self.newInstance();
+      }
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
@@ -350,21 +354,34 @@ module.exports = {
       },
       composeFilters() {
         self.filters = options.filters || [];
-        if (options.addFilters) {
+        if (Array.isArray(options.addFilters)) {
           _.each(options.addFilters, function (newFilter) {
             // remove it from the filters if we've already added it, last one wins
             self.filters = _.filter(self.filters, function (filter) {
               return filter.name !== newFilter.name;
             });
-            // add the new field to the filters
-            self.filters.push(newFilter);
           });
+          // add the new field to the filters
+          self.filters = options.addFilters.concat(self.filters);
         }
         if (options.removeFilters) {
           self.filters = _.filter(self.filters, function (filter) {
             return !_.includes(options.removeFilters, filter.name);
           });
         }
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach(filter => {
+          if (
+            !filter.required &&
+            !filter.choices.find(choice => choice.value === 'any')
+          ) {
+            filter.def = 'any';
+            filter.choices.push({
+              value: 'any',
+              label: 'None'
+            });
+          }
+        });
       },
       composeColumns() {
         self.columns = options.columns || [];
