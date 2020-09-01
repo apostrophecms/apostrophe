@@ -126,7 +126,8 @@ export default {
         label: 'Add Content',
         iconOnly: true,
         icon: 'plus-icon',
-        type: 'outline'
+        type: 'primary',
+        modifiers: [ 'round', 'tiny' ]
       }
     };
   },
@@ -351,7 +352,7 @@ export default {
 .apos-area-menu__group {
   border-bottom: 1px solid var(--a-base-8);
   padding-bottom: 10px;
-  margin-bottom: 10px;
+  margin: 10px 0;
 }
 .apos-area-menu__item:last-child.has-group .apos-area-menu__group {
   border-bottom: none;
