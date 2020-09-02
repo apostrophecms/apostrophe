@@ -5,6 +5,7 @@
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
     :type="buttonType"
+    :role="role"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -60,8 +61,12 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: String,
-      default: ''
+      type: [String, Boolean],
+      default: false
+    },
+    role: {
+      type: [String, Boolean],
+      default: false
     }
   },
   emits: [ 'click' ],
@@ -279,6 +284,7 @@ export default {
     z-index: calc(#{$z-index-default} + 1);
   }
 }
+
 .apos-button--block {
   display: block;
   width: 100%;
@@ -391,6 +397,11 @@ export default {
   .apos-spinner__svg {
     color: var(--a-danger);
   }
+}
+
+.apos-button--group {
+  background-color: transparent;
+  border: none;
 }
 
 .apos-button--busy {
