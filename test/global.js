@@ -40,7 +40,7 @@ describe('Global', function() {
   });
 
   it('should populate when global.addGlobalToData is awaited', async function() {
-    let req = apos.task.getAnonReq();
+    const req = apos.task.getAnonReq();
     await apos.global.addGlobalToData(req);
     assert(req.data.global);
     assert(req.data.global.type === '@apostrophecms/global');

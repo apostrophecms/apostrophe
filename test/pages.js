@@ -46,7 +46,7 @@ describe('Pages', function() {
   // SETUP
 
   it('should make sure all of the expected indexes are configured', async function() {
-    const expectedIndexes = ['path'];
+    const expectedIndexes = [ 'path' ];
     const actualIndexes = [];
 
     const info = await apos.doc.db.indexInformation();

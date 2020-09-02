@@ -211,7 +211,12 @@ export default {
     },
     endDrag(event) {
       this.$emit('update', event);
-      this.setHeights();
+      this.$nextTick(() => {
+        if (!this.$refs['tree-branches']) {
+          return;
+        }
+        this.setHeights();
+      });
     },
     toggleSection(event, data) {
       const row = (data && data.row) ||

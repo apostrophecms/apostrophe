@@ -42,6 +42,10 @@ export default {
   name: 'AposNotification',
   components: { Close },
   props: {
+    id: {
+      type: String,
+      default: null
+    },
     type: {
       type: String,
       default: null
@@ -57,9 +61,20 @@ export default {
     progress: {
       type: Object,
       default: null
+    },
+    dismiss: {
+      type: Number,
+      default: 0
     }
   },
   emits: [ 'close' ],
+  async mounted() {
+    if (this.dismiss) {
+      setTimeout(() => {
+        this.$emit('close', this.id);
+      }, 1000 * this.dismiss);
+    }
+  },
   computed: {
     classList() {
       const classes = [ 'apos-notification' ];
@@ -86,7 +101,7 @@ export default {
   },
   methods: {
     close () {
-      this.$emit('close', this);
+      this.$emit('close', this.id);
     }
   }
 };
@@ -105,6 +120,10 @@ export default {
     background: var(--a-background);
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
+
+    & + .apos-notification {
+      margin-top: 8px;
+    }
   }
 
   .apos-notification__indicator {

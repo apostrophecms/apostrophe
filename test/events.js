@@ -16,7 +16,7 @@ describe('Promisified Events Core', function() {
     apos = await t.create({
       root: module,
       modules: {
-        'test1': {
+        test1: {
           options: {
             alias: 'test1'
           },
@@ -72,7 +72,7 @@ describe('Promisified Events Core', function() {
             };
           }
         },
-        'test2': {
+        test2: {
           options: {
             alias: 'test2'
           },
@@ -86,7 +86,7 @@ describe('Promisified Events Core', function() {
             };
           }
         },
-        'test3': {
+        test3: {
           options: {
             alias: 'test3'
           }

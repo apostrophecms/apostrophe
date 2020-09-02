@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = function(self, options) {
 
@@ -73,8 +73,9 @@ module.exports = function(self, options) {
     // in response to the event.
 
     on(name, methodName, fn) {
-      let moduleName, eventName, index;
-      index = name.indexOf(':');
+      let moduleName;
+      let eventName;
+      const index = name.indexOf(':');
       if ((typeof methodName) !== 'string') {
         throw new Error('When registering an Apostrophe module event handler, the second argument must be a method name, not a function. This ensures that event handlers can be overwritten and/or extended with the "super" pattern.');
       }
@@ -89,7 +90,7 @@ module.exports = function(self, options) {
         throw new Error('The method name ' + methodName + ' is essentially identical to the event name, ' + eventName + '. To prevent conflicts with other handlers, you must give it a distinct name expressing what it actually does with the event.');
       }
       self.apos.eventHandlers[moduleName] = self.apos.eventHandlers[moduleName] || {};
-      let eh = self.apos.eventHandlers[moduleName];
+      const eh = self.apos.eventHandlers[moduleName];
       if (fn) {
         self[methodName] = fn;
       }

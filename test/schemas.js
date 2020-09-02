@@ -1,10 +1,10 @@
-let t = require('../test-lib/test.js');
-let assert = require('assert');
-let _ = require('lodash');
+const t = require('../test-lib/test.js');
+const assert = require('assert');
+const _ = require('lodash');
 
 let apos;
 
-let simpleFields = [
+const simpleFields = [
   {
     name: 'name',
     label: 'Name',
@@ -39,116 +39,116 @@ let simpleFields = [
   }
 ];
 
-let realWorldCase = {
-  'addFields': [
+const realWorldCase = {
+  addFields: [
     {
-      'type': 'string',
-      'name': 'title',
-      'label': 'Title',
-      'required': true,
-      'sortify': true
+      type: 'string',
+      name: 'title',
+      label: 'Title',
+      required: true,
+      sortify: true
     },
     {
-      'type': 'slug',
-      'name': 'slug',
-      'label': 'Slug',
-      'required': true
+      type: 'slug',
+      name: 'slug',
+      label: 'Slug',
+      required: true
     },
     {
-      'type': 'boolean',
-      'name': 'published',
-      'label': 'Published',
-      'def': true
+      type: 'boolean',
+      name: 'published',
+      label: 'Published',
+      def: true
     },
     {
-      'type': 'boolean',
-      'name': 'trash',
-      'label': 'Trash',
-      'contextual': true,
-      'def': false
+      type: 'boolean',
+      name: 'trash',
+      label: 'Trash',
+      contextual: true,
+      def: false
     },
     {
-      'type': 'slug',
-      'name': 'slug',
-      'label': 'Old URL',
-      'required': true,
-      'page': true
+      type: 'slug',
+      name: 'slug',
+      label: 'Old URL',
+      required: true,
+      page: true
     },
     {
-      'name': 'title',
-      'label': 'Description',
-      'type': 'string',
-      'required': true
+      name: 'title',
+      label: 'Description',
+      type: 'string',
+      required: true
     },
     {
-      'type': 'boolean',
-      'name': 'published',
-      'label': 'Published',
-      'required': true,
-      'def': true,
-      'contextual': true
+      type: 'boolean',
+      name: 'published',
+      label: 'Published',
+      required: true,
+      def: true,
+      contextual: true
     },
     {
-      'name': 'urlType',
-      'label': 'Link To',
-      'type': 'select',
-      'choices': [
+      name: 'urlType',
+      label: 'Link To',
+      type: 'select',
+      choices: [
         {
-          'label': 'Internal Page',
-          'value': 'internal',
-          'showFields': [
+          label: 'Internal Page',
+          value: 'internal',
+          showFields: [
             '_newPage'
           ]
         },
         {
-          'label': 'External URL',
-          'value': 'external',
-          'showFields': [
+          label: 'External URL',
+          value: 'external',
+          showFields: [
             'externalUrl'
           ]
         }
       ]
     },
     {
-      'name': 'externalUrl',
-      'label': 'URL',
-      'type': 'url'
+      name: 'externalUrl',
+      label: 'URL',
+      type: 'url'
     },
     {
-      'name': '_newPage',
-      'type': 'join',
+      name: '_newPage',
+      type: 'join',
       limit: 1,
-      'withType': '@apostrophecms/page',
-      'label': 'Page Title',
-      'idsField': 'pageId'
+      withType: '@apostrophecms/page',
+      label: 'Page Title',
+      idsField: 'pageId'
     }
   ],
-  'arrangeFields': [
+  arrangeFields: [
     {
-      'name': 'basics',
-      'label': 'Basics',
-      'fields': [
+      name: 'basics',
+      label: 'Basics',
+      fields: [
         'title',
         'slug',
         'published'
       ]
     },
     {
-      'name': 'permissions',
-      'label': 'Permissions',
-      'fields': [
+      name: 'permissions',
+      label: 'Permissions',
+      fields: [
         'loginRequired',
         '_viewUsers',
         '_viewGroups',
         '_editUsers',
         '_editGroups'
       ],
-      'last': true
+      last: true
     },
     {
-      'name': 'otherFields',
-      'label': 'Other fields',
-      'fields': [
+      name: 'otherFields',
+      label: 'Other fields',
+      fields: [
         'slug',
         'urlType',
         '_newPage',
@@ -159,7 +159,7 @@ let realWorldCase = {
   ]
 };
 
-let pageSlug = [
+const pageSlug = [
   {
     type: 'slug',
     name: 'slug',
@@ -167,14 +167,14 @@ let pageSlug = [
   }
 ];
 
-let regularSlug = [
+const regularSlug = [
   {
     type: 'slug',
     name: 'slug'
   }
 ];
 
-let hasArea = {
+const hasArea = {
   addFields: [
     {
       type: 'area',
@@ -183,7 +183,7 @@ let hasArea = {
       options: {
         widgets: {
           '@apostrophecms/rich-text': {
-            'toolbar': [ 'styles', 'bold' ],
+            toolbar: [ 'styles', 'bold' ],
             styles: [
               {
                 tag: 'p',
@@ -201,7 +201,7 @@ let hasArea = {
   ]
 };
 
-let hasAreaWithoutWidgets = {
+const hasAreaWithoutWidgets = {
   addFields: [
     {
       type: 'area',
@@ -235,7 +235,7 @@ describe('Schemas', function() {
   });
 
   it('should compose schemas correctly', function() {
-    let options = {
+    const options = {
       addFields: [
         {
           name: 'name',
@@ -266,7 +266,7 @@ describe('Schemas', function() {
       ],
       removeFields: [ 'address' ],
       alterFields: function(schema) {
-        let variety = _.find(schema, { name: 'variety' });
+        const variety = _.find(schema, { name: 'variety' });
         assert(variety);
         variety.choices.push({
           value: 'record',
@@ -274,7 +274,7 @@ describe('Schemas', function() {
         });
       }
     };
-    let schema = apos.schema.compose(options);
+    const schema = apos.schema.compose(options);
     assert(schema.length === 2);
     assert(schema[0].name === 'name');
     assert(schema[1].name === 'variety');
@@ -282,18 +282,18 @@ describe('Schemas', function() {
   });
 
   it('should compose a schema for a complex real world case correctly', function() {
-    let schema = apos.schema.compose(realWorldCase);
+    const schema = apos.schema.compose(realWorldCase);
     assert(schema);
-    let externalUrl = _.find(schema, { name: 'externalUrl' });
+    const externalUrl = _.find(schema, { name: 'externalUrl' });
     assert(externalUrl);
     assert.strictEqual(externalUrl.group.name, 'otherFields');
-    let _newPage = _.find(schema, { name: '_newPage' });
+    const _newPage = _.find(schema, { name: '_newPage' });
     assert(_newPage);
     assert.strictEqual(_newPage.group.name, 'otherFields');
   });
 
   it('should error if a field is required and an empty value is submitted for a string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -304,14 +304,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       name: ''
     };
     await testSchemaError(schema, input, 'name', 'required');
   });
 
   it('should error if the value submitted is less than min length for a string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -322,14 +322,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       name: 'Cow'
     };
     await testSchemaError(schema, input, 'name', 'min');
   });
 
   it('should convert and keep the correct value for a field which is required for a string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -340,17 +340,17 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       name: 'Apostrophe^CMS'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(result.name === 'Apostrophe^CMS');
   });
 
   it('should keep an empty submitted field value null when there is a min / max configuration for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -362,18 +362,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: ''
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === null);
   });
 
   it('should keep an empty submitted field value null when there is a min / max configuration for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -385,18 +385,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: ''
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === null);
   });
 
   it('should ensure a max value is being trimmed to the max length for a string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -407,18 +407,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       name: 'Apostrophe'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.name === 'Apost');
   });
 
   it('should allow saving a 0 value provided as a number if a field is required for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -429,18 +429,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 0
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a 0 value provided as a float if a field is required for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -451,18 +451,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 0.00
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0.00);
   });
 
   it('should allow saving a 0 value provided as a number if a field is required for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -473,18 +473,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 0
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a 0 value provided as a number if a field is required for an string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -495,18 +495,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 0
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === '0');
   });
 
   it('should allow saving a 0 value provided as a string if a field is required for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -517,18 +517,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '0'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a 0 value provided as a string if a field is required for an string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -539,18 +539,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '0'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === '0');
   });
 
   it('should allow saving a 0 value provided as a string if a field is required for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -561,18 +561,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '0'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a 0 value provided as a string if there is no min value set for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -582,18 +582,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '0'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a 0 value provided as a string if there is no min value set for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -603,18 +603,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '0'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 0);
   });
 
   it('should allow saving a negative value provided as a number for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -624,18 +624,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: -1
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === -1);
   });
 
   it('should allow saving a negative value provided as a float for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -645,18 +645,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: -1.3
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === -1.3);
   });
 
   it('should allow saving a negative value provided as a float for an string field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'string',
@@ -666,18 +666,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: -1.3
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === '-1.3');
   });
 
   it('should allow saving a negative value provided as a number if a field is required for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -688,18 +688,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: -1
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === -1);
   });
 
   it('should allow saving a negative value provided as a number if a field is required for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -710,18 +710,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: -1.3
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === -1.3);
   });
 
   it('should allow saving a negative value provided as a string if a field is required for an float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -732,18 +732,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '-1.3'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === -1.3);
   });
 
   it('should override the saved value if min and max value has been set and the submitted value is out of range for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -755,18 +755,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '3'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5);
   });
 
   it('should override the saved value if min and max value has been set and the submitted value is out of range for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -778,18 +778,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '3.2'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5.1);
   });
 
   it('should ensure a min value is being set to the configured min value if a lower value is submitted for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -800,18 +800,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '1'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5);
   });
 
   it('should ensure a min value is being set to the configured min value if a lower value is submitted for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -822,18 +822,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '1.2'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5.3);
   });
 
   it('should ensure a max value is being set to the max if a higher value is submitted for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -844,18 +844,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '8'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5);
   });
 
   it('should ensure a max value is being set to the max if a higher value is submitted for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -866,18 +866,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '8'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5.9);
   });
 
   it('should not modify a value if the submitted value is within min and max for an integer field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -889,18 +889,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '5'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 5);
   });
 
   it('should not modify a value if the submitted value is within min and max for a float field type', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -912,18 +912,18 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '4.3'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.price === 4.3);
   });
 
   it('should not allow a text value to be submitted for a required integer field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -934,14 +934,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a required float field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -952,14 +952,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field with min and max', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -971,14 +971,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field with min and max', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -990,14 +990,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field with a default value set', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -1008,14 +1008,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field with a default value set', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -1026,14 +1026,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required integer field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -1043,14 +1043,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should not allow a text value to be submitted for a non required float field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -1060,14 +1060,14 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: 'A'
     };
     await testSchemaError(schema, input, 'price', 'invalid');
   });
 
   it('should allow a parsable string/integer value to be submitted for a non required integer field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'integer',
@@ -1077,17 +1077,17 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '22a'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(result.price === 22);
   });
 
   it('should allow a parsable string/float value to be submitted for a non required float field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'float',
@@ -1097,28 +1097,28 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       price: '11.4b'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(result.price === 11.4);
   });
 
   it('should convert simple data correctly', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: simpleFields
     });
     assert(schema.length === 4);
-    let input = {
+    const input = {
       name: 'Bob Smith',
       address: '5017 Awesome Street\nPhiladelphia, PA 19147',
       irrelevant: 'Irrelevant',
       slug: 'This Is Cool'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
     assert(_.keys(result).length === 4);
@@ -1131,7 +1131,7 @@ describe('Schemas', function() {
   });
 
   it('should update a password if provided', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'password',
@@ -1141,11 +1141,11 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       password: 'silly'
     };
-    let req = apos.task.getReq();
-    let result = { password: 'serious' };
+    const req = apos.task.getReq();
+    const result = { password: 'serious' };
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     // hashing is not the business of schemas, see the
@@ -1154,7 +1154,7 @@ describe('Schemas', function() {
   });
 
   it('should leave a password alone if not provided', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'password',
@@ -1164,11 +1164,11 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       password: ''
     };
-    let req = apos.task.getReq();
-    let result = { password: 'serious' };
+    const req = apos.task.getReq();
+    const result = { password: 'serious' };
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     // hashing is not the business of schemas, see the
@@ -1177,7 +1177,7 @@ describe('Schemas', function() {
   });
 
   it('should handle array schemas', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           type: 'array',
@@ -1194,7 +1194,7 @@ describe('Schemas', function() {
       ]
     });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       addresses: [
         {
           address: '500 test lane'
@@ -1204,8 +1204,8 @@ describe('Schemas', function() {
         }
       ]
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.addresses);
@@ -1218,15 +1218,15 @@ describe('Schemas', function() {
   });
 
   it('should convert string values to areas correctly', async () => {
-    let schema = apos.schema.compose(hasArea);
+    const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
-    let input = {
+    const input = {
       irrelevant: 'Irrelevant',
       // Should get escaped, not be treated as HTML
       body: 'This is the greatest <h1>thing</h1>'
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
     assert(_.keys(result).length === 1);
@@ -1240,9 +1240,9 @@ describe('Schemas', function() {
   });
 
   it('should convert arrays of widgets to areas correctly', async () => {
-    let schema = apos.schema.compose(hasArea);
+    const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
-    let input = {
+    const input = {
       irrelevant: 'Irrelevant',
       body: [
         {
@@ -1253,8 +1253,8 @@ describe('Schemas', function() {
         }
       ]
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
     assert(_.keys(result).length === 1);
@@ -1268,9 +1268,9 @@ describe('Schemas', function() {
   });
 
   it('should not accept a widget not in the widgets object of the area', async () => {
-    let schema = apos.schema.compose(hasAreaWithoutWidgets);
+    const schema = apos.schema.compose(hasAreaWithoutWidgets);
     assert(schema.length === 1);
-    let input = {
+    const input = {
       irrelevant: 'Irrelevant',
       body: [
         {
@@ -1281,23 +1281,23 @@ describe('Schemas', function() {
         }
       ]
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
     assert(!result.body.items[0]);
   });
 
   it('should convert areas gracefully when they are undefined', async () => {
-    let schema = apos.schema.compose(hasArea);
+    const schema = apos.schema.compose(hasArea);
     assert(schema.length === 1);
-    let input = {
+    const input = {
       irrelevant: 'Irrelevant',
       // Should get escaped, not be treated as HTML
       body: undefined
     };
-    let req = apos.task.getReq();
-    let result = {};
+    const req = apos.task.getReq();
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
     assert(_.keys(result).length === 1);
@@ -1309,43 +1309,43 @@ describe('Schemas', function() {
   });
 
   it('should clean up extra slashes in page slugs', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({ addFields: pageSlug });
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({ addFields: pageSlug });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       slug: '/wiggy//wacky///wobbly////whizzle/////'
     };
-    let result = {};
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert.strictEqual(result.slug, '/wiggy/wacky/wobbly/whizzle');
   });
 
   it('retains trailing / on the home page', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({ addFields: pageSlug });
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({ addFields: pageSlug });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       slug: '/'
     };
-    let result = {};
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(result.slug === '/');
   });
 
   it('does not keep slashes when page: true not present for slug', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({ addFields: regularSlug });
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({ addFields: regularSlug });
     assert(schema.length === 1);
-    let input = {
+    const input = {
       slug: '/wiggy//wacky///wobbly////whizzle/////'
     };
-    let result = {};
+    const result = {};
     await apos.schema.convert(req, schema, input, result);
     assert(result.slug === 'wiggy-wacky-wobbly-whizzle');
   });
 
   it('enforces required property for ordinary field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1359,8 +1359,8 @@ describe('Schemas', function() {
   });
 
   it('ignores required property for hidden field', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1390,7 +1390,7 @@ describe('Schemas', function() {
         }
       ]
     });
-    let output = {};
+    const output = {};
     await apos.schema.convert(req, schema, {
       ageOrShoeSize: 'shoeSize',
       age: ''
@@ -1399,7 +1399,7 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for shown field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1436,8 +1436,8 @@ describe('Schemas', function() {
   });
 
   it('ignores required property for recursively hidden field', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1483,7 +1483,7 @@ describe('Schemas', function() {
         }
       ]
     });
-    let output = {};
+    const output = {};
     await apos.schema.convert(req, schema, {
       ageOrShoeSize: 'age',
       doWeCare: '0',
@@ -1493,7 +1493,7 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for recursively shown field', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1547,8 +1547,8 @@ describe('Schemas', function() {
   });
 
   it('ignores required property for recursively hidden field with checkboxes', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1594,7 +1594,7 @@ describe('Schemas', function() {
         }
       ]
     });
-    let output = {};
+    const output = {};
     await apos.schema.convert(req, schema, {
       ageOrShoeSize: [ 'age' ],
       doWeCare: [ '0' ],
@@ -1604,7 +1604,7 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for recursively shown field with checkboxes', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1658,8 +1658,8 @@ describe('Schemas', function() {
   });
 
   it('ignores required property for recursively hidden field with boolean', async () => {
-    let req = apos.task.getReq();
-    let schema = apos.schema.compose({
+    const req = apos.task.getReq();
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',
@@ -1703,7 +1703,7 @@ describe('Schemas', function() {
         }
       ]
     });
-    let output = {};
+    const output = {};
     await apos.schema.convert(req, schema, {
       ageOrShoeSize: 'age',
       doWeCare: false,
@@ -1713,7 +1713,7 @@ describe('Schemas', function() {
   });
 
   it('enforces required property for recursively shown field with boolean', async () => {
-    let schema = apos.schema.compose({
+    const schema = apos.schema.compose({
       addFields: [
         {
           name: 'age',

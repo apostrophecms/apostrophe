@@ -298,8 +298,8 @@ export default {
     box-shadow: 0 0 3px var(--a-base-2);
   }
   &[disabled] {
-    border: 1px solid var(--a-base-9);
-    color: var(--a-base-9);
+    border: 1px solid var(--a-base-7);
+    color: var(--a-base-7);
     background-color: transparent;
   }
   &.apos-button--busy {
@@ -428,6 +428,14 @@ export default {
 
 .apos-button--danger-on-hover:hover {
   color: var(--a-danger);
+}
+
+.apos-button--round {
+  border-radius: 50%;
+}
+
+.apos-button--tiny {
+  padding: 3px;
 }
 
 @keyframes animateGradient {
