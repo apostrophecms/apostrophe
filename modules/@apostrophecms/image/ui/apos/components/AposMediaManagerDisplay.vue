@@ -128,13 +128,13 @@ export default {
         }
       });
 
-      // While the upload is working, set an uploading animation.
+      // TODO: While the upload is working, set an uploading animation.
       await this.insertImage(file, emptyDoc);
 
       // When complete, refresh the image grid, with the new images at top.
       this.$emit('uploaded');
 
-      // If uploading one image, when complete, load up the edit schema in the right rail.
+      // TODO: If uploading one image, when complete, load up the edit schema in the right rail.
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
     },
     async insertImage(file, emptyDoc) {
