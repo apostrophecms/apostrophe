@@ -23,7 +23,8 @@ export default {
     return {
       buttonDefaults: {
         type: 'group',
-        modifiers: [ 'small' ]
+        modifiers: [ 'small' ],
+        role: 'menuitem'
       }
     };
   },

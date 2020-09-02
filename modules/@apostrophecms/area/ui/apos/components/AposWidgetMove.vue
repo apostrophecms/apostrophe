@@ -36,7 +36,8 @@ export default {
         iconOnly: true,
         icon: 'plus-icon',
         type: 'group',
-        modifiers: [ 'tiny' ]
+        modifiers: [ 'tiny' ],
+        role: 'menuitem'
       }
     };
   },

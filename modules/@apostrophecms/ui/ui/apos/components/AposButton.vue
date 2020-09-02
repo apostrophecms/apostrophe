@@ -63,6 +63,10 @@ export default {
     buttonType: {
       type: [String, Boolean],
       default: false
+    },
+    role: {
+      type: [String, Boolean],
+      default: false
     }
   },
   emits: [ 'click' ],
@@ -72,13 +76,6 @@ export default {
     };
   },
   computed: {
-    role () {
-      if (this.type === 'group') {
-        return 'menuitem'
-      }
-
-      return false
-    },
     tabindex() {
       return this.disableFocus ? '-1' : '0';
     },
