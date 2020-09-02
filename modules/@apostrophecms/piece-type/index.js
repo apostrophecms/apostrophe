@@ -197,7 +197,21 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
-      const doc = await self.getRestQuery(req).and({ _id }).published(null).trash(null).toObject();
+      const publishedValues = {
+        null: true,
+        'any': null,
+        'false': false,
+        'true': true
+      };
+      const trashValues = {
+        null: false,
+        'any': null,
+        'false': false,
+        'true': true
+      };
+      const published = publishedValues[req.query.published];
+      const trash = trashValues[req.query.trash];
+      const doc = await self.getRestQuery(req).and({ _id }).published(published).trash(trash).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
       }
