@@ -2,44 +2,59 @@
   <div class="apos-admin-bar-wrapper">
     <div class="apos-admin-bar-spacer" ref="spacer"></div>
     <nav class="apos-admin-bar" ref="adminBar">
-      <AposLogo class="apos-admin-bar__logo" />
-      <ul class="apos-admin-bar__items">
-        <li
-          v-for="(item, index) in menuItems" :key="item.name"
-          class="apos-admin-bar__item"
-        >
-          <component
-            v-if="item.options" :is="item.options.href ? 'a' : 'button'"
-            class="apos-admin-bar__btn" :href="item.options.href"
-            v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+      <div class="apos-admin-bar__row">
+        <AposLogo class="apos-admin-bar__logo" />
+        <ul class="apos-admin-bar__items">
+          <li
+            v-for="(item, index) in menuItems" :key="item.name"
+            class="apos-admin-bar__item"
           >
-            {{ item.label }}
-          </component>
-          <AposContextMenu
-            v-else-if="item.items" class="apos-admin-bar__sub"
-            :menu="item.items" :button="{
-              label: item.label
-            }"
-            :tip-alignment="index > 1 ? 'right' : 'left'"
-          />
-        </li>
-        <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
-          <AposContextMenu
-            class="apos-admin-bar__create"
-            :menu="createMenu" :button="{
-              label: 'New item',
-              iconOnly: true,
-              icon: 'plus-icon',
-              type: 'primary'
-            }"
-            tip-alignment="right"
-          />
-        </li>
-      </ul>
-      <TheAposAdminBarUser
-        class="apos-admin-bar__user"
-        :user="user" :avatar-url="userAvatar"
-      />
+            <component
+              v-if="item.options" :is="item.options.href ? 'a' : 'button'"
+              class="apos-admin-bar__btn" :href="item.options.href"
+              v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+            >
+              {{ item.label }}
+            </component>
+            <AposContextMenu
+              v-else-if="item.items" class="apos-admin-bar__sub"
+              :menu="item.items" :button="{
+                label: item.label
+              }"
+              :tip-alignment="index > 1 ? 'right' : 'left'"
+              @item-clicked="emitEvent"
+            />
+          </li>
+          <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+            <AposContextMenu
+              class="apos-admin-bar__create"
+              :menu="createMenu" :button="{
+                label: 'New item',
+                iconOnly: true,
+                icon: 'plus-icon',
+                type: 'primary'
+              }"
+              tip-alignment="right"
+            />
+          </li>
+        </ul>
+        <TheAposAdminBarUser
+          class="apos-admin-bar__user"
+          :user="user" :avatar-url="userAvatar"
+        />
+      </div>
+      <div class="apos-admin-bar__row">
+        <AposButton
+          type="default" label="Page Settings"
+          icon="cog-icon" class="apos-admin-bar__btn"
+          @click="emitEvent('page-settings')"
+        />
+        <AposButton
+          type="default" label="Page Tree"
+          icon="file-tree-icon" class="apos-admin-bar__btn"
+          @click="emitEvent('page-tree')"
+        />
+      </div>
     </nav>
   </div>
 </template>
@@ -56,7 +71,7 @@ export default {
       }
     }
   },
-  emits: ['admin-menu-click'],
+  emits: [ 'admin-menu-click' ],
   data() {
     return {
       menuItems: [],
@@ -100,14 +115,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$menu-height: 68px;
+$menu-row-height: 68px;
 $menu-v-pad: 18px;
-$menu-item-height: $menu-height - (2 * $menu-v-pad);
+$menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
+$admin-bar-h-pad: 20px;
 
 body {
-  margin-top: $menu-height;
+  margin-top: $menu-row-height * 2;
 }
 
 .apos-admin-bar {
@@ -115,13 +131,16 @@ body {
   top: 0;
   right: 0;
   left: 0;
-  display: flex;
-  align-items: center;
-  height: $menu-height;
-  padding: 0 30px 0 16px;
-  border-bottom: 1px solid var(--a-base-9);
   background: var(--a-background-primary);
   font-size: map-get($font-sizes, menu-label);
+}
+
+.apos-admin-bar__row {
+  display: flex;
+  align-items: center;
+  height: $menu-row-height;
+  padding: 0 $admin-bar-h-pad 0 0;
+  border-bottom: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__items {
@@ -131,22 +150,30 @@ body {
 }
 
 .apos-admin-bar__logo {
+  margin-left: $admin-bar-h-pad;
+}
+
+.apos-admin-bar__logo {
   display: inline-block;
   height: $menu-item-height;
 }
 
 .apos-admin-bar__create /deep/ .apos-context-menu__btn,
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
+.apos-admin-bar__btn.apos-button,
 .apos-admin-bar__btn {
+  border-radius: 0;
+
   &:hover,
   &:focus {
+    border-width: 0;
     transform: none;
   }
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn {
-  height: $menu-height;
+  height: $menu-row-height;
 
   &:hover,
   &:focus {
