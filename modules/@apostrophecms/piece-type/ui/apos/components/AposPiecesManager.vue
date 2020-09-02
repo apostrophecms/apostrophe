@@ -106,6 +106,7 @@
         v-if="editing"
         :is="options.components.insertModal"
         :module-name="moduleName" :doc-id="editingDocId"
+        :filter-values="filterValues"
         @saved="finishSaved" @safe-close="closeEditor"
       />
     </template>

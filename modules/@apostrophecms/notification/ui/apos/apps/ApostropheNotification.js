@@ -75,7 +75,7 @@ export default function() {
       },
       async poll() {
         try {
-          const allNotifications = [...this.notifications, ...this.dismissed];
+          const allNotifications = [ ...this.notifications, ...this.dismissed ];
           const latestTimestamp = allNotifications
             .map(notification => notification.updatedAt)
             .sort()
@@ -94,8 +94,8 @@ export default function() {
             })
           });
 
-          this.notifications = [...this.notifications, ...(notifications || [])];
-          this.dismissed = [...this.dismissed, ...(dismissed || [])];
+          this.notifications = [ ...this.notifications, ...(notifications || []) ];
+          this.dismissed = [ ...this.dismissed, ...(dismissed || []) ];
 
           if (dismissed.length) {
             this.notifications = this.notifications.filter(notification => {
