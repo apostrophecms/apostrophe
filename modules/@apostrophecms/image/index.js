@@ -82,16 +82,9 @@ module.exports = {
     async getAll (_super, req) {
       const pieces = await _super(req);
 
-      console.info(pieces.results.map(piece => ({
-        title: piece.title,
-        _id: piece._id
-      })));
-
-      for (const piece of pieces.results) {
-        piece._path = await self.apos.attachment.url(piece.attachment, {
-          size: 'one-sixth'
-        });
-      }
+      self.apos.attachment.all(pieces, {
+        annotate: true
+      });
 
       return pieces;
     }

@@ -88,7 +88,11 @@
       const dim = [ `${randomNum()}00`, `${randomNum()}00` ];
       images.push({
         _id: `lesk-${Math.floor(Math.random() * Math.floor(10000)).toString()}`,
-        _path: `https://picsum.photos/${dim[0]}/${dim[1]}?q=${Math.floor(Math.random() * Math.floor(1000)).toString()}`,
+        attachment: {
+          _urls: {
+            'one-sixth': `https://picsum.photos/${dim[0]}/${dim[1]}?q=${Math.floor(Math.random() * Math.floor(1000)).toString()}`
+          }
+        },
         title,
         alt,
         credit,
