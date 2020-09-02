@@ -1,0 +1,15 @@
+$a-max-canvas: 1168px;
+
+.apos-editor-context {
+  display: flex;
+  padding-top: 50px;
+  background-color: var(--a-base-9);
+}
+
+.apos-editor-canvas {
+  width: $a-max-canvas;
+  margin: 0 auto;
+  box-shadow: 0 0 9px 0 rgba(0,0,0,0.15);
+  min-height: 100vh;
+  background-color: var(--a-background-primary);
+}

@@ -1,44 +1,47 @@
 <template>
-  <nav class="apos-admin-bar">
-    <AposLogo class="apos-admin-bar__logo" />
-    <ul class="apos-admin-bar__items">
-      <li
-        v-for="(item, index) in menuItems" :key="item.name"
-        class="apos-admin-bar__item"
-      >
-        <component
-          v-if="item.options" :is="item.options.href ? 'a' : 'button'"
-          class="apos-admin-bar__btn" :href="item.options.href"
-          v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+  <div class="apos-admin-bar-wrapper">
+    <div class="apos-admin-bar-spacer" ref="spacer"></div>
+    <nav class="apos-admin-bar" ref="adminBar">
+      <AposLogo class="apos-admin-bar__logo" />
+      <ul class="apos-admin-bar__items">
+        <li
+          v-for="(item, index) in menuItems" :key="item.name"
+          class="apos-admin-bar__item"
         >
-          {{ item.label }}
-        </component>
-        <AposContextMenu
-          v-else-if="item.items" class="apos-admin-bar__sub"
-          :menu="item.items" :button="{
-            label: item.label
-          }"
-          :tip-alignment="index > 1 ? 'right' : 'left'"
-        />
-      </li>
-      <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
-        <AposContextMenu
-          class="apos-admin-bar__create"
-          :menu="createMenu" :button="{
-            label: 'New item',
-            iconOnly: true,
-            icon: 'plus-icon',
-            type: 'primary'
-          }"
-          tip-alignment="right"
-        />
-      </li>
-    </ul>
-    <TheAposAdminBarUser
-      class="apos-admin-bar__user"
-      :user="user" :avatar-url="userAvatar"
-    />
-  </nav>
+          <component
+            v-if="item.options" :is="item.options.href ? 'a' : 'button'"
+            class="apos-admin-bar__btn" :href="item.options.href"
+            v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+          >
+            {{ item.label }}
+          </component>
+          <AposContextMenu
+            v-else-if="item.items" class="apos-admin-bar__sub"
+            :menu="item.items" :button="{
+              label: item.label
+            }"
+            :tip-alignment="index > 1 ? 'right' : 'left'"
+          />
+        </li>
+        <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+          <AposContextMenu
+            class="apos-admin-bar__create"
+            :menu="createMenu" :button="{
+              label: 'New item',
+              iconOnly: true,
+              icon: 'plus-icon',
+              type: 'primary'
+            }"
+            tip-alignment="right"
+          />
+        </li>
+      </ul>
+      <TheAposAdminBarUser
+        class="apos-admin-bar__user"
+        :user="user" :avatar-url="userAvatar"
+      />
+    </nav>
+  </div>
 </template>
 
 <script>
@@ -69,6 +72,7 @@ export default {
     }
   },
   mounted() {
+    this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     this.menuItems = [...this.items];
     // TODO: This will need to be an async call to get pieces as well as the
     // new page route.
