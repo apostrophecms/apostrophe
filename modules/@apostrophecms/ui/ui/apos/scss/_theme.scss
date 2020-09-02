@@ -11,6 +11,7 @@ $font-weights: (
   bold: 700
 );
 
+$font-size-base: 10px;
 $font-sizes: (
   default: 12px,
   meta: 10px,
@@ -31,6 +32,8 @@ $spacing-triple: $spacing-base * 3;
 $input-padding: $spacing-base * 1.5;
 $boolean-padding: $spacing-double;
 
+$menu-row-height: 68px;
+
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
   --a-primary-50: #{transparentize($color, 0.5)};
@@ -41,10 +44,11 @@ $boolean-padding: $spacing-double;
   // stylelint-enable
 }
 
-body {
+body.logged-in {
+  margin-top: $menu-row-height * 2;
   font-family: $font-default;
   font-weight: map-get($font-weights, medium);
-  font-size: 10px; // stylelint-disable-line
+  font-size: $font-size-base;
 }
 
 :root,

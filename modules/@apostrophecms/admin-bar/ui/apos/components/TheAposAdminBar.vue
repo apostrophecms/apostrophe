@@ -111,16 +111,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$menu-row-height: 68px;
 $menu-v-pad: 18px;
 $menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
-
-body {
-  margin-top: $menu-row-height * 2;
-}
 
 .apos-admin-bar {
   position: fixed;

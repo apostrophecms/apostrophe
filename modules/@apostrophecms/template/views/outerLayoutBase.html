@@ -14,7 +14,7 @@
     {% endblock %}
   </head>
   {# TODO: How does `apos-theme--primary-purple` get there? #}
-  <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
+  <body class="{% if data.user %}logged-in {% endif %}{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     {% component '@apostrophecms/template:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}
       <div id="apos-busy"></div>
