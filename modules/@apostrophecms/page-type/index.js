@@ -34,7 +34,7 @@ module.exports = {
         }
       },
       remove: [ 'trash' ],
-      groups: {
+      group: {
         meta: {
           label: 'Meta',
           fields: [ 'title', 'slug', 'type', 'published', 'orphan' ]

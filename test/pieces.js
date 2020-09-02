@@ -29,14 +29,17 @@ describe('Pieces', function() {
             alias: 'things',
             name: 'thing',
             label: 'Thing',
-            addFields: {
-              name: 'foo',
-              label: 'Foo',
-              type: 'string'
-            },
             publicApiProjection: {
               title: 1,
               _url: 1
+            }
+          },
+          fields: {
+            add: {
+              foo: {
+                label: 'Foo',
+                type: 'string'
+              }
             }
           }
         },
@@ -46,13 +49,16 @@ describe('Pieces', function() {
             alias: 'people',
             name: 'person',
             label: 'Person',
-            addFields: {
-              name: '_things',
-              type: 'join'
-            },
             publicApiProjection: {
               title: 1,
               _url: 1
+            }
+          },
+          fields: {
+            add: {
+              _things: {
+                type: 'join'
+              }
             }
           }
         },
@@ -95,9 +101,11 @@ describe('Pieces', function() {
               },
               addresses: {
                 type: 'array',
-                schema: {
-                  street: {
-                    type: 'string'
+                fields: {
+                  add: {
+                    street: {
+                      type: 'string'
+                    }
                   }
                 }
               },

@@ -75,6 +75,15 @@ export default {
     docId: {
       type: String,
       default: null
+    },
+    filterValues: {
+      type: Object,
+      default() {
+        return {
+          published: true,
+          trash: false
+        };
+      }
     }
   },
   emits: [ 'saved', 'safe-close' ],
@@ -155,7 +164,8 @@ export default {
       try {
         const getOnePath = `${this.moduleOptions.action}/${this.docId}`;
         docData = await apos.http.get(getOnePath, {
-          busy: true
+          busy: true,
+          qs: this.filterValues
         });
       } catch {
         // TODO: Add error notification. No client API for this yet.

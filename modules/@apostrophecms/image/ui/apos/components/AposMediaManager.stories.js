@@ -32,7 +32,11 @@ export const mediaManager = () => {
       </button>
       <AposMediaManager
         v-if="active"
+<<<<<<< HEAD
         moduleName="@apostrophecms/image"
+=======
+        moduleName="image"
+>>>>>>> 3.0
         @trash="handleTrash"
         @safe-close="finishExit"
       />

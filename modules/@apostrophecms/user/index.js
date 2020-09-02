@@ -59,107 +59,93 @@ module.exports = {
     adminOnly: true,
     searchable: false
   },
-  beforeSuperClass(self, options) {
-
-    options.addFields = [
-      {
-        type: 'string',
-        name: 'firstName',
-        label: 'First Name'
-      },
-      {
-        type: 'string',
-        name: 'lastName',
-        label: 'Last Name'
-      },
-      {
-        type: 'string',
-        name: 'title',
-        label: 'Full Name'
-      },
-      {
-        type: 'slug',
-        name: 'slug',
-        label: 'Slug',
-        prefix: 'user',
-        required: true
-      },
-      {
-        type: 'boolean',
-        name: 'disabled',
-        label: 'Login Disabled',
-        def: false
-      },
-      {
-        type: 'string',
-        name: 'username',
-        label: 'Username',
-        required: true
-      },
-      {
-        type: 'string',
-        name: 'email',
-        label: 'Email'
-      },
-      {
-        type: 'password',
-        name: 'password',
-        label: 'Password'
-      }
-    ].concat(options.addFields || []);
-
-    if (options.groups) {
-      options.addFields = options.addFields.concat([
-        {
-          type: 'select',
-          name: 'group',
-          label: 'Permission Group',
-          def: 'guest',
-          choices: []
+  fields(self, options) {
+    return {
+      add: {
+        firstName: {
+          type: 'string',
+          label: 'First Name'
         },
-        {
-          type: 'join',
-          name: '_groups',
-          label: 'Groups',
-          idsField: 'groupIds',
-          withType: '@apostrophecms/group',
-          contextual: true
+        lastName: {
+          type: 'string',
+          label: 'Last Name'
+        },
+        title: {
+          type: 'string',
+          label: 'Full Name'
+        },
+        slug: {
+          type: 'slug',
+          label: 'Slug',
+          prefix: 'user',
+          required: true
+        },
+        disabled: {
+          type: 'boolean',
+          label: 'Login Disabled',
+          def: false
+        },
+        username: {
+          type: 'string',
+          label: 'Username',
+          required: true
+        },
+        email: {
+          type: 'string',
+          name: 'email',
+          label: 'Email'
+        },
+        password: {
+          type: 'password',
+          name: 'password',
+          label: 'Password'
+        },
+        ...(options.groups
+          ? {
+            group: {
+              type: 'select',
+              label: 'Permission Group',
+              def: 'guest',
+              choices: []
+            },
+            _groups: {
+              type: 'join',
+              label: 'Groups',
+              idsField: 'groupIds',
+              withType: '@apostrophecms/group',
+              contextual: true
+            }
+          } : {
+            _groups: {
+              type: 'join',
+              label: 'Groups',
+              withType: '@apostrophecms/group'
+            }
+          }
+        )
+      },
+      remove: [ 'published' ],
+      group: {
+        basics: {
+          label: 'Basics',
+          fields: [
+            'firstName',
+            'lastName',
+            'title',
+            'username',
+            'email',
+            'password',
+            'slug',
+            'group',
+            '_groups',
+            'disabled',
+            'slug'
+          ]
         }
-      ]);
-    } else {
-      options.addFields = options.addFields.concat([ {
-        type: 'join',
-        name: '_groups',
-        label: 'Groups',
-        idsField: 'groupIds',
-        withType: '@apostrophecms/group'
-      } ]);
-    }
-
-    options.removeFields = (options.defaultRemoveFields || [
-      'published'
-    ]).concat(options.removeFields || []);
-
-    options.removeFilters = (options.defaultRemoveFilters || [ 'published' ]).concat(options.removeFilters || []);
-
-    options.arrangeFields = [ {
-      name: 'basics',
-      label: 'Basics',
-      fields: [
-        'firstName',
-        'lastName',
-        'title',
-        'username',
-        'email',
-        'password',
-        'slug',
-        'group',
-        '_groups',
-        'disabled',
-        'slug'
-      ]
-    } ].concat(options.arrangeFields || []);
+      }
+    };
   },
+
   async init(self, options) {
 
     self.apos.task.add('@apostrophecms/user', 'add', 'Usage: node app @apostrophecms/user:add username groupname\n\n' + 'This adds a new user and assigns them to a group.\n' + 'You will be prompted for a password.', async function (apos, argv) {
