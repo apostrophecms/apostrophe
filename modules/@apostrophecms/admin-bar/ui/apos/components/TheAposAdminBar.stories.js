@@ -15,15 +15,27 @@ export const adminMenu = () => {
     methods: {
       handler(action) {
         console.log(`heard ${action}`);
+      },
+      logClick(name) {
+        console.info('Admin click 👆', name);
       }
+    },
+    mounted() {
+      apos.bus.$on('admin-menu-click', this.logClick);
+    },
+    destroyed() {
+      apos.bus.$off('admin-menu-click', this.logClick);
     },
     components: {
       TheAposAdminBar
     },
     template: `
       <div>
-        <TheAposAdminBar v-on:click="handler" :items="menuItems" />
-      </div>
+        <TheAposAdminBar
+          :items="menuItems"
+          @click="handler"
+        />
+        </div>
     `
   };
 };
