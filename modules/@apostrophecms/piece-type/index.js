@@ -198,18 +198,21 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
+
+      const commonValues = {
+        any: null,
+        false: false,
+        true: true
+      };
       const publishedValues = {
         null: true,
-        'any': null,
-        'false': false,
-        'true': true
+        ...commonValues
       };
       const trashValues = {
         null: false,
-        'any': null,
-        'false': false,
-        'true': true
+        ...commonValues
       };
+
       const published = publishedValues[req.query.published];
       const trash = trashValues[req.query.trash];
       const doc = await self.getRestQuery(req).and({ _id }).published(published).trash(trash).toObject();

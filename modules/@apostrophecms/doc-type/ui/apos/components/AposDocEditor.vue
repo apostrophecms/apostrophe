@@ -81,7 +81,7 @@ export default {
       default() {
         return {
           published: true,
-          trashh: false
+          trash: false
         };
       }
     }
