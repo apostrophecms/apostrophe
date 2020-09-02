@@ -645,7 +645,6 @@
   };
 
   apos.http.post = async (url, options) => {
-    console.info('🧺', options);
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
     if (options.qs) {

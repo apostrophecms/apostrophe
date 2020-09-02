@@ -296,7 +296,10 @@ module.exports = {
           }
         }
         info.used = true;
-        await self.db.updateOne({ _id: info._id }, info);
+
+        await self.db.updateOne({ _id: info._id }, {
+          $set: info
+        });
         object[field.name] = info;
       },
       fieldTypePartial(data) {

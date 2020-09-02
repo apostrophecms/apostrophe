@@ -34,12 +34,15 @@
         </template>
         <template #bodyMain>
           <AposMediaManagerDisplay
-            :media="media" ref="display"
+            ref="display"
+            :media="media"
+            :module-options="options"
             @edit="updateEditing"
             v-model="checked"
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
+            @uploaded="getMedia"
           />
         </template>
       </AposModalBody>

@@ -18,7 +18,7 @@
         <input
           type="file" class="apos-sr-only"
           ref="apos-upload-input"
-          @input="updateUpload"
+          @input="uploadMedia"
         >
       </label>
       <div
@@ -77,6 +77,10 @@ export default {
       type: [ Array, Boolean ],
       default: false
     },
+    moduleOptions: {
+      type: Object,
+      required: true
+    },
     media: {
       type: Array,
       default() {
@@ -88,7 +92,8 @@ export default {
     'select',
     'select-series',
     'select-another',
-    'change'
+    'change',
+    'uploaded'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -114,30 +119,58 @@ export default {
     }
   },
   methods: {
-    async updateUpload (event) {
+    async uploadMedia (event) {
       const file = event.target.files[0];
+
+      const emptyDoc = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          _newInstance: true
+        }
+      });
+
+      // While the upload is working, set an uploading animation.
+      await this.insertImage(file, emptyDoc);
+
+      // When complete, refresh the image grid, with the new images at top.
+      this.$emit('uploaded');
+
+      // If uploading one image, when complete, load up the edit schema in the right rail.
+      // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
+    },
+    async insertImage(file, emptyDoc) {
       const formData = new window.FormData();
 
       formData.append('file', file);
+      let attachment;
 
       // Make an async request to upload the image.
       try {
-        const attachmentObj = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+        attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
           busy: true,
-          // headers: {
-          //   'content-type': 'multipart/form-data'
-          // },
           body: formData
         });
-        console.info('🧢', attachmentObj);
-      } catch (err) {
-        console.error('🎒', err);
+      } catch (error) {
+        console.error('Error uploading media.', error);
+        // apos.notify('Error uploading media.');
+        return;
       }
-      // While the upload is working, set an uploading animation.
-      // If uploading one image, when complete, load up the edit schema in the right rail.
-      // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
-      // When complete, refresh the image grid, with the new images at top.
+
+      const imageData = Object.assign(emptyDoc, {
+        title: attachment.title,
+        attachment
+      });
+
+      try {
+        await apos.http.post(this.moduleOptions.action, {
+          body: imageData,
+          busy: true
+        });
+      } catch (error) {
+        console.error('Error saving media.', error);
+        // apos.notify('Error saving media.');
+      }
     }
+
   }
 };
 </script>
