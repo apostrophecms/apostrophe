@@ -80,7 +80,6 @@
       @close="close"
       @insert="insert"
       :options="addWidgetOptions"
-      :doc-id="docId"
     />
   </div>
 </template>
@@ -105,10 +104,6 @@ export default {
     },
     widgetOptions: {
       type: Object,
-      required: true
-    },
-    docId: {
-      type: String,
       required: true
     }
   },
