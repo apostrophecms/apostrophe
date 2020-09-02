@@ -27,29 +27,27 @@ module.exports = {
     label: 'Group',
     pluralLabel: 'Groups',
     searchable: false,
-    adminOnly: true,
-    addFields: [
-      {
+    adminOnly: true
+  },
+  fields: {
+    add: {
+      _users: {
         type: 'joinReverse',
-        name: '_users',
         label: 'Users',
-        idsField: 'groupIds',
         withType: '@apostrophecms/user',
         ifOnlyOne: true
       },
-      {
+      permissions: {
         type: 'checkboxes',
-        name: 'permissions',
         label: 'Permissions',
         // This gets patched at modulesReady time
         choices: []
       }
-    ]
+    },
+    remove: [ 'published' ]
   },
-  beforeSuperClass(self, options) {
-    options.removeFields = (options.minimumRemoved || [ 'published' ]).concat(options.removeFields || []);
-
-    options.removeFilters = [ 'published' ].concat(options.removeFilters || []);
+  filters: {
+    remove: [ 'published' ]
   },
   init(self, options) {
     self.enableAddGroupTask();

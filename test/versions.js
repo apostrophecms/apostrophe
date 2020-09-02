@@ -35,13 +35,14 @@ describe('Versions', function() {
               nicknames: {
                 label: 'Nicknames',
                 type: 'array',
-                schema: [
-                  {
-                    type: 'string',
-                    name: 'nickname',
-                    label: 'Nickname'
+                fields: {
+                  add: {
+                    nickname: {
+                      type: 'string',
+                      label: 'Nickname'
+                    }
                   }
-                ]
+                }
               },
               _poems: {
                 label: 'Poems',
