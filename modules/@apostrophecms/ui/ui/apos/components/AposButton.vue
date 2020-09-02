@@ -5,6 +5,7 @@
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
     :type="buttonType"
+    :role="role"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -60,8 +61,8 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: String,
-      default: ''
+      type: [String, Boolean],
+      default: false
     }
   },
   emits: [ 'click' ],
@@ -71,6 +72,13 @@ export default {
     };
   },
   computed: {
+    role () {
+      if (this.type === 'group') {
+        return 'menuitem'
+      }
+
+      return false
+    },
     tabindex() {
       return this.disableFocus ? '-1' : '0';
     },
