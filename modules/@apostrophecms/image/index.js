@@ -17,7 +17,12 @@ module.exports = {
     alias: 'image',
     perPage: 20,
     insertViaUpload: true,
-    searchable: false
+    searchable: false,
+    browser: {
+      components: {
+        managerModal: 'AposMediaManager'
+      }
+    }
   },
   fields: {
     add: {
@@ -191,6 +196,13 @@ module.exports = {
             self.apos.launder.integer(req.body.minSize[1])
           ];
         }
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposMediaManager'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },
