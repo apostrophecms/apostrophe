@@ -11,7 +11,7 @@
       <ol class="apos-media-manager-selections__items">
         <li
           v-for="item in items"
-          :key="item.id" class="apos-media-manager-selections__item"
+          :key="item._id" class="apos-media-manager-selections__item"
         >
           <div class="apos-media-manager-selections__item-thumb-container">
             <img
@@ -25,7 +25,7 @@
             </div>
             <AposButton
               label="Edit" type="quiet"
-              @click="edit(item.id)"
+              @click="edit(item._id)"
             />
           </div>
         </li>
