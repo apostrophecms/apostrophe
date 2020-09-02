@@ -67,7 +67,6 @@
 </template>
 
 <script>
-// TODO: Set up Storybook story for this component
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
@@ -103,7 +102,7 @@ export default {
       return window.apos.modules[this.moduleName];
     },
     selected() {
-      return this.media.filter(item => this.checked.includes(item.id));
+      return this.media.filter(item => this.checked.includes(item._id));
     }
   },
   watch: {
@@ -135,7 +134,7 @@ export default {
           qs
         }
       ));
-      console.info(getResponse);
+
       this.media = getResponse.results;
     },
     clearSelected() {
@@ -143,7 +142,7 @@ export default {
       this.editing = null;
     },
     updateEditing(id) {
-      this.editing = this.media.find(item => item.id === id);
+      this.editing = this.media.find(item => item._id === id);
     },
 
     // select setters
@@ -175,8 +174,8 @@ export default {
         return;
       }
 
-      let beginIndex = this.media.findIndex(item => item.id === this.lastSelected);
-      let endIndex = this.media.findIndex(item => item.id === id);
+      let beginIndex = this.media.findIndex(item => item._id === this.lastSelected);
+      let endIndex = this.media.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
 
       if (direction < 0) {
@@ -188,12 +187,12 @@ export default {
       const sliced = this.media.slice(beginIndex, endIndex);
       // always want to check, never toggle
       sliced.forEach(item => {
-        if (!this.checked.includes(item.id)) {
-          this.checked.push(item.id);
+        if (!this.checked.includes(item._id)) {
+          this.checked.push(item._id);
         }
       });
 
-      this.lastSelected = sliced[sliced.length - 1].id;
+      this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = null;
     },
 
@@ -204,9 +203,9 @@ export default {
         this.clearSelected();
       } else {
         // select all
-        this.checked = this.media.map(item => item.id);
+        this.checked = this.media.map(item => item._id);
         this.editing = null;
-        this.lastSelected = this.media[this.media.length - 1].id;
+        this.lastSelected = this.media[this.media.length - 1]._id;
       }
     },
 

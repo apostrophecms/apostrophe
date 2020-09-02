@@ -18,29 +18,29 @@
       </button>
       <div
         class="apos-media-manager-display__cell" v-for="item in media"
-        :key="generateId(item.id)"
-        :class="{'is-selected': checked.includes(item.id)}"
+        :key="generateId(item._id)"
+        :class="{'is-selected': checked.includes(item._id)}"
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
             tabindex="-1"
             :field="{
-              name: item.id,
+              name: item._id,
               type: 'checkbox',
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
               disableFocus: true
             }"
             :status="{}"
-            :choice="{ value: item.id }"
+            :choice="{ value: item._id }"
             v-model="checkedProxy"
           />
         </div>
         <button
           class="apos-media-manager-display__select"
-          @click.exact="$emit('select', item.id)"
-          @click.shift="$emit('select-series', item.id)"
-          @click.meta="$emit('select-another', item.id)"
+          @click.exact="$emit('select', item._id)"
+          @click.shift="$emit('select-series', item._id)"
+          @click.meta="$emit('select-another', item._id)"
         >
           <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
           <img
