@@ -6,7 +6,6 @@
       tip-alignment="left"
       :index="0"
       :widget-options="options.widgets"
-      :doc-id="docId"
     />
     <div class="apos-areas-widgets-list">
       <div
@@ -52,7 +51,6 @@
           tip-alignment="left"
           :index="i + 1"
           :widget-options="options.widgets"
-          :doc-id="docId"
         />
       </div>
     </div>
