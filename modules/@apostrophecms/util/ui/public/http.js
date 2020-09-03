@@ -12,7 +12,7 @@
   // `options.body`. See `apos.http.remote` for details.
   // You do NOT have to pass a callback unless you must support IE11
   // and do not want to include a promise polyfill in your build.
- 
+
   apos.http.post = function(url, options, callback) {
     return apos.http.remote('POST', url, options, callback);
   };
