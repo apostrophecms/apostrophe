@@ -93,7 +93,8 @@ export default {
     'select-series',
     'select-another',
     'change',
-    'uploaded'
+    'upload-started',
+    'upload-complete'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -120,6 +121,7 @@ export default {
   },
   methods: {
     async uploadMedia (event) {
+      this.$emit('upload-started');
       const file = event.target.files[0];
 
       const emptyDoc = await apos.http.post(this.moduleOptions.action, {
@@ -132,7 +134,7 @@ export default {
       await this.insertImage(file, emptyDoc);
 
       // When complete, refresh the image grid, with the new images at top.
-      this.$emit('uploaded');
+      this.$emit('upload-complete');
 
       // TODO: If uploading one image, when complete, load up the edit schema in the right rail.
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
@@ -146,7 +148,6 @@ export default {
       // Make an async request to upload the image.
       try {
         attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
-          busy: true,
           body: formData
         });
       } catch (error) {
@@ -162,8 +163,7 @@ export default {
 
       try {
         await apos.http.post(this.moduleOptions.action, {
-          body: imageData,
-          busy: true
+          body: imageData
         });
       } catch (error) {
         console.error('Error saving media.', error);

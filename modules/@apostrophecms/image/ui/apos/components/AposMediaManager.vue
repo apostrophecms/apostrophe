@@ -42,7 +42,8 @@
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
-            @uploaded="getMedia"
+            @upload-started="uploading = true"
+            @upload-complete="completeUploading"
           />
         </template>
       </AposModalBody>
@@ -91,6 +92,7 @@ export default {
         showModal: false
       },
       editing: null,
+      uploading: false,
       checked: [],
       lastSelected: null,
       emptyDisplay: {
@@ -139,6 +141,10 @@ export default {
       ));
 
       this.media = getResponse.results;
+    },
+    async completeUploading () {
+      this.uploading = false;
+      await this.getMedia();
     },
     clearSelected() {
       this.checked = [];
