@@ -110,7 +110,9 @@
     var data = options.body;
     var keys;
     var i;
-    url = apos.http.addQueryToUrl(url, data);
+    if (options.qs) {
+      url = apos.http.addQueryToUrl(url, options.qs);
+    }
 
     xmlhttp.open(method, url);
     var formData = window.FormData && (data instanceof window.FormData);
