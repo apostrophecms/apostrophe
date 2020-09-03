@@ -48,9 +48,12 @@ export default {
     return {
       browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
       searchList: [],
-      items: this.listItems,
+      items: this.value.data || this.listItems,
       lastSearches: {}
     };
+  },
+  mounted() {
+    this.validateAndEmit();
   },
   watch: {
     next: function () {
@@ -118,7 +121,7 @@ export default {
     validateAndEmit () {
       // override method from mixin to avoid standard behavior
       this.$emit('input', {
-        data: this.items.map(item => item._id),
+        data: this.items,
         error: this.validate(this.items)
       });
     },
