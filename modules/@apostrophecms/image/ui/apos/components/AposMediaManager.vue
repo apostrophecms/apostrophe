@@ -44,6 +44,7 @@
             @select-another="selectAnother"
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
+            @create-placeholder="createPlaceholder"
           />
         </template>
       </AposModalBody>
@@ -141,6 +142,13 @@ export default {
       ));
 
       this.media = getResponse.results;
+    },
+    createPlaceholder(dimensions) {
+      this.media.unshift({
+        _id: 'placeholder',
+        title: 'placeholder image',
+        dimensions
+      });
     },
     async completeUploading () {
       this.uploading = false;

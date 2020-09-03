@@ -28,6 +28,7 @@
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
+            v-show="item._id !== 'placeholder'"
             tabindex="-1"
             :field="{
               name: item._id,
@@ -42,13 +43,21 @@
           />
         </div>
         <button
+          :disabled="item._id === 'placeholder'"
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
           @click.meta="$emit('select-another', item._id)"
+          ref="btns"
         >
+          <div
+            v-if="item.dimensions"
+            class="apos-media-manager-display__placeholder"
+            :style="getPlaceholderStyles(item)"
+          />
           <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
           <img
+            v-else
             class="apos-media-manager-display__media"
             :src="item.attachment._urls['one-sixth']" :alt="item.title"
           >
@@ -94,7 +103,8 @@ export default {
     'select-another',
     'change',
     'upload-started',
-    'upload-complete'
+    'upload-complete',
+    'create-placeholder'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -131,6 +141,7 @@ export default {
       });
 
       // TODO: While the upload is working, set an uploading animation.
+      this.createPlaceholder(file);
       await this.insertImage(file, emptyDoc);
 
       // When complete, refresh the image grid, with the new images at top.
@@ -138,6 +149,44 @@ export default {
 
       // TODO: If uploading one image, when complete, load up the edit schema in the right rail.
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
+    },
+    createPlaceholder(file) {
+      const img = new Image();
+      const dimensions = {};
+      const objectUrl = window.URL.createObjectURL(file);
+      const self = this;
+
+      img.onload = function () {
+        dimensions.width = this.width;
+        dimensions.height = this.height;
+        window.URL.revokeObjectURL(objectUrl);
+
+        self.$emit('create-placeholder', dimensions);
+      };
+      img.src = objectUrl;
+    },
+    getPlaceholderStyles(item) {
+      console.info(item);
+      const {
+        width: parentWidth,
+        height: parentHeight
+      } = this.$refs.btns[0].getBoundingClientRect();
+
+      const parentRatio = parentWidth / parentHeight;
+      const itemRatio = item.dimensions.width / item.dimensions.height;
+
+      if (parentRatio < itemRatio) {
+        return {
+          width: `${item.dimensions.width}px`,
+          paddingTop: `${(item.dimensions.height / item.dimensions.width) * 100}%`
+        };
+      } else {
+        return {
+          height: `${parentHeight}px`,
+          width: `${parentHeight * itemRatio}px`
+        };
+      }
+
     },
     async insertImage(file, emptyDoc) {
       const formData = new window.FormData();
@@ -228,11 +277,16 @@ export default {
     opacity: 1;
   }
 
-  .apos-media-manager-display__media {
+  .apos-media-manager-display__media,
+  .apos-media-manager-display__placeholder {
     max-width: 100%;
     max-height: 100%;
     opacity: 0.85;
     @include apos-transition();
+  }
+
+  .apos-media-manager-display__placeholder {
+    background-color: var(--a-base-9);
   }
 
   .apos-media-manager-display__select {
@@ -245,19 +299,31 @@ export default {
     border: 1px solid var(--a-base-7);
     @include apos-transition();
 
-    // TODO: Confirm this doesn't need the !important it previously had.
     &:active + .apos-media-manager-display__checkbox {
       opacity: 1;
     }
+
+    &[disabled] {
+      cursor: wait;
+    }
   }
 
-  .apos-media-manager-display__cell.is-selected .apos-media-manager-display__select,
+  // The button when hovering/focused
   .apos-media-manager-display__select:hover,
   .apos-media-manager-display__select:focus,
+  // The button when selected
+  .apos-media-manager-display__cell.is-selected .apos-media-manager-display__select,
+  // The button when hovering on the checkbox
   .apos-media-manager-display__checkbox:hover ~ .apos-media-manager-display__select {
     border-color: var(--a-primary);
     outline: 1px solid var(--a-primary);
     box-shadow: 0 0 10px 1px var(--a-base-7);
+
+    &[disabled] {
+      border-color: var(--a-base-7);
+      outline-width: 0;
+      box-shadow: none;
+    }
   }
 
   .apos-media-manager-display__media-drop {
