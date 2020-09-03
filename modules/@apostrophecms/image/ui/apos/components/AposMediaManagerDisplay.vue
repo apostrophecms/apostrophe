@@ -1,7 +1,7 @@
 <template>
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
-      <button class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
+      <label class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
         <div class="apos-media-manager-display__media-drop__inner">
           <div class="apos-media-manager-display__media-drop__icon">
             <CloudUpload :size="64" />
@@ -15,7 +15,12 @@
             </p>
           </div>
         </div>
-      </button>
+        <input
+          type="file" class="apos-sr-only"
+          ref="apos-upload-input"
+          @input="uploadMedia"
+        >
+      </label>
       <div
         class="apos-media-manager-display__cell" v-for="item in media"
         :key="generateId(item._id)"
@@ -72,6 +77,10 @@ export default {
       type: [ Array, Boolean ],
       default: false
     },
+    moduleOptions: {
+      type: Object,
+      required: true
+    },
     media: {
       type: Array,
       default() {
@@ -83,7 +92,8 @@ export default {
     'select',
     'select-series',
     'select-another',
-    'change'
+    'change',
+    'uploaded'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -95,6 +105,72 @@ export default {
         this.$emit('change', val);
       }
     }
+  },
+  mounted() {
+    // Get the acceptable file types, if set.
+    const imageGroup = apos.modules['@apostrophecms/attachment'].fileGroups
+      .find(group => group.name === 'images');
+
+    if (imageGroup && this.$refs['apos-upload-input']) {
+      const acceptTypes = imageGroup.extensions.map(type => `.${type}`)
+        .join(',');
+      console.info(acceptTypes);
+      this.$refs['apos-upload-input'].setAttribute('accept', acceptTypes);
+    }
+  },
+  methods: {
+    async uploadMedia (event) {
+      const file = event.target.files[0];
+
+      const emptyDoc = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          _newInstance: true
+        }
+      });
+
+      // TODO: While the upload is working, set an uploading animation.
+      await this.insertImage(file, emptyDoc);
+
+      // When complete, refresh the image grid, with the new images at top.
+      this.$emit('uploaded');
+
+      // TODO: If uploading one image, when complete, load up the edit schema in the right rail.
+      // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
+    },
+    async insertImage(file, emptyDoc) {
+      const formData = new window.FormData();
+
+      formData.append('file', file);
+      let attachment;
+
+      // Make an async request to upload the image.
+      try {
+        attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+          busy: true,
+          body: formData
+        });
+      } catch (error) {
+        console.error('Error uploading media.', error);
+        // apos.notify('Error uploading media.');
+        return;
+      }
+
+      const imageData = Object.assign(emptyDoc, {
+        title: attachment.title,
+        attachment
+      });
+
+      try {
+        await apos.http.post(this.moduleOptions.action, {
+          body: imageData,
+          busy: true
+        });
+      } catch (error) {
+        console.error('Error saving media.', error);
+        // apos.notify('Error saving media.');
+      }
+    }
+
   }
 };
 </script>
@@ -186,6 +262,7 @@ export default {
 
   .apos-media-manager-display__media-drop {
     @include apos-button-reset();
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;

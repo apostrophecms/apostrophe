@@ -107,7 +107,7 @@
     var busyName = options.busy === true ? 'busy' : options.busy;
     var xmlhttp = new XMLHttpRequest();
     var csrfToken = apos.csrfCookieName ? apos.util.getCookie(apos.csrfCookieName) : 'csrf-fallback';
-    var data = options.qs;
+    var data = options.body;
     var keys;
     var i;
     url = apos.http.addQueryToUrl(url, data);

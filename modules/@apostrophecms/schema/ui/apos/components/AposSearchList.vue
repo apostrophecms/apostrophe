@@ -1,11 +1,20 @@
 <template>
   <ul class="apos-search">
-    <li class="apos-search__item item" v-for="item in list" :key="item._id" @click="select(item)">
+    <li
+      class="apos-search__item item" v-for="item in list"
+      :key="item._id" @click="select(item)"
+    >
       <div class="item__main">
-        <div class="item__title">{{ item.title }}</div>
-        <div class="item__slug">{{ item.slug }}</div>
+        <div class="item__title">
+          {{ item.title }}
+        </div>
+        <div class="item__slug">
+          {{ item.slug }}
+        </div>
       </div>
-      <div class="item__type">{{ getTypeLabel(item.type) }}</div>
+      <div class="item__type">
+        {{ getTypeLabel(item.type) }}
+      </div>
     </li>
   </ul>
 </template>
@@ -22,7 +31,7 @@ export default {
       type: Array
     }
   },
-  emits: ['select'],
+  emits: [ 'select' ],
   methods: {
     getTypeLabel(type) {
       return apos.modules[type].label;
@@ -35,7 +44,7 @@ export default {
       }
     }
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>

@@ -221,7 +221,7 @@
         managerModal: 'AposPiecesManager'
       }
     },
-    image: {
+    '@apostrophecms/image': {
       name: '@apostrophecms/image',
       label: 'Image',
       pluralLabel: 'Images',
@@ -425,6 +425,60 @@
         managerModal: 'AposMediaManager'
       },
       alias: 'image'
+    },
+    '@apostrophecms/attachment': {
+      action: '/api/v1/@apostrophecms/attachment',
+      fileGroups: [
+        {
+          name: 'images',
+          label: 'Images',
+          extensions: [
+            'gif',
+            'jpg',
+            'png'
+          ],
+          extensionMaps: {
+            jpeg: 'jpg'
+          },
+          image: true
+        },
+        {
+          name: 'office',
+          label: 'Office',
+          extensions: [
+            'txt',
+            'rtf',
+            'pdf',
+            'xls',
+            'ppt',
+            'doc',
+            'pptx',
+            'sldx',
+            'ppsx',
+            'potx',
+            'xlsx',
+            'xltx',
+            'csv',
+            'docx',
+            'dotx'
+          ],
+          extensionMaps: {},
+          image: false
+        }
+      ],
+      name: 'attachment',
+      uploadsUrl: '/uploads',
+      croppable: {
+        gif: true,
+        jpg: true,
+        png: true
+      },
+      sized: {
+        gif: true,
+        jpg: true,
+        png: true
+      },
+      alias: 'attachment'
     }
   };
 
@@ -556,6 +610,9 @@
 
   apos.http.postResponses = {
     '/api/v1/products': {
+      status: 200
+    },
+    '/api/v1/image-upload-mock': {
       status: 200
     }
   };
