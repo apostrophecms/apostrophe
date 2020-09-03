@@ -125,7 +125,7 @@ export default {
     if (imageGroup && this.$refs['apos-upload-input']) {
       const acceptTypes = imageGroup.extensions.map(type => `.${type}`)
         .join(',');
-      console.info(acceptTypes);
+
       this.$refs['apos-upload-input'].setAttribute('accept', acceptTypes);
     }
   },
@@ -166,7 +166,6 @@ export default {
       img.src = objectUrl;
     },
     getPlaceholderStyles(item) {
-      console.info(item);
       const {
         width: parentWidth,
         height: parentHeight
