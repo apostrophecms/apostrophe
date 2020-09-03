@@ -50,7 +50,7 @@
           <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
           <img
             class="apos-media-manager-display__media"
-            :src="item.path" :alt="item.title"
+            :src="item.attachment._urls['one-sixth']" :alt="item.title"
           >
         </button>
       </div>

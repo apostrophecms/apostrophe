@@ -78,6 +78,17 @@ module.exports = {
       }
     }
   },
+  extendRestApiRoutes: (self, options) => ({
+    async getAll (_super, req) {
+      const pieces = await _super(req);
+
+      self.apos.attachment.all(pieces, {
+        annotate: true
+      });
+
+      return pieces;
+    }
+  }),
   methods(self, options) {
     return {
       // This method is available as a template helper: apos.image.first
