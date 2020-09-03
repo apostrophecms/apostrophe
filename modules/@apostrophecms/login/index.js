@@ -350,7 +350,15 @@ module.exports = {
 
       getBrowserData(req) {
         return {
-          action: self.action
+          action: self.action,
+          ...(req.user ? {
+            user: {
+              title: req.user.title,
+              _id: req.user._id,
+              username: req.user.username,
+              email: req.user.email
+            }
+          } : {})
         };
       }
 
