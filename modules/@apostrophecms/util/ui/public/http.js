@@ -12,6 +12,7 @@
   // `options.body`. See `apos.http.remote` for details.
   // You do NOT have to pass a callback unless you must support IE11
   // and do not want to include a promise polyfill in your build.
+ 
   apos.http.post = function(url, options, callback) {
     return apos.http.remote('POST', url, options, callback);
   };
@@ -67,9 +68,10 @@
   // `fullResponse` (if true, return an object with `status`, `headers` and `body`
   // properties, rather than returning the body directly; the individual `headers` are canonicalized
   // to lowercase names. If there are duplicate headers after canonicalization only the
-  // last value is returned.
-  //
-  // `If a header appears multiple times an array is returned for it)
+  // last value is returned. If a header appears multiple times an array is returned for it)
+  // `progress` (may be a function accepting `loaded` and `total` parameters. May never be called. If
+  // called, `loaded` will be the bytes sent or received so far, and `total` will be the total bytes to be
+  // sent or received. If the total is unknown, it will be `null`)
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
@@ -198,7 +200,12 @@
     xmlhttp.addEventListener('error', function(evt) {
       return callback(evt);
     });
-    xmlhttp.addEventListener('loadend', function () {
+    xmlhttp.addEventListener('progress', function(evt) {
+      if (options.progress) {
+        options.progress(evt.loaded, evt.lengthComputable ? evt.total : null);
+      }
+    });
+    xmlhttp.addEventListener('loadend', function (evt) {
       if (options.busy) {
         busyActive[busyName]--;
         if (!busyActive[busyName]) {
