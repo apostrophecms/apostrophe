@@ -246,7 +246,7 @@ body {
   // Adjust button padding and svg size to have a large plus icon while keeping
   // the button size the same.
   /deep/ .apos-context-menu__btn {
-    padding: 5px;
+    padding: 4px;
   }
 
   /deep/ .apos-context-menu__popup {
