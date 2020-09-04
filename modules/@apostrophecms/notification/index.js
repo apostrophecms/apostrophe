@@ -16,6 +16,8 @@
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
 
+const Promise = require('bluebird');
+
 module.exports = {
   options: {
     alias: 'notification'
@@ -40,16 +42,10 @@ module.exports = {
       const message = self.apos.launder.string(req.body.message);
       const strings = self.apos.launder.strings(req.body.strings);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
-      const id = self.apos.launder.id(req.body.id);
-      await self.trigger.apply(self, [
-        req,
-        message
-      ].concat(strings).concat([ {
+      return self.trigger(req, message, ...strings, {
         dismiss,
-        type,
-        id
-      } ]));
-      return self.trigger(req, req.body.message, req.body.options || {});
+        type
+      });
     },
     put(req, _id) {
       throw self.apos.error('unimplemented');
@@ -130,6 +126,8 @@ module.exports = {
           }
           strings.push(arguments[i++]);
         }
+        // i18n and apply the strings
+        message = req.__(message, ...strings);
         if (i === arguments.length - 1 && typeof arguments[i] === 'object') {
           options = arguments[i++];
         } else {
@@ -144,8 +142,7 @@ module.exports = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message,
-          strings
+          message
         };
 
         if (options.dismiss === true) {
@@ -218,7 +215,7 @@ module.exports = {
   },
   middleware(self, options) {
     return {
-      // This middleware is essentially a POST route at
+      // This middleware is essentially a GET route at
       // `/api/v1/@apostrophecms/notification/poll`. It is implemented
       // as middleware to allow it to run before `req.data.global` is loaded,
       // which can be a very expensive operation on some sites and should
@@ -232,16 +229,15 @@ module.exports = {
       // its rendered, localized markup, as well as `_id`, `createdAt`
       // and `id` (if one was provided when it was triggered).
       //
-      // The client must provide `req.body.displayingIds`,
-      // an array of notification `_id` properties it is already displaying.
-      // Without this, all notifications that have not been dismissed via the
-      // dismiss route are sent.
-      //
-      // If any of the ids in `displayingIds` have been recently dismissed,
-      // the response will include them in its `dismissed` property.
+      // The client should provide `modifiedOnOrSince` and `seenIds` in the
+      // query. `modifiedOnOrSince` is the timestamp of the most recent
+      // notification modification time (updatedAt) the client has already seen,
+      // and `seenIds` must contain the _ids of the notifications with that
+      // exact notification time that the client has already seen, for
+      // disambiguation.
       //
       // Waits up to 10 seconds for new notifications (long polling),
-      // but then respond with an empty array to avoid proxy server timeouts.
+      // but then responds with an empty array to avoid proxy server timeouts.
       //
       // As usual POST is used to avoid unwanted caching of the response.
       notifications: {
@@ -284,7 +280,8 @@ module.exports = {
               seenIds
             });
             if (!notifications.length && !dismissed.length) {
-              return setTimeout(attempt, self.options.queryInterval || 1000);
+              await Promise.delay(self.options.queryInterval || 1000);
+              return attempt();
             }
 
             return res.send({
