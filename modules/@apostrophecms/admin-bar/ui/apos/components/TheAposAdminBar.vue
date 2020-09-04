@@ -111,9 +111,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$menu-row-height: 68px;
+$menu-row-height: 50px;
 $menu-v-pad: 18px;
-$menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
@@ -152,7 +151,7 @@ body {
 
 .apos-admin-bar__logo {
   display: inline-block;
-  height: $menu-item-height;
+  height: 32px;
 }
 
 .apos-admin-bar__create /deep/ .apos-context-menu__btn,
