@@ -41,7 +41,7 @@
         :user="user" :avatar-url="userAvatar"
       />
     </div>
-    <div class="apos-admin-bar__row">
+    <div class="apos-admin-bar__row apos-admin-bar__row--utils">
       <AposButton
         type="default" label="Page Settings"
         icon="cog-icon" class="apos-admin-bar__btn"
@@ -117,6 +117,7 @@ $menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
+$admin-bar-border: 1px solid var(--a-base-9);
 
 body {
   margin-top: $menu-row-height * 2;
@@ -136,7 +137,7 @@ body {
   align-items: center;
   height: $menu-row-height;
   padding: 0 $admin-bar-h-pad 0 0;
-  border-bottom: 1px solid var(--a-base-9);
+  border-bottom: $admin-bar-border;
 }
 
 .apos-admin-bar__items {
@@ -219,8 +220,19 @@ body {
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__dropdown-items .apos-admin-bar__btn {
-  padding: 25px;
+.apos-admin-bar__btn {
+  .apos-admin-bar__row--utils & {
+    border-right: $admin-bar-border;
+
+    &:hover,
+    &:focus {
+      border-width: 1px;
+    }
+  }
+
+  .apos-admin-bar__dropdown-items & {
+    padding: 25px;
+  }
 }
 
 .apos-admin-bar__dropdown-items {
