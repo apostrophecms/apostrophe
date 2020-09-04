@@ -84,7 +84,17 @@ export default {
     }
   },
   mounted() {
-    this.menuItems = [ ...this.items ];
+    this.menuItems = [
+      ...this.items.map(item => {
+        if (item.items) {
+          item.items.forEach(subitem => {
+            // The context menu needs an `action` property to emit.
+            subitem.action = subitem.name;
+          });
+        }
+        return item;
+      })
+    ];
     // TODO: This will need to be an async call to get pieces as well as the
     // new page route.
     this.createMenu = [
@@ -117,10 +127,6 @@ $menu-h-space: 16px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
 $admin-bar-border: 1px solid var(--a-base-9);
-
-body {
-  margin-top: $menu-row-height * 2;
-}
 
 .apos-admin-bar {
   z-index: $z-index-default;
