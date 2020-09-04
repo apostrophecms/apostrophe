@@ -84,17 +84,15 @@ export default {
     }
   },
   mounted() {
-    this.menuItems = [
-      ...this.items.map(item => {
-        if (item.items) {
-          item.items.forEach(subitem => {
-            // The context menu needs an `action` property to emit.
-            subitem.action = subitem.name;
-          });
-        }
-        return item;
-      })
-    ];
+    this.menuItems = this.items.map(item => {
+      if (item.items) {
+        item.items.forEach(subitem => {
+          // The context menu needs an `action` property to emit.
+          subitem.action = subitem.name;
+        });
+      }
+      return item;
+    });
     // TODO: This will need to be an async call to get pieces as well as the
     // new page route.
     this.createMenu = [
