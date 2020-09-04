@@ -21,6 +21,13 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
+            @click="chooser=true"
+          />
+          <AposJoinsManager
+            v-if="chooser"
+            :moduleName="field.withType"
+            :items="items"
+            @updated="updated"
           />
         </div>
         <AposSlatList @update="updated" :initial-items="items" />
@@ -49,7 +56,8 @@ export default {
       browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
       searchList: [],
       items: this.value.data || this.listItems,
-      lastSearches: {}
+      lastSearches: {},
+      chooser: false
     };
   },
   mounted() {
