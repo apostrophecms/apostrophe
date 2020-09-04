@@ -123,6 +123,7 @@ body {
 }
 
 .apos-admin-bar {
+  z-index: $z-index-default;
   position: fixed;
   top: 0;
   right: 0;
