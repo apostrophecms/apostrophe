@@ -120,6 +120,7 @@ export default {
   },
   methods: {
     async uploadMedia (event) {
+      const fileCount = event.target.files.length;
       const file = event.target.files[0];
 
       const emptyDoc = await apos.http.post(this.moduleOptions.action, {
@@ -127,6 +128,13 @@ export default {
           _newInstance: true
         }
       });
+      await apos.notify(
+        // TODO: i18n
+        `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`,
+        {
+          dismiss: true
+        }
+      );
 
       // TODO: While the upload is working, set an uploading animation.
       await this.insertImage(file, emptyDoc);
@@ -165,9 +173,17 @@ export default {
           body: imageData,
           busy: true
         });
+        await apos.notify('Upload Successful', {
+          type: 'success',
+          dismiss: true
+        });
       } catch (error) {
         console.error('Error saving media.', error);
-        // apos.notify('Error saving media.');
+        await apos.notify('Upload Error', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
       }
     }
 
