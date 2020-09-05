@@ -1,4 +1,4 @@
-const relationshipr = module.exports = {
+const joinr = module.exports = {
   // Perform a one-to-one relationship with related documents.
   //
   // If you have events and wish to bring a place object into a ._place property
@@ -18,7 +18,7 @@ const relationshipr = module.exports = {
   //
   // Example:
   //
-  // await relationshipr.oneToOne(items, 'placeId', '_place', async function(ids) {
+  // await joinr.oneToOne(items, 'placeId', '_place', async function(ids) {
   //   // returns promise for an array, same thing as awaiting
   //   return myCollection.find({ _id: { $in: ids } }).toArray();
   // });
@@ -27,8 +27,8 @@ const relationshipr = module.exports = {
     const otherIds = [];
     const othersById = {};
     for (const item of items) {
-      if (relationshipr._has(item, idField)) {
-        otherIds.push(relationshipr._get(item, idField));
+      if (joinr._has(item, idField)) {
+        otherIds.push(joinr._get(item, idField));
       }
     }
     if (otherIds.length) {
@@ -39,7 +39,7 @@ const relationshipr = module.exports = {
       }
       // Attach the others to the items
       for (const item of items) {
-        const id = relationshipr._get(item, idField);
+        const id = joinr._get(item, idField);
         if (id && othersById[id]) {
           item[objectField] = othersById[id];
         }
@@ -73,7 +73,7 @@ const relationshipr = module.exports = {
   //
   // Example:
   //
-  // await relationshipr.byOneReverse(items, 'placeId', '_place', async function(ids) {
+  // await joinr.byOneReverse(items, 'placeId', '_place', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return myCollection.find({ placeId: { $in: ids } }).toArray();
   // });
@@ -88,8 +88,8 @@ const relationshipr = module.exports = {
       }
       // Attach the others to the items
       for (const other of others) {
-        if (relationshipr._has(other, idField)) {
-          const id = relationshipr._get(other, idField);
+        if (joinr._has(other, idField)) {
+          const id = joinr._get(other, idField);
           if (itemsById[id]) {
             const item = itemsById[id];
             if (!item[objectsField]) {
@@ -151,12 +151,12 @@ const relationshipr = module.exports = {
   //
   // Example:
   //
-  // await relationshipr.byArray(users, 'groupIds', '_groups', async function(ids) {
+  // await joinr.byArray(users, 'groupIds', '_groups', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return groupsCollection.find({ groupIds: { $in: ids } }).toArray();
   // });
 
-  byArray: async function(items, idsField, fieldsField, objectsField, getter) {
+  byArray: async function(items, idsStorage, fieldsField, objectsField, getter) {
     if (arguments.length === 4) {
       // Allow fieldsField to be skipped
       getter = objectsField;
@@ -166,8 +166,8 @@ const relationshipr = module.exports = {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
-      if (relationshipr._has(item, idsField)) {
-        otherIds = otherIds.concat(relationshipr._get(item, idsField));
+      if (joinr._has(item, idsStorage)) {
+        otherIds = otherIds.concat(joinr._get(item, idsStorage));
       }
     }
     if (otherIds.length) {
@@ -178,13 +178,13 @@ const relationshipr = module.exports = {
       }
       // Attach the others to the items
       for (const item of items) {
-        for (const id of (relationshipr._get(item, idsField) || [])) {
+        for (const id of (joinr._get(item, idsStorage) || [])) {
           if (othersById[id]) {
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
             if (fieldsField) {
-              const fieldsById = relationshipr._get(item, fieldsField) || {};
+              const fieldsById = joinr._get(item, fieldsField) || {};
               item[objectsField].push({
                 ...othersById[id],
                 _fields: fieldsById[id] || {}
@@ -248,12 +248,12 @@ const relationshipr = module.exports = {
   //
   // Example:
   //
-  // await relationshipr.byArrayReverse(groups, 'groupIds', '_users', async function(ids) {
+  // await joinr.byArrayReverse(groups, 'groupIds', '_users', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return usersCollection.find({ placeIds: { $in: ids } }).toArray();
   // });
 
-  byArrayReverse: async function(items, idsField, fieldsField, objectsField, getter) {
+  byArrayReverse: async function(items, idsStorage, fieldsField, objectsField, getter) {
     if (arguments.length === 4) {
       // Allow fieldsField to be skipped
       getter = objectsField;
@@ -269,14 +269,14 @@ const relationshipr = module.exports = {
       }
       // Attach the others to the items
       for (const other of others) {
-        for (const id of (relationshipr._get(other, idsField) || [])) {
+        for (const id of (joinr._get(other, idsStorage) || [])) {
           if (itemsById[id]) {
             const item = itemsById[id];
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
             if (fieldsField) {
-              const fieldsById = relationshipr._get(other, fieldsField) || {};
+              const fieldsById = joinr._get(other, fieldsField) || {};
               item[objectsField].push({
                 ...other,
                 _fields: fieldsById[item._id] || {}
@@ -292,9 +292,9 @@ const relationshipr = module.exports = {
 
   _has: function(o, accessor) {
     if (accessor === undefined) {
-      throw new Error('I think you forgot to set idField or idsField, or you set the wrong one (use idField for byOne, idsField for byArray)');
+      throw new Error('I think you forgot to set idField or idsStorage, or you set the wrong one (use idField for byOne, idsStorage for byArray)');
     }
-    return !!relationshipr._get(o, accessor);
+    return !!joinr._get(o, accessor);
   },
 
   // This supports: foo, foo.bar, foo.bar.baz (dot notation,
@@ -302,7 +302,7 @@ const relationshipr = module.exports = {
 
   _get: function(o, accessor) {
     if (accessor === undefined) {
-      throw new Error('I think you forgot to set idField or idsField, or you set the wrong one (use idField for byOne, idsField for byArray)');
+      throw new Error('I think you forgot to set idField or idsStorage, or you set the wrong one (use idField for byOne, idsStorage for byArray)');
     }
     let fn = accessor;
     if (typeof (accessor) === 'string') {

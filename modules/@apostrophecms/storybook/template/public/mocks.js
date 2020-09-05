@@ -283,7 +283,7 @@
             name: 'basics',
             label: 'Basics'
           },
-          idsField: 'tagsIds',
+          idsStorage: 'tagsIds',
           _id: '885071da9d576801a81f133f5c58b9a1'
         },
         {

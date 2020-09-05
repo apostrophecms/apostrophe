@@ -1087,7 +1087,7 @@ All tests passing.
 
 All tests passing.
 
-* Lazy schema field configuration, in general and especially for joins. No more need to specify `idField`, `idsField`, `relationshipsField` or even `label` for your schema fields. `withType` can be inferred too in many cases, depending on the name of the join field. You can still specify all of the details by hand.
+* Lazy schema field configuration, in general and especially for joins. No more need to specify `idField`, `idsStorage`, `relationshipsField` or even `label` for your schema fields. `withType` can be inferred too in many cases, depending on the name of the join field. You can still specify all of the details by hand.
 
 Also, for reverse joins, there is a new `reverseOf` option, allowing you to just specify the name of the join you are reversing. This is much easier to understand than specifying the `idField` of the other join. However that is still permitted.
 

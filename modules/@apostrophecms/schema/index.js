@@ -13,7 +13,7 @@
 // used when you choose to work independently with schemas, such as in a custom project
 // that requires forms.
 
-const relationshipr = require('./lib/relationshipr');
+const joinr = require('./lib/joinr');
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
@@ -779,7 +779,7 @@ module.exports = {
               if (field.schema) {
                 result._fields = {};
                 if (item && ((typeof item._fields === 'object'))) {
-                  await self.convert(req, field.fields, item._fields || {}, result._fields);
+                  await self.convert(req, field.schema, item._fields || {}, result._fields);
                 }
               }
               actualDocs.push(result);
@@ -789,8 +789,8 @@ module.exports = {
         object[field.name] = actualDocs;
       },
 
-      relationship: async function (req, field, objects, options) {
-        return self.relationshipDriver(req, relationshipr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+      relate: async function (req, field, objects, options) {
+        return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
 
       addQueryBuilder(field, query) {
@@ -842,7 +842,7 @@ module.exports = {
         }
         if (!field.idsStorage) {
           if (field.idField) {
-            fail('relationship takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
+            fail('relationship takes idsStorage, not idField. You can also omit it, in which case a reasonable value is supplied.');
           }
           // Supply reasonable value
           field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
@@ -870,11 +870,11 @@ module.exports = {
             fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
           }
         }
-        if (field.fields && !field.fieldsStorage) {
+        if (field.schema && !field.fieldsStorage) {
           field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
         }
-        if (field.fields && !Array.isArray(field.fields)) {
-          fail('fields property should be an array if present at this stage');
+        if (field.schema && !Array.isArray(field.schema)) {
+          fail('schema property should be an array if present at this stage');
         }
       }
     });
@@ -893,7 +893,7 @@ module.exports = {
     self.addFieldType({
       name: 'relationshipReverse',
       relationship: async function (req, field, objects, options) {
-        return self.relationshipDriver(req, relationshipr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+        return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
       validate: function (field, options, warn, fail) {
         let forwardRelationship;
@@ -945,10 +945,10 @@ module.exports = {
         if (!forwardRelationship) {
           forwardRelationship = _.find(otherModule.schema, {
             type: 'relationship',
-            idsField: field.idsStorage
+            idsStorage: field.idsStorage
           });
           if (!forwardRelationship) {
-            fail('idsField property does not match the idsField property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsField must be the same to find the data there.');
+            fail('idsStorage property does not match the idsStorage property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsStorage must be the same to find the data there.');
           }
         }
       }
@@ -1516,7 +1516,7 @@ module.exports = {
         const builders = options.builders || {};
         const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
-        // Some relationshipr methods don't take fieldsField
+        // Some joinr methods don't take fieldsField
         if (method.length === 4) {
           const realMethod = method;
           method = function (items, idField, fieldsField, objectField, getter) {
@@ -1546,7 +1546,7 @@ module.exports = {
         });
       },
 
-      // Carry out all the relationships in the schema on the specified object or array
+      // Fetch all the relationships in the schema on the specified object or array
       // of objects. The withRelationships option may be omitted.
       //
       // If withRelationships is omitted, null or undefined, all the relationships in the schema
@@ -1571,7 +1571,7 @@ module.exports = {
       //
       // Relationships are also supported in the schemas of array fields.
 
-      async join(req, schema, objectOrArray, withRelationships) {
+      async relate(req, schema, objectOrArray, withRelationships) {
 
         if (withRelationships === false) {
           // Relationships explicitly deactivated for this call
@@ -1596,7 +1596,7 @@ module.exports = {
 
         function findRelationships(schema, arrays) {
           const _relationships = _.filter(schema, function (field) {
-            return !!self.fieldTypes[field.type].relationship;
+            return !!self.fieldTypes[field.type].relate;
           });
           _.each(_relationships, function (relationship) {
             if (!arrays.length) {
@@ -1707,7 +1707,7 @@ module.exports = {
               }
               // Allow options to the getter to be specified in the schema,
               // notably editable: true
-              await self.fieldTypes[_relationship.type].join(req, _relationship, _objects, options);
+              await self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               _.each(_objects, function (object) {
                 if (object[subname]) {
                   if (Array.isArray(object[subname])) {
@@ -1752,7 +1752,7 @@ module.exports = {
 
           // Allow options to the getter to be specified in the schema,
           // notably editable: true
-          await self.fieldTypes[relationship.type].join(req, relationship, _objects, options);
+          await self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
         }
 
         function findObjectsInArrays(objects, arrays) {
@@ -1773,7 +1773,7 @@ module.exports = {
 
       // In the given document, for any relationships that are present in
       // the data (such as `_products`), update the underlying
-      // idsField and fieldsField (if appropriate) so that
+      // idsStorage and fieldsField (if appropriate) so that
       // storage to the database can take place. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
@@ -1782,7 +1782,7 @@ module.exports = {
       //
       // If the relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
-      // existing values in the `idsField` and `fieldsField`
+      // existing values in the `idsStorage` and `fieldsField`
       // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
@@ -1950,8 +1950,8 @@ module.exports = {
 
       relationshipQueryBuilderChoices(field, query, valueField) {
         return async function () {
-          const idsField = field.idsStorage;
-          const ids = await query.toDistinct(idsField);
+          const idsStorage = field.idsStorage;
+          const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
           const relationshipQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
           if (field.builders) {
@@ -2063,7 +2063,7 @@ module.exports = {
       // to stderr for bc.
       //
       // This method may also prevent errors by automatically supplying
-      // reasonable values for certain properties, such as the `idsField` property
+      // reasonable values for certain properties, such as the `idsStorage` property
       // of a `relationship` field, or the `label` property of anything.
 
       validate(schema, options) {
@@ -2306,18 +2306,22 @@ module.exports = {
             ...fields[name]
           };
           // TODO same for relationship schemas but they are being refactored in another PR
-          if ((field.type === 'object') || (field.type === 'array')) {
-            if (!field.fields) {
-              throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
-            }
-            if (!field.fields.add) {
-              if (Object.keys(field.fields).length) {
-                throw new Error(`${context}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
-              } else {
-                throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
+          if ((field.type === 'object') || (field.type === 'array') || (field.type === 'relationship')) {
+            if (field.type !== 'relationship') {
+              if (!field.fields) {
+                throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
               }
             }
-            field.schema = self.fieldsToArray(context, field.fields.add || {});
+            if (field.fields) {
+              if (!field.fields.add) {
+                if (Object.keys(field.fields).length) {
+                  throw new Error(`${context}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
+                } else {
+                  throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
+                }
+              }
+              field.schema = self.fieldsToArray(context, field.fields.add || {});
+            }
           }
           result.push(field);
         }

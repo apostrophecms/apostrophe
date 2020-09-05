@@ -120,7 +120,7 @@ const realWorldCase = {
       limit: 1,
       withType: '@apostrophecms/page',
       label: 'Page Title',
-      idsField: 'pageId'
+      idsStorage: 'pageId'
     }
   ],
   arrangeFields: [

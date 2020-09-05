@@ -118,14 +118,15 @@ describe('Pieces', function() {
                     title: 1
                   }
                 },
-                fields: [
-                  {
-                    // Explains the relevance of the article to the
-                    // product in 1 sentence
-                    name: 'relevance',
-                    type: 'string'
+                fields: {
+                  add: {
+                    relevance: {
+                      // Explains the relevance of the article to the
+                      // product in 1 sentence
+                      type: 'string'
+                    }
                   }
-                ]
+                }
               }
             }
           }

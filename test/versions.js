@@ -48,7 +48,7 @@ describe('Versions', function() {
                 label: 'Poems',
                 type: 'relationship',
                 withType: 'poem',
-                idsField: 'poemIds'
+                idsStorage: 'poemIds'
               },
               body: {
                 type: 'area',

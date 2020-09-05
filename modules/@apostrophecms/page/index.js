@@ -1618,7 +1618,7 @@ database.`);
           const base = name.replace(/^_/, '');
           field.removedIdsField = base + 'RemovedIds';
           field.fieldsStorage = base + 'Fields';
-          field.fields = [ {
+          field.schema = [ {
             name: 'applyToSubpages',
             type: 'boolean',
             label: 'Apply to Subpages',

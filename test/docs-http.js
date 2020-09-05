@@ -23,7 +23,7 @@ describe('Docs', function() {
                 type: 'relationship',
                 limit: 1,
                 withType: 'test-people',
-                idsField: 'friendId',
+                idsStorage: 'friendId',
                 label: 'Friend'
               }
             }

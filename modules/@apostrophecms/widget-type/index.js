@@ -185,7 +185,7 @@ module.exports = {
         if (self.options.scene) {
           req.scene = self.options.scene;
         }
-        await self.apos.schema.join(req, self.schema, widgets, undefined);
+        await self.apos.schema.relate(req, self.schema, widgets, undefined);
 
         // If this is a virtual widget (a widget being edited or previewed in the
         // editor), any nested areas, etc. inside it haven't already been loaded as

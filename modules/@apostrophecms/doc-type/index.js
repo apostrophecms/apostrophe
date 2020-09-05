@@ -58,19 +58,19 @@ module.exports = {
             type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can View',
-            idsField: 'viewUsersIds'
+            idsStorage: 'viewUsersIds'
           },
           _viewGroups: {
             type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can View',
-            idsField: 'viewGroupsIds'
+            idsStorage: 'viewGroupsIds'
           },
           _editUsers: {
             type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can Edit',
-            idsField: 'editUsersIds',
+            idsStorage: 'editUsersIds',
             // Gets patched after full initialization
             permission: 'admin'
           },
@@ -78,7 +78,7 @@ module.exports = {
             type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can Edit',
-            idsField: 'editGroupsIds',
+            idsStorage: 'editGroupsIds',
             // Gets patched after full initialization
             permission: 'admin'
           }
@@ -1167,12 +1167,12 @@ module.exports = {
           }
         },
 
-        // `.relationships(true)`. Performs relationships by default, for all types retrieved,
+        // `.relationships(true)`. Fetches relationships by default, for all types retrieved,
         // based on the schema for each type. If `relationships(false)` is
-        // explicitly called no relationships are performed. If
+        // explicitly called no relationships are fetched. If
         // `relationships([ ... ])` is invoked with an array of relationship names
         // only those relationships and those intermediate to them
-        // are performed (dot notation). See `@apostrophecms/schema`
+        // are fetched (dot notation). See `@apostrophecms/schema`
         // for more information.
 
         relationships: {
@@ -1186,7 +1186,7 @@ module.exports = {
               const manager = self.apos.doc.getManager(type);
               // Careful, there will be no manager if type was not part of the projection
               if (manager && manager.schema) {
-                await self.apos.schema.join(query.req, manager.schema, resultsByType[type], query.get('relationships'));
+                await self.apos.schema.relate(query.req, manager.schema, resultsByType[type], query.get('relationships'));
               }
             }
           }
