@@ -1,5 +1,5 @@
-const joinr = module.exports = {
-  // Perform a one-to-one join with related documents.
+const relationshipr = module.exports = {
+  // Perform a one-to-one relationship with related documents.
   //
   // If you have events and wish to bring a place object into a ._place property
   // of each event based on a .placeId property, this is what you want.
@@ -18,7 +18,7 @@ const joinr = module.exports = {
   //
   // Example:
   //
-  // await joinr.oneToOne(items, 'placeId', '_place', async function(ids) {
+  // await relationshipr.oneToOne(items, 'placeId', '_place', async function(ids) {
   //   // returns promise for an array, same thing as awaiting
   //   return myCollection.find({ _id: { $in: ids } }).toArray();
   // });
@@ -27,8 +27,8 @@ const joinr = module.exports = {
     const otherIds = [];
     const othersById = {};
     for (const item of items) {
-      if (joinr._has(item, idField)) {
-        otherIds.push(joinr._get(item, idField));
+      if (relationshipr._has(item, idField)) {
+        otherIds.push(relationshipr._get(item, idField));
       }
     }
     if (otherIds.length) {
@@ -39,7 +39,7 @@ const joinr = module.exports = {
       }
       // Attach the others to the items
       for (const item of items) {
-        const id = joinr._get(item, idField);
+        const id = relationshipr._get(item, idField);
         if (id && othersById[id]) {
           item[objectField] = othersById[id];
         }
@@ -47,7 +47,7 @@ const joinr = module.exports = {
     }
   },
 
-  // Join with related documents where the id of documents in your collection
+  // Relationship with related documents where the id of documents in your collection
   // is stored in a property on the related side. Since more than one related
   // document might refer to each of your documents, the result is stored in
   // an array property of each document.
@@ -73,7 +73,7 @@ const joinr = module.exports = {
   //
   // Example:
   //
-  // await joinr.byOneReverse(items, 'placeId', '_place', async function(ids) {
+  // await relationshipr.byOneReverse(items, 'placeId', '_place', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return myCollection.find({ placeId: { $in: ids } }).toArray();
   // });
@@ -88,8 +88,8 @@ const joinr = module.exports = {
       }
       // Attach the others to the items
       for (const other of others) {
-        if (joinr._has(other, idField)) {
-          const id = joinr._get(other, idField);
+        if (relationshipr._has(other, idField)) {
+          const id = relationshipr._get(other, idField);
           if (itemsById[id]) {
             const item = itemsById[id];
             if (!item[objectsField]) {
@@ -102,7 +102,7 @@ const joinr = module.exports = {
     }
   },
 
-  // Perform a one-to-many join with related documents via an array property
+  // Perform a one-to-many relationship with related documents via an array property
   // of your documents.
   //
   // If you have users and wish to bring all associated groups into a
@@ -151,7 +151,7 @@ const joinr = module.exports = {
   //
   // Example:
   //
-  // await joinr.byArray(users, 'groupIds', '_groups', async function(ids) {
+  // await relationshipr.byArray(users, 'groupIds', '_groups', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return groupsCollection.find({ groupIds: { $in: ids } }).toArray();
   // });
@@ -166,8 +166,8 @@ const joinr = module.exports = {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
-      if (joinr._has(item, idsField)) {
-        otherIds = otherIds.concat(joinr._get(item, idsField));
+      if (relationshipr._has(item, idsField)) {
+        otherIds = otherIds.concat(relationshipr._get(item, idsField));
       }
     }
     if (otherIds.length) {
@@ -178,13 +178,13 @@ const joinr = module.exports = {
       }
       // Attach the others to the items
       for (const item of items) {
-        for (const id of (joinr._get(item, idsField) || [])) {
+        for (const id of (relationshipr._get(item, idsField) || [])) {
           if (othersById[id]) {
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
             if (fieldsField) {
-              const fieldsById = joinr._get(item, fieldsField) || {};
+              const fieldsById = relationshipr._get(item, fieldsField) || {};
               item[objectsField].push({
                 ...othersById[id],
                 _fields: fieldsById[id] || {}
@@ -198,7 +198,7 @@ const joinr = module.exports = {
     }
   },
 
-  // Perform a one-to-many join with related documents via an array property
+  // Perform a one-to-many relationship with related documents via an array property
   // of the related documents.
   //
   // If you have groups and wish to bring all associated users into a
@@ -248,7 +248,7 @@ const joinr = module.exports = {
   //
   // Example:
   //
-  // await joinr.byArrayReverse(groups, 'groupIds', '_users', async function(ids) {
+  // await relationshipr.byArrayReverse(groups, 'groupIds', '_users', async function(ids) {
   //   // returns a promise, as good as awaiting
   //   return usersCollection.find({ placeIds: { $in: ids } }).toArray();
   // });
@@ -269,14 +269,14 @@ const joinr = module.exports = {
       }
       // Attach the others to the items
       for (const other of others) {
-        for (const id of (joinr._get(other, idsField) || [])) {
+        for (const id of (relationshipr._get(other, idsField) || [])) {
           if (itemsById[id]) {
             const item = itemsById[id];
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
             if (fieldsField) {
-              const fieldsById = joinr._get(other, fieldsField) || {};
+              const fieldsById = relationshipr._get(other, fieldsField) || {};
               item[objectsField].push({
                 ...other,
                 _fields: fieldsById[item._id] || {}
@@ -294,7 +294,7 @@ const joinr = module.exports = {
     if (accessor === undefined) {
       throw new Error('I think you forgot to set idField or idsField, or you set the wrong one (use idField for byOne, idsField for byArray)');
     }
-    return !!joinr._get(o, accessor);
+    return !!relationshipr._get(o, accessor);
   },
 
   // This supports: foo, foo.bar, foo.bar.baz (dot notation,

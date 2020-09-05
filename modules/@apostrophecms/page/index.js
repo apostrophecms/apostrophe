@@ -107,7 +107,7 @@ module.exports = {
             published: null,
             trash: false,
             orphan: null,
-            joins: false,
+            relationships: false,
             areas: false,
             permission: false
           }).toObject();
@@ -598,7 +598,7 @@ database.`);
       // in this way.
       //
       // This requires some tricky mongo work to do it efficiently, especially since we
-      // need to update both the join ids and the denormalized docPermissions array.
+      // need to update both the relationship ids and the denormalized docPermissions array.
       //
       // The applyToSubpages choice is actually a one-time action, not a permanently
       // remembered setting, so the setting itself is cleared afterwards by this

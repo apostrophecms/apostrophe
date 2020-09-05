@@ -56,10 +56,10 @@
 //
 // ### `defer`
 //
-// If you set `defer: true` for a widget module, like @apostrophecms/image-widget, the join to
+// If you set `defer: true` for a widget module, like @apostrophecms/image-widget, the relationship to
 // actually fetch the images is deferred until the last possible minute, right before the
 // template is rendered. This can eliminate some queries and speed up your site when there
-// are many separate joins happening on a page that ultimately result in loading images.
+// are many separate relationships happening on a page that ultimately result in loading images.
 //
 // If you wish this technique to also be applied to images loaded by content on the global doc,
 // you can also set `deferWidgetLoading: true` for the `@apostrophecms/global` module. To avoid chicken
@@ -67,10 +67,10 @@
 // the images from everything else, but you won't get more than one of each type.
 //
 // Setting `defer` to `true` may help performance for any frequently used widget type
-// that depends on joins and has a `load` method that can efficiently handle multiple widgets.
+// that depends on relationships and has a `load` method that can efficiently handle multiple widgets.
 //
-// If you need access to the results of the join in server-side JavaScript code, outside of page
-// templates, do not use this feature. Since it defers the joins to the last minute,
+// If you need access to the results of the relationship in server-side JavaScript code, outside of page
+// templates, do not use this feature. Since it defers the relationships to the last minute,
 // that information will not be available yet in any asynchronous node.js code.
 // It is the last thing to happen before the actual page template rendering.
 //
@@ -169,12 +169,12 @@ module.exports = {
         });
       },
 
-      // Perform joins and any other necessary async
+      // Perform relationships and any other necessary async
       // actions for our type of widget. Note that
       // an array of widgets is handled in a single call
       // as you can usually optimize this.
       //
-      // Override this to perform custom joins not
+      // Override this to perform custom relationships not
       // specified by your schema, talk to APIs, etc.
       //
       // Also implements the `scene` convenience option
@@ -200,7 +200,7 @@ module.exports = {
         // normal things happen after the docs have been "loaded," such as calling loaders
         // of widgets in areas. -Tom and Matt
 
-        // Shut off joins because we already did them and the cursor would try to do them
+        // Shut off relationships because we already did them and the cursor would try to do them
         // again based on `type`, which isn't really a doc type. -Tom
         const cursor = self.apos.doc.find(req).relationships(false);
 
@@ -244,7 +244,7 @@ module.exports = {
         });
       },
 
-      // Remove all properties of a widget that are the results of joins
+      // Remove all properties of a widget that are the results of relationships
       // (arrays or objects named with a leading `_`) for use in stuffing the
       // "data" attribute of the widget.
       //
@@ -281,7 +281,7 @@ module.exports = {
 
       // Filter options passed from the template to the widget before stuffing
       // them into JSON for use by the widget editor. Again, we discard all
-      // properties that are the results of joins or otherwise dynamic
+      // properties that are the results of relationships or otherwise dynamic
       // (arrays or objects named with a leading `_`).
       //
       // If we don't do a good job here we get 1MB+ of markup. So if you override

@@ -324,7 +324,7 @@ module.exports = {
       // information to do that.
       //
       // The default implementation returns a cursor with areas
-      // and joins shut off for speed but all properties included.
+      // and relationships shut off for speed but all properties included.
 
       findForAddUrlsToPieces(req) {
         return self.find(req).areas(false).relationships(false);

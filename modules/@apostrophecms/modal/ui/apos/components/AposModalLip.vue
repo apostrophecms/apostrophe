@@ -27,7 +27,7 @@
             <g id="Mask" />
             <g fill-rule="nonzero" mask="url(#mask-2)">
               <use fill="black" fill-opacity="1" filter="url(#shadow-filter-4)" xlink:href="#shadow-path-3" />
-              <rect stroke-width="1" stroke-linejoin="square" fill="transparent" fill-rule="evenodd" x="-12.5" y="20.5" width="431" height="82" />
+              <rect stroke-width="1" stroke-linerelationship="square" fill="transparent" fill-rule="evenodd" x="-12.5" y="20.5" width="431" height="82" />
             </g>
           </g>
         </g>
