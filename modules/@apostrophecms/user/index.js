@@ -109,7 +109,7 @@ module.exports = {
               choices: []
             },
             _groups: {
-              type: 'join',
+              type: 'relationship',
               label: 'Groups',
               idsField: 'groupIds',
               withType: '@apostrophecms/group',
@@ -117,7 +117,7 @@ module.exports = {
             }
           } : {
             _groups: {
-              type: 'join',
+              type: 'relationship',
               label: 'Groups',
               withType: '@apostrophecms/group'
             }

@@ -333,7 +333,7 @@ module.exports = {
               return compareArrays(schemaIdentifier, schemaDecoratorGenerator(field.schema), old, current);
             } else if (field.type === 'area' || field.type === 'singleton') {
               return compareAreas(old, current);
-            } else if (field.type === 'join') {
+            } else if (field.type === 'relationship') {
               return compareArrays(joinIdentifier, joinDecoratorGenerator(field.withType), old, current);
             } else {
               // Take advantage of Apostrophe's support for boiling fields
@@ -624,8 +624,8 @@ module.exports = {
             if (field.idField) {
               return field.idField === key;
             }
-            if (field.idsField) {
-              return field.idsField === key;
+            if (field.idsStorage) {
+              return field.idsStorage === key;
             }
           });
           return field;

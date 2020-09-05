@@ -23,7 +23,7 @@ describe('Docs', function() {
           fields: {
             add: {
               _friends: {
-                type: 'join',
+                type: 'relationship',
                 max: 1,
                 withType: 'test-people',
                 idsField: 'friendIds',

@@ -55,19 +55,19 @@ module.exports = {
             ]
           },
           _viewUsers: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can View',
             idsField: 'viewUsersIds'
           },
           _viewGroups: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can View',
             idsField: 'viewGroupsIds'
           },
           _editUsers: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can Edit',
             idsField: 'editUsersIds',
@@ -75,7 +75,7 @@ module.exports = {
             permission: 'admin'
           },
           _editGroups: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can Edit',
             idsField: 'editGroupsIds',
@@ -133,114 +133,6 @@ module.exports = {
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
-  },
-  apiRoutes(self, options) {
-    return {
-      post: {
-        async chooser(req) {
-          const browse = !!req.body.browse;
-          const autocomplete = !!req.body.autocomplete;
-          return self.render(req, 'chooser', {
-            browse: browse,
-            autocomplete: autocomplete
-          });
-        },
-        async chooserChoices(req) {
-          const field = req.body.field;
-          const removed = {};
-          // Make sure we have an array of objects
-          const rawChoices = _.map(Array.isArray(req.body.choices) ? req.body.choices : [], function (choice) {
-            if (typeof choice !== 'object') {
-              return {};
-            } else {
-              return choice;
-            }
-          });
-          _.each(rawChoices, function (choice) {
-            if (choice.__removed) {
-              removed[choice.value] = true;
-            }
-          });
-          // We received an array of choices in the generic format, we need to map it to the format
-          // for the relevant type of join before we can use convert to validate the input
-          const input = {};
-          if (field.idsField) {
-            input[field.idsField] = _.map(rawChoices, 'value');
-            if (field.relationshipsField) {
-              input[field.relationshipsField] = {};
-              _.each(rawChoices, function (choice) {
-                input[field.relationshipsField][choice.value] = _.omit(choice, 'value', 'label');
-              });
-            }
-          } else {
-            input[field.idField] = rawChoices[0] && rawChoices[0].value;
-          }
-          const receptacle = {};
-          // For purposes of previewing, it's OK to ignore readOnly so we can tell which
-          // inputs are plausible
-          await self.apos.schema.convert(req, [ _.omit(field, 'readOnly') ], 'form', input, receptacle);
-          await self.apos.schema.join(req, [ field ], receptacle, true);
-          const choiceTemplate = field.choiceTemplate || self.choiceTemplate || 'chooserChoice.html';
-          const choicesTemplate = field.choicesTemplate || self.choicesTemplate || 'chooserChoices.html';
-          let choices = receptacle[field.name];
-          if (!Array.isArray(choices)) {
-            // by one case
-            if (choices) {
-              choices = [ choices ];
-            } else {
-              choices = [];
-            }
-          }
-          // Add "readOnly" property and bring back the `__removed` property for use in the template
-          _.each(choices, function (choice) {
-            choice.readOnly = field.readOnly;
-            if (_.has(removed, choice._id || (choice.item && choice.item._id))) {
-              choice.__removed = true;
-            }
-          });
-          const markup = self.render(req, choicesTemplate, {
-            choices: choices,
-            choiceTemplate: choiceTemplate,
-            relationship: field.relationship,
-            hints: field.hints
-          });
-          // Newer version of this API returns the validated choices, so that the chooser doesn't
-          // get stuck thinking there's already a choice bringing it up to its limit when the choice
-          // is actually in the trash and shouldn't count anymore
-          return {
-            html: markup,
-            choices: format(choices)
-          };
-          function format(choices) {
-            // After the join, the "choices" array is actually an array of docs, or objects with .item and .relationship
-            // properties. As part of our validation services for the chooser object in the browser, recreate what the browser
-            // side is expecting: objects with a "value" property (the _id) and relationship properties, if any
-            return _.map(choices, function (item) {
-              const object = item;
-              const relationship = item._relationship || {};
-              const choice = { value: object._id };
-              if (item.__removed) {
-                choice.__removed = true;
-              }
-              _.defaults(choice, relationship);
-              return choice;
-            });
-          }
-        },
-        async relationshipEditor(req) {
-          const field = req.body.field;
-          return self.render(req, field.relationshipTemplate || self.relationshipTemplate || 'relationshipEditor', { field: field });
-        },
-        async autocomplete(req, res) {
-          const field = req.body.field;
-          const term = self.apos.launder.string(req.body.term);
-          return self.autocomplete(req, {
-            field: field,
-            term: term
-          });
-        }
-      }
-    };
   },
   handlers(self, options) {
     return {
@@ -729,7 +621,7 @@ module.exports = {
         const output = [];
         for (const field of schema) {
           if (field.type.name.substring(0, 5) === '_join') {
-            if (_.has(input, field.idField || field.idsField)) {
+            if (_.has(input, field.idField || field.idsStorage)) {
               output.push(field.name);
             }
           } else {
@@ -1275,7 +1167,7 @@ module.exports = {
           }
         },
 
-        // `.joins(true)`. Performs joins by default, for all types retrieved,
+        // `.relationships(true)`. Performs joins by default, for all types retrieved,
         // based on the schema for each type. If `joins(false)` is
         // explicitly called no joins are performed. If
         // `joins([ ... ])` is invoked with an array of join names
@@ -1803,7 +1695,7 @@ module.exports = {
           const schema = self.schema;
           const field = _.find(schema, { name: key });
           if (field) {
-            add.push('type', field.idsField);
+            add.push('type', field.idsStorage);
             return true;
           }
           return false;

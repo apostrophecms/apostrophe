@@ -62,13 +62,13 @@ describe('Schema builders', function() {
           fields: {
             add: {
               _cats: {
-                type: 'join',
+                type: 'relationship',
                 idsField: 'catsIds',
                 label: 'Cats',
                 withType: 'cat'
               },
               _favorites: {
-                type: 'join',
+                type: 'relationship',
                 max: 1,
                 idsField: 'favoriteIds',
                 label: 'Favorites',

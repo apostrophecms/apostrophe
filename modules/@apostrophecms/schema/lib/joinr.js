@@ -118,7 +118,7 @@ const joinr = module.exports = {
   // those documents that describes the relationship between the document and each
   // of the related documents. This object is expected to be structured like this:
   //
-  // personRelationships: {
+  // personFields: {
   //   idOfPerson1: {
   //     jobTitle: 'Chief Cook'
   //   },
@@ -137,17 +137,17 @@ const joinr = module.exports = {
   // Afterwards the related documents will be attached directly to the items under the
   // array property name specified by objectsField.
   //
-  // *If the relationshipsField argument is present*, the related documents
-  // are returned as usual, with an additional `_relationship` property added to
-  // each, containing the relationship data for that object.
+  // *If the fieldsField argument is present*, the related documents
+  // are returned as usual, with an additional `_fields` property added to
+  // each, containing the custom relationship fields for that object.
   //
   // group._people[0].name <-- Person's name
-  // group._people[0]._relationship.jobTitle <-- Person's job title in
+  // group._people[0]._fields.jobTitle <-- Person's job title in
   //   this specific department; they may have other titles in other departments
   //
   // Since the same person may be related to more than one group, but with different
-  // relationship data, this method guarantees that the person object will be
-  // shallowly cloned so that it can have a distinct `_relationship` property.
+  // custom relationship fields, this method guarantees that the person object will be
+  // shallowly cloned so that it can have a distinct `_fields` property.
   //
   // Example:
   //
@@ -156,12 +156,12 @@ const joinr = module.exports = {
   //   return groupsCollection.find({ groupIds: { $in: ids } }).toArray();
   // });
 
-  byArray: async function(items, idsField, relationshipsField, objectsField, getter) {
+  byArray: async function(items, idsField, fieldsField, objectsField, getter) {
     if (arguments.length === 4) {
-      // Allow relationshipsField to be skipped
+      // Allow fieldsField to be skipped
       getter = objectsField;
-      objectsField = relationshipsField;
-      relationshipsField = undefined;
+      objectsField = fieldsField;
+      fieldsField = undefined;
     }
     let otherIds = [];
     const othersById = {};
@@ -183,11 +183,11 @@ const joinr = module.exports = {
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
-            if (relationshipsField) {
-              const relationships = joinr._get(item, relationshipsField) || {};
+            if (fieldsField) {
+              const fieldsById = joinr._get(item, fieldsField) || {};
               item[objectsField].push({
                 ...othersById[id],
-                _relationship: relationships[id] || {}
+                _fields: fieldsById[id] || {}
               });
             } else {
               item[objectsField].push(othersById[id]);
@@ -216,7 +216,7 @@ const joinr = module.exports = {
   // document and each of your documents. This object is expected to be structured
   // like this:
   //
-  // personRelationships: {
+  // personFields: {
   //   idOfPerson1: {
   //     jobTitle: 'Chief Cook'
   //   },
@@ -236,14 +236,14 @@ const joinr = module.exports = {
   // Afterwards The related documents will be attached directly to the items under the
   // property name specified by `objectsField`.
   //
-  // *If the relationshipsField argument is present*, then each related document
-  // gains an extra `_relationship` property, containing the relationship data
+  // *If the fieldsField argument is present*, then each related document
+  // gains an extra `_fields` property, containing the relationship data
   // for that object. Note that the related documents are shallowly cloned to
   // ensure the same document can be related to two items but with different
   // relationship data.
   //
   // group._people[0].name <-- person's name
-  // group._people[0]._relationship.jobTitle <-- Person's job title in
+  // group._people[0]._fields.jobTitle <-- Person's job title in
   //   this specific department; they may have other titles in other departments
   //
   // Example:
@@ -253,12 +253,12 @@ const joinr = module.exports = {
   //   return usersCollection.find({ placeIds: { $in: ids } }).toArray();
   // });
 
-  byArrayReverse: async function(items, idsField, relationshipsField, objectsField, getter) {
+  byArrayReverse: async function(items, idsField, fieldsField, objectsField, getter) {
     if (arguments.length === 4) {
-      // Allow relationshipsField to be skipped
+      // Allow fieldsField to be skipped
       getter = objectsField;
-      objectsField = relationshipsField;
-      relationshipsField = undefined;
+      objectsField = fieldsField;
+      fieldsField = undefined;
     }
     const itemIds = items.map(item => item._id);
     if (itemIds.length) {
@@ -275,11 +275,11 @@ const joinr = module.exports = {
             if (!item[objectsField]) {
               item[objectsField] = [];
             }
-            if (relationshipsField) {
-              const relationships = joinr._get(other, relationshipsField) || {};
+            if (fieldsField) {
+              const fieldsById = joinr._get(other, fieldsField) || {};
               item[objectsField].push({
                 ...other,
-                _relationship: relationships[item._id] || {}
+                _fields: fieldsById[item._id] || {}
               });
             } else {
               item[objectsField].push(other);

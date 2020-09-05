@@ -116,7 +116,7 @@ const realWorldCase = {
     },
     {
       name: '_newPage',
-      type: 'join',
+      type: 'relationship',
       limit: 1,
       withType: '@apostrophecms/page',
       label: 'Page Title',

@@ -275,7 +275,7 @@
           _id: 'e146d8acff60cc41f257d010b61e277b'
         },
         {
-          type: 'join',
+          type: 'relationship',
           name: '_tags',
           label: 'Tags',
           withType: '@apostrophecms/image-tag',

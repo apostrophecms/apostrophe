@@ -52,7 +52,7 @@ module.exports = {
         label: 'Credit URL'
       },
       _tags: {
-        type: 'join',
+        type: 'relationship',
         label: 'Tags',
         withType: '@apostrophecms/image-tag'
       }
@@ -171,7 +171,7 @@ module.exports = {
       //
       // Given an image attachment, return a string that can be used as the value
       // of a `srcset` HTML attribute.
-      srcset(attachment, cropRelationship) {
+      srcset(attachment, cropFields) {
         if (!self.apos.attachment.isSized(attachment)) {
           return '';
         }
@@ -189,7 +189,7 @@ module.exports = {
         }).map(function (imageSize) {
           const src = self.apos.attachment.url(attachment, {
             size: imageSize.name,
-            crop: cropRelationship
+            crop: cropFields
           });
           const width = Math.min(imageSize.width, attachment.width);
           return src + ' ' + width + 'w';

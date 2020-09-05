@@ -142,14 +142,6 @@ module.exports = {
     self.pluralLabel = options.pluralLabel;
     self.manageViews = options.manageViews;
 
-    // As a doc manager, we can provide default templates for use when
-    // choosing docs of our type. With this code in place, subclasses of
-    // pieces can just provide custom chooserChoice.html and chooserChoices.html
-    // templates with no additional plumbing. -Tom
-
-    self.choiceTemplate = self.__meta.name + ':chooserChoice.html';
-    self.choicesTemplate = self.__meta.name + ':chooserChoices.html';
-    self.relationshipTemplate = self.__meta.name + ':relationshipEditor.html';
     self.composeFilters();
     self.composeColumns();
     self.addPermissions();

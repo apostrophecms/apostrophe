@@ -57,7 +57,7 @@ describe('Pieces', function() {
           fields: {
             add: {
               _things: {
-                type: 'join'
+                type: 'relationship'
               }
             }
           }
@@ -110,7 +110,7 @@ describe('Pieces', function() {
                 }
               },
               _articles: {
-                type: 'join',
+                type: 'relationship',
                 withType: 'article',
                 filters: {
                   projection: {
@@ -118,7 +118,7 @@ describe('Pieces', function() {
                     title: 1
                   }
                 },
-                relationship: [
+                fields: [
                   {
                     // Explains the relevance of the article to the
                     // product in 1 sentence
@@ -587,7 +587,7 @@ describe('Pieces', function() {
     const article = response;
     assert(article);
     assert(article.title === 'First Article');
-    article._relationship = {
+    article._fields = {
       relevance: 'The very first article that was ever published about this product'
     };
     response = await apos.http.post('/api/v1/product', {
@@ -610,7 +610,7 @@ describe('Pieces', function() {
     });
     assert(response._id);
     assert(response.articlesIds[0] === article._id);
-    assert(response.articlesRelationships[article._id].relevance === 'The very first article that was ever published about this product');
+    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
     joinedProductId = response._id;
   });
 

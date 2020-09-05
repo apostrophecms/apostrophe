@@ -202,7 +202,7 @@ module.exports = {
 
         // Shut off joins because we already did them and the cursor would try to do them
         // again based on `type`, which isn't really a doc type. -Tom
-        const cursor = self.apos.doc.find(req).joins(false);
+        const cursor = self.apos.doc.find(req).relationships(false);
 
         // Call .after with our own results
         return cursor.after(widgets);

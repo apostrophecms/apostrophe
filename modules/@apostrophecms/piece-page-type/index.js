@@ -327,7 +327,7 @@ module.exports = {
       // and joins shut off for speed but all properties included.
 
       findForAddUrlsToPieces(req) {
-        return self.find(req).areas(false).joins(false);
+        return self.find(req).areas(false).relationships(false);
       },
 
       // Configure our `addUrlsToPieces` method as the `addUrls` method

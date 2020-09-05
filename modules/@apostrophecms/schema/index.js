@@ -691,8 +691,8 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'join',
-      // Validate a join field, copying from `data[field.name]` to
+      name: 'relationship',
+      // Validate a relationship field, copying from `data[field.name]` to
       // `object[field.name]`. If the join is named `_product`, then
       // `data._product` should be an array of product docs to be joined
       // with. These doc objects must at least have an _id property.
@@ -702,14 +702,18 @@ module.exports = {
       // tolerant manner. This is useful for CSV input. Strings may
       // be mixed with actual joined docs in a single array.
       //
-      // If the join field has a `relationship` option, then each
-      // doc object may also have a `_relationship` property which
-      // will be validated against the schema in `relationship`.
+      // If the join field has a `fields` option, then each
+      // doc object may also have a `_fields` property which
+      // will be validated against the schema in `fields`.
       //
       // The result in `object[field.name]` will always be an array
       // of zero or more joined docs, containing only those that
       // actually exist in the database and can be fetched by this user,
       // in the same order specified in `data[field.name]`.
+      //
+      // Actual storage to the permanent idsStorage and fieldsStorage
+      // properties is handled at a lower level in a beforeSave
+      // handler of the doc-type module.
 
       convert: async function (req, field, data, object) {
         const manager = self.apos.doc.getManager(field.withType);
@@ -760,7 +764,7 @@ module.exports = {
           object[field.name] = [];
           return;
         }
-        const results = await manager.find(req, { $or: clauses }).joins(false).published(null).toArray();
+        const results = await manager.find(req, { $or: clauses }).relationships(false).published(null).toArray();
         // Must maintain input order. Also discard things not actually found in the db
         const actualDocs = [];
         for (const item of input) {
@@ -772,10 +776,10 @@ module.exports = {
           } else if ((item && ((typeof item._id) === 'string'))) {
             const result = results.find(doc => (doc._id === item._id));
             if (result) {
-              if (field.relationship) {
-                result._relationship = {};
-                if (item && ((typeof item._relationship === 'object'))) {
-                  await self.convert(req, field.relationship, item._relationship || {}, result._relationship);
+              if (field.schema) {
+                result._fields = {};
+                if (item && ((typeof item._fields === 'object'))) {
+                  await self.convert(req, field.fields, item._fields || {}, result._fields);
                 }
               }
               actualDocs.push(result);
@@ -786,7 +790,7 @@ module.exports = {
       },
 
       join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byArray, false, objects, field.idsField, field.relationshipsField, field.name, options);
+        return self.joinDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
 
       addQueryBuilder(field, query) {
@@ -809,21 +813,21 @@ module.exports = {
               // Even programmers appreciate shortcuts, so it's not enough that the
               // sanitizer (which doesn't apply to programmatic use) accepts these
               if (Array.isArray(value)) {
-                criteria[field.idsField] = {};
-                criteria[field.idsField][operator] = value;
+                criteria[field.idsStorage] = {};
+                criteria[field.idsStorage][operator] = value;
               } else if (value === 'none') {
                 criteria.$or = [];
                 let clause = {};
-                clause[field.idsField] = null;
+                clause[field.idsStorage] = null;
                 criteria.$or.push(clause);
                 clause = {};
-                clause[field.idsField] = { $exists: 0 };
+                clause[field.idsStorage] = { $exists: 0 };
                 criteria.$or.push(clause);
                 clause = {};
-                clause[field.idsField + '.0'] = { $exists: 0 };
+                clause[field.idsStorage + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsField] = { $in: [ value ] };
+                criteria[field.idsStorage] = { $in: [ value ] };
               }
               query.and(criteria);
             },
@@ -836,12 +840,12 @@ module.exports = {
         if (!field.name.match(/^_/)) {
           warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
         }
-        if (!field.idsField) {
+        if (!field.idsStorage) {
           if (field.idField) {
             fail('join takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
           }
           // Supply reasonable value
-          field.idsField = field.name.replace(/^_/, '') + 'Ids';
+          field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
         }
         if (!field.withType) {
           // Try to supply reasonable value based on join name. Join name will be plural,
@@ -866,12 +870,11 @@ module.exports = {
             fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
           }
         }
-        if (field.relationship && !field.relationshipsField) {
-          field.relationshipsField = field.name.replace(/^_/, '') + 'Relationships';
+        if (field.fields && !field.fieldsStorage) {
+          field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
         }
-        if (field.relationship && !Array.isArray(field.relationship)) {
-          // TODO more validation here
-          fail('relationship field should be an array if present');
+        if (field.fields && !Array.isArray(field.fields)) {
+          fail('fields property should be an array if present at this stage');
         }
       }
     });
@@ -890,7 +893,7 @@ module.exports = {
     self.addFieldType({
       name: 'joinReverse',
       join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byArrayReverse, true, objects, field.idsField, field.relationshipsField, field.name, options);
+        return self.joinDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
       validate: function (field, options, warn, fail) {
         let forwardJoin;
@@ -909,7 +912,7 @@ module.exports = {
         if (!otherModule) {
           fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
         }
-        if (!(field.reverseOf || field.idsField)) {
+        if (!(field.reverseOf || field.idsStorage)) {
           self.validate(otherModule.schema, {
             type: 'doc type',
             subtype: otherModule.name
@@ -922,7 +925,7 @@ module.exports = {
         }
         if (field.reverseOf) {
           forwardJoin = _.find(otherModule.schema, {
-            type: 'join',
+            type: 'relationship',
             name: field.reverseOf
           });
           if (!forwardJoin) {
@@ -934,15 +937,15 @@ module.exports = {
             type: 'doc type',
             subtype: otherModule.name
           });
-          field.idsField = forwardJoin.idsField;
+          field.idsStorage = forwardJoin.idsStorage;
         }
-        if (!field.idsField) {
-          field.idsField = field.name.replace(/^_/, '') + 'Ids';
+        if (!field.idsStorage) {
+          field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
         }
         if (!forwardJoin) {
           forwardJoin = _.find(otherModule.schema, {
-            type: 'join',
-            idsField: field.idsField
+            type: 'relationship',
+            idsField: field.idsStorage
           });
           if (!forwardJoin) {
             fail('idsField property does not match the idsField property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, your idsField must be the same to find the data there.');
@@ -1343,11 +1346,11 @@ module.exports = {
             if (field.idField) {
               subset[field.idField] = instance[field.idField];
             }
-            if (field.idsField) {
-              subset[field.idsField] = instance[field.idsField];
+            if (field.idsStorage) {
+              subset[field.idsStorage] = instance[field.idsStorage];
             }
-            if (field.relationshipsField) {
-              subset[field.relationshipsField] = instance[field.relationshipsField];
+            if (field.fieldsStorage) {
+              subset[field.fieldsStorage] = instance[field.fieldsStorage];
             }
           } else {
             subsetCopy(field.name, instance, subset, field);
@@ -1503,9 +1506,9 @@ module.exports = {
       // Driver invoked by the "join" methods of the standard
       // join field types.
       //
-      // All arguments must be present, however relationshipsField
+      // All arguments must be present, however fieldsField
       // may be undefined to indicate none is needed.
-      async joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
+      async joinDriver(req, method, reverse, items, idField, fieldsField, objectField, options) {
         if (!options) {
           options = {};
         }
@@ -1513,14 +1516,14 @@ module.exports = {
         const builders = options.builders || {};
         const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
-        // Some joinr methods don't take relationshipsField
+        // Some joinr methods don't take fieldsField
         if (method.length === 4) {
           const realMethod = method;
-          method = function (items, idField, relationshipsField, objectField, getter) {
+          method = function (items, idField, fieldsField, objectField, getter) {
             return realMethod(items, idField, objectField, getter);
           };
         }
-        await method(items, idField, relationshipsField, objectField, function (ids) {
+        await method(items, idField, fieldsField, objectField, function (ids) {
           const idsCriteria = {};
           if (reverse) {
             idsCriteria[idField] = { $in: ids };
@@ -1715,10 +1718,10 @@ module.exports = {
                 }
               });
             }
-            if (join.idsField) {
+            if (join.idsStorage) {
               _.each(_objects, function (object) {
                 if (object[join.name]) {
-                  object[join.name] = self.apos.util.orderById(object[join.idsField], object[join.name]);
+                  object[join.name] = self.apos.util.orderById(object[join.idsStorage], object[join.name]);
                 }
               });
             }
@@ -1770,7 +1773,7 @@ module.exports = {
 
       // In the given document, for any joins that are present in
       // the data (such as `_products`), update the underlying
-      // idsField and relationshipsField (if appropriate) so that
+      // idsField and fieldsField (if appropriate) so that
       // storage to the database can take place. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
@@ -1779,11 +1782,11 @@ module.exports = {
       //
       // If the join field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
-      // existing values in the `idsField` and `relationshipsField`
+      // existing values in the `idsField` and `fieldsField`
       // are overwritten. If the join field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
-      // `.joins(false)`, provided a projection was not also used.
+      // `.relationships(false)`, provided a projection was not also used.
       //
       // Currently `req` does not impact this, but that may change.
 
@@ -1817,17 +1820,17 @@ module.exports = {
               if (doc[field.name]) {
                 forSchema(field.schema, doc[field.name]);
               }
-            } else if (field.type === 'join') {
+            } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
-                doc[field.idsField] = doc[field.name].map(joinedDoc => joinedDoc._id);
-                if (field.relationshipsField) {
-                  const relationships = doc[field.relationshipsField] || {};
+                doc[field.idsStorage] = doc[field.name].map(joinedDoc => joinedDoc._id);
+                if (field.fieldsStorage) {
+                  const fieldsById = doc[field.fieldsStorage] || {};
                   for (const joinedDoc of doc[field.name]) {
-                    if (joinedDoc._relationship) {
-                      relationships[joinedDoc._id] = joinedDoc._relationship;
+                    if (joinedDoc._fields) {
+                      fieldsById[joinedDoc._id] = joinedDoc._fields;
                     }
                   }
-                  doc[field.relationshipsField] = relationships;
+                  doc[field.fieldsStorage] = fieldsById;
                 }
               }
             }
@@ -1947,7 +1950,7 @@ module.exports = {
 
       joinQueryBuilderChoices(field, query, valueField) {
         return async function () {
-          const idsField = field.idsField;
+          const idsField = field.idsStorage;
           const ids = await query.toDistinct(idsField);
           const manager = self.apos.doc.getManager(field.withType);
           const joinQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
@@ -2003,7 +2006,7 @@ module.exports = {
               query.set(name + suffix, undefined);
               return;
             }
-            const joinQuery = self.apos.doc.getManager(field.withType).find(query.req).joins(false).areas(false);
+            const joinQuery = self.apos.doc.getManager(field.withType).find(query.req).relationships(false).areas(false);
             const criteria = {};
             // Even programmers appreciate shortcuts, so it's not enough that the
             // sanitizer (which doesn't apply to programmatic use) accepts these
@@ -2271,8 +2274,8 @@ module.exports = {
       subsetSchemaForPatch(schema, patch) {
         const idFields = {};
         schema.forEach(function(field) {
-          if (field.type === 'join') {
-            idFields[field.idsField] = field.name;
+          if (field.type === 'relationship') {
+            idFields[field.idsStorage] = field.name;
           }
         });
         return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idFieldToSchemaField));

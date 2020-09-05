@@ -46,7 +46,7 @@ describe('Versions', function() {
               },
               _poems: {
                 label: 'Poems',
-                type: 'join',
+                type: 'relationship',
                 withType: 'poem',
                 idsField: 'poemIds'
               },
