@@ -23,11 +23,12 @@
             type="input"
             @click="chooser=true"
           />
-          <AposJoinsManager
+          <AposPiecesManager
             v-if="chooser"
             :moduleName="field.withType"
             :items="items"
             :max-items="field.max"
+            :join="true"
             @updated="updated"
             @safe-close="chooser=false"
           />

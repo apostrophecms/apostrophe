@@ -14,6 +14,13 @@
         @click="editing = true"
       />
     </template>
+
+    <template v-if="join" #leftRail>
+      <AposModalRail>
+        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" />
+      </AposModalRail>
+    </template>
+
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
@@ -66,6 +73,7 @@
                     :choice="checkboxes[row._id].choice"
                     :id="row._id"
                     v-model="checked"
+                    @updated="updateSelectedItems"
                   />
                 </td>
                 <td
@@ -124,6 +132,20 @@ export default {
     moduleName: {
       type: String,
       required: true
+    },
+    join: {
+      type: Boolean,
+      default: false
+    },
+    items: {
+      type: Array,
+      default: function () {
+        return [];
+      }
+    },
+    maxItems: {
+      type: Number,
+      default: undefined
     }
   },
   emits: [ 'trash', 'search', 'safe-close' ],
@@ -142,7 +164,9 @@ export default {
       editing: false,
       editingDocId: '',
       queryExtras: {},
-      holdQueries: false
+      holdQueries: false,
+      selectedItems: this.items,
+      checked: this.items.map(item => item._id)
     };
   },
   computed: {
@@ -202,6 +226,11 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
+  },
+  watch: {
+    checked: function() {
+      this.generateUi();
+    }
   },
   methods: {
     async finishSaved() {
@@ -280,6 +309,20 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
+    },
+    updateSlatList(items) {
+      this.selectedItems = items;
+      this.checked = items.map(item => item._id);
+      this.$emit('updated', items);
+    },
+    updateSelectedItems(event) {
+      if (this.checked.length > this.selectedItems.length) {
+        const piece = this.pieces.find(piece => piece._id === event.target.id);
+        this.selectedItems.push(piece);
+      } else {
+        this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
+      }
+      this.$emit('updated', this.selectedItems);
     }
   }
 };
