@@ -29,6 +29,7 @@
             :items="items"
             :max-items="field.max"
             @updated="updated"
+            @safe-close="chooser=false"
           />
         </div>
         <AposSlatList @update="updated" :initial-items="items" />

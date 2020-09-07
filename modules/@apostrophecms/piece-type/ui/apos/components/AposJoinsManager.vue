@@ -17,7 +17,7 @@
 
     <template #leftRail>
       <AposModalRail>
-        <AposSlatList @update="updated" :initial-items="selectedItems" />
+        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" />
       </AposModalRail>
     </template>
 
@@ -74,7 +74,7 @@
                     :choice="checkboxes[row._id].choice"
                     :id="row._id"
                     v-model="checked"
-                    @updated="updateItems"
+                    @updated="updateSelectedItems"
                   />
                 </td>
                 <td
@@ -221,6 +221,11 @@ export default {
     this.modal.active = true;
     this.getPieces();
   },
+  watch: {
+    checked: function() {
+      this.generateUi();
+    }
+  },
   methods: {
     async finishSaved() {
       await this.getPieces();
@@ -299,16 +304,19 @@ export default {
 
       this.getPieces();
     },
-    updated(items) {
+    updateSlatList(items) {
       this.selectedItems = items;
       this.checked = items.map(item => item._id);
       this.$emit('updated', items);
     },
-    updateItems(event) {
-      const piece = this.pieces.find(piece => piece._id = event.target.id);
-      if (piece) {
+    updateSelectedItems(event) {
+      if (this.checked.length > this.selectedItems.length) {
+        const piece = this.pieces.find(piece => piece._id === event.target.id);
         this.selectedItems.push(piece);
+      } else {
+        this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
       }
+      this.$emit('updated', this.selectedItems);
     }
   }
 };
