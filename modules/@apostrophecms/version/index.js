@@ -621,9 +621,6 @@ module.exports = {
           // Maybe it's a relationship, in which case we need to
           // associate that relationship with the ids field that stores it
           field = _.find(schema, function (field) {
-            if (field.idField) {
-              return field.idField === key;
-            }
             if (field.idsStorage) {
               return field.idsStorage === key;
             }

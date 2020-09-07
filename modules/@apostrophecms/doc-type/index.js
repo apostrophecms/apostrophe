@@ -621,7 +621,7 @@ module.exports = {
         const output = [];
         for (const field of schema) {
           if (field.type.name.substring(0, 5) === '_relationship') {
-            if (_.has(input, field.idField || field.idsStorage)) {
+            if (_.has(input, field.idsStorage)) {
               output.push(field.name);
             }
           } else {

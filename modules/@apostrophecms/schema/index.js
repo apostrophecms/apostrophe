@@ -841,9 +841,6 @@ module.exports = {
           warn('Name of relationship field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
         }
         if (!field.idsStorage) {
-          if (field.idField) {
-            fail('relationship takes idsStorage, not idField. You can also omit it, in which case a reasonable value is supplied.');
-          }
           // Supply reasonable value
           field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
         }
@@ -1343,9 +1340,6 @@ module.exports = {
           if (!subsetCopy) {
             // These rules suffice for our standard fields
             subset[field.name] = instance[field.name];
-            if (field.idField) {
-              subset[field.idField] = instance[field.idField];
-            }
             if (field.idsStorage) {
               subset[field.idsStorage] = instance[field.idsStorage];
             }
@@ -1506,9 +1500,9 @@ module.exports = {
       // Driver invoked by the "relationship" methods of the standard
       // relationship field types.
       //
-      // All arguments must be present, however fieldsField
+      // All arguments must be present, however fieldsStorage
       // may be undefined to indicate none is needed.
-      async relationshipDriver(req, method, reverse, items, idField, fieldsField, objectField, options) {
+      async relationshipDriver(req, method, reverse, items, idsStorage, fieldsStorage, objectField, options) {
         if (!options) {
           options = {};
         }
@@ -1516,17 +1510,17 @@ module.exports = {
         const builders = options.builders || {};
         const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
-        // Some joinr methods don't take fieldsField
+        // Some joinr methods don't take fieldsStorage
         if (method.length === 4) {
           const realMethod = method;
-          method = function (items, idField, fieldsField, objectField, getter) {
-            return realMethod(items, idField, objectField, getter);
+          method = function (items, idsStorage, fieldsStorage, objectField, getter) {
+            return realMethod(items, idsStorage, objectField, getter);
           };
         }
-        await method(items, idField, fieldsField, objectField, function (ids) {
+        await method(items, idsStorage, fieldsStorage, objectField, function (ids) {
           const idsCriteria = {};
           if (reverse) {
-            idsCriteria[idField] = { $in: ids };
+            idsCriteria[idsStorage] = { $in: ids };
           } else {
             idsCriteria._id = { $in: ids };
           }
@@ -1773,7 +1767,7 @@ module.exports = {
 
       // In the given document, for any relationships that are present in
       // the data (such as `_products`), update the underlying
-      // idsStorage and fieldsField (if appropriate) so that
+      // idsStorage and fieldsStorage (if appropriate) so that
       // storage to the database can take place. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
@@ -1782,7 +1776,7 @@ module.exports = {
       //
       // If the relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
-      // existing values in the `idsStorage` and `fieldsField`
+      // existing values in the `idsStorage` and `fieldsStorage`
       // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
@@ -2272,13 +2266,13 @@ module.exports = {
       // of `schema` containing the root fields that would ultimately be updated by
       // those operations.
       subsetSchemaForPatch(schema, patch) {
-        const idFields = {};
+        const idsStorageFields = {};
         schema.forEach(function(field) {
           if (field.type === 'relationship') {
-            idFields[field.idsStorage] = field.name;
+            idsStorageFields[field.idsStorage] = field.name;
           }
         });
-        return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idFieldToSchemaField));
+        return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idsStorageFieldToSchemaField));
         function operatorKeys() {
           return _.uniq(_.flatten(
             _.map([ '$push', '$pullAll', '$pullAllById' ], function(o) {
@@ -2288,8 +2282,8 @@ module.exports = {
             })
           ));
         }
-        function idFieldToSchemaField(name) {
-          return idFields[name] || name;
+        function idsStorageFieldToSchemaField(name) {
+          return idsStorageFields[name] || name;
         }
       },
       groupsToArray(groups) {
