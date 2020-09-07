@@ -143,6 +143,10 @@ describe('Pieces', function() {
             add: {
               name: {
                 type: 'string'
+              },
+              _products: {
+                type: 'relationshipReverse',
+                withType: 'product'
               }
             }
           }
@@ -624,11 +628,22 @@ describe('Pieces', function() {
     assert(product._articles.length === 1);
   });
 
+  let relatedArticleId;
+
   it('can GET a single product with relationships', async () => {
     const response = await apos.http.get(`/api/v1/product/${relatedProductId}`);
     assert(response);
     assert(response._articles);
     assert(response._articles.length === 1);
+    relatedArticleId = response._articles[0]._id;
+  });
+
+  it('can GET a single article with reverse relationships', async () => {
+    const response = await apos.http.get(`/api/v1/article/${relatedArticleId}`);
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === relatedProductId);
   });
 
   it('can GET results plus filter choices', async () => {
@@ -637,7 +652,6 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.results);
-    assert(response.choices);
     assert(response.choices.title);
     assert(response.choices.title[0].label.match(/Cool Product/));
     assert(response.choices.published);

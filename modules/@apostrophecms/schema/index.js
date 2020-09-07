@@ -889,7 +889,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'relationshipReverse',
-      relationship: async function (req, field, objects, options) {
+      relate: async function (req, field, objects, options) {
         return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
       validate: function (field, options, warn, fail) {
@@ -1423,26 +1423,28 @@ module.exports = {
             continue;
           }
           const convert = self.fieldTypes[field.type].convert;
-          try {
-            await convert(req, field, data, object);
-          } catch (e) {
-            if (Array.isArray(e)) {
-              // Nested object or array will throw an array if it
-              // encounters an error or errors in its subsidiary fields
-              for (const error of e) {
+          if (convert) {
+            try {
+              await convert(req, field, data, object);
+            } catch (e) {
+              if (Array.isArray(e)) {
+                // Nested object or array will throw an array if it
+                // encounters an error or errors in its subsidiary fields
+                for (const error of e) {
+                  errors.push({
+                    path: field.name + '.' + error.path,
+                    error: error.error
+                  });
+                }
+              } else {
+                if ((typeof e) !== 'string') {
+                  self.apos.util.error(e + '\n\n' + e.stack);
+                }
                 errors.push({
-                  path: field.name + '.' + error.path,
-                  error: error.error
+                  path: field.name,
+                  error: e
                 });
               }
-            } else {
-              if ((typeof e) !== 'string') {
-                self.apos.util.error(e + '\n\n' + e.stack);
-              }
-              errors.push({
-                path: field.name,
-                error: e
-              });
             }
           }
         }
