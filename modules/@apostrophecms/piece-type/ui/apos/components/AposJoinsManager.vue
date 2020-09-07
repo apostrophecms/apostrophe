@@ -28,6 +28,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
+            :disable-selection="checked.length >= maxItems"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -135,6 +136,10 @@ export default {
     },
     items: {
       type: Array
+    },
+    maxItems: {
+      type: Number,
+      default: 0
     }
   },
   emits: [ 'trash', 'search', 'safe-close' ],
@@ -300,7 +305,6 @@ export default {
       this.$emit('updated', items);
     },
     updateItems(event) {
-      //TODO: limit check possibilities if "max"
       const piece = this.pieces.find(piece => piece._id = event.target.id);
       if (piece) {
         this.selectedItems.push(piece);

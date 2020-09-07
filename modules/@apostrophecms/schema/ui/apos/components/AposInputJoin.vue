@@ -27,6 +27,7 @@
             v-if="chooser"
             :moduleName="field.withType"
             :items="items"
+            :max-items="field.max"
             @updated="updated"
           />
         </div>

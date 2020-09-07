@@ -3,6 +3,7 @@
     <template #leftControls>
       <AposButton
         label="Select" :icon-only="true"
+        :disabled="disableSelection"
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')" :icon-color="iconColor"
       />
@@ -69,6 +70,10 @@ export default {
     labels: {
       type: Object,
       required: true
+    },
+    disableSelection: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],

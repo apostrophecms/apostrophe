@@ -113,7 +113,8 @@ export default {
             name: row._id,
             type: 'checkbox',
             hideLabel: true,
-            label: `Toggle selection of ${row.title}`
+            label: `Toggle selection of ${row.title}`,
+            disabled: this.checked.length >= this.maxItems && !this.checked.includes(row._id)
           }
         };
       });
