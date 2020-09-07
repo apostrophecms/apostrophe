@@ -156,4 +156,8 @@ export default {
     min-height: 20px;
     max-width: $input-max-width * 0.75;
   }
+
+  .apos-modal__rail .apos-slat-list {
+    padding: 5px;
+  }
 </style>

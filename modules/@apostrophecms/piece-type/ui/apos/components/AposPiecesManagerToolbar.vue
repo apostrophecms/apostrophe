@@ -151,8 +151,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-pieces-manager-toolbar {
+    max-height: 37px;
+  }
+
   .apos-pieces-manager-toolbar /deep/ .apos-field-search {
     width: 250px;
   }
-
 </style>

@@ -139,7 +139,7 @@ export default {
     },
     maxItems: {
       type: Number,
-      default: 0
+      default: undefined
     }
   },
   emits: [ 'trash', 'search', 'safe-close' ],
