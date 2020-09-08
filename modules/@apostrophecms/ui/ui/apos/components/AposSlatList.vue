@@ -158,6 +158,10 @@ export default {
   }
 
   .apos-modal__rail .apos-slat-list {
-    padding: 5px;
+    padding: 16px;
+  }
+
+  .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
+    margin-bottom: 8px;
   }
 </style>
