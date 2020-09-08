@@ -152,6 +152,7 @@ module.exports = {
           self.canUpload,
           require('connect-multiparty')(),
           async function (req) {
+            let result;
             try {
               // The name attribute could be anything because of how fileupload
               // controls work; we don't really care.
@@ -159,9 +160,9 @@ module.exports = {
               if (!file) {
                 throw self.apos.error('notfound');
               }
-              return self.insert(req, file);
+              result = await self.insert(req, file);
             } finally {
-              for (const file of (req.files || {})) {
+              for (const file of (Object.values(req.files) || {})) {
                 try {
                   fs.unlinkSync(file.path);
                 } catch (e) {
@@ -169,6 +170,7 @@ module.exports = {
                 }
               }
             }
+            return result;
           }
         ],
         // Crop a previously uploaded image, based on the `id` POST parameter
@@ -294,7 +296,7 @@ module.exports = {
           }
         }
         info.used = true;
-        await self.db.updateOne({ _id: info._id }, info);
+        await self.db.replaceOne({ _id: info._id }, info);
         object[field.name] = info;
       },
       fieldTypePartial(data) {
