@@ -42,7 +42,9 @@
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
-            @uploaded="getMedia"
+            @upload-started="uploading = true"
+            @upload-complete="completeUploading"
+            @create-placeholder="createPlaceholder"
           />
         </template>
       </AposModalBody>
@@ -91,6 +93,7 @@ export default {
         showModal: false
       },
       editing: null,
+      uploading: false,
       checked: [],
       lastSelected: null,
       emptyDisplay: {
@@ -139,6 +142,17 @@ export default {
       ));
 
       this.media = getResponse.results;
+    },
+    createPlaceholder(dimensions) {
+      this.media.unshift({
+        _id: 'placeholder',
+        title: 'placeholder image',
+        dimensions
+      });
+    },
+    async completeUploading () {
+      this.uploading = false;
+      await this.getMedia();
     },
     clearSelected() {
       this.checked = [];
