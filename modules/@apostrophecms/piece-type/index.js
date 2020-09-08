@@ -142,14 +142,6 @@ module.exports = {
     self.pluralLabel = options.pluralLabel;
     self.manageViews = options.manageViews;
 
-    // As a doc manager, we can provide default templates for use when
-    // choosing docs of our type. With this code in place, subclasses of
-    // pieces can just provide custom chooserChoice.html and chooserChoices.html
-    // templates with no additional plumbing. -Tom
-
-    self.choiceTemplate = self.__meta.name + ':chooserChoice.html';
-    self.choicesTemplate = self.__meta.name + ':chooserChoices.html';
-    self.relationshipTemplate = self.__meta.name + ':relationshipEditor.html';
     self.composeFilters();
     self.composeColumns();
     self.addPermissions();
@@ -450,7 +442,7 @@ module.exports = {
       // `area` properties are accepted at the root level.
       //
       // Inserts it into the database, fetches it again to get all
-      // joins, and returns the result (note it is an async function).
+      // relationships, and returns the result (note it is an async function).
       //
       // If `input._copyingId` is present, fetches that
       // piece and, if we have permission to view it, copies any schema properties
@@ -480,7 +472,7 @@ module.exports = {
 
       // Similar to `convertInsertAndRefresh`. Update the piece with the given _id, based on the
       // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
-      // populate all joins and return it.
+      // populate all relationships and return it.
       //
       // Any fields not present in `input` are regarded as empty, if permitted (REST PUT semantics).
       // For partial updates use convertPatchAndRefresh. Employs a lock to avoid overwriting the work of
@@ -511,7 +503,7 @@ module.exports = {
 
       // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id, based on the
       // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
-      // populate all joins and return it. Employs a lock to avoid overwriting the work of
+      // populate all relationships and return it. Employs a lock to avoid overwriting the work of
       // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
 
       async convertPatchAndRefresh(req, input, _id) {

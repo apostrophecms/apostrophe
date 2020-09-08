@@ -229,7 +229,7 @@ module.exports = {
 
           // Polymorphic find: fetch just the ids at first, then go back
           // and fetch them via their own type managers so that we get the
-          // expected joins and urls and suchlike.
+          // expected relationships and urls and suchlike.
 
           const idsAndTypes = await cursor.project({
             _id: 1,
@@ -316,10 +316,10 @@ module.exports = {
         // Areas can be schemaless so find them automatically
         self.apos.area.walk(doc, function (area, dotPath) {
           // Do not examine areas accessed via temporarily
-          // joined information, such as snippets in a snippet
-          // widget. Allow those items to be found on their
-          // own as search results, and avoid bloating the
-          // search text up to the 16MB limit as happened on DR
+          // present information loaded via relationships, such as
+          // snippets in a snippet widget. Allow those items to be found
+          // on their own as search results, and avoid bloating the
+          // search text up to the 16MB limit
           if (dotPath.match(/\._\w/)) {
             return;
           }
