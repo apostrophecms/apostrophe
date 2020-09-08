@@ -23,10 +23,8 @@
           group: 'AposInputGroup',
           array: 'AposInputArray',
           object: 'AposInputObject',
-          relationshipByOne: 'AposInputRelationshipByOne',
-          relationshipByOneReverse: 'AposInputRelationshipByOneReverse',
-          relationshipByArray: 'AposInputRelationshipByArray',
-          relationshipByArrayReverse: 'AposInputRelationshipByArrayReverse',
+          relationship: 'AposInputRelationship',
+          relationshipReverse: 'AposInputRelationshipReverse',
           attachment: 'AposInputAttachment',
           video: 'AposInputVideo'
         }
