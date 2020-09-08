@@ -18,7 +18,7 @@
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   props: {
     user: {
       type: Object,
@@ -29,7 +29,7 @@ export default {
       default: ''
     }
   },
-  emits: ['input'],
+  emits: [ 'input' ],
   data() {
     return {
       menu: [
@@ -51,7 +51,7 @@ export default {
       return {
         label: this.user.label || '',
         icon: 'chevron-down-icon',
-        modifiers: ['icon-right'],
+        modifiers: [ 'icon-right' ],
         type: 'quiet'
       };
     }
