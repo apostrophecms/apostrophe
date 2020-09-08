@@ -16,7 +16,7 @@
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
 
-const Promise = require('bluebird');
+const delay = require('bluebird').delay;
 
 module.exports = {
   options: {
@@ -280,7 +280,7 @@ module.exports = {
               seenIds
             });
             if (!notifications.length && !dismissed.length) {
-              await Promise.delay(self.options.queryInterval || 1000);
+              await delay(self.options.queryInterval || 1000);
               return attempt();
             }
 
