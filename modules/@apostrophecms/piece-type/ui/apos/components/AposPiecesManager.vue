@@ -19,10 +19,12 @@
         <template #bodyHeader>
           <AposPiecesManagerToolbar
             :selected-state="selectAllState"
+            :total-pages="totalPages" :current-page="currentPage"
+            :filters="options.filters" :labels="moduleLabels"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
-            :filters="options.filters"
+            @page-change="updatePage"
             @filter="filter"
           />
         </template>
@@ -104,6 +106,7 @@
         v-if="editing"
         :is="options.components.insertModal"
         :module-name="moduleName" :doc-id="editingDocId"
+        :filter-values="filterValues"
         @saved="finishSaved" @safe-close="closeEditor"
       />
     </template>
@@ -133,11 +136,13 @@ export default {
       },
       pieces: [],
       lastSelected: null,
-      totalPages: 1, // TODO: Populate this from the `getPieces` method.
-      currentPage: 1, // TODO: Make use of these.
+      totalPages: 1,
+      currentPage: 1,
       filterValues: {},
       editing: false,
-      editingDocId: ''
+      editingDocId: '',
+      queryExtras: {},
+      holdQueries: false
     };
   },
   computed: {
@@ -188,15 +193,9 @@ export default {
       return 'empty';
     }
   },
-  // TODO: Work these back into the toolbar.
-  // watch: {
-  //   currentPage() {
-  //     this.update();
-  //   }
-  // },
   created() {
     this.options.filters.forEach(filter => {
-      this.filterValues[filter.name] = filter.choices[0].value;
+      this.filterValues[filter.name] = filter.def || filter.choices[0].value;
     });
   },
   async mounted() {
@@ -209,15 +208,42 @@ export default {
       await this.getPieces();
     },
     async getPieces () {
-      this.pieces = (await apos.http.get(
+      if (this.holdQueries) {
+        return;
+      }
+
+      this.holdQueries = true;
+
+      const qs = {
+        ...this.filterValues,
+        page: this.currentPage,
+        ...this.queryExtras
+      };
+
+      // Avoid undefined properties.
+      for (const prop in qs) {
+        if (qs[prop] === undefined) {
+          delete qs[prop];
+        };
+      }
+
+      const getResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs: {
-            ...this.filterValues,
-            page: this.currentPage
-          }
+          qs
         }
-      )).results;
+      ));
+
+      this.currentPage = getResponse.currentPage;
+      this.totalPages = getResponse.pages;
+      this.pieces = getResponse.results;
+      this.holdQueries = false;
+    },
+    updatePage(num) {
+      if (num) {
+        this.currentPage = num;
+        this.getPieces();
+      }
     },
     openEditor(docId) {
       this.editingDocId = docId;
@@ -232,9 +258,18 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    search(query) {
-      // TODO: Update the `qs` object with search term in the `getPieces` call.
-      this.$emit('search', query);
+    async search(query) {
+      if (query) {
+        this.queryExtras.autocomplete = query;
+      } else if ('autocomplete' in this.queryExtras) {
+        delete this.queryExtras.autocomplete;
+      } else {
+        return;
+      }
+
+      this.currentPage = 1;
+
+      await this.getPieces();
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -242,6 +277,7 @@ export default {
       }
 
       this.filterValues[filter] = value;
+      this.currentPage = 1;
 
       this.getPieces();
     }

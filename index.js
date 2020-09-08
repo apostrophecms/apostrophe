@@ -121,8 +121,8 @@ module.exports = async function(options) {
   function mergeConfiguration(options, defaults) {
     let config = {};
     let local = {};
-    let localPath = options.__localPath || '/data/local.js';
-    let reallyLocalPath = self.rootDir + localPath;
+    const localPath = options.__localPath || '/data/local.js';
+    const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
       local = require(reallyLocalPath);
@@ -166,18 +166,18 @@ module.exports = async function(options) {
   }
 
   function autodetectBundles() {
-    let modules = _.keys(self.options.modules);
+    const modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
-      let path = getNpmPath(name);
+      const path = getNpmPath(name);
       if (!path) {
         return;
       }
-      let module = require(path);
+      const module = require(path);
       if (module.moogBundle) {
         self.options.bundles = (self.options.bundles || []).concat(name);
         _.each(module.moogBundle.modules, function(name) {
           if (!_.has(self.options.modules, name)) {
-            let bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
+            const bundledModule = require(require('path').dirname(path) + '/' + module.moogBundle.directory + '/' + name);
             if (bundledModule.improve) {
               self.options.modules[name] = {};
             }
@@ -188,7 +188,7 @@ module.exports = async function(options) {
   }
 
   function getNpmPath(name) {
-    let parentPath = path.resolve(self.npmRootDir);
+    const parentPath = path.resolve(self.npmRootDir);
     try {
       return npmResolve.sync(name, { basedir: parentPath });
     } catch (e) {
@@ -249,10 +249,10 @@ module.exports = async function(options) {
       port: 7900,
       secret: 'irrelevant'
     });
-    let m = findTestModule();
+    const m = findTestModule();
     // Allow tests to be in test/ or in tests/
-    let testDir = require('path').dirname(m.filename);
-    let moduleDir = testDir.replace(/\/tests?$/, '');
+    const testDir = require('path').dirname(m.filename);
+    const moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
@@ -308,7 +308,7 @@ module.exports = async function(options) {
 
   async function instantiateModules() {
     self.modules = {};
-    for (let item of _.keys(self.options.modules)) {
+    for (const item of _.keys(self.options.modules)) {
       const improvement = self.synth.isImprovement(item);
       if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
         // We don't want an actual instance of this module, we are using it
@@ -366,7 +366,7 @@ module.exports = async function(options) {
 
 };
 
-const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widget-type', '@apostrophecms/page-type', '@apostrophecms/piece-type', '@apostrophecms/piece-page-type', '@apostrophecms/piece-widget-type', '@apostrophecms/doc-type' ];
+const abstractClasses = [ '@apostrophecms/module', '@apostrophecms/widget-type', '@apostrophecms/page-type', '@apostrophecms/piece-type', '@apostrophecms/piece-page-type', '@apostrophecms/doc-type' ];
 
 module.exports.moogBundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),

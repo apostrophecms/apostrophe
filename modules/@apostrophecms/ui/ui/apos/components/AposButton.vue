@@ -5,6 +5,7 @@
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
     :type="buttonType"
+    :role="role"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -60,8 +61,12 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: String,
-      default: ''
+      type: [String, Boolean],
+      default: false
+    },
+    role: {
+      type: [String, Boolean],
+      default: false
     }
   },
   emits: [ 'click' ],
@@ -279,6 +284,7 @@ export default {
     z-index: calc(#{$z-index-default} + 1);
   }
 }
+
 .apos-button--block {
   display: block;
   width: 100%;
@@ -298,8 +304,8 @@ export default {
     box-shadow: 0 0 3px var(--a-base-2);
   }
   &[disabled] {
-    border: 1px solid var(--a-base-9);
-    color: var(--a-base-9);
+    border: 1px solid var(--a-base-7);
+    color: var(--a-base-7);
     background-color: transparent;
   }
   &.apos-button--busy {
@@ -393,6 +399,11 @@ export default {
   }
 }
 
+.apos-button--group {
+  background-color: transparent;
+  border: none;
+}
+
 .apos-button--busy {
   .apos-button__content {
     opacity: 0;
@@ -428,6 +439,14 @@ export default {
 
 .apos-button--danger-on-hover:hover {
   color: var(--a-danger);
+}
+
+.apos-button--round {
+  border-radius: 50%;
+}
+
+.apos-button--tiny {
+  padding: 3px;
 }
 
 @keyframes animateGradient {

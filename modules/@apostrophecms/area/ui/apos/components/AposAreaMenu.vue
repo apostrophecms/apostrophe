@@ -1,58 +1,62 @@
 <template>
   <div class="apos-area-menu" :class="{'apos-area-menu--grouped': groupedMenus, 'is-focused': groupIsFocused}">
-    <AposContextMenu tip-alignment="center" :modifiers="['unpadded']">
+    <AposContextMenu
+      :tip-alignment="tipAlignment"
+      :modifiers="['unpadded']"
+      :button="buttonOptions"
+    >
       <ul class="apos-area-menu__wrapper">
         <li
           class="apos-area-menu__item"
-          v-for="(item, index) in myMenu" :key="item.label"
+          v-for="(item, itemIndex) in myMenu" :key="item.label"
           :class="{'has-group': item.items}"
-          :ref="`item-${index}`"
+          :ref="`item-${itemIndex}`"
         >
           <dl v-if="item.items" class="apos-area-menu__group">
             <dt>
               <button
                 :for="item.label" class="apos-area-menu__group-label"
                 v-if="item.items" tabindex="0"
-                :id="`${menuId}-trigger-${index}`"
-                :aria-controls="`${menuId}-group-${index}`"
+                :id="`${menuId}-trigger-${itemIndex}`"
+                :aria-controls="`${menuId}-group-${itemIndex}`"
                 @focus="groupFocused"
                 @blur="groupBlurred"
-                @click="toggleGroup(index)"
-                @keydown.prevent.space="toggleGroup(index)"
-                @keydown.prevent.enter="toggleGroup(index)"
-                @keydown.prevent.arrow-down="switchGroup(index, 1)"
-                @keydown.prevent.arrow-up="switchGroup(index, -1)"
-                @keydown.prevent.home="switchGroup(index, 0)"
-                @keydown.prevent.end="switchGroup(index, null)"
+                @click="toggleGroup(itemIndex)"
+                @keydown.prevent.space="toggleGroup(itemIndex)"
+                @keydown.prevent.enter="toggleGroup(itemIndex)"
+                @keydown.prevent.arrow-down="switchGroup(itemIndex, 1)"
+                @keydown.prevent.arrow-up="switchGroup(itemIndex, -1)"
+                @keydown.prevent.home="switchGroup(itemIndex, 0)"
+                @keydown.prevent.end="switchGroup(itemIndex, null)"
                 ref="groupButton"
               >
                 <span>{{ item.label }}</span>
                 <chevron-up-icon
                   class="apos-area-menu__group-chevron"
-                  :class="{'is-active': index === active}" :size="13"
+                  :class="{'is-active': itemIndex === active}" :size="13"
                 />
               </button>
             </dt>
             <dd class="apos-area-menu__group-list" role="region">
               <ul
                 class="apos-area-menu__items apos-area-menu__items--accordion"
-                :class="{'is-active': active === index}"
-                :id="`${menuId}-group-${index}`"
-                :aria-labelledby="`${menuId}-trigger-${index}`"
-                :aria-expanded="active === index ? 'true' : 'false'"
+                :class="{'is-active': active === itemIndex}"
+                :id="`${menuId}-group-${itemIndex}`"
+                :aria-labelledby="`${menuId}-trigger-${itemIndex}`"
+                :aria-expanded="active === itemIndex ? 'true' : 'false'"
               >
                 <li
                   class="apos-area-menu__item"
                   v-for="(child, childIndex) in item.items"
-                  :key="child.action"
+                  :key="child.name"
                   :ref="`child-${index}-${childIndex}`"
                 >
                   <AposAreaMenuItem
-                    @click="clicked(child)"
+                    @click="add(child.name)"
                     :item="child"
-                    :tabbable="index === active"
-                    @up="switchItem(`child-${index}-${childIndex - 1}`, -1)"
-                    @down="switchItem(`child-${index}-${childIndex + 1}`, 1)"
+                    :tabbable="itemIndex === active"
+                    @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
+                    @down="switchItem(`child-${itemIndex}-${childIndex + 1}`, 1)"
                   />
                 </li>
               </ul>
@@ -60,34 +64,72 @@
           </dl>
           <AposAreaMenuItem
             v-else
-            @click="clicked(item)"
+            @click="add(item.name)"
             :item="item"
-            @up="switchItem(`item-${index - 1}`, -1)"
-            @down="switchItem(`item-${index + 1}`, 1)"
+            @up="switchItem(`item-${itemIndex - 1}`, -1)"
+            @down="switchItem(`item-${itemIndex + 1}`, 1)"
           />
         </li>
       </ul>
     </AposContextMenu>
+    <component
+      :is="addWidgetEditor"
+      v-if="adding"
+      v-model="widget"
+      :type="addWidgetType"
+      @close="close"
+      @insert="insert"
+      :options="addWidgetOptions"
+    />
   </div>
 </template>
 
 <script>
+
+import cuid from 'cuid';
 
 export default {
   props: {
     menu: {
       type: Array,
       required: true
+    },
+    tipAlignment: {
+      type: String,
+      default: 'center'
+    },
+    index: {
+      type: Number,
+      required: true
+    },
+    widgetOptions: {
+      type: Object,
+      required: true
     }
   },
-  emits: ['click'],
+  emits: [ 'add' ],
   data() {
     return {
       active: 0,
-      groupIsFocused: false
+      groupIsFocused: false,
+      addWidgetEditor: null,
+      addWidgetOptions: null,
+      addWidgetType: null,
+      widget: null,
+      adding: false,
+      buttonOptions: {
+        label: 'Add Content',
+        iconOnly: true,
+        icon: 'plus-icon',
+        type: 'primary',
+        modifiers: [ 'round', 'tiny' ]
+      }
     };
   },
   computed: {
+    moduleOptions() {
+      return window.apos.area;
+    },
     groupedMenus() {
       let flag = false;
       this.menu.forEach((e) => {
@@ -105,18 +147,51 @@ export default {
       }
     },
     menuId() {
-      return `areaMenu-${(Math.floor(Math.random() * Math.floor(10000)))}`;
+      return `areaMenu-${cuid()}`;
     }
   },
   methods: {
+    add(name) {
+      if (this.widgetIsContextual(name)) {
+        return this.insert({
+          _id: cuid(),
+          type: name,
+          ...this.contextualWidgetDefaultData(name)
+        });
+      } else {
+        this.adding = !this.adding;
+        if (this.adding) {
+          this.addWidgetEditor = this.widgetEditorComponent(name);
+          this.addWidgetOptions = this.widgetOptions[name];
+          this.addWidgetType = name;
+        }
+      }
+    },
+    close() {
+      this.adding = false;
+    },
+    widgetEditorComponent(type) {
+      return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetIsContextual(type) {
+      return this.moduleOptions.widgetIsContextual[type];
+    },
+    contextualWidgetDefaultData(type) {
+      return this.moduleOptions.contextualWidgetDefaultData[type];
+    },
+    insert(widget) {
+      this.$emit('add', {
+        index: this.index,
+        widget
+      });
+      this.close();
+    },
+
     groupFocused() {
       this.groupIsFocused = true;
     },
     groupBlurred() {
       this.groupIsFocused = false;
-    },
-    clicked(item) {
-      this.$emit('click', item.action);
     },
     composeGroups() {
       const ungrouped = {
@@ -272,7 +347,7 @@ export default {
 .apos-area-menu__group {
   border-bottom: 1px solid var(--a-base-8);
   padding-bottom: 10px;
-  margin-bottom: 10px;
+  margin: 10px 0;
 }
 .apos-area-menu__item:last-child.has-group .apos-area-menu__group {
   border-bottom: none;

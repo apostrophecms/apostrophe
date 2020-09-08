@@ -1,17 +1,57 @@
 <template>
   <div class="apos-area">
-    <ApostropheAddWidgetMenu @widgetAdded="insert" :index="0" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
+    <AposAreaMenu
+      @add="insert"
+      :menu="choices"
+      tip-alignment="left"
+      :index="0"
+      :widget-options="options.widgets"
+    />
     <div class="apos-areas-widgets-list">
-      <div class="apos-area-widget-wrapper" v-for="(widget, i) in next" :key="widget._id">
-        <div class="apos-area-controls">
-          <button v-if="i > 0" @click="up(i)">Up</button>
-          <button v-if="i < next.length - 1" @click="down(i)">Down</button>
-          <button @click="remove(i)">Remove</button>
-          <button @click="edit(i)">Edit</button>
-        </div>
-        <component v-if="editing[widget._id]" @save="editing[widget._id] = false" @close="editing[widget._id] = false" :is="widgetEditorComponent(widget.type)" :value="widget" @update="update" :options="options.widgets[widget.type]" :type="widget.type" :docId="docId" />
-        <component v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))" :is="widgetComponent(widget.type)" :options="options.widgets[widget.type]" :type="widget.type" :docId="docId" :id="widget._id" :areaFieldId="fieldId" :value="widget" @edit="edit(i)" />
-        <ApostropheAddWidgetMenu @widgetAdded="insert" :index="i + 1" :choices="choices" :widgetOptions="options.widgets" :docId="docId" />
+      <div
+        class="apos-area-widget-wrapper"
+        v-for="(widget, i) in next"
+        :key="widget._id"
+      >
+        <AposWidgetMove
+          :first="i === 0"
+          :last="i === next.length - 1"
+          @up="up(i)"
+          @down="down(i)"
+        />
+        <AposWidgetModify
+          @remove="remove(i)"
+          @edit="edit(i)"
+        />
+        <component
+          v-if="editing[widget._id]"
+          @save="editing[widget._id] = false"
+          @close="editing[widget._id] = false"
+          :is="widgetEditorComponent(widget.type)"
+          :value="widget"
+          @update="update"
+          :options="options.widgets[widget.type]"
+          :type="widget.type"
+          :doc-id="docId"
+        />
+        <component
+          v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))"
+          :is="widgetComponent(widget.type)"
+          :options="options.widgets[widget.type]"
+          :type="widget.type"
+          :doc-id="docId"
+          :id="widget._id"
+          :area-field-id="fieldId"
+          :value="widget"
+          @edit="edit(i)"
+        />
+        <AposAreaMenu
+          @add="insert"
+          :menu="choices"
+          tip-alignment="left"
+          :index="i + 1"
+          :widget-options="options.widgets"
+        />
       </div>
     </div>
   </div>
@@ -23,16 +63,42 @@ import Vue from 'apostrophe/vue';
 import cuid from 'cuid';
 
 export default {
-  name: 'ApostropheAreaEditor',
+  name: 'AposAreaEditor',
   props: {
-    docId: String,
-    docType: String,
-    id: String,
-    fieldId: String,
-    options: Object,
-    items: Array,
-    choices: Array
+    docId: {
+      type: String,
+      default: null
+    },
+    docType: {
+      type: String,
+      default: null
+    },
+    id: {
+      type: String,
+      required: true
+    },
+    fieldId: {
+      type: String,
+      required: true
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    items: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
+    choices: {
+      type: Array,
+      required: true
+    }
   },
+  emits: [ 'changed' ],
   data() {
     return {
       next: this.items,
@@ -236,14 +302,18 @@ export default {
 
 </script>
 
-
 <style>
 .apos-area {
   margin: 5px;
   padding: 5px;
   border: 2px solid var(--a-brand-green);
 }
+
 .apos-areas-widgets-list {
   min-height: 64px;
+}
+
+.apos-area-widget-wrapper {
+  position: relative;
 }
 </style>

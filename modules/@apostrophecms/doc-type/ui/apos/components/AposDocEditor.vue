@@ -75,6 +75,15 @@ export default {
     docId: {
       type: String,
       default: null
+    },
+    filterValues: {
+      type: Object,
+      default() {
+        return {
+          published: true,
+          trash: false
+        };
+      }
     }
   },
   emits: [ 'saved', 'safe-close' ],
@@ -133,7 +142,7 @@ export default {
       return tabs;
     },
     modalTitle () {
-      return `Edit ${this.moduleOptions.pluralLabel}`;
+      return `Edit ${this.moduleOptions.label}`;
     },
     currentFields: function() {
       if (this.currentTab) {
@@ -155,7 +164,8 @@ export default {
       try {
         const getOnePath = `${this.moduleOptions.action}/${this.docId}`;
         docData = await apos.http.get(getOnePath, {
-          busy: true
+          busy: true,
+          qs: this.filterValues
         });
       } catch {
         // TODO: Add error notification. No client API for this yet.
@@ -169,7 +179,7 @@ export default {
       }
     } else {
       this.$nextTick(() => {
-        this.buildEmptyDoc();
+        this.newInstance();
       });
     }
   },
@@ -199,10 +209,13 @@ export default {
         apos.bus.$emit('busy', false);
       }
     },
-    buildEmptyDoc () {
-      this.schema.forEach(field => {
-        this.doc.data[field.name] = '';
+    async newInstance () {
+      const newInstance = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          _newInstance: true
+        }
       });
+      this.doc.data = newInstance;
       this.docReady = true;
     }
   }

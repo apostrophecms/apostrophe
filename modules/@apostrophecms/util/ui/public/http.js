@@ -12,6 +12,7 @@
   // `options.body`. See `apos.http.remote` for details.
   // You do NOT have to pass a callback unless you must support IE11
   // and do not want to include a promise polyfill in your build.
+
   apos.http.post = function(url, options, callback) {
     return apos.http.remote('POST', url, options, callback);
   };
@@ -67,9 +68,13 @@
   // `fullResponse` (if true, return an object with `status`, `headers` and `body`
   // properties, rather than returning the body directly; the individual `headers` are canonicalized
   // to lowercase names. If there are duplicate headers after canonicalization only the
-  // last value is returned.
-  //
-  // `If a header appears multiple times an array is returned for it)
+  // last value is returned. If a header appears multiple times an array is returned for it)
+  // `downloadProgress` (may be a function accepting `received` and `total` parameters. May never be called. If
+  // called, `received` will be the bytes sent so far, and `total` will be the total bytes to be
+  // received. If the total is unknown, it will be `null`)
+  // `uploadProgress` (may be a function accepting `sent` and `total` parameters. May never be called. If
+  // called, `sent` will be the bytes sent so far, and `total` will be the total bytes to be
+  // sent. If the total is unknown, it will be `null`)
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
@@ -107,10 +112,12 @@
     var busyName = options.busy === true ? 'busy' : options.busy;
     var xmlhttp = new XMLHttpRequest();
     var csrfToken = apos.csrfCookieName ? apos.util.getCookie(apos.csrfCookieName) : 'csrf-fallback';
-    var data = options.qs;
+    var data = options.body;
     var keys;
     var i;
-    url = apos.http.addQueryToUrl(url, data);
+    if (options.qs) {
+      url = apos.http.addQueryToUrl(url, options.qs);
+    }
 
     xmlhttp.open(method, url);
     var formData = window.FormData && (data instanceof window.FormData);
@@ -139,7 +146,6 @@
     } else {
       data = options.body;
     }
-    xmlhttp.send(data);
     xmlhttp.addEventListener('load', function() {
       if (options.busy) {
         if (!busyActive[busyName]) {
@@ -198,7 +204,17 @@
     xmlhttp.addEventListener('error', function(evt) {
       return callback(evt);
     });
-    xmlhttp.addEventListener('loadend', function () {
+    if (options.downloadProgress) {
+      xmlhttp.addEventListener('progress', function(evt) {
+        options.downloadProgress(evt.loaded, evt.lengthComputable ? evt.total : null);
+      });
+    }
+    if (xmlhttp.upload && options.uploadProgress) {
+      xmlhttp.upload.addEventListener('progress', function(evt) {
+        options.uploadProgress(evt.loaded, evt.lengthComputable ? evt.total : null);
+      });
+    }
+    xmlhttp.addEventListener('loadend', function (evt) {
       if (options.busy) {
         busyActive[busyName]--;
         if (!busyActive[busyName]) {
@@ -210,6 +226,7 @@
         }
       }
     });
+    xmlhttp.send(data);
 
     function getHeaders() {
       var headers = xmlhttp.getAllResponseHeaders();
@@ -236,23 +253,48 @@
     }
   };
 
-  // Adds query string data to url. Currently supports only one level
-  // of parameters (not nested structures)
+  // Adds query string data to url. Supports nested structures with objects
+  // and arrays, in a way compatible with qs and most other parsers including
+  // those baked into PHP frameworks etc.
   apos.http.addQueryToUrl = function(url, data) {
-    var keys;
     var i;
-    if ((data !== null) && ((typeof data) === 'object')) {
-      keys = Object.keys(data);
-      for (i = 0; (i < keys.length); i++) {
-        var key = keys[i];
+    var flat;
+    if ((data != null) && ((typeof data) === 'object')) {
+      flat = flatten('', data);
+      for (i = 0; (i < flat.length); i++) {
+        var key = flat[i][0];
+        var val = flat[i][1];
         if (i > 0) {
           url += '&';
         } else {
           url += '?';
         }
-        url += encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+        url += encodeURIComponent(key) + '=' + encodeURIComponent(val);
       }
     }
     return url;
+    function flatten(path, data) {
+      var flat = [];
+      var keys;
+      var i;
+      if (Array.isArray(data)) {
+        for (i = 0; (i < data.length); i++) {
+          insert('', data[i]);
+        }
+      } else {
+        keys = Object.keys(data);
+        for (i = 0; (i < keys.length); i++) {
+          insert(keys[i], data[keys[i]]);
+        }
+      }
+      return flat;
+      function insert(key, datum) {
+        if ((datum != null) && ((typeof datum) === 'object')) {
+          flat = flat.concat(flatten(path.length ? path + '[' + key + ']' : key, datum));
+        } else {
+          flat.push([ path.length ? path + '[' + key + ']' : key, datum ]);
+        }
+      }
+    }
   };
 })();

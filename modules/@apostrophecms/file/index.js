@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 // A subclass of `@apostrophecms/piece-type`, `@apostrophecms/file` establishes a library
 // of uploaded files, which may be of any type acceptable to the
@@ -15,47 +15,40 @@ module.exports = {
     alias: 'file',
     insertViaUpload: true
   },
-  beforeSuperClass(self, options) {
-    options.addFields = [
-      {
+  fields: {
+    add: {
+      slug: {
         type: 'slug',
-        name: 'slug',
         label: 'Slug',
         prefix: 'file',
         required: true
       },
-      {
+      attachment: {
         type: 'attachment',
-        name: 'attachment',
         label: 'File',
         required: true
       },
-      {
+      description: {
         type: 'string',
-        name: 'description',
         label: 'Description',
         textarea: true
       },
-      {
+      credit: {
         type: 'string',
-        name: 'credit',
         label: 'Credit'
       },
-      {
+      creditUrl: {
         type: 'url',
-        name: 'creditUrl',
         label: 'Credit URL'
       },
-      {
+      _tags: {
         type: 'join',
-        name: '_tags',
         label: 'Tags',
         withType: '@apostrophecms/file-tag'
       }
-    ].concat(options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
+    },
+    group: {
+      basics: {
         label: 'Basics',
         fields: [
           'attachment',
@@ -65,8 +58,7 @@ module.exports = {
           '_tags'
         ]
       },
-      {
-        name: 'details',
+      details: {
         label: 'Details',
         fields: [
           'description',
@@ -74,7 +66,7 @@ module.exports = {
           'creditUrl'
         ]
       }
-    ].concat(options.arrangeFields || []);
+    }
   },
   methods(self, options) {
     return {

@@ -1,7 +1,7 @@
 <template>
   <button
     @click="click" class="apos-area-menu__button"
-    :data-action="item.action"
+    :data-action="item.name"
     :tabindex="String(tabindex)"
     @keydown.prevent.arrow-down="$emit('down')"
     @keydown.prevent.arrow-up="$emit('up')"
@@ -29,7 +29,7 @@ export default {
       default: true
     }
   },
-  emits: ['click', 'up', 'down'],
+  emits: [ 'click', 'up', 'down' ],
   computed: {
     tabindex() {
       if (this.tabbable) {
@@ -42,6 +42,8 @@ export default {
   methods: {
     click() {
       this.$emit('click');
+      // triggering the `AposContextMenu`'s `close` method since slots cannot emit events
+      this.$parent.close();
     }
   }
 };

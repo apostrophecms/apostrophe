@@ -12,14 +12,14 @@ module.exports = function(self) {
     const total = await self.db.count();
     let n = 0;
     await self.each({}, argv.parallel || 1, async function(file) {
-      if (!_.includes(['jpg', 'png', 'gif'], file.extension)) {
+      if (!_.includes([ 'jpg', 'png', 'gif' ], file.extension)) {
         n++;
         console.log('Skipping a non-image attachment: ' + file.name + '.' + file.extension);
         return;
       }
-      let tempFile;
+
       const originalFile = '/attachments/' + file._id + '-' + file.name + '.' + file.extension;
-      tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + file.extension;
+      const tempFile = self.uploadfs.getTempPath() + '/' + self.apos.util.generateId() + '.' + file.extension;
       n++;
       console.log(n + ' of ' + total + ': ' + originalFile);
       // By default, the --resume option will skip any image that
@@ -32,7 +32,7 @@ module.exports = function(self) {
       // relative URL to files will be appended. If your media are
       // actually on s3 you can skip that part, it'll figure it out.
       if (argv.resume) {
-        let resumeTestSize = argv['resume-test-size'] || 'one-third';
+        const resumeTestSize = argv['resume-test-size'] || 'one-third';
         let url = self.uploadfs.getUrl() + '/attachments/' + file._id + '-' + file.name + '.' + resumeTestSize + '.' + file.extension;
         if (url.substr(0, 1) === '/') {
           url = argv.resume + url;
@@ -59,7 +59,7 @@ module.exports = function(self) {
           return;
         }
       }
-      for (let crop of file.crops) {
+      for (const crop of file.crops) {
         console.log('RECROPPING');
         const originalFile = '/attachments/' + file._id + '-' + file.name + '.' + crop.left + '.' + crop.top + '.' + crop.width + '.' + crop.height + '.' + file.extension;
         console.log('Cropping ' + tempFile + ' to ' + originalFile);

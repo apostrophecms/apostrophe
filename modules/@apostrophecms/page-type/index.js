@@ -1,6 +1,6 @@
-let _ = require('lodash');
+const _ = require('lodash');
 // Same engine used by express to match paths
-let pathToRegexp = require('path-to-regexp');
+const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -34,7 +34,7 @@ module.exports = {
         }
       },
       remove: [ 'trash' ],
-      groups: {
+      group: {
         meta: {
           label: 'Meta',
           fields: [ 'title', 'slug', 'type', 'published', 'orphan' ]
@@ -43,7 +43,7 @@ module.exports = {
     };
   },
   init(self, options) {
-    self.removeTrashPrefixFields(['slug']);
+    self.removeTrashPrefixFields([ 'slug' ]);
     self.addTrashSuffixFields([
       'slug'
     ]);
@@ -190,7 +190,7 @@ module.exports = {
   extendMethods(self, options) {
     return {
       getAutocompleteProjection(_super, query) {
-        let projection = _super(query);
+        const projection = _super(query);
         projection.slug = 1;
         return projection;
       },

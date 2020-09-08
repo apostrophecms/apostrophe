@@ -1,11 +1,9 @@
 // The base class for all modules that implement a widget, such as
-// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html),
-// [@apostrophecms/piece-widget-type](../@apostrophecms/piece-widget-type/index.html) and
+// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html) and
 // [@apostrophecms/video-widget](../@apostrophecms/video-widget/index.html).
 //
 // All widgets have a [schema](../../tutorials/getting-started/schema-guide.html).
-// Many project-specific modules that extend this module consist entirely of an
-// `addFields` option and a `views/widget.html` file.
+// Many project-specific modules that extend this module consist entirely of `fields` configuration and a `views/widget.html` file.
 //
 // For more information see the [custom widgets tutorial](../../tutorials/getting-started/custom-widget.html).
 //
@@ -56,13 +54,6 @@
 // upgraded. So you may wish to set the `scene` option of the appropriate
 // subclass of `@apostrophecms/page-type` or `@apostrophecms/piece-page-type`, as well.
 //
-// ### `addFields`, `removeFields`, `arrangeFields`, etc.
-//
-// The standard options for building [schemas](../../tutorials/getting-started/schema-guide.html)
-// are accepted. The widget will present a modal dialog box allowing the user to edit
-// these fields. They are then available inside `widget.html` as properties of
-// `data.widget`.
-//
 // ### `defer`
 //
 // If you set `defer: true` for a widget module, like @apostrophecms/image-widget, the join to
@@ -83,6 +74,16 @@
 // that information will not be available yet in any asynchronous node.js code.
 // It is the last thing to happen before the actual page template rendering.
 //
+// ## Fields
+//
+// You will need to configure the schema fields for your widget using
+// the `fields` section.
+//
+// The standard options for building [schemas](../../tutorials/getting-started/schema-guide.html)
+// are accepted. The widget will present a modal dialog box allowing the user to edit
+// these fields. They are then available inside `widget.html` as properties of
+// `data.widget`.
+//
 // ## Important templates
 //
 // You will need to supply a `views/widget.html` template for your module that
@@ -95,29 +96,7 @@
 // ## More
 //
 // If your widget requires JavaScript on the browser side, you will want
-// to define the browser-side singleton that manages this type of widget by
-// supplying a `public/js/always.js` file. In
-// that file you will override the `play` method, which receives a jQuery element containing
-// the appropriate div, the `data` for the widget, and the `options` that
-// were passed to the widget.
-//
-// For example, here is the `public/js/always.js` file for the
-// [@apostrophecms/video-widget](../@apostrophecms/video-widget/index.html) module:
-//
-// ```javascript
-// apos.define('@apostrophecms/video-widget', {
-//   extend: '@apostrophecms/widget-type',
-//   construct: function(self, options) {
-//     self.play = function($widget, data, options) {
-//       return apos.oembed.queryAndPlay($widget.find('[data-apos-video-player]'), data.video);
-//     };
-//   }
-// });
-// ```
-//
-// **ALWAYS USE `$widget.find`, NEVER $('selector....')` to create widget players.**
-// Otherwise your site will suffer from "please click refresh after you save"
-// syndrome. Otherwise known as "crappy site syndrome."
+// to write a player function. TODO: document this 3.x style (lean).
 //
 // ## Command line tasks
 //
@@ -128,9 +107,10 @@
 // you are debugging a change and need to test all of the different ways a widget has
 // been used, or are wondering if you can safely remove one.
 
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
+  cascades: [ 'fields' ],
   options: {
     playerData: false
   },
@@ -156,14 +136,11 @@ module.exports = {
   },
   methods(self, options) {
     return {
-
-      // Compose the schema, accepting `addFields`, `removeFields`, etc.
-      // as described in the schema guide. After `afterConstruct` invokes
-      // this method, `self.schema` is available. Throw an error
-      // if `type` is used as a field name
-
       composeSchema() {
-        self.schema = self.apos.schema.compose(options);
+        self.schema = self.apos.schema.compose({
+          addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
+          arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
+        });
         const forbiddenFields = [
           '_id',
           'type'
@@ -248,8 +225,8 @@ module.exports = {
         }
         // Make sure we get default values for contextual fields so
         // `by` doesn't go missing for `@apostrophecms/image-widget`
-        let output = self.apos.schema.newInstance(self.schema);
-        let schema = self.allowedSchema(req);
+        const output = self.apos.schema.newInstance(self.schema);
+        const schema = self.allowedSchema(req);
         output._id = self.apos.launder.id(input._id) || self.apos.util.generateId();
         await self.apos.schema.convert(req, schema, input, output);
         output.metaType = 'widget';
@@ -287,12 +264,12 @@ module.exports = {
       // (the default), all of the permanent properties are supplied.
 
       filterForDataAttribute(widget) {
-        let data = self.apos.util.clonePermanent(widget, true);
+        const data = self.apos.util.clonePermanent(widget, true);
         if (widget._edit || self.options.playerData === true) {
           return data;
         }
         if (self.options.playerData) {
-          let result = {};
+          const result = {};
           _.each(self.options.playerData, function (key) {
             result[key] = data[key];
           });

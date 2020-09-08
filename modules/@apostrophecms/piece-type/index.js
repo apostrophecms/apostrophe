@@ -1,7 +1,8 @@
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
+  cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     manageViews: [ 'list' ],
     perPage: 10
@@ -12,68 +13,41 @@ module.exports = {
     //   _url: 1,
     // }
   },
-  beforeSuperClass(self, options) {
-    self.contextual = options.contextual;
-
-    options.addFields = [ {
-      type: 'slug',
-      name: 'slug',
-      label: 'Slug',
-      required: true,
-      slugifies: 'title'
-    } ].concat(options.addFields || []);
-
-    if (self.contextual) {
-      // If the piece is edited contextually, default the published state to false
-      options.addFields = [ {
-        type: 'boolean',
-        name: 'published',
-        label: 'Published',
-        def: false
-      } ].concat(options.addFields || []);
-    }
-
-    options.defaultColumns = options.defaultColumns || [
-      {
-        name: 'title',
-        label: 'Title'
-      },
-      {
-        name: 'updatedAt',
-        label: 'Edited on',
-        partial: function (value) {
-          if (!value) {
-            // Don't crash if updatedAt is missing, for instance due to a dodgy import process
-            return '';
-          }
-          return self.partial('manageUpdatedAt.html', { value: value });
-        }
-      },
-      {
-        name: 'published',
-        label: 'Published',
-        partial: function (value) {
-          return self.partial('managePublished', { value: value });
-        }
+  fields: {
+    add: {
+      slug: {
+        type: 'slug',
+        label: 'Slug',
+        required: true,
+        slugifies: 'title'
       }
-    ];
-
-    if (self.contextual) {
-      options.defaultColumns.push({
-        name: '_url',
-        label: 'Link',
-        partial: function (value) {
-          return self.partial('manageLink', { value: value });
-        }
-      });
     }
-
-    options.addColumns = options.defaultColumns.concat(options.addColumns || []);
-
-    options.addFilters = [
-      {
+  },
+  columns(self, options) {
+    return {
+      add: {
+        title: {
+          label: 'Title'
+        },
+        updatedAt: {
+          label: 'Edited on'
+        },
+        published: {
+          label: 'Published'
+        },
+        ...(self.options.contextual ? {
+          _url: {
+            label: 'Link'
+          }
+        } : {})
+      }
+    };
+  },
+  filters: {
+    add: {
+      published: {
         label: 'Published',
-        name: 'published',
+        inputType: 'radio',
         choices: [
           {
             value: true,
@@ -84,17 +58,16 @@ module.exports = {
             label: 'Draft'
           },
           {
-            value: null,
+            value: 'any',
             label: 'Both'
           }
         ],
         allowedInChooser: false,
-        def: true,
-        style: 'pill'
+        def: true
       },
-      {
+      trash: {
         label: 'Trash',
-        name: 'trash',
+        inputType: 'radio',
         choices: [
           {
             value: false,
@@ -106,42 +79,55 @@ module.exports = {
           }
         ],
         allowedInChooser: false,
-        def: false,
-        style: 'pill'
+        def: false
       }
-    ].concat(options.addFilters || []);
-
-    options.batchOperations = [
-      {
+    }
+  },
+  batchOperations: {
+    add: {
+      trash: {
         name: 'trash',
         label: 'Trash',
-        unlessFilter: { trash: true }
+        inputType: 'radio',
+        unlessFilter: {
+          trash: true
+        }
       },
-      {
+      rescue: {
         name: 'rescue',
         label: 'Rescue',
-        unlessFilter: { trash: false }
+        unlessFilter: {
+          trash: false
+        }
       },
-      {
+      publish: {
         name: 'publish',
         label: 'Publish',
-        unlessFilter: { published: true },
+        unlessFilter: {
+          published: true
+        },
         requiredField: 'published'
       },
-      {
+      unpublish: {
         name: 'unpublish',
         label: 'Unpublish',
-        unlessFilter: { published: false },
+        unlessFilter: {
+          published: false
+        },
         requiredField: 'published'
       }
-    ].concat(options.addBatchOperations || []);
-    if (options.removeBatchOperations) {
-      options.batchOperations = _.filter(options.batchOperations, function (batchOperation) {
-        return !_.includes(options.removeBatchOperations, batchOperation.name);
-      });
     }
   },
   init(self, options) {
+    self.contextual = options.contextual;
+    if (self.contextual) {
+      // If the piece is edited contextually, default the published state to false
+      const published = self.schema.find(field => field.name === 'published');
+      if (published) {
+        published.def = false;
+      }
+    }
+
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
     }
@@ -205,6 +191,9 @@ module.exports = {
     },
     async post(req) {
       self.publicApiCheck(req);
+      if (req.body._newInstance) {
+        return self.newInstance();
+      }
       return self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
@@ -225,7 +214,7 @@ module.exports = {
   }),
   handlers(self, options) {
     return {
-      'beforeInsert': {
+      beforeInsert: {
         ensureTypeAndCreatorPermissions(req, piece, options) {
           piece.type = self.name;
           if (options.permissions !== false && !self.apos.permission.can(req, 'admin-' + self.name)) {
@@ -245,8 +234,10 @@ module.exports = {
       },
       'apostrophe:modulesReady': {
         composeBatchOperations() {
-          // We took care of addBatchOperations and removeBatchOperations in beforeConstruct
-          self.options.batchOperations = _.filter(self.options.batchOperations, function (batchOperation) {
+          self.batchOperations = Object.keys(self.batchOperations).map(key => ({
+            name: key,
+            ...self.batchOperations[key]
+          })).filter(batchOperation => {
             if (batchOperation.requiredField && !_.find(self.schema, { name: batchOperation.requiredField })) {
               return false;
             }
@@ -349,49 +340,35 @@ module.exports = {
         return self.apos.doc.update(req, piece, options);
       },
       composeFilters() {
-        self.filters = options.filters || [];
-        if (options.addFilters) {
-          _.each(options.addFilters, function (newFilter) {
-            // remove it from the filters if we've already added it, last one wins
-            self.filters = _.filter(self.filters, function (filter) {
-              return filter.name !== newFilter.name;
+        self.filters = Object.keys(self.filters).map(key => ({
+          name: key,
+          ...self.filters[key]
+        }));
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach(filter => {
+          if (
+            !filter.required &&
+            !filter.choices.find(choice => choice.value === 'any')
+          ) {
+            filter.def = 'any';
+            filter.choices.push({
+              value: 'any',
+              label: 'None'
             });
-            // add the new field to the filters
-            self.filters.push(newFilter);
-          });
-        }
-        if (options.removeFilters) {
-          self.filters = _.filter(self.filters, function (filter) {
-            return !_.includes(options.removeFilters, filter.name);
-          });
-        }
+          }
+        });
       },
       composeColumns() {
-        self.columns = options.columns || [];
-        if (options.addColumns) {
-          _.each(options.addColumns, function (newColumn) {
-            // remove it from the columns if we've already added it, last one wins
-            self.columns = _.filter(self.columns, function (column) {
-              return column.name !== newColumn.name;
-            });
-            // add the new field to the columns
-            self.columns.push(newColumn);
-          });
-        }
-        if (options.removeColumns) {
-          self.columns = _.filter(self.columns, function (column) {
-            return !_.includes(options.removeColumns, column.name);
-          });
-        }
+        self.columns = Object.keys(self.columns).map(key => ({
+          name: key,
+          ...self.columns[key]
+        }));
       },
       // Enable inclusion of this type in sitewide search results
       searchDetermineTypes(types) {
         if (self.options.searchable !== false) {
           types.push(self.name);
         }
-      },
-      isAdminOnly() {
-        return self.options.adminOnly;
       },
       addPermissions() {
         if (!self.isAdminOnly()) {
@@ -450,9 +427,9 @@ module.exports = {
       // that all lifecycle events are fired correctly, the current
       // implementation processes the pieces in series.
       async batchSimpleRoute(req, name, change) {
-        let batchOperation = _.find(self.options.batchOperations, { name: name });
-        let schema = batchOperation.schema || [];
-        let data = self.apos.schema.newInstance(schema);
+        const batchOperation = _.find(self.batchOperations, { name: name });
+        const schema = batchOperation.schema || [];
+        const data = self.apos.schema.newInstance(schema);
         await self.apos.schema.convert(req, schema, req.body, data);
         await self.apos.modules['@apostrophecms/job'].run(req, one, { labels: { title: batchOperation.progressLabel || batchOperation.buttonLabel || batchOperation.label } });
         async function one(req, id) {
@@ -490,7 +467,7 @@ module.exports = {
       // If copying, the module also emits `copyExtras` with `(req, copyOf, input, piece)`.
 
       async convertInsertAndRefresh(req, input, options) {
-        let piece = self.newInstance();
+        const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
         await self.convert(req, input, piece, {
           onlyPresentFields: true,
@@ -553,13 +530,14 @@ module.exports = {
       },
 
       getCreateControls(req) {
-        let controls = _.cloneDeep(self.createControls);
+        const controls = _.cloneDeep(self.createControls);
         return controls;
       },
       getEditControls(req) {
-        let controls = _.cloneDeep(self.editControls);
+        const controls = _.cloneDeep(self.editControls);
         return controls;
       },
+      // TODO: Remove this if deprecated. - ab
       getChooserControls(req) {
         return [
           {
@@ -580,6 +558,7 @@ module.exports = {
           }
         ];
       },
+      // TODO: Remove this if deprecated. - ab
       getManagerControls(req) {
         return [
           {
@@ -600,7 +579,7 @@ module.exports = {
       // for things like testing pagination, see the
       // `your-piece-type:generate` task.
       generate(i) {
-        let piece = self.newInstance();
+        const piece = self.newInstance();
         piece.title = 'Generated #' + (i + 1);
         piece.published = true;
         return piece;
@@ -671,7 +650,7 @@ module.exports = {
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
         browserOptions.contextual = self.contextual;
-        browserOptions.batchOperations = self.options.batchOperations;
+        browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
         _.defaults(browserOptions, {
           components: {}

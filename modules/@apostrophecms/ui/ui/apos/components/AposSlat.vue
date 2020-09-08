@@ -111,8 +111,7 @@ export default {
     color: var(--a-text-primary);
     @include apos-transition();
     &:hover:not(.apos-slat-list__item--disabled) {
-      color: var(--a-white);
-      background-color: var(--a-primary);
+      background-color: var(--a-base-7);
       cursor: grab;
     }
     &:active:not(.apos-slat-list__item--disabled) {
@@ -120,12 +119,14 @@ export default {
     }
     &:active:not(.apos-slat-list__item--disabled),
     &:focus:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-primary-button-hover);
+      background-color: var(--a-base-7);
     }
   }
 
   .apos-slat.is-engaged,
-  .apos-slat.is-engaged:focus {
+  .apos-slat.is-engaged:focus,
+  .apos-slat.sortable-chosen:focus,
+  .apos-slat.is-dragging:focus {
     background-color: var(--a-primary);
     color: var(--a-white);
   }

@@ -1,4 +1,4 @@
-let _ = require('lodash');
+const _ = require('lodash');
 // A subclass of `@apostrophecms/piece-type`, `@apostrophecms/image` establishes a library
 // of uploaded images in formats suitable for use on the web.
 //
@@ -16,55 +16,49 @@ module.exports = {
     label: 'Image',
     alias: 'image',
     perPage: 20,
-    manageViews: [
-      'grid',
-      'list'
-    ],
     insertViaUpload: true,
-    searchable: false
+    searchable: false,
+    browser: {
+      components: {
+        managerModal: 'AposMediaManager'
+      }
+    }
   },
-  beforeSuperClass(self, options) {
-    options.addFields = [
-      {
+  fields: {
+    add: {
+      slug: {
         type: 'slug',
-        name: 'slug',
         label: 'Slug',
         prefix: 'image',
         required: true
       },
-      {
+      attachment: {
         type: 'attachment',
-        name: 'attachment',
         label: 'Image File',
         fileGroup: 'images',
         required: true
       },
-      {
+      description: {
         type: 'string',
-        name: 'description',
         label: 'Description',
         textarea: true
       },
-      {
+      credit: {
         type: 'string',
-        name: 'credit',
         label: 'Credit'
       },
-      {
+      creditUrl: {
         type: 'url',
-        name: 'creditUrl',
         label: 'Credit URL'
       },
-      {
+      _tags: {
         type: 'join',
-        name: '_tags',
         label: 'Tags',
         withType: '@apostrophecms/image-tag'
       }
-    ].concat(options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
+    },
+    group: {
+      basics: {
         label: 'Basics',
         fields: [
           'attachment',
@@ -74,8 +68,7 @@ module.exports = {
           '_tags'
         ]
       },
-      {
-        name: 'details',
+      details: {
         label: 'Details',
         fields: [
           'description',
@@ -83,8 +76,19 @@ module.exports = {
           'creditUrl'
         ]
       }
-    ].concat(options.arrangeFields || []);
+    }
   },
+  extendRestApiRoutes: (self, options) => ({
+    async getAll (_super, req) {
+      const pieces = await _super(req);
+
+      self.apos.attachment.all(pieces, {
+        annotate: true
+      });
+
+      return pieces;
+    }
+  }),
   methods(self, options) {
     return {
       // This method is available as a template helper: apos.image.first
@@ -121,7 +125,7 @@ module.exports = {
       first(within, options) {
         options = options ? _.clone(options) : {};
         options.group = 'images';
-        let result = self.apos.attachment.first(within, options);
+        const result = self.apos.attachment.first(within, options);
         return result;
       },
       // This method is available as a template helper: apos.image.all
@@ -175,7 +179,7 @@ module.exports = {
         // single image size that's larger than the original image (if such an image
         // size exists) to cover as many bases as possible
         let includedOriginalWidth = false;
-        let sources = self.apos.attachment.imageSizes.filter(function (imageSize) {
+        const sources = self.apos.attachment.imageSizes.filter(function (imageSize) {
           if (imageSize.width < attachment.width) {
             return true;
           } else if (!includedOriginalWidth) {
@@ -183,11 +187,11 @@ module.exports = {
             return true;
           }
         }).map(function (imageSize) {
-          let src = self.apos.attachment.url(attachment, {
+          const src = self.apos.attachment.url(attachment, {
             size: imageSize.name,
             crop: cropRelationship
           });
-          let width = Math.min(imageSize.width, attachment.width);
+          const width = Math.min(imageSize.width, attachment.width);
           return src + ' ' + width + 'w';
         });
         return sources.join(', ');
@@ -203,6 +207,13 @@ module.exports = {
             self.apos.launder.integer(req.body.minSize[1])
           ];
         }
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposMediaManager'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },

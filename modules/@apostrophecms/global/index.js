@@ -33,7 +33,7 @@
 //
 // `_id`: the MongoDB ID of the global doc. Available after `modulesReady`.
 
-let _ = require('lodash');
+const _ = require('lodash');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -44,13 +44,13 @@ module.exports = {
     pluralLabel: 'Global',
     searchable: false
   },
-  beforeSuperClass(self, options) {
-    options.removeFields = [
+  fields: {
+    remove: [
       'title',
       'slug',
       'published',
       'trash'
-    ].concat(options.removeFields || []);
+    ]
   },
   init(self, options) {
     self.slug = options.slug || 'global';

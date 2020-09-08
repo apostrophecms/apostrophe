@@ -20,7 +20,7 @@ describe('Pieces Public API', function() {
       root: module,
 
       modules: {
-        'thing': {
+        thing: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'thing',
@@ -37,11 +37,11 @@ describe('Pieces Public API', function() {
         }
       }
     });
-    assert(apos.modules['thing']);
-    assert(apos.modules['thing'].schema);
+    assert(apos.modules.thing);
+    assert(apos.modules.thing.schema);
   });
 
-  let testThing = {
+  const testThing = {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar',
