@@ -19,7 +19,8 @@
           @engage="engage"
           @disengage="disengage"
           @move="move"
-          v-for="item in items" :key="item._id"
+          v-for="item in items"
+          :key="item._id"
           :item="item"
           :class="{'apos-slat-list__item--disabled' : !editable}"
           :engaged="engaged === item._id"
@@ -90,8 +91,11 @@ export default {
       this.engaged = null;
     },
     remove(item, focusNext) {
+      console.log('removing');
       const itemIndex = this.getIndex(item._id);
+      console.log(this.items);
       const items = this.items.filter(i => item._id !== i._id);
+      console.log(items);
       this.$emit('update', items);
       if (focusNext && items[itemIndex]) {
         this.focusElement(items[itemIndex]._id);

@@ -10,7 +10,10 @@
           <p class="apos-attachment-instructions" v-html="message" />
         </button>
         <div v-if="value.data.length" class="apos-attachment-files">
-          <AposSlatList :initial-items="value.data" />
+          <AposSlatList 
+            :initial-items="next"
+            @update="updated"
+          />
         </div>
       </div>
     </template>
@@ -50,6 +53,9 @@ export default {
     }
   },
   methods: {
+    updated(items) {
+      this.next = items;
+    },
     validate(value) {
       if (this.field.required && !value.data.length) {
         return 'required';
