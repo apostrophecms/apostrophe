@@ -55,30 +55,30 @@ module.exports = {
             ]
           },
           _viewUsers: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can View',
-            idsField: 'viewUsersIds'
+            idsStorage: 'viewUsersIds'
           },
           _viewGroups: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can View',
-            idsField: 'viewGroupsIds'
+            idsStorage: 'viewGroupsIds'
           },
           _editUsers: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/user',
             label: 'These Users can Edit',
-            idsField: 'editUsersIds',
+            idsStorage: 'editUsersIds',
             // Gets patched after full initialization
             permission: 'admin'
           },
           _editGroups: {
-            type: 'join',
+            type: 'relationship',
             withType: '@apostrophecms/group',
             label: 'These Groups can Edit',
-            idsField: 'editGroupsIds',
+            idsStorage: 'editGroupsIds',
             // Gets patched after full initialization
             permission: 'admin'
           }
@@ -134,119 +134,11 @@ module.exports = {
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
   },
-  apiRoutes(self, options) {
-    return {
-      post: {
-        async chooser(req) {
-          const browse = !!req.body.browse;
-          const autocomplete = !!req.body.autocomplete;
-          return self.render(req, 'chooser', {
-            browse: browse,
-            autocomplete: autocomplete
-          });
-        },
-        async chooserChoices(req) {
-          const field = req.body.field;
-          const removed = {};
-          // Make sure we have an array of objects
-          const rawChoices = _.map(Array.isArray(req.body.choices) ? req.body.choices : [], function (choice) {
-            if (typeof choice !== 'object') {
-              return {};
-            } else {
-              return choice;
-            }
-          });
-          _.each(rawChoices, function (choice) {
-            if (choice.__removed) {
-              removed[choice.value] = true;
-            }
-          });
-          // We received an array of choices in the generic format, we need to map it to the format
-          // for the relevant type of join before we can use convert to validate the input
-          const input = {};
-          if (field.idsField) {
-            input[field.idsField] = _.map(rawChoices, 'value');
-            if (field.relationshipsField) {
-              input[field.relationshipsField] = {};
-              _.each(rawChoices, function (choice) {
-                input[field.relationshipsField][choice.value] = _.omit(choice, 'value', 'label');
-              });
-            }
-          } else {
-            input[field.idField] = rawChoices[0] && rawChoices[0].value;
-          }
-          const receptacle = {};
-          // For purposes of previewing, it's OK to ignore readOnly so we can tell which
-          // inputs are plausible
-          await self.apos.schema.convert(req, [ _.omit(field, 'readOnly') ], 'form', input, receptacle);
-          await self.apos.schema.join(req, [ field ], receptacle, true);
-          const choiceTemplate = field.choiceTemplate || self.choiceTemplate || 'chooserChoice.html';
-          const choicesTemplate = field.choicesTemplate || self.choicesTemplate || 'chooserChoices.html';
-          let choices = receptacle[field.name];
-          if (!Array.isArray(choices)) {
-            // by one case
-            if (choices) {
-              choices = [ choices ];
-            } else {
-              choices = [];
-            }
-          }
-          // Add "readOnly" property and bring back the `__removed` property for use in the template
-          _.each(choices, function (choice) {
-            choice.readOnly = field.readOnly;
-            if (_.has(removed, choice._id || (choice.item && choice.item._id))) {
-              choice.__removed = true;
-            }
-          });
-          const markup = self.render(req, choicesTemplate, {
-            choices: choices,
-            choiceTemplate: choiceTemplate,
-            relationship: field.relationship,
-            hints: field.hints
-          });
-          // Newer version of this API returns the validated choices, so that the chooser doesn't
-          // get stuck thinking there's already a choice bringing it up to its limit when the choice
-          // is actually in the trash and shouldn't count anymore
-          return {
-            html: markup,
-            choices: format(choices)
-          };
-          function format(choices) {
-            // After the join, the "choices" array is actually an array of docs, or objects with .item and .relationship
-            // properties. As part of our validation services for the chooser object in the browser, recreate what the browser
-            // side is expecting: objects with a "value" property (the _id) and relationship properties, if any
-            return _.map(choices, function (item) {
-              const object = item;
-              const relationship = item._relationship || {};
-              const choice = { value: object._id };
-              if (item.__removed) {
-                choice.__removed = true;
-              }
-              _.defaults(choice, relationship);
-              return choice;
-            });
-          }
-        },
-        async relationshipEditor(req) {
-          const field = req.body.field;
-          return self.render(req, field.relationshipTemplate || self.relationshipTemplate || 'relationshipEditor', { field: field });
-        },
-        async autocomplete(req, res) {
-          const field = req.body.field;
-          const term = self.apos.launder.string(req.body.term);
-          return self.autocomplete(req, {
-            field: field,
-            term: term
-          });
-        }
-      }
-    };
-  },
   handlers(self, options) {
     return {
       beforeSave: {
-        async prepareJoinsForStorage(req, doc) {
-          self.apos.schema.prepareJoinsForStorage(req, doc);
+        async prepareRelationshipsForStorage(req, doc) {
+          self.apos.schema.prepareRelationshipsForStorage(req, doc);
         }
       },
       afterSave: {
@@ -493,7 +385,7 @@ module.exports = {
       // Removing any of these three is not recommended.
       //
       // `query.field` will contain the schema field definition for
-      // the join the user is attempting to match titles from.
+      // the relationship the user is attempting to match titles from.
       getAutocompleteProjection(query) {
         return {
           title: 1,
@@ -504,7 +396,7 @@ module.exports = {
       // Returns a string to represent the given `doc` in an
       // autocomplete menu. `doc` will contain only the fields returned
       // by `getAutocompleteProjection`. `query.field` will contain
-      // the schema field definition for the join the user is attempting
+      // the schema field definition for the relationship the user is attempting
       // to match titles from. The default behavior is to return
       // the `title` property. This is sometimes extended to include
       // event start dates and similar information that helps the
@@ -513,7 +405,7 @@ module.exports = {
         return doc.title;
       },
       // Used by `@apostrophecms/version` to label changes that
-      // are made to joins by ID. Set `change.text` to the
+      // are made to relationships by ID. Set `change.text` to the
       // desired text.
       decorateChange(doc, change) {
         change.text = doc.title;
@@ -598,7 +490,7 @@ module.exports = {
       // This method provides the back end of /autocomplete routes.
       // For the implementation of the autocomplete() query builder see autocomplete.js.
       //
-      // "query" must contain a "field" property which is the schema join field
+      // "query" must contain a "field" property which is the schema relationship field
       // that describes the relationship we're adding items to.
       //
       // "query" must also contain a "term" property, which is a partial
@@ -722,14 +614,14 @@ module.exports = {
       },
 
       // Return the names of all schema fields present in the `input` object,
-      // taking into account issues like join fields keeping their data in
+      // taking into account issues like relationship fields keeping their data in
       // a separate ids property, etc.
       fieldsPresent(input) {
         const schema = self.schema;
         const output = [];
         for (const field of schema) {
-          if (field.type.name.substring(0, 5) === '_join') {
-            if (_.has(input, field.idField || field.idsField)) {
+          if (field.type.name.substring(0, 5) === '_relationship') {
+            if (_.has(input, field.idsStorage)) {
               output.push(field.name);
             }
           } else {
@@ -849,7 +741,7 @@ module.exports = {
                   continue;
                 }
                 if (!query.projectComputedField(key, add)) {
-                  self.apos.util.warn(self.__meta.name + ': a projection cannot find a computed field (' + key + ') unless it is _url\nor the name of a forward join in the schema for the type being found.\nThis does not mean the field will not work, but it is on you to know\nwhat fields power it, or if they are even coming from the doc itself.');
+                  self.apos.util.warn(self.__meta.name + ': a projection cannot find a computed field (' + key + ') unless it is _url\nor the name of a forward relationship in the schema for the type being found.\nThis does not mean the field will not work, but it is on you to know\nwhat fields power it, or if they are even coming from the doc itself.');
                 } else {
                   // We don't get the _ property itself
                   // (for one thing, Apostrophe is removing it on every save)
@@ -1275,18 +1167,18 @@ module.exports = {
           }
         },
 
-        // `.joins(true)`. Performs joins by default, for all types retrieved,
-        // based on the schema for each type. If `joins(false)` is
-        // explicitly called no joins are performed. If
-        // `joins([ ... ])` is invoked with an array of join names
-        // only those joins and those intermediate to them
-        // are performed (dot notation). See `@apostrophecms/schema`
+        // `.relationships(true)`. Fetches relationships by default, for all types retrieved,
+        // based on the schema for each type. If `relationships(false)` is
+        // explicitly called no relationships are fetched. If
+        // `relationships([ ... ])` is invoked with an array of relationship names
+        // only those relationships and those intermediate to them
+        // are fetched (dot notation). See `@apostrophecms/schema`
         // for more information.
 
-        joins: {
+        relationships: {
           def: true,
           async after(results) {
-            if (!query.get('joins')) {
+            if (!query.get('relationships')) {
               return;
             }
             const resultsByType = _.groupBy(results, 'type');
@@ -1294,7 +1186,7 @@ module.exports = {
               const manager = self.apos.doc.getManager(type);
               // Careful, there will be no manager if type was not part of the projection
               if (manager && manager.schema) {
-                await self.apos.schema.join(query.req, manager.schema, resultsByType[type], query.get('joins'));
+                await self.apos.schema.relate(query.req, manager.schema, resultsByType[type], query.get('relationships'));
               }
             }
           }
@@ -1427,7 +1319,7 @@ module.exports = {
                   req.areasLoadedFor[doc._id] = 0;
                 }
                 if (req.areasLoadedFor[doc._id] >= 5) {
-                  self.apos.util.warn('WARNING: reached maximum area loader recursion level. Doc _id is ' + doc._id + '. Are you using projections for all joins?');
+                  self.apos.util.warn('WARNING: reached maximum area loader recursion level. Doc _id is ' + doc._id + '. Are you using projections for all relationships?');
                   return;
                 }
                 req.areasLoadedFor[doc._id]++;
@@ -1554,7 +1446,7 @@ module.exports = {
         // Returns an array of all distinct values
         // for the given `property`. Not chainable. Wraps
         // MongoDB's `distinct` and does not understand
-        // join fields directly. However, see also
+        // relationship fields directly. However, see also
         // `toChoices`, which is built upon it.
         //
         // The `options` argument may be omitted entirely.
@@ -1607,7 +1499,7 @@ module.exports = {
         // `label` and `value` properties suitable for
         // display as a `select` menu or use as an
         // autocomplete API response. Most field types
-        // support this well, including `join`.
+        // support this well, including `relationship`.
         //
         // If `options.counts` is truthy, then each result
         // in the array will also have a `count` property,
@@ -1752,7 +1644,7 @@ module.exports = {
         // begins with `_`), pushes the names of the necessary physical fields
         // to compute it onto `add` and returns `true` if able to do so.
         // Otherwise `false` is returned. The default implementation can
-        // handle `_url` and `join` fields (not reverse).
+        // handle `_url` and `relationship` fields (not reverse).
         //
         // This method is a good candidate to be extended via `extendQueryMethods`.
         //
@@ -1762,7 +1654,7 @@ module.exports = {
           if (key === '_url') {
             return query.projectUrlField(add);
           } else {
-            return query.projectJoinField(key, add);
+            return query.projectRelationshipField(key, add);
           }
         },
 
@@ -1785,10 +1677,10 @@ module.exports = {
         },
 
         // Pushes the names of the fields necessary to populate
-        // the join field named `key` onto the `add` array
+        // the relationship field named `key` onto the `add` array
         // and returns `true`.
         //
-        // If there is no such `join`
+        // If there is no such `relationship`
         // field this method returns `false and does nothing.
         //
         // Note that this mechanism will not work for a
@@ -1799,11 +1691,11 @@ module.exports = {
         //
         // Not chainable.
 
-        projectJoinField(key, add) {
+        projectRelationshipField(key, add) {
           const schema = self.schema;
           const field = _.find(schema, { name: key });
           if (field) {
-            add.push('type', field.idsField);
+            add.push('type', field.idsStorage);
             return true;
           }
           return false;

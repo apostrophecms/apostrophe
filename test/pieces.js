@@ -57,7 +57,7 @@ describe('Pieces', function() {
           fields: {
             add: {
               _things: {
-                type: 'join'
+                type: 'relationship'
               }
             }
           }
@@ -110,7 +110,7 @@ describe('Pieces', function() {
                 }
               },
               _articles: {
-                type: 'join',
+                type: 'relationship',
                 withType: 'article',
                 filters: {
                   projection: {
@@ -118,14 +118,15 @@ describe('Pieces', function() {
                     title: 1
                   }
                 },
-                relationship: [
-                  {
-                    // Explains the relevance of the article to the
-                    // product in 1 sentence
-                    name: 'relevance',
-                    type: 'string'
+                fields: {
+                  add: {
+                    relevance: {
+                      // Explains the relevance of the article to the
+                      // product in 1 sentence
+                      type: 'string'
+                    }
                   }
-                ]
+                }
               }
             }
           }
@@ -142,6 +143,10 @@ describe('Pieces', function() {
             add: {
               name: {
                 type: 'string'
+              },
+              _products: {
+                type: 'relationshipReverse',
+                withType: 'product'
               }
             }
           }
@@ -334,7 +339,7 @@ describe('Pieces', function() {
     return apos.user.insert(apos.task.getReq(), user);
   });
 
-  it('people can find things via a join', async () => {
+  it('people can find things via a relationship', async () => {
     const req = apos.task.getReq();
     for (const person of testPeople) {
       await apos.people.insert(req, person);
@@ -349,7 +354,7 @@ describe('Pieces', function() {
     assert(person._things.length === 2);
   });
 
-  it('people cannot find things via a join with an inadequate projection', function() {
+  it('people cannot find things via a relationship with an inadequate projection', function() {
     const req = apos.task.getReq();
     return apos.doc.getManager('person').find(req, {}, {
       // Use the options object rather than a chainable method
@@ -366,7 +371,7 @@ describe('Pieces', function() {
       });
   });
 
-  it('people can find things via a join with a "projection" of the join name', function() {
+  it('people can find things via a relationship with a "projection" of the relationship name', function() {
     const req = apos.task.getReq();
     return apos.doc.getManager('person').find(req, {}, {
       project: {
@@ -574,9 +579,9 @@ describe('Pieces', function() {
     assert(product.trash);
   });
 
-  let joinedProductId;
+  let relatedProductId;
 
-  it('can insert a product with joins', async () => {
+  it('can insert a product with relationships', async () => {
     let response = await apos.http.post('/api/v1/article', {
       body: {
         title: 'First Article',
@@ -587,12 +592,12 @@ describe('Pieces', function() {
     const article = response;
     assert(article);
     assert(article.title === 'First Article');
-    article._relationship = {
+    article._fields = {
       relevance: 'The very first article that was ever published about this product'
     };
     response = await apos.http.post('/api/v1/product', {
       body: {
-        title: 'Product Key Product With Join',
+        title: 'Product Key Product With Relationship',
         body: {
           metaType: 'area',
           items: [
@@ -600,7 +605,7 @@ describe('Pieces', function() {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
               id: cuid(),
-              content: '<p>This is the product key product with join</p>'
+              content: '<p>This is the product key product with relationship</p>'
             }
           ]
         },
@@ -610,24 +615,35 @@ describe('Pieces', function() {
     });
     assert(response._id);
     assert(response.articlesIds[0] === article._id);
-    assert(response.articlesRelationships[article._id].relevance === 'The very first article that was ever published about this product');
-    joinedProductId = response._id;
+    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
+    relatedProductId = response._id;
   });
 
-  it('can GET a product with joins', async () => {
+  it('can GET a product with relationships', async () => {
     const response = await apos.http.get('/api/v1/product');
     assert(response);
     assert(response.results);
-    const product = _.find(response.results, { slug: 'product-key-product-with-join' });
+    const product = _.find(response.results, { slug: 'product-key-product-with-relationship' });
     assert(Array.isArray(product._articles));
     assert(product._articles.length === 1);
   });
 
-  it('can GET a single product with joins', async () => {
-    const response = await apos.http.get(`/api/v1/product/${joinedProductId}`);
+  let relatedArticleId;
+
+  it('can GET a single product with relationships', async () => {
+    const response = await apos.http.get(`/api/v1/product/${relatedProductId}`);
     assert(response);
     assert(response._articles);
     assert(response._articles.length === 1);
+    relatedArticleId = response._articles[0]._id;
+  });
+
+  it('can GET a single article with reverse relationships', async () => {
+    const response = await apos.http.get(`/api/v1/article/${relatedArticleId}`);
+    assert(response);
+    assert(response._products);
+    assert(response._products.length === 1);
+    assert(response._products[0]._id === relatedProductId);
   });
 
   it('can GET results plus filter choices', async () => {
@@ -636,7 +652,6 @@ describe('Pieces', function() {
     });
     assert(response);
     assert(response.results);
-    assert(response.choices);
     assert(response.choices.title);
     assert(response.choices.title[0].label.match(/Cool Product/));
     assert(response.choices.published);
@@ -674,22 +689,22 @@ describe('Pieces', function() {
     assert(response.counts.articles[0].value === 'first-article');
   });
 
-  it('can patch a join', async () => {
+  it('can patch a relationship', async () => {
     let response = await apos.http.post('/api/v1/article', {
       jar,
       body: {
-        title: 'Join Article',
-        name: 'join-article'
+        title: 'Relationship Article',
+        name: 'relationship-article'
       }
     });
     const article = response;
     assert(article);
-    assert(article.title === 'Join Article');
+    assert(article.title === 'Relationship Article');
 
     response = await apos.http.post('/api/v1/product', {
       jar,
       body: {
-        title: 'Initially No Join Value',
+        title: 'Initially No Relationship Value',
         body: {
           metaType: 'area',
           items: [
@@ -697,7 +712,7 @@ describe('Pieces', function() {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
               id: cuid(),
-              content: '<p>This is the product key product without initial join</p>'
+              content: '<p>This is the product key product without initial relationship</p>'
             }
           ]
         }
@@ -712,7 +727,7 @@ describe('Pieces', function() {
       },
       jar
     });
-    assert(response.title === 'Initially No Join Value');
+    assert(response.title === 'Initially No Relationship Value');
     assert(response.articlesIds);
     assert(response.articlesIds[0] === article._id);
     assert(response._articles);

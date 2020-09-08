@@ -32,7 +32,7 @@ module.exports = {
   fields: {
     add: {
       _users: {
-        type: 'joinReverse',
+        type: 'relationshipReverse',
         label: 'Users',
         withType: '@apostrophecms/user',
         ifOnlyOne: true

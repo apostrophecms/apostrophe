@@ -23,10 +23,10 @@ describe('Docs', function() {
           fields: {
             add: {
               _friends: {
-                type: 'join',
+                type: 'relationship',
                 max: 1,
                 withType: 'test-people',
-                idsField: 'friendIds',
+                idsStorage: 'friendIds',
                 label: 'Friends'
               }
             }
@@ -122,7 +122,7 @@ describe('Docs', function() {
     assert(response.insertedCount === 3);
   });
 
-  it('should be able to carry out schema joins', async function() {
+  it('should be able to fetch schema relationships', async function() {
     const manager = apos.doc.getManager('test-people');
     const req = apos.task.getAnonReq();
 

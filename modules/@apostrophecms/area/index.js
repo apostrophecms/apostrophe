@@ -133,7 +133,7 @@ module.exports = {
         // Guarantee that `items` at least exists
         area.items = area.items || [];
         return self.render(req, 'area', {
-          // TODO filter area to exclude big joined objects, but
+          // TODO filter area to exclude big relationship objects, but
           // not so sloppy this time please
           area,
           field,
