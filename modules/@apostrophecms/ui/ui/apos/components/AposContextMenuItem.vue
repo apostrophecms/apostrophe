@@ -20,6 +20,7 @@ export default {
     },
     open: Boolean
   },
+  emits: [ 'clicked' ],
   computed: {
     tabindex() {
       return this.open ? '0' : '-1';

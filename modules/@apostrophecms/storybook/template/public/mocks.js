@@ -629,8 +629,6 @@
   };
 
   apos.http.get = async (url, options) => {
-    console.log('hi stu');
-    console.log(url);
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
     if (options.qs && (options.qs.search || options.qs.search === '')) {

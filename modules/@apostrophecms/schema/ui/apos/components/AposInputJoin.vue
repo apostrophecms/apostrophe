@@ -116,6 +116,7 @@ export default {
     async input () {
       if (!this.searching) {
         if (this.next.length) {
+          this.searching = true;
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
             busy: true
           });

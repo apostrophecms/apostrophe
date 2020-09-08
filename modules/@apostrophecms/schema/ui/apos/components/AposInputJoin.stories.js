@@ -67,22 +67,22 @@ export const joinInput = () => {
 function getData(n) {
   const data = [
     {
-      '_id': 'htcuoykl9012j38ecrjghrn0c',
-      'type': 'product',
-      'title': 'Strawberry',
-      'slug': 'strawberry'
+      _id: 'htcuoykl9012j38ecrjghrn0c',
+      type: 'product',
+      title: 'Strawberry',
+      slug: 'strawberry'
     },
     {
-      '_id': 'htcuoykl9012j38ecrjgwefwefhrn0c',
-      'type': 'product',
-      'title': 'Apple',
-      'slug': 'apple'
+      _id: 'htcuoykl9012j38ecrjgwefwefhrn0c',
+      type: 'product',
+      title: 'Apple',
+      slug: 'apple'
     },
     {
-      '_id': 'htcuoykwefwefl9012j38ecrjghrn0c',
-      'type': 'product',
-      'title': 'Mango',
-      'slug': 'mango'
+      _id: 'htcuoykwefwefl9012j38ecrjghrn0c',
+      type: 'product',
+      title: 'Mango',
+      slug: 'mango'
     }
   ];
   return data.splice(0, n);
