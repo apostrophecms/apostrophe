@@ -189,8 +189,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn {
-  padding-left: 20px;
-  padding-right: 20px;
   border-radius: 0;
 }
 
@@ -226,6 +224,8 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__btn {
   .apos-admin-bar__row--utils & {
+    padding-left: $admin-bar-h-pad;
+    padding-right: $admin-bar-h-pad;
     border-right: $admin-bar-border;
 
     &:hover,
