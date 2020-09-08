@@ -4,14 +4,14 @@ import {
   boolean
 } from '@storybook/addon-knobs';
 
-import AposInputJoin from './AposInputJoin.vue';
+import AposInputRelationship from './AposInputRelationship.vue';
 
 export default {
-  title: 'Inputs (Join)',
+  title: 'Inputs (Relationship)',
   decorators: [ withKnobs ]
 };
 
-export const joinInput = () => {
+export const relationshipInput = () => {
 
   const max = select(
     'Limit', {
@@ -36,7 +36,7 @@ export const joinInput = () => {
   const isDisabled = boolean('Is Disabled?', false);
 
   return {
-    components: { AposInputJoin },
+    components: { AposInputRelationship },
     data () {
       return {
         field: {
@@ -56,7 +56,7 @@ export const joinInput = () => {
       };
     },
     template: `
-      <AposInputJoin
+      <AposInputRelationship
         :field="field"
         :value="value"
         :status="status"
