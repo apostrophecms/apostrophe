@@ -26,7 +26,7 @@
           <AposPiecesManager
             v-if="chooser"
             :moduleName="field.withType"
-            :items="items"
+            :initially-selected-items="items"
             :field="field"
             :relationship="true"
             @updated="updated"

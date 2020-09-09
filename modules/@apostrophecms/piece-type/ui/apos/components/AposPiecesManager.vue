@@ -138,7 +138,7 @@ export default {
       type: Boolean,
       default: false
     },
-    items: {
+    initiallySelectedItems: {
       type: Array,
       default: function () {
         return [];
@@ -168,8 +168,8 @@ export default {
       editingDocId: '',
       queryExtras: {},
       holdQueries: false,
-      selectedItems: this.items,
-      checked: this.items.map(item => item._id) // NOTE: originally set in AposTableMixin.js
+      selectedItems: this.initiallySelectedItems,
+      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposTableMixin.js
     };
   },
   computed: {
@@ -314,11 +314,13 @@ export default {
 
       this.getPieces();
     },
+    // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSlatList(items) {
       this.selectedItems = items;
       this.checked = items.map(item => item._id);
       this.$emit('updated', items);
     },
+    // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSelectedItems(event) {
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => piece._id === event.target.id);
