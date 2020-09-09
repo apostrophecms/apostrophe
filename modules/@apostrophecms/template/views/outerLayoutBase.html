@@ -24,17 +24,25 @@
       <div id="apos-context-menu"></div>
       <div id="apos-notification"></div>
     {% endblock %}
-    <div class="apos-refreshable" data-apos-refreshable>
-      {% block beforeMain %}{% endblock %}
-      {% block mainAnchor %}<a name="main"></a>{% endblock %}
-      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
-      {% block main %}{% endblock %}
-      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
-      {% block afterMain %}{% endblock %}
-    </div>
-    {{ apos.asset.scripts(data.when) }}
-    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
-    {% block extraBody %}{% endblock %}
+    {% if data.user %} {# TODO expand this check to editing mode #}
+      <div class="apos-editor-context">
+        <div class="apos-editor-canvas">
+    {% endif %}
+      <div class="apos-refreshable" data-apos-refreshable>
+        {% block beforeMain %}{% endblock %}
+        {% block mainAnchor %}<a name="main"></a>{% endblock %}
+        {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
+        {% block main %}{% endblock %}
+        {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
+        {% block afterMain %}{% endblock %}
+      </div>
+      {{ apos.asset.scripts(data.when) }}
+      {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
+      {% block extraBody %}{% endblock %}
+    {% if data.user %}
+        </div> {# .apos-editor-canvas #}
+      </div> {# .apos-editor-context #}
+    {% endif %}
     <div id="apos-modals"></div>
   </body>
 </html>

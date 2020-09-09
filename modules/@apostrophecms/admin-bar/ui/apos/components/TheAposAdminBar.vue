@@ -1,59 +1,62 @@
 <template>
-  <nav class="apos-admin-bar">
-    <div class="apos-admin-bar__row">
-      <AposLogo class="apos-admin-bar__logo" />
-      <ul class="apos-admin-bar__items">
-        <li
-          v-for="(item, index) in menuItems" :key="item.name"
-          class="apos-admin-bar__item"
-        >
-          <component
-            v-if="item.options" :is="item.options.href ? 'a' : 'button'"
-            class="apos-admin-bar__btn" :href="item.options.href"
-            v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+  <div class="apos-admin-bar-wrapper">
+    <div class="apos-admin-bar-spacer" ref="spacer"></div>
+    <nav class="apos-admin-bar" ref="adminBar">
+      <div class="apos-admin-bar__row">
+        <AposLogo class="apos-admin-bar__logo" />
+        <ul class="apos-admin-bar__items">
+          <li
+            v-for="(item, index) in menuItems" :key="item.name"
+            class="apos-admin-bar__item"
           >
-            {{ item.label }}
-          </component>
-          <AposContextMenu
-            v-else-if="item.items" class="apos-admin-bar__sub"
-            :menu="item.items" :button="{
-              label: item.label
-            }"
-            :tip-alignment="index > 1 ? 'right' : 'left'"
-            @item-clicked="emitEvent"
-          />
-        </li>
-        <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
-          <AposContextMenu
-            class="apos-admin-bar__create"
-            :menu="createMenu" :button="{
-              label: 'New item',
-              iconOnly: true,
-              icon: 'plus-icon',
-              type: 'primary'
-            }"
-            tip-alignment="right"
-          />
-        </li>
-      </ul>
-      <TheAposAdminBarUser
-        class="apos-admin-bar__user"
-        :user="user" :avatar-url="userAvatar"
-      />
-    </div>
-    <div class="apos-admin-bar__row apos-admin-bar__row--utils">
-      <AposButton
-        type="default" label="Page Settings"
-        icon="cog-icon" class="apos-admin-bar__btn"
-        @click="emitEvent('page-settings')"
-      />
-      <AposButton
-        type="default" label="Page Tree"
-        icon="file-tree-icon" class="apos-admin-bar__btn"
-        @click="emitEvent('page-tree')"
-      />
-    </div>
-  </nav>
+            <component
+              v-if="item.options" :is="item.options.href ? 'a' : 'button'"
+              class="apos-admin-bar__btn" :href="item.options.href"
+              v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+            >
+              {{ item.label }}
+            </component>
+            <AposContextMenu
+              v-else-if="item.items" class="apos-admin-bar__sub"
+              :menu="item.items" :button="{
+                label: item.label
+              }"
+              :tip-alignment="index > 1 ? 'right' : 'left'"
+              @item-clicked="emitEvent"
+            />
+          </li>
+          <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+            <AposContextMenu
+              class="apos-admin-bar__create"
+              :menu="createMenu" :button="{
+                label: 'New item',
+                iconOnly: true,
+                icon: 'plus-icon',
+                type: 'primary'
+              }"
+              tip-alignment="right"
+            />
+          </li>
+        </ul>
+        <TheAposAdminBarUser
+          class="apos-admin-bar__user"
+          :user="user" :avatar-url="userAvatar"
+        />
+      </div>
+      <div class="apos-admin-bar__row">
+        <AposButton
+          type="default" label="Page Settings"
+          icon="cog-icon" class="apos-admin-bar__btn"
+          @click="emitEvent('page-settings')"
+        />
+        <AposButton
+          type="default" label="Page Tree"
+          icon="file-tree-icon" class="apos-admin-bar__btn"
+          @click="emitEvent('page-tree')"
+        />
+      </div>
+    </nav>
+  </div>
 </template>
 
 <script>
@@ -84,6 +87,7 @@ export default {
     }
   },
   mounted() {
+    this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     this.menuItems = this.items.map(item => {
       if (item.items) {
         item.items.forEach(subitem => {
