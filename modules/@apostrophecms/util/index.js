@@ -301,7 +301,7 @@ module.exports = {
       // properties whose names begin with `_` except
       // for `_id`. Returns the clone.
       //
-      // This removes the output of joins and
+      // This removes the output of relationships and
       // other dynamic loaders, so that dynamically available
       // content is not stored redundantly in MongoDB.
       //

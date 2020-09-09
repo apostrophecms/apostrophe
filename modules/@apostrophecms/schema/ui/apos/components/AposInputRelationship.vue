@@ -4,10 +4,10 @@
     :uid="uid" :items="items"
   >
     <template #body>
-      <div class="apos-input-wrapper apos-input-join">
-        <div class="apos-input-join__input-wrapper">
+      <div class="apos-input-wrapper apos-input-relationship">
+        <div class="apos-input-relationship__input-wrapper">
           <input
-            class="apos-input apos-input--text apos-input--join"
+            class="apos-input apos-input--text apos-input--relationship"
             v-model="next" type="text"
             :placeholder="field.placeholder"
             :disabled="status.disabled" :required="field.required"
@@ -44,7 +44,7 @@
 import AposInputMixin from '../mixins/AposInputMixin.js';
 
 export default {
-  name: 'AposInputJoin',
+  name: 'AposInputRelationship',
   mixins: [ AposInputMixin ],
   props: {
     listItems: {
@@ -148,7 +148,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-input-join__input-wrapper {
+  .apos-input-relationship__input-wrapper {
     display: flex;
     align-items: center;
     margin-bottom: 10px;

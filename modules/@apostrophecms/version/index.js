@@ -241,16 +241,16 @@ module.exports = {
         const flatChanges = flatten(changes);
         // Some changes are best displayed by first fetching the docs they
         // refer to in order to get their title or another representation
-        const joined = _.filter(flatChanges, function (change) {
+        const related = _.filter(flatChanges, function (change) {
           return change.docType;
         });
-        const docTypes = _.uniq(_.map(joined, 'docType'));
+        const docTypes = _.uniq(_.map(related, 'docType'));
         for (const docType of docTypes) {
-          const ids = _.map(_.filter(joined, { docType: docType }), function (change) {
+          const ids = _.map(_.filter(related, { docType: docType }), function (change) {
             return change.current || change.old;
           });
           const changesById = {};
-          _.each(joined, function (change) {
+          _.each(related, function (change) {
             changesById[change.current || change.old] = change;
           });
           const manager = self.apos.doc.getManager(docType);
@@ -333,8 +333,8 @@ module.exports = {
               return compareArrays(schemaIdentifier, schemaDecoratorGenerator(field.schema), old, current);
             } else if (field.type === 'area' || field.type === 'singleton') {
               return compareAreas(old, current);
-            } else if (field.type === 'join') {
-              return compareArrays(joinIdentifier, joinDecoratorGenerator(field.withType), old, current);
+            } else if (field.type === 'relationship') {
+              return compareArrays(relationshipIdentifier, relationshipDecoratorGenerator(field.withType), old, current);
             } else {
               // Take advantage of Apostrophe's support for boiling fields
               // down to search text to generate a basis for a text diff.
@@ -604,11 +604,11 @@ module.exports = {
             }
           };
         }
-        function joinIdentifier(item) {
+        function relationshipIdentifier(item) {
           // It's an id already
           return item;
         }
-        function joinDecoratorGenerator(withType) {
+        function relationshipDecoratorGenerator(withType) {
           return function (change) {
             change.docType = withType;
           };
@@ -618,14 +618,11 @@ module.exports = {
           if (field) {
             return field;
           }
-          // Maybe it's a join, in which case we need to
-          // associate that join with the ids field that stores it
+          // Maybe it's a relationship, in which case we need to
+          // associate that relationship with the ids field that stores it
           field = _.find(schema, function (field) {
-            if (field.idField) {
-              return field.idField === key;
-            }
-            if (field.idsField) {
-              return field.idsField === key;
+            if (field.idsStorage) {
+              return field.idsStorage === key;
             }
           });
           return field;
