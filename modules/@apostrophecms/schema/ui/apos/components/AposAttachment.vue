@@ -32,7 +32,7 @@ export default {
   mixins: [ AposInputMixin ],
   computed: {
     limitReached () {
-      return this.value.data.length >= this.field.limit;
+      return this.next.length >= this.field.limit;
     },
     message () {
       let message = '<paperclip-icon :size="14" /> Drop a file here or <span class="apos-attachment-highlight">click to open the file explorer</span>';
