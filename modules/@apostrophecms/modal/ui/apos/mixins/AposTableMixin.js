@@ -51,7 +51,7 @@ export default {
       if (!this.checked.length) {
         this.rows.forEach((row) => {
           this.toggleRowCheck('checked', row._id);
-          this.updateSelectedItems({ target: { id: row._id }});
+          this.updateSelectedItems({ target: { id: row._id } });
         });
         return;
       }
@@ -117,7 +117,7 @@ export default {
             type: 'checkbox',
             hideLabel: true,
             label: `Toggle selection of ${row.title}`,
-            disabled: this.maxItems && this.checked.length >= this.maxItems && !this.checked.includes(row._id)
+            disabled: this.field.max && this.checked.length >= this.field.max && !this.checked.includes(row._id)
           }
         };
       });

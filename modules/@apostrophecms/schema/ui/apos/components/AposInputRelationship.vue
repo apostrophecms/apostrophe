@@ -27,7 +27,7 @@
             v-if="chooser"
             :moduleName="field.withType"
             :items="items"
-            :max-items="field.max"
+            :field="field"
             :relationship="true"
             @updated="updated"
             @safe-close="chooser=false"

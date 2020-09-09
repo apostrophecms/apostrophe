@@ -12,6 +12,16 @@
       @end="isDragging=false"
       :id="listId"
     >
+      <div v-if="field.min || field.max" class="apos-field-limit">
+        <span>{{ items.length }} selected</span>
+        <span v-if="field.min">
+          min: {{ field.min }}
+        </span>
+        <span v-if="field.max">
+          max: {{ field.max }}
+        </span>
+      </div>
+
       <transition-group type="transition" name="apos-flip-list">
         <AposSlat
           class="apos-slat-list__item"
@@ -26,6 +36,8 @@
           :parent="listId"
         />
       </transition-group>
+
+      <div class="apos-slat-status">{{ message }}</div>
     </draggable>
   </div>
 </template>
@@ -46,6 +58,12 @@ export default {
     editable: {
       type: Boolean,
       default: true
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'update' ],
@@ -53,8 +71,12 @@ export default {
     return {
       isDragging: false,
       delayedDragging: false,
-      engaged: null
+      engaged: null,
+      message: null
     };
+  },
+  mounted() {
+    this.updateMessage();
   },
   computed: {
     items() {
@@ -80,6 +102,9 @@ export default {
       this.$nextTick(() => {
         this.delayedDragging = false;
       });
+    },
+    items() {
+      this.updateMessage();
     }
   },
   methods: {
@@ -131,6 +156,13 @@ export default {
       return (
         (!relatedElement || !relatedElement.fixed) && !draggedElement.fixed
       );
+    },
+    updateMessage() {
+      if (this.field.max && this.field.max <= this.items.length) {
+        this.message = 'Limit reached!';
+      } else {
+        this.message = null;
+      }
     }
   }
 };
@@ -163,5 +195,9 @@ export default {
 
   .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
     margin-bottom: 8px;
+  }
+
+  .apos-slat-status {
+    text-align: center;
   }
 </style>

@@ -17,7 +17,7 @@
 
     <template v-if="relationship" #leftRail>
       <AposModalRail>
-        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" />
+        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" :field="field" />
       </AposModalRail>
     </template>
 
@@ -28,7 +28,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
-            :disable-selection="maxItems && checked.length >= maxItems"
+            :disable-selection="field.max && checked.length >= field.max"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -144,9 +144,11 @@ export default {
         return [];
       }
     },
-    maxItems: {
-      type: Number,
-      default: undefined
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'trash', 'search', 'safe-close' ],
@@ -320,8 +322,8 @@ export default {
     updateSelectedItems(event) {
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => piece._id === event.target.id);
-        if (this.maxItems) {
-          if (this.selectedItems.length < this.maxItems) {
+        if (this.field.max) {
+          if (this.selectedItems.length < this.field.max) {
             this.selectedItems.push(piece);
           }
         } else {
