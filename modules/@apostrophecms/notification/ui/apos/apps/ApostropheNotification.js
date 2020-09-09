@@ -1,6 +1,11 @@
 import Vue from 'apostrophe/vue';
 
 export default function() {
+  if (!apos.login.user) {
+    // The user scene is being used but no one is logged in
+    // (example: the login page)
+    return;
+  }
   /* eslint-disable no-new */
   return new Vue({
     el: '#apos-notification',
@@ -51,8 +56,7 @@ export default function() {
             message,
             strings,
             type: options.type,
-            dismiss: options.dismiss,
-            id: options.id
+            dismiss: options.dismiss
           }
         });
       };

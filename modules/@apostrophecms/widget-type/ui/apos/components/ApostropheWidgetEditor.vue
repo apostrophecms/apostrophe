@@ -1,18 +1,21 @@
 <template>
   <ApostropheModal @close="$emit('close')">
-    <template slot="header">
+    <template #header>
       <!-- TODO i18n -->
       <p>{{ (value ? 'Edit ' : 'New ') + label }}</p>
     </template>
-    <template slot="body">
+    <template #body>
       <AposSchema :schema="schema" v-model="widgetInfo" />
     </template>
-    <template slot="footer">
+    <template #footer>
       <slot name="footer">
         <button class="modal-default-button" @click="$emit('close')">
           Cancel
         </button>
-        <button v-if="!widgetInfo.hasErrors" class="modal-default-button" @click="save()">
+        <button
+          v-if="!widgetInfo.hasErrors" class="modal-default-button"
+          @click="save()"
+        >
           Save
         </button>
       </slot>
@@ -41,11 +44,6 @@ export default {
       default() {
         return {};
       }
-    },
-    docId: {
-      type: String,
-      required: false,
-      default: null
     }
   },
   data() {

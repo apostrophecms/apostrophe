@@ -23,10 +23,8 @@
           group: 'AposInputGroup',
           array: 'AposInputArray',
           object: 'AposInputObject',
-          joinByOne: 'AposInputJoinByOne',
-          joinByOneReverse: 'AposInputJoinByOneReverse',
-          joinByArray: 'AposInputJoinByArray',
-          joinByArrayReverse: 'AposInputJoinByArrayReverse',
+          relationship: 'AposInputRelationship',
+          relationshipReverse: 'AposInputRelationshipReverse',
           attachment: 'AposInputAttachment',
           video: 'AposInputVideo'
         }
@@ -220,6 +218,265 @@
         insertModal: 'AposDocEditor',
         managerModal: 'AposPiecesManager'
       }
+    },
+    '@apostrophecms/image': {
+      name: '@apostrophecms/image',
+      label: 'Image',
+      pluralLabel: 'Images',
+      action: '/api/v1/@apostrophecms/image',
+      schema: [
+        {
+          type: 'attachment',
+          name: 'attachment',
+          label: 'Image File',
+          fileGroup: 'images',
+          required: true,
+          group: {
+            name: 'basics',
+            label: 'Basics'
+          },
+          _id: 'ff809c0731221ac3fc49cee43bc1d96f'
+        },
+        {
+          type: 'string',
+          name: 'title',
+          label: 'Title',
+          required: true,
+          sortify: true,
+          group: {
+            name: 'basics',
+            label: 'Basics'
+          },
+          _id: '1d809868eb5a6fe48c9c8e516a17072b'
+        },
+        {
+          type: 'slug',
+          name: 'slug',
+          label: 'Slug',
+          prefix: 'image',
+          required: true,
+          group: {
+            name: 'basics',
+            label: 'Basics'
+          },
+          _id: '3e33d2f714881ce899c858791ef5eaf4'
+        },
+        {
+          type: 'boolean',
+          name: 'published',
+          label: 'Published',
+          def: true,
+          group: {
+            name: 'basics',
+            label: 'Basics'
+          },
+          _id: 'e146d8acff60cc41f257d010b61e277b'
+        },
+        {
+          type: 'relationship',
+          name: '_tags',
+          label: 'Tags',
+          withType: '@apostrophecms/image-tag',
+          group: {
+            name: 'basics',
+            label: 'Basics'
+          },
+          idsStorage: 'tagsIds',
+          _id: '885071da9d576801a81f133f5c58b9a1'
+        },
+        {
+          type: 'string',
+          name: 'description',
+          label: 'Description',
+          textarea: true,
+          group: {
+            name: 'details',
+            label: 'Details'
+          },
+          _id: '90e1312c2385c184e3b6f6e41fab3bc5'
+        },
+        {
+          type: 'string',
+          name: 'credit',
+          label: 'Credit',
+          group: {
+            name: 'details',
+            label: 'Details'
+          },
+          _id: 'dd38d1006aaffafce8eb6cd2c6b8aea6'
+        },
+        {
+          type: 'url',
+          name: 'creditUrl',
+          label: 'Credit URL',
+          group: {
+            name: 'details',
+            label: 'Details'
+          },
+          _id: '8adf70ca71d419bf473936061e54b7b0'
+        },
+        {
+          type: 'boolean',
+          name: 'trash',
+          label: 'Trash',
+          contextual: true,
+          def: false,
+          group: {
+            name: 'ungrouped',
+            label: 'Ungrouped'
+          },
+          _id: '781f8a0089bef9e079178670f4a7efaa'
+        }
+      ],
+      filters: [
+        {
+          label: 'Published',
+          name: 'published',
+          choices: [
+            {
+              value: true,
+              label: 'Published'
+            },
+            {
+              value: false,
+              label: 'Draft'
+            },
+            {
+              value: null,
+              label: 'Both'
+            }
+          ],
+          allowedInChooser: false,
+          def: true,
+          style: 'pill'
+        },
+        {
+          label: 'Trash',
+          name: 'trash',
+          choices: [
+            {
+              value: false,
+              label: 'Live'
+            },
+            {
+              value: true,
+              label: 'Trash'
+            }
+          ],
+          allowedInChooser: false,
+          def: false,
+          style: 'pill'
+        }
+      ],
+      columns: [
+        {
+          name: 'title',
+          label: 'Title'
+        },
+        {
+          name: 'updatedAt',
+          label: 'Edited on'
+        },
+        {
+          name: 'published',
+          label: 'Published'
+        }
+      ],
+      batchOperations: [
+        {
+          name: 'trash',
+          label: 'Trash',
+          unlessFilter: {
+            trash: true
+          }
+        },
+        {
+          name: 'rescue',
+          label: 'Rescue',
+          unlessFilter: {
+            trash: false
+          }
+        },
+        {
+          name: 'publish',
+          label: 'Publish',
+          unlessFilter: {
+            published: true
+          },
+          requiredField: 'published'
+        },
+        {
+          name: 'unpublish',
+          label: 'Unpublish',
+          unlessFilter: {
+            published: false
+          },
+          requiredField: 'published'
+        }
+      ],
+      insertViaUpload: true,
+      components: {
+        filters: 'ApostrophePiecesFilters',
+        list: 'ApostrophePiecesList',
+        pager: 'ApostrophePager',
+        insertModal: 'AposDocEditor',
+        managerModal: 'AposMediaManager'
+      },
+      alias: 'image'
+    },
+    '@apostrophecms/attachment': {
+      action: '/api/v1/@apostrophecms/attachment',
+      fileGroups: [
+        {
+          name: 'images',
+          label: 'Images',
+          extensions: [
+            'gif',
+            'jpg',
+            'png'
+          ],
+          extensionMaps: {
+            jpeg: 'jpg'
+          },
+          image: true
+        },
+        {
+          name: 'office',
+          label: 'Office',
+          extensions: [
+            'txt',
+            'rtf',
+            'pdf',
+            'xls',
+            'ppt',
+            'doc',
+            'pptx',
+            'sldx',
+            'ppsx',
+            'potx',
+            'xlsx',
+            'xltx',
+            'csv',
+            'docx',
+            'dotx'
+          ],
+          extensionMaps: {},
+          image: false
+        }
+      ],
+      name: 'attachment',
+      uploadsUrl: '/uploads',
+      croppable: {
+        gif: true,
+        jpg: true,
+        png: true
+      },
+      sized: {
+        gif: true,
+        jpg: true,
+        png: true
+      },
+      alias: 'attachment'
     }
   };
 
@@ -351,6 +608,9 @@
 
   apos.http.postResponses = {
     '/api/v1/products': {
+      status: 200
+    },
+    '/api/v1/image-upload-mock': {
       status: 200
     }
   };

@@ -16,55 +16,49 @@ module.exports = {
     label: 'Image',
     alias: 'image',
     perPage: 20,
-    manageViews: [
-      'grid',
-      'list'
-    ],
     insertViaUpload: true,
-    searchable: false
+    searchable: false,
+    browser: {
+      components: {
+        managerModal: 'AposMediaManager'
+      }
+    }
   },
-  beforeSuperClass(self, options) {
-    options.addFields = [
-      {
+  fields: {
+    add: {
+      slug: {
         type: 'slug',
-        name: 'slug',
         label: 'Slug',
         prefix: 'image',
         required: true
       },
-      {
+      attachment: {
         type: 'attachment',
-        name: 'attachment',
         label: 'Image File',
         fileGroup: 'images',
         required: true
       },
-      {
+      description: {
         type: 'string',
-        name: 'description',
         label: 'Description',
         textarea: true
       },
-      {
+      credit: {
         type: 'string',
-        name: 'credit',
         label: 'Credit'
       },
-      {
+      creditUrl: {
         type: 'url',
-        name: 'creditUrl',
         label: 'Credit URL'
       },
-      {
-        type: 'join',
-        name: '_tags',
+      _tags: {
+        type: 'relationship',
         label: 'Tags',
         withType: '@apostrophecms/image-tag'
       }
-    ].concat(options.addFields || []);
-    options.arrangeFields = [
-      {
-        name: 'basics',
+    },
+    group: {
+      basics: {
         label: 'Basics',
         fields: [
           'attachment',
@@ -74,8 +68,7 @@ module.exports = {
           '_tags'
         ]
       },
-      {
-        name: 'details',
+      details: {
         label: 'Details',
         fields: [
           'description',
@@ -83,8 +76,19 @@ module.exports = {
           'creditUrl'
         ]
       }
-    ].concat(options.arrangeFields || []);
+    }
   },
+  extendRestApiRoutes: (self, options) => ({
+    async getAll (_super, req) {
+      const pieces = await _super(req);
+
+      self.apos.attachment.all(pieces, {
+        annotate: true
+      });
+
+      return pieces;
+    }
+  }),
   methods(self, options) {
     return {
       // This method is available as a template helper: apos.image.first
@@ -94,7 +98,7 @@ module.exports = {
       //
       // For best performance be reasonably specific; don't pass an entire page or piece
       // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many joins.
+      // if the page has many relationships.
       //
       // For ease of use, a null or undefined `within` argument is accepted.
       //
@@ -131,7 +135,7 @@ module.exports = {
       //
       // For best performance be reasonably specific; don't pass an entire page or piece
       // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many joins.
+      // if the page has many relationships.
       //
       // When available, the `_description`, `_credit` and `_creditUrl` are
       // also returned as part of the object.
@@ -167,7 +171,7 @@ module.exports = {
       //
       // Given an image attachment, return a string that can be used as the value
       // of a `srcset` HTML attribute.
-      srcset(attachment, cropRelationship) {
+      srcset(attachment, cropFields) {
         if (!self.apos.attachment.isSized(attachment)) {
           return '';
         }
@@ -185,7 +189,7 @@ module.exports = {
         }).map(function (imageSize) {
           const src = self.apos.attachment.url(attachment, {
             size: imageSize.name,
-            crop: cropRelationship
+            crop: cropFields
           });
           const width = Math.min(imageSize.width, attachment.width);
           return src + ' ' + width + 'w';
@@ -203,6 +207,13 @@ module.exports = {
             self.apos.launder.integer(req.body.minSize[1])
           ];
         }
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposMediaManager'),
+          { moduleName: self.__meta.name }
+        );
       }
     };
   },

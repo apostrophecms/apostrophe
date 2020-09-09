@@ -88,7 +88,15 @@ export default {
   },
   mounted() {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
-    this.menuItems = [...this.items];
+    this.menuItems = this.items.map(item => {
+      if (item.items) {
+        item.items.forEach(subitem => {
+          // The context menu needs an `action` property to emit.
+          subitem.action = subitem.name;
+        });
+      }
+      return item;
+    });
     // TODO: This will need to be an async call to get pieces as well as the
     // new page route.
     this.createMenu = [
@@ -115,18 +123,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$menu-row-height: 68px;
+$menu-row-height: 50px;
 $menu-v-pad: 18px;
-$menu-item-height: $menu-row-height - (2 * $menu-v-pad);
 $menu-h-space: 16px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
-
-body {
-  margin-top: $menu-row-height * 2;
-}
+$admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar {
+  z-index: $z-index-default;
   position: fixed;
   top: 0;
   right: 0;
@@ -140,7 +145,7 @@ body {
   align-items: center;
   height: $menu-row-height;
   padding: 0 $admin-bar-h-pad 0 0;
-  border-bottom: 1px solid var(--a-base-9);
+  border-bottom: $admin-bar-border;
 }
 
 .apos-admin-bar__items {
@@ -155,7 +160,7 @@ body {
 
 .apos-admin-bar__logo {
   display: inline-block;
-  height: $menu-item-height;
+  height: 32px;
 }
 
 .apos-admin-bar__create /deep/ .apos-context-menu__btn,
@@ -188,8 +193,6 @@ body {
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn {
-  padding-left: 20px;
-  padding-right: 20px;
   border-radius: 0;
 }
 
@@ -223,8 +226,21 @@ body {
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__dropdown-items .apos-admin-bar__btn {
-  padding: 25px;
+.apos-admin-bar__btn {
+  .apos-admin-bar__row--utils & {
+    padding-left: $admin-bar-h-pad;
+    padding-right: $admin-bar-h-pad;
+    border-right: $admin-bar-border;
+
+    &:hover,
+    &:focus {
+      border-width: 1px;
+    }
+  }
+
+  .apos-admin-bar__dropdown-items & {
+    padding: 25px;
+  }
 }
 
 .apos-admin-bar__dropdown-items {
@@ -239,7 +255,7 @@ body {
   // Adjust button padding and svg size to have a large plus icon while keeping
   // the button size the same.
   /deep/ .apos-context-menu__btn {
-    padding: 5px;
+    padding: 4px;
   }
 
   /deep/ .apos-context-menu__popup {

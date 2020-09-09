@@ -12,12 +12,14 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: { label: 'Video' },
-  beforeSuperClass(self, options) {
-    options.addFields = [ {
-      type: 'video',
-      name: 'video',
-      label: 'Video URL',
-      required: true
-    } ].concat(options.addFields || []);
+  fields: {
+    add: {
+      video: {
+        type: 'video',
+        name: 'video',
+        label: 'Video URL',
+        required: true
+      }
+    }
   }
 };

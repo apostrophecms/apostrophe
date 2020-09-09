@@ -2,6 +2,7 @@ const _ = require('lodash');
 const path = require('path');
 
 module.exports = {
+  cascades: [ 'batchOperations' ],
   options: {
     alias: 'page',
     types: [
@@ -42,25 +43,17 @@ module.exports = {
       label: 'Publish Page'
     } ]
   },
-  beforeSuperClass(self, options) {
-    options.batchOperations = [
-      {
-        name: 'trash',
+  batchOperations: {
+    add: {
+      trash: {
         label: 'Trash'
       },
-      {
-        name: 'publish',
+      publish: {
         label: 'Publish'
       },
-      {
-        name: 'unpublish',
+      unpublish: {
         label: 'Unpublish'
       }
-    ].concat(options.addBatchOperations || []);
-    if (options.removeBatchOperations) {
-      options.batchOperations = _.filter(options.batchOperations, function (batchOperation) {
-        return !_.includes(options.removeBatchOperations, batchOperation.name);
-      });
     }
   },
   async init(self, options) {
@@ -114,7 +107,7 @@ module.exports = {
             published: null,
             trash: false,
             orphan: null,
-            joins: false,
+            relationships: false,
             areas: false,
             permission: false
           }).toObject();
@@ -605,7 +598,7 @@ database.`);
       // in this way.
       //
       // This requires some tricky mongo work to do it efficiently, especially since we
-      // need to update both the join ids and the denormalized docPermissions array.
+      // need to update both the relationship ids and the denormalized docPermissions array.
       //
       // The applyToSubpages choice is actually a one-time action, not a permanently
       // remembered setting, so the setting itself is cleared afterwards by this
@@ -645,32 +638,32 @@ database.`);
           });
           fields.forEach(field => {
             (page[field] || []).forEach(id => {
-              const relationshipField = field.replace('Ids', 'Relationships');
-              const relationships = page[relationshipField];
-              const relationship = relationships && (relationships[id] || {});
-              const propagate = relationship.applyToSubpages;
+              const fieldsStorage = field.replace('Ids', 'Fields');
+              const fieldsById = page[fieldsStorage];
+              const fields = fieldsById && (fieldsById[id] || {});
+              const propagate = fields.applyToSubpages;
               if (propagate) {
                 append(propagateAdd, 'docPermissions', prefix + '-' + id);
                 append(propagateAdd, field, id);
                 // This is not a persistent setting, it's a one-time indicator that
                 // we should propagate now
-                propagateSet[relationshipField + '.' + id + '.applyToSubpages'] = false;
+                propagateSet[fieldsStorage + '.' + id + '.applyToSubpages'] = false;
               }
-              relationship.applyToSubpages = false;
+              fields.applyToSubpages = false;
             });
           });
           removedFields.forEach(field => {
             (page[field] || []).forEach(id => {
-              const relationshipField = field.replace('RemovedIds', 'Relationships');
-              const relationships = page[relationshipField];
-              const relationship = relationships && (relationships[id] || {});
-              const propagate = relationship.applyToSubpages;
+              const fieldsStorage = field.replace('RemovedIds', 'Fields');
+              const fieldsById = page[fieldsStorage];
+              const fields = fieldsById && (fieldsById[id] || {});
+              const propagate = fields.applyToSubpages;
               if (propagate) {
                 append(propagatePull, 'docPermissions', prefix + '-' + id);
                 append(propagatePull, field.replace('Removed', ''), id);
               }
               // This is a one-time operation each time it's chosen, so don't remember it
-              relationship.applyToSubpages = false;
+              fields.applyToSubpages = false;
             });
           });
         });
@@ -734,7 +727,7 @@ database.`);
           published: parentPage.published
         });
         // Inherit permissions from parent page
-        _.assign(page, _.pick(parentPage, 'loginRequired', 'applyLoginRequiredToSubpages', 'viewUsersIds', 'viewUsersRelationships', 'viewGroupsIds', 'viewGroupsRelationships', 'editUsersIds', 'editUsersRelationships', 'editGroupsIds', 'editGroupsRelationships', 'docPermissions'));
+        _.assign(page, _.pick(parentPage, 'loginRequired', 'applyLoginRequiredToSubpages', 'viewUsersIds', 'viewUsersFields', 'viewGroupsIds', 'viewGroupsFields', 'editUsersIds', 'editUsersFields', 'editGroupsIds', 'editGroupsFields', 'docPermissions'));
         if (!page.published) {
           page.published = false;
         }
@@ -1624,8 +1617,8 @@ database.`);
           const field = _.clone(schema[index]);
           const base = name.replace(/^_/, '');
           field.removedIdsField = base + 'RemovedIds';
-          field.relationshipsField = base + 'Relationships';
-          field.relationship = [ {
+          field.fieldsStorage = base + 'Fields';
+          field.schema = [ {
             name: 'applyToSubpages',
             type: 'boolean',
             label: 'Apply to Subpages',

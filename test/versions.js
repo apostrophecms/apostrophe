@@ -35,19 +35,20 @@ describe('Versions', function() {
               nicknames: {
                 label: 'Nicknames',
                 type: 'array',
-                schema: [
-                  {
-                    type: 'string',
-                    name: 'nickname',
-                    label: 'Nickname'
+                fields: {
+                  add: {
+                    nickname: {
+                      type: 'string',
+                      label: 'Nickname'
+                    }
                   }
-                ]
+                }
               },
               _poems: {
                 label: 'Poems',
-                type: 'join',
+                type: 'relationship',
                 withType: 'poem',
-                idsField: 'poemIds'
+                idsStorage: 'poemIds'
               },
               body: {
                 type: 'area',
@@ -76,7 +77,7 @@ describe('Versions', function() {
     assert(apos.version.db);
   });
 
-  it('should accept a direct mongo insert of poems for join test purposes', async () => {
+  it('should accept a direct mongo insert of poems for relationship test purposes', async () => {
     return apos.doc.db.insertMany([
       {
         title: 'Poem ABC',
@@ -503,7 +504,7 @@ describe('Versions', function() {
     assert(change.current.nickname === 'sarah');
   });
 
-  it('should be able to compare versions with join and spot an id change, providing the titles via a join', async () => {
+  it('should be able to compare versions with relationship and spot an id change, providing the titles via a relationship', async () => {
     const req = apos.task.getReq();
     const doc = await apos.doc.find(req, { slug: 'one' }).toObject();
     assert(doc);

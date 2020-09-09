@@ -15,7 +15,7 @@
 //
 // To avoid causing problems for routes that depend on the middleware, loads are
 // only deferred until the end of loading the global doc and anything it
-// joins with; they are not merged with deferred loads for the actual page.
+// relationships with; they are not merged with deferred loads for the actual page.
 // This option defaults to `false` because in many cases performance is
 // not improved, as the global doc often contains no deferrable widgets,
 // or loads them efficiently already.
@@ -44,13 +44,13 @@ module.exports = {
     pluralLabel: 'Global',
     searchable: false
   },
-  beforeSuperClass(self, options) {
-    options.removeFields = [
+  fields: {
+    remove: [
       'title',
       'slug',
       'published',
       'trash'
-    ].concat(options.removeFields || []);
+    ]
   },
   init(self, options) {
     self.slug = options.slug || 'global';
@@ -61,7 +61,7 @@ module.exports = {
         async initGlobal() {
           const req = self.apos.task.getReq();
           // Existence test must not load widgets etc. as this can lead
-          // to chicken and egg problems if widgets join with page types
+          // to chicken and egg problems if widgets relationship with page types
           // not yet registered
           const existing = await self.apos.doc.db.findOne({ slug: self.slug });
           if (!existing) {

@@ -59,7 +59,7 @@ module.exports = {
             if (Array.isArray(route)) {
               let routeFn = route[route.length - 1];
               if (self.routeWrappers[section]) {
-                routeFn = self.routeWrappers[section](routeFn);
+                routeFn = self.routeWrappers[section](name, routeFn);
                 route[route.length - 1] = routeFn;
               }
               self.apos.app[method](url, function(req, res) {
