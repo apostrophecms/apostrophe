@@ -97,6 +97,7 @@ export default {
         }
       }
       if (this.field.type === 'email') {
+        // regex source: https://emailregex.com/
         const matches = value.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
         if (!matches) {
           return 'invalid';
