@@ -28,7 +28,7 @@
             :moduleName="field.withType"
             :items="items"
             :max-items="field.max"
-            :join="true"
+            :relationship="true"
             @updated="updated"
             @safe-close="chooser=false"
           />

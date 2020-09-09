@@ -102,7 +102,8 @@ export default {
         },
         status: {},
         value: { data: '' }
-      }
+      },
+      disable: this.disableSelection
     };
   },
   computed: {

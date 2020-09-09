@@ -15,7 +15,7 @@
       />
     </template>
 
-    <template v-if="join" #leftRail>
+    <template v-if="relationship" #leftRail>
       <AposModalRail>
         <AposSlatList @update="updateSlatList" :initial-items="selectedItems" />
       </AposModalRail>
@@ -28,6 +28,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
+            :disable-selection="maxItems && checked.length >= maxItems"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -133,7 +134,7 @@ export default {
       type: String,
       required: true
     },
-    join: {
+    relationship: {
       type: Boolean,
       default: false
     },
@@ -166,7 +167,7 @@ export default {
       queryExtras: {},
       holdQueries: false,
       selectedItems: this.items,
-      checked: this.items.map(item => item._id)
+      checked: this.items.map(item => item._id) // NOTE: originally set in AposTableMixin.js
     };
   },
   computed: {
@@ -228,6 +229,7 @@ export default {
     this.getPieces();
   },
   watch: {
+    // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
     }
@@ -318,10 +320,17 @@ export default {
     updateSelectedItems(event) {
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => piece._id === event.target.id);
-        this.selectedItems.push(piece);
+        if (this.maxItems) {
+          if (this.selectedItems.length < this.maxItems) {
+            this.selectedItems.push(piece);
+          }
+        } else {
+          this.selectedItems.push(piece);
+        }
       } else {
         this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
       }
+      this.checked = this.selectedItems.map(item => item._id);
       this.$emit('updated', this.selectedItems);
     }
   }
