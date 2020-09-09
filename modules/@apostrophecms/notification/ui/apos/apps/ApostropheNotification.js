@@ -56,8 +56,7 @@ export default function() {
             message,
             strings,
             type: options.type,
-            dismiss: options.dismiss,
-            id: options.id
+            dismiss: options.dismiss
           }
         });
       };

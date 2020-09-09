@@ -73,6 +73,7 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import cuid from 'cuid';
 
 export default {
   mixins: [ AposModalParentMixin ],
@@ -145,7 +146,7 @@ export default {
     },
     createPlaceholder(dimensions) {
       this.media.unshift({
-        _id: 'placeholder',
+        _id: cuid(),
         title: 'placeholder image',
         dimensions
       });

@@ -2,7 +2,8 @@
   apostrophe-build uses this to prepend SCSS with globals.
   Order here does matter, so make sure vars, mixins, functions are loaded first.
 */
-
+@import '~normalize.css';
+@import './_admin';
 @import './_theme';
 @import './_functions';
 @import './_mixins';
