@@ -36,9 +36,12 @@
       </div>
       <div class="apos-slat__secondary">
         <div class="apos-slat__size" v-if="item.size">{{ item.size }}</div>
-        <close-icon
-          @click="remove" class="apos-slat__control apos-slat__control--remove"
-          :size="13"
+        <AposButton
+          @click="remove"
+          icon="close-icon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          label="Remove Item"
         />
       </div>
     </li>
@@ -206,7 +209,6 @@ export default {
   .apos-slat__extension--ppt,
   .apos-slat__extension--pptx {
     background-color: var(--a-presentation);
-    // color: var(--a-primary-text);
   }
 
   .apos-slat__extension--doc,

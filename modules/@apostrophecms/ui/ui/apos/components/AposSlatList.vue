@@ -91,11 +91,8 @@ export default {
       this.engaged = null;
     },
     remove(item, focusNext) {
-      console.log('removing');
       const itemIndex = this.getIndex(item._id);
-      console.log(this.items);
       const items = this.items.filter(i => item._id !== i._id);
-      console.log(items);
       this.$emit('update', items);
       if (focusNext && items[itemIndex]) {
         this.focusElement(items[itemIndex]._id);

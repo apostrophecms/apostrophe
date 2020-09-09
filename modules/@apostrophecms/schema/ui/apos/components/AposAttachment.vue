@@ -21,8 +21,8 @@
 </template>
 
 <script>
-import AposInputMixin from '../mixins/AposInputMixin.js';
-import AposSlatList from '../../../../ui/ui/apos/components/AposSlatList';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
   name: 'AposAttachment',
