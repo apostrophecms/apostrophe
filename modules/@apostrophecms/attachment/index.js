@@ -152,7 +152,6 @@ module.exports = {
           self.canUpload,
           require('connect-multiparty')(),
           async function (req) {
-            let result;
             try {
               // The name attribute could be anything because of how fileupload
               // controls work; we don't really care.
@@ -160,9 +159,9 @@ module.exports = {
               if (!file) {
                 throw self.apos.error('notfound');
               }
-              result = await self.insert(req, file);
+              return self.insert(req, file);
             } finally {
-              for (const file of (Object.values(req.files) || {})) {
+              for (const file of (req.files || {})) {
                 try {
                   fs.unlinkSync(file.path);
                 } catch (e) {
@@ -170,7 +169,6 @@ module.exports = {
                 }
               }
             }
-            return result;
           }
         ],
         // Crop a previously uploaded image, based on the `id` POST parameter
@@ -296,8 +294,7 @@ module.exports = {
           }
         }
         info.used = true;
-
-        await self.db.replaceOne({ _id: info._id }, info);
+        await self.db.updateOne({ _id: info._id }, info);
         object[field.name] = info;
       },
       fieldTypePartial(data) {
@@ -512,7 +509,7 @@ module.exports = {
       //
       // For best performance be reasonably specific; don't pass an entire page or piece
       // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many joins.
+      // if the page has many relationships.
       //
       // Returns the first attachment matching the criteria.
       //
@@ -546,11 +543,11 @@ module.exports = {
       // This method is available as a template helper: apos.attachment.all
       //
       // Find all attachments referenced within an object, whether they are
-      // properties or sub-properties (via joins, etc).
+      // properties or sub-properties (via relationships, etc).
       //
       // For best performance be reasonably specific; don't pass an entire page or piece
       // object if you can pass piece.thumbnail to avoid an exhaustive search, especially
-      // if the piece has many joins.
+      // if the piece has many relationships.
       //
       // Returns an array of attachments, or an empty array if none are found.
       //
@@ -624,12 +621,13 @@ module.exports = {
             let i;
             for (i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
-              if (ancestor.relationships && ancestor.relationships[o._id]) {
+              const fields = ancestor.imagesFields && ancestor.imagesFields[o._id];
+              if (fields) {
                 // Clone it so that if two things have crops of the same image, we
                 // don't overwrite the value on subsequent calls
                 value = _.clone(value);
-                value._crop = _.pick(ancestor.relationships[o._id], 'top', 'left', 'width', 'height');
-                value._focalPoint = _.pick(ancestor.relationships[o._id], 'x', 'y');
+                value._crop = _.pick(fields, 'top', 'left', 'width', 'height');
+                value._focalPoint = _.pick(fields, 'x', 'y');
                 if (o.credit) {
                   value._credit = o.credit;
                 }
@@ -708,7 +706,7 @@ module.exports = {
         if (!attachment) {
           return false;
         }
-        // Specified directly on the attachment (it's not a join situation)
+        // Specified directly on the attachment (it's not a relationship situation)
         if (typeof attachment.x === 'number') {
           return true;
         }

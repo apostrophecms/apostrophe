@@ -711,30 +711,34 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'join',
-      // Validate a join field, copying from `data[field.name]` to
-      // `object[field.name]`. If the join is named `_product`, then
-      // `data._product` should be an array of product docs to be joined
-      // with. These doc objects must at least have an _id property.
+      name: 'relationship',
+      // Validate a relationship field, copying from `data[field.name]` to
+      // `object[field.name]`. If the relationship is named `_product`, then
+      // `data._product` should be an array of product docs.
+      // These doc objects must at least have an _id property.
       //
       // Alternatively, entries in `data._product` may simply be
       // `_id` strings or `title` strings. Titles are compared in a
       // tolerant manner. This is useful for CSV input. Strings may
-      // be mixed with actual joined docs in a single array.
+      // be mixed with actual docs in a single array.
       //
-      // If the join field has a `relationship` option, then each
-      // doc object may also have a `_relationship` property which
-      // will be validated against the schema in `relationship`.
+      // If the relationship field has a `fields` option, then each
+      // doc object may also have a `_fields` property which
+      // will be validated against the schema in `fields`.
       //
       // The result in `object[field.name]` will always be an array
-      // of zero or more joined docs, containing only those that
+      // of zero or more related docs, containing only those that
       // actually exist in the database and can be fetched by this user,
       // in the same order specified in `data[field.name]`.
+      //
+      // Actual storage to the permanent idsStorage and fieldsStorage
+      // properties is handled at a lower level in a beforeSave
+      // handler of the doc-type module.
 
       convert: async function (req, field, data, object) {
         const manager = self.apos.doc.getManager(field.withType);
         if (!manager) {
-          throw Error('join with type ' + field.withType + ' unrecognized');
+          throw Error('relationship with type ' + field.withType + ' unrecognized');
         }
         let input = data[field.name];
         if (input == null) {
@@ -780,7 +784,7 @@ module.exports = {
           object[field.name] = [];
           return;
         }
-        const results = await manager.find(req, { $or: clauses }).joins(false).published(null).toArray();
+        const results = await manager.find(req, { $or: clauses }).relationships(false).published(null).toArray();
         // Must maintain input order. Also discard things not actually found in the db
         const actualDocs = [];
         for (const item of input) {
@@ -792,10 +796,10 @@ module.exports = {
           } else if ((item && ((typeof item._id) === 'string'))) {
             const result = results.find(doc => (doc._id === item._id));
             if (result) {
-              if (field.relationship) {
-                result._relationship = {};
-                if (item && ((typeof item._relationship === 'object'))) {
-                  await self.convert(req, field.relationship, item._relationship || {}, result._relationship);
+              if (field.schema) {
+                result._fields = {};
+                if (item && ((typeof item._fields === 'object'))) {
+                  await self.convert(req, field.schema, item._fields || {}, result._fields);
                 }
               }
               actualDocs.push(result);
@@ -805,16 +809,16 @@ module.exports = {
         object[field.name] = actualDocs;
       },
 
-      join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byArray, false, objects, field.idsField, field.relationshipsField, field.name, options);
+      relate: async function (req, field, objects, options) {
+        return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
 
       addQueryBuilder(field, query) {
 
         addOperationQueryBuilder('', '$in');
         addOperationQueryBuilder('And', '$all');
-        self.addJoinSlugQueryBuilder(field, query, '');
-        self.addJoinSlugQueryBuilder(field, query, 'And');
+        self.addRelationshipSlugQueryBuilder(field, query, '');
+        self.addRelationshipSlugQueryBuilder(field, query, 'And');
 
         function addOperationQueryBuilder(suffix, operator) {
           return query.addBuilder(field.name + suffix, {
@@ -829,46 +833,43 @@ module.exports = {
               // Even programmers appreciate shortcuts, so it's not enough that the
               // sanitizer (which doesn't apply to programmatic use) accepts these
               if (Array.isArray(value)) {
-                criteria[field.idsField] = {};
-                criteria[field.idsField][operator] = value;
+                criteria[field.idsStorage] = {};
+                criteria[field.idsStorage][operator] = value;
               } else if (value === 'none') {
                 criteria.$or = [];
                 let clause = {};
-                clause[field.idsField] = null;
+                clause[field.idsStorage] = null;
                 criteria.$or.push(clause);
                 clause = {};
-                clause[field.idsField] = { $exists: 0 };
+                clause[field.idsStorage] = { $exists: 0 };
                 criteria.$or.push(clause);
                 clause = {};
-                clause[field.idsField + '.0'] = { $exists: 0 };
+                clause[field.idsStorage + '.0'] = { $exists: 0 };
                 criteria.$or.push(clause);
               } else {
-                criteria[field.idsField] = { $in: [ value ] };
+                criteria[field.idsStorage] = { $in: [ value ] };
               }
               query.and(criteria);
             },
-            choices: self.joinQueryBuilderChoices(field, query, '_id'),
-            launder: joinQueryBuilderLaunder
+            choices: self.relationshipQueryBuilderChoices(field, query, '_id'),
+            launder: relationshipQueryBuilderLaunder
           });
         }
       },
       validate: function (field, options, warn, fail) {
         if (!field.name.match(/^_/)) {
-          warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
+          warn('Name of relationship field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
         }
-        if (!field.idsField) {
-          if (field.idField) {
-            fail('join takes idsField, not idField. You can also omit it, in which case a reasonable value is supplied.');
-          }
+        if (!field.idsStorage) {
           // Supply reasonable value
-          field.idsField = field.name.replace(/^_/, '') + 'Ids';
+          field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
         }
         if (!field.withType) {
-          // Try to supply reasonable value based on join name. Join name will be plural,
+          // Try to supply reasonable value based on relationship name. Relationship name will be plural,
           // so consider that too
           const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
+            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
@@ -886,17 +887,16 @@ module.exports = {
             fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
           }
         }
-        if (field.relationship && !field.relationshipsField) {
-          field.relationshipsField = field.name.replace(/^_/, '') + 'Relationships';
+        if (field.schema && !field.fieldsStorage) {
+          field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
         }
-        if (field.relationship && !Array.isArray(field.relationship)) {
-          // TODO more validation here
-          fail('relationship field should be an array if present');
+        if (field.schema && !Array.isArray(field.schema)) {
+          fail('schema property should be an array if present at this stage');
         }
       }
     });
 
-    function joinQueryBuilderLaunder(v) {
+    function relationshipQueryBuilderLaunder(v) {
       if (Array.isArray(v)) {
         return self.apos.launder.ids(v);
       } else if (typeof v === 'string' && v.length) {
@@ -908,20 +908,20 @@ module.exports = {
     }
 
     self.addFieldType({
-      name: 'joinReverse',
-      join: async function (req, field, objects, options) {
-        return self.joinDriver(req, joinr.byArrayReverse, true, objects, field.idsField, field.relationshipsField, field.name, options);
+      name: 'relationshipReverse',
+      relate: async function (req, field, objects, options) {
+        return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
       validate: function (field, options, warn, fail) {
-        let forwardJoin;
+        let forwardRelationship;
         if (!field.name.match(/^_/)) {
-          warn('Name of join field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
+          warn('Name of relationship field does not start with _. This is permitted for bc but it will fill your database with duplicate outdated data. Please fix it.');
         }
         if (!field.withType) {
-          // Try to supply reasonable value based on join name
+          // Try to supply reasonable value based on relationship name
           const withType = field.name.replace(/^_/, '').replace(/s$/, '');
           if (!_.find(self.apos.doc.managers, { name: withType })) {
-            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your join the same name as the other type, with a leading _ and optional trailing s.');
+            fail('withType property is missing. Hint: it must match the "name" property of a doc type. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
           }
           field.withType = withType;
         }
@@ -929,43 +929,43 @@ module.exports = {
         if (!otherModule) {
           fail('withType property, ' + field.withType + ', does not match the "name" property of any doc type. In most cases this is the same as the module name.');
         }
-        if (!(field.reverseOf || field.idsField)) {
+        if (!(field.reverseOf || field.idsStorage)) {
           self.validate(otherModule.schema, {
             type: 'doc type',
             subtype: otherModule.name
           });
-          // Look for a join with our type in the other type
-          forwardJoin = _.find(otherModule.schema, { withType: options.subtype });
-          if (forwardJoin) {
-            field.reverseOf = forwardJoin.name;
+          // Look for a relationship with our type in the other type
+          forwardRelationship = _.find(otherModule.schema, { withType: options.subtype });
+          if (forwardRelationship) {
+            field.reverseOf = forwardRelationship.name;
           }
         }
         if (field.reverseOf) {
-          forwardJoin = _.find(otherModule.schema, {
-            type: 'join',
+          forwardRelationship = _.find(otherModule.schema, {
+            type: 'relationship',
             name: field.reverseOf
           });
-          if (!forwardJoin) {
-            fail('reverseOf property does not match the name property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, "reverse" must match "name".');
+          if (!forwardRelationship) {
+            fail('reverseOf property does not match the name property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, "reverse" must match "name".');
           }
-          // Make sure the other join has any missing fields auto-supplied before
+          // Make sure the other relationship has any missing fields auto-supplied before
           // trying to access them
-          self.validate([ forwardJoin ], {
+          self.validate([ forwardRelationship ], {
             type: 'doc type',
             subtype: otherModule.name
           });
-          field.idsField = forwardJoin.idsField;
+          field.idsStorage = forwardRelationship.idsStorage;
         }
-        if (!field.idsField) {
-          field.idsField = field.name.replace(/^_/, '') + 'Ids';
+        if (!field.idsStorage) {
+          field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
         }
-        if (!forwardJoin) {
-          forwardJoin = _.find(otherModule.schema, {
-            type: 'join',
-            idsField: field.idsField
+        if (!forwardRelationship) {
+          forwardRelationship = _.find(otherModule.schema, {
+            type: 'relationship',
+            idsStorage: field.idsStorage
           });
-          if (!forwardJoin) {
-            fail('idsField property does not match the idsField property of any join in the schema for ' + field.withType + '. Hint: you are taking advantage of a join already being edited in the schema for that type, your idsField must be the same to find the data there.');
+          if (!forwardRelationship) {
+            fail('idsStorage property does not match the idsStorage property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, your idsStorage must be the same to find the data there.');
           }
         }
       }
@@ -1360,14 +1360,11 @@ module.exports = {
           if (!subsetCopy) {
             // These rules suffice for our standard fields
             subset[field.name] = instance[field.name];
-            if (field.idField) {
-              subset[field.idField] = instance[field.idField];
+            if (field.idsStorage) {
+              subset[field.idsStorage] = instance[field.idsStorage];
             }
-            if (field.idsField) {
-              subset[field.idsField] = instance[field.idsField];
-            }
-            if (field.relationshipsField) {
-              subset[field.relationshipsField] = instance[field.relationshipsField];
+            if (field.fieldsStorage) {
+              subset[field.fieldsStorage] = instance[field.fieldsStorage];
             }
           } else {
             subsetCopy(field.name, instance, subset, field);
@@ -1446,26 +1443,28 @@ module.exports = {
             continue;
           }
           const convert = self.fieldTypes[field.type].convert;
-          try {
-            await convert(req, field, data, object);
-          } catch (e) {
-            if (Array.isArray(e)) {
-              // Nested object or array will throw an array if it
-              // encounters an error or errors in its subsidiary fields
-              for (const error of e) {
+          if (convert) {
+            try {
+              await convert(req, field, data, object);
+            } catch (e) {
+              if (Array.isArray(e)) {
+                // Nested object or array will throw an array if it
+                // encounters an error or errors in its subsidiary fields
+                for (const error of e) {
+                  errors.push({
+                    path: field.name + '.' + error.path,
+                    error: error.error
+                  });
+                }
+              } else {
+                if ((typeof e) !== 'string') {
+                  self.apos.util.error(e + '\n\n' + e.stack);
+                }
                 errors.push({
-                  path: field.name + '.' + error.path,
-                  error: error.error
+                  path: field.name,
+                  error: e
                 });
               }
-            } else {
-              if ((typeof e) !== 'string') {
-                self.apos.util.error(e + '\n\n' + e.stack);
-              }
-              errors.push({
-                path: field.name,
-                error: e
-              });
             }
           }
         }
@@ -1520,12 +1519,12 @@ module.exports = {
         }
       },
 
-      // Driver invoked by the "join" methods of the standard
-      // join field types.
+      // Driver invoked by the "relationship" methods of the standard
+      // relationship field types.
       //
-      // All arguments must be present, however relationshipsField
+      // All arguments must be present, however fieldsStorage
       // may be undefined to indicate none is needed.
-      async joinDriver(req, method, reverse, items, idField, relationshipsField, objectField, options) {
+      async relationshipDriver(req, method, reverse, items, idsStorage, fieldsStorage, objectField, options) {
         if (!options) {
           options = {};
         }
@@ -1533,17 +1532,17 @@ module.exports = {
         const builders = options.builders || {};
         const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
-        // Some joinr methods don't take relationshipsField
+        // Some joinr methods don't take fieldsStorage
         if (method.length === 4) {
           const realMethod = method;
-          method = function (items, idField, relationshipsField, objectField, getter) {
-            return realMethod(items, idField, objectField, getter);
+          method = function (items, idsStorage, fieldsStorage, objectField, getter) {
+            return realMethod(items, idsStorage, objectField, getter);
           };
         }
-        await method(items, idField, relationshipsField, objectField, function (ids) {
+        await method(items, idsStorage, fieldsStorage, objectField, function (ids) {
           const idsCriteria = {};
           if (reverse) {
-            idsCriteria[idField] = { $in: ids };
+            idsCriteria[idsStorage] = { $in: ids };
           } else {
             idsCriteria._id = { $in: ids };
           }
@@ -1554,7 +1553,7 @@ module.exports = {
             ]
           };
           const query = find(req, criteria);
-          // Builders hardcoded as part of this join's options don't
+          // Builders hardcoded as part of this relationship's options don't
           // require any sanitization
           query.applyBuilders(builders);
           // Hints, on the other hand, must be sanitized
@@ -1563,35 +1562,35 @@ module.exports = {
         });
       },
 
-      // Carry out all the joins in the schema on the specified object or array
-      // of objects. The withJoins option may be omitted.
+      // Fetch all the relationships in the schema on the specified object or array
+      // of objects. The withRelationships option may be omitted.
       //
-      // If withJoins is omitted, null or undefined, all the joins in the schema
-      // are performed, and also any joins specified by the 'withJoins' option of
-      // each join field in the schema, if any. And that's where it stops. Infinite
+      // If withRelationships is omitted, null or undefined, all the relationships in the schema
+      // are performed, and also any relationships specified by the 'withRelationships' option of
+      // each relationship field in the schema, if any. And that's where it stops. Infinite
       // recursion is not possible.
       //
-      // If withJoins is specified and set to "false", no joins at all are performed.
+      // If withRelationships is specified and set to "false", no relationships at all are performed.
       //
-      // If withJoins is set to an array of join names found in the schema, then
-      // only those joins are performed, ignoring any 'withJoins' options found in
+      // If withRelationships is set to an array of relationship names found in the schema, then
+      // only those relationships are performed, ignoring any 'withRelationships' options found in
       // the schema.
       //
-      // If a join name in the withJoins array uses dot notation, like this:
+      // If a relationship name in the withRelationships array uses dot notation, like this:
       //
       // _events._locations
       //
-      // Then the objects are joined with events, and then the events are further
-      // joined with locations, assuming that _events is defined as a join in the
-      // schema and _locations is defined as a join in the schema for the events
-      // module. Multiple "dot notation" joins may share a prefix.
+      // Then the related events are fetched, and the locations related to those events are fetched,
+      // assuming that _events is defined as a relationship in the
+      // original schema and _locations is defined as a relationship in the schema for the events
+      // module. Multiple "dot notation" relationships may share a prefix.
       //
-      // Joins are also supported in the schemas of array fields.
+      // Relationships are also supported in the schemas of array fields.
 
-      async join(req, schema, objectOrArray, withJoins) {
+      async relate(req, schema, objectOrArray, withRelationships) {
 
-        if (withJoins === false) {
-          // Joins explicitly deactivated for this call
+        if (withRelationships === false) {
+          // Relationships explicitly deactivated for this call
           return;
         }
 
@@ -1601,95 +1600,95 @@ module.exports = {
           return;
         }
 
-        // build an array of joins of interest, found at any level
+        // build an array of relationships of interest, found at any level
         // in the schema, even those nested in array schemas. Add
         // an _arrays property to each one which contains the names
-        // of the array fields leading to this join, if any, so
+        // of the array fields leading to this relationship, if any, so
         // we know where to store the results. Also set a
         // _dotPath property which can be used to identify relevant
-        // joins when the withJoins option is present
+        // relationships when the withRelationships option is present
 
-        let joins = [];
+        let relationships = [];
 
-        function findJoins(schema, arrays) {
-          const _joins = _.filter(schema, function (field) {
-            return !!self.fieldTypes[field.type].join;
+        function findRelationships(schema, arrays) {
+          const _relationships = _.filter(schema, function (field) {
+            return !!self.fieldTypes[field.type].relate;
           });
-          _.each(_joins, function (join) {
+          _.each(_relationships, function (relationship) {
             if (!arrays.length) {
-              join._dotPath = join.name;
+              relationship._dotPath = relationship.name;
             } else {
-              join._dotPath = arrays.join('.') + '.' + join.name;
+              relationship._dotPath = arrays.join('.') + '.' + relationship.name;
             }
-            // If we have more than one object we're not interested in joins
+            // If we have more than one object we're not interested in relationships
             // with the ifOnlyOne restriction right now.
-            if (objects.length > 1 && join.ifOnlyOne) {
+            if (objects.length > 1 && relationship.ifOnlyOne) {
               return;
             }
-            join._arrays = _.clone(arrays);
+            relationship._arrays = _.clone(arrays);
           });
-          joins = joins.concat(_joins);
+          relationships = relationships.concat(_relationships);
           _.each(schema, function (field) {
             if (field.type === 'array' || field.type === 'object') {
-              findJoins(field.schema, arrays.concat(field.name));
+              findRelationships(field.schema, arrays.concat(field.name));
             }
           });
         }
 
-        findJoins(schema, []);
+        findRelationships(schema, []);
 
-        // The withJoins option allows restriction of joins. Set to false
-        // it blocks all joins. Set to an array, it allows the joins named within.
-        // Dot notation can be used to specify joins in array properties,
-        // or joins reached via other joins.
+        // The withRelationships option allows restriction of relationships. Set to false
+        // it blocks all relationships. Set to an array, it allows the relationships named within.
+        // Dot notation can be used to specify relationships in array properties,
+        // or relationships reached via other relationships.
         //
-        // By default, all configured joins will take place, but withJoins: false
-        // will be passed when fetching the objects on the other end of the join,
+        // By default, all configured relationships will take place, but withRelationships: false
+        // will be passed when fetching the objects on the other end of the relationship,
         // so that infinite recursion never takes place.
 
-        const withJoinsNext = {};
-        // Explicit withJoins option passed to us
-        if (Array.isArray(withJoins)) {
-          joins = _.filter(joins, function (join) {
-            const dotPath = join._dotPath;
+        const withRelationshipsNext = {};
+        // Explicit withRelationships option passed to us
+        if (Array.isArray(withRelationships)) {
+          relationships = _.filter(relationships, function (relationship) {
+            const dotPath = relationship._dotPath;
             let winner;
-            _.each(withJoins, function (withJoinName) {
-              if (withJoinName === dotPath) {
+            _.each(withRelationships, function (withRelationshipName) {
+              if (withRelationshipName === dotPath) {
                 winner = true;
                 return;
               }
-              if (withJoinName.substr(0, dotPath.length + 1) === dotPath + '.') {
-                if (!withJoinsNext[dotPath]) {
-                  withJoinsNext[dotPath] = [];
+              if (withRelationshipName.substr(0, dotPath.length + 1) === dotPath + '.') {
+                if (!withRelationshipsNext[dotPath]) {
+                  withRelationshipsNext[dotPath] = [];
                 }
-                withJoinsNext[dotPath].push(withJoinName.substr(dotPath.length + 1));
+                withRelationshipsNext[dotPath].push(withRelationshipName.substr(dotPath.length + 1));
                 winner = true;
               }
             });
             return winner;
           });
         } else {
-          // No explicit withJoins option for us, so we do all the joins
-          // we're configured to do, and pass on the withJoins options we
+          // No explicit withRelationships option for us, so we do all the relationships
+          // we're configured to do, and pass on the withRelationships options we
           // have configured for those
-          _.each(joins, function (join) {
-            if (join.withJoins) {
-              withJoinsNext[join._dotPath] = join.withJoins;
+          _.each(relationships, function (relationship) {
+            if (relationship.withRelationships) {
+              withRelationshipsNext[relationship._dotPath] = relationship.withRelationships;
             }
           });
         }
 
-        for (const join of joins) {
-          const arrays = join._arrays;
+        for (const relationship of relationships) {
+          const arrays = relationship._arrays;
 
           const _objects = findObjectsInArrays(objects, arrays);
 
-          if (!join.name.match(/^_/)) {
-            throw Error('Joins should always be given names beginning with an underscore (_). Otherwise we would waste space in your database storing the results statically. There would also be a conflict with the array field withJoins syntax. Join name is: ' + join._dotPath);
+          if (!relationship.name.match(/^_/)) {
+            throw Error('Relationships should always be given names beginning with an underscore (_). Otherwise we would waste space in your database storing the results statically. There would also be a conflict with the array field withRelationships syntax. Relationship name is: ' + relationship._dotPath);
           }
-          if (Array.isArray(join.withType)) {
+          if (Array.isArray(relationship.withType)) {
             // Polymorphic join
-            for (const type of join.withType) {
+            for (const type of relationship.withType) {
               const manager = self.apos.doc.getManager(type);
               if (!manager) {
                 throw Error('I cannot find the instance type ' + type);
@@ -1698,55 +1697,55 @@ module.exports = {
 
               const options = {
                 find: find,
-                builders: { joins: withJoinsNext[join._dotPath] || false },
+                builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
                 hints: {}
               };
-              const subname = join.name + ':' + type;
-              const _join = _.assign({}, join, {
+              const subname = relationship.name + ':' + type;
+              const _relationship = _.assign({}, relationship, {
                 name: subname,
                 withType: type
               });
 
               // Allow options to the get() method to be
-              // specified in the join configuration
-              if (_join.builders) {
-                _.extend(options.builders, _join.builders);
+              // specified in the relationship configuration
+              if (_relationship.builders) {
+                _.extend(options.builders, _relationship.builders);
               }
-              if (_join.buildersByType && _join.buildersByType[type]) {
-                _.extend(options.builders, _join.buildersByType[type]);
+              if (_relationship.buildersByType && _relationship.buildersByType[type]) {
+                _.extend(options.builders, _relationship.buildersByType[type]);
               }
-              if (_join.hints) {
-                _.extend(options.hints, _join.hints);
+              if (_relationship.hints) {
+                _.extend(options.hints, _relationship.hints);
               }
-              if (_join.hintsByType && _join.hintsByType[type]) {
-                _.extend(options.hints, _join.hints);
-                _.extend(options.hints, _join.hintsByType[type]);
+              if (_relationship.hintsByType && _relationship.hintsByType[type]) {
+                _.extend(options.hints, _relationship.hints);
+                _.extend(options.hints, _relationship.hintsByType[type]);
               }
               // Allow options to the getter to be specified in the schema,
               // notably editable: true
-              await self.fieldTypes[_join.type].join(req, _join, _objects, options);
+              await self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               _.each(_objects, function (object) {
                 if (object[subname]) {
                   if (Array.isArray(object[subname])) {
-                    object[join.name] = (object[join.name] || []).concat(object[subname]);
+                    object[relationship.name] = (object[relationship.name] || []).concat(object[subname]);
                   } else {
-                    object[join.name] = object[subname];
+                    object[relationship.name] = object[subname];
                   }
                 }
               });
             }
-            if (join.idsField) {
+            if (relationship.idsStorage) {
               _.each(_objects, function (object) {
-                if (object[join.name]) {
-                  object[join.name] = self.apos.util.orderById(object[join.idsField], object[join.name]);
+                if (object[relationship.name]) {
+                  object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage], object[relationship.name]);
                 }
               });
             }
           }
 
-          const manager = self.apos.doc.getManager(join.withType);
+          const manager = self.apos.doc.getManager(relationship.withType);
           if (!manager) {
-            throw Error('I cannot find the instance type ' + join.withType);
+            throw Error('I cannot find the instance type ' + relationship.withType);
           }
 
           // If it has a getter, use it, otherwise supply one
@@ -1754,22 +1753,22 @@ module.exports = {
 
           const options = {
             find: find,
-            builders: { joins: withJoinsNext[join._dotPath] || false },
+            builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
             hints: {}
           };
 
           // Allow options to the get() method to be
-          // specified in the join configuration
-          if (join.builders) {
-            _.extend(options.builders, join.builders);
+          // specified in the relationship configuration
+          if (relationship.builders) {
+            _.extend(options.builders, relationship.builders);
           }
-          if (join.hints) {
-            _.extend(options.hints, join.hints);
+          if (relationship.hints) {
+            _.extend(options.hints, relationship.hints);
           }
 
           // Allow options to the getter to be specified in the schema,
           // notably editable: true
-          await self.fieldTypes[join.type].join(req, join, _objects, options);
+          await self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
         }
 
         function findObjectsInArrays(objects, arrays) {
@@ -1788,26 +1787,26 @@ module.exports = {
         }
       },
 
-      // In the given document, for any joins that are present in
+      // In the given document, for any relationships that are present in
       // the data (such as `_products`), update the underlying
-      // idsField and relationshipsField (if appropriate) so that
+      // idsStorage and fieldsStorage (if appropriate) so that
       // storage to the database can take place. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
-      // itself as needed for joins nested in widgets,
+      // itself as needed for relationships nested in widgets,
       // array fields and object fields.
       //
-      // If the join field is present by name (such as `_products`)
+      // If the relationship field is present by name (such as `_products`)
       // in the document, that is taken as authoritative, and any
-      // existing values in the `idsField` and `relationshipsField`
-      // are overwritten. If the join field is not present, the
+      // existing values in the `idsStorage` and `fieldsStorage`
+      // are overwritten. If the relationship field is not present, the
       // existing values are left alone. This allows the developer
       // to safely update a document that was fetched with
-      // `.joins(false)`, provided a projection was not also used.
+      // `.relationships(false)`, provided a projection was not also used.
       //
       // Currently `req` does not impact this, but that may change.
 
-      prepareJoinsForStorage(req, doc) {
+      prepareRelationshipsForStorage(req, doc) {
         if (doc.metaType === 'doc') {
           const manager = self.apos.doc.getManager(doc.type);
           if (!manager) {
@@ -1826,7 +1825,7 @@ module.exports = {
             if (field.type === 'area') {
               if (doc[field.name] && doc[field.name].items) {
                 for (const widget of doc[field.name].items) {
-                  self.prepareJoinsForStorage(req, widget);
+                  self.prepareRelationshipsForStorage(req, widget);
                 }
               }
             } else if (field.type === 'array') {
@@ -1837,17 +1836,17 @@ module.exports = {
               if (doc[field.name]) {
                 forSchema(field.schema, doc[field.name]);
               }
-            } else if (field.type === 'join') {
+            } else if (field.type === 'relationship') {
               if (Array.isArray(doc[field.name])) {
-                doc[field.idsField] = doc[field.name].map(joinedDoc => joinedDoc._id);
-                if (field.relationshipsField) {
-                  const relationships = doc[field.relationshipsField] || {};
-                  for (const joinedDoc of doc[field.name]) {
-                    if (joinedDoc._relationship) {
-                      relationships[joinedDoc._id] = joinedDoc._relationship;
+                doc[field.idsStorage] = doc[field.name].map(relatedDoc => relatedDoc._id);
+                if (field.fieldsStorage) {
+                  const fieldsById = doc[field.fieldsStorage] || {};
+                  for (const relatedDoc of doc[field.name]) {
+                    if (relatedDoc._fields) {
+                      fieldsById[relatedDoc._id] = relatedDoc._fields;
                     }
                   }
-                  doc[field.relationshipsField] = relationships;
+                  doc[field.fieldsStorage] = fieldsById;
                 }
               }
             }
@@ -1962,19 +1961,19 @@ module.exports = {
 
       // You don't need to call this. It returns an async function that, when later called
       // with no arguments, will give you query builder choices based on the given field, query
-      // and value field of interest. Join field types use this method to implement
+      // and value field of interest. Relationship field types use this method to implement
       // their query builder `choices`.
 
-      joinQueryBuilderChoices(field, query, valueField) {
+      relationshipQueryBuilderChoices(field, query, valueField) {
         return async function () {
-          const idsField = field.idsField;
-          const ids = await query.toDistinct(idsField);
+          const idsStorage = field.idsStorage;
+          const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
-          const joinQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
+          const relationshipQuery = manager.find(query.req, { _id: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
           if (field.builders) {
-            joinQuery.applyBuilders(field.builders);
+            relationshipQuery.applyBuilders(field.builders);
           }
-          const docs = await joinQuery.toArray();
+          const docs = await relationshipQuery.toArray();
           _.each(docs, function (doc) {
             doc.label = doc.title;
             doc.value = doc[valueField];
@@ -1987,24 +1986,24 @@ module.exports = {
       },
 
       // You don't need to call this. It is called for you as part of the mechanism that
-      // adds query builders for all joins.
+      // adds query builders for all relationships.
       //
-      // If you named your join properly (leading _), you also get a query builder
+      // If you named your relationship properly (leading _), you also get a query builder
       // *without* the `_` that accepts slugs rather than ids - it's suitable
       // for public use in URLs (and it's good naming because the public would find the _ weird).
       //
       // If you're wondering, you should have had the leading _ anyway to keep it from
-      // persisting the loaded data for the join back to your doc, which could easily blow
+      // persisting the loaded data for the relationship back to your doc, which could easily blow
       // mongodb's doc size limit and in any case is out of data info in your database.
       //
 
-      addJoinSlugQueryBuilder(field, query, suffix) {
+      addRelationshipSlugQueryBuilder(field, query, suffix) {
 
         suffix = suffix || '';
         const name = field.name.replace(/^_/, '');
 
         if (name === field.name) {
-          // Nope, your join is not well-named
+          // Nope, your relationship is not well-named
           return;
         }
         if (query.builders[name + suffix]) {
@@ -2023,7 +2022,7 @@ module.exports = {
               query.set(name + suffix, undefined);
               return;
             }
-            const joinQuery = self.apos.doc.getManager(field.withType).find(query.req).joins(false).areas(false);
+            const relationshipQuery = self.apos.doc.getManager(field.withType).find(query.req).relationships(false).areas(false);
             const criteria = {};
             // Even programmers appreciate shortcuts, so it's not enough that the
             // sanitizer (which doesn't apply to programmatic use) accepts these
@@ -2032,17 +2031,17 @@ module.exports = {
             } else {
               criteria.slug = value;
             }
-            joinQuery.and(criteria);
-            joinQuery.project({ _id: 1 });
-            const docs = await joinQuery.toArray();
+            relationshipQuery.and(criteria);
+            relationshipQuery.project({ _id: 1 });
+            const docs = await relationshipQuery.toArray();
             query.set(field.name + suffix, _.map(docs, '_id'));
             query.set(name + suffix, undefined);
           },
-          choices: self.joinQueryBuilderChoices(field, query, 'slug'),
-          launder: joinQueryBuilderSlugLaunder
+          choices: self.relationshipQueryBuilderChoices(field, query, 'slug'),
+          launder: relationshipQueryBuilderSlugLaunder
         });
 
-        function joinQueryBuilderSlugLaunder(v) {
+        function relationshipQueryBuilderSlugLaunder(v) {
           if (Array.isArray(v)) {
             return self.apos.launder.strings(v);
           } else if (typeof v === 'string' && v.length) {
@@ -2080,8 +2079,8 @@ module.exports = {
       // to stderr for bc.
       //
       // This method may also prevent errors by automatically supplying
-      // reasonable values for certain properties, such as the `idsField` property
-      // of a `join` field, or the `label` property of anything.
+      // reasonable values for certain properties, such as the `idsStorage` property
+      // of a `relationship` field, or the `label` property of anything.
 
       validate(schema, options) {
         // Infinite recursion prevention
@@ -2289,13 +2288,13 @@ module.exports = {
       // of `schema` containing the root fields that would ultimately be updated by
       // those operations.
       subsetSchemaForPatch(schema, patch) {
-        const idFields = {};
+        const idsStorageFields = {};
         schema.forEach(function(field) {
-          if (field.type === 'join') {
-            idFields[field.idsField] = field.name;
+          if (field.type === 'relationship') {
+            idsStorageFields[field.idsStorage] = field.name;
           }
         });
-        return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idFieldToSchemaField));
+        return self.apos.schema.subset(schema, _.map(_.keys(patch).concat(operatorKeys()), idsStorageFieldToSchemaField));
         function operatorKeys() {
           return _.uniq(_.flatten(
             _.map([ '$push', '$pullAll', '$pullAllById' ], function(o) {
@@ -2305,8 +2304,8 @@ module.exports = {
             })
           ));
         }
-        function idFieldToSchemaField(name) {
-          return idFields[name] || name;
+        function idsStorageFieldToSchemaField(name) {
+          return idsStorageFields[name] || name;
         }
       },
       groupsToArray(groups) {
@@ -2323,18 +2322,22 @@ module.exports = {
             ...fields[name]
           };
           // TODO same for relationship schemas but they are being refactored in another PR
-          if ((field.type === 'object') || (field.type === 'array')) {
-            if (!field.fields) {
-              throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
-            }
-            if (!field.fields.add) {
-              if (Object.keys(field.fields).length) {
-                throw new Error(`${context}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
-              } else {
-                throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
+          if ((field.type === 'object') || (field.type === 'array') || (field.type === 'relationship')) {
+            if (field.type !== 'relationship') {
+              if (!field.fields) {
+                throw new Error(`${context}: the subfield ${name} requires a 'fields' property, with an 'add' subproperty containing its own fields.`);
               }
             }
-            field.schema = self.fieldsToArray(context, field.fields.add || {});
+            if (field.fields) {
+              if (!field.fields.add) {
+                if (Object.keys(field.fields).length) {
+                  throw new Error(`${context}: the subfield ${name} has a 'fields' property with no 'add' subproperty. You probably forgot to nest its fields in 'add.'`);
+                } else {
+                  throw new Error(`${context}: the subfield ${name} must have a 'fields' property with an 'add' subproperty containing its own fields.`);
+                }
+              }
+              field.schema = self.fieldsToArray(context, field.fields.add || {});
+            }
           }
           result.push(field);
         }
