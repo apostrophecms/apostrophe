@@ -23,7 +23,7 @@ export const relationshipInput = () => {
     null
   );
 
-  const prepoulate = select(
+  const prepopulate = select(
     'Prepopulate', {
       None: 0,
       One: 1,
@@ -48,7 +48,7 @@ export const relationshipInput = () => {
           max
         },
         value: {
-          data: getData(prepoulate)
+          data: getData(prepopulate)
         },
         status: {
           disabled: isDisabled

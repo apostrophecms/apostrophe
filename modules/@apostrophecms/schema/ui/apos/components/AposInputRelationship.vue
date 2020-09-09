@@ -27,7 +27,11 @@
           @update="updated"
           :initial-items="items"
         />
-        <AposSearchList :list="searchList" @select="selected" :selected-items="items" />
+        <AposSearchList
+          :list="searchList"
+          @select="selected"
+          :selected-items="items"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -57,10 +61,8 @@ export default {
       searching: false
     };
   },
-  mounted() {
-    this.validateAndEmit();
-  },
   computed: {
+    // TODO get this from server for better i18
     pluralLabel() {
       return apos.modules[this.field.withType].pluralLabel;
     },
@@ -78,6 +80,9 @@ export default {
     value: function () {
       // override method from mixin to avoid standard behavior
     }
+  },
+  mounted() {
+    this.validateAndEmit();
   },
   methods: {
     validate(value) {
