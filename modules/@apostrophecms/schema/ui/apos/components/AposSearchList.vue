@@ -71,7 +71,7 @@ export default {
   margin: 10px;
   padding: 10px 20px;
   letter-spacing: 0.5px;
-  border-radius: 5px;
+  border-radius: var(--a-border-radius);
   box-sizing: border-box;
   transition: background-color 0.3s ease;
   & * {

@@ -23,10 +23,8 @@
           group: 'AposInputGroup',
           array: 'AposInputArray',
           object: 'AposInputObject',
-          joinByOne: 'AposInputJoinByOne',
-          joinByOneReverse: 'AposInputJoinByOneReverse',
-          joinByArray: 'AposInputJoinByArray',
-          joinByArrayReverse: 'AposInputJoinByArrayReverse',
+          relationship: 'AposInputRelationship',
+          relationshipReverse: 'AposInputRelationshipReverse',
           attachment: 'AposInputAttachment',
           video: 'AposInputVideo'
         }
@@ -275,7 +273,7 @@
           _id: 'e146d8acff60cc41f257d010b61e277b'
         },
         {
-          type: 'join',
+          type: 'relationship',
           name: '_tags',
           label: 'Tags',
           withType: '@apostrophecms/image-tag',
@@ -283,7 +281,7 @@
             name: 'basics',
             label: 'Basics'
           },
-          idsField: 'tagsIds',
+          idsStorage: 'tagsIds',
           _id: '885071da9d576801a81f133f5c58b9a1'
         },
         {

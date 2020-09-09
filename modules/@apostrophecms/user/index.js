@@ -4,7 +4,7 @@
 // it at project level (not changing the name) in order to alter its behavior.
 //
 // A user's permissions are determined by their membership in groups. See the
-// join with `@apostrophecms/group` in the schema.
+// relationship with `@apostrophecms/group` in the schema.
 //
 // Groups are managed by the `@apostrophecms/group` module.
 //
@@ -109,15 +109,15 @@ module.exports = {
               choices: []
             },
             _groups: {
-              type: 'join',
+              type: 'relationship',
               label: 'Groups',
-              idsField: 'groupIds',
+              idsStorage: 'groupIds',
               withType: '@apostrophecms/group',
               contextual: true
             }
           } : {
             _groups: {
-              type: 'join',
+              type: 'relationship',
               label: 'Groups',
               withType: '@apostrophecms/group'
             }

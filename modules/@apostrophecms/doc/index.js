@@ -329,7 +329,7 @@ module.exports = {
         await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
-      // Apostrophe edits doc editing and viewing permissions via joins,
+      // Apostrophe edits permissions via relationships,
       // but for query performance then copies them to a single array with entries
       // like: `[ 'edit-xxx', 'view-xxx' ]`, where `xxx` might be a user id
       // or a group id. This method performs that copying. It also invokes
