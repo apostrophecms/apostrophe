@@ -62,13 +62,14 @@ export default {
     };
   },
   computed: {
-    // TODO get this from server for better i18
     pluralLabel() {
       return apos.modules[this.field.withType].pluralLabel;
     },
+    // TODO get 'Search' server for better i18
     placeholder() {
       return this.field.placeholder || `Search ${this.pluralLabel}`;
     },
+    // TODO get 'Browse' for better i18
     browseLabel() {
       return `Browse ${this.pluralLabel}`;
     }
