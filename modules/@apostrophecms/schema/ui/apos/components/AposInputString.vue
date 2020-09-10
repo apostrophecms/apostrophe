@@ -79,11 +79,6 @@ export default {
       }
     }
   },
-  watch: {
-    type() {
-      this.defineStep();
-    }
-  },
   methods: {
     enterEmit() {
       if (this.field.enterSubmittable) {
