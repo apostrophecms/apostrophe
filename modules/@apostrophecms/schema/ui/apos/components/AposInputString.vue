@@ -20,6 +20,7 @@
           @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
+          :step="step"
         >
         <component
           v-if="icon"
@@ -39,12 +40,23 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  data () {
+    return {
+      step: undefined
+    };
+  },
+  mounted() {
+    this.defineStep();
+  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
     },
     type () {
       if (this.field.type) {
+        if (this.field.type === 'float' || this.field.type === 'integer') {
+          return 'number';
+        }
         return this.field.type;
       } else {
         return 'text';
@@ -65,6 +77,11 @@ export default {
       } else {
         return null;
       }
+    }
+  },
+  watch: {
+    type() {
+      this.defineStep();
     }
   },
   methods: {
@@ -104,6 +121,11 @@ export default {
         }
       }
       return false;
+    },
+    defineStep() {
+      if (this.type === 'number') {
+        this.step = this.field.type === 'float' ? 'any' : 1;
+      }
     }
   }
 };
