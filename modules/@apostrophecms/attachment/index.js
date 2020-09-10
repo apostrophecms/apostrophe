@@ -317,6 +317,12 @@ module.exports = {
           silent: silent
         });
       },
+      // Checked a given attachment's file extension against the extensions
+      // allowed by a particular schema field. If the attachment's file
+      // extension is allowed, `null` is returned. If the file extension is not
+      // allowed, `checkExtension` returns an array of the file extensions that
+      // _are_ allowed (or an empty array if the allowed extensions are
+      // unknown).
       checkExtension(field, attachment) {
         const groups = field.fileGroups ||
           (field.fileGroup && [ field.fileGroup ]);
@@ -332,19 +338,18 @@ module.exports = {
               }
               extensions = extensions.concat(groupInfo.extensions);
             });
-
             return extensions;
           }
         }
         extensions = field.extensions ||
-          (attachment.extension && [ attachment.extension ]);
+          (field.extension && [ field.extension ]);
 
         if (extensions) {
           if (!_.includes(extensions, attachment.extension)) {
             return extensions;
           }
         }
-        return false;
+        return null;
       },
       // Insert a file as an Apostrophe attachment. The `file` object
       // should be an object with `name` and `path` properties.
