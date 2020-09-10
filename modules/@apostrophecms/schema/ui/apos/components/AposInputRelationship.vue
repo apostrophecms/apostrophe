@@ -20,6 +20,16 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
+            @click="chooser=true"
+          />
+          <AposPiecesManager
+            v-if="chooser"
+            :moduleName="field.withType"
+            :initially-selected-items="items"
+            :field="field"
+            :relationship="true"
+            @updated="updated"
+            @safe-close="chooser=false"
           />
         </div>
         <AposSlatList
@@ -58,18 +68,19 @@ export default {
       items: this.value.data || this.listItems,
       lastSearches: {},
       originalDisabled: this.status.disabled,
-      searching: false
+      searching: false,
+      chooser: false
     };
   },
   computed: {
     pluralLabel() {
       return apos.modules[this.field.withType].pluralLabel;
     },
-    // TODO get 'Search' server for better i18
+    // TODO get 'Search' server for better i18n
     placeholder() {
       return this.field.placeholder || `Search ${this.pluralLabel}`;
     },
-    // TODO get 'Browse' for better i18
+    // TODO get 'Browse' for better i18n
     browseLabel() {
       return `Browse ${this.pluralLabel}`;
     }
