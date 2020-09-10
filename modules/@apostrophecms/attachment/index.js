@@ -964,7 +964,10 @@ module.exports = {
       canUpload(req, res, next) {
         if (!self.apos.permission.can(req, 'edit-attachment')) {
           res.statusCode = 403;
-          return res.send('forbidden');
+          return res.send({
+            type: 'forbidden',
+            message: req.__('You do not have enough permissions to upload')
+          });
         }
         next();
       }
