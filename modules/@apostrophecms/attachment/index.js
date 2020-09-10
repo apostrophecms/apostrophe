@@ -360,7 +360,7 @@ module.exports = {
         const group = self.getFileGroup(extension);
         if (!group) {
           const accepted = _.union(_.map(self.fileGroups, 'extensions'));
-          throw new Error('File extension not accepted. Acceptable extensions: ' + accepted.join(','));
+          throw self.apos.error('invalid', req.__('File extension not accepted. Acceptable extensions: ' + accepted.join(',')));
         }
         const info = {
           _id: self.apos.util.generateId(),

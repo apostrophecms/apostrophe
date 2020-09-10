@@ -147,6 +147,7 @@
       data = options.body;
     }
     xmlhttp.addEventListener('load', function() {
+      var data = null;
       if (options.busy) {
         if (!busyActive[busyName]) {
           busyActive[busyName] = 0;
@@ -160,35 +161,21 @@
       }
 
       var responseHeader = this.getResponseHeader('Content-Type');
-      if (!responseHeader) {
-        // Can happen when the response body is null
-        return callback(error(), null);
-      }
-      var data;
-      if ((options.parse === 'json') || (responseHeader.match(/^application\/json/))) {
-        try {
-          data = JSON.parse(this.responseText);
-        } catch (e) {
-          return reply(e, this.responseText);
+      if (responseHeader || (options.parse === 'json')) {
+        if ((options.parse === 'json') || (responseHeader.match(/^application\/json/))) {
+          try {
+            data = JSON.parse(this.responseText);
+          } catch (e) {
+            return callback(e);
+          }
+        } else {
+          data = this.responseText;
         }
-      } else {
-        data = this.responseText;
       }
 
-      return reply(error(), data);
-
-      function error() {
-        // xmlhttprequest does not consider a 404, 500, etc. to be
-        // an "error" in the sense that would trigger the error
-        // event handler function (below), but we do.
-        if (xmlhttp.status < 400) {
-          return null;
-        }
-        return xmlhttp;
-      }
-      function reply(error, data) {
-        if (error || options.fullResponse) {
-          return callback(error, {
+      if (xmlhttp.status < 400) {
+        if (options.fullResponse) {
+          return callback(null, {
             body: data,
             status: xmlhttp.status,
             headers: getHeaders()
@@ -196,6 +183,12 @@
         } else {
           return callback(null, data);
         }
+      } else {
+        return callback({
+          body: data,
+          status: xmlhttp.status,
+          headers: getHeaders()
+        });
       }
     });
     xmlhttp.addEventListener('abort', function(evt) {
