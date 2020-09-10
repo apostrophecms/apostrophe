@@ -1,7 +1,6 @@
 import {
   withKnobs,
   select,
-  optionsKnob as options,
   boolean
 } from '@storybook/addon-knobs';
 
@@ -76,7 +75,7 @@ export const attachmentInput = () => {
     fileBank.length
   );
 
-  let fileValues = [];
+  const fileValues = [];
   if (files) {
     for (let index = 0; index < files; index++) {
       fileValues.push(fileBank[index]);
