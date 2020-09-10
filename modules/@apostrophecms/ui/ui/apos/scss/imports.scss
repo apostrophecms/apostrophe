@@ -3,7 +3,7 @@
   Order here does matter, so make sure vars, mixins, functions are loaded first.
 */
 
-@import './_normalize';
+@import '~normalize.css/normalize.css';
 @import './_admin';
 @import './_theme';
 @import './_functions';
