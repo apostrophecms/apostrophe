@@ -468,6 +468,26 @@ module.exports = {
     });
 
     self.addFieldType({
+      name: 'email',
+      vueComponent: 'AposInputString',
+      convert: function (req, field, data, object) {
+        object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
+        if (!data[field.name].length) {
+          if (field.required) {
+            throw self.apos.error('required');
+          }
+        } else {
+          // regex source: https://emailregex.com/
+          const matches = data[field.name].match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+          if (!matches) {
+            throw self.apos.error('invalid');
+          }
+        }
+        object[field.name] = data[field.name];
+      }
+    });
+
+    self.addFieldType({
       name: 'color',
       convert: async function (req, field, data, object) {
         const test = self.apos.launder.string(data[field.name]);
