@@ -235,8 +235,8 @@ export default {
 
         await apos.notify(this.getErrorMessage(error, 'Upload Error'), {
           type: 'danger',
-          icon: 'alert-circle-icon'
-          // dismiss: true
+          icon: 'alert-circle-icon',
+          dismiss: true
         });
       }
     },
