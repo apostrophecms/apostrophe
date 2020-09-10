@@ -1258,9 +1258,7 @@ module.exports = {
           if (field.contextual) {
             return;
           }
-          if (field.name === 'title') {
-            console.info(field);
-          }
+
           if (!field.group) {
             field.group = {
               name: defaultGroup.name,
@@ -1427,6 +1425,9 @@ module.exports = {
             try {
               await convert(req, field, data, object);
             } catch (e) {
+              if (e instanceof Error) {
+                throw e;
+              }
               if (Array.isArray(e)) {
                 // Nested object or array will throw an array if it
                 // encounters an error or errors in its subsidiary fields

@@ -285,9 +285,18 @@ module.exports = {
           return;
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
-        if (!self.acceptableExtension(field, info)) {
-          throw self.apos.error('invalid');
+
+        // Check if the file type is acceptable of if there are
+        const correctedExtensions = self.checkExtension(field, info);
+
+        if (correctedExtensions) {
+          let message = req.__('File type was not accepted.');
+          if (correctedExtensions.length) {
+            message += ` ${req.__('Acceptable extensions:')} ${correctedExtensions.join(', ')}`;
+          }
+          throw self.apos.error('invalid', message);
         }
+
         if (info.crop) {
           if (!_.find(info.crops, info.crop)) {
             info.crop = null;
@@ -308,29 +317,34 @@ module.exports = {
           silent: silent
         });
       },
-      acceptableExtension(field, attachment) {
-        const groups = field.fileGroups || (field.fileGroup && [ field.fileGroup ]);
+      checkExtension(field, attachment) {
+        const groups = field.fileGroups ||
+          (field.fileGroup && [ field.fileGroup ]);
         let extensions;
+
         if (groups) {
           if (!_.includes(groups, attachment.group)) {
             extensions = [];
             _.each(groups, function (group) {
-              const groupInfo = _.find(self.options.fileGroups, { name: group });
+              const groupInfo = _.find(self.fileGroups, { name: group });
               if (!groupInfo) {
-                return;
+                return [];
               }
               extensions = extensions.concat(groupInfo.extensions);
             });
-            return false;
+
+            return extensions;
           }
         }
-        extensions = field.extensions || (field.extension && [ field.extension ]);
+        extensions = field.extensions ||
+          (attachment.extension && [ attachment.extension ]);
+
         if (extensions) {
           if (!_.includes(extensions, attachment.extension)) {
-            return false;
+            return extensions;
           }
         }
-        return true;
+        return false;
       },
       // Insert a file as an Apostrophe attachment. The `file` object
       // should be an object with `name` and `path` properties.
@@ -356,11 +370,14 @@ module.exports = {
           extension = extension.substr(1);
         }
         extension = extension.toLowerCase();
-        // Do we accept this file extension?
+        // Do we *ever* accept this file extension?
         const group = self.getFileGroup(extension);
+
         if (!group) {
-          const accepted = _.union(_.map(self.fileGroups, 'extensions'));
-          throw self.apos.error('invalid', req.__('File extension not accepted. Acceptable extensions: ' + accepted.join(',')));
+          // Uncomment the next line for all possibly acceptable file types.
+          // const accepted = _.union(_.map(self.fileGroups, 'extensions'));
+
+          throw self.apos.error('invalid', req.__('File type was not accepted'));
         }
         const info = {
           _id: self.apos.util.generateId(),

@@ -208,7 +208,12 @@ export default {
         });
       } catch (error) {
         console.error('Error uploading media.', error);
-        // apos.notify('Error uploading media.');
+
+        await apos.notify(this.getErrorMessage(error, 'Upload error'), {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
         return;
       }
 
@@ -227,14 +232,17 @@ export default {
         });
       } catch (error) {
         console.error('Error saving media.', error);
-        await apos.notify('Upload Error', {
+
+        await apos.notify(this.getErrorMessage(error, 'Upload Error'), {
           type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
+          icon: 'alert-circle-icon'
+          // dismiss: true
         });
       }
+    },
+    getErrorMessage (error, fallback) {
+      return error.body && error.body.message ? error.body.message : fallback;
     }
-
   }
 };
 </script>

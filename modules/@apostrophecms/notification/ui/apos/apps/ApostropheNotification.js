@@ -56,6 +56,7 @@ export default function() {
             message,
             strings,
             type: options.type,
+            icon: options.icon,
             dismiss: options.dismiss
           }
         });
@@ -121,6 +122,7 @@ export default function() {
           :key="notification._id"
           :label="notification.message"
           :type="notification.type"
+          :icon="notification.icon"
           :id="notification._id"
           :dismiss="notification.dismiss"
           @close="dismiss"

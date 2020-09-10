@@ -34,16 +34,18 @@ module.exports = {
     },
     async post(req) {
       const type = self.apos.launder.select(req.body.type, [
-        'error',
+        'danger',
         'warn',
         'success',
         'info'
       ], 'info');
+      const icon = self.apos.launder.string(req.body.icon);
       const message = self.apos.launder.string(req.body.message);
       const strings = self.apos.launder.strings(req.body.strings);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
       return self.trigger(req, message, ...strings, {
         dismiss,
+        icon,
         type
       });
     },
