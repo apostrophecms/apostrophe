@@ -31,11 +31,11 @@
       },
       alias: 'schema'
     },
-    products: {
+    product: {
       name: 'product',
       label: 'Product',
       pluralLabel: 'Products',
-      action: '/api/v1/products',
+      action: '/api/v1/product',
       schema: [
         {
           type: 'string',
@@ -529,7 +529,12 @@
   };
 
   apos.http.getResponses = {
-    '/api/v1/products?published=true&trash=false&page=1': {
+    '/api/v1/product': {
+      pages: 1,
+      currentPage: 1,
+      results: [ grape, strawberry ]
+    },
+    '/api/v1/product?published=true&trash=false&page=1': {
       pages: 1,
       currentPage: 1,
       results: [
@@ -537,8 +542,8 @@
         strawberry
       ]
     },
-    [`/api/v1/products/${grape._id}`]: grape,
-    [`/api/v1/products/${strawberry._id}`]: strawberry,
+    [`/api/v1/product/${grape._id}`]: grape,
+    [`/api/v1/product/${strawberry._id}`]: strawberry,
     '/api/v1/@apostrophecms/page?all=1': {
       results: {
         title: 'Home',
@@ -607,7 +612,7 @@
   };
 
   apos.http.postResponses = {
-    '/api/v1/products': {
+    '/api/v1/product': {
       status: 200
     },
     '/api/v1/image-upload-mock': {
@@ -616,7 +621,7 @@
   };
 
   apos.http.putResponses = {
-    '/api/v1/products': {
+    '/api/v1/product': {
       status: 200
     }
   };
@@ -624,7 +629,7 @@
   apos.http.get = async (url, options) => {
     // variable async delay for realism
     await delay(Math.random() * 100 + 100);
-    if (options.qs.search || options.qs.search === '') {
+    if (options.qs && (options.qs.search || options.qs.search === '')) {
       console.info(`Mock searching for ${options.qs.search}...`);
       delete options.qs.search;
     }
@@ -635,6 +640,9 @@
       // Like responses from a real API, the returned object needs to be safe to
       // change.
       return JSON.parse(JSON.stringify(apos.http.getResponses[url]));
+    } else if (apos.http.getResponses[url.split('?')[0]]) {
+      // try without querystrings
+      return JSON.parse(JSON.stringify(apos.http.getResponses[url.split('?')[0]]));
     } else {
       throw {
         status: 404
