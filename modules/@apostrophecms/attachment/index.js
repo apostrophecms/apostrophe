@@ -971,7 +971,7 @@ module.exports = {
           res.statusCode = 403;
           return res.send({
             type: 'forbidden',
-            message: req.__('You do not have enough permissions to upload')
+            message: req.__('You do not have permission to upload a file')
           });
         }
         next();
