@@ -2,28 +2,28 @@ import AposSlatList from './AposSlatList.vue';
 
 const items = [
   {
-    label: 'Ernie',
-    id: 'wefino3390'
+    title: 'Ernie',
+    _id: 'wefino3390'
   },
   {
-    label: 'Bert',
-    id: 'wekjfljwenf'
+    title: 'Bert',
+    _id: 'wekjfljwenf'
   },
   {
-    label: 'Big Bird',
-    id: 'ewkl4390'
+    title: 'Big Bird',
+    _id: 'ewkl4390'
   },
   {
-    label: 'Grover',
-    id: 'wefinofewfe3390'
+    title: 'Grover',
+    _id: 'wefinofewfe3390'
   },
   {
-    label: 'Cookie Monster',
-    id: 'wekjfljfewefwenf'
+    title: 'Cookie Monster',
+    _id: 'wekjfljfewefwenf'
   },
   {
-    label: 'Oscar the Grouch',
-    id: 'ewkl439ewd0'
+    title: 'Oscar the Grouch',
+    _id: 'ewkl439ewd0'
   }
 ];
 
