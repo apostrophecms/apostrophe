@@ -14,6 +14,13 @@
         @click="editing = true"
       />
     </template>
+
+    <template v-if="relationship" #leftRail>
+      <AposModalRail>
+        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" :field="field" />
+      </AposModalRail>
+    </template>
+
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
@@ -21,6 +28,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
+            :disable-selection="field.max && checked.length >= field.max"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -66,6 +74,7 @@
                     :choice="checkboxes[row._id].choice"
                     :id="row._id"
                     v-model="checked"
+                    @updated="updateSelectedItems"
                   />
                 </td>
                 <td
@@ -124,6 +133,22 @@ export default {
     moduleName: {
       type: String,
       required: true
+    },
+    relationship: {
+      type: Boolean,
+      default: false
+    },
+    initiallySelectedItems: {
+      type: Array,
+      default: function () {
+        return [];
+      }
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'trash', 'search', 'safe-close' ],
@@ -142,7 +167,9 @@ export default {
       editing: false,
       editingDocId: '',
       queryExtras: {},
-      holdQueries: false
+      holdQueries: false,
+      selectedItems: this.initiallySelectedItems,
+      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposTableMixin.js
     };
   },
   computed: {
@@ -202,6 +229,12 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
+  },
+  watch: {
+    // NOTE: revisit this during refactoring
+    checked: function() {
+      this.generateUi();
+    }
   },
   methods: {
     async finishSaved() {
@@ -280,6 +313,29 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
+    },
+    // NOTE: move this into the new AposRelationshipManager in the refactor
+    updateSlatList(items) {
+      this.selectedItems = items;
+      this.checked = items.map(item => item._id);
+      this.$emit('updated', items);
+    },
+    // NOTE: move this into the new AposRelationshipManager in the refactor
+    updateSelectedItems(event) {
+      if (this.checked.length > this.selectedItems.length) {
+        const piece = this.pieces.find(piece => piece._id === event.target.id);
+        if (this.field.max) {
+          if (this.selectedItems.length < this.field.max) {
+            this.selectedItems.push(piece);
+          }
+        } else {
+          this.selectedItems.push(piece);
+        }
+      } else {
+        this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
+      }
+      this.checked = this.selectedItems.map(item => item._id);
+      this.$emit('updated', this.selectedItems);
     }
   }
 };
