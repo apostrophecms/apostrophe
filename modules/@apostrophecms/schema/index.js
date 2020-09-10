@@ -1425,8 +1425,8 @@ module.exports = {
             try {
               await convert(req, field, data, object);
             } catch (e) {
-              if (e instanceof Error) {
-                throw e;
+              if (e instanceof Error && e.message) {
+                throw self.apos.error('invalid', e.message);
               }
               if (Array.isArray(e)) {
                 // Nested object or array will throw an array if it
