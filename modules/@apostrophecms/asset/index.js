@@ -105,6 +105,7 @@ module.exports = {
         const importFile = `${buildDir}/import.js`;
 
         fs.writeFileSync(importFile, `
+import 'Modules/@apostrophecms/ui/scss/shared/shared.scss';
 import Vue from 'apostrophe/vue';
 if (window.apos.modules) {
   for (const module of Object.values(window.apos.modules)) {
@@ -114,7 +115,6 @@ if (window.apos.modules) {
   }
 }
 window.apos.bus = new Vue();
-
 ${iconImports.importCode}
 ${iconImports.registerCode}
 ${componentImports.importCode}

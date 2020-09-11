@@ -302,7 +302,7 @@ export default {
 
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-area {
   margin: 5px;
   padding: 5px;

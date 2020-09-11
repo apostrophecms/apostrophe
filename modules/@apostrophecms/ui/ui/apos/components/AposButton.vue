@@ -137,6 +137,7 @@ export default {
 };
 </script>
 
+<!-- Unscoped because the admin bar overrides styles for these when nested-->
 <style lang="scss">
 
 .apos-button {

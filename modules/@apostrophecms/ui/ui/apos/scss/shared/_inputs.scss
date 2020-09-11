@@ -1,5 +1,3 @@
-$input-max-width: 580px;
-
 .apos-input,
 .apos-input-wrapper,
 .apos-choice-label {
@@ -9,65 +7,6 @@ $input-max-width: 580px;
   }
 }
 
-@mixin apos-input() {
-  width: 100%;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-9);
-  color: var(--a-text-primary);
-  font-family: inherit;
-  font-size: map-get($font-sizes, input);
-  box-sizing: border-box;
-  // Some  browser styles set `textarea` to monospace.
-  resize: none;
-  @include apos-transition(all);
-
-  &::placeholder {
-    color: var(--a-base-4);
-    font-style: italic;
-  }
-
-  &:hover,
-  &:focus {
-    border-color: var(--a-base-2);
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 3px var(--a-base-2);
-    border-color: var(--a-base-2);
-    background-color: var(--a-base-10);
-  }
-
-  &[disabled] {
-    color: var(--a-base-4);
-    background: var(--a-base-7);
-    border-color: var(--a-base-4);
-    &:hover {
-      cursor: not-allowed;
-    }
-  }
-
-  .apos-field--error & {
-    border-color: var(--a-danger);
-
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 3px var(--a-danger);
-    }
-  }
-
-  &--text,
-  &--time,
-  &--textarea,
-  &--date,
-  &--select,
-  &--password,
-  &--email {
-    padding: $input-padding;
-    padding-right: $input-padding * 2;
-  }
-}
 .apos-input {
   @include apos-input();
 }
@@ -120,8 +59,6 @@ $input-max-width: 580px;
 .apos-input-label--disabled {
   color: var(--a-base-3);
 }
-
-$box-width: 12px;
 
 .apos-input--choice {
   display: inline;
