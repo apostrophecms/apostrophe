@@ -95,6 +95,7 @@ export default {
   },
   mounted() {
     this.validateAndEmit();
+    apos.bus.$emit('field', this.field);
   },
   methods: {
     validate(value) {
@@ -137,7 +138,7 @@ export default {
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
             busy: true
           });
-          
+
           // filter items already selected
           this.searchList = list.results.filter(item => {
             return !this.items.map(i => i._id).includes(item._id);

@@ -10,12 +10,12 @@ export default {
   data() {
     return {
       busy: false
-    }
+    };
   },
   mounted() {
     apos.bus.$on('apos-busy', state => {
       if (state.name === 'busy') {
-        this.busy = state.active
+        this.busy = state.active;
       }
     });
   }

@@ -73,6 +73,7 @@ export default {
     return {
       more: {
         button: {
+          label: 'More operations',
           iconOnly: true,
           icon: 'dots-vertical-icon',
           iconSize: 13,
@@ -81,11 +82,19 @@ export default {
         menu: [
           {
             label: 'Edit Relationship',
-            action: 'edit-relationship'
+            action: 'edit-relationship',
+            id: this.item._id,
+            component: 'AposRelationshipFieldsManager',
+            schema: null
           }
-        ]
+        ],
       },
     };
+  },
+  mounted() {
+    apos.bus.$on('field', field => {
+      this.more.menu[0].schema = field.schema
+    });
   },
   methods: {
     toggleEngage() {
