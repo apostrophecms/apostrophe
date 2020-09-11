@@ -32,6 +32,8 @@ module.exports = {
         const error = new Error(message || name);
         error.name = name;
         error.data = data;
+        // Establish a difference between errors built here and those elsewhere.
+        error.aposError = true;
         return error;
       }
     };
