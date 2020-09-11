@@ -37,6 +37,13 @@ module.exports = async (config) => {
     }
   );
 
+  // Allow for an npm linked apostrophe module to work
+  config.resolve.modules = [
+    'node_modules',
+    path.resolve(`${process.env.APOS_ROOT}/node_modules/apostrophe/node_modules`),
+    path.resolve(`${process.env.APOS_ROOT}/node_modules`)
+  ];
+
   // find vue like our components do
   config.resolve.alias['apostrophe/vue$'] = 'vue/dist/vue.esm.js';
   // resolve frontend assets of apostrophe modules as Modules/@apostrophecms/modulename/something
