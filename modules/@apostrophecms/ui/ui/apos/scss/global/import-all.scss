@@ -1,5 +1,5 @@
 // Just like components, the shared stuff needs access to the mixins
-@import '../imports.scss';
+@import '../mixins/import-all.scss';
 
 // One-time imports used project wide, like utility classes, login styles, etc.
 @import '~normalize.css/normalize.css';

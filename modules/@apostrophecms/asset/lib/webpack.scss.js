@@ -23,7 +23,7 @@ module.exports = (options, apos) => {
               loader: 'sass-loader',
               options: {
                 additionalData: `
-@import "Modules/@apostrophecms/ui/scss/imports.scss";
+@import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
               `
               }
             }

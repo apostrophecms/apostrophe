@@ -105,7 +105,7 @@ module.exports = {
         const importFile = `${buildDir}/import.js`;
 
         fs.writeFileSync(importFile, `
-import 'Modules/@apostrophecms/ui/scss/shared/shared.scss';
+import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
 import Vue from 'apostrophe/vue';
 if (window.apos.modules) {
   for (const module of Object.values(window.apos.modules)) {
