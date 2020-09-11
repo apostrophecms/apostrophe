@@ -9,11 +9,10 @@
           <input
             class="apos-input apos-input--text apos-input--relationship"
             v-model="next" type="text"
-            :placeholder="field.placeholder"
+            :placeholder="placeholder"
             :disabled="status.disabled" :required="field.required"
             :id="uid"
             @input="input"
-            @focus="handleFocus"
             @focusout="handleFocusOut"
             tabindex="0"
           >
@@ -21,10 +20,28 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
+            @click="chooser=true"
+          />
+          <AposPiecesManager
+            v-if="chooser"
+            :moduleName="field.withType"
+            :initially-selected-items="items"
+            :field="field"
+            :relationship="true"
+            @updated="updated"
+            @safe-close="chooser=false"
           />
         </div>
-        <AposSlatList @update="updated" :initial-items="items" />
-        <AposSearchList :list="searchList" @select="selected" :selected-items="items" />
+        <AposSlatList
+          v-if="items.length"
+          @update="updated"
+          :initial-items="items"
+        />
+        <AposSearchList
+          :list="searchList"
+          @select="selected"
+          :selected-items="items"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -44,16 +61,29 @@ export default {
       }
     }
   },
+  emits: [ 'input' ],
   data () {
     return {
-      browseLabel: 'Browse ' + apos.modules[this.field.withType].pluralLabel,
       searchList: [],
       items: this.value.data || this.listItems,
-      lastSearches: {}
+      lastSearches: {},
+      originalDisabled: this.status.disabled,
+      searching: false,
+      chooser: false
     };
   },
-  mounted() {
-    this.validateAndEmit();
+  computed: {
+    pluralLabel() {
+      return apos.modules[this.field.withType].pluralLabel;
+    },
+    // TODO get 'Search' server for better i18n
+    placeholder() {
+      return this.field.placeholder || `Search ${this.pluralLabel}`;
+    },
+    // TODO get 'Browse' for better i18n
+    browseLabel() {
+      return `Browse ${this.pluralLabel}`;
+    }
   },
   watch: {
     next: function () {
@@ -63,10 +93,19 @@ export default {
       // override method from mixin to avoid standard behavior
     }
   },
+  mounted() {
+    this.validateAndEmit();
+  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
         return { message: 'required' };
+      }
+
+      // if the original status was disabled, no validation should change that
+      if (this.originalDisabled) {
+        this.status.disabled = true;
+        return;
       }
 
       if (this.field.max && this.field.max <= value.length) {
@@ -92,23 +131,21 @@ export default {
       this.validateAndEmit();
     },
     async input () {
-      if (this.next.length) {
-        if (!this.lastSearches[this.next]) {
+      if (!this.searching) {
+        if (this.next.length) {
+          this.searching = true;
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
             busy: true
           });
-          this.searchList = list.results;
-          this.lastSearches[this.next] = list.results;
+          
+          // filter items already selected
+          this.searchList = list.results.filter(item => {
+            return !this.items.map(i => i._id).includes(item._id);
+          });
+          this.searching = false;
         } else {
-          this.searchList = this.lastSearches[this.next];
+          this.searchList = [];
         }
-      } else {
-        this.searchList = [];
-      }
-    },
-    handleFocus() {
-      if (this.next && this.lastSearches[this.next]) {
-        this.searchList = this.lastSearches[this.next];
       }
     },
     handleFocusOut() {

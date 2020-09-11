@@ -141,8 +141,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-schema /deep/ .apos-field {
-    margin-bottom: 30px;
-    letter-spacing: 0.5px;
+  .apos-field {
+    .apos-schema /deep/ & {
+      margin-bottom: 30px;
+      letter-spacing: 0.5px;
+    }
+
+    .apos-schema /deep/ .apos-toolbar & {
+      margin-bottom: 0;
+    }
   }
 </style>

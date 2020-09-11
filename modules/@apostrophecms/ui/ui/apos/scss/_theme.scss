@@ -93,6 +93,13 @@ body {
   --a-brand-magenta: #b327bf;
   --a-brand-blue: #66f;
   --a-brand-green: #00bf9a;
+
+  // File colors
+  --a-presentation: #f1c40f;
+  --a-document: #3498db;
+  --a-generic: var(--a-base-1);
+  --a-spreadsheet: #2ecc71;
+  --a-pdf: #e74c3c;
 }
 
 .apos-theme-dark {
