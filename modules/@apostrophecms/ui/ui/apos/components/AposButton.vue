@@ -12,7 +12,7 @@
     </transition>
     <div class="apos-button__content">
       <component
-        :size="15" class="apos-button__icon"
+        :size="iconSize" class="apos-button__icon"
         v-if="icon" :is="icon"
         fill-color="currentColor"
       />
@@ -52,6 +52,10 @@ export default {
     iconColor: {
       type: String,
       default: ''
+    },
+    iconSize: {
+      type: Number,
+      default: 15
     },
     state: {
       type: Array,
