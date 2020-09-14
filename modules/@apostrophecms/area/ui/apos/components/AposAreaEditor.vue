@@ -1,6 +1,6 @@
 <template>
   <div data-apos-area class="apos-area">
-    <button @click="emitToParentArea('test', { data: 5 })">Emit Demo Event</button>
+    <!-- <button @click="emitToParentArea('test', { data: 5 })">Emit Demo Event</button> -->
     <!-- <AposAreaMenu
       @add="insert"
       :menu="choices"
@@ -8,6 +8,19 @@
       :index="0"
       :widget-options="options.widgets"
     /> -->
+    <div
+      v-if="next.length === 0"
+      class="apos-empty-area"
+    >
+      <AposEmptyState :empty-state="emptyState" />
+      <AposAreaMenu
+        @add="insert"
+        :context-options="contextOptions"
+        :empty="true"
+        :index="0"
+        :widget-options="options.widgets"
+      />
+    </div>
     <div class="apos-areas-widgets-list">
       <AposAreaWidget
         v-for="(widget, i) in next"
@@ -19,6 +32,7 @@
         :next="next"
         :context-options="contextOptions"
         :field-id="fieldId"
+        @suppress="emitToParentArea('suppress', { data: 12 })"
         @up="up"
         @down="down"
         @remove="remove"
@@ -125,6 +139,9 @@ export default {
       contextOptions: {
         autoPosition: false,
         menu: this.choices
+      },
+      emptyState: {
+        message: 'Add your content here'
       }
     };
   },
@@ -357,12 +374,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-area {
-  // margin: 5px;s
-  // padding: 5px;
-  // border: 2px solid var(--a-brand-green);
-}
-
 .apos-empty-area {
   display: flex;
   padding: 30px;
@@ -372,10 +383,6 @@ export default {
   min-height: 50px;
   background-color: var(--a-base-10);
   border: 2px dotted var(--a-primary);
-}
-
-.apos-areas-widgets-list {
-  // min-height: 64px;
 }
 
 .apos-area-widget-wrapper {

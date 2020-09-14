@@ -10,7 +10,7 @@
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add"
         :class="state.addTop"
-        >
+      >
         <AposAreaMenu
           @add="insert"
           @menuOpen="focusMenu('addTop')"
@@ -60,10 +60,10 @@
         :value="widget"
         @edit="edit(i)"
       />
-      <div 
+      <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
         :class="state.addBottom"
-        >
+      >
         <AposAreaMenu
           @add="insert"
           :context-options="contextOptions"
@@ -79,6 +79,7 @@
 
 <script>
 import Vue from 'apostrophe/vue';
+
 export default {
   name: 'AposAreaWidget',
   props: {
@@ -121,7 +122,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'suppress', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     return {
       state: {
@@ -143,13 +144,49 @@ export default {
       return window.apos.area;
     }
   },
+  mounted() {
+    // apos.bus.$on('area-event', this.areaEventReceiver);
+  },
   methods: {
+    // Emit an event from this area to its parent area, even though they
+    // are in separate Vue apps. Results in a call to onAreaEvent in the
+    // parent area, and only that area.
+    //
+    // You must pass a name argument, to distinguish your different
+    // child area events, and you may pass more arguments.
+    emitToParentArea(name, ...args) {
+      apos.bus.$emit('area-event', this.area, name, ...args);
+    },
+    // Receive an event from a child area, even though they are in
+    // separate Vue apps. inWidget is the widget within this.next in which
+    // childArea is nested. All incoming arguments after `name` wind up in the
+    // `args` array.
+    onChildAreaEvent(childArea, inWidget, name, ...args) {
+      console.log('stus ver: The descendant area', childArea, 'nested directly in our child widget', inWidget, 'emitted a ', name, ' event with these arguments:', args);
+    },
+
+    // Implementation detail, you want to modify `onChildAreaEvent`, below
+    // areaEventReceiver(area, ...args) {
+
+    //   if (apos.util.closest(this.$el.parentNode, '[data-apos-area]') === this.$el) {
+    //     const $widget = apos.util.closest(this.area.$el, '[data-apos-widget]');
+    //     console.log($widget);
+    //     console.log(this.next);
+    //     const widget = this.next.find(widget => widget._id === $widget.getAttribute('id'));
+    //     console.log(widget);
+    //     this.onChildAreaEvent(this.area, widget, ...args);
+    //   } else {
+    //     console.log('stu: received, but not for us');
+    //   }
+    // },
 
     // EVENTS
 
     handleMouseover() {
       this.showMove();
       this.highlightContainer();
+      // this.emitToParentArea('test', { data: 5 });
+      this.$emit('suppress');
       // this.$emit('supress');
     },
 
