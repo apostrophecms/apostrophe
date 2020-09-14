@@ -108,10 +108,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-notifications {
-    z-index: $z-index-notifications;
-  }
-
   .apos-notification {
     position: relative;
     display: inline-flex;
