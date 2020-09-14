@@ -1445,7 +1445,7 @@ module.exports = {
             try {
               await convert(req, field, data, object);
             } catch (e) {
-              if (e.aposError) {
+              if (field.throwErrors && e.aposError) {
                 throw self.apos.error(e.name, e.message);
               }
               if (Array.isArray(e)) {

@@ -36,6 +36,7 @@ module.exports = {
         type: 'attachment',
         label: 'Image File',
         fileGroup: 'images',
+        throwErrors: true,
         required: true
       },
       description: {
