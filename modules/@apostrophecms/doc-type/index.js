@@ -1795,6 +1795,9 @@ module.exports = {
 
         applyBuilders(obj) {
           for (const [ name, val ] of Object.entries(obj || {})) {
+            if (!query[name]) {
+              throw new Error(`${name} is not a query builder in the ${self.__meta.name} module`);
+            }
             query[name](val);
           }
           // Chainable method

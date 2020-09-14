@@ -112,8 +112,8 @@ describe('Pieces', function() {
               _articles: {
                 type: 'relationship',
                 withType: 'article',
-                filters: {
-                  projection: {
+                builders: {
+                  project: {
                     _url: 1,
                     title: 1
                   }
@@ -147,6 +147,32 @@ describe('Pieces', function() {
               _products: {
                 type: 'relationshipReverse',
                 withType: 'product'
+              }
+            }
+          }
+        },
+        'product-widget': {
+          extend: '@apostrophecms/piece-widget-type',
+          options: {
+            label: 'Products'
+          },
+          filters: {
+            add: {
+              _articles: {}
+            }
+          }
+        },
+        '@apostrophecms/home-page': {
+          fields: {
+            add: {
+              body: {
+                type: 'area',
+                contextual: true,
+                options: {
+                  widgets: {
+                    'product-widget': {}
+                  }
+                }
               }
             }
           }
@@ -580,22 +606,32 @@ describe('Pieces', function() {
   });
 
   let relatedProductId;
+  let relatedArticleId;
 
   it('can insert a product with relationships', async () => {
-    let response = await apos.http.post('/api/v1/article', {
+    const article = await apos.http.post('/api/v1/article', {
       body: {
         title: 'First Article',
         name: 'first-article'
       },
       jar
     });
-    const article = response;
     assert(article);
     assert(article.title === 'First Article');
+    const article2 = await apos.http.post('/api/v1/article', {
+      body: {
+        title: 'Second Article',
+        name: 'second-article'
+      },
+      jar
+    });
+    assert(article2);
+    assert(article2.title === 'Second Article');
+
     article._fields = {
       relevance: 'The very first article that was ever published about this product'
     };
-    response = await apos.http.post('/api/v1/product', {
+    const product = await apos.http.post('/api/v1/product', {
       body: {
         title: 'Product Key Product With Relationship',
         body: {
@@ -613,10 +649,10 @@ describe('Pieces', function() {
       },
       jar
     });
-    assert(response._id);
-    assert(response.articlesIds[0] === article._id);
-    assert(response.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
-    relatedProductId = response._id;
+    assert(product._id);
+    assert(product.articlesIds[0] === article._id);
+    assert(product.articlesFields[article._id].relevance === 'The very first article that was ever published about this product');
+    relatedProductId = product._id;
   });
 
   it('can GET a product with relationships', async () => {
@@ -627,8 +663,6 @@ describe('Pieces', function() {
     assert(Array.isArray(product._articles));
     assert(product._articles.length === 1);
   });
-
-  let relatedArticleId;
 
   it('can GET a single product with relationships', async () => {
     const response = await apos.http.get(`/api/v1/product/${relatedProductId}`);
@@ -644,6 +678,58 @@ describe('Pieces', function() {
     assert(response._products);
     assert(response._products.length === 1);
     assert(response._products[0]._id === relatedProductId);
+  });
+
+  it('can GET the home page and find multiple products via a product widget without filters', async () => {
+    await apos.doc.db.updateOne({
+      slug: '/'
+    },
+    {
+      $set: {
+        body: {
+          metaType: 'area',
+          _id: cuid(),
+          items: [
+            {
+              metaType: 'widget',
+              type: 'product',
+              selected: 'automatically'
+            }
+          ]
+        }
+      }
+    });
+    const response = await apos.http.get('/');
+    assert(response);
+    console.log(response);
+    assert(!response.match(/Cool Product #1/));
+    assert(!response.match(/Cool Product #2/));
+  });
+
+  it('can GET the home page and find a product with a relationship to a specified article via a piece widget', async () => {
+    await apos.doc.db.updateOne({
+      slug: '/'
+    },
+    {
+      $set: {
+        body: {
+          metaType: 'area',
+          _id: cuid(),
+          items: [
+            {
+              metaType: 'widget',
+              type: 'product',
+              selected: 'automatically',
+              articlesIds: [ relatedArticleId ]
+            }
+          ]
+        }
+      }
+    });
+    const response = await apos.http.get('/');
+    assert(response);
+    assert(response.match(/Product Key Product With Relationship/));
+    assert(!response.match(/Cool Product #1/));
   });
 
   it('can GET results plus filter choices', async () => {

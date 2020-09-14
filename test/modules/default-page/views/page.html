@@ -6,6 +6,4 @@
   <a href="{{ tab._url }}">Tab: {{ tab.slug }}</a>
 {% endfor %}
 
-{% if data.page.body %}
-  {% area data.page, 'body' %}
-{% endif %}
+{% area data.page, 'body' %}

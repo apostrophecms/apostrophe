@@ -7,3 +7,5 @@
 {% endif %}
 {# Necessary to the @apostrophecms/global tests. #}
 counts: {{ data.global.counts }}
+{{ apos.log(data.page.body) }}
+{% area data.page, 'body' %}

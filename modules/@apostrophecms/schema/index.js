@@ -2092,6 +2092,7 @@ module.exports = {
         _.each(schema, function (field) {
           const fieldType = self.fieldTypes[field.type];
           if (!fieldType) {
+            console.log(field);
             fail('Unknown schema field type.');
           }
           if (!field.name) {
