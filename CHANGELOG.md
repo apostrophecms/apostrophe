@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.111.4 (2020-09-23)
+
+* The `View File` button now accesses the original version of an image, not a scaled version. This was always the intention, but 2.x defaults to the `full` size and we initially missed it. Thanks to Quentin Mouraret for this contribution.
+
 ## 2.111.3 (2020-08-26)
 
 * When Apostrophe is running behind a proxy server like nginx, you can now instruct it to trust the `X-Forwarded-*` headers by passing the `trustProxy: true` option to `apostrophe-express`. If Apostrophe is generating `http:` URLs when they should be `https:`, this is most likely what you need.
