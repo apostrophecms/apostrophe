@@ -43,6 +43,8 @@
           :selected-items="items"
         />
       </div>
+
+      <AposRelationshipFieldsManager v-if="relationshipSchema" :schema="relationshipSchema"/>
     </template>
   </AposInputWrapper>
 </template>
@@ -69,7 +71,8 @@ export default {
       lastSearches: {},
       originalDisabled: this.status.disabled,
       searching: false,
-      chooser: false
+      chooser: false,
+      relationshipSchema: null
     };
   },
   computed: {
@@ -95,7 +98,7 @@ export default {
   },
   mounted() {
     this.validateAndEmit();
-    apos.bus.$emit('field', this.field);
+    apos.bus.$on('context-menu-item-clicked', () => (this.relationshipSchema = this.field.schema));
   },
   methods: {
     validate(value) {

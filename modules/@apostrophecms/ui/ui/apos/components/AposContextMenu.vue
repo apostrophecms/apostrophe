@@ -30,9 +30,9 @@
           <ul class="apos-context-menu__items" v-if="menu">
             <AposContextMenuItem
               v-for="item in menu"
-              :key="item.id || item.action"
+              :key="item.action"
               :menu-item="item"
-              @clicked="menuItemClicked(item.action, item.id)"
+              @clicked="menuItemClicked"
               :open="open"
             />
           </ul>
@@ -146,8 +146,8 @@ export default {
         this.unbind();
       }
     },
-    menuItemClicked(action, id) {
-      this.$emit('item-clicked', action, id);
+    menuItemClicked(action) {
+      this.$emit('item-clicked', action);
       this.close();
     },
     positionPopup() {

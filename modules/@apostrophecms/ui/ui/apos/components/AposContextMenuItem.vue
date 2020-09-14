@@ -7,12 +7,6 @@
     >
       {{ menuItem.label }}
     </button>
-    <!-- TODO: move "component" in parent and open it when event "clicked" emitted -->
-    <component
-      v-if="menuItem.component && openComponent"
-      :is="menuItem.component"
-      :schema="menuItem.schema"
-    />
   </li>
 </template>
 
@@ -27,11 +21,6 @@ export default {
     open: Boolean
   },
   emits: [ 'clicked' ],
-  data() {
-    return {
-      openComponent: false
-    }
-  },
   computed: {
     tabindex() {
       return this.open ? '0' : '-1';
@@ -40,7 +29,7 @@ export default {
   methods: {
     click() {
       this.$emit('clicked', this.menuItem.action);
-      this.openComponent = true;
+      apos.bus.$emit('context-menu-item-clicked');
     }
   }
 };

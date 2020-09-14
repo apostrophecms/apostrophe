@@ -82,19 +82,11 @@ export default {
         menu: [
           {
             label: 'Edit Relationship',
-            action: 'edit-relationship',
-            id: this.item._id,
-            component: 'AposRelationshipFieldsManager',
-            schema: null
+            action: 'edit-relationship'
           }
         ],
       },
     };
-  },
-  mounted() {
-    apos.bus.$on('field', field => {
-      this.more.menu[0].schema = field.schema
-    });
   },
   methods: {
     toggleEngage() {
