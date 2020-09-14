@@ -107,7 +107,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-notification {
     position: relative;
     display: inline-flex;

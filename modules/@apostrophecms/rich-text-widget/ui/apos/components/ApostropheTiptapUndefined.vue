@@ -12,7 +12,7 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-active {
   background-color: var(--a-danger);
 }

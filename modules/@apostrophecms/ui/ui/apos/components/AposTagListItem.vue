@@ -53,7 +53,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .apos-tag-list__item {
   position: relative;
   display: block;
