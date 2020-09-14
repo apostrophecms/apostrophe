@@ -7,6 +7,8 @@ $breakpoints: (
   desk: 1600px
 );
 
+$modal-rail-right-w: 22%;
+
 // We default to mobile first, but make a max-with option available as well.
 @mixin media-up($bp) {
   $bpVal: map-get($breakpoints, $bp);

@@ -383,7 +383,7 @@ export default {
   }
 
   .apos-modal__main--with-rails {
-    grid-template-columns: 18% 1fr minmax(250px, 22%);
+    grid-template-columns: 18% 1fr minmax(250px, $modal-rail-right-w);
   }
 
   .apos-modal__main--with-left-rail {
@@ -391,6 +391,6 @@ export default {
   }
 
   .apos-modal__main--with-right-rail {
-    grid-template-columns: 78% 22%;
+    grid-template-columns: 78% $modal-rail-right-w;
   }
 </style>

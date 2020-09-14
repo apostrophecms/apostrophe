@@ -75,7 +75,7 @@ export default {
     right: 0;
     bottom: 0;
     box-sizing: border-box;
-    width: 18%;
+    width: $modal-rail-right-w;
     min-width: 250px;
   }
 
