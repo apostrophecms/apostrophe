@@ -24,7 +24,6 @@ export default {
   },
   async mounted() {
     apos.notify = async function(message, options) {
-      console.info('NOTIFY:', message);
       const strings = [];
       let i = 1;
       let index = 0;
@@ -108,7 +107,6 @@ export default {
         });
 
         this.notifications = [ ...this.notifications, ...(notifications || []) ];
-        console.info('NOTIES COUNT', this.notifications.length);
         this.dismissed = [ ...this.dismissed, ...(dismissed || []) ];
 
         if (dismissed.length) {

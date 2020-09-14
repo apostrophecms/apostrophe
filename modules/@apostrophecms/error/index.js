@@ -32,6 +32,10 @@ module.exports = {
         const error = new Error(message || name);
         error.name = name;
         error.data = data;
+        // Copying what is available on `error.message` onto an enumerable
+        // property.
+        error.description = message || name;
+
         // Establish a difference between errors built here and those elsewhere.
         error.aposError = true;
         return error;

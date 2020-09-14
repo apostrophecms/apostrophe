@@ -209,7 +209,9 @@ export default {
       } catch (error) {
         console.error('Error uploading media.', error);
 
-        await apos.notify(this.getErrorMessage(error, 'Upload error'), {
+        const msg = error.body && error.body.message ? error.body.message : 'Upload error';
+
+        await apos.notify(msg, {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
@@ -231,17 +233,23 @@ export default {
           dismiss: true
         });
       } catch (error) {
-        console.error('Error saving media.', error);
-
-        await apos.notify(this.getErrorMessage(error, 'Upload Error'), {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
+        await this.notifyErrors(error, 'Upload Error');
       }
     },
-    getErrorMessage (error, fallback) {
-      return error.body && error.body.message ? error.body.message : fallback;
+    async notifyErrors(error, fallback) {
+      if (error.body && error.body.errors) {
+        for (const err of error.body.errors) {
+          console.error('Error saving media.', err);
+
+          if (err.error && err.error.description) {
+            await apos.notify(err.error.description || fallback, {
+              type: 'danger',
+              icon: 'alert-circle-icon',
+              dismiss: true
+            });
+          }
+        }
+      }
     }
   }
 };
