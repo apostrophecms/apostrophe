@@ -472,7 +472,7 @@ module.exports = {
       vueComponent: 'AposInputString',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], undefined, field.min, field.max);
-        if (!data[field.name].length) {
+        if (!data[field.name]) {
           if (field.required) {
             throw self.apos.error('required');
           }

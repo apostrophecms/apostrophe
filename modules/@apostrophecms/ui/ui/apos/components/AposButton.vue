@@ -449,6 +449,15 @@ export default {
   padding: 3px;
 }
 
+.apos-button--inline {
+  padding: 0;
+  &, &:hover, &:active, &:focus {
+    border: 0;
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
 @keyframes animateGradient {
   0% {
     background-position: 0% 50%;

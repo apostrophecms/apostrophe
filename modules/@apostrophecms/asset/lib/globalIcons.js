@@ -19,6 +19,7 @@ module.exports = {
   'delete-icon': 'Delete',
   'dots-vertical-icon': 'DotsVertical',
   'drag-icon': 'Apps',
+  'eye-icon': 'Eye',
   'file-tree-icon': 'FileTree',
   'image-icon': 'Image',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
