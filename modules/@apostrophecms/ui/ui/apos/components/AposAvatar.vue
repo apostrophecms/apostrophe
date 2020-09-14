@@ -26,7 +26,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-avatar {
     display: inline-block;
     border-radius: 100%;

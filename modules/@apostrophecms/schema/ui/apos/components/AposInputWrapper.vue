@@ -16,7 +16,7 @@
       {{ field.help }}
     </p>
     <div v-if="field.min || field.max" class="apos-field-limit">
-      <span>{{ items.length }} selected</span>
+      <span v-if="field.type === 'relationship'">{{ items.length }} selected</span>
       <span v-if="field.min">
         min: {{ field.min }}
       </span>
@@ -125,7 +125,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-field {
     border-width: 0;
     padding: 0;

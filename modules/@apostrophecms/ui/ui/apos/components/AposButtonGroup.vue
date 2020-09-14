@@ -38,7 +38,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-button-group {
     background-color: var(--a-background-primary);
     border-radius: 3px;

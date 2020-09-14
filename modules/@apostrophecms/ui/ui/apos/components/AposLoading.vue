@@ -60,7 +60,7 @@ module.exports = {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-loading {
     max-width: 90px;
   }

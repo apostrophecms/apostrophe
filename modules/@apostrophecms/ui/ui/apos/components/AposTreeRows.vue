@@ -300,7 +300,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-tree__row {
     &.is-dragging {
       opacity: 0.5;
