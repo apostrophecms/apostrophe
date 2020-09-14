@@ -137,8 +137,7 @@ export default {
 };
 </script>
 
-<!-- Unscoped because the admin bar overrides styles for these when nested -->
-<style lang="scss">
+<style lang="scss" scoped>
 
 .apos-button {
   position: relative;
