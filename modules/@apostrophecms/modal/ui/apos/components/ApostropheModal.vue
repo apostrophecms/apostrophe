@@ -35,6 +35,7 @@ export default {
 };
 </script>
 
+<!-- Unscoped because components that use slots in the modal need these classes too. -Tom -->
 <style lang="scss">
 .modal-mask {
   z-index: $z-index-modal-inner;

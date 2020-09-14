@@ -64,7 +64,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   .apos-breadcrumb {
     border-bottom: 1px solid var(--a-base-4);
 

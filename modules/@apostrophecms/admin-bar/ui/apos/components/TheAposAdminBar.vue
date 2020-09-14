@@ -208,7 +208,8 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__sub /deep/ .apos-button,
-.apos-admin-bar__btn {
+.apos-admin-bar__btn,
+.apos-admin-bar__row /deep/ .apos-admin-bar__btn {
   @include apos-button-reset();
   position: relative;
   display: inline-flex;
