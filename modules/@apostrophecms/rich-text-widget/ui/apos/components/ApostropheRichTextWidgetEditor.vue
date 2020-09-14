@@ -122,7 +122,7 @@ export default {
 };
 </script>
 
-<style type="text/css">
+<style lang="scss" scoped>
   .apos-richtext-menubar {
     margin: 12px 0;
   }

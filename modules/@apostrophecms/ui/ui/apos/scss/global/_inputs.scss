@@ -1,5 +1,3 @@
-$input-max-width: 580px;
-
 .apos-input,
 .apos-input-wrapper,
 .apos-choice-label {
@@ -63,6 +61,7 @@ $input-max-width: 580px;
   &--date,
   &--select,
   &--password,
+  &--number,
   &--email {
     padding: $input-padding;
     padding-right: $input-padding * 2;
@@ -120,8 +119,6 @@ $input-max-width: 580px;
 .apos-input-label--disabled {
   color: var(--a-base-3);
 }
-
-$box-width: 12px;
 
 .apos-input--choice {
   display: inline;

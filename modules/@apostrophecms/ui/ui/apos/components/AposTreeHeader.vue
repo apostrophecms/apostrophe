@@ -130,7 +130,7 @@ function debounce(func, wait, immediate) {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .apos-tree__header {
   color: var(--a-base-3);
 }

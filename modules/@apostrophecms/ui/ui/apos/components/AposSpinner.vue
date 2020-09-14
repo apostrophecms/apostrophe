@@ -53,7 +53,7 @@ module.exports = {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .apos-spinner {
   position: relative;
   width: 17px;

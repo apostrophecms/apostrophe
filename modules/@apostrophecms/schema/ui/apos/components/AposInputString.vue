@@ -20,6 +20,7 @@
           @keydown.enter="enterEmit"
           :disabled="field.disabled" :required="field.required"
           :id="uid" :tabindex="tabindex"
+          :step="step"
         >
         <component
           v-if="icon"
@@ -39,12 +40,23 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  data () {
+    return {
+      step: undefined
+    };
+  },
+  mounted() {
+    this.defineStep();
+  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
     },
     type () {
       if (this.field.type) {
+        if (this.field.type === 'float' || this.field.type === 'integer') {
+          return 'number';
+        }
         return this.field.type;
       } else {
         return 'text';
@@ -87,12 +99,20 @@ export default {
         }
       }
       if (this.field.min) {
-        if (value.length && (value.length < this.field.min)) {
+        if (this.type === 'number') {
+          if (value && (value < this.field.min)) {
+            return 'min';
+          }
+        } else if (value.length && (value.length < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max) {
-        if (value.length && (value.length > this.field.max)) {
+        if (this.type === 'number') {
+          if (value && (value > this.field.max)) {
+            return 'max';
+          }
+        } else if (value.length && (value.length > this.field.max)) {
           return 'max';
         }
       }
@@ -104,6 +124,11 @@ export default {
         }
       }
       return false;
+    },
+    defineStep() {
+      if (this.type === 'number') {
+        this.step = this.field.type === 'float' ? 'any' : 1;
+      }
     }
   }
 };

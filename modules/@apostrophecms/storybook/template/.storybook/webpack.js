@@ -28,14 +28,21 @@ module.exports = async (config) => {
           loader: 'sass-loader',
           options: {
             // sass-loader 9 changed this option name yet again
-            additionalData: `
-              @import 'Modules/@apostrophecms/storybook/scss/storybook';
-            `
+            additionalData:
+`@import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
+`
           }
         }
       ]
     }
   );
+
+  // Allow for an npm linked apostrophe module to work
+  config.resolve.modules = [
+    'node_modules',
+    path.resolve(`${process.env.APOS_ROOT}/node_modules/apostrophe/node_modules`),
+    path.resolve(`${process.env.APOS_ROOT}/node_modules`)
+  ];
 
   // find vue like our components do
   config.resolve.alias['apostrophe/vue$'] = 'vue/dist/vue.esm.js';
