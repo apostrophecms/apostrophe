@@ -99,12 +99,20 @@ export default {
         }
       }
       if (this.field.min) {
-        if (value.length && (value.length < this.field.min)) {
+        if (this.type === 'number') {
+          if (value && (value < this.field.min)) {
+            return 'min';
+          }
+        } else if (value.length && (value.length < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max) {
-        if (value.length && (value.length > this.field.max)) {
+        if (this.type === 'number') {
+          if (value && (value > this.field.max)) {
+            return 'max';
+          }
+        } else if (value.length && (value.length > this.field.max)) {
           return 'max';
         }
       }
