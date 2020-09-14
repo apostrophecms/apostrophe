@@ -9,6 +9,7 @@ export default function() {
   /* eslint-disable no-new */
   return new Vue({
     el: '#apos-notification',
+    name: 'TheAposNotifications',
     data () {
       return {
         notifications: [],

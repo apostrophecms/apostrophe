@@ -6,6 +6,8 @@
   DO NOT REMOVE ANY ALL-CAPS HEADERS. They are placeholders in the build.
 */
 
+import 'Modules/@apostrophecms/storybook/scss/storybook.scss';
+
 import Vue from 'apostrophe/vue';
 if (window.apos.modules) {
   for (const module of Object.values(window.apos.modules)) {

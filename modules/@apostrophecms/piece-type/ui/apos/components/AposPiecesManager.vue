@@ -342,7 +342,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  @import 'Modules/@apostrophecms/ui/scss/shared/_tables';
   // TODO: .apos-pieces-manager__empty is shared with
   // `apos-media-manager__empty`. We should combine somehow.
   .apos-pieces-manager__empty {

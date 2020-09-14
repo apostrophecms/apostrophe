@@ -199,7 +199,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   $row-nested-h-padding: 24px;
   $cell-padding: 16px;
 

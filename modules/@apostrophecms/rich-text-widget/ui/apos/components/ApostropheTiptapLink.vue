@@ -82,7 +82,7 @@ export default {
 };
 </script>
 
-<style type="text/css">
+<style lang="scss" scoped>
   .apostrophe-tiptap-link-control {
     display: inline-block;
   }

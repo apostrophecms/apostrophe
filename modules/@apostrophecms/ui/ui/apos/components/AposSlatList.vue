@@ -1,6 +1,16 @@
 
 <template>
   <div ref="root">
+    <div v-if="field.min || field.max" class="apos-slat-limit">
+      <span>{{ items.length }} selected</span>
+      <span v-if="field.min">
+        min: {{ field.min }}
+      </span>
+      <span v-if="field.max">
+        max: {{ field.max }}
+      </span>
+    </div>
+
     <draggable
       class="apos-slat-list"
       tag="ol"
@@ -12,16 +22,6 @@
       @end="isDragging=false"
       :id="listId"
     >
-      <div v-if="field.min || field.max" class="apos-field-limit">
-        <span>{{ items.length }} selected</span>
-        <span v-if="field.min">
-          min: {{ field.min }}
-        </span>
-        <span v-if="field.max">
-          max: {{ field.max }}
-        </span>
-      </div>
-
       <transition-group type="transition" name="apos-flip-list">
         <AposSlat
           class="apos-slat-list__item"
@@ -37,9 +37,9 @@
           :parent="listId"
         />
       </transition-group>
-
-      <div class="apos-slat-status">{{ message }}</div>
     </draggable>
+
+    <div class="apos-slat-status">{{ message }}</div>
   </div>
 </template>
 
@@ -200,5 +200,16 @@ export default {
 
   .apos-slat-status {
     text-align: center;
+  }
+
+  .apos-slat-limit {
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 10px 0 0;
+    text-align: center;
+
+    span {
+      margin-right: 10px;
+    }
   }
 </style>
