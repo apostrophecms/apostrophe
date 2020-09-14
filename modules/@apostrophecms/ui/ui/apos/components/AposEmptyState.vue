@@ -36,7 +36,7 @@ export default {
   }
 
   .apos-hint {
-    margin: 0 0 10px;
+    margin: 0 0 5px;
     color: var(--a-primary-text);
     font-size: map-get($font-sizes, default);
     text-align: center;
@@ -46,6 +46,6 @@ export default {
   .apos-emoji {
     // Variable sizes are less important for icons.
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
-    font-size: 42px;
+    font-size: 34px;
   }
 </style>

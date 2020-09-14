@@ -8,11 +8,10 @@
     <!-- TODO refactor buttons to take a single config obj -->
     <AposButton
       class="apos-context-menu__btn"
-      @click="buttonClicked" :label="button.label"
-      :type="button.type" :icon="button.icon"
-      :icon-only="button.iconOnly" :state="buttonState"
+      @click="buttonClicked($event)"
+      v-bind="button"
+      :state="buttonState"
       ref="button"
-      :modifiers="button.modifiers"
     />
     <div
       class="apos-primary-scrollbar apos-context-menu__popup"
@@ -49,6 +48,10 @@ export default {
       type: Array,
       default: null
     },
+    autoPosition: {
+      type: Boolean,
+      default: true
+    },
     modifiers: {
       type: Array,
       default() {
@@ -75,7 +78,7 @@ export default {
       default: 'below'
     }
   },
-  emits: [ 'open', 'item-clicked' ],
+  emits: [ 'open', 'close', 'item-clicked' ],
   data() {
     return {
       open: false,
@@ -95,6 +98,9 @@ export default {
       if (this.menu) {
         classes.push('apos-context-menu--unpadded');
       }
+      if (this.autoPosition) {
+        classes.push('apos-context-menu--fixed');
+      }
       return classes.join(' ');
     },
     buttonState() {
@@ -104,9 +110,11 @@ export default {
   watch: {
     open(newVal, oldVal) {
       if (newVal) {
-        this.position = this.calculatePosition();
+        this.positionPopup();
+        this.$emit('open');
+      } else {
+        this.$emit('close');
       }
-      this.$emit('open', newVal);
     }
   },
   methods: {
@@ -137,7 +145,7 @@ export default {
         this.unbind();
       }
     },
-    buttonClicked() {
+    buttonClicked($event) {
       this.open = !this.open;
       if (this.open) {
         this.bind();
@@ -150,7 +158,9 @@ export default {
       this.close();
     },
     positionPopup() {
-      this.position = this.calculatePosition();
+      if (this.autoPosition) {
+        this.position = this.calculatePosition();
+      }
     },
     // TODO this is proving a difficult way to handle positioning.
     // Ideally we'd be using absolute positioning to anchor to the button and float above or below
@@ -192,7 +202,7 @@ export default {
         left = rect.left - contextRect.left - 15;
       }
 
-      return `top: ${top}px; left: ${left}px`;
+      return `top: ${top}px; left: ${left}px;`;
     }
   }
 };
@@ -210,7 +220,7 @@ export default {
 
   .apos-context-menu__popup {
     z-index: $z-index-model-popup;
-    position: fixed;
+    position: absolute;
     display: inline-block;
     color: var(--a-text-primary);
     opacity: 0;
@@ -218,6 +228,10 @@ export default {
     transform: scale(0.98) translateY(-8px);
     transform-origin: top left;
     transition: scale 0.15s ease, translatey 0.15s ease;
+  }
+
+  .apos-context-menu--fixed .apos-context-menu__popup {
+    position: fixed;
   }
 
   .apos-context-menu__popup.is-visible {

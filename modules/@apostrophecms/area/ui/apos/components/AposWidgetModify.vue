@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-widget-modify">
+  <div class="apos-widget-controls apos-widget-modify">
     <AposButtonGroup>
       <AposButton
         v-bind="removeButton"

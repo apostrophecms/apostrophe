@@ -1,9 +1,10 @@
 <template>
   <div class="apos-area-menu" :class="{'apos-area-menu--grouped': groupedMenus, 'is-focused': groupIsFocused}">
     <AposContextMenu
-      :tip-alignment="tipAlignment"
-      :modifiers="['unpadded']"
       :button="buttonOptions"
+      v-bind="contextOpts"
+      @open="menuOpen"
+      @close="menuClose"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -90,13 +91,13 @@ import cuid from 'cuid';
 
 export default {
   props: {
-    menu: {
-      type: Array,
-      required: true
+    empty: {
+      type: Boolean,
+      default: false
     },
-    tipAlignment: {
-      type: String,
-      default: 'center'
+    contextOptions: {
+      type: Object,
+      required: true
     },
     index: {
       type: Number,
@@ -107,7 +108,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'add' ],
+  emits: [ 'menuClose', 'menuOpen', 'add' ],
   data() {
     return {
       active: 0,
@@ -122,7 +123,8 @@ export default {
         iconOnly: true,
         icon: 'plus-icon',
         type: 'primary',
-        modifiers: [ 'round', 'tiny' ]
+        modifiers: [ 'round', 'tiny' ],
+        iconSize: this.empty ? 20 : 11
       }
     };
   },
@@ -130,9 +132,16 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
+    contextOpts() {
+      return {
+        tipAlignment: 'center',
+        ...this.contextOptions,
+        modifiers: [ 'unpadded' ]
+      };
+    },
     groupedMenus() {
       let flag = false;
-      this.menu.forEach((e) => {
+      this.contextOptions.menu.forEach((e) => {
         if (e.items) {
           flag = true;
         }
@@ -143,7 +152,7 @@ export default {
       if (this.groupedMenus) {
         return this.composeGroups();
       } else {
-        return this.menu;
+        return this.contextOptions.menu;
       }
     },
     menuId() {
@@ -151,6 +160,12 @@ export default {
     }
   },
   methods: {
+    menuClose() {
+      this.$emit('menuClose');
+    },
+    menuOpen() {
+      this.$emit('menuOpen');
+    },
     add(name) {
       if (this.widgetIsContextual(name)) {
         return this.insert({
@@ -200,7 +215,7 @@ export default {
       };
       const myMenu = [];
 
-      this.menu.forEach((item) => {
+      this.contextOptions.forEach((item) => {
         if (!item.items) {
           ungrouped.items.push(item);
         } else {

@@ -1,15 +1,32 @@
 <template>
   <div data-apos-area class="apos-area">
     <button @click="emitToParentArea('test', { data: 5 })">Emit Demo Event</button>
-    <AposAreaMenu
+    <!-- <AposAreaMenu
       @add="insert"
       :menu="choices"
       tip-alignment="left"
       :index="0"
       :widget-options="options.widgets"
-    />
+    /> -->
     <div class="apos-areas-widgets-list">
-      <div
+      <AposAreaWidget
+        v-for="(widget, i) in next"
+        :key="widget._id"
+        :widget="widget"
+        :i="i"
+        :options="options"
+        :editing="editing"
+        :next="next"
+        :context-options="contextOptions"
+        :field-id="fieldId"
+        @up="up"
+        @down="down"
+        @remove="remove"
+        @edit="edit"
+        @update="update"
+        @insert="insert"
+      />
+      <!-- <div
         class="apos-area-widget-wrapper"
         v-for="(widget, i) in next"
         :key="widget._id"
@@ -54,7 +71,7 @@
           :index="i + 1"
           :widget-options="options.widgets"
         />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -104,7 +121,11 @@ export default {
   data() {
     return {
       next: this.items,
-      editing: {}
+      editing: {},
+      contextOptions: {
+        autoPosition: false,
+        menu: this.choices
+      }
     };
   },
   computed: {
@@ -335,15 +356,26 @@ export default {
 
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-area {
-  margin: 5px;
-  padding: 5px;
-  border: 2px solid var(--a-brand-green);
+  // margin: 5px;s
+  // padding: 5px;
+  // border: 2px solid var(--a-brand-green);
+}
+
+.apos-empty-area {
+  display: flex;
+  padding: 30px;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 50px;
+  background-color: var(--a-base-10);
+  border: 2px dotted var(--a-primary);
 }
 
 .apos-areas-widgets-list {
-  min-height: 64px;
+  // min-height: 64px;
 }
 
 .apos-area-widget-wrapper {
