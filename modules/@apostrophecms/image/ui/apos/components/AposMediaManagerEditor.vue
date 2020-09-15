@@ -32,14 +32,11 @@
     <AposModalLip :refresh="lipKey">
       <div
         class="apos-media-manager-editor__lip"
-        :class="{
-          'apos-media-manager-editor__lip--two-controls': selected.length > 1
-        }"
       >
         <AposButton
-          @click="$emit('back')" v-if="selected.length > 1"
+          @click="$emit('back')"
           class="apos-media-manager-editor__back" type="outline"
-          label="Back"
+          label="Cancel"
         />
         <AposButton
           @click="save" class="apos-media-manager-editor__save"
@@ -54,7 +51,7 @@
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
-  mixins: [AposHelpers],
+  mixins: [ AposHelpers ],
   props: {
     media: {
       type: Object,
@@ -67,7 +64,7 @@ export default {
       }
     }
   },
-  emits: ['save', 'back'],
+  emits: [ 'save', 'back' ],
   data() {
     const fields = [
       {
@@ -192,11 +189,6 @@ export default {
 
   .apos-media-manager-editor__lip {
     display: flex;
-    justify-content: flex-end;
-  }
-
-  .apos-media-manager-editor__lip--two-controls {
     justify-content: space-between;
   }
-
 </style>

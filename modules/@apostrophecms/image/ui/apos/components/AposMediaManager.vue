@@ -114,7 +114,7 @@ export default {
   },
   watch: {
     checked (newVal) {
-      if (newVal.length > 1) {
+      if (newVal.length > 1 || newVal.length === 0) {
         this.editing = null;
       }
     }
