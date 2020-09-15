@@ -4,7 +4,7 @@
       <div class="apos-media-manager-editor__thumb-wrapper">
         <img
           class="apos-media-manager-editor__thumb"
-          :src="media.path" alt=""
+          :src="media.attachment._urls['one-third']" :alt="media.description"
         >
       </div>
       <ul class="apos-media-manager-editor__details">
@@ -18,14 +18,10 @@
           {{ media.dim }}
         </li>
       </ul>
-      <AposInputString
-        v-for="input in inputs" :field="input.field"
-        :status="input.status" :value="input.value"
-        :key="input.field.name" :modifiers="['small', 'inverted']"
-      />
-      <AposInputBoolean
-        :field="published.field" :status="published.status"
-        :value="published.value"
+      <AposSchema
+        v-if="doc.data.title"
+        :schema="schema"
+        v-model="doc"
         :modifiers="['small', 'inverted']"
       />
     </div>
@@ -49,13 +45,16 @@
 
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
+import klona from 'klona';
 
 export default {
   mixins: [ AposHelpers ],
   props: {
     media: {
       type: Object,
-      default: null
+      default() {
+        return {};
+      }
     },
     selected: {
       type: Array,
@@ -66,32 +65,11 @@ export default {
   },
   emits: [ 'save', 'back' ],
   data() {
-    const fields = [
-      {
-        label: 'Image Title',
-        property: 'title'
-      },
-      {
-        label: 'Alt Text',
-        property: 'alt'
-      },
-      {
-        label: 'Credit',
-        property: 'credit'
-      },
-      {
-        label: 'Credit URL',
-        property: 'creditUrl'
-      },
-      {
-        label: 'Slug',
-        property: 'slug'
-      }
-    ];
-
     return {
-      // this is not how this will work in the real thing!!!
-      fields,
+      doc: {
+        data: {},
+        hasErrors: false
+      },
       published: {
         field: {
           required: false,
@@ -112,27 +90,21 @@ export default {
     };
   },
   computed: {
-    inputs() {
-      if (this.media) {
-        return this.fields.map((field) => {
-          const value = this.media[field.property];
-          return {
-            field: {
-              name: value,
-              label: field.label,
-              type: 'text'
-            },
-            value: { data: value },
-            status: {}
-          };
+    moduleOptions() {
+      return window.apos.modules[this.media.type] || {};
+    },
+    schema() {
+      if (this.moduleOptions.schema) {
+        return this.moduleOptions.schema.filter(field => {
+          return field.type !== 'attachment';
         });
-      } else {
-        return [];
       }
+      return [];
     }
   },
   watch: {
-    media() {
+    media(newVal) {
+      this.doc.data = klona(newVal);
       this.generateLipKey();
     }
   },
