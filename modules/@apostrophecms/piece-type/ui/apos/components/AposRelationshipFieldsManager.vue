@@ -13,7 +13,7 @@
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Save"
+        type="primary" label="Finished"
         :disabled="doc.hasErrors"
         @click="submit"
       />
@@ -33,18 +33,6 @@
         </template>
       </AposModalBody>
     </template>
-    <template #rightRail>
-      <AposModalRail type="right">
-        <div class="apos-doc-editor__utility">
-          <AposSchema
-            v-if="docReady"
-            :schema="schema"
-            v-model="doc"
-            :modifiers="['small', 'inverted']"
-          />
-        </div>
-      </AposModalRail>
-    </template>
   </AposModal>
 </template>
 
@@ -62,9 +50,15 @@ export default {
       default() {
         return [];
       }
+    },
+    item: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
-  emits: [ 'saved', 'safe-close' ],
+  emits: [ 'safe-close' ],
   data() {
     return {
       doc: {
@@ -77,62 +71,19 @@ export default {
         type: 'overlay',
         showModal: true
       },
-      modalTitle: 'Test'
+      modalTitle: `Edit Relationship for ${this.item.title}`
     };
   },
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-
-    // if (this.docId) {
-    //   let docData;
-    //   try {
-    //     const getOnePath = `${this.moduleOptions.action}/${this.docId}`;
-    //     docData = await apos.http.get(getOnePath, {
-    //       busy: true,
-    //       qs: this.filterValues
-    //     });
-    //   } catch {
-    //     // TODO: Add error notification. No client API for this yet.
-    //     console.error('⁉️ The requested piece was not found.', this.docId);
-    //     apos.bus.$emit('busy', false);
-    //     this.cancel();
-    //   } finally {
-    //     this.doc.data = docData;
-    //     this.docReady = true;
-    //     apos.bus.$emit('busy', false);
-    //   }
-    // } else {
-    //   this.$nextTick(() => {
-    //     this.newInstance();
-    //   });
-    // }
+    this.doc.data = this.item._fields || {};
   },
   methods: {
     async submit() {
-      apos.bus.$emit('busy', true);
-
-      let route;
-      let requestMethod;
-      if (this.docId) {
-        route = `${this.moduleOptions.action}/${this.docId}`;
-        requestMethod = apos.http.put;
-      } else {
-        route = this.moduleOptions.action;
-        requestMethod = apos.http.post;
-      }
-
-      try {
-        await requestMethod(route, {
-          busy: true,
-          body: this.doc.data
-        });
-        this.$emit('saved');
-
-        this.modal.showModal = false;
-      } finally {
-        apos.bus.$emit('busy', false);
-      }
+      const relationshipItem = this.item;
+      relationshipItem._fields = this.doc.data;
+      this.cancel();
     },
   }
 };

@@ -18,7 +18,11 @@
     >
       <div class="apos-slat__main">
         <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
-        <AposContextMenu :button="more.button" :menu="more.menu" />
+        <AposContextMenu
+          :button="more.button"
+          :menu="more.menu"
+          :item-props="item"
+        />
         <a
           class="apos-slat__control apos-slat__control--view"
           v-if="item.url"
@@ -84,8 +88,8 @@ export default {
             label: 'Edit Relationship',
             action: 'edit-relationship'
           }
-        ],
-      },
+        ]
+      }
     };
   },
   methods: {

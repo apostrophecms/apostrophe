@@ -18,7 +18,13 @@ export default {
       type: Object,
       required: true
     },
-    open: Boolean
+    open: Boolean,
+    itemProps: {
+      type: Object,
+      default() {
+        return {};
+      }
+    }
   },
   emits: [ 'clicked' ],
   computed: {
@@ -29,7 +35,7 @@ export default {
   methods: {
     click() {
       this.$emit('clicked', this.menuItem.action);
-      apos.bus.$emit('context-menu-item-clicked');
+      apos.bus.$emit('context-menu-item-clicked', this.itemProps);
     }
   }
 };

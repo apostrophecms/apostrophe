@@ -34,6 +34,7 @@
               :menu-item="item"
               @clicked="menuItemClicked"
               :open="open"
+              :item-props="itemProps"
             />
           </ul>
         </slot>
@@ -74,6 +75,12 @@ export default {
     origin: {
       type: String,
       default: 'below'
+    },
+    itemProps: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'open', 'item-clicked' ],
