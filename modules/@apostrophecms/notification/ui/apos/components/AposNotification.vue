@@ -68,13 +68,6 @@ export default {
     }
   },
   emits: [ 'close' ],
-  async mounted() {
-    if (this.dismiss) {
-      setTimeout(() => {
-        this.$emit('close', this.id);
-      }, 1000 * this.dismiss);
-    }
-  },
   computed: {
     classList() {
       const classes = [ 'apos-notification' ];
@@ -99,6 +92,13 @@ export default {
       return `${Math.floor((this.progress.current / 100) * 100)}%`;
     }
   },
+  async mounted() {
+    if (this.dismiss) {
+      setTimeout(() => {
+        this.$emit('close', this.id);
+      }, 1000 * this.dismiss);
+    }
+  },
   methods: {
     close () {
       this.$emit('close', this.id);
@@ -117,7 +117,7 @@ export default {
     padding: 15px 35px 15px 15px;
     border: 1px solid var(--a-base-8);
     color: var(--a-text-primary);
-    background: var(--a-background);
+    background: var(--a-background-primary);
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
 
