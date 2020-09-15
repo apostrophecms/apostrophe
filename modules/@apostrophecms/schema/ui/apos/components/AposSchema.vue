@@ -95,6 +95,14 @@ export default {
       handler() {
         this.updateNextAndEmit();
       }
+    },
+    value: {
+      deep: true,
+      handler(newVal, oldVal) {
+        if (newVal.data.slug !== this.fieldState.slug.data) {
+          this.populateDocData();
+        }
+      }
     }
   },
   mounted() {
