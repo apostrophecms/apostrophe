@@ -63,7 +63,7 @@ export default {
       }
     }
   },
-  emits: [ 'save', 'back' ],
+  emits: [ 'saved', 'back' ],
   data() {
     return {
       doc: {
@@ -112,9 +112,21 @@ export default {
     this.generateLipKey();
   },
   methods: {
-    save() {
-      // TODO I have no idea what to bundle up and send back to parent at this point in dev -SR
-      this.$emit('save');
+    async save() {
+      apos.bus.$emit('busy', true);
+      const route = `${this.moduleOptions.action}/${this.media._id}`;
+      // Repopulate `attachment` since it was removed from the schema.
+      this.doc.data.attachment = this.media.attachment;
+
+      try {
+        await apos.http.put(route, {
+          busy: true,
+          body: this.doc.data
+        });
+      } finally {
+        this.$emit('saved');
+        apos.bus.$emit('busy', false);
+      }
     },
     generateLipKey() {
       this.lipKey = this.generateId();

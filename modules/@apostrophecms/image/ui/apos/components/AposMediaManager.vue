@@ -58,7 +58,7 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing" :selected="selected"
-            @back="updateEditing(null)" @save="saveMedia"
+            @back="updateEditing(null)" @saved="updateMedia"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -143,6 +143,10 @@ export default {
       ));
 
       this.media = getResponse.results;
+    },
+    async updateMedia () {
+      this.updateEditing(null);
+      await this.getMedia();
     },
     createPlaceholder(dimensions) {
       this.media.unshift({
@@ -230,11 +234,6 @@ export default {
     // TODO stub
     trashClick() {
       this.$emit('trash', this.checked);
-    },
-
-    // TODO stub
-    saveMedia() {
-      this.$emit('save');
     },
 
     search(query) {
