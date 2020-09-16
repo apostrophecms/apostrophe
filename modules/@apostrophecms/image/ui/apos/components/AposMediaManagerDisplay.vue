@@ -3,9 +3,9 @@
     <div class="apos-media-manager-display__grid">
       <label class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
         <div class="apos-media-manager-display__media-drop__inner">
-          <div class="apos-media-manager-display__media-drop__icon">
-            <CloudUpload :size="64" />
-          </div>
+          <AposCloudUploadIcon
+            class="apos-media-manager-display__media-drop__icon"
+          />
           <div class="apos-media-manager-display__media-drop__instructions">
             <p class="apos-media-manager-display__media-drop__primary">
               Drop new media here
@@ -69,12 +69,8 @@
 
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
-import CloudUpload from 'vue-material-design-icons/CloudUpload.vue';
 
 export default {
-  components: {
-    CloudUpload
-  },
   mixins: [ AposHelpers ],
   // Custom model to handle the v-model connection on the parent.
   model: {
@@ -277,7 +273,7 @@ export default {
     height: 100%;
     @include apos-transition();
 
-    &:before {
+    &::before {
       content: '';
       display: inline-block;
       width: 1px;
@@ -367,16 +363,21 @@ export default {
     grid-column: 1 / 3;
     grid-row: 1 / 2;
     @include apos-transition();
-    &:hover, &:active, &:focus {
-      border: 2px dashed var(--a-primary);
+
+    &:hover,
+    &:active,
+    &:focus {
+      border-color: var(--a-primary);
       box-shadow: 0 0 10px -4px var(--a-primary-button-active);
+
       .apos-media-manager-display__media-drop__icon {
-        color: var(--a-primary);
-        filter: drop-shadow(0 0 5px var(--a-primary-50));
+        fill: url(#apos-upload-gradient);
         transform: translateY(-2px);
       }
     }
-    &:active, &:focus {
+
+    &:active,
+    &:focus {
       outline: 1px solid var(--a-primary);
     }
   }
@@ -389,7 +390,8 @@ export default {
   }
 
   .apos-media-manager-display__media-drop__icon {
-    height: 55px;
+    width: 57px;
+    height: auto;
     margin-bottom: 5px;
     color: var(--a-base-5);
     @include apos-transition();
