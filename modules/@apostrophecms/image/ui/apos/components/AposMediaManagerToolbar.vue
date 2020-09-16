@@ -19,7 +19,7 @@
       />
     </template>
     <template #rightControls>
-      <AposFilterMenu :menu="filterFields" @input="filter" />
+      <AposFilterMenu :filters="filterFields" @input="filter" />
       <AposInputString
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -78,46 +78,50 @@ export default {
         status: {},
         value: { data: '' }
       },
-      filterFields: {
-        published: {
-          field: {
-            name: 'published',
-            type: 'radio',
-            label: 'Published State',
-            choices: [
-              {
-                label: 'Published',
-                value: 'published'
-              },
-              {
-                label: 'Unpublished',
-                value: 'unpublished'
-              }
-            ]
-          },
-          value: { data: 'published' },
-          status: {}
+      filterFields: [
+        {
+          name: 'published',
+          label: 'Published',
+          inputType: 'radio',
+          choices: [
+            {
+              value: true,
+              label: 'Published'
+            },
+            {
+              value: false,
+              label: 'Draft'
+            },
+            {
+              value: 'any',
+              label: 'Both'
+            }
+          ],
+          allowedInChooser: false,
+          def: true
         },
-        trash: {
-          field: {
-            name: 'trash',
-            type: 'radio',
-            label: 'Trash',
-            choices: [
-              {
-                label: 'No',
-                value: 'false'
-              },
-              {
-                label: 'Yes',
-                value: 'true'
-              }
-            ]
-          },
-          value: { data: 'false' },
-          status: {}
+        {
+          name: 'trash',
+          label: 'Trash',
+          inputType: 'radio',
+          choices: [
+            {
+              value: false,
+              label: 'Live'
+            },
+            {
+              value: true,
+              label: 'Trash'
+            },
+            {
+              value: 'any',
+              label: 'None'
+            }
+          ],
+          allowedInChooser: false,
+          def: false
         }
-      }
+      ]
     };
   },
   computed: {
