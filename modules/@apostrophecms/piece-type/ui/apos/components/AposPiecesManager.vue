@@ -5,6 +5,7 @@
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template v-if="field.type === 'relationship'" #primaryControls>
+      <!-- TODO: Refactor into AposRelationshipManager -->
       <AposButton
         :label="`New ${ options.label }`" type="default"
         @click="editing = true"
@@ -15,6 +16,7 @@
       />
     </template>
     <template v-else #primaryControls>
+      <!-- TODO: Refactor into AposPiecesManager -->
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -27,7 +29,10 @@
 
     <template v-if="relationship" #leftRail>
       <AposModalRail>
-        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" :field="field" />
+        <AposSlatList
+          @update="updateSlatList" :initial-items="selectedItems"
+          :field="field"
+        />
       </AposModalRail>
     </template>
 
@@ -193,6 +198,7 @@ export default {
       };
     },
     moduleTitle () {
+      // TODO: Refactor for AposRelationshipManager
       const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },
@@ -231,6 +237,12 @@ export default {
       return 'empty';
     }
   },
+  watch: {
+    // NOTE: revisit this during refactoring
+    checked: function() {
+      this.generateUi();
+    }
+  },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def || filter.choices[0].value;
@@ -240,12 +252,6 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-  },
-  watch: {
-    // NOTE: revisit this during refactoring
-    checked: function() {
-      this.generateUi();
-    }
   },
   methods: {
     async finishSaved() {
