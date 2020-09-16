@@ -24,8 +24,9 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader v-if="!!media.length">
+        <template #bodyHeader>
           <AposMediaManagerToolbar
+            v-if="!!media.length"
             :checked="checked" :media="media"
             @select-click="selectClick"
             @trash-click="trashClick"
@@ -120,7 +121,6 @@ export default {
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
     await this.getMedia();
   },
