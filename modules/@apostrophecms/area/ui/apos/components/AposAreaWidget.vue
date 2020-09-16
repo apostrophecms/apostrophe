@@ -1,20 +1,20 @@
 <template>
-  <div class="apos-area-widget-wrapper">
+  <div class="apos-area-widget-wrapper" :data-area-widget="widgetId">
     <div
       class="apos-area-widget-inner"
-      :class="[state.container, { 'apos-supress': supressStatus }]"
-      @mouseover="handleMouseover"
+      :class="ui.container"
+      @mouseover="handleMouseover($event)"
       @mouseleave="handleMouseleave"
       @click="handleFocus($event)"
     >
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add"
-        :class="state.addTop"
+        :class="ui.addTop"
       >
         <AposAreaMenu
           @add="insert"
-          @menuOpen="focusMenu('addTop')"
-          @menuClose="unfocusMenu('addTop')"
+          @menuOpen="focusMenu('top')"
+          @menuClose="unfocusMenu('top')"
           :context-options="contextOptions"
           :index="i"
           :widget-options="options.widgets"
@@ -22,7 +22,7 @@
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--move"
-        :class="state.move"
+        :class="ui.move"
       >
         <AposWidgetMove
           :first="i === 0"
@@ -33,7 +33,7 @@
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--modify"
-        :class="state.modify"
+        :class="ui.modify"
       >
         <AposWidgetModify
           @remove="remove(i)"
@@ -49,6 +49,7 @@
         @update="update"
         :options="options.widgets[widget.type]"
         :type="widget.type"
+        :doc-id="docId"
       />
       <component
         v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))"
@@ -59,18 +60,20 @@
         :area-field-id="fieldId"
         :value="widget"
         @edit="edit(i)"
+        :doc-id="docId"
+        data-apos-widget
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
-        :class="state.addBottom"
+        :class="ui.addBottom"
       >
         <AposAreaMenu
           @add="insert"
           :context-options="contextOptions"
           :index="i + 1"
           :widget-options="options.widgets"
-          @menuOpen="focusMenu('addBottom')"
-          @menuClose="unfocusMenu('addBottom')"
+          @menuOpen="focusMenu('bottom')"
+          @menuClose="unfocusMenu('bottom')"
         />
       </div>
     </div>
@@ -78,11 +81,28 @@
 </template>
 
 <script>
+
 import Vue from 'apostrophe/vue';
+import cuid from 'cuid';
 
 export default {
   name: 'AposAreaWidget',
   props: {
+    widgetHovered: {
+      type: String,
+      default: null
+    },
+    widgetFocused: {
+      type: String,
+      default: null
+    },
+    docId: {
+      type: String,
+      required: false,
+      default() {
+        return null;
+      }
+    },
     i: {
       type: Number,
       required: true
@@ -116,38 +136,85 @@ export default {
     contextOptions: {
       type: Object,
       required: true
-    },
-    supressStatus: {
-      type: Boolean,
-      default: false
     }
   },
-  emits: [ 'suppress', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
-    return {
-      state: {
-        move: [],
-        modify: [],
-        container: [],
-        addTop: [],
-        addBottom: []
+    const state = {
+      move: {
+        show: false
       },
+      modify: {
+        show: false
+      },
+      container: {
+        highlight: false,
+        focus: false
+      },
+      add: {
+        bottom: {
+          show: false
+        },
+        top: {
+          show: false
+        }
+      }
+    };
+    return {
+      state,
+      suppressedState: { ...state },
       show: 'apos-show',
       open: 'apos-open',
       focus: 'apos-focus',
-      highlight: 'apos-highlight',
-      supress: 'apos-supress'
+      highlight: 'apos-highlight'
     };
   },
   computed: {
     moduleOptions() {
       return window.apos.area;
+    },
+    widgetId() {
+      return cuid();
+    },
+    isSuppressed() {
+      if (this.widgetHovered) {
+        return this.widgetHovered !== this.widgetId;
+      } else {
+        return false;
+      }
+    },
+    ui() {
+      if (this.isSuppressed) {
+        return this.suppressedState;
+      } else {
+        return {
+          move: this.state.move.show ? this.show : null,
+          modify: this.state.modify.show ? this.show : null,
+          container: this.state.container.focus ? this.focus
+            : (this.state.container.highlight ? this.highlight : null),
+          addTop: this.state.add.top.show ? this.show : null,
+          addBottom: this.state.add.bottom.show ? this.show : null
+        };
+      }
     }
   },
   mounted() {
     // apos.bus.$on('area-event', this.areaEventReceiver);
   },
   methods: {
+    areaEventReceiver(area, ...args) {
+      if (apos.util.closest(area.$el.parentNode, '[data-apos-area]') === this.$el) {
+        const $widget = apos.util.closest(area.$el, '[data-apos-widget]');
+        console.log($widget);
+        console.log(this.next);
+        const widget = this.next.find(widget => widget._id === $widget.getAttribute('id'));
+        console.log(widget);
+        this.onChildAreaEvent(area, widget, ...args);
+      } else {
+        console.log('received, but not for us');
+      }
+    },
+
     // Emit an event from this area to its parent area, even though they
     // are in separate Vue apps. Results in a call to onAreaEvent in the
     // parent area, and only that area.
@@ -165,152 +232,43 @@ export default {
       console.log('stus ver: The descendant area', childArea, 'nested directly in our child widget', inWidget, 'emitted a ', name, ' event with these arguments:', args);
     },
 
-    // Implementation detail, you want to modify `onChildAreaEvent`, below
-    // areaEventReceiver(area, ...args) {
-
-    //   if (apos.util.closest(this.$el.parentNode, '[data-apos-area]') === this.$el) {
-    //     const $widget = apos.util.closest(this.area.$el, '[data-apos-widget]');
-    //     console.log($widget);
-    //     console.log(this.next);
-    //     const widget = this.next.find(widget => widget._id === $widget.getAttribute('id'));
-    //     console.log(widget);
-    //     this.onChildAreaEvent(this.area, widget, ...args);
-    //   } else {
-    //     console.log('stu: received, but not for us');
-    //   }
-    // },
-
     // EVENTS
 
-    handleMouseover() {
-      this.showMove();
-      this.highlightContainer();
-      // this.emitToParentArea('test', { data: 5 });
-      this.$emit('suppress');
-      // this.$emit('supress');
+    handleMouseover(e) {
+      e.stopPropagation();
+      this.state.move.show = true;
+      this.state.container.highlight = true;
+      apos.bus.$emit('widget-hover', this.widgetId);
     },
 
     handleMouseleave() {
-      this.removeMove();
-      this.unhighlightContainer();
+      this.state.move.show = false;
+      this.state.container.highlight = false;
     },
 
     handleFocus($event) {
       $event.stopPropagation();
+      this.state.container.focus = true;
       document.addEventListener('click', this.blurUnfocus);
-      this.showFocus();
-      // remove all other focus states
-      // this.$emit('supress');
-      // for (let k in this.states) {
-      //   this.states[k].container = this.states[k].container.filter(i => { return i !== this.focus });
-      //   this.states[k].modify = this.states[k].modify.filter(i => { return i !== this.show });
-      //   this.states[k].addTop = this.states[k].addTop.filter(i => { return i !== this.show });
-      //   this.states[k].addBottom = this.states[k].addBottom.filter(i => { return i !== this.show });
-      //   this.states[k].move = this.states[k].move.filter(i => { return i !== this.focus });
-      // }
-
-
-    },
-
-    // ACTIONS
-
-    toggleSupress() {
-      if (this.state.container.includes(this.supress)) {
-        this.state.container = this.removeClass(this.state.container, this.supress);  
-      } else {
-        this.addClass(this.state.container, this.supress);
-      }
+      apos.bus.$emit('widget-focus', this.widgetId);
     },
 
     focusMenu(which) {
-      this.addClass(this.state[which], this.focus);
+      this.state.add[which].show = true;
     },
 
     unfocusMenu(which) {
-      this.state[which] = this.removeClass(this.state[which], this.focus);
-    },
-
-    showMove() {
-      this.addClass(this.state.move, this.show);
-    },
-
-    removeMove() {
-      this.state.move = this.removeClass(this.state.move, this.show);
-    },
-
-    focusMove() {
-      this.addClass(this.state.move, this.focus);
-    },
-
-    unfocusMove() {
-      this.state.move = this.removeClass(this.state.move, this.focus);
-    },
-
-    highlightContainer() {
-      this.addClass(this.state.container, this.highlight);
-    },
-
-    unhighlightContainer() {
-      this.state.container = this.removeClass(this.state.container, this.highlight);
-    },
-
-    showModify() {
-      this.addClass(this.state.modify, this.show);
-    },
-
-    removeModify() {
-      this.state.modify = this.removeClass(this.state.modify, this.show);
-    },
-
-    showAddControls() {
-      this.addClass(this.state.addBottom, this.show);
-      this.addClass(this.state.addTop, this.show);
-    },
-
-    hideAddControls() {
-      this.state.addBottom = this.removeClass(this.state.addBottom, this.show);
-      this.state.addTop = this.removeClass(this.state.addTop, this.show);
-    },
-
-    showFocus() {
-      this.showModify();
-
-      // add focus states
-      this.addClass(this.state.container, this.focus);
-      this.addClass(this.state.move, this.focus);
-
-      this.showAddControls();
-    },
-
-    removeFocus() {
-      this.removeModify();
-      this.removeMove();
-      this.unfocusMove();
-      // remove container focus
-      this.state.container = this.removeClass(this.state.container, this.focus);
-      this.state.move = this.removeClass(this.state.move, this.show);
-
-      this.hideAddControls();
+      this.state.add[which].show = false;
     },
 
     // misc
     blurUnfocus(event) {
       if (!this.$el.contains(event.target)) {
-        this.removeFocus();
+        this.state.container.focus = false;
+        this.state.container.highlight = false;
         document.removeEventListener('click', this.blurUnfocus);
+        apos.bus.$emit('widget-mouseover', null);
       }
-    },
-
-    // soft append
-    addClass(what, c) {
-      if (!what.includes(c)) {
-        what.push(c);
-      }
-    },
-
-    // filter class off array
-    removeClass(what, c) {
-      return what.filter(i => { return i !== c; });
     },
 
     // events to emit

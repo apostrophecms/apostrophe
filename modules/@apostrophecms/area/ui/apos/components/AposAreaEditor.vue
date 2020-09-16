@@ -1,5 +1,5 @@
 <template>
-  <div data-apos-area class="apos-area">
+  <div :data-apos-area="areaId" class="apos-area">
     <!-- <button @click="emitToParentArea('test', { data: 5 })">Emit Demo Event</button> -->
     <!-- <AposAreaMenu
       @add="insert"
@@ -24,15 +24,18 @@
     <div class="apos-areas-widgets-list">
       <AposAreaWidget
         v-for="(widget, i) in next"
+        :area-id="areaId"
         :key="widget._id"
         :widget="widget"
         :i="i"
         :options="options"
         :editing="editing"
         :next="next"
+        :doc-id="docId"
         :context-options="contextOptions"
         :field-id="fieldId"
-        @suppress="emitToParentArea('suppress', { data: 12 })"
+        :widget-hovered="hoveredWidget"
+        :widget-focused="focusedWidget"
         @up="up"
         @down="down"
         @remove="remove"
@@ -134,8 +137,11 @@ export default {
   emits: [ 'changed' ],
   data() {
     return {
+      areaId: cuid(),
       next: this.items,
       editing: {},
+      hoveredWidget: null,
+      focusedWidget: null,
       contextOptions: {
         autoPosition: false,
         menu: this.choices
@@ -189,16 +195,24 @@ export default {
         }
       };
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
-      apos.bus.$on('area-event', this.areaEventReceiver);
+      apos.bus.$on('widget-hover', this.updateWidgetHovered);
+      apos.bus.$on('widget-focus', this.updateWidgetFocused);
     }
   },
   beforeDestroy() {
     if (this.areaUpdatedHandler) {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
-      apos.bus.$off('area-event', this.areaEventHandler);
+      apos.bus.$on('widget-hover', this.updateWidgetHovered);
+      apos.bus.$on('widget-focus', this.updateWidgetFocused);
     }
   },
   methods: {
+    updateWidgetHovered(widgetId) {
+      this.hoveredWidget = widgetId;
+    },
+    updateWidgetFocused(widgetId) {
+      this.focusedWidget = widgetId;
+    },
     async up(i) {
       if (this.docId) {
         await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
