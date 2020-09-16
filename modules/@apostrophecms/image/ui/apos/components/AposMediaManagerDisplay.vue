@@ -365,7 +365,7 @@ export default {
     justify-content: center;
     border: 2px dashed var(--a-base-3);
     grid-column: 1 / 3;
-    grid-row: 1 / 2;
+    grid-row: 1 / 3;
     @include apos-transition();
     &:hover, &:active, &:focus {
       border: 2px dashed var(--a-primary);
