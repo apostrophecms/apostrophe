@@ -51,11 +51,13 @@ export default {
         return [];
       }
     },
-    item: {
+    value: {
       type: Object,
-      default() {
-        return {};
-      }
+      required: true
+    },
+    title: {
+      type: String,
+      default: ''
     }
   },
   emits: [ 'safe-close' ],
@@ -71,18 +73,17 @@ export default {
         type: 'overlay',
         showModal: true
       },
-      modalTitle: `Edit Relationship for ${this.item.title}`
+      modalTitle: `Edit Relationship for ${this.title}`
     };
   },
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    this.doc.data = this.item._fields || {};
+    this.doc.data = this.value || {};
   },
   methods: {
     async submit() {
-      const relationshipItem = this.item;
-      relationshipItem._fields = this.doc.data;
+      this.$emit('input', this.doc.data);
       this.cancel();
     },
   }

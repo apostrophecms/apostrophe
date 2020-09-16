@@ -47,7 +47,8 @@
       <AposRelationshipFieldsManager
         v-if="relationshipSchema"
         :schema="relationshipSchema"
-        :item="clickedItem"
+        :title="clickedItem.title"
+        v-model="clickedItem._fields"
         @safe-close="relationshipSchema=null"
       />
     </template>
