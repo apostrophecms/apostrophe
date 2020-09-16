@@ -28,7 +28,6 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
-            :disable-selection="field.max && checked.length >= field.max"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -234,6 +233,11 @@ export default {
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
+      if (!this.checked.length) {
+        this.selectedItems = [];
+        this.$emit('updated', this.selectedItems);
+      }
+
     }
   },
   methods: {
