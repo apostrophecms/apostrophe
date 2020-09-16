@@ -60,7 +60,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'safe-close' ],
+  emits: [ 'input', 'safe-close' ],
   data() {
     return {
       doc: {
