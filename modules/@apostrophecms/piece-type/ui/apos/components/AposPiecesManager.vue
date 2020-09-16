@@ -183,7 +183,8 @@ export default {
       };
     },
     moduleTitle () {
-      return `Manage ${this.moduleLabels.plural}`;
+      const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
     },
     rows() {
       const rows = [];
