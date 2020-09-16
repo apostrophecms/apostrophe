@@ -186,7 +186,20 @@ module.exports = {
       if (req.body._newInstance) {
         return self.newInstance();
       }
-      return self.convertInsertAndRefresh(req, req.body);
+
+      try {
+        return await self.convertInsertAndRefresh(req, req.body);
+      } catch (e) {
+        if (Array.isArray(e)) {
+          // TODO: Turn errors that should be 500 errors into uninformative,
+          // opaque errors. (the ones that don't have `aposError === true`).
+          throw self.apos.error('invalid', {
+            errors: e
+          });
+        } else {
+          throw e;
+        }
+      }
     },
     async put(req, _id) {
       self.publicApiCheck(req);
