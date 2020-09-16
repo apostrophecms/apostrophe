@@ -3,6 +3,7 @@
 ## 2.111.4 (2020-09-23)
 
 * The `View File` button now accesses the original version of an image, not a scaled version. This was always the intention, but 2.x defaults to the `full` size and we initially missed it. Thanks to Quentin Mouraret for this contribution.
+* LESS compilation errors during `apostrophe:generation` are now reported properly, resulting in a clean process exit. Previously they resulted in a hung process.
 
 ## 2.111.3 (2020-08-26)
 
