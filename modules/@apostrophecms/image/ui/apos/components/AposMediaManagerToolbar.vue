@@ -19,6 +19,11 @@
       />
     </template>
     <template #rightControls>
+      <AposPager
+        v-if="totalPages > 1"
+        @click="registerPageChange" @change="registerPageChange"
+        :total-pages="totalPages" :current-page="currentPage"
+      />
       <AposFilterMenu :filters="filterFields" @input="filter" />
       <AposInputString
         @input="search" :field="searchField.field"
@@ -44,6 +49,14 @@ export default {
         return [];
       }
     },
+    totalPages: {
+      type: Number,
+      default: 1
+    },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
     applyTags: {
       type: Array,
       default () {
@@ -51,7 +64,13 @@ export default {
       }
     }
   },
-  emits: [ 'filter', 'search', 'trash-click', 'select-click' ],
+  emits: [
+    'filter',
+    'search',
+    'trash-click',
+    'select-click',
+    'page-change'
+  ],
 
   data() {
     return {
@@ -141,6 +160,9 @@ export default {
     },
     search(value) {
       this.$emit('search', value.data);
+    },
+    registerPageChange(pageNum) {
+      this.$emit('page-change', pageNum);
     }
   }
 };
@@ -151,3 +173,4 @@ export default {
     width: 250px;
   }
 </style>
+8

@@ -71,7 +71,9 @@
     ]
   };
   window.apos.http.getResponses['/api/v1/@apostrophecms/image'] = {
-    results: createImages(30)
+    results: createImages(31),
+    currentPage: 1,
+    pages: 1
   };
 
   function randomNum() {

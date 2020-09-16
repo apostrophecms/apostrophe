@@ -28,6 +28,8 @@
           <AposMediaManagerToolbar
             v-if="!!media.length"
             :checked="checked" :media="media"
+            :total-pages="totalPages" :current-page="currentPage"
+            @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
             @search="search"
@@ -88,6 +90,8 @@ export default {
   data() {
     return {
       media: [],
+      totalPages: 1,
+      currentPage: 1,
       tagList: [],
       modal: {
         active: false,
@@ -127,7 +131,9 @@ export default {
   methods: {
     async getMedia () {
 
-      const qs = {};
+      const qs = {
+        page: this.currentPage
+      };
 
       // Avoid undefined properties.
       for (const prop in qs) {
@@ -142,6 +148,8 @@ export default {
         }
       ));
 
+      this.currentPage = getResponse.currentPage;
+      this.totalPages = getResponse.pages;
       this.media = getResponse.results;
     },
     createPlaceholder(dimensions) {
@@ -226,7 +234,12 @@ export default {
         this.lastSelected = this.media[this.media.length - 1]._id;
       }
     },
-
+    async updatePage(num) {
+      if (num) {
+        this.currentPage = num;
+        await this.getMedia();
+      }
+    },
     // TODO stub
     trashClick() {
       this.$emit('trash', this.checked);
