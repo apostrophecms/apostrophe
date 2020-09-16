@@ -17,7 +17,10 @@
 
     <template v-if="relationship" #leftRail>
       <AposModalRail>
-        <AposSlatList @update="updateSlatList" :initial-items="selectedItems" :field="field" />
+        <AposSlatList
+          @update="updateSlatList"
+          :initial-items="selectedItems" :field="field"
+        />
       </AposModalRail>
     </template>
 
@@ -220,6 +223,12 @@ export default {
       return 'empty';
     }
   },
+  watch: {
+    // NOTE: revisit this during refactoring
+    checked: function() {
+      this.generateUi();
+    }
+  },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def || filter.choices[0].value;
@@ -229,12 +238,6 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-  },
-  watch: {
-    // NOTE: revisit this during refactoring
-    checked: function() {
-      this.generateUi();
-    }
   },
   methods: {
     async finishSaved() {
@@ -316,12 +319,18 @@ export default {
     },
     // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSlatList(items) {
+      if (!this.relationship) {
+        return;
+      }
       this.selectedItems = items;
       this.checked = items.map(item => item._id);
       this.$emit('updated', items);
     },
     // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSelectedItems(event) {
+      if (!this.relationship) {
+        return;
+      }
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => piece._id === event.target.id);
         if (this.field.max) {

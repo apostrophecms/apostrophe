@@ -36,7 +36,7 @@ export default {
     }
   },
   methods: {
-    toggleRowCheck(event, id) {
+    toggleRowCheck(id) {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(item => item !== id);
         if (this.checkboxes[id]) {
@@ -50,7 +50,7 @@ export default {
     selectAll(event) {
       if (!this.checked.length) {
         this.rows.forEach((row) => {
-          this.toggleRowCheck('checked', row._id);
+          this.toggleRowCheck(row._id);
           this.updateSelectedItems({ target: { id: row._id } });
         });
         return;
@@ -58,7 +58,7 @@ export default {
 
       if (this.checked.length <= this.rows.length) {
         this.checked.forEach((id) => {
-          this.toggleRowCheck('checked', id);
+          this.toggleRowCheck(id);
         });
       }
     },
