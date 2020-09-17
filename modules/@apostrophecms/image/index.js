@@ -16,6 +16,7 @@ module.exports = {
     label: 'Image',
     alias: 'image',
     perPage: 31,
+    sort: { createdAt: -1 },
     insertViaUpload: true,
     searchable: false,
     browser: {

@@ -200,14 +200,14 @@ export default {
     selectAll(event) {
       if (!this.checked.length) {
         this.pagesFlat.forEach((row) => {
-          this.toggleRowCheck('checked', row.id);
+          this.toggleRowCheck(row.id);
         });
         return;
       }
 
       if (this.checked.length <= this.pagesFlat.length) {
         this.checked.forEach((id) => {
-          this.toggleRowCheck('checked', id);
+          this.toggleRowCheck(id);
         });
       }
     },
