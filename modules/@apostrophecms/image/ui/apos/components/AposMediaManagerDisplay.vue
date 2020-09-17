@@ -1,16 +1,24 @@
 <template>
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
-      <label class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
+      <label
+        :class="dropzoneClasses"
+        @dragover="dragover = true"
+        @drop="dragover = false"
+        @dragleave="dragover = false"
+      >
         <div class="apos-media-manager-display__media-drop__inner">
           <AposCloudUploadIcon
             class="apos-media-manager-display__media-drop__icon"
           />
           <div class="apos-media-manager-display__media-drop__instructions">
             <p class="apos-media-manager-display__media-drop__primary">
-              Drop new media here
+              {{ dragover ? 'Drop’em when you’re ready' : 'Drop new media here' }}
             </p>
-            <p class="apos-media-manager-display__media-drop__secondary">
+            <p
+              v-if="!dragover"
+              class="apos-media-manager-display__media-drop__secondary"
+            >
               Or click to open the file explorer
             </p>
           </div>
@@ -102,6 +110,11 @@ export default {
     'upload-complete',
     'create-placeholder'
   ],
+  data() {
+    return {
+      dragover: false
+    };
+  },
   computed: {
     // Handle the local check state within this component.
     checkedProxy: {
@@ -111,6 +124,15 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
+    },
+    dropzoneClasses () {
+      return [
+        'apos-media-manager-display__cell',
+        'apos-media-manager-display__media-drop',
+        {
+          'is-dragging': this.dragover
+        }
+      ];
     }
   },
   mounted() {
@@ -246,6 +268,12 @@ export default {
           }
         }
       }
+    },
+    addDragClass(event) {
+      event.target.classList.add('is-hovering');
+    },
+    removeDragClass(event) {
+      event.target.classList.remove('is-hovering');
     }
   }
 };
@@ -386,7 +414,8 @@ export default {
 
     &:hover,
     &:active,
-    &:focus {
+    &:focus,
+    &.is-dragging {
       border-width: 0;
 
       &::after {
