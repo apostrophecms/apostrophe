@@ -19,7 +19,12 @@
       />
     </template>
     <template #rightControls>
-      <AposFilterMenu :menu="filterFields" @input="filter" />
+      <AposPager
+        v-if="totalPages > 1"
+        @click="registerPageChange" @change="registerPageChange"
+        :total-pages="totalPages" :current-page="currentPage"
+      />
+      <AposFilterMenu :filters="filterFields" @input="filter" />
       <AposInputString
         @input="search" :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -44,6 +49,14 @@ export default {
         return [];
       }
     },
+    totalPages: {
+      type: Number,
+      default: 1
+    },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
     applyTags: {
       type: Array,
       default () {
@@ -51,7 +64,13 @@ export default {
       }
     }
   },
-  emits: [ 'filter', 'search', 'trash-click', 'select-click' ],
+  emits: [
+    'filter',
+    'search',
+    'trash-click',
+    'select-click',
+    'page-change'
+  ],
 
   data() {
     return {
@@ -78,46 +97,50 @@ export default {
         status: {},
         value: { data: '' }
       },
-      filterFields: {
-        published: {
-          field: {
-            name: 'published',
-            type: 'radio',
-            label: 'Published State',
-            choices: [
-              {
-                label: 'Published',
-                value: 'published'
-              },
-              {
-                label: 'Unpublished',
-                value: 'unpublished'
-              }
-            ]
-          },
-          value: { data: 'published' },
-          status: {}
+      filterFields: [
+        {
+          name: 'published',
+          label: 'Published',
+          inputType: 'radio',
+          choices: [
+            {
+              value: true,
+              label: 'Published'
+            },
+            {
+              value: false,
+              label: 'Draft'
+            },
+            {
+              value: 'any',
+              label: 'Both'
+            }
+          ],
+          allowedInChooser: false,
+          def: true
         },
-        trash: {
-          field: {
-            name: 'trash',
-            type: 'radio',
-            label: 'Trash',
-            choices: [
-              {
-                label: 'No',
-                value: 'false'
-              },
-              {
-                label: 'Yes',
-                value: 'true'
-              }
-            ]
-          },
-          value: { data: 'false' },
-          status: {}
+        {
+          name: 'trash',
+          label: 'Trash',
+          inputType: 'radio',
+          choices: [
+            {
+              value: false,
+              label: 'Live'
+            },
+            {
+              value: true,
+              label: 'Trash'
+            },
+            {
+              value: 'any',
+              label: 'None'
+            }
+          ],
+          allowedInChooser: false,
+          def: false
         }
-      }
+      ]
     };
   },
   computed: {
@@ -137,6 +160,9 @@ export default {
     },
     search(value) {
       this.$emit('search', value.data);
+    },
+    registerPageChange(pageNum) {
+      this.$emit('page-change', pageNum);
     }
   }
 };
@@ -147,3 +173,4 @@ export default {
     width: 250px;
   }
 </style>
+8

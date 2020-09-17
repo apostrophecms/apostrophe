@@ -15,7 +15,7 @@ module.exports = {
     name: '@apostrophecms/image',
     label: 'Image',
     alias: 'image',
-    perPage: 20,
+    perPage: 31,
     sort: { createdAt: -1 },
     insertViaUpload: true,
     searchable: false,
