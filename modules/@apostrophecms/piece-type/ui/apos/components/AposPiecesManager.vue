@@ -30,8 +30,8 @@
     <template v-if="relationship" #leftRail>
       <AposModalRail>
         <AposSlatList
-          @update="updateSlatList" :initial-items="selectedItems"
-          :field="field"
+          @update="updateSlatList"
+          :initial-items="selectedItems" :field="field"
         />
       </AposModalRail>
     </template>
@@ -240,7 +240,7 @@ export default {
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
-      if (!this.checked.length) {
+      if (this.relationship && !this.checked.length) {
         this.selectedItems = [];
         this.$emit('updated', this.selectedItems);
       }
@@ -336,12 +336,18 @@ export default {
     },
     // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSlatList(items) {
+      if (!this.relationship) {
+        return;
+      }
       this.selectedItems = items;
       this.checked = items.map(item => item._id);
       this.$emit('updated', items);
     },
     // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSelectedItems(event) {
+      if (!this.relationship) {
+        return;
+      }
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => piece._id === event.target.id);
         if (this.field.max) {
