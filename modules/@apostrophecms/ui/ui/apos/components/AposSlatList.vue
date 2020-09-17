@@ -29,6 +29,7 @@
           @engage="engage"
           @disengage="disengage"
           @move="move"
+          @item-clicked="$emit('item-clicked', item)"
           v-for="item in items"
           :key="item._id"
           :item="item"
@@ -67,7 +68,7 @@ export default {
       }
     }
   },
-  emits: [ 'update' ],
+  emits: [ 'update', 'item-clicked' ],
   data() {
     return {
       isDragging: false,
