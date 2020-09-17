@@ -24,9 +24,12 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader v-if="!!media.length">
+        <template #bodyHeader>
           <AposMediaManagerToolbar
+            v-if="!!media.length"
             :checked="checked" :media="media"
+            :total-pages="totalPages" :current-page="currentPage"
+            @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
             @search="search"
@@ -58,7 +61,7 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing" :selected="selected"
-            @back="updateEditing(null)" @save="saveMedia"
+            @back="updateEditing(null)" @saved="updateMedia"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -87,6 +90,8 @@ export default {
   data() {
     return {
       media: [],
+      totalPages: 1,
+      currentPage: 1,
       tagList: [],
       modal: {
         active: false,
@@ -114,20 +119,21 @@ export default {
   },
   watch: {
     checked (newVal) {
-      if (newVal.length > 1) {
+      if (newVal.length > 1 || newVal.length === 0) {
         this.editing = null;
       }
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
     await this.getMedia();
   },
   methods: {
     async getMedia () {
 
-      const qs = {};
+      const qs = {
+        page: this.currentPage
+      };
 
       // Avoid undefined properties.
       for (const prop in qs) {
@@ -142,7 +148,13 @@ export default {
         }
       ));
 
+      this.currentPage = getResponse.currentPage;
+      this.totalPages = getResponse.pages;
       this.media = getResponse.results;
+    },
+    async updateMedia () {
+      this.updateEditing(null);
+      await this.getMedia();
     },
     createPlaceholder(dimensions) {
       this.media.unshift({
@@ -226,15 +238,15 @@ export default {
         this.lastSelected = this.media[this.media.length - 1]._id;
       }
     },
-
+    async updatePage(num) {
+      if (num) {
+        this.currentPage = num;
+        await this.getMedia();
+      }
+    },
     // TODO stub
     trashClick() {
       this.$emit('trash', this.checked);
-    },
-
-    // TODO stub
-    saveMedia() {
-      this.$emit('save');
     },
 
     search(query) {

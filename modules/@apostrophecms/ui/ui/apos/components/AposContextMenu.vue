@@ -11,6 +11,7 @@
       @click="buttonClicked" :label="button.label"
       :type="button.type" :icon="button.icon"
       :icon-only="button.iconOnly" :state="buttonState"
+      :icon-size="button.iconSize"
       ref="button"
       :modifiers="button.modifiers"
     />

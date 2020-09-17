@@ -18,6 +18,12 @@
     >
       <div class="apos-slat__main">
         <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <AposContextMenu
+          v-if="item._fields"
+          :button="more.button"
+          :menu="more.menu"
+          @item-clicked="$emit('item-clicked', item)"
+        />
         <a
           class="apos-slat__control apos-slat__control--view"
           v-if="item.url"
@@ -67,9 +73,24 @@ export default {
       default: false
     }
   },
-  emits: [ 'engage', 'disengage', 'move', 'remove' ],
+  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked' ],
   data() {
     return {
+      more: {
+        button: {
+          label: 'More operations',
+          iconOnly: true,
+          icon: 'dots-vertical-icon',
+          iconSize: 13,
+          type: 'inline'
+        },
+        menu: [
+          {
+            label: 'Edit Relationship',
+            action: 'edit-relationship'
+          }
+        ]
+      }
     };
   },
   methods: {

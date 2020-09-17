@@ -10,10 +10,11 @@ be destroyed however necessary.
 */
 export default {
   methods: {
-    cancel() {
+    async cancel() {
       if (this.editing) {
         // If the modal is a manager with an open editor, close the editor and
         // keep the manager open.
+        await apos.notify('Finish or cancel editing before closing');
         return;
       }
       this.modal.showModal = false;

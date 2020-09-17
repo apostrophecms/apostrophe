@@ -24,7 +24,7 @@
           />
           <AposPiecesManager
             v-if="chooser"
-            :moduleName="field.withType"
+            :module-name="field.withType"
             :initially-selected-items="items"
             :field="field"
             :relationship="true"
@@ -35,6 +35,7 @@
         <AposSlatList
           v-if="items.length"
           @update="updated"
+          @item-clicked="openRelationshipEditor"
           :initial-items="items"
         />
         <AposSearchList
@@ -43,6 +44,14 @@
           :selected-items="items"
         />
       </div>
+
+      <AposRelationshipEditor
+        v-if="relationshipSchema"
+        :schema="relationshipSchema"
+        :title="clickedItem.title"
+        v-model="clickedItem._fields"
+        @safe-close="relationshipSchema=null"
+      />
     </template>
   </AposInputWrapper>
 </template>
@@ -69,7 +78,9 @@ export default {
       lastSearches: {},
       originalDisabled: this.status.disabled,
       searching: false,
-      chooser: false
+      chooser: false,
+      relationshipSchema: null,
+      clickedItem: null
     };
   },
   computed: {
@@ -137,7 +148,7 @@ export default {
           const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
             busy: true
           });
-          
+
           // filter items already selected
           this.searchList = list.results.filter(item => {
             return !this.items.map(i => i._id).includes(item._id);
@@ -168,6 +179,10 @@ export default {
     },
     watchNext () {
       // override method from mixin to avoid standard behavior
+    },
+    openRelationshipEditor (item) {
+      this.relationshipSchema = this.field.schema;
+      this.clickedItem = item;
     }
   }
 };

@@ -71,7 +71,9 @@
     ]
   };
   window.apos.http.getResponses['/api/v1/@apostrophecms/image'] = {
-    results: createImages(30)
+    results: createImages(31),
+    currentPage: 1,
+    pages: 1
   };
 
   function randomNum() {
@@ -86,11 +88,14 @@
       const credit = 'Credit Goold';
       const creditUrl = 'https://gooldy.ceo';
       const dim = [ `${randomNum()}00`, `${randomNum()}00` ];
+      const _id = `lesk-${Math.floor(Math.random() * Math.floor(10000)).toString()}`;
+      const imgUrl = `https://picsum.photos/${dim[0]}/${dim[1]}?q=${Math.floor(Math.random() * Math.floor(1000)).toString()}`;
       images.push({
-        _id: `lesk-${Math.floor(Math.random() * Math.floor(10000)).toString()}`,
+        _id,
         attachment: {
           _urls: {
-            'one-sixth': `https://picsum.photos/${dim[0]}/${dim[1]}?q=${Math.floor(Math.random() * Math.floor(1000)).toString()}`
+            'one-sixth': imgUrl,
+            'one-third': imgUrl
           }
         },
         title,
@@ -100,7 +105,7 @@
         fileSize: '345KB',
         dim: `${dim[0]} x ${dim[1]}`,
         creditUrl,
-        slug: title.replace(' ', '-').toLowerCase(),
+        slug: `${title.replace(/\s/g, '-').toLowerCase()}-${_id}`,
         tags: tags.tags
       });
     };
