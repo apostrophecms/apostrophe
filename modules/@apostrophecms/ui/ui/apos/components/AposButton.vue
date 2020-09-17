@@ -57,6 +57,10 @@ export default {
       type: String,
       default: ''
     },
+    iconSize: {
+      type: Number,
+      default: 15
+    },
     state: {
       type: Array,
       default() {
