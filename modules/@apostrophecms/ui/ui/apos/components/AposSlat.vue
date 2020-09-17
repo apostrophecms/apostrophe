@@ -19,6 +19,7 @@
       <div class="apos-slat__main">
         <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
         <AposContextMenu
+          v-if="item._fields"
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
