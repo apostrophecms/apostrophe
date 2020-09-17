@@ -132,6 +132,7 @@ export default {
   methods: {
     async uploadMedia (event) {
       this.$emit('upload-started');
+      const fileCount = event.target.files.length;
       const file = event.target.files[0];
 
       const emptyDoc = await apos.http.post(this.moduleOptions.action, {
@@ -139,6 +140,13 @@ export default {
           _newInstance: true
         }
       });
+      await apos.notify(
+        // TODO: i18n
+        `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`,
+        {
+          dismiss: true
+        }
+      );
 
       // TODO: While the upload is working, set an uploading animation.
       this.createPlaceholder(file);
@@ -200,7 +208,14 @@ export default {
         });
       } catch (error) {
         console.error('Error uploading media.', error);
-        // apos.notify('Error uploading media.');
+
+        const msg = error.body && error.body.message ? error.body.message : 'Upload error';
+
+        await apos.notify(msg, {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
         return;
       }
 
@@ -213,12 +228,29 @@ export default {
         await apos.http.post(this.moduleOptions.action, {
           body: imageData
         });
+        await apos.notify('Upload Successful', {
+          type: 'success',
+          dismiss: true
+        });
       } catch (error) {
-        console.error('Error saving media.', error);
-        // apos.notify('Error saving media.');
+        await this.notifyErrors(error, 'Upload Error');
+      }
+    },
+    async notifyErrors(error, fallback) {
+      if (error.body && error.body.errors) {
+        for (const err of error.body.errors) {
+          console.error('Error saving media.', err);
+
+          if (err.error && err.error.description) {
+            await apos.notify(err.error.description || fallback, {
+              type: 'danger',
+              icon: 'alert-circle-icon',
+              dismiss: true
+            });
+          }
+        }
       }
     }
-
   }
 };
 </script>
