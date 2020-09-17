@@ -364,12 +364,35 @@ export default {
     grid-row: 1 / 2;
     @include apos-transition();
 
+    &::after {
+      z-index: $z-index-under;
+      position: absolute;
+      content: '';
+      width: 90%;
+      height: 90%;
+      background-image:
+        linear-gradient(to right, rgba($brand-magenta, 0.3), rgba($brand-blue, 0.3)),
+        linear-gradient(to right, rgba($brand-gold, 0.3), rgba($brand-magenta, 0.3));
+      background-size:
+        100% 60%,
+        100% 60%;
+      background-position:
+        5% -5%,
+        5% 100%;
+      background-repeat: no-repeat;
+      filter: blur(10px);
+      @include apos-transition($duration: 0.3s);
+    }
+
     &:hover,
     &:active,
     &:focus {
-      border-color: var(--a-primary);
-      box-shadow: 0 0 10px -4px var(--a-primary-button-active);
+      border-width: 0;
 
+      &::after {
+        width: 102%;
+        height: 102%;
+      }
       .apos-media-manager-display__media-drop__icon {
         fill: url(#apos-upload-gradient);
         transform: translateY(-2px);
@@ -384,17 +407,21 @@ export default {
 
   .apos-media-manager-display__media-drop__inner {
     display: flex;
+    width: 100%;
+    height: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background-color: var(--a-background-primary);
   }
 
   .apos-media-manager-display__media-drop__icon {
     width: 57px;
+    max-width: 50%;
     height: auto;
     margin-bottom: 5px;
-    color: var(--a-base-5);
-    @include apos-transition();
+    fill: var(--a-text-primary);
+    @include apos-transition($duration: 0.2s);
   }
 
   .apos-media-manager-display__media-drop__instructions {

@@ -45,11 +45,11 @@ body {
   --a-white: #fff;
 
   // Apostrophe brand
-  --a-brand-red: #ea433a;
-  --a-brand-gold: #cc9300;
-  --a-brand-magenta: #b327bf;
-  --a-brand-blue: #66f;
-  --a-brand-green: #00bf9a;
+  --a-brand-red: $brand-red;
+  --a-brand-gold: $brand-gold;
+  --a-brand-magenta: $brand-magenta;
+  --a-brand-blue: $brand-blue;
+  --a-brand-green: $brand-green;
 
   // File colors
   --a-presentation: #f1c40f;
