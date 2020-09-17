@@ -7,13 +7,13 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
+        type="default" label="Cancel"
         @click="cancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Finished"
+        type="primary" label="Saved"
         :disabled="doc.hasErrors"
         @click="submit"
       />
@@ -40,7 +40,7 @@
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  name: 'AposRelationshipFieldsManager',
+  name: 'AposRelationshipEditor',
   mixins: [
     AposModalParentMixin
   ],
@@ -57,7 +57,7 @@ export default {
     },
     title: {
       type: String,
-      default: ''
+      required: true
     }
   },
   emits: [ 'input', 'safe-close' ],

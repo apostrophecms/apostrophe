@@ -21,7 +21,7 @@
         <AposContextMenu
           :button="more.button"
           :menu="more.menu"
-          :item-props="item"
+          @item-clicked="$emit('item-clicked', item)"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -72,7 +72,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'engage', 'disengage', 'move', 'remove' ],
+  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked' ],
   data() {
     return {
       more: {

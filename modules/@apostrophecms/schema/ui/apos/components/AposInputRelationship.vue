@@ -35,6 +35,7 @@
         <AposSlatList
           v-if="items.length"
           @update="updated"
+          @item-clicked="openRelationshipEditor"
           :initial-items="items"
         />
         <AposSearchList
@@ -44,7 +45,7 @@
         />
       </div>
 
-      <AposRelationshipFieldsManager
+      <AposRelationshipEditor
         v-if="relationshipSchema"
         :schema="relationshipSchema"
         :title="clickedItem.title"
@@ -105,10 +106,6 @@ export default {
   },
   mounted() {
     this.validateAndEmit();
-    apos.bus.$on('context-menu-item-clicked', item => {
-      this.relationshipSchema = this.field.schema;
-      this.clickedItem = item;
-    });
   },
   methods: {
     validate(value) {
@@ -182,6 +179,10 @@ export default {
     },
     watchNext () {
       // override method from mixin to avoid standard behavior
+    },
+    openRelationshipEditor (item) {
+      this.relationshipSchema = this.field.schema;
+      this.clickedItem = item;
     }
   }
 };
