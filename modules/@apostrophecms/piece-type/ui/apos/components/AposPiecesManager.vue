@@ -4,7 +4,19 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template #primaryControls>
+    <template v-if="field.type === 'relationship'" #primaryControls>
+      <!-- TODO: Refactor into AposRelationshipManager -->
+      <AposButton
+        :label="`New ${ options.label }`" type="default"
+        @click="editing = true"
+      />
+      <AposButton
+        type="primary" label="Exit"
+        @click="cancel"
+      />
+    </template>
+    <template v-else #primaryControls>
+      <!-- TODO: Refactor into AposPiecesManager -->
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -31,7 +43,6 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
-            :disable-selection="field.max && checked.length >= field.max"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -154,7 +165,7 @@ export default {
       }
     }
   },
-  emits: [ 'trash', 'search', 'safe-close' ],
+  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
       modal: {
@@ -186,7 +197,9 @@ export default {
       };
     },
     moduleTitle () {
-      return `Manage ${this.moduleLabels.plural}`;
+      // TODO: Refactor for AposRelationshipManager
+      const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
     },
     rows() {
       const rows = [];
@@ -227,6 +240,10 @@ export default {
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
+      if (this.relationship && !this.checked.length) {
+        this.selectedItems = [];
+        this.$emit('updated', this.selectedItems);
+      }
     }
   },
   created() {
