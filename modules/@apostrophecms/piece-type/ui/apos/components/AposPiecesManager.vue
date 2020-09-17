@@ -165,7 +165,7 @@ export default {
       }
     }
   },
-  emits: [ 'trash', 'search', 'safe-close' ],
+  emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
       modal: {
@@ -240,6 +240,10 @@ export default {
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
+      if (!this.checked.length) {
+        this.selectedItems = [];
+        this.$emit('updated', this.selectedItems);
+      }
     }
   },
   created() {
@@ -251,17 +255,6 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-  },
-  watch: {
-    // NOTE: revisit this during refactoring
-    checked: function() {
-      this.generateUi();
-      if (!this.checked.length) {
-        this.selectedItems = [];
-        this.$emit('updated', this.selectedItems);
-      }
-
-    }
   },
   methods: {
     async finishSaved() {
