@@ -3,6 +3,7 @@
     <div class="apos-media-manager-editor__inner" v-if="media">
       <div class="apos-media-manager-editor__thumb-wrapper">
         <img
+          v-if="media.attachment"
           class="apos-media-manager-editor__thumb"
           :src="media.attachment._urls['one-third']" :alt="media.description"
         >
