@@ -9,7 +9,7 @@
       @click="widgetFocus($event)"
     >
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--add"
+        class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
         :class="ui.addTop"
       >
         <AposAreaMenu
@@ -171,6 +171,7 @@ export default {
       blankState: klona(s),
       state: klona(s),
       highlightable: false,
+      focused: false,
       show: 'apos-show',
       open: 'apos-open',
       focus: 'apos-focus',
@@ -224,6 +225,9 @@ export default {
   },
   watch: {
     widgetFocused (newVal) {
+      if (newVal === this.widgetId) {
+        this.focused = true;
+      }
       const $parents = apos.util.closest(this.$el.parentNode, '[data-area-widget]');
       if (
         $parents &&
@@ -252,7 +256,10 @@ export default {
     },
 
     widgetMouseleave() {
-      this.state.move.show = false;
+      // Force move controls while focused
+      if (!this.focused) {
+        this.state.move.show = false;
+      }
       if (!this.highlightable) {
         // Force highlight when a parent has been focused
         this.state.container.highlight = false;
@@ -327,6 +334,7 @@ export default {
 <style lang="scss" scoped>
   $offset-0: 10px;
   $offset-1: 5px;
+
   .apos-area-widget-inner {
     position: relative;
     min-height: 50px;
@@ -346,6 +354,12 @@ export default {
     outline: 1px solid var(--a-primary);
   }
 
+  .apos-area-widget-inner .apos-area-widget-inner {
+    &.apos-highlight, &.apos-focus {
+      outline-color: var(--a-primary-child);
+    }
+  }
+
   .apos-area-widget-controls {
     position: absolute;
     opacity: 0;
@@ -357,10 +371,20 @@ export default {
     top: calc(-1 * #{$offset-0});
     transform: translateY(-85%);
   }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
+    top: calc(-1 * #{$offset-1});
+  }
+
   .apos-area-widget-controls--move {
     top: 50%;
-    left: calc(-1 * #{$offset-0 + 5});
+    left: 0;
+    padding-right: $offset-0 * 2;
     transform: translate3d(-100%, -50%, 0);
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--move {
+    padding-right: $offset-1 * 2;
   }
 
   .apos-area-widget-controls--move.apos-focus {
@@ -384,10 +408,18 @@ export default {
     transform: translate3d(-50%, calc(-50% - #{$offset-0}), 0);
   }
 
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--add--top {
+    transform: translate3d(-50%, calc(-50% - #{$offset-1}), 0);
+  }
+
   .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
     transform: translate3d(-50%, calc(50% + #{$offset-0}), 0);
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--add--bottom {
+    transform: translate3d(-50%, calc(50% + #{$offset-1}), 0);
   }
 
   .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {
@@ -395,4 +427,10 @@ export default {
     left: 50%;
     transform: translate(-50%, 0);
   }
+
+  .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
+    background-color: var(--a-primary-child);
+    border-color: var(--a-primary-child);
+  }
+
 </style>
