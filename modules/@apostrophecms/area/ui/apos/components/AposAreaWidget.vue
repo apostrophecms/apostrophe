@@ -1,3 +1,4 @@
+
 <template>
   <div class="apos-area-widget-wrapper" :data-area-widget="widgetId">
     <div
@@ -40,6 +41,8 @@
           @edit="edit(i)"
         />
       </div>
+      <!-- isSuppressed: {{ isSuppressed }} <br/>
+      highlightable: {{ highlightable }} <br/> -->
       <component
         v-if="editing[widget._id]"
         @save="editing[widget._id] = false"
@@ -167,6 +170,7 @@ export default {
     return {
       blankState: klona(s),
       state: klona(s),
+      highlightable: false,
       show: 'apos-show',
       open: 'apos-open',
       focus: 'apos-focus',
@@ -184,6 +188,11 @@ export default {
       if (this.widgetFocused === this.widgetId) {
         return false;
       }
+
+      if (this.highlightable) {
+        return false;
+      }
+
       if (this.widgetHovered) {
         return this.widgetHovered !== this.widgetId;
       } else {
@@ -213,12 +222,30 @@ export default {
       return state;
     }
   },
+  watch: {
+    widgetFocused (newVal) {
+      const $parents = apos.util.closest(this.$el.parentNode, '[data-area-widget]');
+      if (
+        $parents &&
+        $parents.dataset.areaWidget === newVal
+      ) {
+        // Our parent was focused
+        this.resetState();
+        this.state.container.highlight = true;
+        this.highlightable = true;
+      } else {
+        this.highlightable = false;
+      }
+    }
+  },
   methods: {
 
     // EVENTS
 
     widgetMouseover(e) {
-      e.stopPropagation();
+      if (e) {
+        e.stopPropagation();
+      }
       this.state.move.show = true;
       this.state.container.highlight = true;
       apos.bus.$emit('widget-hover', this.widgetId);
@@ -226,7 +253,10 @@ export default {
 
     widgetMouseleave() {
       this.state.move.show = false;
-      this.state.container.highlight = false;
+      if (!this.highlightable) {
+        // Force highlight when a parent has been focused
+        this.state.container.highlight = false;
+      }
     },
 
     widgetFocus(e) {
@@ -240,11 +270,12 @@ export default {
     },
 
     widgetUnfocus(event) {
-      console.log('blur?');
       if (!this.$el.contains(event.target)) {
+        // console.log(`unfocus ${this.widgetId}`);
         this.resetState();
+        this.highlightable = false;
         document.removeEventListener('click', this.blurUnfocus);
-        apos.bus.$emit('widget-mouseover', null);
+        apos.bus.$emit('widget-focus', null);
       }
     },
 
@@ -295,10 +326,15 @@ export default {
 
 <style lang="scss" scoped>
   $offset-0: 10px;
+  $offset-1: 5px;
   .apos-area-widget-inner {
     position: relative;
     min-height: 50px;
     outline-offset: $offset-0;
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner {
+    outline-offset: $offset-1;
   }
 
   .apos-highlight {

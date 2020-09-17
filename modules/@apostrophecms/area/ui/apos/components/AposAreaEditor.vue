@@ -158,6 +158,7 @@ export default {
     },
     updateWidgetFocused(widgetId) {
       this.focusedWidget = widgetId;
+      
     },
     async up(i) {
       if (this.docId) {
