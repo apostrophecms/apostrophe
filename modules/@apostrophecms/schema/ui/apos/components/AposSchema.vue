@@ -95,6 +95,19 @@ export default {
       handler() {
         this.updateNextAndEmit();
       }
+    },
+    value: {
+      deep: true,
+      handler(newVal, oldVal) {
+        // The doc might be swapped out completely in cases such as the media
+        // library editor. Repopulate the fields if that happens.
+        if (
+          this.fieldState._id &&
+          (newVal.data._id !== this.fieldState._id.data)
+        ) {
+          this.populateDocData();
+        }
+      }
     }
   },
   mounted() {
@@ -108,6 +121,13 @@ export default {
       };
 
       const fieldState = {};
+
+      // Though not in the schema, keep track of the _id field.
+      if (this.value.data._id) {
+        next.data._id = this.value.data._id;
+        fieldState._id = { data: this.value.data._id };
+      }
+
       this.schema.forEach(field => {
         fieldState[field.name] = {
           error: false,

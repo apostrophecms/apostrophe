@@ -63,6 +63,19 @@
           >
         </button>
       </div>
+      <!-- We need a placeholder display cell to generate the first image
+      placeholder. -->
+      <div
+        v-if="media.length === 0"
+        class="apos-media-manager-display__cell is-hidden"
+        aria-hidden="true"
+      >
+        <button
+          disabled="true"
+          class="apos-media-manager-display__select"
+          ref="btns"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -174,10 +187,13 @@ export default {
       img.src = objectUrl;
     },
     getPlaceholderStyles(item) {
+      // Account for whether the refs have been set by the v-for or if on the
+      // placeholder.
+      const btn = Array.isArray(this.$refs.btns) ? this.$refs.btns[0] : this.$refs.btns;
       const {
         width: parentWidth,
         height: parentHeight
-      } = this.$refs.btns[0].getBoundingClientRect();
+      } = btn.getBoundingClientRect();
 
       const parentRatio = parentWidth / parentHeight;
       const itemRatio = item.dimensions.width / item.dimensions.height;
@@ -276,6 +292,8 @@ export default {
     width: 100%;
     height: 100%;
     @include apos-transition();
+
+    &.is-hidden { visibility: hidden; }
 
     &:before {
       content: '';
