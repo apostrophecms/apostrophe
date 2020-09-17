@@ -108,7 +108,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'menuClose', 'menuOpen', 'add' ],
+  emits: [ 'menu-close', 'menu-open', 'add' ],
   data() {
     return {
       active: 0,
@@ -161,10 +161,10 @@ export default {
   },
   methods: {
     menuClose() {
-      this.$emit('menuClose');
+      this.$emit('menu-close');
     },
     menuOpen() {
-      this.$emit('menuOpen');
+      this.$emit('menu-open');
     },
     add(name) {
       if (this.widgetIsContextual(name)) {

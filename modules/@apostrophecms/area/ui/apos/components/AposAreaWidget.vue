@@ -9,13 +9,21 @@
       @click="widgetFocus($event)"
     >
       <div
+        class="apos-area-widget-controls apos-area-widget__label"
+        :class="ui.labels"
+      >
+        <span class="apos-area-widget__type">
+          {{ widgetLabel }}
+        </span>
+      </div>
+      <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
         :class="ui.addTop"
       >
         <AposAreaMenu
           @add="insert"
-          @menuOpen="menuFocus('top')"
-          @menuClose="menuUnfocus('top')"
+          @menu-open="menuFocus('top')"
+          @menu-close="menuUnfocus('top')"
           :context-options="contextOptions"
           :index="i"
           :widget-options="options.widgets"
@@ -41,8 +49,6 @@
           @edit="edit(i)"
         />
       </div>
-      <!-- isSuppressed: {{ isSuppressed }} <br/>
-      highlightable: {{ highlightable }} <br/> -->
       <component
         v-if="editing[widget._id]"
         @save="editing[widget._id] = false"
@@ -76,8 +82,8 @@
           :context-options="contextOptions"
           :index="i + 1"
           :widget-options="options.widgets"
-          @menuOpen="menuFocus('bottom')"
-          @menuClose="menuUnfocus('bottom')"
+          @menu-open="menuFocus('bottom')"
+          @menu-close="menuUnfocus('bottom')"
         />
       </div>
     </div>
@@ -165,6 +171,9 @@ export default {
           show: false,
           focus: false
         }
+      },
+      labels: {
+        show: false
       }
     };
     return {
@@ -179,6 +188,9 @@ export default {
     };
   },
   computed: {
+    widgetLabel() {
+      return window.apos.modules[`${this.widget.type}-widget`].label;
+    },
     moduleOptions() {
       return window.apos.area;
     },
@@ -207,6 +219,7 @@ export default {
       const state = {
         move: this.state.move.show ? this.show : null,
         modify: this.state.modify.show ? this.show : null,
+        labels: this.state.labels.show ? this.show : null,
         container: this.state.container.focus ? this.focus
           : (this.state.container.highlight ? this.highlight : null),
         addTop: this.state.add.top.focus ? this.focus
@@ -252,6 +265,7 @@ export default {
       }
       this.state.move.show = true;
       this.state.container.highlight = true;
+      this.state.labels.show = true;
       apos.bus.$emit('widget-hover', this.widgetId);
     },
 
@@ -264,6 +278,7 @@ export default {
         // Force highlight when a parent has been focused
         this.state.container.highlight = false;
       }
+      this.state.labels.show = false;
     },
 
     widgetFocus(e) {
@@ -272,13 +287,13 @@ export default {
       this.state.modify.show = true;
       this.state.add.top.show = true;
       this.state.add.bottom.show = true;
+      this.state.labels.show = false;
       document.addEventListener('click', this.widgetUnfocus);
       apos.bus.$emit('widget-focus', this.widgetId);
     },
 
     widgetUnfocus(event) {
       if (!this.$el.contains(event.target)) {
-        // console.log(`unfocus ${this.widgetId}`);
         this.resetState();
         this.highlightable = false;
         document.removeEventListener('click', this.blurUnfocus);
@@ -387,21 +402,6 @@ export default {
     padding-right: $offset-1 * 2;
   }
 
-  .apos-area-widget-controls--move.apos-focus {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .apos-area-widget-controls.apos-show,
-  .apos-area-widget-controls.apos-focus {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .apos-area-widget-controls.apos-focus {
-    z-index: $z-index-default;
-  }
-
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
@@ -431,6 +431,38 @@ export default {
   .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
     background-color: var(--a-primary-child);
     border-color: var(--a-primary-child);
+  }
+
+  .apos-area-widget__label {
+    position: absolute;
+    bottom: calc(100% + #{$offset-0} + 2px);
+    left: $offset-0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: map-get($font-sizes, meta);
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
+    bottom: calc(100% + #{$offset-1} + 2px);
+  }
+
+  .apos-area-widget__type {
+    padding: 2px 4px;
+    background-color: var(--a-primary);
+    color: var(--a-white);
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__type {
+    background-color: var(--a-primary-child);
+  }
+
+  .apos-show, .apos-focus {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .apos-focus {
+    z-index: $z-index-default;
   }
 
 </style>

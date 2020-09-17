@@ -158,7 +158,6 @@ export default {
     },
     updateWidgetFocused(widgetId) {
       this.focusedWidget = widgetId;
-      
     },
     async up(i) {
       if (this.docId) {
@@ -300,35 +299,6 @@ export default {
         }
       }
     }
-    // // Implementation detail, you want to modify `onChildAreaEvent`, below
-    // areaEventReceiver(area, ...args) {
-    //   if (apos.util.closest(area.$el.parentNode, '[data-apos-area]') === this.$el) {
-    //     const $widget = apos.util.closest(area.$el, '[data-apos-widget]');
-    //     console.log($widget);
-    //     console.log(this.next);
-    //     const widget = this.next.find(widget => widget._id === $widget.getAttribute('id'));
-    //     console.log(widget);
-    //     this.onChildAreaEvent(area, widget, ...args);
-    //   } else {
-    //     console.log('received, but not for us');
-    //   }
-    // },
-    // // Emit an event from this area to its parent area, even though they
-    // // are in separate Vue apps. Results in a call to onAreaEvent in the
-    // // parent area, and only that area.
-    // //
-    // // You must pass a name argument, to distinguish your different
-    // // child area events, and you may pass more arguments.
-    // emitToParentArea(name, ...args) {
-    //   apos.bus.$emit('area-event', this, name, ...args);
-    // },
-    // // Receive an event from a child area, even though they are in
-    // // separate Vue apps. inWidget is the widget within this.next in which
-    // // childArea is nested. All incoming arguments after `name` wind up in the
-    // // `args` array.
-    // onChildAreaEvent(childArea, inWidget, name, ...args) {
-    //   console.log('The descendant area', childArea, 'nested directly in our child widget', inWidget, 'emitted a ', name, ' event with these arguments:', args);
-    // }
   }
 };
 

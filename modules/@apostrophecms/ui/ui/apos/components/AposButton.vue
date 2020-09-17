@@ -12,7 +12,7 @@
     </transition>
     <div class="apos-button__content">
       <component
-        :size="15" class="apos-button__icon"
+        :size="iconSize" class="apos-button__icon"
         v-if="icon" :is="icon"
         fill-color="currentColor"
       />
@@ -404,8 +404,14 @@ export default {
 }
 
 .apos-button--group {
-  background-color: transparent;
+  background-color: var(--a-background-primary);
   border: none;
+  &:hover {
+    background-color: var(--a-base-9);
+  }
+  &:focus {
+    background-color: var(--a-base-8);
+  }
 }
 
 .apos-button--busy {
