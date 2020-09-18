@@ -151,7 +151,7 @@ export default {
   },
   emits: [ 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
-    const s = {
+    const initialState = {
       move: {
         show: false
       },
@@ -177,8 +177,8 @@ export default {
       }
     };
     return {
-      blankState: klona(s),
-      state: klona(s),
+      blankState: klona(initialState),
+      state: klona(initialState),
       highlightable: false,
       focused: false,
       show: 'apos-show',
@@ -371,7 +371,7 @@ export default {
 
   .apos-area-widget-inner .apos-area-widget-inner {
     &.apos-highlight, &.apos-focus {
-      outline-color: var(--a-primary-child);
+      outline-color: var(--a-secondary);
     }
   }
 
@@ -429,8 +429,8 @@ export default {
   }
 
   .apos-area-widget-inner .apos-area-widget-inner /deep/ .apos-context-menu__btn {
-    background-color: var(--a-primary-child);
-    border-color: var(--a-primary-child);
+    background-color: var(--a-secondary);
+    border-color: var(--a-secondary);
   }
 
   .apos-area-widget__label {
@@ -453,7 +453,7 @@ export default {
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__type {
-    background-color: var(--a-primary-child);
+    background-color: var(--a-secondary);
   }
 
   .apos-show, .apos-focus {

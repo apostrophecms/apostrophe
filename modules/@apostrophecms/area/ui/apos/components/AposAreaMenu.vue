@@ -2,7 +2,7 @@
   <div class="apos-area-menu" :class="{'apos-area-menu--grouped': groupedMenus, 'is-focused': groupIsFocused}">
     <AposContextMenu
       :button="buttonOptions"
-      v-bind="contextOpts"
+      v-bind="extendedContextMenuOptions"
       @open="menuOpen"
       @close="menuClose"
     >
@@ -132,7 +132,7 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
-    contextOpts() {
+    extendedContextMenuOptions() {
       return {
         tipAlignment: 'center',
         ...this.contextOptions,

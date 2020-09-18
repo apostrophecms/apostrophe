@@ -13,6 +13,7 @@ body {
 
   .apos-theme--primary-purple {
     @include apos-primary-mixin(#6516dd);
+    --a-secondary: #e65100;
   }
 
   --a-danger-button-hover: #c00717;
@@ -62,6 +63,7 @@ body {
 .apos-theme-dark {
   .apos-theme--primary-blue {
     @include apos-primary-mixin(#0062ff);
+    --a-secondary: #00b075;
   }
   --a-base-1: #d1d3d5;
   --a-base-2: #6b7c92;

@@ -145,7 +145,7 @@ export default {
         this.unbind();
       }
     },
-    buttonClicked($event) {
+    buttonClicked() {
       this.open = !this.open;
       if (this.open) {
         this.bind();
