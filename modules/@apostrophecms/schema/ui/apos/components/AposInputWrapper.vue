@@ -1,35 +1,39 @@
 <template>
-  <component :is="wrapEl" :class="classList">
-    <!-- TODO i18n -->
-    <component
-      v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
-      class="apos-field-label"
-      :is="labelEl" :for="uid"
-    >
-      {{ field.label }}
-      <span v-if="field.required" class="apos-field-required">
-        *
-      </span>
+  <div class="apos-field__outer">
+    <component :is="wrapEl" :class="classList">
+      <!-- TODO i18n -->
+      <component
+        v-if="field.label" :class="{'apos-sr-only': field.hideLabel }"
+        class="apos-field-label"
+        :is="labelEl" :for="uid"
+      >
+        {{ field.label }}
+        <span v-if="field.required" class="apos-field-required">
+          *
+        </span>
+      </component>
+      <!-- TODO i18n -->
+      <p v-if="field.help" class="apos-field-help">
+        {{ field.help }}
+      </p>
+      <div v-if="field.min || field.max" class="apos-field-limit">
+        <span v-if="field.type === 'relationship'">{{ items.length }} selected</span>
+        <span v-if="field.min">
+          min: {{ field.min }}
+        </span>
+        <span v-if="field.max">
+          max: {{ field.max }}
+        </span>
+      </div>
+      <slot name="body" />
+      <!-- TODO i18n -->
+      <div v-if="errorMessage" class="apos-field-error">
+        {{ errorMessage }}
+      </div>
     </component>
-    <!-- TODO i18n -->
-    <p v-if="field.help" class="apos-field-help">
-      {{ field.help }}
-    </p>
-    <div v-if="field.min || field.max" class="apos-field-limit">
-      <span v-if="field.type === 'relationship'">{{ items.length }} selected</span>
-      <span v-if="field.min">
-        min: {{ field.min }}
-      </span>
-      <span v-if="field.max">
-        max: {{ field.max }}
-      </span>
-    </div>
-    <slot name="body" />
-    <!-- TODO i18n -->
-    <div v-if="errorMessage" class="apos-field-error">
-      {{ errorMessage }}
-    </div>
-  </component>
+    <!-- CSS Escape hatch for additional interfaces like relatipnship managers -->
+    <slot name="secondary" />
+  </div>
 </template>
 
 <script>

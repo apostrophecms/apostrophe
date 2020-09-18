@@ -1,16 +1,24 @@
 <template>
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
-      <label class="apos-media-manager-display__cell apos-media-manager-display__media-drop">
+      <label
+        :class="dropzoneClasses"
+        @dragover="dragover = true"
+        @drop="dragover = false"
+        @dragleave="dragover = false"
+      >
         <div class="apos-media-manager-display__media-drop__inner">
-          <div class="apos-media-manager-display__media-drop__icon">
-            <CloudUpload :size="64" />
-          </div>
+          <AposCloudUploadIcon
+            class="apos-media-manager-display__media-drop__icon"
+          />
           <div class="apos-media-manager-display__media-drop__instructions">
             <p class="apos-media-manager-display__media-drop__primary">
-              Drop new media here
+              {{ dragover ? 'Drop’em when you’re ready' : 'Drop new media here' }}
             </p>
-            <p class="apos-media-manager-display__media-drop__secondary">
+            <p
+              v-if="!dragover"
+              class="apos-media-manager-display__media-drop__secondary"
+            >
               Or click to open the file explorer
             </p>
           </div>
@@ -82,12 +90,8 @@
 
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
-import CloudUpload from 'vue-material-design-icons/CloudUpload.vue';
 
 export default {
-  components: {
-    CloudUpload
-  },
   mixins: [ AposHelpers ],
   // Custom model to handle the v-model connection on the parent.
   model: {
@@ -119,6 +123,11 @@ export default {
     'upload-complete',
     'create-placeholder'
   ],
+  data() {
+    return {
+      dragover: false
+    };
+  },
   computed: {
     // Handle the local check state within this component.
     checkedProxy: {
@@ -128,6 +137,15 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
+    },
+    dropzoneClasses () {
+      return [
+        'apos-media-manager-display__cell',
+        'apos-media-manager-display__media-drop',
+        {
+          'is-dragging': this.dragover
+        }
+      ];
     }
   },
   mounted() {
@@ -266,6 +284,12 @@ export default {
           }
         }
       }
+    },
+    addDragClass(event) {
+      event.target.classList.add('is-hovering');
+    },
+    removeDragClass(event) {
+      event.target.classList.remove('is-hovering');
     }
   }
 };
@@ -295,7 +319,7 @@ export default {
 
     &.is-hidden { visibility: hidden; }
 
-    &:before {
+    &::before {
       content: '';
       display: inline-block;
       width: 1px;
@@ -385,32 +409,66 @@ export default {
     grid-column: 1 / 3;
     grid-row: 1 / 3;
     @include apos-transition();
-    &:hover, &:active, &:focus {
-      border: 2px dashed var(--a-primary);
-      box-shadow: 0 0 10px -4px var(--a-primary-button-active);
+
+    &::after {
+      z-index: $z-index-under;
+      position: absolute;
+      content: '';
+      width: 90%;
+      height: 90%;
+      background-image:
+        linear-gradient(to right, rgba($brand-magenta, 0.3), rgba($brand-blue, 0.3)),
+        linear-gradient(to right, rgba($brand-gold, 0.3), rgba($brand-magenta, 0.3));
+      background-size:
+        100% 60%,
+        100% 60%;
+      background-position:
+        5% -5%,
+        5% 100%;
+      background-repeat: no-repeat;
+      filter: blur(10px);
+      @include apos-transition($duration: 0.3s);
+    }
+
+    &:hover,
+    &:active,
+    &:focus,
+    &.is-dragging {
+      border-width: 0;
+
+      &::after {
+        width: 102%;
+        height: 102%;
+      }
       .apos-media-manager-display__media-drop__icon {
-        color: var(--a-primary);
-        filter: drop-shadow(0 0 5px var(--a-primary-50));
+        fill: url(#apos-upload-gradient);
         transform: translateY(-2px);
       }
     }
-    &:active, &:focus {
+
+    &:active,
+    &:focus {
       outline: 1px solid var(--a-primary);
     }
   }
 
   .apos-media-manager-display__media-drop__inner {
     display: flex;
+    width: 100%;
+    height: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background-color: var(--a-background-primary);
   }
 
   .apos-media-manager-display__media-drop__icon {
-    height: 55px;
+    width: 57px;
+    max-width: 50%;
+    height: auto;
     margin-bottom: 5px;
-    color: var(--a-base-5);
-    @include apos-transition();
+    fill: var(--a-text-primary);
+    @include apos-transition($duration: 0.2s);
   }
 
   .apos-media-manager-display__media-drop__instructions {

@@ -116,8 +116,8 @@ export default {
     max-width: 400px;
     padding: 15px 35px 15px 15px;
     border: 1px solid var(--a-base-8);
-    color: var(--a-text-primary);
-    background: var(--a-background-primary);
+    color: var(--a-text-inverted);
+    background: var(--a-background-inverted);
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
 
@@ -153,11 +153,10 @@ export default {
     padding: 20px 10px;
     border: none;
     background-color: transparent;
-    color: var(--a-base-4);
+    color: var(--a-text-inverted);
     @include apos-transition(all);
     &:hover {
       cursor: pointer;
-      color: var(--a-primary-text);
     }
   }
 
@@ -172,7 +171,6 @@ export default {
 
   .apos-notification__label {
     letter-spacing: 0.75px;
-    color: var(--a-text-primary);
   }
 
   .apos-notification__progress {
