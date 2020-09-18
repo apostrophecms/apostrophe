@@ -153,6 +153,9 @@ export default {
   .apos-slat.is-dragging:focus {
     background-color: var(--a-primary);
     color: var(--a-white);
+    &:hover {
+      background-color: var(--a-primary-button-hover);
+    }
   }
 
   .apos-slat-list__item--disabled {
