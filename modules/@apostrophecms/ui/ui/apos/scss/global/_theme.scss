@@ -31,6 +31,7 @@ body {
   --a-base-10: #f4f4f4;
 
   --a-text-primary: #000;
+  --a-text-inverted: #fff;
 
   // Borders
   --a-border-radius: 5px;
@@ -75,9 +76,11 @@ body {
   --a-base-10: #171d24;
 
   --a-background-primary: #0b0b0c;
+  --a-background-inverted: #fff;
   --a-overlay: #0b0b0c90;
 
   --a-text-primary: #fff;
+  --a-text-inverted: #000;
 }
 
 .apos-theme--primary-blue {
