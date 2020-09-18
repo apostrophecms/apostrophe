@@ -7,9 +7,11 @@
       <component
         v-if="fieldState[field.name]"
         v-model="fieldState[field.name]"
-        :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
+        :is="fieldComponentMap[field.type]"
+        :field="fields[field.name].field"
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
+        :doc-id="fieldState._id && fieldState._id.data"
       />
     </div>
   </div>

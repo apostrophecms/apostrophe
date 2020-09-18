@@ -19,6 +19,10 @@ export default {
         return [];
       },
       type: Array
+    },
+    docId: {
+      type: String,
+      default: null
     }
   },
   data () {
@@ -69,6 +73,7 @@ export default {
         data: this.next,
         error: this.validate(this.next)
       });
+      apos.bus.$emit(this.field.name, this.next);
     },
     watchValue () {
       this.error = this.value.error;

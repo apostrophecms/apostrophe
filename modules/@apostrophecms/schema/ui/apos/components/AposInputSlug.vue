@@ -5,38 +5,24 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <textarea
-          :class="classes"
-          v-if="field.textarea" rows="5"
-          v-model="next" :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
-          :id="uid" :tabindex="tabindex"
-        />
         <input
-          v-else :class="classes"
-          v-model="next" :type="type"
-          :placeholder="field.placeholder"
-          @keydown.enter="$emit('return')"
-          :disabled="field.disabled" :required="field.required"
+          type="text"
+          class="apos-input apos-input--text"
+          v-model="next"
+          :disabled="field.disabled"
+          :required="field.required"
           :id="uid" :tabindex="tabindex"
+          @keydown.enter="$emit('return')"
         >
-        <component
-          v-if="icon"
-          :size="iconSize"
-          class="apos-input-icon"
-          :is="icon"
-        />
       </div>
     </template>
   </AposInputWrapper>
 </template>
 
 <script>
-// NOTE: This is a temporary component, copying AposInputString. Base modules
-// already have `type: 'slug'` fields, so this is needed to avoid distracting
-// errors.
 import AposInputMixin from '../mixins/AposInputMixin';
+import slugify from 'sluggo';
+import debounce from 'debounce-async';
 
 export default {
   name: 'AposInputSlug',
@@ -45,29 +31,18 @@ export default {
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
-    },
-    type () {
-      if (this.field.type) {
-        return this.field.type;
-      } else {
-        return 'text';
-      }
-    },
-    classes () {
-      return [ 'apos-input', 'apos-input--text' ];
-    },
-    icon () {
-      if (this.error) {
-        return 'circle-medium-icon';
-      } else if (this.field.type === 'date') {
-        return 'calendar-icon';
-      } else if (this.field.type === 'time') {
-        return 'clock-icon';
-      } else if (this.field.icon) {
-        return this.field.icon;
-      } else {
-        return null;
-      }
+    }
+  },
+  watch: {
+    next(value) {
+      this.checkTaken();
+    }
+  },
+  mounted() {
+    if (this.field.slugifies) {
+      apos.bus.$on(this.field.slugifies, value => {
+        this.next = value ? slugify(value) : '';
+      });
     }
   },
   methods: {
@@ -77,44 +52,56 @@ export default {
           return 'required';
         }
       }
-      if (this.field.min) {
-        if (value.length && (value.length < this.field.min)) {
-          return 'min';
-        }
-      }
-      if (this.field.max) {
-        if (value.length && (value.length > this.field.max)) {
-          return 'max';
-        }
-      }
       return false;
+    },
+    async checkTaken() {
+      if (!this.debouncedTaken) {
+        this.debouncedTaken = debounce(() => apos.http.post(
+          `${apos.doc.action}/slug-taken`, {
+            busy: true,
+            body: {
+              slug: this.next,
+              _id: this.docId
+            }
+          }
+        ), 250);
+      }
+
+      const result = await this.debouncedTaken().catch(e => {
+        if (e === 'canceled') { // debouncer canceled it, no worries
+          return;
+        }
+        console.error(e);
+      });
+
+      if (result && result.status === 'taken') {
+        await this.deduplicate();
+      }
+    },
+    async deduplicate() {
+      if (!this.debouncedDeduplicate) {
+        this.debouncedDeduplicate = debounce(() => apos.http.post(
+          `${apos.doc.action}/deduplicate-slug`, {
+            busy: true,
+            body: {
+              slug: this.next,
+              _id: this.docId
+            }
+          }
+        ), 250);
+      }
+
+      const result = await this.debouncedDeduplicate().catch(e => {
+        if (e === 'canceled') { // debouncer canceled it, no worries
+          return;
+        }
+        console.error(e);
+      });
+
+      if (result && result.status === 'ok') {
+        this.next = result.slug;
+      }
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-  .apos-input--date,
-  .apos-input--time {
-    // lame magic number ..
-    // height of date/time input is slightly larger than others due to the browser spinner ui
-    height: 46px;
-  }
-  .apos-input--date {
-    // padding is lessend to overlap with calendar UI
-    padding-right: $input-padding * 1.4;
-    &::-webkit-calendar-picker-indicator { opacity: 0; }
-    &::-webkit-clear-button {
-      position: relative;
-      right: 5px;
-    }
-  }
-  .apos-input--time {
-    padding-right: $input-padding * 2.5;
-  }
-
-  .apos-field--small .apos-input--date,
-  .apos-field--small .apos-input--time {
-    height: 33px;
-  }
-</style>
