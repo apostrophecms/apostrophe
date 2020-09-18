@@ -157,7 +157,6 @@ export default {
     @include apos-transition(all);
     &:hover {
       cursor: pointer;
-      // color: var(--a-text-inverted);
     }
   }
 
