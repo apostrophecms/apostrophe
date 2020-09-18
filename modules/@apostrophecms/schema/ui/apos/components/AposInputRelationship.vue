@@ -22,15 +22,6 @@
             type="input"
             @click="chooser=true"
           />
-          <AposPiecesManager
-            v-if="chooser"
-            :module-name="field.withType"
-            :initially-selected-items="items"
-            :field="field"
-            :relationship="true"
-            @updated="updated"
-            @safe-close="chooser=false"
-          />
         </div>
         <AposSlatList
           v-if="items.length"
@@ -44,7 +35,17 @@
           :selected-items="items"
         />
       </div>
-
+    </template>
+    <template #secondary>
+      <AposPiecesManager
+        v-if="chooser"
+        :module-name="field.withType"
+        :initially-selected-items="items"
+        :field="field"
+        :relationship="true"
+        @updated="updated"
+        @safe-close="chooser=false"
+      />
       <AposRelationshipEditor
         v-if="relationshipSchema"
         :schema="relationshipSchema"
