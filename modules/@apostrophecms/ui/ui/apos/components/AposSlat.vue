@@ -152,7 +152,10 @@ export default {
   .apos-slat.sortable-chosen:focus,
   .apos-slat.is-dragging:focus {
     background-color: var(--a-primary);
-    color: var(--a-white);
+    &,
+    /deep/ .apos-button {
+      color: var(--a-white);
+    }
     &:hover {
       background-color: var(--a-primary-button-hover);
     }
@@ -200,6 +203,7 @@ export default {
   }
 
   .apos-slat__size {
+    line-height: 1.4;
     margin-right: 5px;
   }
 
