@@ -1,0 +1,6 @@
+<h3>Product Widget Template</h3>
+{{ apos.log(data.widget) }}
+{{ data.widget._pieces.length }}
+{% for piece in data.widget._pieces %}
+  <h4>{{ piece.title }}</h4>
+{% endfor %}

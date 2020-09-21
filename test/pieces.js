@@ -693,7 +693,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: 'product',
-              selected: 'automatically'
+              selection: 'automatically'
             }
           ]
         }
@@ -701,7 +701,6 @@ describe('Pieces', function() {
     });
     const response = await apos.http.get('/');
     assert(response);
-    console.log(response);
     assert(!response.match(/Cool Product #1/));
     assert(!response.match(/Cool Product #2/));
   });
@@ -719,8 +718,9 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: 'product',
-              selected: 'automatically',
-              articlesIds: [ relatedArticleId ]
+              selection: 'automatically',
+              articlesIds: [ relatedArticleId ],
+              shown: 5
             }
           ]
         }
@@ -728,6 +728,8 @@ describe('Pieces', function() {
     });
     const response = await apos.http.get('/');
     assert(response);
+    console.log('***');
+    console.log(response);
     assert(response.match(/Product Key Product With Relationship/));
     assert(!response.match(/Cool Product #1/));
   });
