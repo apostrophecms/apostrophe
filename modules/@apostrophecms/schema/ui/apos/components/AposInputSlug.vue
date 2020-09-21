@@ -37,8 +37,7 @@ export default {
     next(value) {
       this.checkTaken();
     },
-    followsValue(newVal, oldVal) {
-      console.log('newVal', newVal, 'oldVal', oldVal)
+    followsValue(oldVal, newVal) {
       this.next = newVal ? slugify(newVal) : '';
     }
   },
