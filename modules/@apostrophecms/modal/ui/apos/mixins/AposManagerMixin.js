@@ -17,10 +17,10 @@ export default {
       return this.checked.length > 0 ? { data: [ 'checked' ] } : { data: [] };
     },
     selectAllChoice() {
-      const checkLen = this.checked.length;
-      const rowLen = this.rows.length;
+      const checkCount = this.checked.length;
+      const itemCount = this.items.length;
 
-      return checkLen > 0 && checkLen !== rowLen ? {
+      return checkCount > 0 && checkCount !== itemCount ? {
         value: 'checked',
         indeterminate: true
       } : {
@@ -29,7 +29,7 @@ export default {
     }
   },
   watch: {
-    rows: function(newValue) {
+    items: function(newValue) {
       if (newValue.length) {
         this.generateUi();
       }
@@ -49,14 +49,14 @@ export default {
     },
     selectAll(event) {
       if (!this.checked.length) {
-        this.rows.forEach((row) => {
-          this.toggleRowCheck(row._id);
-          this.updateSelectedItems({ target: { id: row._id } });
+        this.items.forEach((item) => {
+          this.toggleRowCheck(item._id);
+          this.updateSelectedItems({ target: { id: item._id } });
         });
         return;
       }
 
-      if (this.checked.length <= this.rows.length) {
+      if (this.checked.length <= this.items.length) {
         this.checked.forEach((id) => {
           this.toggleRowCheck(id);
         });
@@ -93,23 +93,23 @@ export default {
         }
       });
       this.icons = icons;
-      // prep row checkbox fields
+      // prep item checkbox fields
     },
     generateCheckboxes () {
       const checkboxes = {};
-      this.rows.forEach((row) => {
-        checkboxes[row._id] = {
+      this.items.forEach((item) => {
+        checkboxes[item._id] = {
           status: {},
           value: {
             data: []
           },
-          choice: { value: row._id },
+          choice: { value: item._id },
           field: {
-            name: row._id,
+            name: item._id,
             type: 'checkbox',
             hideLabel: true,
-            label: `Toggle selection of ${row.title}`,
-            disabled: this.field.max && this.checked.length >= this.field.max && !this.checked.includes(row._id)
+            label: `Toggle selection of ${item.title}`,
+            disabled: this.field.max && this.checked.length >= this.field.max && !this.checked.includes(item._id)
           }
         };
       });

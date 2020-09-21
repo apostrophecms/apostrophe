@@ -21,7 +21,7 @@
         </template>
         <template #bodyMain>
           <AposTree
-            :rows="rows"
+            :items="items"
             :headers="headers" :icons="icons"
             v-model="checked"
             :options="treeOptions"
@@ -89,8 +89,8 @@ export default {
     };
   },
   computed: {
-    rows() {
-      const rows = [];
+    items() {
+      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
@@ -105,10 +105,10 @@ export default {
           data._id = page._id;
           data.children = page.children;
         });
-        rows.push(data);
+        items.push(data);
       });
 
-      return rows;
+      return items;
     },
     selectAllState() {
       if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {

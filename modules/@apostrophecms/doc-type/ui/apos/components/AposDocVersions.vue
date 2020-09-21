@@ -20,7 +20,7 @@
       <AposModalBody>
         <template #bodyMain>
           <AposTree
-            :rows="rows" :headers="headers"
+            :items="rows" :headers="headers"
             :icons="icons" :options="treeOptions"
             v-model="selected"
           />

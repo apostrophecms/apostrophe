@@ -52,10 +52,10 @@
         </template>
         <template #bodyMain>
           <AposPiecesManagerView
-            v-if="rows.length > 0"
+            v-if="items.length > 0"
             :checkboxes="checkboxes"
             :headers="headers"
-            :rows="rows"
+            :items="items"
             v-model="checked"
             @open="openEditor"
             @updated="updateSelectedItems"
@@ -150,8 +150,8 @@ export default {
       const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },
-    rows() {
-      const rows = [];
+    items() {
+      const items = [];
       if (!this.pieces || !this.headers.length) {
         return [];
       }
@@ -163,10 +163,10 @@ export default {
           data[column.name] = piece[column.name];
           data._id = piece._id;
         });
-        rows.push(data);
+        items.push(data);
       });
 
-      return rows;
+      return items;
     },
     emptyDisplay() {
       return {
@@ -187,7 +187,7 @@ export default {
   },
   watch: {
     // TEMP From Table Mixin:
-    // rows: function(newValue) {
+    // items: function(newValue) {
     //   if (newValue.length) {
     //     this.generateUi();
     //   }
