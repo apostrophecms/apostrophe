@@ -36,12 +36,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalParentMixin, AposTableMixin ],
+  mixins: [ AposModalParentMixin, AposManagerMixin ],
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {

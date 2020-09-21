@@ -32,12 +32,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
 import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocVersions',
-  mixins: [ AposModalParentMixin, AposTableMixin ],
+  mixins: [ AposModalParentMixin, AposManagerMixin ],
   props: {
     doc: {
       type: Object,

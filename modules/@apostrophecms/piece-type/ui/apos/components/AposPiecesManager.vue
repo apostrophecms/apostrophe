@@ -78,12 +78,12 @@
 </template>
 
 <script>
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposTableMixin, AposModalParentMixin ],
+  mixins: [ AposManagerMixin, AposModalParentMixin ],
   props: {
     // TEMP From Table Mixin:
     // headers
@@ -113,7 +113,7 @@ export default {
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
-      // TEMP From Table Mixin:
+      // TEMP From Manager Mixin:
       // icons: {},
       // checkboxes: {},
       // checked: [] <== OVERIDDEN BELOW
@@ -132,7 +132,7 @@ export default {
       queryExtras: {},
       holdQueries: false,
       selectedItems: this.initiallySelectedItems,
-      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposTableMixin.js
+      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposManagerMixin.js
     };
   },
   computed: {
