@@ -36,14 +36,10 @@ export default {
   watch: {
     next(value) {
       this.checkTaken();
-    }
-  },
-  mounted() {
-    //TODO: use "follows"
-    if (this.field.slugifies) {
-      apos.bus.$on(this.field.slugifies, value => {
-        this.next = value ? slugify(value) : '';
-      });
+    },
+    followsValue(newVal, oldVal) {
+      console.log('newVal', newVal, 'oldVal', oldVal)
+      this.next = newVal ? slugify(newVal) : '';
     }
   },
   methods: {

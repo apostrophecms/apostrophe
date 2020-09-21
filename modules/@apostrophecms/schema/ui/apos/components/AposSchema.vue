@@ -12,7 +12,7 @@
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :doc-id="fieldState._id && fieldState._id.data"
-        :follows-value="fields[field.name].field.follows && fieldState[fields[field.name].field.follows].data"
+        :follows-value="fields[field.name].field.follows && value.data[fields[field.name].field.follows]"
       />
     </div>
   </div>
