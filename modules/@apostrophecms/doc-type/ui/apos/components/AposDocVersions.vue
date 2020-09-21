@@ -131,6 +131,7 @@ export default {
       // After a confirmation step, this should also trigger `cancel`.
       console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
+    // TODO: Confirm we still need this `openEditor`. It doesn't seem used.
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
     },

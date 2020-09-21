@@ -73,14 +73,6 @@ export default {
       }
     },
 
-    getEl(header) {
-      if (header.action) {
-        return 'button';
-      } else {
-        return 'span';
-      }
-    },
-
     sort(action) {
       this.$emit('sort', action);
     },

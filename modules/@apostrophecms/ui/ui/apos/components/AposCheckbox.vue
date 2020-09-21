@@ -38,7 +38,7 @@ export default {
   },
   props: {
     checked: {
-      type: [Array, Boolean],
+      type: [ Array, Boolean ],
       default: false
     },
     choice: {
@@ -58,7 +58,7 @@ export default {
       default: null
     }
   },
-  emits: ['change', 'updated'],
+  emits: [ 'change', 'updated' ],
   data() {
     return {
       tabindex: this.field.disableFocus ? '-1' : '0'

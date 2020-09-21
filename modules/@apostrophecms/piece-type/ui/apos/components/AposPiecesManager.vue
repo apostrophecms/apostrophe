@@ -51,74 +51,15 @@
           />
         </template>
         <template #bodyMain>
-          <table class="apos-table" v-if="rows.length > 0">
-            <tbody>
-              <tr>
-                <th class="apos-table__header" />
-                <th
-                  v-for="header in headers" scope="col"
-                  class="apos-table__header" :key="header.label"
-                >
-                  <component
-                    :is="getEl(header)" @click="sort(header.action)"
-                    class="apos-table__header-label"
-                  >
-                    <component
-                      v-if="header.labelIcon"
-                      :is="icons[header.labelIcon]"
-                      :size="iconSize(header)"
-                      class="apos-table__header-icon"
-                    />
-                    {{ header.label }}
-                  </component>
-                </th>
-              </tr>
-              <tr
-                class="apos-table__row"
-                v-for="row in rows"
-                :key="row._id"
-                :class="{'is-selected': false }"
-              >
-                <td class="apos-table__cell">
-                  <AposCheckbox
-                    v-if="checkboxes[row._id]"
-                    :field="checkboxes[row._id].field"
-                    :value="checkboxes[row._id].value.data"
-                    :status="checkboxes[row._id].status"
-                    :choice="checkboxes[row._id].choice"
-                    :id="row._id"
-                    v-model="checked"
-                    @updated="updateSelectedItems"
-                  />
-                </td>
-                <td
-                  class="apos-table__cell" v-for="header in headers"
-                  :key="row[header.name]"
-                >
-                  <a
-                    v-if="header.name === 'url'" class="apos-table__link"
-                    :href="row[header.name]"
-                  >
-                    <LinkIcon :size="12" />
-                  </a>
-                  <button
-                    v-else-if="header.name === 'title'"
-                    @click="openEditor(row._id)"
-                    class="apos-table__cell-field"
-                    :class="`apos-table__cell-field--${header.name}`"
-                  >
-                    {{ row[header.name] }}
-                  </button>
-                  <p
-                    v-else class="apos-table__cell-field"
-                    :class="`apos-table__cell-field--${header.name}`"
-                  >
-                    {{ row[header.name] }}
-                  </p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <AposPiecesManagerView
+            v-if="rows.length > 0"
+            :checkboxes="checkboxes"
+            :headers="headers"
+            :rows="rows"
+            v-model="checked"
+            @open="openEditor"
+            @updated="updateSelectedItems"
+          />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
           </div>
@@ -144,6 +85,10 @@ export default {
   name: 'AposPiecesManager',
   mixins: [ AposTableMixin, AposModalParentMixin ],
   props: {
+    // TEMP From Table Mixin:
+    // headers
+    // selectAllValue
+    // selectAllChoice
     moduleName: {
       type: String,
       required: true
@@ -168,6 +113,10 @@ export default {
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
+      // TEMP From Table Mixin:
+      // icons: {},
+      // checkboxes: {},
+      // checked: [] <== OVERIDDEN BELOW
       modal: {
         active: false,
         type: 'overlay',
@@ -237,6 +186,12 @@ export default {
     }
   },
   watch: {
+    // TEMP From Table Mixin:
+    // rows: function(newValue) {
+    //   if (newValue.length) {
+    //     this.generateUi();
+    //   }
+    // }
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
@@ -257,6 +212,14 @@ export default {
     this.getPieces();
   },
   methods: {
+    // TEMP From Table Mixin:
+    // toggleRowCheck
+    // selectAll
+    // iconSize
+    // sort
+    // generateUi
+    // generateIcons
+    // generateCheckboxes
     async finishSaved() {
       await this.getPieces();
     },
