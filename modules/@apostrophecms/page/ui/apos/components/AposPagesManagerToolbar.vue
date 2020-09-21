@@ -7,7 +7,7 @@
       <AposButton
         label="Select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
-        @click="$emit('select-click')" :icon-color="iconColor"
+        @click="$emit('select-click')"
       />
       <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
       <AposButton
@@ -46,7 +46,7 @@ export default {
       }
     }
   },
-  emits: ['trash-click', 'select-click'],
+  emits: [ 'trash-click', 'select-click' ],
   data() {
     return {
       more: {
@@ -83,13 +83,6 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
-    },
-    iconColor() {
-      if (this.selectedState === 'checked' || this.selectedState === 'indeterminate') {
-        return 'var(--a-primary)';
-      }
-
-      return null;
     }
   },
   methods: {

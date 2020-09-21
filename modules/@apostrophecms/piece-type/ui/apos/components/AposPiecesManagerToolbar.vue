@@ -4,7 +4,7 @@
       <AposButton
         label="Select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
-        @click="$emit('select-click')" :icon-color="iconColor"
+        @click="$emit('select-click')"
       />
       <AposTagApply :tags="applyTags" :apply-to="[]" />
       <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
@@ -109,13 +109,6 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
-    },
-    iconColor() {
-      if (this.selectedState === 'checked' || this.selectedState === 'indeterminate') {
-        return 'var(--a-primary)';
-      }
-
-      return null;
     }
   },
   methods: {
