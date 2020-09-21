@@ -39,6 +39,7 @@ export default {
     }
   },
   mounted() {
+    //TODO: use "follows"
     if (this.field.slugifies) {
       apos.bus.$on(this.field.slugifies, value => {
         this.next = value ? slugify(value) : '';

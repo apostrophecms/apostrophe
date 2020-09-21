@@ -54,7 +54,7 @@
           name: 'slug',
           label: 'Slug',
           required: true,
-          slugifies: 'title',
+          follows: 'title',
           group: {
             name: 'utility',
             label: 'Utility'

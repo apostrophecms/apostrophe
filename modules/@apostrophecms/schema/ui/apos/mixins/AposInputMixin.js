@@ -23,6 +23,10 @@ export default {
     docId: {
       type: String,
       default: null
+    },
+    followsValue: {
+      type: String,
+      default: null
     }
   },
   data () {
