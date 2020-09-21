@@ -119,7 +119,8 @@ module.exports = {
             _groups: {
               type: 'relationship',
               label: 'Groups',
-              withType: '@apostrophecms/group'
+              idsStorage: 'groupIds',
+              withType: '@apostrophecms/group',
             }
           }
         )

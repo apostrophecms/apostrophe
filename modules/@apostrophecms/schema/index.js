@@ -1722,6 +1722,7 @@ module.exports = {
               }
               // Allow options to the getter to be specified in the schema,
               // notably editable: true
+
               await self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
               _.each(_objects, function (object) {
                 if (object[subname]) {
