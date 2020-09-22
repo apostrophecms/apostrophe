@@ -25,10 +25,12 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposMediaManagerToolbar
-            v-if="!!media.length"
-            :checked="checked" :media="media"
+          <AposPiecesManagerToolbar
+            v-if="!!items.length"
+            :checked="checked" :media="items"
+            :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
+            :filters="options.filters" :labels="moduleLabels"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
@@ -38,7 +40,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            :media="media"
+            :media="items"
             :module-options="options"
             @edit="updateEditing"
             v-model="checked"
@@ -76,10 +78,11 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalParentMixin ],
+  mixins: [ AposModalParentMixin, AposManagerMixin ],
   props: {
     moduleName: {
       type: String,
@@ -89,7 +92,7 @@ export default {
   emits: [ 'safe-close', 'trash', 'save', 'search' ],
   data() {
     return {
-      media: [],
+      items: [],
       totalPages: 1,
       currentPage: 1,
       tagList: [],
@@ -100,7 +103,7 @@ export default {
       },
       editing: null,
       uploading: false,
-      checked: [],
+      // checked: [], // In AposManagerMixin
       lastSelected: null,
       emptyDisplay: {
         title: 'No Media Found',
@@ -113,8 +116,23 @@ export default {
     options() {
       return window.apos.modules[this.moduleName];
     },
+    moduleLabels() {
+      return {
+        singular: this.options.label,
+        plural: this.options.pluralLabel
+      };
+    },
     selected() {
-      return this.media.filter(item => this.checked.includes(item._id));
+      return this.items.filter(item => this.checked.includes(item._id));
+    },
+    selectAllState() {
+      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
+        return 'checked';
+      }
+      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
+        return 'indeterminate';
+      }
+      return 'empty';
     }
   },
   watch: {
@@ -150,14 +168,14 @@ export default {
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      this.media = getResponse.results;
+      this.items = getResponse.results;
     },
     async updateMedia () {
       this.updateEditing(null);
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
-      this.media.unshift({
+      this.items.unshift({
         _id: cuid(),
         title: 'placeholder image',
         dimensions
@@ -172,7 +190,7 @@ export default {
       this.editing = null;
     },
     updateEditing(id) {
-      this.editing = this.media.find(item => item._id === id);
+      this.editing = this.items.find(item => item._id === id);
     },
 
     // select setters
@@ -204,8 +222,8 @@ export default {
         return;
       }
 
-      let beginIndex = this.media.findIndex(item => item._id === this.lastSelected);
-      let endIndex = this.media.findIndex(item => item._id === id);
+      let beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
+      let endIndex = this.items.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
 
       if (direction < 0) {
@@ -214,7 +232,7 @@ export default {
         endIndex++;
       }
 
-      const sliced = this.media.slice(beginIndex, endIndex);
+      const sliced = this.items.slice(beginIndex, endIndex);
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
@@ -228,14 +246,14 @@ export default {
 
     // Toolbar handlers
     selectClick() {
-      if (this.checked.length === this.media.length) {
+      if (this.checked.length === this.items.length) {
         // unselect all
         this.clearSelected();
       } else {
         // select all
-        this.checked = this.media.map(item => item._id);
+        this.checked = this.items.map(item => item._id);
         this.editing = null;
-        this.lastSelected = this.media[this.media.length - 1]._id;
+        this.lastSelected = this.items[this.items.length - 1]._id;
       }
     },
     async updatePage(num) {
