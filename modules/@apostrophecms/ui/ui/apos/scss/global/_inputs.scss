@@ -7,8 +7,6 @@
   }
 }
 
-$input-color-disabled: var(--a-base-4);
-
 @mixin apos-input() {
   width: 100%;
   border: 1px solid var(--a-base-8);
