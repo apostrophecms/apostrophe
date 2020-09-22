@@ -25,7 +25,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPiecesManagerToolbar
+          <AposDocManagerToolbar
             v-if="!!items.length"
             :checked="checked" :media="items"
             :selected-state="selectAllState"

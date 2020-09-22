@@ -13,7 +13,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPiecesManagerToolbar
+          <AposDocManagerToolbar
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"

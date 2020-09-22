@@ -39,7 +39,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPiecesManagerToolbar
+          <AposDocManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
