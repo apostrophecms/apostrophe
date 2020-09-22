@@ -12,9 +12,9 @@
         class="apos-area-widget-controls apos-area-widget__label"
         :class="ui.labels"
       >
-        <span class="apos-area-widget__type">
+        <p class="apos-area-widget__type">
           {{ widgetLabel }}
-        </span>
+        </p>
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
@@ -432,18 +432,20 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    bottom: calc(100% + #{$offset-0} + 2px);
+    bottom: calc(100% + #{$offset-0});
     left: $offset-0;
+    display: flex;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-size: map-get($font-sizes, meta);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
-    bottom: calc(100% + #{$offset-1} + 2px);
+    bottom: calc(100% + #{$offset-1});
   }
 
   .apos-area-widget__type {
+    margin: 0;
     padding: 2px 4px;
     background-color: var(--a-primary);
     color: var(--a-white);
