@@ -54,8 +54,6 @@
           <AposPiecesManagerView
             v-if="items.length > 0"
             :items="items"
-
-            :checkboxes="checkboxes"
             :headers="headers"
             v-model="checked"
             @open="openEditor"
@@ -117,7 +115,6 @@ export default {
     return {
       // TEMP From Manager Mixin:
       // icons: {},
-      // checkboxes: {},
       // checked: [] <== OVERIDDEN BELOW
       modal: {
         active: false,

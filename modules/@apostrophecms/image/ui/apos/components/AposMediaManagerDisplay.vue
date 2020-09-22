@@ -39,11 +39,9 @@
           v-show="item._id !== 'placeholder'"
           :field="{
             name: item._id,
-            type: 'checkbox',
             hideLabel: true,
             label: `Toggle selection of ${item.title}`
           }"
-          :status="{}"
           :choice="{ value: item._id }"
           v-model="checkedProxy"
         />

@@ -50,13 +50,11 @@
               class="apos-tree__row__checkbox"
               tabindex="-1"
               :field="{
-                name: `${col.name}-${index}`,
-                type: 'checkbox',
+                name: row._id,
                 hideLabel: true,
                 label: `Toggle selection of ${row.title}`,
                 disableFocus: true
               }"
-              :status="{}"
               :choice="{ value: row._id }"
               v-model="checkedProxy"
             />

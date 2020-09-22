@@ -29,12 +29,16 @@
       >
         <td class="apos-table__cell">
           <AposCheckbox
-            v-if="checkboxes[item._id]"
-            :field="checkboxes[item._id].field"
-            :value="checkboxes[item._id].value.data"
-            :status="checkboxes[item._id].status"
-            :choice="checkboxes[item._id].choice"
-            :id="item._id"
+            v-if="item._id"
+            :field="{
+              name: item._id,
+              hideLabel: true,
+              label: `Toggle selection of ${item.title}`,
+              // TODO: Refactor this.field out to relationship manager.
+              disabled: field && field.max && checked.length >= field.max &&
+                !checked.includes(item._id)
+            }"
+            :choice="{ value: item._id }"
             v-model="checkProxy"
             @updated="emitUpdated"
           />
@@ -76,10 +80,6 @@ export default {
     event: 'change'
   },
   props: {
-    checkboxes: {
-      type: Object,
-      required: true
-    },
     headers: {
       type: Array,
       required: true

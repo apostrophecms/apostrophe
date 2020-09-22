@@ -179,25 +179,6 @@ export default {
       // We'll hit a route here to update the docs.
       console.info('CHANGED ROW:', obj);
     },
-    generateCheckboxes () {
-      const checkboxes = {};
-      this.pagesFlat.forEach((row) => {
-        checkboxes[row.id] = {
-          status: {},
-          value: {
-            data: []
-          },
-          choice: { value: row.id },
-          field: {
-            name: row.id,
-            type: 'checkbox',
-            hideLabel: true,
-            label: `Toggle selection of ${row.title}`
-          }
-        };
-      });
-      this.checkboxes = checkboxes;
-    },
     setBusy(val) {
       apos.bus.$emit('busy', val);
     },

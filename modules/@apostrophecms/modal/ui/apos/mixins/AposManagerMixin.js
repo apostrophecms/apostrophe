@@ -5,7 +5,6 @@ export default {
   data() {
     return {
       icons: {},
-      checkboxes: {},
       checked: []
     };
   },
@@ -39,12 +38,8 @@ export default {
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(item => item !== id);
-        if (this.checkboxes[id]) {
-          this.checkboxes[id].value.data = this.checkboxes[id] && [];
-        }
       } else {
         this.checked.push(id);
-        this.checkboxes[id].value.data = [ 'checked' ];
       }
     },
     selectAll(event) {
@@ -78,7 +73,6 @@ export default {
     },
     generateUi () {
       this.generateIcons();
-      this.generateCheckboxes();
     },
     generateIcons () {
       // fetch all icons used in table headers
@@ -94,29 +88,6 @@ export default {
       });
       this.icons = icons;
       // prep item checkbox fields
-    },
-    generateCheckboxes () {
-      const checkboxes = {};
-      this.items.forEach((item) => {
-        checkboxes[item._id] = {
-          status: {},
-          value: {
-            data: []
-          },
-          choice: { value: item._id },
-          field: {
-            name: item._id,
-            type: 'checkbox',
-            hideLabel: true,
-            label: `Toggle selection of ${item.title}`,
-            // TODO: Refactor this.field out to relationship manager.
-            disabled: this.field && this.field.max &&
-              this.checked.length >= this.field.max &&
-              !this.checked.includes(item._id)
-          }
-        };
-      });
-      this.checkboxes = checkboxes;
     }
   }
 };
