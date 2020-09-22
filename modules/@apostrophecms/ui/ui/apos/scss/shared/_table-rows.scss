@@ -1,0 +1,40 @@
+.apos-tree__cell {
+  display: inline-flex;
+  flex-shrink: 2;
+  padding: $cell-padding;
+  border-bottom: 1px solid var(--a-base-8);
+  box-sizing: border-box;
+}
+
+// Let the title cell column grow.
+span.apos-tree__cell:first-of-type {
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+.apos-tree__row-data {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.apos-tree__cell__icon {
+  display: inline-flex;
+  align-items: flex-start;
+  margin-right: 10px;
+  padding-top: 0.2em;
+
+  /deep/ .material-design-icon__svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .apos-tree__cell--icon & /deep/ .material-design-icon__svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .apos-tree__cell--icon & {
+    padding-top: 0;
+  }
+}
