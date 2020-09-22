@@ -13,10 +13,14 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPagesManagerToolbar
+          <AposPiecesManagerToolbar
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
+            :options="{
+              noSearch: true,
+              noPager: true
+            }"
           />
         </template>
         <template #bodyMain>

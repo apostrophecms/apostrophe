@@ -21,14 +21,17 @@
     </template>
     <template #rightControls>
       <AposPager
+        v-if="!options.noPager"
         @click="registerPageChange" @change="registerPageChange"
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
+        v-if="filters.length > 0"
         :filters="filters"
         @input="filter"
       />
       <AposInputString
+        v-if="!options.noSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -68,7 +71,15 @@ export default {
     },
     labels: {
       type: Object,
-      required: true
+      default () {
+        return {};
+      }
+    },
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     }
   },
   emits: [
@@ -97,7 +108,7 @@ export default {
       searchField: {
         field: {
           name: 'search',
-          placeholder: `Search ${this.labels.plural}`,
+          placeholder: `Search ${this.labels.plural || ''}`,
           icon: 'magnify-icon',
           enterSubmittable: true
         },
