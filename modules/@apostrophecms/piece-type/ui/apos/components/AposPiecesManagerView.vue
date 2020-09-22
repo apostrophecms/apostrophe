@@ -35,12 +35,12 @@
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
               // TODO: Refactor this.field out to relationship manager.
-              disabled: field && field.max && checked.length >= field.max &&
+              disabled: field.max && checked.length >= field.max &&
                 !checked.includes(item._id)
             }"
             :choice="{ value: item._id }"
             v-model="checkProxy"
-            @updated="emitUpdated"
+            @updated="emitUpdated(item._id)"
           />
         </td>
         <td
@@ -92,6 +92,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    field: {
+      type: Object,
+      default() {
+        return {};
       }
     }
   },

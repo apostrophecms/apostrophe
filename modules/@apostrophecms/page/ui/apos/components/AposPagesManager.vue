@@ -30,7 +30,7 @@
             v-model="checked"
             :options="treeOptions"
             @update="update" @busy="setBusy"
-            @edit="openEditor"
+            @open="openEditor"
           />
         </template>
       </AposModalBody>

@@ -56,6 +56,7 @@
             :items="items"
             :headers="headers"
             v-model="checked"
+            :field="field"
             @open="openEditor"
             @updated="updateSelectedItems"
           />
@@ -306,12 +307,15 @@ export default {
       this.$emit('updated', items);
     },
     // NOTE: move this into the new AposRelationshipManager in the refactor
-    updateSelectedItems(event) {
+    updateSelectedItems(itemId) {
       if (!this.relationship) {
         return;
       }
       if (this.checked.length > this.selectedItems.length) {
-        const piece = this.pieces.find(piece => piece._id === event.target.id);
+        const piece = this.pieces.find(piece => {
+          return piece._id === itemId;
+        });
+
         if (this.field.max) {
           if (this.selectedItems.length < this.field.max) {
             this.selectedItems.push(piece);
@@ -320,7 +324,9 @@ export default {
           this.selectedItems.push(piece);
         }
       } else {
-        this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
+        this.selectedItems = this.selectedItems.filter(item => {
+          return item._id !== itemId;
+        });
       }
       this.checked = this.selectedItems.map(item => item._id);
       this.$emit('updated', this.selectedItems);
