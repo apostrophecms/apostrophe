@@ -21,7 +21,6 @@
         :widget="widget"
         :i="i"
         :options="options"
-        :editing="editing"
         :next="next"
         :doc-id="docId"
         :context-options="contextOptions"

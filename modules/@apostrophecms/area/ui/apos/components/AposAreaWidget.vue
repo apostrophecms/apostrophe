@@ -50,9 +50,9 @@
         />
       </div>
       <component
-        v-if="editing[widget._id]"
-        @save="editing[widget._id] = false"
-        @close="editing[widget._id] = false"
+        v-if="editing"
+        @save="editing = false"
+        @close="editing = false"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="update"
@@ -130,12 +130,6 @@ export default {
         return {};
       }
     },
-    editing: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
     next: {
       type: Array,
       required: true
@@ -184,7 +178,8 @@ export default {
       show: 'apos-show',
       open: 'apos-open',
       focus: 'apos-focus',
-      highlight: 'apos-highlight'
+      highlight: 'apos-highlight',
+      editing: false
     };
   },
   computed: {
@@ -324,9 +319,11 @@ export default {
       this.$emit('remove', i);
     },
     edit(i) {
+      this.editing = true;
       this.$emit('edit', i);
     },
     update(widget) {
+      this.editing = false;
       this.$emit('update', widget);
     },
     insert(e) {
