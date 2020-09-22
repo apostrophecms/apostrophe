@@ -34,17 +34,20 @@
         :key="generateId(item._id)"
         :class="{'is-selected': checked.includes(item._id)}"
       >
-        <AposCheckbox
-          class="apos-media-manager-display__checkbox"
-          v-show="item._id !== 'placeholder'"
-          :field="{
-            name: item._id,
-            hideLabel: true,
-            label: `Toggle selection of ${item.title}`
-          }"
-          :choice="{ value: item._id }"
-          v-model="checkedProxy"
-        />
+        <div class="apos-media-manager-display__checkbox">
+          <AposCheckbox
+            v-show="item._id !== 'placeholder'"
+            tabindex="-1"
+            :field="{
+              name: item._id,
+              hideLabel: true,
+              label: `Toggle selection of ${item.title}`,
+              disableFocus: true
+            }"
+            :choice="{ value: item._id }"
+            v-model="checkedProxy"
+          />
+        </div>
         <button
           :disabled="item._id === 'placeholder'"
           class="apos-media-manager-display__select"
@@ -336,19 +339,13 @@ export default {
     position: absolute;
     top: -6px;
     left: -6px;
+    opacity: 0;
     @include apos-transition();
   }
 
-  .apos-input-indicator {
-    .apos-media-manager-display__checkbox /deep/ & {
-      opacity: 0;
-    }
-
-    .apos-media-manager-display__checkbox /deep/ .apos-input--checkbox:focus + &,
-    .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox /deep/ &,
-    .apos-media-manager-display__cell.is-selected .apos-media-manager-display__checkbox /deep/ & {
-      opacity: 1;
-    }
+  .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
+  .apos-media-manager-display__cell.is-selected .apos-media-manager-display__checkbox {
+    opacity: 1;
   }
 
   .apos-media-manager-display__media,
