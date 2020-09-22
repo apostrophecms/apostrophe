@@ -21,7 +21,7 @@
         :class="ui.addTop"
       >
         <AposAreaMenu
-          @add="insert"
+          @add="$emit('insert', $event);"
           @menu-open="menuFocus('top')"
           @menu-close="menuUnfocus('top')"
           :context-options="contextOptions"
@@ -36,8 +36,8 @@
         <AposWidgetMove
           :first="i === 0"
           :last="i === next.length - 1"
-          @up="up(i)"
-          @down="down(i)"
+          @up="$emit('up', i);"
+          @down="$emit('down', i);"
         />
       </div>
       <div
@@ -45,31 +45,31 @@
         :class="ui.modify"
       >
         <AposWidgetModify
-          @remove="remove(i)"
-          @edit="edit(i)"
+          @remove="$emit('remove', i);"
+          @edit="$emit('edit', i);"
         />
       </div>
       <component
-        v-if="editing"
-        @save="editing = false"
-        @close="editing = false"
+        v-if="isEditing"
+        @save="$emit('done', widget)"
+        @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
-        @update="update"
+        @update="$emit('update', widget);"
         :options="options.widgets[widget.type]"
         :type="widget.type"
         :doc-id="docId"
         data-apos-widget
       />
       <component
-        v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))"
+        v-if="(!isEditing) || (!widgetIsContextual(widget.type))"
         :is="widgetComponent(widget.type)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
         :id="widget._id"
         :area-field-id="fieldId"
         :value="widget"
-        @edit="edit(i)"
+        @edit="$emit('edit', i);"
         :doc-id="docId"
         data-apos-widget
       />
@@ -78,7 +78,7 @@
         :class="ui.addBottom"
       >
         <AposAreaMenu
-          @add="insert"
+          @add="$emit('insert', $event)"
           :context-options="contextOptions"
           :index="i + 1"
           :widget-options="options.widgets"
@@ -99,6 +99,12 @@ import klona from 'klona';
 export default {
   name: 'AposAreaWidget',
   props: {
+    editing: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     widgetHovered: {
       type: String,
       default: null
@@ -143,7 +149,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     const initialState = {
       move: {
@@ -178,11 +184,13 @@ export default {
       show: 'apos-show',
       open: 'apos-open',
       focus: 'apos-focus',
-      highlight: 'apos-highlight',
-      editing: false
+      highlight: 'apos-highlight'
     };
   },
   computed: {
+    isEditing() {
+      return this.editing[this.widget._id] ? this.editing[this.widget._id] : false;
+    },
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
@@ -306,28 +314,6 @@ export default {
 
     resetState() {
       this.state = klona(this.blankState);
-    },
-
-    // events to emit
-    up(i) {
-      this.$emit('up', i);
-    },
-    down(i) {
-      this.$emit('down', i);
-    },
-    remove(i) {
-      this.$emit('remove', i);
-    },
-    edit(i) {
-      this.editing = true;
-      this.$emit('edit', i);
-    },
-    update(widget) {
-      this.editing = false;
-      this.$emit('update', widget);
-    },
-    insert(e) {
-      this.$emit('insert', e);
     },
 
     widgetComponent(type) {

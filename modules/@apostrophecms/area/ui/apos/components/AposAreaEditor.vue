@@ -20,6 +20,7 @@
         :key="widget._id"
         :widget="widget"
         :i="i"
+        :editing="editing"
         :options="options"
         :next="next"
         :doc-id="docId"
@@ -27,10 +28,12 @@
         :field-id="fieldId"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
+        @done="done"
         @up="up"
         @down="down"
         @remove="remove"
         @edit="edit"
+        @close="close"
         @update="update"
         @insert="insert"
       />
@@ -234,6 +237,16 @@ export default {
         widget,
         ...this.next.slice(index + 1)
       ];
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
+    async close(widget) {
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
+    async done(widget) {
       if (!this.widgetIsContextual(widget.type)) {
         this.editing[widget._id] = false;
       }
