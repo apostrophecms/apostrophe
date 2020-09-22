@@ -39,7 +39,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposDocManagerToolbar
+          <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
@@ -78,12 +78,12 @@
 </template>
 
 <script>
-import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposManagerMixin, AposModalParentMixin ],
+  mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
   props: {
     // TEMP From Table Mixin:
     // headers
@@ -132,7 +132,7 @@ export default {
       queryExtras: {},
       holdQueries: false,
       selectedItems: this.initiallySelectedItems,
-      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposManagerMixin.js
+      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposDocsManagerMixin.js
     };
   },
   computed: {

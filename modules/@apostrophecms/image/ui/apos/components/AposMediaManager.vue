@@ -25,7 +25,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposDocManagerToolbar
+          <AposDocsManagerToolbar
             v-if="!!items.length"
             :checked="checked" :media="items"
             :selected-state="selectAllState"
@@ -79,11 +79,11 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalParentMixin, AposManagerMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   props: {
     moduleName: {
       type: String,
@@ -104,7 +104,7 @@ export default {
       },
       editing: null,
       uploading: false,
-      // checked: [], // In AposManagerMixin
+      // checked: [], // In AposDocsManagerMixin
       lastSelected: null,
       emptyDisplay: {
         title: 'No Media Found',

@@ -13,7 +13,7 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposDocManagerToolbar
+          <AposDocsManagerToolbar
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
@@ -40,12 +40,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposManagerMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalParentMixin, AposManagerMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
