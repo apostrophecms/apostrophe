@@ -40,7 +40,8 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            :media="items"
+            :items="items"
+
             :module-options="options"
             @edit="updateEditing"
             v-model="checked"

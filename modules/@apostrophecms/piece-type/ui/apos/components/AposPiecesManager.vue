@@ -53,9 +53,10 @@
         <template #bodyMain>
           <AposPiecesManagerView
             v-if="items.length > 0"
+            :items="items"
+
             :checkboxes="checkboxes"
             :headers="headers"
-            :items="items"
             v-model="checked"
             @open="openEditor"
             @updated="updateSelectedItems"
