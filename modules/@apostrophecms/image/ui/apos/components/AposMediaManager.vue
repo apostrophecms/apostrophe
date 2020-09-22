@@ -27,7 +27,6 @@
         <template #bodyHeader>
           <AposDocsManagerToolbar
             v-if="!!items.length"
-            :checked="checked" :media="items"
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
