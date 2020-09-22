@@ -1,5 +1,5 @@
 <template>
-  <AposModalToolbar class-name="apos-pieces-manager-toolbar">
+  <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
         label="Select" :icon-only="true"
@@ -71,7 +71,13 @@ export default {
       required: true
     }
   },
-  emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],
+  emits: [
+    'trash-click',
+    'select-click',
+    'filter',
+    'search',
+    'page-change'
+  ],
   data() {
     return {
       more: {
@@ -139,7 +145,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-pieces-manager-toolbar /deep/ .apos-field-search {
+  .apos-manager-toolbar /deep/ .apos-field-search {
     width: 250px;
   }
 </style>

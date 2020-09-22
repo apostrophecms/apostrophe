@@ -2,7 +2,7 @@
   NOTE: Mostly based on aposPiecesManagerToolbar. Possibly could be combined.
 */
 <template>
-  <AposModalToolbar class-name="apos-pieces-manager-toolbar">
+  <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
         label="Select" :icon-only="true"

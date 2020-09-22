@@ -103,6 +103,7 @@ export default {
         return [];
       }
     },
+    // TODO: Refactor `field` out to relationship manager.
     field: {
       type: Object,
       default() {

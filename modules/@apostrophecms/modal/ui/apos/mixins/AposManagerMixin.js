@@ -109,7 +109,10 @@ export default {
             type: 'checkbox',
             hideLabel: true,
             label: `Toggle selection of ${item.title}`,
-            disabled: this.field.max && this.checked.length >= this.field.max && !this.checked.includes(item._id)
+            // TODO: Refactor this.field out to relationship manager.
+            disabled: this.field && this.field.max &&
+              this.checked.length >= this.field.max &&
+              !this.checked.includes(item._id)
           }
         };
       });
