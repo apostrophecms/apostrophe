@@ -174,15 +174,6 @@ export default {
         message: '',
         emoji: '📄'
       };
-    },
-    selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
-        return 'checked';
-      }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
-        return 'indeterminate';
-      }
-      return 'empty';
     }
   },
   watch: {

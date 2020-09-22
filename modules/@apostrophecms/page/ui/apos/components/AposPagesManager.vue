@@ -114,15 +114,6 @@ export default {
 
       return items;
     },
-    selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
-        return 'checked';
-      }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
-        return 'indeterminate';
-      }
-      return 'empty';
-    },
     selectAllChoice() {
       const checkLen = this.checked.length;
       const rowLen = this.pagesFlat.length;

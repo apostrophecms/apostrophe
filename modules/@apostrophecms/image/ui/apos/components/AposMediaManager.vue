@@ -103,7 +103,6 @@ export default {
       },
       editing: null,
       uploading: false,
-      // checked: [], // In AposDocsManagerMixin
       lastSelected: null,
       emptyDisplay: {
         title: 'No Media Found',
@@ -124,15 +123,6 @@ export default {
     },
     selected() {
       return this.items.filter(item => this.checked.includes(item._id));
-    },
-    selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
-        return 'checked';
-      }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
-        return 'indeterminate';
-      }
-      return 'empty';
     }
   },
   watch: {
