@@ -120,7 +120,7 @@ module.exports = {
               type: 'relationship',
               label: 'Groups',
               idsStorage: 'groupIds',
-              withType: '@apostrophecms/group',
+              withType: '@apostrophecms/group'
             }
           }
         )
