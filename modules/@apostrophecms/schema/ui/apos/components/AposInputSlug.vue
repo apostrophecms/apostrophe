@@ -112,7 +112,7 @@ export default {
       }
     },
     manuallyInput() {
-      this.manuallyModified = true;
+      this.manuallyModified = this.next !== slugify(this.followsValue);
     }
   }
 };
