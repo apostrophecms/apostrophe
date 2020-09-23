@@ -77,6 +77,7 @@ export default {
         data: this.next,
         error: this.validate(this.next)
       });
+      this.$store.commit('modifyDoc', { [this.field.name]: this.next });
     },
     watchValue () {
       this.error = this.value.error;

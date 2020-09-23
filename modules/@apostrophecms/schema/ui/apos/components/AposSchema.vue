@@ -14,14 +14,11 @@
         :doc-id="fieldState._id && fieldState._id.data"
         :follows-value="fields[field.name].field.follows && value.data[fields[field.name].field.follows]"
       />
-      <!-- TODO: pass initial value? -->
-      <!-- question: why does new title is not taken into consideration in the doc but it is taken into consideration in slug? -->
     </div>
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'AposSchema',
   props: {
@@ -117,6 +114,7 @@ export default {
   },
   mounted() {
     this.populateDocData();
+    this.$store.commit('setDoc', this.next.data);
   },
   methods: {
     populateDocData() {

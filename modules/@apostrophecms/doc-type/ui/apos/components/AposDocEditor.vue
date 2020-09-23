@@ -200,7 +200,7 @@ export default {
       try {
         await requestMethod(route, {
           busy: true,
-          body: this.doc.data
+          body: this.$store.state.doc
         });
         this.$emit('saved');
 
