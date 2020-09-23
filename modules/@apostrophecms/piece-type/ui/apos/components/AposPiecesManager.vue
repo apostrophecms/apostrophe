@@ -112,8 +112,10 @@ export default {
         plural: this.options.pluralLabel
       };
     },
+    // TODO: possibly move moduleTitle into manager mixin.
     moduleTitle () {
-      return `Manage ${this.moduleLabels.plural}`;
+      const verb = this.relationshipField ? 'Choose' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
     },
     items() {
       const items = [];

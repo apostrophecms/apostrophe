@@ -11,7 +11,7 @@ export default {
   decorators: [ withKnobs ]
 };
 
-export const relationshipInput = () => {
+export const piecesRelationship = () => {
 
   const max = select(
     'Limit', {
@@ -49,6 +49,49 @@ export const relationshipInput = () => {
         },
         value: {
           data: getData(prepopulate)
+        },
+        status: {
+          disabled: isDisabled
+        }
+      };
+    },
+    template: `
+      <AposInputRelationship
+        :field="field"
+        :value="value"
+        :status="status"
+      />`
+  };
+};
+
+export const mediaRelationship = () => {
+
+  const max = select(
+    'Limit', {
+      None: null,
+      One: 1,
+      Two: 2,
+      Three: 3
+    },
+    null
+  );
+
+  const isDisabled = boolean('Is Disabled?', false);
+
+  return {
+    components: { AposInputRelationship },
+    data () {
+      return {
+        field: {
+          name: 'imgJoin',
+          label: 'Choose image(s) to display',
+          help: 'Choose image(s)',
+          type: 'join',
+          withType: '@apostrophecms/image',
+          max
+        },
+        value: {
+          data: []
         },
         status: {
           disabled: isDisabled

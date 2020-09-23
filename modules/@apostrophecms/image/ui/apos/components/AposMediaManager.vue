@@ -6,12 +6,22 @@
 
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Media"
+    :modal="modal" :modal-title="moduleTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
-    <template #primaryControls>
+    <template v-if="relationshipField" #primaryControls>
+      <AposButton
+        type="default" label="Cancel"
+        @click="cancel"
+      />
+      <AposButton
+        :label="`Save`" type="primary"
+        @click="saveRelationship"
+      />
+    </template>
+    <template v-else #primaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -112,6 +122,10 @@ export default {
     };
   },
   computed: {
+    moduleTitle () {
+      const verb = this.relationshipField ? 'Choose' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
+    },
     options() {
       return window.apos.modules[this.moduleName];
     },
