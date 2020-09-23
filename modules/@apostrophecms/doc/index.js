@@ -198,24 +198,40 @@ module.exports = {
         await self.db.createIndex({ updatedAt: -1 }, {});
         await self.db.createIndex({ published: 1 }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
-        await self.ensureTextIndex();
+        await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});
       },
-      async ensureTextIndex() {
-        return self.db.createIndex({
-          highSearchText: 'text',
-          lowSearchText: 'text',
-          title: 'text',
-          searchBoost: 'text'
-        }, {
-          default_language: self.options.searchLanguage || 'none',
-          weights: {
-            title: 100,
-            searchBoost: 150,
-            highSearchText: 10,
-            lowSearchText: 2
+      async createTextIndex() {
+        try {
+          return await attempt();
+        } catch (e) {
+          // We are experiencing what may be a mongodb bug in which these indexes
+          // have different weights than expected and the createIndex call fails.
+          // If this happens drop and recreate the text index
+          if (e.toString().match(/with different options/)) {
+            self.apos.util.warn('Text index has unexpected weights or other misconfiguration, reindexing');
+            await self.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
+            return await attempt();
+          } else {
+            throw e;
           }
-        });
+        }
+        function attempt() {
+          return self.db.createIndex({
+            highSearchText: 'text',
+            lowSearchText: 'text',
+            title: 'text',
+            searchBoost: 'text'
+          }, {
+            default_language: self.options.searchLanguage || 'none',
+            weights: {
+              title: 100,
+              searchBoost: 150,
+              highSearchText: 10,
+              lowSearchText: 2
+            }
+          });
+        }
       },
       async ensurePathLevelIndex() {
         const params = self.getPathLevelIndexParams();

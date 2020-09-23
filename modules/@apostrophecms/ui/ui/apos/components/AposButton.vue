@@ -1,6 +1,6 @@
 <template>
   <button
-    @click="click"
+    @click="click($event)"
     class="apos-button"
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
@@ -37,6 +37,10 @@ export default {
       default() {
         return [];
       }
+    },
+    iconSize: {
+      type: Number,
+      default: 15
     },
     disabled: Boolean,
     busy: Boolean,
@@ -130,8 +134,8 @@ export default {
     }
   },
   methods: {
-    click() {
-      this.$emit('click');
+    click($event) {
+      this.$emit('click', $event);
     }
   }
 };
@@ -400,8 +404,14 @@ export default {
 }
 
 .apos-button--group {
-  background-color: transparent;
+  background-color: var(--a-background-primary);
   border: none;
+  &:hover {
+    background-color: var(--a-base-9);
+  }
+  &:focus {
+    background-color: var(--a-base-8);
+  }
 }
 
 .apos-button--busy {
@@ -418,6 +428,10 @@ export default {
   .apos-button__icon {
     margin-right: 0;
   }
+}
+
+.apos-button--icon.apos-button--small {
+  padding: 7.5px 10px;
 }
 
 .apos-button__label {
