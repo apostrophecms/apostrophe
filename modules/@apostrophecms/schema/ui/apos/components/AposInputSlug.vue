@@ -13,6 +13,7 @@
           :required="field.required"
           :id="uid" :tabindex="tabindex"
           @keydown.enter="$emit('return')"
+          @input="manuallyInput"
         >
       </div>
     </template>
@@ -28,6 +29,11 @@ export default {
   name: 'AposInputSlug',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  data () {
+    return {
+      manuallyModified: false
+    };
+  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -38,7 +44,14 @@ export default {
       this.checkTaken();
     },
     followsValue(oldVal, newVal) {
-      this.next = newVal ? slugify(newVal) : '';
+      if (!this.manuallyModified) {
+        this.next = newVal ? slugify(newVal) : '';
+      }
+    }
+  },
+  mounted() {
+    if (this.next !== slugify(this.followsValue)) {
+      this.manuallyModified = true;
     }
   },
   methods: {
@@ -97,6 +110,9 @@ export default {
       if (result && result.status === 'ok') {
         this.next = result.slug;
       }
+    },
+    manuallyInput() {
+      this.manuallyModified = true;
     }
   }
 };

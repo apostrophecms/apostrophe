@@ -12,7 +12,10 @@ export const store = new Vuex.Store({
       state.doc = payload;
     },
     modifyDoc (state, payload) {
-      state.doc = { ...state.doc, ...payload };
+      state.doc = {
+        ...state.doc,
+        ...payload
+      };
     }
   },
   getters: {},
