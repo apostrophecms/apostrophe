@@ -55,7 +55,7 @@
         @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
-        @update="$emit('update', widget);"
+        @update="$emit('update', $event)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
         :doc-id="docId"
