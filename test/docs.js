@@ -597,4 +597,26 @@ describe('Docs', function() {
     }
   });
 
+  it('should be able to recover if the text index weights are mysteriously wrong at startup', async function() {
+    await apos.doc.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
+    await apos.doc.db.createIndex({
+      highSearchText: 'text',
+      lowSearchText: 'text',
+      title: 'text',
+      searchBoost: 'text'
+    }, {
+      default_language: 'none',
+      weights: {
+        // These are the weird weights we've seen when this
+        // mystery bug crops up, flunking createIndex on a
+        // later startup
+        title: 1,
+        searchBoost: 1,
+        highSearchText: 1,
+        lowSearchText: 1
+      }
+    });
+    await apos.doc.createTextIndex();
+  });
+
 });

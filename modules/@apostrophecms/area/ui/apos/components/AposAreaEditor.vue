@@ -1,58 +1,42 @@
 <template>
-  <div class="apos-area">
-    <AposAreaMenu
-      @add="insert"
-      :menu="choices"
-      tip-alignment="left"
-      :index="0"
-      :widget-options="options.widgets"
-    />
+  <div :data-apos-area="areaId" class="apos-area">
+    <div
+      v-if="next.length === 0"
+      class="apos-empty-area"
+    >
+      <AposEmptyState :empty-state="emptyState" />
+      <AposAreaMenu
+        @add="insert"
+        :context-options="contextOptions"
+        :empty="true"
+        :index="0"
+        :widget-options="options.widgets"
+      />
+    </div>
     <div class="apos-areas-widgets-list">
-      <div
-        class="apos-area-widget-wrapper"
+      <AposAreaWidget
         v-for="(widget, i) in next"
+        :area-id="areaId"
         :key="widget._id"
-      >
-        <AposWidgetMove
-          :first="i === 0"
-          :last="i === next.length - 1"
-          @up="up(i)"
-          @down="down(i)"
-        />
-        <AposWidgetModify
-          @remove="remove(i)"
-          @edit="edit(i)"
-        />
-        <component
-          v-if="editing[widget._id]"
-          @save="editing[widget._id] = false"
-          @close="editing[widget._id] = false"
-          :is="widgetEditorComponent(widget.type)"
-          :value="widget"
-          @update="update"
-          :options="options.widgets[widget.type]"
-          :type="widget.type"
-          :doc-id="docId"
-        />
-        <component
-          v-if="(!editing[widget._id]) || (!widgetIsContextual(widget.type))"
-          :is="widgetComponent(widget.type)"
-          :options="options.widgets[widget.type]"
-          :type="widget.type"
-          :doc-id="docId"
-          :id="widget._id"
-          :area-field-id="fieldId"
-          :value="widget"
-          @edit="edit(i)"
-        />
-        <AposAreaMenu
-          @add="insert"
-          :menu="choices"
-          tip-alignment="left"
-          :index="i + 1"
-          :widget-options="options.widgets"
-        />
-      </div>
+        :widget="widget"
+        :i="i"
+        :editing="editing[widget._id] || false"
+        :options="options"
+        :next="next"
+        :doc-id="docId"
+        :context-options="contextOptions"
+        :field-id="fieldId"
+        :widget-hovered="hoveredWidget"
+        :widget-focused="focusedWidget"
+        @done="done"
+        @up="up"
+        @down="down"
+        @remove="remove"
+        @edit="edit"
+        @close="close"
+        @update="update"
+        @insert="insert"
+      />
     </div>
   </div>
 </template>
@@ -101,8 +85,18 @@ export default {
   emits: [ 'changed' ],
   data() {
     return {
+      areaId: cuid(),
       next: this.items,
-      editing: {}
+      editing: {},
+      hoveredWidget: null,
+      focusedWidget: null,
+      contextOptions: {
+        autoPosition: false,
+        menu: this.choices
+      },
+      emptyState: {
+        message: 'Add your content here'
+      }
     };
   },
   computed: {
@@ -149,14 +143,24 @@ export default {
         }
       };
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
+      apos.bus.$on('widget-hover', this.updateWidgetHovered);
+      apos.bus.$on('widget-focus', this.updateWidgetFocused);
     }
   },
   beforeDestroy() {
     if (this.areaUpdatedHandler) {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
+      apos.bus.$on('widget-hover', this.updateWidgetHovered);
+      apos.bus.$on('widget-focus', this.updateWidgetFocused);
     }
   },
   methods: {
+    updateWidgetHovered(widgetId) {
+      this.hoveredWidget = widgetId;
+    },
+    updateWidgetFocused(widgetId) {
+      this.focusedWidget = widgetId;
+    },
     async up(i) {
       if (this.docId) {
         await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
@@ -237,6 +241,16 @@ export default {
         this.editing[widget._id] = false;
       }
     },
+    async close(widget) {
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
+    async done(widget) {
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
     async insert(e) {
       const widget = e.widget;
       if (!widget._id) {
@@ -303,14 +317,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-area {
-  margin: 5px;
-  padding: 5px;
-  border: 2px solid var(--a-brand-green);
-}
-
-.apos-areas-widgets-list {
-  min-height: 64px;
+.apos-empty-area {
+  display: flex;
+  padding: 30px;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 50px;
+  background-color: var(--a-base-10);
+  border: 2px dotted var(--a-primary);
 }
 
 .apos-area-widget-wrapper {
