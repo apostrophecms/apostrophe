@@ -50,7 +50,7 @@
         />
       </div>
       <component
-        v-if="isEditing"
+        v-if="editing"
         @save="$emit('done', widget)"
         @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
@@ -62,7 +62,7 @@
         data-apos-widget
       />
       <component
-        v-if="(!isEditing) || (!widgetIsContextual(widget.type))"
+        v-if="(!editing) || (!widgetIsContextual(widget.type))"
         :is="widgetComponent(widget.type)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
@@ -100,10 +100,8 @@ export default {
   name: 'AposAreaWidget',
   props: {
     editing: {
-      type: Object,
-      default() {
-        return {};
-      }
+      type: Boolean,
+      default: false
     },
     widgetHovered: {
       type: String,
@@ -188,9 +186,6 @@ export default {
     };
   },
   computed: {
-    isEditing() {
-      return this.editing[this.widget._id] ? this.editing[this.widget._id] : false;
-    },
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },

@@ -20,7 +20,7 @@
         :key="widget._id"
         :widget="widget"
         :i="i"
-        :editing="editing"
+        :editing="editing[widget._id] || false"
         :options="options"
         :next="next"
         :doc-id="docId"
