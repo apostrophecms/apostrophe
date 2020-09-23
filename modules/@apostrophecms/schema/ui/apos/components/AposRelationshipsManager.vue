@@ -4,8 +4,7 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template v-if="field.type === 'relationship'" #primaryControls>
-      <!-- TODO: Refactor into AposRelationshipManager -->
+    <template #primaryControls>
       <AposButton
         :label="`New ${ options.label }`" type="default"
         @click="editing = true"
@@ -15,19 +14,7 @@
         @click="cancel"
       />
     </template>
-    <template v-else #primaryControls>
-      <!-- TODO: Refactor into AposPiecesManager -->
-      <AposButton
-        type="default" label="Finished"
-        @click="cancel"
-      />
-      <AposButton
-        :label="`New ${ options.label }`" type="primary"
-        @click="editing = true"
-      />
-    </template>
-
-    <template v-if="relationship" #leftRail>
+    <template #leftRail>
       <AposModalRail>
         <AposSlatList
           @update="updateSlatList"
@@ -44,7 +31,6 @@
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
             @select-click="selectAll"
-            @trash-click="trashClick"
             @search="search"
             @page-change="updatePage"
             @filter="filter"
@@ -82,10 +68,10 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  name: 'AposPiecesManager',
+  name: 'AposRelationshipsManager',
   mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
   props: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // headers
     // selectAllValue
     // selectAllChoice
@@ -93,17 +79,12 @@ export default {
       type: String,
       required: true
     },
-    relationship: {
-      type: Boolean,
-      default: false
-    },
     initiallySelectedItems: {
       type: Array,
       default: function () {
         return [];
       }
     },
-    // TODO: Refactor `field` out to relationship manager.
     field: {
       type: Object,
       default() {
@@ -146,9 +127,7 @@ export default {
       };
     },
     moduleTitle () {
-      // TODO: Refactor for AposRelationshipManager
-      const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
-      return `${verb} ${this.moduleLabels.plural}`;
+      return `Select ${this.moduleLabels.plural}`;
     },
     items() {
       const items = [];
@@ -177,7 +156,7 @@ export default {
     }
   },
   watch: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // items: function(newValue) {
     //   if (newValue.length) {
     //     this.generateUi();
@@ -186,7 +165,7 @@ export default {
     // NOTE: revisit this during refactoring
     checked: function() {
       this.generateUi();
-      if (this.relationship && !this.checked.length) {
+      if (!this.checked.length) {
         this.selectedItems = [];
         this.$emit('updated', this.selectedItems);
       }
@@ -203,7 +182,7 @@ export default {
     this.getPieces();
   },
   methods: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // toggleRowCheck
     // selectAll
     // iconSize
@@ -260,11 +239,6 @@ export default {
       this.editing = false;
       this.editingDocId = '';
     },
-    // Toolbar handlers
-    trashClick() {
-      // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.selected);
-    },
     async search(query) {
       if (query) {
         this.queryExtras.autocomplete = query;
@@ -288,20 +262,12 @@ export default {
 
       this.getPieces();
     },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSlatList(items) {
-      if (!this.relationship) {
-        return;
-      }
       this.selectedItems = items;
       this.checked = items.map(item => item._id);
       this.$emit('updated', items);
     },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
     updateSelectedItems(itemId) {
-      if (!this.relationship) {
-        return;
-      }
       if (this.checked.length > this.selectedItems.length) {
         const piece = this.pieces.find(piece => {
           return piece._id === itemId;
@@ -329,6 +295,8 @@ export default {
 <style lang="scss" scoped>
   // TODO: .apos-pieces-manager__empty is shared with
   // `apos-media-manager__empty`. We should combine somehow.
+  // Maybe move this style to AposEmptyState and make it conditional on being
+  // inside the modal main area.
   .apos-pieces-manager__empty {
     display: flex;
     justify-content: center;

@@ -37,12 +37,11 @@
       </div>
     </template>
     <template #secondary>
-      <AposPiecesManager
+      <AposRelationshipsManager
         v-if="chooser"
         :module-name="field.withType"
         :initially-selected-items="items"
         :field="field"
-        :relationship="true"
         @updated="updated"
         @safe-close="chooser=false"
       />
