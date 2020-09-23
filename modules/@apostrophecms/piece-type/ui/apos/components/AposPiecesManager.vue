@@ -85,7 +85,7 @@ export default {
   name: 'AposPiecesManager',
   mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
   props: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // headers
     // selectAllValue
     // selectAllChoice
@@ -177,7 +177,7 @@ export default {
     }
   },
   watch: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // items: function(newValue) {
     //   if (newValue.length) {
     //     this.generateUi();
@@ -203,7 +203,7 @@ export default {
     this.getPieces();
   },
   methods: {
-    // TEMP From Table Mixin:
+    // TEMP From Manager Mixin:
     // toggleRowCheck
     // selectAll
     // iconSize
