@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-widget-move">
+  <div class="apos-widget-controls apos-widget-move">
     <AposButtonGroup direction="vertical">
       <AposButton
         v-bind="upButton"

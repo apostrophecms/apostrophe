@@ -47,6 +47,7 @@ export default {
 
   .apos-button-group__inner {
     display: flex;
+    overflow: hidden;
     border: 1px solid var(--a-base-5);
     border-radius: var(--a-border-radius);
     color: var(--a-text-primary);
