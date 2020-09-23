@@ -55,7 +55,10 @@ export default {
       if (!this.checked.length) {
         this.items.forEach((item) => {
           this.toggleRowCheck(item._id);
-          this.updateSelectedItems({ target: { id: item._id } });
+          if (this.updateSelectedItems) {
+            // Update selected items in the relationships manager.
+            this.updateSelectedItems(item._id);
+          }
         });
         return;
       }
@@ -66,7 +69,6 @@ export default {
         });
       }
     },
-
     iconSize(header) {
       if (header.icon) {
         if (header.icon === 'Circle') {

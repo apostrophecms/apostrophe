@@ -4,19 +4,7 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template v-if="field.type === 'relationship'" #primaryControls>
-      <!-- TODO: Refactor into AposRelationshipManager -->
-      <AposButton
-        :label="`New ${ options.label }`" type="default"
-        @click="editing = true"
-      />
-      <AposButton
-        type="primary" label="Exit"
-        @click="cancel"
-      />
-    </template>
-    <template v-else #primaryControls>
-      <!-- TODO: Refactor into AposPiecesManager -->
+    <template #primaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -26,16 +14,6 @@
         @click="editing = true"
       />
     </template>
-
-    <template v-if="relationship" #leftRail>
-      <AposModalRail>
-        <AposSlatList
-          @update="updateSlatList"
-          :initial-items="selectedItems" :field="field"
-        />
-      </AposModalRail>
-    </template>
-
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
@@ -56,9 +34,7 @@
             :items="items"
             :headers="headers"
             v-model="checked"
-            :field="field"
             @open="openEditor"
-            @updated="updateSelectedItems"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
@@ -92,23 +68,6 @@ export default {
     moduleName: {
       type: String,
       required: true
-    },
-    relationship: {
-      type: Boolean,
-      default: false
-    },
-    initiallySelectedItems: {
-      type: Array,
-      default: function () {
-        return [];
-      }
-    },
-    // TODO: Refactor `field` out to relationship manager.
-    field: {
-      type: Object,
-      default() {
-        return {};
-      }
     }
   },
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
@@ -130,9 +89,7 @@ export default {
       editing: false,
       editingDocId: '',
       queryExtras: {},
-      holdQueries: false,
-      selectedItems: this.initiallySelectedItems,
-      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposDocsManagerMixin.js
+      holdQueries: false
     };
   },
   computed: {
@@ -146,9 +103,7 @@ export default {
       };
     },
     moduleTitle () {
-      // TODO: Refactor for AposRelationshipManager
-      const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
-      return `${verb} ${this.moduleLabels.plural}`;
+      return `Manage ${this.moduleLabels.plural}`;
     },
     items() {
       const items = [];
@@ -174,22 +129,6 @@ export default {
         message: '',
         emoji: '📄'
       };
-    }
-  },
-  watch: {
-    // TEMP From Manager Mixin:
-    // items: function(newValue) {
-    //   if (newValue.length) {
-    //     this.generateUi();
-    //   }
-    // }
-    // NOTE: revisit this during refactoring
-    checked: function() {
-      this.generateUi();
-      if (this.relationship && !this.checked.length) {
-        this.selectedItems = [];
-        this.$emit('updated', this.selectedItems);
-      }
     }
   },
   created() {
@@ -287,40 +226,6 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
-    },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
-    updateSlatList(items) {
-      if (!this.relationship) {
-        return;
-      }
-      this.selectedItems = items;
-      this.checked = items.map(item => item._id);
-      this.$emit('updated', items);
-    },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
-    updateSelectedItems(itemId) {
-      if (!this.relationship) {
-        return;
-      }
-      if (this.checked.length > this.selectedItems.length) {
-        const piece = this.pieces.find(piece => {
-          return piece._id === itemId;
-        });
-
-        if (this.field.max) {
-          if (this.selectedItems.length < this.field.max) {
-            this.selectedItems.push(piece);
-          }
-        } else {
-          this.selectedItems.push(piece);
-        }
-      } else {
-        this.selectedItems = this.selectedItems.filter(item => {
-          return item._id !== itemId;
-        });
-      }
-      this.checked = this.selectedItems.map(item => item._id);
-      this.$emit('updated', this.selectedItems);
     }
   }
 };
