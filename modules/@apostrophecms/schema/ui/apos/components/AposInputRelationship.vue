@@ -20,30 +20,31 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
-            @click="chooser=true"
+            @click="choosing=true"
           />
         </div>
         <AposSlatList
           v-if="items.length"
-          @update="updated"
+          @update="updateSelected"
           @item-clicked="openRelationshipEditor"
           :initial-items="items"
         />
         <AposSearchList
           :list="searchList"
-          @select="selected"
+          @select="updateSelected"
           :selected-items="items"
         />
       </div>
     </template>
     <template #secondary>
-      <AposRelationshipsManager
-        v-if="chooser"
+      <component
+        :is="chooserComponent"
+        v-if="choosing"
         :module-name="field.withType"
-        :initially-selected-items="items"
-        :field="field"
-        @updated="updated"
-        @safe-close="chooser=false"
+        :selected="items"
+        :relationship-field="field"
+        @chose="updateSelected"
+        @safe-close="choosing=false"
       />
       <AposRelationshipEditor
         v-if="relationshipSchema"
@@ -75,10 +76,9 @@ export default {
     return {
       searchList: [],
       items: this.value.data || this.listItems,
-      lastSearches: {},
       originalDisabled: this.status.disabled,
       searching: false,
-      chooser: false,
+      choosing: false,
       relationshipSchema: null,
       clickedItem: null
     };
@@ -94,6 +94,9 @@ export default {
     // TODO get 'Browse' for better i18n
     browseLabel() {
       return `Browse ${this.pluralLabel}`;
+    },
+    chooserComponent () {
+      return apos.modules[this.field.withType].components.managerModal;
     }
   },
   watch: {
@@ -133,11 +136,7 @@ export default {
 
       return false;
     },
-    updated(items) {
-      this.items = items;
-      this.selected(items);
-    },
-    selected(items) {
+    updateSelected(items) {
       this.items = items;
       this.validateAndEmit();
     },

@@ -4,7 +4,17 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template #primaryControls>
+    <template v-if="relationshipField" #primaryControls>
+      <AposButton
+        type="default" label="Cancel"
+        @click="cancel"
+      />
+      <AposButton
+        :label="`Save`" type="primary"
+        @click="saveRelationship"
+      />
+    </template>
+    <template v-else #primaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"

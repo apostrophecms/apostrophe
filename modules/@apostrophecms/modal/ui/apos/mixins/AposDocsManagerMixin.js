@@ -5,8 +5,21 @@ export default {
   data() {
     return {
       icons: {},
-      checked: []
+      // If passing in selected items from the relationship input, use those
+      // as initially checked.
+      checked: this.selected ? this.selected.map(item => item._id) : []
     };
+  },
+  props: {
+    selected: {
+      type: Array,
+      default: false
+    },
+    // TODO: Disable unchecked checkboxes if hit field.max
+    relationshipField: {
+      type: Object,
+      default: false
+    }
   },
   computed: {
     headers() {
@@ -78,7 +91,6 @@ export default {
         }
       }
     },
-
     sort(action) {
       this.$emit('sort', action);
     },
@@ -99,6 +111,17 @@ export default {
       });
       this.icons = icons;
       // prep item checkbox fields
+    },
+    saveRelationship() {
+      const chosenItems = this.items.filter(item => {
+        return this.checked.includes(item._id);
+      });
+      this.$emit('chose', chosenItems);
+      if (this.cancel) {
+        // DocsManagers must also be modal parents with the
+        // AposModalParentMixin methods available.
+        this.cancel();
+      }
     }
   }
 };
