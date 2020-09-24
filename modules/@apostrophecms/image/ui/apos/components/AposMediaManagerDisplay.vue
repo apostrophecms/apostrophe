@@ -181,10 +181,10 @@ export default {
 
       // TODO: While the upload is working, set an uploading animation.
       this.createPlaceholder(file);
-      await this.insertImage(file, emptyDoc);
+      const image = await this.insertImage(file, emptyDoc);
 
       // When complete, refresh the image grid, with the new images at top.
-      this.$emit('upload-complete');
+      this.$emit('upload-complete', image._id);
 
       // TODO: If uploading one image, when complete, load up the edit schema in the right rail.
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
@@ -259,15 +259,17 @@ export default {
       });
 
       try {
-        await apos.http.post(this.moduleOptions.action, {
+        const imgPiece = await apos.http.post(this.moduleOptions.action, {
           body: imageData
         });
         await apos.notify('Upload Successful', {
           type: 'success',
           dismiss: true
         });
+        return imgPiece;
       } catch (error) {
         await this.notifyErrors(error, 'Upload Error');
+        return {};
       }
     },
     async notifyErrors(error, fallback) {

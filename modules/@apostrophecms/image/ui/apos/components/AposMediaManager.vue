@@ -163,9 +163,14 @@ export default {
         dimensions
       });
     },
-    async completeUploading () {
+    async completeUploading (imgId) {
       this.uploading = false;
       await this.getMedia();
+
+      if (imgId) {
+        this.checked = [ imgId ];
+        this.updateEditing(imgId);
+      }
     },
     clearSelected() {
       this.checked = [];
