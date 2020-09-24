@@ -41,7 +41,7 @@
         :is="chooserComponent"
         v-if="choosing"
         :module-name="field.withType"
-        :selected="items"
+        :chosen="items"
         :relationship-field="field"
         @chose="updateSelected"
         @safe-close="choosing=false"

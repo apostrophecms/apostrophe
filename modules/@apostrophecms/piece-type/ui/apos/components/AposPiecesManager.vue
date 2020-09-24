@@ -11,6 +11,7 @@
       />
       <AposButton
         :label="`Save`" type="primary"
+        :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
     </template>
@@ -36,6 +37,7 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
           />
         </template>
         <template #bodyMain>
@@ -45,6 +47,7 @@
             :headers="headers"
             v-model="checked"
             @open="openEditor"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
@@ -155,7 +158,6 @@ export default {
   },
   methods: {
     // TEMP From Manager Mixin:
-    // toggleRowCheck
     // selectAll
     // iconSize
     // sort
@@ -214,7 +216,7 @@ export default {
     // Toolbar handlers
     trashClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.selected);
+      this.$emit('trash', this.checked);
     },
     async search(query) {
       if (query) {

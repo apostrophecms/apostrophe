@@ -42,14 +42,18 @@
               name: item._id,
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
-              disableFocus: true
+              disableFocus: true,
+              disabled: options.disableUnchecked && !checked.includes(item._id)
             }"
             :choice="{ value: item._id }"
             v-model="checkedProxy"
           />
         </div>
         <button
-          :disabled="item._id === 'placeholder'"
+          :disabled="
+            item._id === 'placeholder' ||
+              (options.disableUnchecked && !checked.includes(item._id))
+          "
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
@@ -109,6 +113,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
       }
     }
   },
@@ -375,7 +385,7 @@ export default {
     }
 
     &[disabled] {
-      cursor: wait;
+      cursor: not-allowed;
     }
   }
 

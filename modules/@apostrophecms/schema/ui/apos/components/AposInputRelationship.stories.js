@@ -23,6 +23,15 @@ export const piecesRelationship = () => {
     null
   );
 
+  const min = select(
+    'Minimum', {
+      None: null,
+      One: 1,
+      Two: 2
+    },
+    null
+  );
+
   const prepopulate = select(
     'Prepopulate', {
       None: 0,
@@ -41,10 +50,11 @@ export const piecesRelationship = () => {
       return {
         field: {
           name: 'myJoin',
-          label: 'Link to A Page',
-          help: 'Choose a page from the joiner to link to it',
+          label: 'Link to a Product',
+          help: 'Choose a product to link to it',
           type: 'join',
           withType: 'product',
+          min,
           max
         },
         value: {
@@ -76,6 +86,15 @@ export const mediaRelationship = () => {
     null
   );
 
+  const min = select(
+    'Minimum', {
+      None: null,
+      One: 1,
+      Two: 2
+    },
+    null
+  );
+
   const isDisabled = boolean('Is Disabled?', false);
 
   return {
@@ -88,6 +107,7 @@ export const mediaRelationship = () => {
           help: 'Choose image(s)',
           type: 'join',
           withType: '@apostrophecms/image',
+          min,
           max
         },
         value: {

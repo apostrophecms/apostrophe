@@ -5,23 +5,38 @@ export default {
   data() {
     return {
       icons: {},
-      // If passing in selected items from the relationship input, use those
+      // If passing in chosen items from the relationship input, use those
       // as initially checked.
-      checked: this.selected ? this.selected.map(item => item._id) : []
+      checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
+        : []
     };
   },
   props: {
-    selected: {
-      type: Array,
+    chosen: {
+      type: [ Array, Boolean ],
       default: false
     },
-    // TODO: Disable unchecked checkboxes if hit field.max
     relationshipField: {
-      type: Object,
+      type: [ Object, Boolean ],
       default: false
     }
   },
   computed: {
+    relationshipErrors() {
+      if (!this.relationshipField) {
+        return false;
+      }
+
+      if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
+        return 'min';
+      }
+
+      if (this.relationshipField.max && this.checked.length >= this.relationshipField.max) {
+        return 'max';
+      }
+
+      return false;
+    },
     headers() {
       return this.options.columns ? this.options.columns : [];
     },
@@ -57,28 +72,21 @@ export default {
     }
   },
   methods: {
-    toggleRowCheck(id) {
-      if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(item => item !== id);
-      } else {
-        this.checked.push(id);
-      }
-    },
-    selectAll(event) {
+    selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {
-          this.toggleRowCheck(item._id);
-          if (this.updateSelectedItems) {
-            // Update selected items in the relationships manager.
-            this.updateSelectedItems(item._id);
+          if (this.relationshipField && this.relationshipErrors === 'max') {
+            return;
           }
+
+          this.checked.push(item._id);
         });
         return;
       }
 
       if (this.checked.length <= this.items.length) {
         this.checked.forEach((id) => {
-          this.toggleRowCheck(id);
+          this.checked = this.checked.filter(item => item !== id);
         });
       }
     },
