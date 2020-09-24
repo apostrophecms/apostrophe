@@ -84,9 +84,13 @@ export default {
   },
   emits: [ 'changed' ],
   data() {
+    const validItems = this.items.filter(item => {
+      return window.apos.modules[`${item.type}-widget`];
+    });
+
     return {
       areaId: cuid(),
-      next: this.items,
+      next: validItems,
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
