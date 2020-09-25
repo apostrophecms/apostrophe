@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.111.5 (2020-10-07)
+
+* Clean up `fs.watch` calls from the nunjucks loader properly when destroying an `apos` object, so that the process can close and/or memory be recovered.
+
 ## 2.111.4 (2020-09-23)
 
 * The `View File` button now accesses the original version of an image, not a scaled version. This was always the intention, but 2.x defaults to the `full` size and we initially missed it. Thanks to Quentin Mouraret for this contribution.
