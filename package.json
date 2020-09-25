@@ -121,6 +121,7 @@
     "vue-eslint-parser": "^7.1.0",
     "vue-loader": "^15.9.3",
     "vue-material-design-icons": "^4.7.1",
+    "vue-popperjs": "^2.3.0",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.6.11",
     "vuedraggable": "^2.24.0",

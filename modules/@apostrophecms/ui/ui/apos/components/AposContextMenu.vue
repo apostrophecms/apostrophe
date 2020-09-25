@@ -6,43 +6,60 @@
   >
     <slot name="prebutton" />
     <!-- TODO refactor buttons to take a single config obj -->
-    <AposButton
-      class="apos-context-menu__btn"
-      @click="buttonClicked($event)"
-      v-bind="button"
-      :state="buttonState"
-      ref="button"
-    />
-    <div
-      class="apos-primary-scrollbar apos-context-menu__popup"
-      :class="{'is-visible': open}" ref="popup"
-      :aria-hidden="open ? 'false' : 'true'"
-      role="dialog" :style="position"
-    >
-      <AposContextMenuTip
-        :align="tipAlignment"
-        :origin="origin"
-      />
-      <div class="apos-context-menu__pane">
-        <slot>
-          <ul class="apos-context-menu__items" v-if="menu">
-            <AposContextMenuItem
-              v-for="item in menu"
-              :key="item.action"
-              :menu-item="item"
-              @clicked="menuItemClicked"
-              :open="open"
-            />
-          </ul>
-        </slot>
+    <Popper trigger="hover" :options="{placement: 'top'}">
+      <div class="popper">
+        Popper Content
       </div>
-    </div>
+
+      <!-- <a href="#" slot="reference" class="top">
+        Topjjjj
+      </a> -->
+      <AposButton
+        class="apos-context-menu__btn"
+        @click="buttonClicked($event)"
+        v-bind="button"
+        :state="buttonState"
+        ref="button"
+        slot="reference"
+      />
+    </Popper>
+    <!-- <Popper trigger="hover">
+      <div
+        class="apos-primary-scrollbar apos-context-menu__popup"
+        :class="{'is-visible': open}" ref="popup"
+        :aria-hidden="open ? 'false' : 'true'"
+        role="dialog" :style="position"
+      >
+        <AposContextMenuTip
+          :align="tipAlignment"
+          :origin="origin"
+        />
+        <div class="apos-context-menu__pane">
+          <slot>
+            <ul class="apos-context-menu__items" v-if="menu">
+              <AposContextMenuItem
+                v-for="item in menu"
+                :key="item.action"
+                :menu-item="item"
+                @clicked="menuItemClicked"
+                :open="open"
+              />
+            </ul>
+          </slot>
+        </div>
+      </div>
+    </Popper> -->
   </div>
 </template>
 
 <script>
+import Popper from 'vue-popperjs';
+import 'vue-popperjs/dist/vue-popper.css';
 export default {
   name: 'AposContextMenu',
+  components: {
+    Popper
+  },
   props: {
     menu: {
       type: Array,
