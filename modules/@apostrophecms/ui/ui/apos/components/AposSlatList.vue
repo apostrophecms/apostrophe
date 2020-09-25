@@ -40,7 +40,9 @@
       </transition-group>
     </draggable>
 
-    <div class="apos-slat-status">{{ message }}</div>
+    <div class="apos-slat-status">
+      {{ message }}
+    </div>
   </div>
 </template>
 
@@ -77,9 +79,6 @@ export default {
       message: null
     };
   },
-  mounted() {
-    this.updateMessage();
-  },
   computed: {
     items() {
       return this.initialItems;
@@ -108,6 +107,9 @@ export default {
     items() {
       this.updateMessage();
     }
+  },
+  mounted() {
+    this.updateMessage();
   },
   methods: {
     engage(id) {
@@ -191,13 +193,14 @@ export default {
     max-width: $input-max-width * 0.75;
   }
 
-  .apos-modal__rail .apos-slat-list {
-    padding: 16px;
-  }
-
-  .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
-    margin-bottom: 8px;
-  }
+  // TODO: Factor this positioning into pieces manager refactor. - AB
+  // .apos-modal__rail .apos-slat-list {
+  //   padding: 16px;
+  // }
+  // TODO: Factor this positioning into pieces manager refactor. - AB
+  // .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
+  //   margin-bottom: 8px;
+  // }
 
   .apos-slat-status {
     text-align: center;
