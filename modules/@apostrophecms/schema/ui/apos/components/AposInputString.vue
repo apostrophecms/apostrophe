@@ -57,6 +57,9 @@ export default {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
         }
+        if (this.field.type === 'string') {
+          return 'text';
+        }
         return this.field.type;
       } else {
         return 'text';
@@ -116,7 +119,7 @@ export default {
           return 'max';
         }
       }
-      if (this.field.type === 'email') {
+      if (this.field.type === 'email' && value) {
         // regex source: https://emailregex.com/
         const matches = value.match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
         if (!matches) {

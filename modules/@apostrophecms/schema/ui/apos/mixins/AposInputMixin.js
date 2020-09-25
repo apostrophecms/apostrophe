@@ -19,7 +19,8 @@ export default {
         return [];
       },
       type: Array
-    }
+    },
+    triggerValidation: Boolean
   },
   data () {
     return {
@@ -33,6 +34,9 @@ export default {
   },
   mounted () {
     this.$el.addEventListener('focusout', this.validateAndEmit);
+    if (this.triggerValidation) {
+      this.validateAndEmit();
+    }
   },
   destroyed () {
     this.$el.removeEventListener('focusout', this.validateAndEmit);

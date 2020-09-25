@@ -34,7 +34,10 @@
             <div class="apos-doc-editor__body">
               <AposSchema
                 v-if="docReady"
-                :schema="schema" :current-fields="currentFields"
+                :key="'schema-body-validation-' + triggerValidation"
+                :schema="schema"
+                :current-fields="currentFields"
+                :trigger-validation="triggerValidation"
                 v-model="doc"
               />
             </div>
@@ -47,7 +50,10 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :schema="schema" :current-fields="utilityFields"
+            :key="'schema-rail-validation-' + triggerValidation"
+            :schema="schema"
+            :current-fields="utilityFields"
+            :trigger-validation="triggerValidation"
             v-model="doc"
             :modifiers="['small', 'inverted']"
           />
@@ -98,7 +104,8 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false
-      }
+      },
+      triggerValidation: false
     };
   },
   computed: {
@@ -184,30 +191,34 @@ export default {
     }
   },
   methods: {
-    async submit() {
-      apos.bus.$emit('busy', true);
+    submit() {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (!this.doc.hasErrors) {
+          apos.bus.$emit('busy', true);
+          let route;
+          let requestMethod;
+          if (this.docId) {
+            route = `${this.moduleOptions.action}/${this.docId}`;
+            requestMethod = apos.http.put;
+          } else {
+            route = this.moduleOptions.action;
+            requestMethod = apos.http.post;
+          }
 
-      let route;
-      let requestMethod;
-      if (this.docId) {
-        route = `${this.moduleOptions.action}/${this.docId}`;
-        requestMethod = apos.http.put;
-      } else {
-        route = this.moduleOptions.action;
-        requestMethod = apos.http.post;
-      }
+          try {
+            await requestMethod(route, {
+              busy: true,
+              body: this.doc.data
+            });
+            this.$emit('saved');
 
-      try {
-        await requestMethod(route, {
-          busy: true,
-          body: this.doc.data
-        });
-        this.$emit('saved');
-
-        this.modal.showModal = false;
-      } finally {
-        apos.bus.$emit('busy', false);
-      }
+            this.modal.showModal = false;
+          } finally {
+            apos.bus.$emit('busy', false);
+          }
+        }
+      });
     },
     async newInstance () {
       const newInstance = await apos.http.post(this.moduleOptions.action, {
