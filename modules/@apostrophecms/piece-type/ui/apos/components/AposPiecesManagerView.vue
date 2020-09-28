@@ -34,9 +34,7 @@
               name: item._id,
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
-              // TODO: Refactor this.field out to relationship manager.
-              disabled: field.max && checked.length >= field.max &&
-                !checked.includes(item._id)
+              disabled: options.disableUnchecked && !checkProxy.includes(item._id)
             }"
             :choice="{ value: item._id }"
             v-model="checkProxy"
@@ -74,6 +72,7 @@
 </template>
 
 <script>
+// TODO: Rename to AposPiecesManagerDisplay
 export default {
   model: {
     prop: 'checked',
@@ -94,7 +93,7 @@ export default {
         return [];
       }
     },
-    field: {
+    options: {
       type: Object,
       default() {
         return {};

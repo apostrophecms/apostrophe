@@ -11,7 +11,7 @@ export default {
   decorators: [ withKnobs ]
 };
 
-export const relationshipInput = () => {
+export const piecesRelationship = () => {
 
   const max = select(
     'Limit', {
@@ -19,6 +19,15 @@ export const relationshipInput = () => {
       One: 1,
       Two: 2,
       Three: 3
+    },
+    null
+  );
+
+  const min = select(
+    'Minimum', {
+      None: null,
+      One: 1,
+      Two: 2
     },
     null
   );
@@ -41,14 +50,68 @@ export const relationshipInput = () => {
       return {
         field: {
           name: 'myJoin',
-          label: 'Link to A Page',
-          help: 'Choose a page from the joiner to link to it',
+          label: 'Link to a Product',
+          help: 'Choose a product to link to it',
           type: 'join',
           withType: 'product',
+          min,
           max
         },
         value: {
           data: getData(prepopulate)
+        },
+        status: {
+          disabled: isDisabled
+        }
+      };
+    },
+    template: `
+      <AposInputRelationship
+        :field="field"
+        :value="value"
+        :status="status"
+      />`
+  };
+};
+
+export const mediaRelationship = () => {
+
+  const max = select(
+    'Limit', {
+      None: null,
+      One: 1,
+      Two: 2,
+      Three: 3
+    },
+    null
+  );
+
+  const min = select(
+    'Minimum', {
+      None: null,
+      One: 1,
+      Two: 2
+    },
+    null
+  );
+
+  const isDisabled = boolean('Is Disabled?', false);
+
+  return {
+    components: { AposInputRelationship },
+    data () {
+      return {
+        field: {
+          name: 'imgJoin',
+          label: 'Choose image(s) to display',
+          help: 'Choose image(s)',
+          type: 'join',
+          withType: '@apostrophecms/image',
+          min,
+          max
+        },
+        value: {
+          data: []
         },
         status: {
           disabled: isDisabled

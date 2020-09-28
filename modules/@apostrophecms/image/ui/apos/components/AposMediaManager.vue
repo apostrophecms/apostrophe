@@ -6,12 +6,23 @@
 
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Media"
+    :modal="modal" :modal-title="moduleTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
-    <template #primaryControls>
+    <template v-if="relationshipField" #primaryControls>
+      <AposButton
+        type="default" label="Cancel"
+        @click="cancel"
+      />
+      <AposButton
+        :label="`Save`" type="primary"
+        :disabled="relationshipErrors === 'min'"
+        @click="saveRelationship"
+      />
+    </template>
+    <template v-else #primaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -30,6 +41,7 @@
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
+            :disable="relationshipErrors === 'min'"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
@@ -40,7 +52,6 @@
           <AposMediaManagerDisplay
             ref="display"
             :items="items"
-
             :module-options="options"
             @edit="updateEditing"
             v-model="checked"
@@ -50,6 +61,7 @@
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
           />
         </template>
       </AposModalBody>
@@ -112,6 +124,10 @@ export default {
     };
   },
   computed: {
+    moduleTitle () {
+      const verb = this.relationshipField ? 'Choose' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
+    },
     options() {
       return window.apos.modules[this.moduleName];
     },
@@ -236,15 +252,8 @@ export default {
 
     // Toolbar handlers
     selectClick() {
-      if (this.checked.length === this.items.length) {
-        // unselect all
-        this.clearSelected();
-      } else {
-        // select all
-        this.checked = this.items.map(item => item._id);
-        this.editing = null;
-        this.lastSelected = this.items[this.items.length - 1]._id;
-      }
+      this.selectAll();
+      this.editing = null;
     },
     async updatePage(num) {
       if (num) {
