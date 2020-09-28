@@ -17,6 +17,7 @@
             tabindex="0"
           >
           <AposButton
+            class="apos-input-relationship__button"
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
@@ -24,6 +25,7 @@
           />
         </div>
         <AposSlatList
+          class="apos-input-relationship__items"
           v-if="items.length"
           @update="updateSelected"
           @item-clicked="openRelationshipEditor"
@@ -189,13 +191,24 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+    position: relative;
+
+    .apos-input-relationship__button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      padding: ($input-padding - 5px) $input-padding;
+      font-size: map-get($font-sizes, input);
+
+      &:hover:not([disabled]),
+      &:focus:not([disabled]) {
+        transform: none;
+      }
+    }
   }
 
-  .apos-button {
-    position: absolute;
-    right: 7.5px;
+  .apos-input-relationship__items {
+    max-width: 220px;
+    margin-top: 10px;
   }
 </style>

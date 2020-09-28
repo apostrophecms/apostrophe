@@ -301,6 +301,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  @import '../scss/shared/_table-vars';
+  @import '../scss/shared/_table-rows';
+
+  .apos-tree__list {
+    width: 100%;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style-type: none;
+  }
+
   .apos-tree__row {
     &.is-dragging {
       opacity: 0.5;
@@ -326,7 +337,37 @@ export default {
     }
   }
 
+  .apos-tree__row--parent {
+    position: relative;
+
+    &::before {
+      position: absolute;
+      top: 24px;
+      bottom: 0;
+      left: $row-nested-h-padding / 2;
+      display: block;
+      content: '';
+      background-color: var(--a-base-8);
+      width: 1px;
+      transition: background-color 0.3s ease;
+    }
+
+    &.is-collapsed::before {
+      background-color: transparent;
+    }
+  }
+
+  .apos-tree__row__toggle {
+    @include apos-button-reset();
+    position: absolute;
+    top: 50%;
+    left: -$row-nested-h-padding / 2;
+    background-color: var(--a-background-primary);
+    transform: translate(-50%, -50%);
+  }
+
   .apos-tree__row__toggle-icon {
+    display: block;
     transition: transform 0.3s ease;
     transform: rotate(-90deg) translateY(0.25em);
 
@@ -344,13 +385,13 @@ export default {
       cursor: grabbing;
     }
 
-    .material-design-icon__svg {
+    /deep/ .material-design-icon__svg {
       transition: fill 0.2s ease;
       fill: var(--a-base-8);
     }
 
-    .sortable-chosen & .material-design-icon__svg,
-    &:hover .material-design-icon__svg {
+    .sortable-chosen & /deep/ .material-design-icon__svg,
+    &:hover /deep/ .material-design-icon__svg {
       fill: var(--a-base-2);
     }
   }
@@ -358,5 +399,52 @@ export default {
   .apos-tree__row__checkbox.apos-choice-label {
     align-items: flex-start;
     margin-right: 0.5em;
+  }
+
+  .apos-tree__row {
+    .apos-tree--nested & {
+      padding-left: $row-nested-h-padding;
+    }
+  }
+
+  .apos-tree__row-data {
+    .apos-tree__row--parent .apos-tree__row & {
+      &::before {
+        position: absolute;
+        top: 50%;
+        left: -$row-nested-h-padding * 1.5;
+        display: block;
+        width: 24px;
+        height: 1px;
+        content: '';
+        background-color: var(--a-base-8);
+      }
+    }
+
+    .apos-tree__row--parent > &:first-child {
+      &::before {
+        width: 14px;
+      }
+    }
+  }
+
+  button.apos-tree__cell {
+    @include apos-button-reset();
+    padding: $cell-padding;
+    border-bottom: 1px solid var(--a-base-8);
+  }
+
+  .apos-tree__cell--published {
+    /deep/ .material-design-icon__svg {
+      fill: var(--a-success);
+    }
+
+    &.apos-tree__cell--disabled {
+      color: var(--a-base-2);
+
+      /deep/ .material-design-icon__svg {
+        fill: var(--a-base-2);
+      }
+    }
   }
 </style>

@@ -75,6 +75,7 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing" :selected="selected"
+            :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
           />
           <AposMediaManagerSelections
@@ -132,9 +133,12 @@ export default {
       return window.apos.modules[this.moduleName];
     },
     moduleLabels() {
+      if (!this.options) {
+        return null;
+      }
       return {
-        singular: this.options.label,
-        plural: this.options.pluralLabel
+        label: this.options.label,
+        pluralLabel: this.options.pluralLabel
       };
     },
     selected() {

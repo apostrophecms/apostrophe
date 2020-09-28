@@ -38,9 +38,9 @@
   }
 
   &[disabled] {
-    color: var(--a-base-4);
+    color: $input-color-disabled;
     background: var(--a-base-7);
-    border-color: var(--a-base-4);
+    border-color: $input-color-disabled;
     &:hover {
       cursor: not-allowed;
     }
@@ -160,11 +160,18 @@
   -webkit-appearance: none;
   // stylelint-enable property-no-vendor-prefix
   background-repeat: no-repeat, repeat;
+
   &:hover {
     cursor: pointer;
   }
-  &:hover ~ .apos-input-icon, &:active ~ .apos-input-icon {
+
+  &:hover ~ .apos-input-icon,
+  &:active ~ .apos-input-icon {
     color: var(--a-primary);
+  }
+
+  &[disabled] ~ .apos-input-icon {
+    color: $input-color-disabled;
   }
 }
 
@@ -193,8 +200,8 @@
   }
 
   .apos-input--choice[disabled] + & {
-    border-color: var(--a-base-4);
-    background-color: var(--a-base-4);
+    border-color: $input-color-disabled;
+    background-color: $input-color-disabled;
   }
   .apos-input--choice:checked,
   .apos-input--choice[checked] {

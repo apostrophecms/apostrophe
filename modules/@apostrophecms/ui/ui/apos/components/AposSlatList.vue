@@ -193,13 +193,14 @@ export default {
     max-width: $input-max-width * 0.75;
   }
 
-  .apos-modal__rail .apos-slat-list {
-    padding: 16px;
-  }
-
-  .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
-    margin-bottom: 8px;
-  }
+  // TODO: Factor this positioning into pieces manager refactor. - AB
+  // .apos-modal__rail .apos-slat-list {
+  //   padding: 16px;
+  // }
+  // TODO: Factor this positioning into pieces manager refactor. - AB
+  // .apos-modal__rail .apos-slat-list /deep/ .apos-slat {
+  //   margin-bottom: 8px;
+  // }
 
   .apos-slat-status {
     text-align: center;
