@@ -53,10 +53,6 @@ export default {
       default: null
     },
     iconOnly: Boolean,
-    iconColor: {
-      type: String,
-      default: ''
-    },
     iconSize: {
       type: Number,
       default: 15

@@ -23,11 +23,15 @@ export default {
   props: {
     list: {
       type: Array,
-      default() { return []; }
+      default() {
+        return [];
+      }
     },
     selectedItems: {
       type: Array,
-      default() { return []; }
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'select' ],

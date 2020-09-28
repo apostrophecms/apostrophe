@@ -24,13 +24,13 @@
     >
       <transition-group type="transition" name="apos-flip-list">
         <AposSlat
+          v-for="item in items"
           class="apos-slat-list__item"
           @remove="remove"
           @engage="engage"
           @disengage="disengage"
           @move="move"
           @item-clicked="$emit('item-clicked', item)"
-          v-for="item in items"
           :key="item._id"
           :item="item"
           :class="{'apos-slat-list__item--disabled' : !editable}"

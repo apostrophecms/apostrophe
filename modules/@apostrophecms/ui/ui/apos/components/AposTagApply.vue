@@ -246,6 +246,7 @@ export default {
           type: 'checkbox',
           name: tag.slug
         },
+        // TODO: status and value are not needed.
         status: {},
         value: { data: [] },
         choice: {

@@ -20,7 +20,7 @@
       <AposModalBody>
         <template #bodyMain>
           <AposTree
-            :rows="rows" :headers="headers"
+            :items="rows" :headers="headers"
             :icons="icons" :options="treeOptions"
             v-model="selected"
           />
@@ -32,12 +32,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocVersions',
-  mixins: [ AposModalParentMixin, AposTableMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   props: {
     doc: {
       type: Object,
@@ -131,6 +131,7 @@ export default {
       // After a confirmation step, this should also trigger `cancel`.
       console.info(`Restore version ${this.selected[0]} for doc ${this.doc._id}`);
     },
+    // TODO: Confirm we still need this `openEditor`. It doesn't seem used.
     openEditor(event) {
       console.info('OPEN DOC TO EDIT', event);
     },
