@@ -62,7 +62,6 @@ module.exports = {
             label: 'Both'
           }
         ],
-        allowedInChooser: false,
         def: true
       },
       trash: {
@@ -78,7 +77,6 @@ module.exports = {
             label: 'Trash'
           }
         ],
-        allowedInChooser: false,
         def: false
       }
     }

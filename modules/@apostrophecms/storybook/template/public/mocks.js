@@ -143,7 +143,7 @@
               label: 'Both'
             }
           ],
-          allowedInChooser: false,
+
           def: true,
           inputType: 'radio'
         },
@@ -160,7 +160,7 @@
               label: 'Trash'
             }
           ],
-          allowedInChooser: false,
+
           def: false,
           inputType: 'radio'
         }
@@ -346,7 +346,7 @@
               label: 'Both'
             }
           ],
-          allowedInChooser: false,
+
           def: true,
           style: 'pill'
         },
@@ -363,7 +363,7 @@
               label: 'Trash'
             }
           ],
-          allowedInChooser: false,
+
           def: false,
           style: 'pill'
         }
