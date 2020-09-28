@@ -351,6 +351,7 @@ module.exports = {
         self.filters.forEach(filter => {
           if (
             !filter.required &&
+            filter.choices &&
             !filter.choices.find(choice => choice.value === 'any')
           ) {
             filter.def = 'any';

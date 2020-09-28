@@ -79,6 +79,13 @@ module.exports = {
       }
     }
   },
+  filters: {
+    add: {
+      _tags: {
+        label: 'Tags'
+      }
+    }
+  },
   extendRestApiRoutes: (self, options) => ({
     async getAll (_super, req) {
       const pieces = await _super(req);
