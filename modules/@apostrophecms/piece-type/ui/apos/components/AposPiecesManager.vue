@@ -4,19 +4,18 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template v-if="field.type === 'relationship'" #primaryControls>
-      <!-- TODO: Refactor into AposRelationshipManager -->
+    <template v-if="relationshipField" #primaryControls>
       <AposButton
-        :label="`New ${ options.label }`" type="default"
-        @click="editing = true"
+        type="default" label="Cancel"
+        @click="cancel"
       />
       <AposButton
-        type="primary" label="Exit"
-        @click="cancel"
+        :label="`Save`" type="primary"
+        :disabled="relationshipErrors === 'min'"
+        @click="saveRelationship"
       />
     </template>
     <template v-else #primaryControls>
-      <!-- TODO: Refactor into AposPiecesManager -->
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -26,20 +25,10 @@
         @click="editing = true"
       />
     </template>
-
-    <template v-if="relationship" #leftRail>
-      <AposModalRail>
-        <AposSlatList
-          @update="updateSlatList"
-          :initial-items="selectedItems" :field="field"
-        />
-      </AposModalRail>
-    </template>
-
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPiecesManagerToolbar
+          <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="options.filters" :labels="moduleLabels"
@@ -48,77 +37,18 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
           />
         </template>
         <template #bodyMain>
-          <table class="apos-table" v-if="rows.length > 0">
-            <tbody>
-              <tr>
-                <th class="apos-table__header" />
-                <th
-                  v-for="header in headers" scope="col"
-                  class="apos-table__header" :key="header.label"
-                >
-                  <component
-                    :is="getEl(header)" @click="sort(header.action)"
-                    class="apos-table__header-label"
-                  >
-                    <component
-                      v-if="header.labelIcon"
-                      :is="icons[header.labelIcon]"
-                      :size="iconSize(header)"
-                      class="apos-table__header-icon"
-                    />
-                    {{ header.label }}
-                  </component>
-                </th>
-              </tr>
-              <tr
-                class="apos-table__row"
-                v-for="row in rows"
-                :key="row._id"
-                :class="{'is-selected': false }"
-              >
-                <td class="apos-table__cell">
-                  <AposCheckbox
-                    v-if="checkboxes[row._id]"
-                    :field="checkboxes[row._id].field"
-                    :value="checkboxes[row._id].value.data"
-                    :status="checkboxes[row._id].status"
-                    :choice="checkboxes[row._id].choice"
-                    :id="row._id"
-                    v-model="checked"
-                    @updated="updateSelectedItems"
-                  />
-                </td>
-                <td
-                  class="apos-table__cell" v-for="header in headers"
-                  :key="row[header.name]"
-                >
-                  <a
-                    v-if="header.name === 'url'" class="apos-table__link"
-                    :href="row[header.name]"
-                  >
-                    <LinkIcon :size="12" />
-                  </a>
-                  <button
-                    v-else-if="header.name === 'title'"
-                    @click="openEditor(row._id)"
-                    class="apos-table__cell-field"
-                    :class="`apos-table__cell-field--${header.name}`"
-                  >
-                    {{ row[header.name] }}
-                  </button>
-                  <p
-                    v-else class="apos-table__cell-field"
-                    :class="`apos-table__cell-field--${header.name}`"
-                  >
-                    {{ row[header.name] }}
-                  </p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <AposPiecesManagerView
+            v-if="items.length > 0"
+            :items="items"
+            :headers="headers"
+            v-model="checked"
+            @open="openEditor"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+          />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
           </div>
@@ -137,37 +67,28 @@
 </template>
 
 <script>
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposTableMixin, AposModalParentMixin ],
+  mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
   props: {
+    // TEMP From Manager Mixin:
+    // headers
+    // selectAllValue
+    // selectAllChoice
     moduleName: {
       type: String,
       required: true
-    },
-    relationship: {
-      type: Boolean,
-      default: false
-    },
-    initiallySelectedItems: {
-      type: Array,
-      default: function () {
-        return [];
-      }
-    },
-    field: {
-      type: Object,
-      default() {
-        return {};
-      }
     }
   },
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
+      // TEMP From Manager Mixin:
+      // icons: {},
+      // checked: [] <== OVERIDDEN BELOW
       modal: {
         active: false,
         type: 'overlay',
@@ -181,9 +102,7 @@ export default {
       editing: false,
       editingDocId: '',
       queryExtras: {},
-      holdQueries: false,
-      selectedItems: this.initiallySelectedItems,
-      checked: this.initiallySelectedItems.map(item => item._id) // NOTE: originally set in AposTableMixin.js
+      holdQueries: false
     };
   },
   computed: {
@@ -196,13 +115,13 @@ export default {
         plural: this.options.pluralLabel
       };
     },
+    // TODO: possibly move moduleTitle into manager mixin.
     moduleTitle () {
-      // TODO: Refactor for AposRelationshipManager
-      const verb = this.field.type === 'relationship' ? 'Select' : 'Manage';
+      const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },
-    rows() {
-      const rows = [];
+    items() {
+      const items = [];
       if (!this.pieces || !this.headers.length) {
         return [];
       }
@@ -214,10 +133,10 @@ export default {
           data[column.name] = piece[column.name];
           data._id = piece._id;
         });
-        rows.push(data);
+        items.push(data);
       });
 
-      return rows;
+      return items;
     },
     emptyDisplay() {
       return {
@@ -225,25 +144,6 @@ export default {
         message: '',
         emoji: '📄'
       };
-    },
-    selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
-        return 'checked';
-      }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
-        return 'indeterminate';
-      }
-      return 'empty';
-    }
-  },
-  watch: {
-    // NOTE: revisit this during refactoring
-    checked: function() {
-      this.generateUi();
-      if (this.relationship && !this.checked.length) {
-        this.selectedItems = [];
-        this.$emit('updated', this.selectedItems);
-      }
     }
   },
   created() {
@@ -257,6 +157,13 @@ export default {
     this.getPieces();
   },
   methods: {
+    // TEMP From Manager Mixin:
+    // selectAll
+    // iconSize
+    // sort
+    // generateUi
+    // generateIcons
+    // generateCheckboxes
     async finishSaved() {
       await this.getPieces();
     },
@@ -309,7 +216,7 @@ export default {
     // Toolbar handlers
     trashClick() {
       // TODO: Trigger a confirmation modal and execute the deletion.
-      this.$emit('trash', this.selected);
+      this.$emit('trash', this.checked);
     },
     async search(query) {
       if (query) {
@@ -333,35 +240,6 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
-    },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
-    updateSlatList(items) {
-      if (!this.relationship) {
-        return;
-      }
-      this.selectedItems = items;
-      this.checked = items.map(item => item._id);
-      this.$emit('updated', items);
-    },
-    // NOTE: move this into the new AposRelationshipManager in the refactor
-    updateSelectedItems(event) {
-      if (!this.relationship) {
-        return;
-      }
-      if (this.checked.length > this.selectedItems.length) {
-        const piece = this.pieces.find(piece => piece._id === event.target.id);
-        if (this.field.max) {
-          if (this.selectedItems.length < this.field.max) {
-            this.selectedItems.push(piece);
-          }
-        } else {
-          this.selectedItems.push(piece);
-        }
-      } else {
-        this.selectedItems = this.selectedItems.filter(item => item._id !== event.target.id);
-      }
-      this.checked = this.selectedItems.map(item => item._id);
-      this.$emit('updated', this.selectedItems);
     }
   }
 };

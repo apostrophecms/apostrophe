@@ -62,6 +62,15 @@ export default {
       default() {
         return [];
       }
+    },
+    moduleLabels: {
+      type: Object,
+      default() {
+        return {
+          label: 'Image',
+          pluralLabel: 'Images'
+        };
+      }
     }
   },
   emits: [ 'saved', 'back' ],
@@ -124,8 +133,22 @@ export default {
           busy: true,
           body: this.doc.data
         });
-      } finally {
+
+        await apos.notify(`${this.moduleLabels.label} Saved`, {
+          type: 'success',
+          dismiss: true
+        });
+
         this.$emit('saved');
+      } catch (err) {
+        console.error('Error saving image', err);
+
+        await apos.notify(`Error Saving ${this.moduleLabels.label}`, {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+      } finally {
         apos.bus.$emit('busy', false);
       }
     },

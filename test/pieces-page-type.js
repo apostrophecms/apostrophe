@@ -16,21 +16,21 @@ describe('Pieces Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        events: {
+        event: {
           extend: '@apostrophecms/piece-type',
           options: {
             name: 'event',
             label: 'Event',
-            alias: 'events',
+            alias: 'event',
             sort: { title: 1 }
           }
         },
-        'events-pages': {
+        'event-page': {
           extend: '@apostrophecms/piece-page-type',
           options: {
-            name: 'events',
-            label: 'Events',
-            alias: 'eventsPages',
+            name: 'eventPage',
+            label: 'Event',
+            alias: 'eventPage',
             perPage: 10
           }
         },
@@ -39,7 +39,7 @@ describe('Pieces Pages', function() {
             park: [
               {
                 title: 'Events',
-                type: 'events',
+                type: 'eventPage',
                 slug: '/events',
                 parkedId: 'events',
                 published: true
@@ -52,7 +52,7 @@ describe('Pieces Pages', function() {
   });
 
   it('should be able to use db to insert test pieces', async function() {
-    assert(apos.modules['events-pages']);
+    assert(apos.modules.event);
     const testItems = [];
     const total = 100;
     for (let i = 1; (i <= total); i++) {
