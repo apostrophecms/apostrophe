@@ -34,7 +34,6 @@
             <div class="apos-doc-editor__body">
               <AposSchema
                 v-if="docReady"
-                :key="'schema-body-validation-' + triggerValidation"
                 :schema="schemaOtherFields"
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
@@ -51,7 +50,6 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :key="'schema-rail-validation-' + triggerValidation"
             :schema="schemaUtilityFields"
             :current-fields="utilityFields"
             :trigger-validation="triggerValidation"
