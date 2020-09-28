@@ -361,15 +361,20 @@ module.exports = {
           _cursor[filter.name](undefined);
           req.data.piecesFilters[filter.name] = await _cursor.toChoices(filter.name, _.pick(filter, 'counts'));
         }
-      },
-
-      getBrowserData(req) {
+      }
+    };
+  },
+  extendMethods(self, options) {
+    return {
+      getBrowserData(_super, req) {
+        const data = _super(req);
         if (self.pieces.options.contextual && req.data.piece) {
           return {
+            ...data,
             contextPiece: _.pick(req.data.piece, '_id', 'title', 'slug', 'type')
           };
         } else {
-          return {};
+          return data;
         }
       }
     };

@@ -20,11 +20,20 @@ export default {
       },
       type: Array
     },
-    triggerValidation: Boolean,
     following: {
       // Flexible because it depends on the type of the field being
       // followed, if any
       type: [ String, Number, Boolean, Object ],
+      required: false
+    },
+    triggerValidation: {
+      type: Boolean,
+      default: false
+    },
+    // Because some field types, like AposInputSlug, must check for
+    // uniqueness without regarding the document itself as a conflict
+    docId: {
+      type: String,
       required: false
     }
   },
@@ -35,17 +44,24 @@ export default {
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
-      uid: Math.random()
+      uid: Math.random(),
+      // Automatically updated for you, can be watched
+      focus: false
     };
   },
   mounted () {
-    this.$el.addEventListener('focusout', this.validateAndEmit);
-    if (this.triggerValidation) {
-      this.validateAndEmit();
-    }
+    this.focusInListener = () => {
+      this.focus = true;
+    };
+    this.$el.addEventListener('focusin', this.focusInListener);
+    this.focusOutListener = () => {
+      this.focus = false;
+    };
+    this.$el.addEventListener('focusout', this.focusOutListener);
   },
   destroyed () {
-    this.$el.removeEventListener('focusout', this.validateAndEmit);
+    this.$el.removeEventListener('focusin', this.focusInListener);
+    this.$el.removeEventListener('focusout', this.focusOutListener);
   },
   computed: {
     options () {
@@ -70,6 +86,16 @@ export default {
       deep: true,
       handler (value) {
         this.watchNext();
+      }
+    },
+    triggerValidation(value) {
+      if (value) {
+        this.validateAndEmit();
+      }
+    },
+    focus(value) {
+      if (!value) {
+        this.validateAndEmit();
       }
     }
   },

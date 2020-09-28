@@ -34,12 +34,12 @@
             <div class="apos-doc-editor__body">
               <AposSchema
                 v-if="docReady"
-                :key="'schema-body-validation-' + triggerValidation"
                 :schema="schemaOtherFields"
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
                 :utility-rail="false"
                 :following="following('other')"
+                :doc-id="docId"
                 v-model="docOtherFields"
               />
             </div>
@@ -52,12 +52,12 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :key="'schema-rail-validation-' + triggerValidation"
             :schema="schemaUtilityFields"
             :current-fields="utilityFields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following="following('utility')"
+            :doc-id="docId"
             v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
           />

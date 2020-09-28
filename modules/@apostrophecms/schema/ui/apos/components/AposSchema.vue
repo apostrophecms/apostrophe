@@ -13,6 +13,7 @@
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :trigger-validation="triggerValidation"
+        :doc-id="docId"
       />
     </div>
   </div>
@@ -50,7 +51,13 @@ export default {
       }
     },
     triggerValidation: Boolean,
-    utilityRail: Boolean
+    utilityRail: Boolean,
+    docId: {
+      type: String,
+      default() {
+        return null;
+      }
+    }
   },
   emits: [ 'input' ],
   data() {

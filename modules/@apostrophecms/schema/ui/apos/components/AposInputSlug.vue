@@ -38,11 +38,17 @@
 // errors.
 import AposInputMixin from '../mixins/AposInputMixin';
 import sluggo from 'sluggo';
+import debounce from 'debounce-async';
 
 export default {
   name: 'AposInputSlug',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  data() {
+    return {
+      conflict: false
+    };
+  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -69,6 +75,9 @@ export default {
       } else {
         return null;
       }
+    },
+    prefix () {
+      return this.field.prefix || '';
     }
   },
   watch: {
@@ -78,12 +87,30 @@ export default {
       }
     }
   },
+  mounted() {
+    this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
+  },
   methods: {
-    watchNext() {
+    async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();
+      try {
+        await this.debouncedCheckConflict();
+      } catch (e) {
+        if (e === 'canceled') {
+          // That's fine
+        } else {
+          throw e;
+        }
+      }
     },
     validate(value) {
+      if (this.conflict) {
+        return {
+          name: 'conflict',
+          message: 'In use'
+        };
+      }
       if (this.field.required) {
         if (!value.length) {
           return 'required';
@@ -102,18 +129,31 @@ export default {
       return false;
     },
     compatible(title, slug) {
+      if ((typeof title) !== 'string') {
+        title = '';
+      }
       if (this.page) {
         const matches = slug.match(/[^\/]+$/);
         slug = matches[0] || '';
       }
-      return ((title === '') && (slug === 'none')) || this.slugify(title) === this.slugify(slug);
+      return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
     },
     slugify(s) {
       const options = {};
       if (this.field.page) {
         options.allow = '/';
       }
+      let preserveSlash = false;
+      // When you are typing a slug it feels wrong for hyphens you typed
+      // to disappear as you go, so if the last character is not valid in a slug,
+      // restore it after we call sluggo for the full string
+      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === 'none')) {
+        preserveSlash = true;
+      }
       s = sluggo(s, options);
+      if (preserveSlash) {
+        s += '-';
+      }
       if (this.field.page) {
         if (!s.charAt(0) !== '/') {
           s = `/${s}`;
@@ -126,7 +166,47 @@ export default {
       if (!s.length) {
         s = 'none';
       }
+      if (!s.startsWith(this.prefix)) {
+        if (this.prefix.startsWith(s)) {
+          // If they delete the `-`, and the prefix is `recipe-`,
+          // we want to restore `recipe-`, not set it to `recipe-recipe`
+          s = this.prefix;
+        } else {
+          s = this.prefix + s;
+        }
+      }
       return s;
+    },
+    async checkConflict() {
+      let slug;
+      try {
+        slug = this.next;
+        await apos.http.post(`${apos.doc.action}/slug-taken`, {
+          body: {
+            slug,
+            _id: this.docId
+          }
+        });
+        // Still relevant?
+        if (slug === this.next) {
+          this.conflict = false;
+          this.validateAndEmit();
+        } else {
+          // Can ignore it
+        }
+      } catch (e) {
+        if (e.status === 409) {
+          // Still relevant?
+          if (slug === this.next) {
+            this.conflict = true;
+            this.validateAndEmit();
+          } else {
+            // Can ignore it
+          }
+        } else {
+          throw e;
+        }
+      }
     }
   }
 };
