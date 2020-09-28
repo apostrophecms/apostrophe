@@ -37,6 +37,7 @@
 // already have `type: 'slug'` fields, so this is needed to avoid distracting
 // errors.
 import AposInputMixin from '../mixins/AposInputMixin';
+import sluggo from 'sluggo';
 
 export default {
   name: 'AposInputSlug',
@@ -70,7 +71,18 @@ export default {
       }
     }
   },
+  watch: {
+    following(newValue, oldValue) {
+      if (this.compatible(oldValue, this.next)) {
+        this.next = this.slugify(newValue);
+      }
+    }
+  },
   methods: {
+    watchNext() {
+      this.next = this.slugify(this.next);
+      this.validateAndEmit();
+    },
     validate(value) {
       if (this.field.required) {
         if (!value.length) {
@@ -88,6 +100,33 @@ export default {
         }
       }
       return false;
+    },
+    compatible(title, slug) {
+      if (this.page) {
+        const matches = slug.match(/[^\/]+$/);
+        slug = matches[0] || '';
+      }
+      return ((title === '') && (slug === 'none')) || this.slugify(title) === this.slugify(slug);
+    },
+    slugify(s) {
+      const options = {};
+      if (this.field.page) {
+        options.allow = '/';
+      }
+      s = sluggo(s, options);
+      if (this.field.page) {
+        if (!s.charAt(0) !== '/') {
+          s = `/${s}`;
+        }
+        s = s.replace(/\/+/g, '/');
+        if (s !== '/') {
+          s = s.replace(/\/$/, '');
+        }
+      }
+      if (!s.length) {
+        s = 'none';
+      }
+      return s;
     }
   }
 };

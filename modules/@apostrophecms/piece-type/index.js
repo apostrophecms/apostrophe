@@ -19,7 +19,7 @@ module.exports = {
         type: 'slug',
         label: 'Slug',
         required: true,
-        slugifies: 'title'
+        following: 'title'
       }
     }
   },

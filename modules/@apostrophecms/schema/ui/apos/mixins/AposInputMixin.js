@@ -20,7 +20,13 @@ export default {
       },
       type: Array
     },
-    triggerValidation: Boolean
+    triggerValidation: Boolean,
+    following: {
+      // Flexible because it depends on the type of the field being
+      // followed, if any
+      type: [ String, Number, Boolean, Object ],
+      required: false
+    }
   },
   data () {
     return {

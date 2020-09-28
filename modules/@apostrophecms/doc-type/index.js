@@ -17,6 +17,7 @@ module.exports = {
         slug: {
           type: 'slug',
           label: 'Slug',
+          following: 'title',
           required: true
         },
         published: {
