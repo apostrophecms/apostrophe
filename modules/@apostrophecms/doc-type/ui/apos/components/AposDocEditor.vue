@@ -14,7 +14,7 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
-        :disabled="doc.hasErrors"
+        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
       />
     </template>
@@ -35,10 +35,11 @@
               <AposSchema
                 v-if="docReady"
                 :key="'schema-body-validation-' + triggerValidation"
-                :schema="schema"
+                :schema="schemaOtherFields"
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
-                v-model="doc"
+                :utility-rail="false"
+                v-model="docOtherFields"
               />
             </div>
           </AposModalTabsBody>
@@ -51,10 +52,11 @@
           <AposSchema
             v-if="docReady"
             :key="'schema-rail-validation-' + triggerValidation"
-            :schema="schema"
+            :schema="schemaUtilityFields"
             :current-fields="utilityFields"
             :trigger-validation="triggerValidation"
-            v-model="doc"
+            :utility-rail="true"
+            v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
           />
         </div>
@@ -99,12 +101,22 @@ export default {
         data: {},
         hasErrors: false
       },
+      docUtilityFields: {
+        data: {},
+        hasErrors: false
+      },
+      docOtherFields: {
+        data: {},
+        hasErrors: false
+      },
       docReady: false,
       modal: {
         active: false,
         type: 'overlay',
         showModal: false
       },
+      schemaUtilityFields: [],
+      schemaOtherFields: [],
       triggerValidation: false
     };
   },
@@ -182,6 +194,7 @@ export default {
       } finally {
         this.doc.data = docData;
         this.docReady = true;
+        this.splitDoc();
         apos.bus.$emit('busy', false);
       }
     } else {
@@ -194,8 +207,12 @@ export default {
     submit() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (!this.doc.hasErrors) {
-          apos.bus.$emit('busy', true);
+        if (!this.docUtilityFields.hasErrors && !this.docOtherFields.hasErrors) {
+          this.doc.data = {
+            ...this.doc.data,
+            ...this.docUtilityFields.data,
+            ...this.docOtherFields.data
+          };
           let route;
           let requestMethod;
           if (this.docId) {
@@ -206,17 +223,12 @@ export default {
             requestMethod = apos.http.post;
           }
 
-          try {
-            await requestMethod(route, {
-              busy: true,
-              body: this.doc.data
-            });
-            this.$emit('saved');
-
-            this.modal.showModal = false;
-          } finally {
-            apos.bus.$emit('busy', false);
-          }
+          await requestMethod(route, {
+            busy: true,
+            body: this.doc.data
+          });
+          this.$emit('saved');
+          this.modal.showModal = false;
         }
       });
     },
@@ -228,6 +240,18 @@ export default {
       });
       this.doc.data = newInstance;
       this.docReady = true;
+      this.splitDoc();
+    },
+    splitDoc() {
+      this.schema.forEach(field => {
+        if (field.group.name === 'utility') {
+          this.docUtilityFields.data[field.name] = this.doc.data[field.name];
+          this.schemaUtilityFields.push(field);
+        } else {
+          this.docOtherFields.data[field.name] = this.doc.data[field.name];
+          this.schemaOtherFields.push(field);
+        }
+      });
     }
   }
 };

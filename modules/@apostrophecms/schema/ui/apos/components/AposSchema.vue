@@ -42,7 +42,8 @@ export default {
         return [];
       }
     },
-    triggerValidation: Boolean
+    triggerValidation: Boolean,
+    utilityRail: Boolean
   },
   emits: [ 'input' ],
   data() {
@@ -141,7 +142,7 @@ export default {
       this.$emit('input', this.next);
     },
     displayComponent(fieldName) {
-      return this.currentFields.includes(fieldName);
+      return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
     }
   }
 };
