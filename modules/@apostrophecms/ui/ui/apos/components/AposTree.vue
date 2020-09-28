@@ -11,7 +11,7 @@
     />
     <AposTreeRows
       v-model="checkedProxy"
-      :rows="myRows"
+      :rows="myItems"
       :headers="headers"
       :icons="icons"
       :col-widths="colWidths"
@@ -19,7 +19,7 @@
       :nested="nested"
       @busy="setBusy"
       @update="update"
-      @edit="$emit('edit', $event)"
+      @open="$emit('open', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -49,7 +49,7 @@ export default {
         return {};
       }
     },
-    rows: {
+    items: {
       type: Array,
       required: true
     },
@@ -74,11 +74,11 @@ export default {
       }
     }
   },
-  emits: [ 'busy', 'update', 'change', 'edit' ],
+  emits: [ 'busy', 'update', 'change', 'open' ],
   data() {
     return {
-      // Copy the `rows` property to mutate with VueDraggable.
-      myRows: klona(this.rows),
+      // Copy the `items` property to mutate with VueDraggable.
+      myItems: klona(this.items),
       nested: false,
       colWidths: null,
       treeId: this.generateId()
@@ -96,7 +96,7 @@ export default {
     },
     spacingRow() {
       let spacingRow = {};
-      // Combine the header with the rows, the limit to a reasonable 50 rows.
+      // Combine the header with the items, the limit to a reasonable 50 items.
       const headers = {};
       if (this.headers) {
         this.headers.forEach(header => {
@@ -105,8 +105,8 @@ export default {
       }
 
       let completeRows = [ headers ];
-      // Add child rows into `completeRows`.
-      this.rows.forEach(row => {
+      // Add child items into `completeRows`.
+      this.items.forEach(row => {
         completeRows.push(row);
 
         if (row.children && row.children.length > 0) {
@@ -116,7 +116,7 @@ export default {
       });
       completeRows = completeRows.slice(0, 50);
 
-      // Loop over the combined header/rows array, finding the largest value
+      // Loop over the combined header/items array, finding the largest value
       // for each key.
       completeRows.forEach(row => {
         if (spacingRow.length === 0) {
@@ -169,8 +169,8 @@ export default {
     }
   },
   watch: {
-    rows(array) {
-      this.myRows = array;
+    items(array) {
+      this.myItems = array;
     }
   },
   methods: {

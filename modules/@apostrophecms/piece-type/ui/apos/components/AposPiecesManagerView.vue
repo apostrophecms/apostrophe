@@ -23,45 +23,47 @@
       </tr>
       <tr
         class="apos-table__row"
-        v-for="row in rows"
-        :key="row._id"
+        v-for="item in items"
+        :key="item._id"
         :class="{'is-selected': false }"
       >
         <td class="apos-table__cell">
           <AposCheckbox
-            v-if="checkboxes[row._id]"
-            :field="checkboxes[row._id].field"
-            :value="checkboxes[row._id].value.data"
-            :status="checkboxes[row._id].status"
-            :choice="checkboxes[row._id].choice"
-            :id="row._id"
+            v-if="item._id"
+            :field="{
+              name: item._id,
+              hideLabel: true,
+              label: `Toggle selection of ${item.title}`,
+              disabled: options.disableUnchecked && !checkProxy.includes(item._id)
+            }"
+            :choice="{ value: item._id }"
             v-model="checkProxy"
-            @updated="emitUpdated"
+            @updated="emitUpdated(item._id)"
           />
         </td>
         <td
           class="apos-table__cell" v-for="header in headers"
-          :key="row[header.name]"
+          :key="item[header.name]"
         >
           <a
             v-if="header.name === 'url'" class="apos-table__link"
-            :href="row[header.name]"
+            :href="item[header.name]"
           >
             <LinkIcon :size="12" />
           </a>
           <button
             v-else-if="header.name === 'title'"
-            @click="$emit('open',row._id)"
+            @click="$emit('open',item._id)"
             class="apos-table__cell-field"
             :class="`apos-table__cell-field--${header.name}`"
           >
-            {{ row[header.name] }}
+            {{ item[header.name] }}
           </button>
           <p
             v-else class="apos-table__cell-field"
             :class="`apos-table__cell-field--${header.name}`"
           >
-            {{ row[header.name] }}
+            {{ item[header.name] }}
           </p>
         </td>
       </tr>
@@ -70,21 +72,18 @@
 </template>
 
 <script>
+// TODO: Rename to AposPiecesManagerDisplay
 export default {
   model: {
     prop: 'checked',
     event: 'change'
   },
   props: {
-    checkboxes: {
-      type: Object,
-      required: true
-    },
     headers: {
       type: Array,
       required: true
     },
-    rows: {
+    items: {
       type: Array,
       required: true
     },
@@ -92,6 +91,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
       }
     }
   },

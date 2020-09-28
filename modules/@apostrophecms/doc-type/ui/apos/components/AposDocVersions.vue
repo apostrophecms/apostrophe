@@ -20,7 +20,7 @@
       <AposModalBody>
         <template #bodyMain>
           <AposTree
-            :rows="rows" :headers="headers"
+            :items="rows" :headers="headers"
             :icons="icons" :options="treeOptions"
             v-model="selected"
           />
@@ -32,12 +32,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocVersions',
-  mixins: [ AposModalParentMixin, AposTableMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   props: {
     doc: {
       type: Object,

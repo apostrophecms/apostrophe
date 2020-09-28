@@ -30,7 +30,7 @@
         >
       </label>
       <div
-        class="apos-media-manager-display__cell" v-for="item in media"
+        class="apos-media-manager-display__cell" v-for="item in items"
         :key="generateId(item._id)"
         :class="{'is-selected': checked.includes(item._id)}"
       >
@@ -40,18 +40,20 @@
             tabindex="-1"
             :field="{
               name: item._id,
-              type: 'checkbox',
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
-              disableFocus: true
+              disableFocus: true,
+              disabled: options.disableUnchecked && !checked.includes(item._id)
             }"
-            :status="{}"
             :choice="{ value: item._id }"
             v-model="checkedProxy"
           />
         </div>
         <button
-          :disabled="item._id === 'placeholder'"
+          :disabled="
+            item._id === 'placeholder' ||
+              (options.disableUnchecked && !checked.includes(item._id))
+          "
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
@@ -74,7 +76,7 @@
       <!-- We need a placeholder display cell to generate the first image
       placeholder. -->
       <div
-        v-if="media.length === 0"
+        v-if="items.length === 0"
         class="apos-media-manager-display__cell is-hidden"
         aria-hidden="true"
       >
@@ -107,10 +109,16 @@ export default {
       type: Object,
       required: true
     },
-    media: {
+    items: {
       type: Array,
       default() {
         return [];
+      }
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
       }
     }
   },
@@ -377,7 +385,7 @@ export default {
     }
 
     &[disabled] {
-      cursor: wait;
+      cursor: not-allowed;
     }
   }
 
