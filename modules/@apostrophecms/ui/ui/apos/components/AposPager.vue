@@ -9,6 +9,7 @@
     />
     <div class="apos-input-wrapper">
       <select
+        :disabled="totalPages <= 1"
         class="apos-input apos-input--select"
         v-model="selectedPage" aria-label="Select page"
       >
