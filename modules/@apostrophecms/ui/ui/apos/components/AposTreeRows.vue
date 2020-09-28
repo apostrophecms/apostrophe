@@ -50,13 +50,11 @@
               class="apos-tree__row__checkbox"
               tabindex="-1"
               :field="{
-                name: `${col.name}-${index}`,
-                type: 'checkbox',
+                name: row._id,
                 hideLabel: true,
                 label: `Toggle selection of ${row.title}`,
                 disableFocus: true
               }"
-              :status="{}"
               :choice="{ value: row._id }"
               v-model="checkedProxy"
             />
@@ -88,7 +86,7 @@
           }"
           @busy="$emit('busy', $event)"
           @update="$emit('update', $event)"
-          @edit="$emit('edit', $event)"
+          @open="$emit('open', $event)"
           v-model="checkedProxy"
         />
       </li>
@@ -160,7 +158,9 @@ export default {
       required: true
     }
   },
-  emits: [ 'busy', 'update', 'change', 'edit' ],
+  // TODO The 'open' event isn't actually currently emitted. Fix during UI
+  // integration.
+  emits: [ 'busy', 'update', 'change', 'open' ],
   computed: {
     myRows() {
       return this.rows;

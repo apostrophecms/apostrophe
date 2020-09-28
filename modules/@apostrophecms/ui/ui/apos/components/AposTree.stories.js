@@ -34,7 +34,7 @@ export const Tree = () => ({
     <AposTree
       :headers="data.headers"
       :icons="data.icons"
-      :rows="data.rows"
+      :items="data.items"
       :options="{
         draggable: true,
         bulkSelect: true
@@ -46,7 +46,7 @@ export const Tree = () => ({
 });
 
 function getData () {
-  const rows = generateRows(randomNumber());
+  const items = generateRows(randomNumber());
   return {
     headers: [
       {
@@ -79,7 +79,7 @@ function getData () {
       circle: 'circle-icon',
       link: 'link-icon'
     },
-    rows,
+    items,
     draggable,
     bulkSelect
   };
