@@ -1814,7 +1814,7 @@ module.exports = {
           }
           forSchema(manager.schema, doc);
         } else if (doc.metaType === 'widget') {
-          const manager = self.apos.doc.getManager(doc.type);
+          const manager = self.apos.area.getWidgetManager(doc.type);
           if (!manager) {
             return;
           }
