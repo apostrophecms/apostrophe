@@ -119,6 +119,10 @@ export default {
   },
   watch: {
     checked (newVal) {
+      if (this.editing && newVal.includes(this.editing._id)) {
+        return;
+      }
+
       if (newVal.length > 1 || newVal.length === 0) {
         this.editing = null;
       }
@@ -168,8 +172,12 @@ export default {
       await this.getMedia();
 
       if (imgId) {
-        this.checked = [ imgId ];
-        this.updateEditing(imgId);
+        this.checked.push(imgId);
+
+        // If we're currently editing one, don't interrupt that by replacing it.
+        if (!this.editing) {
+          this.updateEditing(imgId);
+        }
       }
     },
     clearSelected() {
