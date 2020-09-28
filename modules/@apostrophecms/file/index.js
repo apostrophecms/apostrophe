@@ -22,7 +22,8 @@ module.exports = {
         type: 'slug',
         label: 'Slug',
         prefix: 'file',
-        required: true
+        required: true,
+        following: 'title'
       },
       attachment: {
         type: 'attachment',
