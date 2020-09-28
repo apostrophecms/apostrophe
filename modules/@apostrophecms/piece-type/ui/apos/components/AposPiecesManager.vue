@@ -41,7 +41,7 @@
           />
         </template>
         <template #bodyMain>
-          <AposPiecesManagerView
+          <AposPiecesManagerDisplay
             v-if="items.length > 0"
             :items="items"
             :headers="headers"
