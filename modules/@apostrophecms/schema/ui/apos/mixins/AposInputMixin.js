@@ -20,10 +20,10 @@ export default {
       },
       type: Array
     },
-    following: {
+    followingValue: {
       // Flexible because it depends on the type of the field being
       // followed, if any
-      type: [ String, Number, Boolean, Object ],
+      type: [ String, Number, Boolean, Object, Array ],
       required: false
     },
     triggerValidation: {

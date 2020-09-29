@@ -81,7 +81,7 @@ export default {
     }
   },
   watch: {
-    following(newValue, oldValue) {
+    followingValue(newValue, oldValue) {
       if (this.compatible(oldValue, this.next)) {
         this.next = this.slugify(newValue);
       }
@@ -108,7 +108,7 @@ export default {
       if (this.conflict) {
         return {
           name: 'conflict',
-          message: 'In use'
+          message: 'Slug already in use'
         };
       }
       if (this.field.required) {
@@ -192,16 +192,19 @@ export default {
           this.conflict = false;
           this.validateAndEmit();
         } else {
-          // Can ignore it
+          // Can ignore it, another request
+          // probably already in-flight
         }
       } catch (e) {
+        // 409: Conflict (slug in use)
         if (e.status === 409) {
           // Still relevant?
           if (slug === this.next) {
             this.conflict = true;
             this.validateAndEmit();
           } else {
-            // Can ignore it
+            // Can ignore it, another request
+            // probably already in-flight
           }
         } else {
           throw e;

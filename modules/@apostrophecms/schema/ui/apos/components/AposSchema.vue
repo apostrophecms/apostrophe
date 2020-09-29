@@ -7,7 +7,7 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :following="following[field.name]"
+        :followingValue="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :status="fields[field.name].status"
@@ -38,7 +38,7 @@ export default {
         return [];
       }
     },
-    following: {
+    followingValues: {
       type: Object,
       default() {
         return {};
