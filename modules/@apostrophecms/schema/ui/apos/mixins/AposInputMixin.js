@@ -19,6 +19,10 @@ export default {
         return [];
       },
       type: Array
+    },
+    triggerValidation: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -60,6 +64,11 @@ export default {
       deep: true,
       handler (value) {
         this.watchNext();
+      }
+    },
+    triggerValidation(value) {
+      if (value) {
+        this.validateAndEmit();
       }
     }
   },
