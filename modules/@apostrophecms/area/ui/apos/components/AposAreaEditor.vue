@@ -84,9 +84,16 @@ export default {
   },
   emits: [ 'changed' ],
   data() {
+    const validItems = this.items.filter(item => {
+      if (!window.apos.modules[`${item.type}-widget`]) {
+        console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
+      }
+      return window.apos.modules[`${item.type}-widget`];
+    });
+
     return {
       areaId: cuid(),
-      next: this.items,
+      next: validItems,
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
