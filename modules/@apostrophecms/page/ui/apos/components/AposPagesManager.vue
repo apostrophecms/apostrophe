@@ -13,20 +13,24 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposPagesManagerToolbar
+          <AposDocsManagerToolbar
             :selected-state="selectAllState"
             @select-click="selectAll"
             @trash-click="trashClick"
+            :options="{
+              noSearch: true,
+              noPager: true
+            }"
           />
         </template>
         <template #bodyMain>
           <AposTree
-            :rows="rows"
+            :items="items"
             :headers="headers" :icons="icons"
             v-model="checked"
             :options="treeOptions"
             @update="update" @busy="setBusy"
-            @edit="openEditor"
+            @open="openEditor"
           />
         </template>
       </AposModalBody>
@@ -36,12 +40,12 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
-import AposTableMixin from 'Modules/@apostrophecms/modal/mixins/AposTableMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalParentMixin, AposTableMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
@@ -89,8 +93,8 @@ export default {
     };
   },
   computed: {
-    rows() {
-      const rows = [];
+    items() {
+      const items = [];
       if (!this.pages || !this.headers.length) {
         return [];
       }
@@ -105,19 +109,10 @@ export default {
           data._id = page._id;
           data.children = page.children;
         });
-        rows.push(data);
+        items.push(data);
       });
 
-      return rows;
-    },
-    selectAllState() {
-      if (this.selectAllValue.data.length && !this.selectAllChoice.indeterminate) {
-        return 'checked';
-      }
-      if (this.selectAllValue.data.length && this.selectAllChoice.indeterminate) {
-        return 'indeterminate';
-      }
-      return 'empty';
+      return items;
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
@@ -174,25 +169,6 @@ export default {
     update(obj) {
       // We'll hit a route here to update the docs.
       console.info('CHANGED ROW:', obj);
-    },
-    generateCheckboxes () {
-      const checkboxes = {};
-      this.pagesFlat.forEach((row) => {
-        checkboxes[row.id] = {
-          status: {},
-          value: {
-            data: []
-          },
-          choice: { value: row.id },
-          field: {
-            name: row.id,
-            type: 'checkbox',
-            hideLabel: true,
-            label: `Toggle selection of ${row.title}`
-          }
-        };
-      });
-      this.checkboxes = checkboxes;
     },
     setBusy(val) {
       apos.bus.$emit('busy', val);

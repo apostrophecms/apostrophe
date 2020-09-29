@@ -17,34 +17,36 @@
             tabindex="0"
           >
           <AposButton
+            class="apos-input-relationship__button"
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
-            @click="chooser=true"
+            @click="choosing=true"
           />
         </div>
         <AposSlatList
+          class="apos-input-relationship__items"
           v-if="items.length"
-          @update="updated"
+          @update="updateSelected"
           @item-clicked="openRelationshipEditor"
           :initial-items="items"
         />
         <AposSearchList
           :list="searchList"
-          @select="selected"
+          @select="updateSelected"
           :selected-items="items"
         />
       </div>
     </template>
     <template #secondary>
-      <AposPiecesManager
-        v-if="chooser"
+      <component
+        :is="chooserComponent"
+        v-if="choosing"
         :module-name="field.withType"
-        :initially-selected-items="items"
-        :field="field"
-        :relationship="true"
-        @updated="updated"
-        @safe-close="chooser=false"
+        :chosen="items"
+        :relationship-field="field"
+        @chose="updateSelected"
+        @safe-close="choosing=false"
       />
       <AposRelationshipEditor
         v-if="relationshipSchema"
@@ -76,10 +78,9 @@ export default {
     return {
       searchList: [],
       items: this.value.data || this.listItems,
-      lastSearches: {},
       originalDisabled: this.status.disabled,
       searching: false,
-      chooser: false,
+      choosing: false,
       relationshipSchema: null,
       clickedItem: null
     };
@@ -95,6 +96,9 @@ export default {
     // TODO get 'Browse' for better i18n
     browseLabel() {
       return `Browse ${this.pluralLabel}`;
+    },
+    chooserComponent () {
+      return apos.modules[this.field.withType].components.managerModal;
     }
   },
   watch: {
@@ -134,11 +138,7 @@ export default {
 
       return false;
     },
-    updated(items) {
-      this.items = items;
-      this.selected(items);
-    },
-    selected(items) {
+    updateSelected(items) {
       this.items = items;
       this.validateAndEmit();
     },
@@ -191,13 +191,24 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+    position: relative;
+
+    .apos-input-relationship__button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      padding: ($input-padding - 5px) $input-padding;
+      font-size: map-get($font-sizes, input);
+
+      &:hover:not([disabled]),
+      &:focus:not([disabled]) {
+        transform: none;
+      }
+    }
   }
 
-  .apos-button {
-    position: absolute;
-    right: 7.5px;
+  .apos-input-relationship__items {
+    max-width: 220px;
+    margin-top: 10px;
   }
 </style>

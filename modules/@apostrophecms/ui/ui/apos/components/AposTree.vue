@@ -11,7 +11,7 @@
     />
     <AposTreeRows
       v-model="checkedProxy"
-      :rows="myRows"
+      :rows="myItems"
       :headers="headers"
       :icons="icons"
       :col-widths="colWidths"
@@ -19,7 +19,7 @@
       :nested="nested"
       @busy="setBusy"
       @update="update"
-      @edit="$emit('edit', $event)"
+      @open="$emit('open', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -49,7 +49,7 @@ export default {
         return {};
       }
     },
-    rows: {
+    items: {
       type: Array,
       required: true
     },
@@ -74,11 +74,11 @@ export default {
       }
     }
   },
-  emits: [ 'busy', 'update', 'change', 'edit' ],
+  emits: [ 'busy', 'update', 'change', 'open' ],
   data() {
     return {
-      // Copy the `rows` property to mutate with VueDraggable.
-      myRows: klona(this.rows),
+      // Copy the `items` property to mutate with VueDraggable.
+      myItems: klona(this.items),
       nested: false,
       colWidths: null,
       treeId: this.generateId()
@@ -96,7 +96,7 @@ export default {
     },
     spacingRow() {
       let spacingRow = {};
-      // Combine the header with the rows, the limit to a reasonable 50 rows.
+      // Combine the header with the items, the limit to a reasonable 50 items.
       const headers = {};
       if (this.headers) {
         this.headers.forEach(header => {
@@ -105,8 +105,8 @@ export default {
       }
 
       let completeRows = [ headers ];
-      // Add child rows into `completeRows`.
-      this.rows.forEach(row => {
+      // Add child items into `completeRows`.
+      this.items.forEach(row => {
         completeRows.push(row);
 
         if (row.children && row.children.length > 0) {
@@ -116,7 +116,7 @@ export default {
       });
       completeRows = completeRows.slice(0, 50);
 
-      // Loop over the combined header/rows array, finding the largest value
+      // Loop over the combined header/items array, finding the largest value
       // for each key.
       completeRows.forEach(row => {
         if (spacingRow.length === 0) {
@@ -169,8 +169,8 @@ export default {
     }
   },
   watch: {
-    rows(array) {
-      this.myRows = array;
+    items(array) {
+      this.myItems = array;
     }
   },
   methods: {
@@ -200,138 +200,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  $row-nested-h-padding: 24px;
-  $cell-padding: 16px;
+  @import '../scss/shared/_table-vars';
 
   .apos-tree {
     color: var(--a-text-primary);
     font-size: map-get($font-sizes, default);
   }
 
-  .apos-tree__list {
-    width: 100%;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-left: 0;
-    list-style-type: none;
-  }
-
-  .apos-tree__row-data {
-    position: relative;
-    display: flex;
-    width: 100%;
-
-    .apos-tree__row--parent .apos-tree__row & {
-      &::before {
-        position: absolute;
-        top: 50%;
-        left: -$row-nested-h-padding * 1.5;
-        display: block;
-        width: 24px;
-        height: 1px;
-        content: '';
-        background-color: var(--a-base-8);
-      }
-    }
-
-    .apos-tree__row--parent > &:first-child {
-      &::before {
-        width: 14px;
-      }
-    }
-  }
-
-  .apos-tree__cell {
-    display: inline-flex;
-    flex-shrink: 2;
-    padding: $cell-padding;
-    border-bottom: 1px solid var(--a-base-8);
-    box-sizing: border-box;
-  }
-
-  button.apos-tree__cell {
-    @include apos-button-reset();
-    padding: $cell-padding;
-    border-bottom: 1px solid var(--a-base-8);
-  }
-
-  // Let the title cell column grow.
-  span.apos-tree__cell:first-of-type {
-    flex-grow: 1;
-    flex-shrink: 1;
-  }
-
-  .apos-tree__cell--published {
-    .material-design-icon__svg {
-      fill: var(--a-success);
-    }
-
-    &.apos-tree__cell--disabled {
-      color: var(--a-base-2);
-
-      .material-design-icon__svg {
-        fill: var(--a-base-2);
-      }
-    }
-  }
-
-  .apos-tree__cell__icon {
-    display: inline-flex;
-    align-items: flex-start;
-    margin-right: 10px;
-    padding-top: 0.2em;
-
-    .material-design-icon__svg {
-      width: 12px;
-      height: 12px;
-    }
-
-    .apos-tree__cell--icon & .material-design-icon__svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .apos-tree__cell--icon & {
-      padding-top: 0;
-    }
-  }
-
-  .apos-tree__row {
-    .apos-tree--nested & {
-      padding-left: $row-nested-h-padding;
-    }
-  }
-
-  .apos-tree__row--parent {
-    position: relative;
-
-    &::before {
-      position: absolute;
-      top: 24px;
-      bottom: 0;
-      left: $row-nested-h-padding / 2;
-      display: block;
-      content: '';
-      background-color: var(--a-base-8);
-      width: 1px;
-      transition: background-color 0.3s ease;
-    }
-
-    &.is-collapsed::before {
-      background-color: transparent;
-    }
-  }
-
-  .apos-tree__row__toggle {
-    @include apos-button-reset();
-    position: absolute;
-    top: 50%;
-    left: -$row-nested-h-padding / 2;
-    background-color: var(--a-background-primary);
-    transform: translate(-50%, -50%);
-  }
-
-  .apos-tree__row__toggle-icon {
-    display: block;
-  }
 </style>

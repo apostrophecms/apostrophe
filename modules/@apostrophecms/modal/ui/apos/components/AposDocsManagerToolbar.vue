@@ -1,10 +1,10 @@
 <template>
-  <AposModalToolbar class-name="apos-pieces-manager-toolbar">
+  <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
         label="Select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
-        @click="$emit('select-click')" :icon-color="iconColor"
+        @click="$emit('select-click')"
       />
       <AposTagApply :tags="applyTags" :apply-to="[]" />
       <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
@@ -21,14 +21,17 @@
     </template>
     <template #rightControls>
       <AposPager
+        v-if="!options.noPager"
         @click="registerPageChange" @change="registerPageChange"
         :total-pages="totalPages" :current-page="currentPage"
       />
       <AposFilterMenu
+        v-if="filters.length > 0"
         :filters="filters"
         @input="filter"
       />
       <AposInputString
+        v-if="!options.noSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
         :status="searchField.status" :value="searchField.value"
@@ -68,10 +71,24 @@ export default {
     },
     labels: {
       type: Object,
-      required: true
+      default () {
+        return {};
+      }
+    },
+    options: {
+      type: Object,
+      default () {
+        return {};
+      }
     }
   },
-  emits: [ 'trash-click', 'select-click', 'filter', 'search', 'page-change' ],
+  emits: [
+    'trash-click',
+    'select-click',
+    'filter',
+    'search',
+    'page-change'
+  ],
   data() {
     return {
       more: {
@@ -91,7 +108,7 @@ export default {
       searchField: {
         field: {
           name: 'search',
-          placeholder: `Search ${this.labels.plural}`,
+          placeholder: `Search ${this.labels.plural || ''}`,
           icon: 'magnify-icon',
           enterSubmittable: true
         },
@@ -109,13 +126,6 @@ export default {
       } else {
         return 'checkbox-blank-icon';
       }
-    },
-    iconColor() {
-      if (this.selectedState === 'checked' || this.selectedState === 'indeterminate') {
-        return 'var(--a-primary)';
-      }
-
-      return null;
     }
   },
   methods: {
@@ -146,7 +156,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-pieces-manager-toolbar /deep/ .apos-field-search {
+  .apos-manager-toolbar /deep/ .apos-field-search {
     width: 250px;
   }
 </style>

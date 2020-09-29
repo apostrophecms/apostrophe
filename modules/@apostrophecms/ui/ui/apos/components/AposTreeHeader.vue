@@ -131,6 +131,9 @@ function debounce(func, wait, immediate) {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/shared/_table-vars';
+@import '../scss/shared/_table-rows';
+
 .apos-tree__header {
   color: var(--a-base-3);
 }

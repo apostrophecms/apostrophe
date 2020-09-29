@@ -6,12 +6,23 @@
 
 <template>
   <AposModal
-    :modal="modal" modal-title="Manage Media"
+    :modal="modal" :modal-title="moduleTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
-    <template #primaryControls>
+    <template v-if="relationshipField" #primaryControls>
+      <AposButton
+        type="default" label="Cancel"
+        @click="cancel"
+      />
+      <AposButton
+        :label="`Save`" type="primary"
+        :disabled="relationshipErrors === 'min'"
+        @click="saveRelationship"
+      />
+    </template>
+    <template v-else #primaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
@@ -25,10 +36,12 @@
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
-          <AposMediaManagerToolbar
-            v-if="!!media.length"
-            :checked="checked" :media="media"
+          <AposDocsManagerToolbar
+            v-if="!!items.length"
+            :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
+            :filters="options.filters" :labels="moduleLabels"
+            :disable="relationshipErrors === 'min'"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
@@ -38,7 +51,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            :media="media"
+            :items="items"
             :module-options="options"
             @edit="updateEditing"
             v-model="checked"
@@ -48,6 +61,7 @@
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
+            :options="{ disableUnchecked: relationshipErrors === 'max' }"
           />
         </template>
       </AposModalBody>
@@ -61,6 +75,7 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing" :selected="selected"
+            :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
           />
           <AposMediaManagerSelections
@@ -76,10 +91,11 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalParentMixin ],
+  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
   props: {
     moduleName: {
       type: String,
@@ -89,7 +105,7 @@ export default {
   emits: [ 'safe-close', 'trash', 'save', 'search' ],
   data() {
     return {
-      media: [],
+      items: [],
       totalPages: 1,
       currentPage: 1,
       tagList: [],
@@ -100,7 +116,6 @@ export default {
       },
       editing: null,
       uploading: false,
-      checked: [],
       lastSelected: null,
       emptyDisplay: {
         title: 'No Media Found',
@@ -110,11 +125,24 @@ export default {
     };
   },
   computed: {
+    moduleTitle () {
+      const verb = this.relationshipField ? 'Choose' : 'Manage';
+      return `${verb} ${this.moduleLabels.plural}`;
+    },
     options() {
       return window.apos.modules[this.moduleName];
     },
+    moduleLabels() {
+      if (!this.options) {
+        return null;
+      }
+      return {
+        label: this.options.label,
+        pluralLabel: this.options.pluralLabel
+      };
+    },
     selected() {
-      return this.media.filter(item => this.checked.includes(item._id));
+      return this.items.filter(item => this.checked.includes(item._id));
     }
   },
   watch: {
@@ -150,14 +178,14 @@ export default {
 
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
-      this.media = getResponse.results;
+      this.items = getResponse.results;
     },
     async updateMedia () {
       this.updateEditing(null);
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
-      this.media.unshift({
+      this.items.unshift({
         _id: cuid(),
         title: 'placeholder image',
         dimensions
@@ -172,7 +200,7 @@ export default {
       this.editing = null;
     },
     updateEditing(id) {
-      this.editing = this.media.find(item => item._id === id);
+      this.editing = this.items.find(item => item._id === id);
     },
 
     // select setters
@@ -204,8 +232,8 @@ export default {
         return;
       }
 
-      let beginIndex = this.media.findIndex(item => item._id === this.lastSelected);
-      let endIndex = this.media.findIndex(item => item._id === id);
+      let beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
+      let endIndex = this.items.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
 
       if (direction < 0) {
@@ -214,7 +242,7 @@ export default {
         endIndex++;
       }
 
-      const sliced = this.media.slice(beginIndex, endIndex);
+      const sliced = this.items.slice(beginIndex, endIndex);
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
@@ -228,15 +256,8 @@ export default {
 
     // Toolbar handlers
     selectClick() {
-      if (this.checked.length === this.media.length) {
-        // unselect all
-        this.clearSelected();
-      } else {
-        // select all
-        this.checked = this.media.map(item => item._id);
-        this.editing = null;
-        this.lastSelected = this.media[this.media.length - 1]._id;
-      }
+      this.selectAll();
+      this.editing = null;
     },
     async updatePage(num) {
       if (num) {

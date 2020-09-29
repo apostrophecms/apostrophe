@@ -14,7 +14,7 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
-        :disabled="doc.hasErrors"
+        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
       />
     </template>
@@ -34,8 +34,11 @@
             <div class="apos-doc-editor__body">
               <AposSchema
                 v-if="docReady"
-                :schema="schema" :current-fields="currentFields"
-                v-model="doc"
+                :schema="schemaOtherFields"
+                :current-fields="currentFields"
+                :trigger-validation="triggerValidation"
+                :utility-rail="false"
+                v-model="docOtherFields"
               />
             </div>
           </AposModalTabsBody>
@@ -47,8 +50,11 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
-            :schema="schema" :current-fields="utilityFields"
-            v-model="doc"
+            :schema="schemaUtilityFields"
+            :current-fields="utilityFields"
+            :trigger-validation="triggerValidation"
+            :utility-rail="true"
+            v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
           />
         </div>
@@ -93,12 +99,23 @@ export default {
         data: {},
         hasErrors: false
       },
+      docUtilityFields: {
+        data: {},
+        hasErrors: false
+      },
+      docOtherFields: {
+        data: {},
+        hasErrors: false
+      },
       docReady: false,
       modal: {
         active: false,
         type: 'overlay',
         showModal: false
-      }
+      },
+      schemaUtilityFields: [],
+      schemaOtherFields: [],
+      triggerValidation: false
     };
   },
   computed: {
@@ -175,6 +192,7 @@ export default {
       } finally {
         this.doc.data = docData;
         this.docReady = true;
+        this.splitDoc();
         apos.bus.$emit('busy', false);
       }
     } else {
@@ -184,30 +202,33 @@ export default {
     }
   },
   methods: {
-    async submit() {
-      apos.bus.$emit('busy', true);
+    submit() {
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (!this.docUtilityFields.hasErrors && !this.docOtherFields.hasErrors) {
+          this.doc.data = {
+            ...this.doc.data,
+            ...this.docUtilityFields.data,
+            ...this.docOtherFields.data
+          };
+          let route;
+          let requestMethod;
+          if (this.docId) {
+            route = `${this.moduleOptions.action}/${this.docId}`;
+            requestMethod = apos.http.put;
+          } else {
+            route = this.moduleOptions.action;
+            requestMethod = apos.http.post;
+          }
 
-      let route;
-      let requestMethod;
-      if (this.docId) {
-        route = `${this.moduleOptions.action}/${this.docId}`;
-        requestMethod = apos.http.put;
-      } else {
-        route = this.moduleOptions.action;
-        requestMethod = apos.http.post;
-      }
-
-      try {
-        await requestMethod(route, {
-          busy: true,
-          body: this.doc.data
-        });
-        this.$emit('saved');
-
-        this.modal.showModal = false;
-      } finally {
-        apos.bus.$emit('busy', false);
-      }
+          await requestMethod(route, {
+            busy: true,
+            body: this.doc.data
+          });
+          this.$emit('saved');
+          this.modal.showModal = false;
+        }
+      });
     },
     async newInstance () {
       const newInstance = await apos.http.post(this.moduleOptions.action, {
@@ -217,6 +238,18 @@ export default {
       });
       this.doc.data = newInstance;
       this.docReady = true;
+      this.splitDoc();
+    },
+    splitDoc() {
+      this.schema.forEach(field => {
+        if (field.group.name === 'utility') {
+          this.docUtilityFields.data[field.name] = this.doc.data[field.name];
+          this.schemaUtilityFields.push(field);
+        } else {
+          this.docOtherFields.data[field.name] = this.doc.data[field.name];
+          this.schemaOtherFields.push(field);
+        }
+      });
     }
   }
 };
