@@ -3,13 +3,15 @@
 -->
 <template>
   <div class="apos-schema">
-    <div v-for="field in currentSchema" :key="field.name">
+    <div v-for="field in schema" :key="field.name">
       <component
-        v-if="fieldState[field.name]"
+        v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :is="fieldComponentMap[field.type]" :field="fields[field.name].field"
+        :is="fieldComponentMap[field.type]"
+        :field="fields[field.name].field"
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
+        :trigger-validation="triggerValidation"
       />
     </div>
   </div>
@@ -39,7 +41,9 @@ export default {
       default() {
         return [];
       }
-    }
+    },
+    triggerValidation: Boolean,
+    utilityRail: Boolean
   },
   emits: [ 'input' ],
   data() {
@@ -53,25 +57,11 @@ export default {
     };
   },
   computed: {
-    currentSchema: function() {
-      if (this.currentFields.length === 0) {
-        return this.schema;
-      }
-
-      const fields = [];
-      this.currentFields.forEach((field) => {
-        fields.push(this.schema.find(item => {
-          return field === item.name;
-        }));
-      });
-
-      return fields;
-    },
     fields() {
       const fields = {};
-      this.currentSchema.forEach((item) => {
+      this.schema.forEach(item => {
         fields[item.name] = {};
-        fields[item.name].field = { ...item };
+        fields[item.name].field = item;
         fields[item.name].value = {
           data: this.value[item.name]
         };
@@ -80,11 +70,6 @@ export default {
         fields[item.name].status = {};
 
         fields[item.name].modifiers = this.modifiers;
-
-        // final difference smoothing
-        if (item.type === 'string') {
-          fields[item.name].field.type = 'text';
-        }
       });
       return fields;
     }
@@ -110,7 +95,7 @@ export default {
       }
     }
   },
-  mounted() {
+  created() {
     this.populateDocData();
   },
   methods: {
@@ -155,6 +140,9 @@ export default {
         }
       });
       this.$emit('input', this.next);
+    },
+    displayComponent(fieldName) {
+      return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
     }
   }
 };
