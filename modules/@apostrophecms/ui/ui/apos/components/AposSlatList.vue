@@ -36,6 +36,8 @@
           :class="{'apos-slat-list__item--disabled' : !editable}"
           :engaged="engaged === item._id"
           :parent="listId"
+          :display-drag-icon="!!items.length > 1"
+          :removable="removable"
         />
       </transition-group>
     </draggable>
@@ -60,6 +62,10 @@ export default {
       required: true
     },
     editable: {
+      type: Boolean,
+      default: true
+    },
+    removable: {
       type: Boolean,
       default: true
     },

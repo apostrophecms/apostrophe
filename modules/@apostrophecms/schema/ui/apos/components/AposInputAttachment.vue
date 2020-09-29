@@ -5,13 +5,18 @@
   >
     <template #body>
       <div class="apos-attachment">
-        <!-- TODO need a file drop library/whatever here -->
-        <button :disabled="disabled" class="apos-input-wrapper apos-attachment-dropzone">
+        <label :disabled="disabled" class="apos-input-wrapper apos-attachment-dropzone">
           <p class="apos-attachment-instructions" v-html="message" />
-        </button>
-        <div v-if="value.data.length" class="apos-attachment-files">
-          <AposSlatList 
-            :initial-items="next"
+          <input
+            type="file"
+            class="apos-sr-only"
+            @input="uploadMedia"
+          >
+        </label>
+        <div v-if="value.data" class="apos-attachment-files">
+          <AposSlatList
+            :initial-items="[ next ]"
+            :removable="false"
             @update="updated"
           />
         </div>
@@ -25,14 +30,15 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.
 import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
-  name: 'AposAttachment',
+  name: 'AposInputAttachment',
   components: {
     AposSlatList
   },
   mixins: [ AposInputMixin ],
+  emits: [ 'upload-started', 'upload-complete' ],
   computed: {
     limitReached () {
-      return this.next.length >= this.field.limit;
+      return this.next._id;
     },
     message () {
       let message = '<paperclip-icon :size="14" /> Drop a file here or <span class="apos-attachment-highlight">click to open the file explorer</span>';
@@ -50,6 +56,9 @@ export default {
     },
     disabled () {
       return (this.limitReached || this.field.disabled);
+    },
+    moduleOptions() {
+      return window.apos.modules['@apostrophecms/file'];
     }
   },
   methods: {
@@ -57,12 +66,65 @@ export default {
       this.next = items;
     },
     validate(value) {
-      if (this.field.required && !value.data.length) {
+      if (this.field.required && !value) {
         return 'required';
       }
 
       return false;
-    }
+    },
+    async uploadMedia (event) {
+      this.$emit('upload-started');
+      const file = event.target.files[0];
+
+      const emptyDoc = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          _newInstance: true
+        }
+      });
+      await apos.notify('Uploading file', { dismiss: true });
+
+      const formData = new window.FormData();
+
+      formData.append('file', file);
+      let attachment;
+
+      try {
+        attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+          body: formData
+        });
+      } catch (error) {
+        console.error('Error uploading file.', error);
+
+        const msg = error.body && error.body.message ? error.body.message : 'Upload error';
+
+        await apos.notify(msg, {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return;
+      }
+
+      const fileData = Object.assign(emptyDoc, {
+        title: attachment.title,
+        attachment
+      });
+
+      try {
+        const uploaded = await apos.http.post(this.moduleOptions.action, {
+          body: fileData
+        });
+        await apos.notify('Upload Successful', {
+          type: 'success',
+          dismiss: true
+        });
+        this.value.data = uploaded;
+      } catch (error) {
+        await this.notifyErrors(error, 'Upload Error');
+      }
+
+      this.$emit('upload-complete');
+    },
   }
 };
 </script>

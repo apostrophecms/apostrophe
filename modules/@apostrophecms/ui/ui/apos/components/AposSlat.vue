@@ -17,7 +17,7 @@
       :aria-labelledby="parent"
     >
       <div class="apos-slat__main">
-        <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <drag-icon v-if="displayDragIcon" class="apos-slat__control apos-slat__control--drag" :size="13" />
         <AposContextMenu
           v-if="item._fields"
           :button="more.button"
@@ -31,9 +31,9 @@
         >
           <eye-icon :size="14" />
         </a>
-        <div v-if="item.ext" class="apos-slat__extension-wrapper">
-          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.ext}`]">
-            {{ item.ext }}
+        <div v-if="item.extension" class="apos-slat__extension-wrapper">
+          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
+            {{ item.extension }}
           </span>
         </div>
         <div class="apos-slat__label">
@@ -41,8 +41,9 @@
         </div>
       </div>
       <div class="apos-slat__secondary">
-        <div class="apos-slat__size" v-if="item.size">{{ item.size }}</div>
+        <div class="apos-slat__size" v-if="item.length && item.length.size">{{ itemSize }}</div>
         <AposButton
+          v-if="removable"
           @click="remove"
           icon="close-icon"
           :icon-only="true"
@@ -71,6 +72,14 @@ export default {
     engaged: {
       type: Boolean,
       default: false
+    },
+    displayDragIcon: {
+      type: Boolean,
+      default: true
+    },
+    removable: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked' ],
@@ -92,6 +101,16 @@ export default {
         ]
       }
     };
+  },
+  computed: {
+    itemSize() {
+      const size = this.item.length.size
+      if (size < 1000000) {
+        return `${(size / 1000).toFixed(2)}kb`;
+      } else {
+        return `${(size / 1000000).toFixed(2)}mb`;
+      }
+    }
   },
   methods: {
     toggleEngage() {

@@ -4,8 +4,6 @@ import {
   boolean
 } from '@storybook/addon-knobs';
 
-import AposAttachment from './AposAttachment.vue';
-
 export default {
   title: 'Input (Attachment)',
   decorators: [ withKnobs ]
@@ -81,8 +79,8 @@ export const attachmentInput = () => {
       fileValues.push(fileBank[index]);
     }
   }
+  console.log('fileValues ====> ', fileValues)
   return {
-    components: { AposAttachment },
     data () {
       return {
         field: {
@@ -99,7 +97,7 @@ export const attachmentInput = () => {
       };
     },
     template: `
-      <AposAttachment
+      <AposInputAttachment
         :field="field"
         :value="value"
       />`
