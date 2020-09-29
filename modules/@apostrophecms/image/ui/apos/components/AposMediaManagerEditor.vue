@@ -10,7 +10,7 @@
       </div>
       <ul class="apos-media-manager-editor__details">
         <li class="apos-media-manager-editor__detail" v-if="createdDate">
-          {{ createdDate }}
+          Uploaded: {{ createdDate }}
         </li>
         <li
           class="apos-media-manager-editor__detail"
@@ -55,6 +55,8 @@
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
+dayjs.extend(advancedFormat);
 
 export default {
   mixins: [ AposHelpers ],
@@ -136,10 +138,10 @@ export default {
       }
     },
     createdDate() {
-      if (!this.media.createdAt) {
+      if (!this.media.attachment || !this.media.attachment.createdAt) {
         return '';
       }
-      return dayjs(this.media.createdAt).format('MMM D, YYYY');
+      return dayjs(this.media.attachment.createdAt).format('MMM Do, YYYY');
     }
   },
   watch: {
