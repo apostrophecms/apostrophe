@@ -43,7 +43,7 @@ export default {
   },
   watch: {
     active (newValue) {
-      this.$emit('update', newValue);
+      this.$emit('update', [ ...newValue ]);
     }
   },
   methods: {

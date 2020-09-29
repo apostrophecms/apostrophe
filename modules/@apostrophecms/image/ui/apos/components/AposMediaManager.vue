@@ -30,14 +30,17 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <AposTagList title="Filter by Tag" :tags="tagList" />
+        <AposTagList
+          title="Filter by Tag"
+          :tags="tagList"
+          @update="filter('_tags', $event)"
+        />
       </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
           <AposDocsManagerToolbar
-            v-if="!!items.length"
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
             :filters="toolbarFilters" :labels="moduleLabels"
@@ -46,6 +49,7 @@
             @select-click="selectClick"
             @trash-click="trashClick"
             @search="search"
+            @filter="filter"
           />
         </template>
         <template #bodyMain>
@@ -109,6 +113,11 @@ export default {
       totalPages: 1,
       currentPage: 1,
       tagList: [],
+      filterValues: {
+        _tags: [],
+        published: true,
+        trash: false
+      },
       modal: {
         active: false,
         type: 'overlay',
@@ -168,8 +177,8 @@ export default {
   },
   methods: {
     async getMedia () {
-
       const qs = {
+        ...this.filterValues,
         page: this.currentPage
       };
 
@@ -203,6 +212,12 @@ export default {
     },
     async updateMedia () {
       this.updateEditing(null);
+      await this.getMedia();
+    },
+    async filter(name, value) {
+      this.filterValues[name] = value;
+      this.currentPage = 1;
+
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
