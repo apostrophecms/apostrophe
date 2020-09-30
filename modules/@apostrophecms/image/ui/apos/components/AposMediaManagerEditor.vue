@@ -37,6 +37,7 @@
         />
         <AposButton
           @click="save" class="apos-media-manager-editor__save"
+          :disabled="doc.hasErrors"
           label="Save" type="primary"
         />
       </div>
@@ -131,6 +132,11 @@ export default {
       this.doc.data.attachment = this.media.attachment;
       this.$nextTick(async () => {
         if (this.doc.hasErrors) {
+          await apos.notify('Resolve errors before saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
           return;
         }
 

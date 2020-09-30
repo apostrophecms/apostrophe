@@ -209,29 +209,36 @@ export default {
     submit() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        if (!this.docUtilityFields.hasErrors && !this.docOtherFields.hasErrors) {
-          this.doc.data = {
-            ...this.doc.data,
-            ...this.docUtilityFields.data,
-            ...this.docOtherFields.data
-          };
-          let route;
-          let requestMethod;
-          if (this.docId) {
-            route = `${this.moduleOptions.action}/${this.docId}`;
-            requestMethod = apos.http.put;
-          } else {
-            route = this.moduleOptions.action;
-            requestMethod = apos.http.post;
-          }
-
-          await requestMethod(route, {
-            busy: true,
-            body: this.doc.data
+        if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
+          await apos.notify('Resolve errors before saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
           });
-          this.$emit('saved');
-          this.modal.showModal = false;
+          return;
         }
+
+        this.doc.data = {
+          ...this.doc.data,
+          ...this.docUtilityFields.data,
+          ...this.docOtherFields.data
+        };
+        let route;
+        let requestMethod;
+        if (this.docId) {
+          route = `${this.moduleOptions.action}/${this.docId}`;
+          requestMethod = apos.http.put;
+        } else {
+          route = this.moduleOptions.action;
+          requestMethod = apos.http.post;
+        }
+
+        await requestMethod(route, {
+          busy: true,
+          body: this.doc.data
+        });
+        this.$emit('saved');
+        this.modal.showModal = false;
       });
     },
     async newInstance () {
