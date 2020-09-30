@@ -30,7 +30,7 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.
 import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
-  name: 'AposInputAttachment',
+  name: 'AposAttachment',
   components: {
     AposSlatList
   },

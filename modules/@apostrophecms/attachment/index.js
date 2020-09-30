@@ -199,6 +199,15 @@ module.exports = {
             return true;
           }
         ]
+      },
+      get: {
+        url(req) {
+          const { attachment, options } = req.query;
+          if (!attachment) {
+            throw self.apos.error('invalid');
+          }
+          return self.url(attachment, options);
+        }
       }
     };
   },
@@ -265,7 +274,8 @@ module.exports = {
           name: self.name,
           partial: self.fieldTypePartial,
           convert: self.convert,
-          index: self.index
+          index: self.index,
+          vueComponent: 'AposAttachment'
         });
       },
       async convert(req, field, data, object) {

@@ -12,6 +12,7 @@
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :trigger-validation="triggerValidation"
+        :url="url"
       />
     </div>
   </div>
@@ -43,7 +44,11 @@ export default {
       }
     },
     triggerValidation: Boolean,
-    utilityRail: Boolean
+    utilityRail: Boolean,
+    url: {
+      type: String,
+      default: undefined
+    }
   },
   emits: [ 'input' ],
   data() {

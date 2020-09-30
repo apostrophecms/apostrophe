@@ -23,9 +23,19 @@ export default {
     triggerValidation: {
       type: Boolean,
       default: false
+    },
+    url: {
+      type: String,
+      default: undefined
     }
   },
   data () {
+    if (this.url && this.value && this.value.data) {
+      this.value.data = {
+        ...this.value.data,
+        url: this.url
+      };
+    }
     return {
       next: (this.value && this.value.data !== undefined)
         ? this.value.data : (this.field.def || ''),
