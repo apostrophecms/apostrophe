@@ -239,6 +239,9 @@ module.exports = {
               return s;
             }
           },
+          __: function (s) {
+            return s;
+          },
           data: {},
           protocol: 'http',
           get: function (propName) {

@@ -134,11 +134,6 @@ export default {
           body: this.doc.data
         });
 
-        await apos.notify(`${this.moduleLabels.label} Saved`, {
-          type: 'success',
-          dismiss: true
-        });
-
         this.$emit('saved');
       } catch (err) {
         console.error('Error saving image', err);
