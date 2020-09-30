@@ -118,7 +118,10 @@ export default {
           type: 'success',
           dismiss: true
         });
-        this.value.data = uploaded;
+        this.value.data = {
+          ...uploaded[this.field.name],
+          url: uploaded._url
+        };
       } catch (error) {
         await this.notifyErrors(error, 'Upload Error');
       }

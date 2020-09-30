@@ -28,6 +28,7 @@
           class="apos-slat__control apos-slat__control--view"
           v-if="item.url"
           :href="item.url"
+          target="_blank"
         >
           <eye-icon :size="14" />
         </a>
