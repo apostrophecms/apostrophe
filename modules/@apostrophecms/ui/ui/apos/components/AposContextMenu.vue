@@ -9,6 +9,7 @@
       :placement="menuPlacement"
       trigger="manual"
       :open="isOpen"
+      :delay="{ show: 0, hide: 0 }"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
@@ -200,7 +201,7 @@ export default {
 
 <style lang="scss">
 
-.apos-context-menu__popup .apos-context-menu__pane  {
+.apos-context-menu__popup--unpadded .apos-context-menu__pane  {
   padding: 0;
 }
 
@@ -270,13 +271,11 @@ export default {
   &[aria-hidden='true'] {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.15s, visibility 0.15s;
   }
 
   &[aria-hidden='false'] {
     visibility: visible;
     opacity: 1;
-    transition: opacity 0.15s;
   }
 }
 

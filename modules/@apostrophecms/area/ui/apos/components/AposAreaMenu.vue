@@ -185,6 +185,7 @@ export default {
           this.addWidgetType = name;
         }
       }
+      this.menuClose();
     },
     close() {
       this.adding = false;
