@@ -7,11 +7,13 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
+        :followingValue="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :trigger-validation="triggerValidation"
+        :doc-id="docId"
       />
     </div>
   </div>
@@ -36,6 +38,12 @@ export default {
         return [];
       }
     },
+    followingValues: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     modifiers: {
       type: Array,
       default() {
@@ -43,7 +51,13 @@ export default {
       }
     },
     triggerValidation: Boolean,
-    utilityRail: Boolean
+    utilityRail: Boolean,
+    docId: {
+      type: String,
+      default() {
+        return null;
+      }
+    }
   },
   emits: [ 'input' ],
   data() {

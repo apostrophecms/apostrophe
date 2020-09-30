@@ -13,7 +13,8 @@ module.exports = {
     name: '@apostrophecms/file',
     label: 'File',
     alias: 'file',
-    insertViaUpload: true
+    insertViaUpload: true,
+    slugPrefix: 'file-'
   },
   fields: {
     add: {
@@ -21,7 +22,8 @@ module.exports = {
         type: 'slug',
         label: 'Slug',
         prefix: 'file',
-        required: true
+        required: true,
+        following: 'title'
       },
       attachment: {
         type: 'attachment',

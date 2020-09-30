@@ -73,38 +73,11 @@ module.exports = {
           }
           const doc = await self.find(req, criteria).permission(false).trash(null).published(null).project({ slug: 1 }).toObject();
           if (doc) {
-            return { status: 'taken' };
+            throw self.apos.error('conflict');
           } else {
-            return { status: 'ok' };
-          }
-        },
-        async deduplicateSlug(req) {
-          if (!req.user) {
-            throw self.apos.error('notfound');
-          }
-          const _id = self.apos.launder.id(req.body._id);
-          let slug = self.apos.launder.string(req.body.slug);
-          let counter = 1;
-          let suffix = '';
-          slug = await deduplicate(slug);
-          return {
-            status: 'ok',
-            slug: slug
-          };
-          async function deduplicate(slug) {
-            const criteria = { slug: slug };
-            if (_id) {
-              criteria._id = { $ne: _id };
-            }
-            const doc = await self.find(req, criteria).permission(false).trash(null).published(null).project({ slug: 1 }).toObject();
-            if (doc) {
-              counter++;
-              suffix = '-' + counter;
-              slug = slug.replace(/-\d+$/, '') + suffix;
-              return deduplicate(slug);
-            } else {
-              return slug;
-            }
+            return {
+              available: true
+            };
           }
         }
       }
