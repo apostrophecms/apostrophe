@@ -1,10 +1,5 @@
 <template>
-  <div
-    class="apos-context-menu"
-    :class="classList"
-    stu='hi'
-    ref="component"
-  >
+  <div class="apos-context-menu">
     <slot name="prebutton" />
     <!-- TODO refactor buttons to take a single config obj -->
     <v-popover
@@ -24,6 +19,7 @@
       <template #popover>
         <div
           class="apos-primary-scrollbar apos-context-menu__popup"
+          :class="classList"
           ref="popup"
           :aria-hidden="open ? 'false' : 'true'"
           role="dialog"
@@ -89,24 +85,14 @@ export default {
     },
     menuPlacement: {
       type: String,
-      default: 'bottom-start'
+      default: 'bottom-end'
     }
   },
   emits: [ 'open', 'close', 'item-clicked' ],
   data() {
     return {
       open: false,
-      position: '',
-      arrow: `
-        <svg class="apos-context-menu__tip" width="27px" height="13px" viewBox="0 0 27 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-            <g transform="translate(-0.375000, 1.312500)">
-              <path class="apos-context-menu__tip-outline" d="M17.2842712,1.46446609 L25.748,9.928 L1.749,9.928 L10.2132034,1.46446609 C12.1658249,-0.488155365 15.3316498,-0.488155365 17.2842712,1.46446609 Z" stroke="var(--a-base-8)" />
-              <path class="apos-context-menu__tip-background" d="M17.0029602,1.84623992 C15.3903198,0.179595947 12.5749711,0.0148310371 10.7918701,1.61499023 C9.60313614,2.68176303 9.52086075,2.75884626 10.5450439,1.84623992 L0.815307617,11.4361572 L26.6676025,11.4361572 L17.0029602,1.84623992 Z" fill="var(--a-background-primary)" fill-rule="nonzero" />
-            </g>
-          </g>
-        </svg>
-      `
+      position: ''
     };
   },
   computed: {
@@ -125,19 +111,20 @@ export default {
     },
     classList() {
       const classes = [];
+      const baseClass = 'apos-context-menu__popup';
       // classes.push(`apos-context-menu--origin-${this.origin}`);
       // classes.push(`apos-context-menu--tip-alignment-${this.tipAlignment}`);
-      classes.push(`apos-context-menu--tip-alignment-${this.menuPlacement}`);
+      classes.push(`${baseClass}--tip-alignment-${this.menuPlacement}`);
       if (this.modifiers) {
         this.modifiers.forEach((m) => {
-          classes.push(`apos-context-menu--${m}`);
+          classes.push(`${baseClass}--${m}`);
         });
       }
       if (this.menu) {
-        classes.push('apos-context-menu--unpadded');
+        classes.push(`${baseClass}--unpadded`);
       }
       if (this.autoPosition) {
-        classes.push('apos-context-menu--fixed');
+        classes.push(`${baseClass}--fixed`);
       }
       return classes.join(' ');
     },
@@ -208,35 +195,15 @@ export default {
 </script>
 
 <style lang="scss">
-.apos-context-menu {
-  // position: relative;
-  // display: inline;
-}
 
-.apos-context-menu--unpadded .apos-context-menu__pane  {
+.apos-context-menu__popup .apos-context-menu__pane  {
   padding: 0;
 }
 
 .apos-context-menu__popup {
-  // z-index: $z-index-model-popup;
-  // position: absolute;
   display: inline-block;
   color: var(--a-text-primary);
-  // opacity: 0;
-  // pointer-events: none;
-  // transform: scale(0.98) translateY(-8px);
-  // transform-origin: top left;
   transition: scale 0.15s ease, translatey 0.15s ease;
-}
-
-.apos-context-menu--fixed .apos-context-menu__popup {
-  // position: fixed;
-}
-
-.apos-context-menu__popup.is-visible {
-  // opacity: 1;
-  // transform: scale(1) translateY(0);
-  // pointer-events: auto;
 }
 
 .apos-context-menu__inner {
@@ -283,8 +250,12 @@ export default {
     margin-top: 5px;
   }
 
-  &[x-placement^='bottom'] {
-    margin-top: 5px;
+  &[x-placement$='end'] {
+    margin-right: 15px;
+  }
+
+  &[x-placement$='start'] {
+    margin-left: 15px;
   }
 
   &[aria-hidden='true'] {

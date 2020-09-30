@@ -23,12 +23,12 @@ export const contextMenu = () => ({
       menu: data.menu,
       menuPlacement: select(
         'Menu Placement', {
-          Top: 'top',
-          TopStart: 'top-start',
-          TopEnd: 'top-end',
-          Bottom: 'bottom',
-          BottomStart: 'bottom-start',
-          BottomEnd: 'bottom-end'
+          top: 'top',
+          'top-start': 'top-start',
+          'top-end': 'top-end',
+          bottom: 'bottom',
+          'bottom-start': 'bottom-start',
+          'bottom-end': 'bottom-end'
         },
         'top'
       )

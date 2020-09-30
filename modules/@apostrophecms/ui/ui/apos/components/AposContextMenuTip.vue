@@ -2,7 +2,7 @@
   <!-- Disabling since the SVG is mostly not active vue template code. -->
   <!-- eslint-disable vue/max-attributes-per-line -->
   <svg
-    :class="[alignmentModifier, originModifier]"
+    :class="alignmentModifier"
     class="apos-context-menu__tip" width="27px" height="13px" viewBox="0 0 27 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
   >
     <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -22,18 +22,11 @@ export default {
     align: {
       type: String,
       required: true
-    },
-    origin: {
-      type: String,
-      required: true
     }
   },
   computed: {
     alignmentModifier () {
       return `apos-context-menu__tip--alignment-${this.align}`;
-    },
-    originModifier () {
-      return `apos-context-menu__tip--origin-${this.origin}`;
     }
   }
 };
@@ -44,7 +37,7 @@ export default {
     position: absolute;
   }
 
-  .apos-context-menu__tip--alignment-start {
+  .apos-context-menu__tip--alignment-end {
     left: 20px;
   }
 
@@ -55,15 +48,15 @@ export default {
     margin-right: auto;
   }
 
-  .apos-context-menu__tip--alignment-end {
+  .apos-context-menu__tip--alignment-start {
     right: 20px;
   }
 
-  [x-placement='bottom'] .apos-context-menu__tip {
+  [x-placement^='bottom'] .apos-context-menu__tip {
     top: -11px;
   }
 
-  [x-placement='top'] .apos-context-menu__tip {
+  [x-placement^='top'] .apos-context-menu__tip {
     bottom: -11px;
     transform: rotate(180deg);
   }
