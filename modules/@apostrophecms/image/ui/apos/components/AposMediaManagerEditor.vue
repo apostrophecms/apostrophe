@@ -1,22 +1,22 @@
 <template>
   <div class="apos-media-manager-editor">
-    <div class="apos-media-manager-editor__inner" v-if="media">
+    <div class="apos-media-manager-editor__inner" v-if="activeMedia">
       <div class="apos-media-manager-editor__thumb-wrapper">
         <img
-          v-if="media.attachment"
+          v-if="activeMedia.attachment"
           class="apos-media-manager-editor__thumb"
-          :src="media.attachment._urls['one-third']" :alt="media.description"
+          :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-manager-editor__details">
         <li class="apos-media-manager-editor__detail">
-          {{ media.uploadedAt }}
+          {{ activeMedia.uploadedAt }}
         </li>
         <li class="apos-media-manager-editor__detail">
-          File Size: {{ media.fileSize }}
+          File Size: {{ activeMedia.fileSize }}
         </li>
         <li class="apos-media-manager-editor__detail">
-          {{ media.dim }}
+          {{ activeMedia.dim }}
         </li>
       </ul>
       <AposSchema
@@ -45,6 +45,12 @@
         />
       </div>
     </AposModalLip>
+    <AposModalConfirm
+      v-if="confirmContent"
+      @safe-close="confirmContent = null"
+      :confirm-content="confirmContent"
+      @confirm="changeConfirmed = true && updateActiveDoc(media)"
+    />
   </div>
 </template>
 
@@ -80,18 +86,21 @@ export default {
   emits: [ 'saved', 'back' ],
   data() {
     return {
+      activeMedia: this.media,
       doc: {
         data: {},
         hasErrors: false
       },
       docEdited: false,
       lipKey: '',
-      triggerValidation: false
+      triggerValidation: false,
+      confirmContent: null,
+      changeConfirmed: false
     };
   },
   computed: {
     moduleOptions() {
-      return window.apos.modules[this.media.type] || {};
+      return window.apos.modules[this.activeMedia.type] || {};
     },
     schema() {
       if (this.moduleOptions.schema) {
@@ -115,8 +124,20 @@ export default {
       }
     },
     media(newVal) {
-      this.doc.data = klona(newVal);
-      this.generateLipKey();
+      if (
+        this.docEdited && !this.changeConfirmed &&
+        newVal._id !== this.activeMedia._id
+      ) {
+        this.confirmContent = {
+          heading: 'Unsaved Changes',
+          description: 'Do you want to abandon changes to the active image?',
+          affirmativeLabel: 'Yes'
+        };
+
+        return;
+      }
+
+      this.updateActiveDoc(newVal);
     }
   },
   mounted() {
@@ -124,12 +145,18 @@ export default {
     this.docEdited = false;
   },
   methods: {
+    updateActiveDoc(newMedia) {
+      this.activeMedia = newMedia;
+      this.doc.data = klona(newMedia);
+      this.generateLipKey();
+    },
     save() {
       this.triggerValidation = true;
       apos.bus.$emit('busy', true);
-      const route = `${this.moduleOptions.action}/${this.media._id}`;
+      const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
-      this.doc.data.attachment = this.media.attachment;
+      this.doc.data.attachment = this.activeMedia.attachment;
+
       this.$nextTick(async () => {
         if (this.doc.hasErrors) {
           await apos.notify('Resolve errors before saving.', {
