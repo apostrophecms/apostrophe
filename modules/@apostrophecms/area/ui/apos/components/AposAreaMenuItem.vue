@@ -43,7 +43,7 @@ export default {
     click() {
       this.$emit('click');
       // triggering the `AposContextMenu`'s `close` method since slots cannot emit events
-      this.$parent.close();
+      // this.$parent.close();
     }
   }
 };

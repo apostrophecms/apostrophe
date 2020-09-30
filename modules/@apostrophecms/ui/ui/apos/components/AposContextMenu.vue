@@ -1,14 +1,16 @@
 <template>
   <div class="apos-context-menu">
     <slot name="prebutton" />
-    <!-- TODO refactor buttons to take a single config obj -->
     <v-popover
       ref="popover"
+      @hide="hide"
       @show="show"
-      @hide="$emit('close')"
       :offset="menuOffset"
       :placement="menuPlacement"
+      trigger="manual"
+      :open="isOpen"
     >
+      <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         class="apos-context-menu__btn"
         @click="buttonClicked($event)"
@@ -21,7 +23,6 @@
           class="apos-primary-scrollbar apos-context-menu__popup"
           :class="classList"
           ref="popup"
-          :aria-hidden="open ? 'false' : 'true'"
           role="dialog"
         >
           <AposContextMenuTip
@@ -36,7 +37,7 @@
                   :key="item.action"
                   :menu-item="item"
                   @clicked="menuItemClicked"
-                  :open="open"
+                  :open="isOpen"
                 />
               </ul>
             </slot>
@@ -48,13 +49,13 @@
 </template>
 
 <script>
-import Vue from 'apostrophe/vue';
+// import Vue from 'apostrophe/vue';
 import {
-  VTooltip,
+  // VTooltip,
   VPopover
 } from 'v-tooltip';
-Vue.directive('tooltip', VTooltip);
-Vue.component('v-popover', VPopover);
+// Vue.directive('tooltip', VTooltip);
+// Vue.component('v-popover', VPopover);
 
 export default {
   name: 'AposContextMenu',
@@ -95,7 +96,7 @@ export default {
   emits: [ 'open', 'close', 'item-clicked' ],
   data() {
     return {
-      open: false,
+      isOpen: false,
       position: ''
     };
   },
@@ -147,17 +148,16 @@ export default {
   //   }
   // },
   methods: {
-    resize($event) {
-      console.log('hi resize');
-      console.log($event);
-    },
     show() {
-      console.log('hello');
-      console.log(this.$refs.popover);
+      this.isOpen = true;
     },
-    close() {
-      this.open = false;
+    hide() {
+      this.isOpen = false;
     },
+    // close() {
+    //   console.log('does close fire?');
+    //   this.open = false;
+    // },
     bind() {
       // document.addEventListener('click', this.clicks);
       // document.addEventListener('keydown', this.keyboard);
@@ -171,19 +171,19 @@ export default {
     keyboard(event) {
       // if user hits esc, close menu
       if (event.keyCode === 27) {
-        this.close();
+        // this.close();
         this.unbind();
       }
     },
     clicks (event) {
       // if user clicks outside menu component, close menu
       if (!this.$el.contains(event.target)) {
-        this.close();
+        // this.close();
         this.unbind();
       }
     },
     buttonClicked() {
-      // this.open = !this.open;
+      this.isOpen = !this.isOpen;
       // if (this.open) {
       //   this.bind();
       // } else {
@@ -192,7 +192,7 @@ export default {
     },
     menuItemClicked(action) {
       this.$emit('item-clicked', action);
-      this.close();
+      this.hide();
     }
   }
 };
