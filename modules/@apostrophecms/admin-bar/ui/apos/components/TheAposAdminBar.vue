@@ -21,7 +21,6 @@
               :menu="item.items" :button="{
                 label: item.label
               }"
-              :tip-alignment="index > 1 ? 'right' : 'left'"
               @item-clicked="emitEvent"
             />
           </li>
@@ -35,7 +34,6 @@
                 icon: 'plus-icon',
                 type: 'primary'
               }"
-              menu-placement="bottom"
             />
           </li>
         </ul>

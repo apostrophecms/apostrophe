@@ -14,8 +14,8 @@
         type="outline"
       />
       <AposContextMenu
-        :button="more.button" :menu="more.menu"
-        tip-alignment="right"
+        :button="more.button"
+        :menu="more.menu"
         @item-clicked="managerAction"
       />
     </template>

@@ -1,7 +1,6 @@
 <template>
   <AposContextMenu
-    @open="open = $event" :origin="origin"
-    :tip-alignment="tipAlignment"
+    @open="open = $event"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
@@ -347,10 +346,10 @@ export default {
   }
 
   .fade-enter, .fade-leave-to {
-    position: absolute;
-    width: 100%;
-    opacity: 0;
-    transform: translateY(-5px);
+    // position: absolute;
+    // width: 100%;
+    // opacity: 0;
+    // transform: translateY(-5px);
   }
 
 </style>

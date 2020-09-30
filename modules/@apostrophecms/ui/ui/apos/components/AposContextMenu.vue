@@ -87,7 +87,7 @@ export default {
     },
     menuPlacement: {
       type: String,
-      default: 'bottom-end'
+      default: 'bottom'
     },
     menuOffset: {
       type: Number,
