@@ -24,7 +24,7 @@
           @add="$emit('insert', $event);"
           @menu-open="menuFocus('top')"
           @menu-close="menuUnfocus('top')"
-          :context-options="contextOptions"
+          :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
         />
@@ -79,7 +79,7 @@
       >
         <AposAreaMenu
           @add="$emit('insert', $event)"
-          :context-options="contextOptions"
+          :context-menu-options="contextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
           @menu-open="menuFocus('bottom')"
@@ -142,7 +142,7 @@ export default {
       type: String,
       required: true
     },
-    contextOptions: {
+    contextMenuOptions: {
       type: Object,
       required: true
     }

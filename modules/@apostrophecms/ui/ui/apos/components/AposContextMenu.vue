@@ -204,6 +204,11 @@ export default {
   padding: 0;
 }
 
+.apos-context-menu__popup--tb-padded .apos-context-menu__pane{
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
 .apos-context-menu__popup {
   display: inline-block;
   color: var(--a-text-primary);
@@ -243,7 +248,7 @@ export default {
   display: block;
 
   .tooltip-arrow {
-    // display: none;
+    display: none;
   }
 
   &[x-placement^='top'] {

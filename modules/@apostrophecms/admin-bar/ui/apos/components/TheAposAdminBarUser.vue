@@ -4,7 +4,7 @@
     :button="button"
     :menu="menu"
     menu-placement="bottom-start"
-    menu-offset="2"
+    :menu-offset="2"
   >
     <template #prebutton>
       <AposAvatar
