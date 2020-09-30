@@ -50,13 +50,7 @@ export default {
     };
   },
   mounted () {
-    this.focusInListener = () => {
-      this.focus = true;
-    };
     this.$el.addEventListener('focusin', this.focusInListener);
-    this.focusOutListener = () => {
-      this.focus = false;
-    };
     this.$el.addEventListener('focusout', this.focusOutListener);
   },
   destroyed () {
@@ -112,6 +106,12 @@ export default {
     },
     watchNext () {
       this.validateAndEmit();
+    },
+    focusInListener() {
+      this.focus = true;
+    },
+    focusOutListener() {
+      this.focus = false;
     }
   }
 };
