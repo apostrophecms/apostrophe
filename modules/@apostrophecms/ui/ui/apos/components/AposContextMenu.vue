@@ -6,7 +6,7 @@
       ref="popover"
       @show="show"
       @hide="$emit('close')"
-      offset="16"
+      :offset="menuOffset"
       :placement="menuPlacement"
     >
       <AposButton
@@ -86,6 +86,10 @@ export default {
     menuPlacement: {
       type: String,
       default: 'bottom-end'
+    },
+    menuOffset: {
+      type: Number,
+      default: 15
     }
   },
   emits: [ 'open', 'close', 'item-clicked' ],

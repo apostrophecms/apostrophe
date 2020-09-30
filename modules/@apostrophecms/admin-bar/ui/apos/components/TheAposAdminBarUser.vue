@@ -1,7 +1,10 @@
 <template>
   <AposContextMenu
-    class="apos-admin-user" tip-alignment="right"
-    :button="button" :menu="menu"
+    class="apos-admin-user"
+    :button="button"
+    :menu="menu"
+    menu-placement="bottom-start"
+    menu-offset="2"
   >
     <template #prebutton>
       <AposAvatar

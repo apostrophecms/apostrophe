@@ -28,13 +28,14 @@
           <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
             <AposContextMenu
               class="apos-admin-bar__create"
-              :menu="createMenu" :button="{
+              :menu="createMenu"
+              :button="{
                 label: 'New item',
                 iconOnly: true,
                 icon: 'plus-icon',
                 type: 'primary'
               }"
-              tip-alignment="right"
+              menu-placement="bottom"
             />
           </li>
         </ul>
