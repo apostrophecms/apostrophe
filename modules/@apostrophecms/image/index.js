@@ -23,7 +23,8 @@ module.exports = {
       components: {
         managerModal: 'AposMediaManager'
       }
-    }
+    },
+    slugPrefix: 'image-'
   },
   fields: {
     add: {
@@ -31,7 +32,8 @@ module.exports = {
         type: 'slug',
         label: 'Slug',
         prefix: 'image',
-        required: true
+        required: true,
+        following: 'title'
       },
       attachment: {
         type: 'attachment',

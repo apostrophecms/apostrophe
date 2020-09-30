@@ -38,6 +38,8 @@
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
                 :utility-rail="false"
+                :followingValues="followingValues('other')"
+                :doc-id="docId"
                 v-model="docOtherFields"
               />
             </div>
@@ -54,6 +56,8 @@
             :current-fields="utilityFields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
+            :followingValues="followingValues('utility')"
+            :doc-id="docId"
             v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
           />
@@ -261,6 +265,21 @@ export default {
           this.schemaOtherFields.push(field);
         }
       });
+    },
+    // followedBy is either "other" or "utility". The returned object contains
+    // properties named for each field that follows another field; the values are
+    // those of the followed field. For instance if followedBy is "utility"
+    // then in our default configuration `followingValues` will be `{ slug: 'latest title here' }`
+    followingValues: function(followedBy) {
+      const fields = (followedBy === 'other') ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
+      const source = (followedBy === 'other') ? this.docUtilityFields : this.docOtherFields;
+      const followingValues = {};
+      for (const field of fields) {
+        if (field.following) {
+          followingValues[field.name] = source.data[field.following];
+        }
+      }
+      return followingValues;
     }
   }
 };
