@@ -113,11 +113,7 @@ export default {
       totalPages: 1,
       currentPage: 1,
       tagList: [],
-      filterValues: {
-        _tags: [],
-        published: true,
-        trash: false
-      },
+      filterValues: {},
       modal: {
         active: false,
         type: 'overlay',
