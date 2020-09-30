@@ -81,22 +81,6 @@ export default {
         data: {},
         hasErrors: false
       },
-      published: {
-        field: {
-          required: false,
-          name: 'published',
-          type: 'radio',
-          label: 'Published',
-          toggle: {
-            true: 'Published',
-            false: 'Unpublished'
-          }
-        },
-        status: {},
-        value: {
-          data: true
-        }
-      },
       lipKey: '',
       triggerValidation: false
     };
