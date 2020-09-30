@@ -185,8 +185,12 @@ export default {
           qs: this.filterValues
         });
       } catch {
-        // TODO: Add error notification. No client API for this yet.
-        console.error('⁉️ The requested piece was not found.', this.docId);
+        await apos.notify(`The requested ${this.moduleLabels.label.toLowerCase()} was not found.`, {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        console.error('The requested piece was not found.', this.docId);
         apos.bus.$emit('busy', false);
         this.cancel();
       } finally {
