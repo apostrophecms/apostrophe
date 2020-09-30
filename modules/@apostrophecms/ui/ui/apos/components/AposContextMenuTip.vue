@@ -39,12 +39,12 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
   .apos-context-menu__tip {
     position: absolute;
   }
 
-  .apos-context-menu__tip--alignment-left {
+  .apos-context-menu__tip--alignment-start {
     left: 20px;
   }
 
@@ -55,15 +55,15 @@ export default {
     margin-right: auto;
   }
 
-  .apos-context-menu__tip--alignment-right {
+  .apos-context-menu__tip--alignment-end {
     right: 20px;
   }
 
-  .apos-context-menu__tip--origin-below {
+  [x-placement='bottom'] .apos-context-menu__tip {
     top: -11px;
   }
 
-  .apos-context-menu__tip--origin-above {
+  [x-placement='top'] .apos-context-menu__tip {
     bottom: -11px;
     transform: rotate(180deg);
   }
