@@ -17,6 +17,7 @@ module.exports = {
         slug: {
           type: 'slug',
           label: 'Slug',
+          following: 'title',
           required: true
         },
         published: {
@@ -137,8 +138,18 @@ module.exports = {
   handlers(self, options) {
     return {
       beforeSave: {
-        async prepareRelationshipsForStorage(req, doc) {
+        prepareRelationshipsForStorage(req, doc) {
           self.apos.schema.prepareRelationshipsForStorage(req, doc);
+        },
+        slugPrefix(req, doc) {
+          if (self.options.slugPrefix) {
+            if (!doc.slug) {
+              doc.slug = 'none';
+            }
+            if (!doc.slug.startsWith(self.options.slugPrefix)) {
+              doc.slug = `${self.options.slugPrefix}${doc.slug}`;
+            }
+          }
         }
       },
       afterSave: {
@@ -450,6 +461,12 @@ module.exports = {
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
         });
+        if (self.options.slugPrefix) {
+          const slug = self.schema.find(field => field.name === 'slug');
+          if (slug) {
+            slug.prefix = self.options.slugPrefix;
+          }
+        }
         // Extend `composeSchema` to flag the use of field names
         // that are forbidden or nonfunctional in all doc types, i.e.
         // properties that will be overwritten by non-schema-driven
