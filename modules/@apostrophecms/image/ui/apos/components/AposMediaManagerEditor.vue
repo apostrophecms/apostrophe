@@ -20,10 +20,13 @@
         </li>
       </ul>
       <AposSchema
+        v-if="doc.data.title !== undefined"
         :schema="schema"
         v-model="doc"
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
+        :doc-id="doc.data._id"
+        @reset="docEdited = false"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -81,6 +84,7 @@ export default {
         data: {},
         hasErrors: false
       },
+      docEdited: false,
       lipKey: '',
       triggerValidation: false
     };
@@ -99,6 +103,17 @@ export default {
     }
   },
   watch: {
+    'doc.data': {
+      deep: true,
+      handler(newData, oldData) {
+        this.$nextTick(() => {
+          // If the previous state was an empty object, it's not "edited"
+          if (Object.keys(oldData).length > 0) {
+            this.docEdited = true;
+          }
+        });
+      }
+    },
     media(newVal) {
       this.doc.data = klona(newVal);
       this.generateLipKey();
@@ -106,6 +121,7 @@ export default {
   },
   mounted() {
     this.generateLipKey();
+    this.docEdited = false;
   },
   methods: {
     save() {
