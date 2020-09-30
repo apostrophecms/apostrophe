@@ -20,10 +20,10 @@
         </li>
       </ul>
       <AposSchema
-        v-if="doc.data.title"
         :schema="schema"
         v-model="doc"
         :modifiers="['small', 'inverted']"
+        :trigger-validation="triggerValidation"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -96,7 +96,8 @@ export default {
           data: true
         }
       },
-      lipKey: ''
+      lipKey: '',
+      triggerValidation: false
     };
   },
   computed: {
@@ -122,30 +123,36 @@ export default {
     this.generateLipKey();
   },
   methods: {
-    async save() {
+    save() {
+      this.triggerValidation = true;
       apos.bus.$emit('busy', true);
       const route = `${this.moduleOptions.action}/${this.media._id}`;
       // Repopulate `attachment` since it was removed from the schema.
       this.doc.data.attachment = this.media.attachment;
+      this.$nextTick(async () => {
+        if (this.doc.hasErrors) {
+          return;
+        }
 
-      try {
-        await apos.http.put(route, {
-          busy: true,
-          body: this.doc.data
-        });
+        try {
+          await apos.http.put(route, {
+            busy: true,
+            body: this.doc.data
+          });
 
-        this.$emit('saved');
-      } catch (err) {
-        console.error('Error saving image', err);
+          this.$emit('saved');
+        } catch (err) {
+          console.error('Error saving image', err);
 
-        await apos.notify(`Error Saving ${this.moduleLabels.label}`, {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-      } finally {
-        apos.bus.$emit('busy', false);
-      }
+          await apos.notify(`Error Saving ${this.moduleLabels.label}`, {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+        } finally {
+          apos.bus.$emit('busy', false);
+        }
+      });
     },
     generateLipKey() {
       this.lipKey = this.generateId();
