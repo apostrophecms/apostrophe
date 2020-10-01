@@ -93,6 +93,7 @@ export default {
   emits: [ 'saved', 'back' ],
   data() {
     return {
+      // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: this.media,
       doc: {
         data: {},
