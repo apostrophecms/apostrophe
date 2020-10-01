@@ -20,6 +20,7 @@
 </template>
 
 <script>
+import { isEqual } from 'lodash';
 
 export default {
   name: 'AposSchema',
@@ -59,9 +60,10 @@ export default {
       }
     }
   },
-  emits: [ 'input' ],
+  emits: [ 'input', 'reset' ],
   data() {
     return {
+      schemaReady: false,
       next: {
         hasErrors: false,
         data: {}
@@ -117,6 +119,7 @@ export default {
   },
   methods: {
     populateDocData() {
+      this.schemaReady = false;
       const next = {
         hasErrors: false,
         data: {}
@@ -139,24 +142,54 @@ export default {
       });
       this.next = next;
       this.fieldState = fieldState;
+
+      // Wait until the next tick so the parent editor component is done
+      // updating. This is only really a concern in editors that can swap
+      // the active doc/object without unmounting AposSchema.
+      this.$nextTick(() => {
+        this.schemaReady = true;
+        // Signal that the schema data is ready to be tracked.
+        this.$emit('reset');
+      });
     },
     updateNextAndEmit() {
+      if (!this.schemaReady) {
+        return;
+      }
+
       this.next.hasErrors = false;
+      let changeFound = false;
+
       this.schema.forEach(field => {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
 
         if (
-          this.fieldState[field.name].data ||
-          this.fieldState[field.name].data !== undefined
+          this.fieldState[field.name].data !== undefined &&
+          this.findRealChange(this.next.data[field.name], this.fieldState[field.name].data)
         ) {
+          changeFound = true;
           this.next.data[field.name] = this.fieldState[field.name].data;
         } else {
           this.next.data[field.name] = this.value.data[field.name];
         }
       });
-      this.$emit('input', this.next);
+
+      if (changeFound) {
+        this.$emit('input', this.next);
+      }
+    },
+    findRealChange(oldData, newData) {
+      if (isEqual(oldData, newData)) {
+        return false;
+      } else if (!oldData && !newData) {
+        return false;
+      } else if (!oldData && Array.isArray(newData) && newData.length === 0) {
+        return false;
+      } else {
+        return true;
+      }
     },
     displayComponent(fieldName) {
       return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
