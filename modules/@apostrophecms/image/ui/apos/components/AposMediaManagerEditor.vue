@@ -9,14 +9,18 @@
         >
       </div>
       <ul class="apos-media-manager-editor__details">
-        <li class="apos-media-manager-editor__detail">
-          {{ activeMedia.uploadedAt }}
+        <li class="apos-media-manager-editor__detail" v-if="createdDate">
+          Uploaded: {{ createdDate }}
         </li>
-        <li class="apos-media-manager-editor__detail">
-          File Size: {{ activeMedia.fileSize }}
+        <li class="apos-media-manager-editor__detail" v-if="fileSize">
+          File Size: {{ fileSize }}
         </li>
-        <li class="apos-media-manager-editor__detail">
-          {{ activeMedia.dim }}
+        <li
+          class="apos-media-manager-editor__detail"
+          v-if="activeMedia.attachment && activeMedia.attachment.width"
+        >
+          Dimensions: {{ activeMedia.attachment.width }} 𝗑
+          {{ activeMedia.attachment.height }}
         </li>
       </ul>
       <AposSchema
@@ -57,6 +61,9 @@
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import klona from 'klona';
+import dayjs from 'dayjs';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
+dayjs.extend(advancedFormat);
 
 export default {
   mixins: [ AposHelpers ],
@@ -114,6 +121,28 @@ export default {
         });
       }
       return [];
+    },
+    fileSize() {
+      if (
+        !this.activeMedia.attachment || !this.activeMedia.attachment.length ||
+        !this.activeMedia.attachment.length.size
+      ) {
+        return '';
+      }
+
+      const size = this.activeMedia.attachment.length.size;
+
+      if (size >= 1000000) {
+        return `${(size / 1000000).toFixed(2)}MB`;
+      } else {
+        return `${Math.round(size / 1000)}KB`;
+      }
+    },
+    createdDate() {
+      if (!this.activeMedia.attachment || !this.activeMedia.attachment.createdAt) {
+        return '';
+      }
+      return dayjs(this.activeMedia.attachment.createdAt).format('MMM Do, YYYY');
     }
   },
   watch: {

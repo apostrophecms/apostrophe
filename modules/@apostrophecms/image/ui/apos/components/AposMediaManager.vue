@@ -11,21 +11,23 @@
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
-    <template v-if="relationshipField" #primaryControls>
+    <template v-if="relationshipField" #secondaryControls>
       <AposButton
         type="default" label="Cancel"
         @click="cancel"
       />
+    </template>
+    <template v-else #secondaryControls>
+      <AposButton
+        type="default" label="Exit"
+        @click="cancel"
+      />
+    </template>
+    <template v-if="relationshipField" #primaryControls>
       <AposButton
         :label="`Save`" type="primary"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
-      />
-    </template>
-    <template v-else #primaryControls>
-      <AposButton
-        type="default" label="Finished"
-        @click="cancel"
       />
     </template>
     <template #leftRail>
