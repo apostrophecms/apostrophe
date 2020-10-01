@@ -100,7 +100,7 @@
           length: {
             size: 345000
           },
-          wdith: dim[0],
+          width: dim[0],
           height: dim[1]
         },
         title,
