@@ -34,7 +34,7 @@
         class="apos-media-manager-editor__lip"
       >
         <AposButton
-          @click="$emit('back')"
+          @click="cancel"
           class="apos-media-manager-editor__back" type="outline"
           label="Cancel"
         />
@@ -46,8 +46,8 @@
       </div>
     </AposModalLip>
     <AposModalConfirm
-      v-if="confirmContent"
-      @safe-close="confirmContent = null"
+      v-if="confirmingDiscard"
+      @safe-close="confirmingDiscard = false"
       :confirm-content="confirmContent"
       @confirm="discardChanges"
     />
@@ -94,8 +94,13 @@ export default {
       docEdited: false,
       lipKey: '',
       triggerValidation: false,
-      confirmContent: null,
-      changeConfirmed: false
+      confirmContent: {
+        heading: 'Unsaved Changes',
+        description: 'Do you want to discard changes to the active image?',
+        affirmativeLabel: 'Discard Changes'
+      },
+      confirmingDiscard: false,
+      discardConfirmed: false
     };
   },
   computed: {
@@ -127,15 +132,15 @@ export default {
       }
     },
     media(newVal) {
+      // Ask for comfirmation to change the active media if the doc was edited,
+      // we haven't confirmed it's okay to discard it yet, there's existing
+      // active media to replace, and that new media is different from the
+      // active media.
       if (
-        this.docEdited && !this.changeConfirmed &&
-        newVal._id !== this.activeMedia._id
+        this.docEdited && !this.discardConfirmed &&
+        this.activeMedia._id && (newVal._id !== this.activeMedia._id)
       ) {
-        this.confirmContent = {
-          heading: 'Unsaved Changes',
-          description: 'Do you want to discard changes to the active image?',
-          affirmativeLabel: 'Discard Changes'
-        };
+        this.confirmingDiscard = true;
 
         return;
       }
@@ -194,9 +199,28 @@ export default {
     generateLipKey() {
       this.lipKey = this.generateId();
     },
+    cancel() {
+      // If the doc was edited and we haven't confirmed the discard yet, ask
+      // for confirmation.
+      if (this.docEdited && !this.discardConfirmed) {
+        this.confirmingDiscard = true;
+
+        return;
+      }
+
+      this.$emit('back');
+    },
     async discardChanges () {
-      this.changeConfirmed = true;
-      this.updateActiveDoc(this.media);
+      this.discardConfirmed = true;
+
+      if (this.media._id !== this.activeMedia._id) {
+        this.updateActiveDoc(this.media);
+      } else {
+        this.updateActiveDoc({});
+        this.cancel();
+      }
+
+      this.discardConfirmed = false;
 
       await apos.notify(`${this.moduleLabels.label} changes discarded`, {
         dismiss: true
