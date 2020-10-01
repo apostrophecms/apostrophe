@@ -130,8 +130,8 @@ export default {
       ) {
         this.confirmContent = {
           heading: 'Unsaved Changes',
-          description: 'Do you want to abandon changes to the active image?',
-          affirmativeLabel: 'Yes'
+          description: 'Do you want to discard changes to the active image?',
+          affirmativeLabel: 'Discard Changes'
         };
 
         return;
