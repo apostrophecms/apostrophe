@@ -199,6 +199,15 @@ module.exports = {
             return true;
           }
         ]
+      },
+      get: {
+        url(req) {
+          const { attachment, options } = req.query;
+          if (!attachment) {
+            throw self.apos.error('invalid');
+          }
+          return self.url(attachment, options);
+        }
       }
     };
   },

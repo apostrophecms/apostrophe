@@ -5,8 +5,24 @@
   >
     <template #body>
       <div class="apos-attachment">
-        <label :disabled="field.disabled" class="apos-input-wrapper apos-attachment-dropzone">
-          <p class="apos-attachment-instructions" v-html="message" />
+        <label
+          class="apos-input-wrapper apos-attachment-dropzone"
+          :class="{ 'apos-attachment-dropzone--dragover': dragging }"
+          :disabled="field.disabled"
+          @drop.prevent="uploadMedia"
+          @dragover="dragHandler"
+          @dragleave="dragging = false"
+        >
+          <p class="apos-attachment-instructions">
+            <template v-if="dragging">
+              <cloud-upload-icon :size="38"  />
+            </template>
+            <template v-else>
+              <paperclip-icon :size="14" />
+              {{ messagePart1 }}
+              <span class="apos-attachment-highlight">{{ messagePart2 }}</span>
+            </template>
+          </p>
           <input
             type="file"
             class="apos-sr-only"
@@ -36,15 +52,31 @@ export default {
   },
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
-  computed: {
-    message () {
-      let message = '<paperclip-icon :size="14" /> Drop a file here or <span class="apos-attachment-highlight">click to open the file explorer</span>';
+  data () {
+    let messagePart1 = 'Drop a file here or';
+    let messagePart2 = 'click to open the file explorer';
 
-      if (this.field.disabled) {
-        message = 'This field is disabled';
-      }
-
-      return message;
+    if (this.field.disabled) {
+      messagePart1 = 'This field is disabled';
+      messagePart2 = '';
+    }
+    return {
+      dragging: false,
+      messagePart1,
+      messagePart2
+    };
+  },
+  async mounted () {
+    if (this.value.data && this.value.data._id) {
+      const url = await apos.http.get('/api/v1/@apostrophecms/attachment/url', {
+        qs: {
+          attachment: this.next
+        }
+      });
+      this.value.data = {
+        ...this.value.data,
+        url
+      };
     }
   },
   methods: {
@@ -60,9 +92,10 @@ export default {
     },
     async uploadMedia (event) {
       try {
+        this.dragging = false;
         this.$emit('upload-started');
 
-        const file = event.target.files[0];
+        const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
         await apos.notify(`Uploading ${file.name}`, {
           dismiss: true,
           icon: 'cloud-upload-icon'
@@ -91,6 +124,10 @@ export default {
           dismiss: true
         });
       }
+    },
+    dragHandler (event) {
+      event.preventDefault();
+      this.dragging = true;
     }
   }
 };
@@ -121,6 +158,11 @@ export default {
     }
   }
 
+  .apos-attachment-dropzone--dragover {
+    border: 2px dashed var(--a-primary);
+    background-color: var(--a-base-10);
+  }
+
   .apos-attachment-instructions {
     text-align: center;
     // v-html goofiness
@@ -129,5 +171,4 @@ export default {
       font-weight: 700;
     }
   }
-
 </style>
