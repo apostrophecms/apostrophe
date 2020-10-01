@@ -143,6 +143,9 @@ export default {
       this.next = next;
       this.fieldState = fieldState;
 
+      // Wait until the next tick so the parent editor component is done
+      // updating. This is only really a concern in editors that can swap
+      // the active doc/object without unmounting AposSchema.
       this.$nextTick(() => {
         this.schemaReady = true;
         // Signal that the schema data is ready to be tracked.
