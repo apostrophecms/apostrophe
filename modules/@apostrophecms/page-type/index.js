@@ -15,7 +15,8 @@ module.exports = {
           type: 'slug',
           label: 'Slug',
           required: true,
-          page: true
+          page: true,
+          following: 'title'
         },
         type: {
           type: 'select',
