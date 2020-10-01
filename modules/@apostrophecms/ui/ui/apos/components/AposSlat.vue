@@ -17,7 +17,7 @@
       :aria-labelledby="parent"
     >
       <div class="apos-slat__main">
-        <drag-icon v-if="displayDragIcon" class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <drag-icon v-if="sortable" class="apos-slat__control apos-slat__control--drag" :size="13" />
         <AposContextMenu
           v-if="item._fields"
           :button="more.button"
@@ -74,7 +74,7 @@ export default {
       type: Boolean,
       default: false
     },
-    displayDragIcon: {
+    sortable: {
       type: Boolean,
       default: true
     },
@@ -105,7 +105,7 @@ export default {
   },
   computed: {
     itemSize() {
-      const size = this.item.length.size
+      const size = this.item.length.size;
       if (size < 1000000) {
         return `${(size / 1000).toFixed(2)}kb`;
       } else {

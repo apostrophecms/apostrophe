@@ -15,6 +15,7 @@ module.exports = {
   'circle-medium-icon': 'CircleMedium',
   'clock-icon': 'Clock',
   'close-icon': 'Close',
+  'cloud-upload-icon': 'CloudUpload',
   'cog-icon': 'Cog',
   'delete-icon': 'Delete',
   'dots-vertical-icon': 'DotsVertical',

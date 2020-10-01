@@ -38,7 +38,6 @@
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
                 :utility-rail="false"
-                :url="doc.data._url"
                 v-model="docOtherFields"
               />
             </div>

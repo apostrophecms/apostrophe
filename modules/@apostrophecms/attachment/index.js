@@ -265,8 +265,7 @@ module.exports = {
           name: self.name,
           partial: self.fieldTypePartial,
           convert: self.convert,
-          index: self.index,
-          vueComponent: 'AposAttachment'
+          index: self.index
         });
       },
       async convert(req, field, data, object) {

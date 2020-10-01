@@ -13,7 +13,7 @@
             @input="uploadMedia"
           >
         </label>
-        <div v-if="value.data" class="apos-attachment-files">
+        <div v-if="next" class="apos-attachment-files">
           <AposSlatList
             :initial-items="[ next ]"
             :removable="false"
@@ -30,7 +30,7 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.
 import AposSlatList from 'Modules/@apostrophecms/ui/components/AposSlatList';
 
 export default {
-  name: 'AposAttachment',
+  name: 'AposInputAttachment',
   components: {
     AposSlatList
   },
@@ -38,7 +38,7 @@ export default {
   emits: [ 'upload-started', 'upload-complete' ],
   computed: {
     limitReached () {
-      return this.next._id;
+      return this.next.length >= this.field.max;
     },
     message () {
       let message = '<paperclip-icon :size="14" /> Drop a file here or <span class="apos-attachment-highlight">click to open the file explorer</span>';
@@ -56,16 +56,13 @@ export default {
     },
     disabled () {
       return (this.limitReached || this.field.disabled);
-    },
-    moduleOptions() {
-      return window.apos.modules['@apostrophecms/file'];
     }
   },
   methods: {
-    updated(items) {
+    updated (items) {
       this.next = items;
     },
-    validate(value) {
+    validate (value) {
       if (this.field.required && !value) {
         return 'required';
       }
@@ -73,61 +70,39 @@ export default {
       return false;
     },
     async uploadMedia (event) {
-      this.$emit('upload-started');
-      const file = event.target.files[0];
-
-      const emptyDoc = await apos.http.post(this.moduleOptions.action, {
-        body: {
-          _newInstance: true
-        }
-      });
-      await apos.notify('Uploading file', { dismiss: true });
-
-      const formData = new window.FormData();
-
-      formData.append('file', file);
-      let attachment;
-
       try {
-        attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+        this.$emit('upload-started');
+
+        const file = event.target.files[0];
+        await apos.notify(`Uploading ${file.name}`, {
+          dismiss: true,
+          icon: 'cloud-upload-icon'
+        });
+
+        const formData = new window.FormData();
+        formData.append('file', file);
+        const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
           body: formData
         });
+
+        await apos.notify(`Successfully uploaded ${file.name}`, {
+          type: 'success',
+          dismiss: true,
+          icon: 'check-all-icon'
+        });
+
+        this.$emit('upload-complete');
+        this.value.data = attachment;
       } catch (error) {
         console.error('Error uploading file.', error);
-
         const msg = error.body && error.body.message ? error.body.message : 'Upload error';
-
         await apos.notify(msg, {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
         });
-        return;
       }
-
-      const fileData = Object.assign(emptyDoc, {
-        title: attachment.title,
-        attachment
-      });
-
-      try {
-        const uploaded = await apos.http.post(this.moduleOptions.action, {
-          body: fileData
-        });
-        await apos.notify('Upload Successful', {
-          type: 'success',
-          dismiss: true
-        });
-        this.value.data = {
-          ...uploaded[this.field.name],
-          url: uploaded._url
-        };
-      } catch (error) {
-        await this.notifyErrors(error, 'Upload Error');
-      }
-
-      this.$emit('upload-complete');
-    },
+    }
   }
 };
 </script>

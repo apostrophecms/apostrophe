@@ -47,7 +47,7 @@ export const attachmentInput = () => {
       };
     },
     template: `
-      <AposAttachment
+      <AposInputAttachment
         :field="field"
         :value="value"
       />`

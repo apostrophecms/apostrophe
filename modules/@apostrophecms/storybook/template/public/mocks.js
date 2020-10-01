@@ -25,7 +25,7 @@
           object: 'AposInputObject',
           relationship: 'AposInputRelationship',
           relationshipReverse: 'AposInputRelationshipReverse',
-          attachment: 'AposAttachment',
+          attachment: 'AposInputAttachment',
           video: 'AposInputVideo'
         }
       },
