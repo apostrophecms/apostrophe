@@ -1,14 +1,14 @@
 <template>
   <AposInputWrapper
     :field="field" :error="error"
-    :uid="uid" :items="items"
+    :uid="uid" :items="next"
   >
     <template #body>
       <div class="apos-input-wrapper apos-input-relationship">
         <div class="apos-input-relationship__input-wrapper">
           <input
             class="apos-input apos-input--text apos-input--relationship"
-            v-model="next" type="text"
+            v-model="searchTerm" type="text"
             :placeholder="placeholder"
             :disabled="status.disabled" :required="field.required"
             :id="uid"
@@ -26,15 +26,15 @@
         </div>
         <AposSlatList
           class="apos-input-relationship__items"
-          v-if="items.length"
+          v-if="next.length"
           @update="updateSelected"
           @item-clicked="openRelationshipEditor"
-          :initial-items="items"
+          :initial-items="next"
         />
         <AposSearchList
           :list="searchList"
           @select="updateSelected"
-          :selected-items="items"
+          :selected-items="next"
         />
       </div>
     </template>
@@ -43,7 +43,7 @@
         :is="chooserComponent"
         v-if="choosing"
         :module-name="field.withType"
-        :chosen="items"
+        :chosen="next"
         :relationship-field="field"
         @chose="updateSelected"
         @safe-close="choosing=false"
@@ -65,19 +65,13 @@ import AposInputMixin from '../mixins/AposInputMixin.js';
 export default {
   name: 'AposInputRelationship',
   mixins: [ AposInputMixin ],
-  props: {
-    listItems: {
-      type: Array,
-      default() {
-        return [];
-      }
-    }
-  },
   emits: [ 'input' ],
   data () {
     return {
+      searchTerm: '',
       searchList: [],
-      items: this.value.data || this.listItems,
+      next: (this.value && Array.isArray(this.value.data))
+        ? this.value.data : (this.field.def || []),
       originalDisabled: this.status.disabled,
       searching: false,
       choosing: false,
@@ -101,14 +95,6 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
-  watch: {
-    next: function () {
-      // override method from mixin to avoid standard behavior
-    },
-    value: function () {
-      // override method from mixin to avoid standard behavior
-    }
-  },
   mounted() {
     this.validateAndEmit();
   },
@@ -125,10 +111,10 @@ export default {
       }
 
       if (this.field.max && this.field.max <= value.length) {
-        this.next = 'Limit reached!';
+        this.searchTerm = 'Limit reached!';
         this.status.disabled = true;
       } else {
-        this.next = '';
+        this.searchTerm = '';
         this.status.disabled = false;
       }
 
@@ -139,20 +125,19 @@ export default {
       return false;
     },
     updateSelected(items) {
-      this.items = items;
-      this.validateAndEmit();
+      this.next = items;
     },
     async input () {
       if (!this.searching) {
-        if (this.next.length) {
+        if (this.searchTerm.length) {
           this.searching = true;
-          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.next}`, {
+          const list = await apos.http.get(`${apos.modules[this.field.withType].action}?autocomplete=${this.searchTerm}`, {
             busy: true
           });
 
           // filter items already selected
           this.searchList = list.results.filter(item => {
-            return !this.items.map(i => i._id).includes(item._id);
+            return !this.next.map(i => i._id).includes(item._id);
           });
           this.searching = false;
         } else {
@@ -166,20 +151,6 @@ export default {
       setTimeout(() => {
         this.searchList = [];
       }, 200);
-    },
-    validateAndEmit () {
-      // override method from mixin to avoid standard behavior
-      this.$emit('input', {
-        data: this.items,
-        error: this.validate(this.items)
-      });
-    },
-    watchValue () {
-      // override method from mixin to avoid standard behavior
-      this.error = this.value.error;
-    },
-    watchNext () {
-      // override method from mixin to avoid standard behavior
     },
     openRelationshipEditor (item) {
       this.relationshipSchema = this.field.schema;
