@@ -126,13 +126,13 @@ export default {
     },
     gridModifier() {
       if (this.hasLeftRail && this.hasRightRail) {
-        return 'apos-modal__main--grid apos-modal__main--with-rails';
+        return 'apos-modal__main--with-rails';
       }
       if (this.hasLeftRail && !this.hasRightRail) {
-        return 'apos-modal__main--grid apos-modal__main--with-left-rail';
+        return 'apos-modal__main--with-left-rail';
       }
       if (!this.hasLeftRail && this.hasRightRail) {
-        return 'apos-modal__main--grid apos-modal__main--with-right-rail';
+        return 'apos-modal__main--with-right-rail';
       }
       return false;
     }
@@ -283,6 +283,7 @@ export default {
   }
 
   .apos-modal__main {
+    display: grid;
     grid-row: 2 / 3;
     overflow-y: auto;
   }
@@ -372,10 +373,6 @@ export default {
     &:first-child {
       margin-left: 0;
     }
-  }
-
-  .apos-modal__main--grid {
-    display: grid;
   }
 
   .apos-modal__controls--secondary {

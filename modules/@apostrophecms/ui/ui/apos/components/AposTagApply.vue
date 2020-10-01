@@ -1,6 +1,7 @@
 <template>
   <AposContextMenu
     @open="open = $event"
+    menu-placement="bottom-end"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
