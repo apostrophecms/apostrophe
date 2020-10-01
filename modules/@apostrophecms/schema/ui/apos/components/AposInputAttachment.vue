@@ -5,7 +5,7 @@
   >
     <template #body>
       <div class="apos-attachment">
-        <label :disabled="disabled" class="apos-input-wrapper apos-attachment-dropzone">
+        <label :disabled="field.disabled" class="apos-input-wrapper apos-attachment-dropzone">
           <p class="apos-attachment-instructions" v-html="message" />
           <input
             type="file"
@@ -37,9 +37,6 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
   computed: {
-    limitReached () {
-      return this.next.length >= this.field.max;
-    },
     message () {
       let message = '<paperclip-icon :size="14" /> Drop a file here or <span class="apos-attachment-highlight">click to open the file explorer</span>';
 
@@ -47,15 +44,7 @@ export default {
         message = 'This field is disabled';
       }
 
-      // limit reached should be a more specific form of disabled and go after it
-      if (this.limitReached) {
-        message = 'Attachment Limit Reached';
-      }
-
       return message;
-    },
-    disabled () {
-      return (this.limitReached || this.field.disabled);
     }
   },
   methods: {
