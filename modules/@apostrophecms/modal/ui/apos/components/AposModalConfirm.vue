@@ -48,14 +48,14 @@
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  mixins: [AposModalParentMixin],
+  mixins: [ AposModalParentMixin ],
   props: {
     confirmContent: {
       type: Object,
       required: true
     }
   },
-  emits: ['safe-close', 'confirm'],
+  emits: [ 'safe-close', 'confirm' ],
   data() {
     return {
       modal: {
@@ -83,6 +83,9 @@ export default {
 
 <style lang="scss" scoped>
 .apos-confirm {
+  // Repeat modal z-index here since this typically lives inside a modal.
+  // TODO: Remove z-index once using Vue 3 Teleport.
+  z-index: $z-index-modal-bg;
   position: fixed;
   top: 0;
   right: 0;
@@ -94,13 +97,22 @@ export default {
 }
 
 /deep/ .apos-modal__inner {
-  top: auto;
-  right: auto;
-  bottom: auto;
-  left: auto;
-  width: 420px;
-  height: auto;
-  text-align: center;
+  &,
+  .apos-modal__inner .apos-confirm & {
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 420px;
+    height: auto;
+    text-align: center;
+  }
+}
+
+/deep/ .apos-modal__overlay {
+  .apos-modal__inner .apos-confirm & {
+    display: block;
+  }
 }
 
 /deep/ .apos-modal__body {

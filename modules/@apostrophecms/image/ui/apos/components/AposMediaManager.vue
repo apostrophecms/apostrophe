@@ -116,7 +116,7 @@ export default {
         type: 'overlay',
         showModal: false
       },
-      editing: null,
+      editing: undefined,
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
@@ -154,7 +154,7 @@ export default {
       }
 
       if (newVal.length > 1 || newVal.length === 0) {
-        this.editing = null;
+        this.editing = undefined;
       }
     }
   },
@@ -212,7 +212,7 @@ export default {
     },
     clearSelected() {
       this.checked = [];
-      this.editing = null;
+      this.editing = undefined;
     },
     updateEditing(id) {
       this.editing = this.items.find(item => item._id === id);
@@ -238,7 +238,7 @@ export default {
       }
 
       this.lastSelected = id;
-      this.editing = null;
+      this.editing = undefined;
     },
 
     selectSeries(id) {
@@ -266,13 +266,13 @@ export default {
       });
 
       this.lastSelected = sliced[sliced.length - 1]._id;
-      this.editing = null;
+      this.editing = undefined;
     },
 
     // Toolbar handlers
     selectClick() {
       this.selectAll();
-      this.editing = null;
+      this.editing = undefined;
     },
     async updatePage(num) {
       if (num) {
