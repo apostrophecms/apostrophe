@@ -152,6 +152,11 @@ export default {
         this.searchList = [];
       }, 200);
     },
+    watchValue () {
+      this.error = this.value.error;
+      // Ensure the internal state is an array.
+      this.next = Array.isArray(this.value.data) ? this.value.data : [];
+    },
     openRelationshipEditor (item) {
       this.relationshipSchema = this.field.schema;
       this.clickedItem = item;
