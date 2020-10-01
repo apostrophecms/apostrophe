@@ -116,8 +116,11 @@ export default {
       deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
-          // If the previous state was an empty object, it's not "edited"
-          if (Object.keys(oldData).length > 0) {
+          // If either old or new state are an empty object, it's not "edited"
+          if (
+            Object.keys(oldData).length > 0 &&
+            Object.keys(newData).length > 0
+          ) {
             this.docEdited = true;
           }
         });
@@ -173,6 +176,7 @@ export default {
             body: this.doc.data
           });
 
+          this.docEdited = false;
           this.$emit('saved');
         } catch (err) {
           console.error('Error saving image', err);
