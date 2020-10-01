@@ -49,7 +49,7 @@
       v-if="confirmContent"
       @safe-close="confirmContent = null"
       :confirm-content="confirmContent"
-      @confirm="changeConfirmed = true && updateActiveDoc(media)"
+      @confirm="discardChanges"
     />
   </div>
 </template>
@@ -193,6 +193,14 @@ export default {
     },
     generateLipKey() {
       this.lipKey = this.generateId();
+    },
+    async discardChanges () {
+      this.changeConfirmed = true;
+      this.updateActiveDoc(this.media);
+
+      await apos.notify(`${this.moduleLabels.label} changes discarded`, {
+        dismiss: true
+      });
     }
   }
 };
