@@ -7,7 +7,7 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :followingValue="followingValues[field.name]"
+        :following-value="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :status="fields[field.name].status"
@@ -101,9 +101,12 @@ export default {
         // The doc might be swapped out completely in cases such as the media
         // library editor. Repopulate the fields if that happens.
         if (
-          this.fieldState._id &&
-          (newVal.data._id !== this.fieldState._id.data)
+          // If the fieldState had been cleared and there's new populated data
+          (!this.fieldState._id && newVal.data._id) ||
+          // or if there *is* active fieldState, but the new data is a new doc
+          (this.fieldState._id && newVal.data._id !== this.fieldState._id.data)
         ) {
+          // repopulate the schema.
           this.populateDocData();
         }
       }
