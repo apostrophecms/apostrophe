@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import isEqual from 'lodash.isequal';
+import { isEqual } from 'lodash';
 
 export default {
   name: 'AposSchema',
