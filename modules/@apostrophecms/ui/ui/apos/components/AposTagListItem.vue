@@ -33,21 +33,26 @@ export default {
     Close
   },
   props: {
+    activeTags: {
+      type: Array,
+      default() {
+        return [];
+      }
+    },
     tag: {
       required: true,
       type: Object
     }
   },
-  emits: ['click'],
-  data() {
-    return {
-      active: false
-    };
+  emits: [ 'click' ],
+  computed: {
+    active () {
+      return this.activeTags.includes(this.tag.value);
+    }
   },
   methods: {
     click(tag) {
-      this.active = !this.active;
-      this.$emit('click', tag.slug);
+      this.$emit('click', tag.value);
     }
   }
 };

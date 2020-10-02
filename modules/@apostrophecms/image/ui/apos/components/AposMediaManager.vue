@@ -32,22 +32,26 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <AposTagList title="Filter by Tag" :tags="tagList" />
+        <AposTagList
+          title="Filter by Tag"
+          :tags="tagList"
+          @update="filter('_tags', $event)"
+        />
       </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
           <AposDocsManagerToolbar
-            v-if="!!items.length"
             :selected-state="selectAllState"
             :total-pages="totalPages" :current-page="currentPage"
-            :filters="options.filters" :labels="moduleLabels"
+            :filters="toolbarFilters" :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
             @search="search"
+            @filter="filter"
           />
         </template>
         <template #bodyMain>
@@ -111,6 +115,7 @@ export default {
       totalPages: 1,
       currentPage: 1,
       tagList: [],
+      filterValues: {},
       modal: {
         active: false,
         type: 'overlay',
@@ -129,10 +134,20 @@ export default {
   computed: {
     moduleTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
-      return `${verb} ${this.moduleLabels.plural}`;
+      return `${verb} ${this.moduleLabels.pluralLabel}`;
     },
     options() {
       return window.apos.modules[this.moduleName];
+    },
+    toolbarFilters() {
+      if (!this.options || !this.options.filters) {
+        return null;
+      }
+
+      return this.options.filters.filter(filter => {
+        // Removes _tags since that will be in the left sidebar.
+        return filter.name !== '_tags';
+      });
     },
     moduleLabels() {
       if (!this.options) {
@@ -164,10 +179,20 @@ export default {
   },
   methods: {
     async getMedia () {
-
       const qs = {
+        ...this.filterValues,
         page: this.currentPage
       };
+
+      if (this.options && Array.isArray(this.options.filters)) {
+        this.options.filters.forEach(filter => {
+          if (!filter.choices && qs.choices) {
+            qs.choices += `,${filter.name}`;
+          } else if (!filter.choices) {
+            qs.choices = filter.name;
+          }
+        });
+      }
 
       // Avoid undefined properties.
       for (const prop in qs) {
@@ -175,19 +200,26 @@ export default {
           delete qs[prop];
         };
       }
-      const getResponse = (await apos.http.get(
+      const apiResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
           qs
         }
       ));
 
-      this.currentPage = getResponse.currentPage;
-      this.totalPages = getResponse.pages;
-      this.items = getResponse.results;
+      this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+      this.currentPage = apiResponse.currentPage;
+      this.totalPages = apiResponse.pages;
+      this.items = apiResponse.results;
     },
     async updateMedia () {
       this.updateEditing(null);
+      await this.getMedia();
+    },
+    async filter(name, value) {
+      this.filterValues[name] = value;
+      this.currentPage = 1;
+
       await this.getMedia();
     },
     createPlaceholder(dimensions) {
