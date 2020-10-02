@@ -17,6 +17,7 @@
       />
     </template>
     <template #primaryControls>
+      <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
       <AposContextMenu
         v-if="relationshipField"
         :button="relationshipMore.button"
