@@ -41,7 +41,7 @@ export const areaMenu = () => {
     },
     template: `
       <AposAreaMenu
-        v-on:click="handler"
+        @click="handler"
         :contextMenuOptions="contextMenuOptions"
         :widgetOptions="widgetOptions"
         style="margin-left: 100px;"
