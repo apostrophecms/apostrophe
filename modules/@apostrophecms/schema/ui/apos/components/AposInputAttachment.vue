@@ -90,45 +90,49 @@ export default {
       return false;
     },
     async uploadMedia (event) {
-      try {
-        this.dragging = false;
-        this.disabled = true;
-        this.$emit('upload-started');
+      if (!this.disabled) {
+        try {
+          this.dragging = false;
+          this.disabled = true;
+          this.$emit('upload-started');
 
-        const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
-        await apos.notify(`Uploading ${file.name}`, {
-          dismiss: true,
-          icon: 'cloud-upload-icon'
-        });
+          const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
+          await apos.notify(`Uploading ${file.name}`, {
+            dismiss: true,
+            icon: 'cloud-upload-icon'
+          });
 
-        const formData = new window.FormData();
-        formData.append('file', file);
-        const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
-          body: formData
-        });
+          const formData = new window.FormData();
+          formData.append('file', file);
+          const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+            body: formData
+          });
 
-        await apos.notify(`Successfully uploaded ${file.name}`, {
-          type: 'success',
-          dismiss: true,
-          icon: 'check-all-icon'
-        });
+          await apos.notify(`Successfully uploaded ${file.name}`, {
+            type: 'success',
+            dismiss: true,
+            icon: 'check-all-icon'
+          });
 
-        this.$emit('upload-complete');
-        this.value.data = attachment;
-      } catch (error) {
-        console.error('Error uploading file.', error);
-        const msg = error.body && error.body.message ? error.body.message : 'Upload error';
-        await apos.notify(msg, {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        this.disabled = false;
+          this.$emit('upload-complete');
+          this.value.data = attachment;
+        } catch (error) {
+          console.error('Error uploading file.', error);
+          const msg = error.body && error.body.message ? error.body.message : 'Upload error';
+          await apos.notify(msg, {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.disabled = false;
+        }
       }
     },
     dragHandler (event) {
       event.preventDefault();
-      this.dragging = true;
+      if (!this.disabled) {
+        this.dragging = true;
+      }
     }
   }
 };
