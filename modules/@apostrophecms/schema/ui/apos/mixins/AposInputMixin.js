@@ -1,5 +1,7 @@
 export default {
   props: {
+    // The value passed in from the parent component through the v-model
+    // directive.
     value: {
       type: Object,
       required: true
@@ -76,6 +78,8 @@ export default {
         this.watchValue();
       }
     },
+    // `next` is the internal state of the input's value, which is eventually
+    // emitted with the 'input' event.
     next: {
       deep: true,
       handler (value) {

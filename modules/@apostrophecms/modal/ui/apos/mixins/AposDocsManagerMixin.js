@@ -79,7 +79,9 @@ export default {
 
       // If in a relationship input context, keep `checkedDocs` in sync with
       // `checked`, first removing from `checkedDocs` if no longer in `checked`
-      this.checkedDocs.filter(doc => this.checked.includes(doc._id));
+      this.checkedDocs = this.checkedDocs.filter(doc => {
+        return this.checked.includes(doc._id);
+      });
       // then adding to `checkedDocs` if not there yet. These should be in
       // `items`.
       // TODO: Once we have the option to select all docs of a type even if not
