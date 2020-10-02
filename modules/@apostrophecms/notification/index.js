@@ -35,7 +35,7 @@ module.exports = {
     async post(req) {
       const type = self.apos.launder.select(req.body.type, [
         'danger',
-        'warn',
+        'warning',
         'success',
         'info'
       ], 'info');
@@ -84,7 +84,7 @@ module.exports = {
       // in place of `req`. Someone must be the recipient.
       //
       // `options.type` styles the notification and may be set to `error`,
-      // `warn` or `success`. If not set, a "plain" default style is used.
+      // `warning` or `success`. If not set, a "plain" default style is used.
       //
       // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
