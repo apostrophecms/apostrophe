@@ -6,8 +6,9 @@
         <AposTagListItem
           v-for="tag in tags"
           :key="tag.slug"
-          @click="click"
+          :active-tags="active"
           :tag="tag"
+          @click="toggleTag"
         />
       </ul>
     </div>
@@ -31,7 +32,7 @@ export default {
       type: String
     }
   },
-  emits: ['tag-click'],
+  emits: [ 'update' ],
   data() {
     return {
       active: [],
@@ -40,10 +41,20 @@ export default {
       }
     };
   },
+  watch: {
+    active (newValue) {
+      this.$emit('update', [ ...newValue ]);
+    }
+  },
   methods: {
-    click(slug) {
-      // tell parent modal something was clicked
-      this.$emit('tag-click', slug);
+    toggleTag(id) {
+      if (this.active.includes(id)) {
+        this.active = this.active.filter(val => {
+          return val !== id;
+        });
+      } else {
+        this.active.push(id);
+      }
     }
   }
 };
