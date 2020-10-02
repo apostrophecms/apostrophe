@@ -2,7 +2,6 @@
   <div class="apos-context-menu">
     <slot name="prebutton" />
     <v-popover
-      ref="popover"
       @hide="hide"
       @show="show"
       :offset="menuOffset"
@@ -10,6 +9,7 @@
       trigger="manual"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
+      popover-class="apos-popover"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
@@ -50,13 +50,9 @@
 </template>
 
 <script>
-// import Vue from 'apostrophe/vue';
 import {
-  // VTooltip,
   VPopover
 } from 'v-tooltip';
-// Vue.directive('tooltip', VTooltip);
-// Vue.component('v-popover', VPopover);
 
 export default {
   name: 'AposContextMenu',
@@ -118,8 +114,6 @@ export default {
     classList() {
       const classes = [];
       const baseClass = 'apos-context-menu__popup';
-      // classes.push(`apos-context-menu--origin-${this.origin}`);
-      // classes.push(`apos-context-menu--tip-alignment-${this.tipAlignment}`);
       classes.push(`${baseClass}--tip-alignment-${this.menuPlacement}`);
       if (this.modifiers) {
         this.modifiers.forEach((m) => {
@@ -138,16 +132,6 @@ export default {
       return this.open ? [ 'active' ] : null;
     }
   },
-  // watch: {
-  //   open(newVal, oldVal) {
-  //     if (newVal) {
-  //       // this.positionPopup();
-  //       this.$emit('open');
-  //     } else {
-  //       this.$emit('close');
-  //     }
-  //   }
-  // },
   methods: {
     show() {
       this.isOpen = true;
@@ -155,41 +139,8 @@ export default {
     hide() {
       this.isOpen = false;
     },
-    // close() {
-    //   console.log('does close fire?');
-    //   this.open = false;
-    // },
-    bind() {
-      // document.addEventListener('click', this.clicks);
-      // document.addEventListener('keydown', this.keyboard);
-      // window.addEventListener('resize', this.positionPopup);
-    },
-    unbind() {
-      // document.removeEventListener('click', this.clicks);
-      // document.removeEventListener('keydown', this.keyboard);
-      // window.removeEventListener('resize', this.positionPopup);
-    },
-    keyboard(event) {
-      // if user hits esc, close menu
-      if (event.keyCode === 27) {
-        // this.close();
-        this.unbind();
-      }
-    },
-    clicks (event) {
-      // if user clicks outside menu component, close menu
-      if (!this.$el.contains(event.target)) {
-        // this.close();
-        this.unbind();
-      }
-    },
     buttonClicked() {
       this.isOpen = !this.isOpen;
-      // if (this.open) {
-      //   this.bind();
-      // } else {
-      //   this.unbind();
-      // }
     },
     menuItemClicked(action) {
       this.$emit('item-clicked', action);
@@ -243,8 +194,7 @@ export default {
   padding: 10px 0;
 }
 
-// tooltip
-.tooltip {
+.apos-popover {
   z-index: $z-index-modal-inner;
   display: block;
 
