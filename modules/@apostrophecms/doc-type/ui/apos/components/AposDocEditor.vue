@@ -38,7 +38,7 @@
                 :current-fields="currentFields"
                 :trigger-validation="triggerValidation"
                 :utility-rail="false"
-                :followingValues="followingValues('other')"
+                :following-values="followingValues('other')"
                 :doc-id="docId"
                 v-model="docOtherFields"
               />
@@ -56,7 +56,7 @@
             :current-fields="utilityFields"
             :trigger-validation="triggerValidation"
             :utility-rail="true"
-            :followingValues="followingValues('utility')"
+            :following-values="followingValues('utility')"
             :doc-id="docId"
             v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
