@@ -347,10 +347,10 @@ export default {
   }
 
   .fade-enter, .fade-leave-to {
-    // position: absolute;
-    // width: 100%;
-    // opacity: 0;
-    // transform: translateY(-5px);
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(-5px);
   }
 
 </style>
