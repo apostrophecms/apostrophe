@@ -2,6 +2,7 @@
 
 ## 2.111.5 (2020-10-07)
 
+* When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
 * Clean up `fs.watch` calls from the nunjucks loader properly when destroying an `apos` object, so that the process can close and/or memory be recovered.
 
 ## 2.111.4 (2020-09-23)
