@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-area-menu" :class="{'apos-area-menu--grouped': groupedMenus, 'is-focused': groupIsFocused}">
+  <div class="apos-area-menu" :class="{'is-focused': groupIsFocused}">
     <AposContextMenu
       :button="buttonOptions"
       v-bind="extendedContextMenuOptions"
@@ -95,13 +95,13 @@ export default {
       type: Boolean,
       default: false
     },
-    contextOptions: {
+    contextMenuOptions: {
       type: Object,
       required: true
     },
     index: {
       type: Number,
-      required: true
+      default: 0
     },
     widgetOptions: {
       type: Object,
@@ -133,15 +133,19 @@ export default {
       return window.apos.area;
     },
     extendedContextMenuOptions() {
+      const modifiers = [ 'unpadded' ];
+      if (!this.groupedMenus) {
+        modifiers.push('tb-padded');
+      }
       return {
-        tipAlignment: 'center',
-        ...this.contextOptions,
-        modifiers: [ 'unpadded' ]
+        menuPlacement: 'bottom',
+        ...this.contextMenuOptions,
+        modifiers
       };
     },
     groupedMenus() {
       let flag = false;
-      this.contextOptions.menu.forEach((e) => {
+      this.contextMenuOptions.menu.forEach((e) => {
         if (e.items) {
           flag = true;
         }
@@ -152,7 +156,7 @@ export default {
       if (this.groupedMenus) {
         return this.composeGroups();
       } else {
-        return this.contextOptions.menu;
+        return this.contextMenuOptions.menu;
       }
     },
     menuId() {
@@ -181,6 +185,7 @@ export default {
           this.addWidgetType = name;
         }
       }
+      this.menuClose();
     },
     close() {
       this.adding = false;
@@ -215,7 +220,7 @@ export default {
       };
       const myMenu = [];
 
-      this.contextOptions.forEach((item) => {
+      this.contextMenuOptions.menu.forEach((item) => {
         if (!item.items) {
           ungrouped.items.push(item);
         } else {
@@ -281,11 +286,6 @@ export default {
 
 .apos-area-menu.is-focused /deep/ .apos-context-menu__tip-outline {
   stroke: var(--a-base-4);
-}
-
-.apos-area-menu:not(.apos-area-menu--grouped) .apos-area-menu__wrapper {
-  padding-top: 20px;
-  padding-bottom: 20px;
 }
 
 .apos-area-menu__wrapper,

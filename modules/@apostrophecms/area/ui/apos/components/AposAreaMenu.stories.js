@@ -16,6 +16,10 @@ export const areaMenu = () => {
   return {
     data() {
       return {
+        index: 0,
+        widgetOptions: {
+          '@apostrophecms/rich-text': {}
+        }
       };
     },
     methods: {
@@ -24,11 +28,11 @@ export const areaMenu = () => {
       }
     },
     computed: {
-      menu() {
+      contextMenuOptions() {
         if (menuFormat) {
-          return data.menu;
+          return { menu: data.menu };
         } else {
-          return data.menu[1].items;
+          return { menu: data.menu[1].items };
         }
       }
     },
@@ -37,7 +41,9 @@ export const areaMenu = () => {
     },
     template: `
       <AposAreaMenu
-        v-on:click="handler" :menu="menu"
+        @click="handler"
+        :contextMenuOptions="contextMenuOptions"
+        :widgetOptions="widgetOptions"
         style="margin-left: 100px;"
       />
     `
