@@ -18,8 +18,13 @@ function webpack(config, cb) {
 }
 
 module.exports = {
+
   options: { alias: 'asset' },
+
   init(self, options) {
+
+    self.reloadId = self.apos.util.generateId();
+
     self.addTask('build', 'Build Apostrophe frontend javascript master import files', async function (apos, argv) {
       const buildDir = `${apos.rootDir}/apos-build`;
       const modulesDir = `${buildDir}/modules`;
@@ -239,6 +244,58 @@ ${bundle}
       },
       scripts: function (when) {
         return self.scriptsHelper(when);
+      },
+      reload() {
+        return self.apos.template.safe(`
+<script>
+  (function() {
+    var reloadId;
+    var fast = '1';
+    check();
+    function check() {
+      apos.http.get(\`${self.action}/reload-id\`, {
+        qs: {
+          fast: fast
+        }
+      }, function(err, result) {
+        if (err) {
+          fast = '1';
+          setTimeout(check, 1000);
+          return;
+        }
+        fast = '';
+        if (!reloadId) {
+          reloadId = result;
+        } else if (result !== reloadId) {
+          console.log('Apostrophe restarted, refreshing the page');
+          window.location.reload(true);
+          return;
+        }
+        setTimeout(check, 1000);
+      });
+    }
+  })();
+</script>
+        `);
+      }
+    };
+  },
+  apiRoutes(self, options) {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+    return {
+      get: {
+        async reloadId(req) {
+          // Long polling: keep the logs quiet by responding slowly, except the
+          // first time. If we restart, the request will fail immediately,
+          // and the client will know to try again with `fast`. The client also
+          // uses `fast` the first time
+          if (!req.query.fast) {
+            await Promise.delay(30000);
+          }
+          return self.reloadId;
+        }
       }
     };
   }
