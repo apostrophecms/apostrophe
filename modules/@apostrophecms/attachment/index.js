@@ -159,7 +159,9 @@ module.exports = {
               if (!file) {
                 throw self.apos.error('notfound');
               }
-              return await self.insert(req, file);
+              const attachment = await self.insert(req, file);
+              self.all({ attachment }, { annotate: true });
+              return attachment;
             } finally {
               for (const file of (Object.values(req.files) || {})) {
                 try {
@@ -199,15 +201,6 @@ module.exports = {
             return true;
           }
         ]
-      },
-      get: {
-        url(req) {
-          const { attachment, options } = req.query;
-          if (!attachment) {
-            throw self.apos.error('invalid');
-          }
-          return self.url(attachment, options);
-        }
       }
     };
   },

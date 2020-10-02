@@ -8,7 +8,7 @@
         <label
           class="apos-input-wrapper apos-attachment-dropzone"
           :class="{ 'apos-attachment-dropzone--dragover': dragging }"
-          :disabled="field.disabled"
+          :disabled="disabled"
           @drop.prevent="uploadMedia"
           @dragover="dragHandler"
           @dragleave="dragging = false"
@@ -18,21 +18,21 @@
               <cloud-upload-icon :size="38"  />
             </template>
             <template v-else>
-              <paperclip-icon :size="14" />
-              {{ messagePart1 }}
+              <paperclip-icon :size="14" class="apos-attachment-icon"/>
+              {{ messagePart1 }}&nbsp;
               <span class="apos-attachment-highlight">{{ messagePart2 }}</span>
             </template>
           </p>
           <input
             type="file"
             class="apos-sr-only"
+            :disabled="disabled"
             @input="uploadMedia"
           >
         </label>
         <div v-if="next" class="apos-attachment-files">
           <AposSlatList
             :initial-items="[ next ]"
-            :removable="false"
             @update="updated"
           />
         </div>
@@ -53,35 +53,34 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
-    let messagePart1 = 'Drop a file here or';
-    let messagePart2 = 'click to open the file explorer';
-
-    if (this.field.disabled) {
-      messagePart1 = 'This field is disabled';
-      messagePart2 = '';
-    }
     return {
+      disabled: undefined,
       dragging: false,
-      messagePart1,
-      messagePart2
+      messagePart1: '',
+      messagePart2: ''
     };
   },
-  async mounted () {
-    if (this.value.data && this.value.data._id) {
-      const url = await apos.http.get('/api/v1/@apostrophecms/attachment/url', {
-        qs: {
-          attachment: this.next
-        }
-      });
-      this.value.data = {
-        ...this.value.data,
-        url
-      };
+  watch: {
+    disabled(value) {
+      if (value) {
+        this.messagePart1 = 'This field is disabled';
+        this.messagePart2 = '';
+      } else {
+        this.messagePart1 = 'Drop a file here or';
+        this.messagePart2 = 'click to open the file explorer';
+      }
     }
   },
+  async mounted () {
+    this.disabled = this.field.disabled || !!(this.value.data && this.value.data._id);
+  },
   methods: {
+    watchNext () {
+      this.validateAndEmit();
+      this.disabled = !!this.next.length;
+    },
     updated (items) {
-      this.next = items;
+      this.next = items.length ? items : {};
     },
     validate (value) {
       if (this.field.required && !value) {
@@ -93,6 +92,7 @@ export default {
     async uploadMedia (event) {
       try {
         this.dragging = false;
+        this.disabled = true;
         this.$emit('upload-started');
 
         const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
@@ -123,6 +123,7 @@ export default {
           icon: 'alert-circle-icon',
           dismiss: true
         });
+        this.disabled = false;
       }
     },
     dragHandler (event) {
@@ -164,11 +165,18 @@ export default {
   }
 
   .apos-attachment-instructions {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     // v-html goofiness
     & /deep/ .apos-attachment-highlight {
       color: var(--a-primary);
       font-weight: 700;
     }
+  }
+
+  .apos-attachment-icon {
+    transform: rotate(45deg);
+    margin-right: 5px;
   }
 </style>

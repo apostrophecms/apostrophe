@@ -26,8 +26,8 @@
         />
         <a
           class="apos-slat__control apos-slat__control--view"
-          v-if="item.url"
-          :href="item.url"
+          v-if="item._url || item._urls"
+          :href="item._url || item._urls.original"
           target="_blank"
         >
           <eye-icon :size="14" />
@@ -107,9 +107,9 @@ export default {
     itemSize() {
       const size = this.item.length.size;
       if (size < 1000000) {
-        return `${(size / 1000).toFixed(2)}kb`;
+        return `${(size / 1000).toFixed(0)}kb`;
       } else {
-        return `${(size / 1000000).toFixed(2)}mb`;
+        return `${(size / 1000000).toFixed(1)}mb`;
       }
     }
   },

@@ -1,6 +1,5 @@
 import {
   withKnobs,
-  select,
   boolean
 } from '@storybook/addon-knobs';
 
@@ -11,18 +10,6 @@ export default {
 
 export const attachmentInput = () => {
   const isDisabled = boolean('Disabled', false);
-  const limit = select(
-    'Limit', {
-      None: false,
-      One: 1,
-      Two: 2,
-      Three: 3,
-      Four: 4,
-      Five: 5,
-      Six: 6
-    },
-    6
-  );
 
   return {
     data () {
@@ -32,7 +19,6 @@ export const attachmentInput = () => {
           label: 'Attach a resume',
           help: 'Acceptable file types are doc, pdf, or json',
           type: 'attachment',
-          limit,
           disabled: isDisabled
         },
         value: {
@@ -41,7 +27,7 @@ export const attachmentInput = () => {
             title: 'very good spreadsheet',
             _id: 'welkfnw;elfkn',
             length: { size: 1020068 },
-            url: '/some-url'
+            _url: '/some-url'
           }
         }
       };
