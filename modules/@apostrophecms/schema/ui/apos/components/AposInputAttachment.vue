@@ -7,7 +7,10 @@
       <div class="apos-attachment">
         <label
           class="apos-input-wrapper apos-attachment-dropzone"
-          :class="{ 'apos-attachment-dropzone--dragover': dragging }"
+          :class="{
+            'apos-attachment-dropzone--dragover': dragging,
+            'is-disabled': disabled
+          }"
           :disabled="disabled"
           @drop.prevent="uploadMedia"
           @dragover="dragHandler"
@@ -15,12 +18,14 @@
         >
           <p class="apos-attachment-instructions">
             <template v-if="dragging">
-              <cloud-upload-icon :size="38"  />
+              <cloud-upload-icon :size="38" />
             </template>
             <template v-else>
-              <paperclip-icon :size="14" class="apos-attachment-icon"/>
-              {{ messagePart1 }}&nbsp;
-              <span class="apos-attachment-highlight">{{ messagePart2 }}</span>
+              <paperclip-icon :size="14" class="apos-attachment-icon" />
+              {{ messages.primary }}&nbsp;
+              <span class="apos-attachment-highlight">
+                {{ messages.highlighted }}
+              </span>
             </template>
           </p>
           <input
@@ -32,6 +37,7 @@
         </label>
         <div v-if="next" class="apos-attachment-files">
           <AposSlatList
+            v-if="next && next._id"
             :initial-items="[ next ]"
             @update="updated"
           />
@@ -54,21 +60,25 @@ export default {
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
     return {
-      disabled: undefined,
-      dragging: false,
-      messagePart1: '',
-      messagePart2: ''
+      // Next should consistently be an object.
+      next: (this.value && Array.isArray(this.value.data))
+        ? this.value.data : (this.field.def || {}),
+      disabled: false,
+      dragging: false
     };
   },
-  watch: {
-    disabled(value) {
-      if (value) {
-        this.messagePart1 = 'This field is disabled';
-        this.messagePart2 = '';
+  computed: {
+    messages () {
+      const msgs = {};
+      if (this.disabled) {
+        msgs.primary = 'This field is disabled';
+        msgs.highlighted = '';
       } else {
-        this.messagePart1 = 'Drop a file here or';
-        this.messagePart2 = 'click to open the file explorer';
+        msgs.primary = 'Drop a file here or';
+        msgs.highlighted = 'click to open the file explorer';
       }
+
+      return msgs;
     }
   },
   async mounted () {
@@ -77,10 +87,10 @@ export default {
   methods: {
     watchNext () {
       this.validateAndEmit();
-      this.disabled = !!this.next.length;
+      this.disabled = typeof this.next === 'object' && this.next._id;
     },
     updated (items) {
-      this.next = items.length ? items : {};
+      this.next = items.length > 0 ? items[0] : {};
     },
     validate (value) {
       if (this.field.required && !value) {
@@ -148,17 +158,21 @@ export default {
     border: 2px dashed var(--a-base-8);
     font-size: map-get($font-sizes, default);
     transition: all 0.2s ease;
-    &:not([disabled]):hover {
-      border: 2px dashed var(--a-primary);
+    &:hover {
+      border-color: var(--a-primary);
       background-color: var(--a-base-10);
     }
-    &:active, &:focus {
+    &:active,
+    &:focus {
       border: 2px solid var(--a-primary);
     }
-    &[disabled] {
+    &.is-disabled {
       color: var(--a-base-4);
+
       &:hover {
         cursor: not-allowed;
+        background-color: transparent;
+        border-color: var(--a-base-8);
       }
     }
   }
