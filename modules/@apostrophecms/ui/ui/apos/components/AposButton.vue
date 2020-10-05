@@ -147,12 +147,11 @@ export default {
   position: relative;
   overflow: hidden;
   padding: 10px 20px;
-  // TODO: Uncomment this once style loading is resolved.
-  // font-size: map-get($font-sizes, modal);
-  letter-spacing: 0.75px;
   border: 1px solid var(--a-base-5);
-  border-radius: var(--a-border-radius);
   color: var(--a-text-primary);
+  font-size: map-get($font-sizes, button);
+  letter-spacing: 0.75px;
+  border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   transition: all 0.2s ease;
   &:hover {
@@ -449,6 +448,7 @@ export default {
   display: inline-flex;
   margin-right: 5px;
   align-items: center;
+  max-height: 13px;
 }
 
 .apos-button--danger-on-hover:hover {
