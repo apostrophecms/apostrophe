@@ -19,10 +19,10 @@
     <template #primaryControls>
       <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
       <AposContextMenu
-        v-if="relationshipField"
-        :button="relationshipMore.button"
-        :menu="relationshipMore.menu"
-        @item-clicked="relationshipMoreMenuHandler"
+        v-if="moreMenu.menu.length"
+        :button="moreMenu.button"
+        :menu="moreMenu.menu"
+        @item-clicked="moreMenuHandler"
       />
       <AposButton
         v-if="relationshipField"
@@ -114,7 +114,7 @@ export default {
       editingDocId: '',
       queryExtras: {},
       holdQueries: false,
-      relationshipMore: {
+      moreMenu: {
         button: {
           label: 'More operations',
           iconOnly: true,
@@ -175,11 +175,13 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
-    // Add computed singular label to context menu
-    this.relationshipMore.menu.unshift({
-      action: 'new',
-      label: `New ${this.moduleLabels.singular}`
-    });
+    if (this.relationshipField) {
+      // Add computed singular label to context menu
+      this.moreMenu.menu.unshift({
+        action: 'new',
+        label: `New ${this.moduleLabels.singular}`
+      });
+    }
   },
   methods: {
     // TEMP From Manager Mixin:
@@ -189,7 +191,7 @@ export default {
     // generateUi
     // generateIcons
     // generateCheckboxes
-    relationshipMoreMenuHandler(action) {
+    moreMenuHandler(action) {
       if (action === 'new') {
         this.new();
       }
