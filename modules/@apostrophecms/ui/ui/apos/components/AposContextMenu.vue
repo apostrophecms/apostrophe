@@ -115,7 +115,6 @@ export default {
       this.isOpen = !this.isOpen;
     },
     menuItemClicked(name) {
-      console.log('drop in');
       this.$emit('item-clicked', name);
       this.hide();
     }
