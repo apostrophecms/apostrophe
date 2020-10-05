@@ -17,7 +17,10 @@
       :aria-labelledby="parent"
     >
       <div class="apos-slat__main">
-        <drag-icon v-if="sortable" class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <drag-icon
+          v-if="sortable" class="apos-slat__control apos-slat__control--drag"
+          :size="13"
+        />
         <AposContextMenu
           v-if="item._fields"
           :button="more.button"
@@ -42,7 +45,9 @@
         </div>
       </div>
       <div class="apos-slat__secondary">
-        <div class="apos-slat__size" v-if="item.length && item.length.size">{{ itemSize }}</div>
+        <div class="apos-slat__size" v-if="item.length && item.length.size">
+          {{ itemSize }}
+        </div>
         <AposButton
           v-if="removable"
           @click="remove"
@@ -107,9 +112,9 @@ export default {
     itemSize() {
       const size = this.item.length.size;
       if (size < 1000000) {
-        return `${(size / 1000).toFixed(0)}kb`;
+        return `${(size / 1000).toFixed(0)}KB`;
       } else {
-        return `${(size / 1000000).toFixed(1)}mb`;
+        return `${(size / 1000000).toFixed(1)}MB`;
       }
     }
   },
