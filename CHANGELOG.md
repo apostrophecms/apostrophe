@@ -8,6 +8,7 @@
 
 * Node 8 deprecation notice: for the time being, Apostrophe does still run on Node 8. However, since Node 8 has passed its end of life date, this support is unofficial and may be terminated soon. All projects should upgrade to a current Long Term Support version of Node.
 
+* When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
 * Clean up `fs.watch` calls from the nunjucks loader properly when destroying an `apos` object, so that the process can close and/or memory be recovered.
 
 ## 2.111.4 (2020-09-23)
