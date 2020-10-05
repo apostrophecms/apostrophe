@@ -20,30 +20,14 @@
         ref="button"
       />
       <template #popover>
-        <div
-          class="apos-primary-scrollbar apos-context-menu__popup"
-          :class="classList"
-          ref="popup"
-          role="dialog"
+        <AposContextMenuDialog
+          :menu-placement="menuPlacement"
+          :class-list="classList"
+          :menu="menu"
+          @item-clicked="menuItemClicked"
         >
-          <AposContextMenuTip
-            :align="tipAlignment"
-            :origin="menuOrigin"
-          />
-          <div class="apos-context-menu__pane">
-            <slot>
-              <ul class="apos-context-menu__items" v-if="menu">
-                <AposContextMenuItem
-                  v-for="item in menu"
-                  :key="item.action"
-                  :menu-item="item"
-                  @clicked="menuItemClicked"
-                  :open="isOpen"
-                />
-              </ul>
-            </slot>
-          </div>
-        </div>
+          <slot />
+        </AposContextMenuDialog>
       </template>
     </v-popover>
   </div>
@@ -98,19 +82,6 @@ export default {
     };
   },
   computed: {
-    menuPositions () {
-      return this.menuPlacement.split('-');
-    },
-    menuOrigin() {
-      return this.menuPositions[0];
-    },
-    tipAlignment() {
-      if (!this.menuPositions[1]) {
-        return 'center';
-      } else {
-        return this.menuPositions[1];
-      }
-    },
     classList() {
       const classes = [];
       const baseClass = 'apos-context-menu__popup';
@@ -131,6 +102,7 @@ export default {
     buttonState() {
       return this.open ? [ 'active' ] : null;
     }
+
   },
   methods: {
     show() {
@@ -142,8 +114,9 @@ export default {
     buttonClicked() {
       this.isOpen = !this.isOpen;
     },
-    menuItemClicked(action) {
-      this.$emit('item-clicked', action);
+    menuItemClicked(name) {
+      console.log('drop in');
+      this.$emit('item-clicked', name);
       this.hide();
     }
   }
@@ -211,11 +184,11 @@ export default {
   }
 
   &[x-placement$='end'] {
-    margin-right: 15px;
+    margin-right: -15px;
   }
 
   &[x-placement$='start'] {
-    margin-left: 15px;
+    margin-left: -15px;
   }
 
   &[aria-hidden='true'] {
