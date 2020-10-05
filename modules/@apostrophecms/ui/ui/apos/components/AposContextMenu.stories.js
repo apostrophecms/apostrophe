@@ -1,89 +1,73 @@
-import { storiesOf } from '@storybook/vue';
-
 import AposContextMenu from './AposContextMenu.vue';
+import {
+  withKnobs, select
+} from '@storybook/addon-knobs';
 
-const menu = [
-  {
-    label: 'New Page',
-    action: 'new-page'
-  },
-  {
-    label: 'New Event',
-    action: 'new-event'
-  },
-  {
-    label: 'New Project',
-    action: 'new-project'
-  },
-  {
-    label: 'New Staff Member',
-    action: 'new-staff-member'
-  },
-  {
-    label: 'New Article',
-    action: 'new-article'
-  }
-];
+export default {
+  title: 'Context Menu',
+  decorators: [ withKnobs ]
+};
 
-storiesOf('Context Menu', module)
-  .add('Default, from below', () => ({
-    components: { AposContextMenu },
-    data () {
-      return { menu };
-    },
-    template: `
-      <div>
-        <AposContextMenu
-          :menu="menu"
-          @item-clicked="log"
-        />
-        <AposContextMenu
-          tip-alignment="center"
-          :menu="menu"
-          @item-clicked="log"
-        />
-        <AposContextMenu
-          tip-alignment="right"
-          :menu="menu"
-          @item-clicked="log"
-        />
-      </div>
-    `,
-    methods: {
-      log (action) {
-        console.log(`Story heard ${action} was clicked`);
-      }
+export const contextMenu = () => ({
+  components: {
+    AposContextMenu
+  },
+  methods: {
+    log (action) {
+      console.log(`Story heard ${action} was clicked`);
     }
-  }))
-  .add('From above', () => ({
-    components: { AposContextMenu },
-    data () {
-      return { menu };
-    },
-    template: `
-      <div style="margin-top: 200px">
-        <AposContextMenu
-          :menu="menu"
-          @item-clicked="log"
-          origin="above"
-        />
-        <AposContextMenu
-          tip-alignment="center"
-          :menu="menu"
-          @item-clicked="log"
-          origin="above"
-        />
-        <AposContextMenu
-          tip-alignment="right"
-          :menu="menu"
-          @item-clicked="log"
-          origin="above"
-        />
-      </div>
-    `,
-    methods: {
-      log (action) {
-        console.log(`Story heard ${action} was clicked`);
+  },
+  data() {
+    const data = getData();
+    return {
+      menu: data.menu,
+      menuPlacement: select(
+        'Menu Placement', {
+          top: 'top',
+          'top-start': 'top-start',
+          'top-end': 'top-end',
+          bottom: 'bottom',
+          'bottom-start': 'bottom-start',
+          'bottom-end': 'bottom-end'
+        },
+        'top'
+      )
+    };
+  },
+  template: `
+    <div style="padding: 300px;">
+      <AposContextMenu
+        :menu="menu"
+        @item-clicked="log"
+        :menuPlacement="menuPlacement"
+      />
+    </div>
+  `
+});
+
+function getData() {
+  return {
+    menu: [
+      {
+        label: 'New Page',
+        action: 'new-page'
+      },
+      {
+        label: 'New Event',
+        action: 'new-event'
+      },
+      {
+        label: 'New Project',
+        action: 'new-project'
+      },
+      {
+        label: 'New Staff Member',
+        action: 'new-staff-member'
+      },
+      {
+        label: 'New Article',
+        action: 'new-article'
       }
-    }
-  }));
+    ]
+  };
+}

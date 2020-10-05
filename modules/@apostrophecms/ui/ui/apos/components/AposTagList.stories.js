@@ -67,31 +67,38 @@ function getItems() {
   return [
     {
       label: 'Good Morning',
-      slug: 'good-morning'
+      slug: 'good-morning',
+      value: 'Ultricies'
     },
     {
       label: 'goodvibes',
-      slug: 'goodvibes'
+      slug: 'goodvibes',
+      value: 'Tortor'
     },
     {
       label: 'GOOD',
-      slug: 'good'
+      slug: 'good',
+      value: 'Pharetra'
     },
     {
       label: 'Good Night Moon The Book',
-      slug: 'good-night'
+      slug: 'good-night',
+      value: 'Fermentum'
     },
     {
       label: 'goodmood',
-      slug: 'goodmood'
+      slug: 'goodmood',
+      value: 'Venenatis'
     },
     {
       label: 'Goodweather',
-      slug: 'goodweather'
+      slug: 'goodweather',
+      value: 'Egestas'
     },
     {
       label: 'good boy',
-      slug: 'good-boy'
+      slug: 'good-boy',
+      value: 'Consectetur'
     }
   ];
 }

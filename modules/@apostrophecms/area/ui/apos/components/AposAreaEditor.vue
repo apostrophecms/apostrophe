@@ -7,7 +7,7 @@
       <AposEmptyState :empty-state="emptyState" />
       <AposAreaMenu
         @add="insert"
-        :context-options="contextOptions"
+        :context-menu-options="contextMenuOptions"
         :empty="true"
         :index="0"
         :widget-options="options.widgets"
@@ -24,7 +24,7 @@
         :options="options"
         :next="next"
         :doc-id="docId"
-        :context-options="contextOptions"
+        :context-menu-options="contextMenuOptions"
         :field-id="fieldId"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
@@ -97,8 +97,7 @@ export default {
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
-      contextOptions: {
-        autoPosition: false,
+      contextMenuOptions: {
         menu: this.choices
       },
       emptyState: {

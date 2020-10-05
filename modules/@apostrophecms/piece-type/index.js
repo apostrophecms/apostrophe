@@ -239,6 +239,22 @@ module.exports = {
           }
         }
       },
+      afterInsert: {
+        insertNotif(req, doc) {
+          self.apos.notify(req, `New ${self.label.toLowerCase()} added: %s`, doc.title, {
+            dismiss: true,
+            type: 'success'
+          });
+        }
+      },
+      afterUpdate: {
+        updateNotif(req, doc) {
+          self.apos.notify(req, `${self.label} %s updated`, doc.title, {
+            dismiss: true,
+            type: 'success'
+          });
+        }
+      },
       'apostrophe:modulesReady': {
         composeBatchOperations() {
           self.batchOperations = Object.keys(self.batchOperations).map(key => ({
@@ -355,6 +371,7 @@ module.exports = {
         self.filters.forEach(filter => {
           if (
             !filter.required &&
+            filter.choices &&
             !filter.choices.find(choice => choice.value === 'any')
           ) {
             filter.def = 'any';

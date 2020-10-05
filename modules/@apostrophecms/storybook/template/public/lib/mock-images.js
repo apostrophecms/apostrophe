@@ -96,14 +96,17 @@
           _urls: {
             'one-sixth': imgUrl,
             'one-third': imgUrl
-          }
+          },
+          length: {
+            size: 345000
+          },
+          width: dim[0],
+          height: dim[1]
         },
         title,
         alt,
         credit,
-        uploadedAt: 'Uploaded: March 6th, 2018',
-        fileSize: '345KB',
-        dim: `${dim[0]} x ${dim[1]}`,
+        createdAt: '2019-05-12T19:17:57.075Z',
         creditUrl,
         slug: `${title.replace(/\s/g, '-').toLowerCase()}-${_id}`,
         tags: tags.tags

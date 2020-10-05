@@ -1,7 +1,7 @@
 <template>
   <AposContextMenu
-    :origin="origin" :tip-alignment="tipAlignment"
     :button="button"
+    menu-placement="bottom"
   >
     <div class="apos-filters-menu">
       <div
@@ -39,14 +39,6 @@ export default {
           type: 'outline'
         };
       }
-    },
-    tipAlignment: {
-      type: String,
-      default: 'center'
-    },
-    origin: {
-      type: String,
-      default: 'below'
     }
   },
   emits: [ 'input' ],
