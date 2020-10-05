@@ -30,6 +30,7 @@
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
         :doc-id="doc.data._id"
+        :following-values="followingValues()"
         @reset="docEdited = false"
       />
     </div>
@@ -60,13 +61,14 @@
 
 <script>
 import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
+import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposHelpers ],
+  mixins: [ AposHelpers, AposEditorMixin ],
   props: {
     media: {
       type: Object,

@@ -9,7 +9,7 @@ storiesOf('Doc Editor', module)
     },
     data () {
       return {
-        moduleName: 'products',
+        moduleName: 'product',
         id: null, // TODO: Add a demo document to the mock API.
         active: true
       };
