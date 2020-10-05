@@ -25,6 +25,7 @@
       type="file" class="apos-sr-only"
       ref="apos-upload-input"
       @input="uploadMedia"
+      multiple="true"
     >
   </label>
 </template>
@@ -71,7 +72,6 @@ export default {
       this.$emit('upload-started');
       const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
       const fileCount = files.length;
-      const file = files[0];
 
       const emptyDoc = await apos.http.post(this.action, {
         body: {
@@ -80,17 +80,31 @@ export default {
       });
       await apos.notify(
         // TODO: i18n
-        `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`,
-        {
+        `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
           dismiss: true
         }
       );
 
-      this.createPlaceholder(file);
-      const image = await this.insertImage(file, emptyDoc);
+      // Send up placeholders
+      for (const file of files) {
+        this.createPlaceholder(file);
+      }
+
+      const imageIds = [];
+      // Actually upload the images and send them up once all done.
+      for (const file of files) {
+        const img = await this.insertImage(file, emptyDoc);
+        imageIds.push(img._id);
+      }
+
+      // TODO: i18n
+      await apos.notify('Upload Successful', {
+        type: 'success',
+        dismiss: true
+      });
 
       // When complete, refresh the image grid, with the new images at top.
-      this.$emit('upload-complete', image._id);
+      this.$emit('upload-complete', imageIds);
 
       // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
     },
@@ -142,10 +156,7 @@ export default {
         const imgPiece = await apos.http.post(this.action, {
           body: imageData
         });
-        await apos.notify('Upload Successful', {
-          type: 'success',
-          dismiss: true
-        });
+
         return imgPiece;
       } catch (error) {
         await this.notifyErrors(error, 'Upload Error');
