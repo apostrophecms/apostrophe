@@ -35,9 +35,8 @@
             @input="uploadMedia"
           >
         </label>
-        <div v-if="next" class="apos-attachment-files">
+        <div v-if="next && next._id" class="apos-attachment-files">
           <AposSlatList
-            v-if="next && next._id"
             :initial-items="[ next ]"
             @update="updated"
           />
@@ -90,6 +89,7 @@ export default {
       this.disabled = typeof this.next === 'object' && this.next._id;
     },
     updated (items) {
+      // NOTE: This is limited to a single item.
       this.next = items.length > 0 ? items[0] : {};
     },
     validate (value) {
