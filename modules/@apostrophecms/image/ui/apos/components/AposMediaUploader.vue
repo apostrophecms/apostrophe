@@ -1,8 +1,8 @@
 <template>
   <label
     :class="dropzoneClasses"
-    @dragover="dragover = true"
-    @drop="dragover = false"
+    @drop.prevent="uploadMedia"
+    @dragover.prevent="dragover = true"
     @dragleave="dragover = false"
   >
     <div class="apos-media-uploader__inner">
@@ -60,10 +60,18 @@ export default {
     }
   },
   methods: {
+    dragHandler (event) {
+      event.preventDefault();
+      this.dragging = true;
+    },
     async uploadMedia (event) {
+      // Set `dragover` in case the media was dropped.
+      this.dragover = false;
+
       this.$emit('upload-started');
-      const fileCount = event.target.files.length;
-      const file = event.target.files[0];
+      const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
+      const fileCount = files.length;
+      const file = files[0];
 
       const emptyDoc = await apos.http.post(this.action, {
         body: {
