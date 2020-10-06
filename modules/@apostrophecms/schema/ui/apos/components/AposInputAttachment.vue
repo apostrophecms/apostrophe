@@ -70,7 +70,7 @@ export default {
     messages () {
       const msgs = {};
       if (this.disabled) {
-        msgs.primary = 'This field is disabled';
+        msgs.primary = 'Attachment limit reached';
         msgs.highlighted = '';
       } else {
         msgs.primary = 'Drop a file here or';
