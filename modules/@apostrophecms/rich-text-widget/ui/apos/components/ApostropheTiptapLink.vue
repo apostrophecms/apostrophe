@@ -3,13 +3,14 @@
     <button
       @click="click"
       ref="button"
+      :class="{ 'apos-active': buttonActive }"
     >
       {{ tool.label }}
     </button>
     <editor-menu-bubble
       :editor="editor"
       :keep-in-bounds="keepInBounds"
-      v-slot="{ commands, isActive, menu }"
+      v-slot="{ menu }"
     >
       <div
         class="apos-link-control__dialog"
@@ -26,20 +27,23 @@
       >
         <AposContextMenuDialog
           menu-placement="bottom-start"
+          v-if="active"
         >
           <form>
             <AposSchema
               :schema="schema"
-              :value="value"
+              v-model="value"
             />
-            <AposButton
-              type="default" label="Cancel"
-              @click="close"
-            />
-            <AposButton
-              type="primary" label="Save"
-              @click="save"
-            />
+            <footer class="apos-link-control__footer">
+              <AposButton
+                type="default" label="Cancel"
+                @click="close"
+              />
+              <AposButton
+                type="primary" label="Save"
+                @click="save"
+              />
+            </footer>
           </form>
         </AposContextMenuDialog>
       </div>
@@ -48,8 +52,9 @@
 </template>
 
 <script>
-import klona from 'klona';
+
 import { EditorMenuBubble } from 'tiptap';
+import { isEmpty } from 'lodash';
 import {
   VPopover
 } from 'v-tooltip';
@@ -75,52 +80,35 @@ export default {
     }
   },
   data () {
-    const field = {
-      name: '',
-      label: '',
-      placeholder: '',
-      help: false,
-      required: false,
-      disabled: false
-    };
-    const value = {
-      data: '',
-      error: false
-    };
-
     return {
       keepInBounds: true,
       href: null,
       id: null,
       target: null,
       active: false,
-      blankField: field,
-      blankValue: value,
       value: {
-        data: {
-          href: 'cool nice',
-          id: 'lweieipwn',
-          target: '_self'
-        }
+        data: {}
       },
       schema: [
         {
           name: 'href',
           label: 'URL',
-          placeholder: 'HIII',
+          help: 'Where should the link go?',
+          placeholder: 'http://calm.com',
           type: 'string'
         },
         {
           name: 'id',
           label: 'Anchor Name',
-          placeholder: 'anchor name',
+          help: 'This becomes the ID of the anchor',
           type: 'string'
         },
         {
           name: 'target',
           label: 'Target',
-          placeholder: 'HIII',
+          help: 'Where should this link open?',
           type: 'select',
+          def: '_self',
           choices: [
             {
               label: 'Current browsing context (_self)',
@@ -144,6 +132,9 @@ export default {
     };
   },
   computed: {
+    buttonActive() {
+      return !isEmpty(this.value.data);
+    },
     hasSelection() {
       return this.editor.selection.from !== this.editor.selection.to;
     },
@@ -155,19 +146,20 @@ export default {
     }
   },
   watch: {
+    'editor.selection.from': {
+      handler(newVal, oldVal) {
+        this.populateFields();
+      }
+    },
     hasSelection(newVal, oldVal) {
       if (!newVal) {
         this.close();
       }
     }
   },
-  created() {
-    // this.resetFields();
-  },
   methods: {
     click() {
       if (this.hasSelection) {
-        // this.resetFields();
         this.active = !this.active;
         this.populateFields();
       }
@@ -177,71 +169,17 @@ export default {
       this.editor.focus();
     },
     save() {
-      this.editor.commands[this.name]({
-        href: this.href.value.data,
-        id: this.id.value.data,
-        target: this.target.value.data
-      });
+      this.editor.commands[this.name](this.value.data);
       this.active = false;
     },
     populateFields() {
-      console.log('pop called');
-      if (this.active) {
-        console.log('gonna pop');
-        const values = this.editor.getMarkAttrs('link');
-        this.value.data.href = values.href;
-        this.value.data.id = values.id;
-        this.value.data.target = values.target;
-      }
-    },
-    resetFields() {
-      this.href = {
-        field: {
-          ...klona(this.blankField),
-          name: 'url',
-          label: 'URL',
-          help: 'Relative or absolute, the power is yours'
-        },
-        value: klona(this.blankValue)
-      };
-
-      this.id = {
-        field: {
-          ...klona(this.blankField),
-          name: 'id',
-          label: 'Anchor Name',
-          help: 'This becomes the ID of your selection'
-        },
-        value: klona(this.blankValue)
-      };
-
-      this.target = {
-        field: {
-          ...klona(this.blankField),
-          name: 'target',
-          label: 'Target',
-          help: 'Where the new link opens up',
-          choices: [
-            {
-              label: 'Current browsing context (_self)',
-              value: '_self'
-            },
-            {
-              label: 'New tab or window (_blank)',
-              value: '_blank'
-            },
-            {
-              label: 'Parent browsing context (_parent)',
-              value: '_parent'
-            },
-            {
-              label: 'Topmost browsing context (_top)',
-              value: '_top'
-            }
-          ]
-        },
-        value: klona(this.blankValue)
-      };
+      const attrs = this.editor.getMarkAttrs('link');
+      this.value.data = {};
+      this.schema.forEach((item) => {
+        if (attrs[item.name]) {
+          this.value.data[item.name] = attrs[item.name];
+        }
+      });
     }
   }
 };
@@ -264,4 +202,17 @@ export default {
     pointer-events: auto;
   }
 
+  .apos-active {
+    background-color: var(--a-brand-blue);
+  }
+
+  .apos-link-control__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .apos-link-control__footer .apos-button {
+    margin-left: 7.5px;
+  }
 </style>

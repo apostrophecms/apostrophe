@@ -119,4 +119,11 @@ export default {
   padding: 10px 0;
 }
 
+.apos-context-menu__dialog /deep/ .apos-schema .apos-field {
+  margin-bottom: 20px;
+  .apos-field-help {
+    margin-top: 5px;
+  }
+}
+
 </style>
