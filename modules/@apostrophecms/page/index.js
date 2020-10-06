@@ -85,6 +85,7 @@ module.exports = {
     self.finalizeControls();
     self.addPermissions();
     self.addToAdminBar();
+    self.addManagerModal();
     self.enableBrowserData();
     await self.createIndexes();
   },
@@ -430,12 +431,21 @@ database.`);
         });
       },
       getBrowserData(req) {
-        const options = _.pick(self, 'action', 'schema', 'types');
-        _.assign(options, _.pick(self.options, 'batchOperations'));
+        const browserOptions = _.pick(self, 'action', 'schema', 'types');
+        _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
+
+        _.defaults(browserOptions, {
+          components: {}
+        });
+        _.defaults(browserOptions.components, {
+          insertModal: 'AposDocEditor',
+          managerModal: 'AposPagesManager'
+        });
+
         if (req.data.bestPage) {
-          options.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
+          browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
-        return options;
+        return browserOptions;
       },
       // Returns a cursor that finds pages the current user can edit
       // in a batch operation, including unpublished and trashed pages.
@@ -1719,6 +1729,13 @@ database.`);
       },
       addToAdminBar() {
         self.apos.adminBar.add(self.__meta.name, 'Pages', 'edit-@apostrophecms/page');
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
       },
       // Returns the effective base URL for the given request.
       // If Apostrophe's top-level `baseUrl` option is set, it is returned,
