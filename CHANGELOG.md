@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.112.1 (2020-10-07)
+* When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
+
 ## 2.112.0 (2020-10-02)
 
 * Security: Apostrophe's oembed support has always consulted a list of safe sites, however the fallback support for embedding site previews via Open Graph did not consult such a list. There was no XSS risk, but this could be exploited to scan for open ports behind a firewall, and potentially to obtain title tags and page body text from webpages behind a firewall as well, if they had no login provisions. Note that this risk existed only if the public Apostrophe site was running on a server that could "see" these Intranet sites, which is rare (a public website is usually not hosted on an Intranet, port forwarding would typically be needed to make that possible). However to eliminate the risk our Open Graph fallback support now consults the same list of safe sites used for oembed. This Open Graph embed feature is not actually used by Apostrophe's video widgets, so this change will only impact developers who discovered the feature and chose to use it independently. If you are affected, add additional sites to the `safeList` option of `apostrophe-oembed`. For backwards compatibility the `whitelist` option is also accepted. Thanks to Rudi van Hierden for reporting the issue.
@@ -8,7 +11,6 @@
 
 * Node 8 deprecation notice: for the time being, Apostrophe does still run on Node 8. However, since Node 8 has passed its end of life date, this support is unofficial and may be terminated soon. All projects should upgrade to a current Long Term Support version of Node.
 
-* When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
 * Clean up `fs.watch` calls from the nunjucks loader properly when destroying an `apos` object, so that the process can close and/or memory be recovered.
 
 ## 2.111.4 (2020-09-23)
