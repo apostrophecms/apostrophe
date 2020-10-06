@@ -4,10 +4,17 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template #primaryControls>
+    <template #secondaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
+      />
+    </template>
+    <template #primaryControls>
+      <AposButton
+        type="primary"
+        label="New Page"
+        @click="editing = true"
       />
     </template>
     <template #main>
@@ -34,6 +41,13 @@
           />
         </template>
       </AposModalBody>
+      <!-- The pieces editor modal. -->
+      <component
+        v-if="editing"
+        :is="moduleOptions.components.insertModal"
+        :module-name="moduleName" :doc-id="editingDocId"
+        @saved="finishSaved" @safe-close="closeEditor"
+      />
     </template>
   </AposModal>
 </template>
@@ -49,6 +63,7 @@ export default {
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
+      moduleName: '@apostrophecms/page',
       modal: {
         active: false,
         type: 'slide',
@@ -89,10 +104,15 @@ export default {
       treeOptions: {
         bulkSelect: true,
         draggable: true
-      }
+      },
+      editing: false,
+      editingDocId: ''
     };
   },
   computed: {
+    moduleOptions() {
+      return window.apos.modules[this.moduleName];
+    },
     items() {
       const items = [];
       if (!this.pages || !this.headers.length) {
@@ -165,6 +185,13 @@ export default {
           page.children.forEach(formatPage);
         }
       }
+    },
+    async finishSaved() {
+      await this.getPages();
+    },
+    closeEditor() {
+      this.editing = false;
+      this.editingDocId = '';
     },
     update(obj) {
       // We'll hit a route here to update the docs.
