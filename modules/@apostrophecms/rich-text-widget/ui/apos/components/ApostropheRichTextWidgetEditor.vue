@@ -2,8 +2,9 @@
   <div class="apos-richtext-editor">
     <editor-menu-bar :editor="editor">
       <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
-        <component v-for="item in toolbar"
-          v-bind:key="item"
+        <component
+          v-for="(item, index) in toolbar"
+          :key="item + '-' + index"
           :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
           :name="item"
           :tool="tools[item]"
