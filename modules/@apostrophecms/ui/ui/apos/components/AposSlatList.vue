@@ -36,7 +36,7 @@
           :class="{'apos-slat-list__item--disabled' : !editable}"
           :engaged="engaged === item._id"
           :parent="listId"
-          :sortable="!items.length > 1"
+          :slat-count="items.length"
           :removable="removable"
         />
       </transition-group>
@@ -95,7 +95,7 @@ export default {
     dragOptions() {
       return {
         animation: 0,
-        disabled: !this.editable || !this.items.length <= 1,
+        disabled: !this.editable || this.items.length <= 1,
         ghostClass: 'is-dragging'
       };
     }

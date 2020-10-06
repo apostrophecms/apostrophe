@@ -5,7 +5,10 @@
       class="apos-slat"
       :data-id="item._id"
       tabindex="0"
-      :class="{'is-engaged': engaged}"
+      :class="{
+        'is-engaged': engaged,
+        'is-only-child': slatCount === 1
+      }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
       @keydown.prevent.escape="disengage"
@@ -18,7 +21,7 @@
     >
       <div class="apos-slat__main">
         <drag-icon
-          v-if="sortable" class="apos-slat__control apos-slat__control--drag"
+          v-if="slatCount > 1" class="apos-slat__control apos-slat__control--drag"
           :size="13"
         />
         <AposContextMenu
@@ -75,13 +78,13 @@ export default {
       type: String,
       required: true
     },
+    slatCount: {
+      type: Number,
+      required: true
+    },
     engaged: {
       type: Boolean,
       default: false
-    },
-    sortable: {
-      type: Boolean,
-      default: true
     },
     removable: {
       type: Boolean,
@@ -159,16 +162,30 @@ export default {
     background-color: var(--a-base-9);
     color: var(--a-text-primary);
     @include apos-transition();
-    &:hover:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-7);
+
+    &:hover {
       cursor: grab;
+      background-color: var(--a-base-7);
     }
-    &:active:not(.apos-slat-list__item--disabled) {
+    &:active {
       cursor: grabbing;
     }
-    &:active:not(.apos-slat-list__item--disabled),
-    &:focus:not(.apos-slat-list__item--disabled) {
+    &:active,
+    &:focus {
       background-color: var(--a-base-7);
+    }
+
+    &.apos-slat-list__item--disabled,
+    &.is-only-child {
+      &:hover,
+      &:active {
+        cursor: default;
+      }
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: var(--a-base-9);
+      }
     }
   }
 
