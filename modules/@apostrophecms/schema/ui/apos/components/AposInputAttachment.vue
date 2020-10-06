@@ -20,6 +20,7 @@
             <template v-if="dragging">
               <cloud-upload-icon :size="38" />
             </template>
+            <AposSpinner v-else-if="uploading" />
             <template v-else>
               <paperclip-icon :size="14" class="apos-attachment-icon" />
               {{ messages.primary }}&nbsp;
@@ -63,7 +64,8 @@ export default {
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || {}),
       disabled: false,
-      dragging: false
+      dragging: false,
+      uploading: false
     };
   },
   computed: {
@@ -104,6 +106,7 @@ export default {
         try {
           this.dragging = false;
           this.disabled = true;
+          this.uploading = true;
           this.$emit('upload-started');
 
           const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
@@ -135,6 +138,8 @@ export default {
             dismiss: true
           });
           this.disabled = false;
+        } finally {
+          this.uploading = false;
         }
       }
     },
