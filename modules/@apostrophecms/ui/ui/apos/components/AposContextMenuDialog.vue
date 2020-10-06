@@ -3,6 +3,7 @@
     class="apos-primary-scrollbar apos-context-menu__dialog"
     :class="classList"
     role="dialog"
+    :x-placement="menuPlacement"
   >
     <AposContextMenuTip
       :align="tipAlignment"

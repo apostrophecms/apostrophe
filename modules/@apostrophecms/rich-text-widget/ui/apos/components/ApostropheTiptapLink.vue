@@ -6,67 +6,50 @@
     >
       {{ tool.label }}
     </button>
-    <div class="apos-link-control__dialog">
-      <v-popover
-        @hide="close"
-        :offset="10"
-        placement="bottom-start"
-        :open="active"
-        :delay="{ show: 0, hide: 0 }"
-        popover-class="apos-popover"
+    <editor-menu-bubble
+      :editor="editor"
+      :keep-in-bounds="keepInBounds"
+      v-slot="{ commands, isActive, menu }"
+    >
+      <div
+        class="apos-link-control__dialog"
+        :class="{
+          'is-ready': menu.isActive,
+          'is-triggered': active,
+          'has-selection': hasSelection
+        }"
+        :style="
+          `left: ${menu.left}px;
+          bottom: ${menu.bottom}px;
+          transform: translate3d(-25px, calc(100% + ${offset}), 0);
+          `"
       >
-        <template #popover>
-          <AposContextMenuDialog
-            menu-placement="bottom-start"
-          >
-            <form>
-              <!-- <label for="href">URL</label><input v-model="href" /> -->
-              <AposInputString
-                :field="href.field"
-                :value="href.value"
-                :modifiers="['small']"
-              />
-              <AposInputString
-                :field="id.field"
-                :value="id.value"
-                :modifiers="['small']"
-              />
-              <AposInputSelect
-                :field="target.field"
-                :value="target.value"
-                :modifiers="['small']"
-              />
-              <!-- <label for="id">Anchor Name</label><input v-model="id" /> -->
-              <!-- <label for="target">Target</label><input v-model="target" /> -->
-            </form>
-          </AposContextMenuDialog>
-        </template>
-      </v-popover>
-    </div>
-
-    <!-- <ApostropheModal v-if="active">
-      <template slot="header">
-        <p>Link</p>
-      </template>
-      <template slot="body">
-
-      </template>
-      <template slot="footer">
-        <slot name="footer">
-          <button class="modal-default-button" @click="close">
-            Cancel
-          </button>
-          <button class="modal-default-button" @click="save()">
-            Save
-          </button>
-        </slot>
-      </template>
-    </ApostropheModal> -->
+        <AposContextMenuDialog
+          menu-placement="bottom-start"
+        >
+          <form>
+            <AposSchema
+              :schema="schema"
+              :value="value"
+            />
+            <AposButton
+              type="default" label="Cancel"
+              @click="close"
+            />
+            <AposButton
+              type="primary" label="Save"
+              @click="save"
+            />
+          </form>
+        </AposContextMenuDialog>
+      </div>
+    </editor-menu-bubble>
   </div>
 </template>
 
 <script>
 import klona from 'klona';
+import { EditorMenuBubble } from 'tiptap';
 import {
   VPopover
 } from 'v-tooltip';
@@ -74,7 +57,8 @@ import {
 export default {
   name: 'ApostropheTiptapLink',
   components: {
-    'v-popover': VPopover
+    'v-popover': VPopover,
+    EditorMenuBubble
   },
   props: {
     name: {
@@ -105,28 +89,87 @@ export default {
     };
 
     return {
+      keepInBounds: true,
       href: null,
       id: null,
       target: null,
       active: false,
       blankField: field,
-      blankValue: value
+      blankValue: value,
+      value: {
+        data: {
+          href: 'cool nice',
+          id: 'lweieipwn',
+          target: '_self'
+        }
+      },
+      schema: [
+        {
+          name: 'href',
+          label: 'URL',
+          placeholder: 'HIII',
+          type: 'string'
+        },
+        {
+          name: 'id',
+          label: 'Anchor Name',
+          placeholder: 'anchor name',
+          type: 'string'
+        },
+        {
+          name: 'target',
+          label: 'Target',
+          placeholder: 'HIII',
+          type: 'select',
+          choices: [
+            {
+              label: 'Current browsing context (_self)',
+              value: '_self'
+            },
+            {
+              label: 'New tab or window (_blank)',
+              value: '_blank'
+            },
+            {
+              label: 'Parent browsing context (_parent)',
+              value: '_parent'
+            },
+            {
+              label: 'Topmost browsing context (_top)',
+              value: '_top'
+            }
+          ]
+        }
+      ]
     };
   },
   computed: {
     hasSelection() {
       return this.editor.selection.from !== this.editor.selection.to;
+    },
+    offset() {
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      return (rect.height + 15) + 'px';
+    }
+  },
+  watch: {
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
     }
   },
   created() {
-    this.resetFields();
+    // this.resetFields();
   },
   methods: {
     click() {
       if (this.hasSelection) {
-        this.resetFields();
-        this.populateFields();
+        // this.resetFields();
         this.active = !this.active;
+        this.populateFields();
       }
     },
     close() {
@@ -142,11 +185,13 @@ export default {
       this.active = false;
     },
     populateFields() {
+      console.log('pop called');
       if (this.active) {
+        console.log('gonna pop');
         const values = this.editor.getMarkAttrs('link');
-        this.href.value.data = values.href;
-        this.id.value.data = values.id;
-        this.target.value.data = values.target;
+        this.value.data.href = values.href;
+        this.value.data.id = values.id;
+        this.value.data.target = values.target;
       }
     },
     resetFields() {
@@ -210,5 +255,13 @@ export default {
   .apos-link-control__dialog {
     z-index: $z-index-modal-bg;
     position: absolute;
+    opacity: 0;
+    pointer-events: none;
   }
+
+  .apos-link-control__dialog.is-triggered.has-selection.is-ready {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
 </style>
