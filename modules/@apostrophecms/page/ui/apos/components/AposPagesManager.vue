@@ -145,7 +145,7 @@ export default {
             all: 1
           }
         }
-      )).results;
+      ));
 
       formatPage(pageTree);
 
