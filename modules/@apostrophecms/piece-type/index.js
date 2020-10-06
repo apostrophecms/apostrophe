@@ -678,9 +678,7 @@ module.exports = {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          filters: 'ApostrophePiecesFilters',
-          list: 'ApostrophePiecesList',
-          pager: 'ApostrophePager',
+          filters: 'ApostrophePiecesFilters', // TODO: Remove component and this.
           insertModal: 'AposDocEditor',
           managerModal: 'AposPiecesManager'
         });
