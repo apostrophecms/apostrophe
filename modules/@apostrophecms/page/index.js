@@ -203,7 +203,7 @@ module.exports = {
       // `_targetId` is the _id of another page, and `_position` may be `before`, `after`,
       // `firstChild` or `lastChild`.
       //
-      // If you do not specify these properties they default to the homepage and `inside`,
+      // If you do not specify these properties they default to the homepage and `lastChild`,
       // creating a subpage of the home page.
       //
       // You may pass _copyingId. If you do all properties not in `req.body` are copied from it.
@@ -219,6 +219,15 @@ module.exports = {
           // cheeky
           throw self.apos.error('invalid');
         }
+
+        if (req.body._newInstance) {
+          // If we're looking for a fresh page instance and aren't saving yet,
+          // simply get a new page doc and return;
+          const parentPage = await self.findForEditing(req, { _id: targetId })
+            .permission('edit-@apostrophecms/page').toObject();
+          return self.newChild(parentPage);
+        }
+
         return self.withLock(req, async () => {
           const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit-@apostrophecms/page').toObject();
           if (!targetPage) {
@@ -433,8 +442,9 @@ database.`);
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
         _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
-
         _.defaults(browserOptions, {
+          label: 'Page',
+          pluralLabel: 'Pages',
           components: {}
         });
         _.defaults(browserOptions.components, {
