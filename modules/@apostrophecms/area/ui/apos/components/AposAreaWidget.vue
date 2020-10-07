@@ -21,6 +21,7 @@
         :class="ui.addTop"
       >
         <AposAreaMenu
+          :max-reached="maxReached"
           @add="$emit('insert', $event);"
           @menu-open="menuFocus('top')"
           @menu-close="menuUnfocus('top')"
@@ -78,6 +79,7 @@
         :class="ui.addBottom"
       >
         <AposAreaMenu
+          :max-reached="maxReached"
           @add="$emit('insert', $event)"
           :context-menu-options="contextMenuOptions"
           :index="i + 1"
@@ -92,7 +94,6 @@
 
 <script>
 
-import Vue from 'apostrophe/vue';
 import cuid from 'cuid';
 import klona from 'klona';
 
@@ -145,6 +146,9 @@ export default {
     contextMenuOptions: {
       type: Object,
       required: true
+    },
+    maxReached: {
+      type: Boolean
     }
   },
   emits: [ 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
