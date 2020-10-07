@@ -52,10 +52,9 @@ export default {
       type: String,
       default: null
     },
-    iconOnly: Boolean,
-    iconSize: {
-      type: Number,
-      default: 15
+    iconOnly: {
+      type: Boolean,
+      default: false
     },
     state: {
       type: Array,
@@ -429,6 +428,15 @@ export default {
   }
 }
 
+.apos-button--rich-text {
+  padding: 15px 10px;
+  background-color: var(--a-background);
+  border-radius: 0;
+  &:hover {
+    background-color: var(--a-primary);
+  }
+}
+
 .apos-button--icon.apos-button--small {
   padding: 7.5px 10px;
 }
@@ -470,6 +478,10 @@ export default {
     background-color: transparent;
     box-shadow: none;
   }
+}
+
+.apos-button--no-border {
+  border: none;
 }
 
 @keyframes animateGradient {

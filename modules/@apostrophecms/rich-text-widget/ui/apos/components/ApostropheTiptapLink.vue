@@ -1,6 +1,9 @@
 <template>
   <div class="apostrophe-tiptap-link-control">
-    <button @click="click()">
+    <button 
+      class="apos-tiptap-control apos-tiptap-control--button"
+      @click="click"
+    >
       {{ tool.label }}
     </button>
     <ApostropheModal v-if="active">

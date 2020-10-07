@@ -1,6 +1,16 @@
 <template>
-  <select :value="active()" @change="style">
-    <option v-for="style, i in options.styles" :value="i">{{ style.label }}</option>
+  <select
+    :value="active"
+    @change="setStyle"
+    class="apos-tiptap-control apos-tiptap-control--select"
+  >
+    <option
+      v-for="(style, i) in options.styles"
+      :value="i"
+      :key="style.label + '-' + i"
+    >
+      {{ style.label }}
+    </option>
   </select>
 </template>
 
@@ -9,12 +19,26 @@
 export default {
   name: 'ApostropheTiptapStyles',
   props: {
-    name: String,
-    editor: Object,
-    tool: Object,
-    options: Object
+    name: {
+      type: String,
+      required: true
+    },
+    editor: {
+      type: Object,
+      required: true
+    },
+    tool: {
+      type: Object,
+      required: true
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
+    }
   },
-  methods: {
+  computed: {
     active() {
       const styles = this.options.styles || [];
       for (let i = 0; (i < styles.length); i++) {
@@ -28,10 +52,11 @@ export default {
         }
       }
       return 0;
-    },
-    style($event) {
+    }
+  },
+  methods: {
+    setStyle($event) {
       const style = this.options.styles[$event.target.value];
-
       this.editor.commands.styles(style);
     }
   }

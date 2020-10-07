@@ -1,17 +1,23 @@
 <template>
-  <div class="apos-richtext-editor">
-    <editor-menu-bar :editor="editor">
-      <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
-        <component v-for="item in toolbar"
-          v-bind:key="item"
-          :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
-          :name="item"
-          :tool="tools[item]"
-          :options="options"
-          :editor="editor"
-        />
-      </div>
-    </editor-menu-bar>
+  <div class="apos-rich-text-editor">
+    <AposContextMenuDialog
+      menu-placement="bottom"
+      class-list="apos-theme-dark apos-context-menu__dialog--unpadded"
+    >
+      <editor-menu-bar :editor="editor">
+        <div class="apos-rich-text-menubar" slot-scope="{ commands, isActive }">
+          <component
+            v-for="(item, index) in toolbar"
+            :key="item + '-' + index"
+            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
+            :name="item"
+            :tool="tools[item]"
+            :options="options"
+            :editor="editor"
+          />
+        </div>
+      </editor-menu-bar>
+    </AposContextMenuDialog>
     <editor-content :editor="editor" />
   </div>
 </template>
@@ -72,6 +78,7 @@ export default {
       }
     }
   },
+  emits: [ 'update' ],
   data() {
     return {
       tools: moduleOptionsBody(this.type).tools,
@@ -123,7 +130,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-richtext-menubar {
-    margin: 12px 0;
+  .apos-rich-text-editor /deep/ .apos-tiptap-control {
+    // @include apos-button-reset();
+    // padding: 20px 10px;
+    // &:hover {
+    //   background-color: var(--a-primary);
+    //   color: var(--a-white);
+    // }
   }
 </style>
