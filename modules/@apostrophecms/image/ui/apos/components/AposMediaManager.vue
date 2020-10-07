@@ -229,16 +229,16 @@ export default {
         dimensions
       });
     },
-    async completeUploading (imgId) {
+    async completeUploading (imgIds) {
       this.uploading = false;
       await this.getMedia();
 
-      if (imgId) {
-        this.checked.push(imgId);
+      if (Array.isArray(imgIds) && imgIds.length) {
+        this.checked = this.checked.concat(imgIds);
 
         // If we're currently editing one, don't interrupt that by replacing it.
-        if (!this.editing) {
-          this.updateEditing(imgId);
+        if (!this.editing && imgIds.length === 1) {
+          this.updateEditing(imgIds[0]);
         }
       }
     },
