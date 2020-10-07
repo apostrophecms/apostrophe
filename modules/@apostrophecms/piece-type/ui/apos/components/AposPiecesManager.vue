@@ -66,13 +66,15 @@
         </template>
       </AposModalBody>
       <!-- The pieces editor modal. -->
-      <component
-        v-if="editing"
-        :is="options.components.insertModal"
-        :module-name="moduleName" :doc-id="editingDocId"
-        :filter-values="filterValues"
-        @saved="finishSaved" @safe-close="closeEditor"
-      />
+      <portal to="modal-target">
+        <component
+          v-if="editing"
+          :is="options.components.insertModal"
+          :module-name="moduleName" :doc-id="editingDocId"
+          :filter-values="filterValues"
+          @saved="finishSaved" @safe-close="closeEditor"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
