@@ -145,7 +145,7 @@ export default {
     },
     dragHandler (event) {
       event.preventDefault();
-      if (!this.disabled) {
+      if (!this.disabled && !this.dragging) {
         this.dragging = true;
       }
     }
@@ -191,6 +191,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none;
     // v-html goofiness
     & /deep/ .apos-attachment-highlight {
       color: var(--a-primary);
