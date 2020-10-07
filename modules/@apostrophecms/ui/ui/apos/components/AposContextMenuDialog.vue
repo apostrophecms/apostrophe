@@ -3,6 +3,7 @@
     class="apos-primary-scrollbar apos-context-menu__dialog"
     :class="classList"
     role="dialog"
+    :x-placement="menuPlacement"
   >
     <AposContextMenuTip
       :align="tipAlignment"
@@ -116,6 +117,13 @@ export default {
   margin-block-start: 0;
   margin-block-end: 0;
   padding: 10px 0;
+}
+
+.apos-context-menu__dialog /deep/ .apos-schema .apos-field {
+  margin-bottom: 20px;
+  .apos-field-help {
+    margin-top: 5px;
+  }
 }
 
 </style>
