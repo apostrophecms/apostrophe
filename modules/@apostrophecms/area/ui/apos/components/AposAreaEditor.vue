@@ -262,12 +262,7 @@ export default {
         this.editing[widget._id] = false;
       }
     },
-    // Returns true on a successful insert, false if the max constraint
-    // would be violated
     async insert(e) {
-      if (this.options.max && this.next.length >= this.options.max) {
-        return false;
-      }
       const widget = e.widget;
       if (!widget._id) {
         widget._id = cuid();
@@ -296,7 +291,6 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(e.index);
       }
-      return true;
     },
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
