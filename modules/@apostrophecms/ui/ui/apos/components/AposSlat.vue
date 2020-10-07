@@ -5,7 +5,10 @@
       class="apos-slat"
       :data-id="item._id"
       tabindex="0"
-      :class="{'is-engaged': engaged}"
+      :class="{
+        'is-engaged': engaged,
+        'is-only-child': slatCount === 1
+      }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
       @keydown.prevent.escape="disengage"
@@ -17,7 +20,10 @@
       :aria-labelledby="parent"
     >
       <div class="apos-slat__main">
-        <drag-icon class="apos-slat__control apos-slat__control--drag" :size="13" />
+        <drag-icon
+          v-if="slatCount > 1" class="apos-slat__control apos-slat__control--drag"
+          :size="13"
+        />
         <AposContextMenu
           v-if="item._fields"
           :button="more.button"
@@ -26,14 +32,15 @@
         />
         <a
           class="apos-slat__control apos-slat__control--view"
-          v-if="item.url"
-          :href="item.url"
+          v-if="item._url || item._urls"
+          :href="item._url || item._urls.original"
+          target="_blank"
         >
           <eye-icon :size="14" />
         </a>
-        <div v-if="item.ext" class="apos-slat__extension-wrapper">
-          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.ext}`]">
-            {{ item.ext }}
+        <div v-if="item.extension" class="apos-slat__extension-wrapper">
+          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
+            {{ item.extension }}
           </span>
         </div>
         <div class="apos-slat__label">
@@ -41,8 +48,11 @@
         </div>
       </div>
       <div class="apos-slat__secondary">
-        <div class="apos-slat__size" v-if="item.size">{{ item.size }}</div>
+        <div class="apos-slat__size" v-if="item.length && item.length.size">
+          {{ itemSize }}
+        </div>
         <AposButton
+          v-if="removable"
           @click="remove"
           icon="close-icon"
           :icon-only="true"
@@ -68,9 +78,17 @@ export default {
       type: String,
       required: true
     },
+    slatCount: {
+      type: Number,
+      required: true
+    },
     engaged: {
       type: Boolean,
       default: false
+    },
+    removable: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked' ],
@@ -92,6 +110,16 @@ export default {
         ]
       }
     };
+  },
+  computed: {
+    itemSize() {
+      const size = this.item.length.size;
+      if (size < 1000000) {
+        return `${(size / 1000).toFixed(0)}KB`;
+      } else {
+        return `${(size / 1000000).toFixed(1)}MB`;
+      }
+    }
   },
   methods: {
     toggleEngage() {
@@ -134,16 +162,30 @@ export default {
     background-color: var(--a-base-9);
     color: var(--a-text-primary);
     @include apos-transition();
-    &:hover:not(.apos-slat-list__item--disabled) {
-      background-color: var(--a-base-7);
+
+    &:hover {
       cursor: grab;
+      background-color: var(--a-base-7);
     }
-    &:active:not(.apos-slat-list__item--disabled) {
+    &:active {
       cursor: grabbing;
     }
-    &:active:not(.apos-slat-list__item--disabled),
-    &:focus:not(.apos-slat-list__item--disabled) {
+    &:active,
+    &:focus {
       background-color: var(--a-base-7);
+    }
+
+    &.apos-slat-list__item--disabled,
+    &.is-only-child {
+      &:hover,
+      &:active {
+        cursor: default;
+      }
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: var(--a-base-9);
+      }
     }
   }
 

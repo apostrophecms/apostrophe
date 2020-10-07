@@ -165,6 +165,7 @@ module.exports = {
       result.pages = query.get('totalPages');
       result.currentPage = query.get('page') || 1;
       result.results = await query.toArray();
+      self.apos.attachment.all(result.results, { annotate: true });
       if (query.get('choicesResults')) {
         result.choices = query.get('choicesResults');
       }
@@ -179,6 +180,7 @@ module.exports = {
       if (!doc) {
         throw self.apos.error('notfound');
       }
+      self.apos.attachment.all(doc, { annotate: true });
       return doc;
     },
     async post(req) {

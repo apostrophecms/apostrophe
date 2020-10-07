@@ -11,6 +11,7 @@
         :empty="true"
         :index="0"
         :widget-options="options.widgets"
+        :max-reached="maxReached"
       />
     </div>
     <div class="apos-areas-widgets-list">
@@ -28,6 +29,7 @@
         :field-id="fieldId"
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
+        :max-reached="maxReached"
         @done="done"
         @up="up"
         @down="down"
@@ -111,6 +113,9 @@ export default {
     },
     types() {
       return Object.keys(this.options.widgets);
+    },
+    maxReached() {
+      return this.options.max && this.next.length >= this.options.max;
     }
   },
   watch: {
