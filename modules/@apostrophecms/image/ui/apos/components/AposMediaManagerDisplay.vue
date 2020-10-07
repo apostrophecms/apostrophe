@@ -158,21 +158,6 @@ export default {
       }
 
     },
-    async notifyErrors(error, fallback) {
-      if (error.body && error.body.errors) {
-        for (const err of error.body.errors) {
-          console.error('Error saving media.', err);
-
-          if (err.error && err.error.description) {
-            await apos.notify(err.error.description || fallback, {
-              type: 'danger',
-              icon: 'alert-circle-icon',
-              dismiss: true
-            });
-          }
-        }
-      }
-    },
     addDragClass(event) {
       event.target.classList.add('is-hovering');
     },
