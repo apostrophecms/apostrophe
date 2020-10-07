@@ -55,14 +55,10 @@
 
 import { EditorMenuBubble } from 'tiptap';
 import { isEmpty } from 'lodash';
-import {
-  VPopover
-} from 'v-tooltip';
 
 export default {
   name: 'ApostropheTiptapLink',
   components: {
-    'v-popover': VPopover,
     EditorMenuBubble
   },
   props: {
@@ -111,20 +107,12 @@ export default {
           def: '_self',
           choices: [
             {
-              label: 'Current browsing context (_self)',
+              label: 'Current tab (_self)',
               value: '_self'
             },
             {
-              label: 'New tab or window (_blank)',
+              label: 'New tab (_blank)',
               value: '_blank'
-            },
-            {
-              label: 'Parent browsing context (_parent)',
-              value: '_parent'
-            },
-            {
-              label: 'Topmost browsing context (_top)',
-              value: '_top'
             }
           ]
         }
