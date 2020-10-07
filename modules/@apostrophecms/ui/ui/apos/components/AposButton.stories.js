@@ -35,7 +35,8 @@ export const buttons = () => ({
         'Danger on Hover': 'danger-on-hover',
         Block: 'block',
         'Gradient on Hover': 'gradient-on-hover',
-        'No Border': 'no-border'
+        'No Border': 'no-border',
+        'No Motion': 'no-motion'
       },
       [],
       { display: 'multi-select' },

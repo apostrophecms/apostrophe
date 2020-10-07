@@ -52,11 +52,13 @@ export default {
     right: 20px;
   }
 
-  [x-placement^='bottom'] .apos-context-menu__tip {
+  [x-placement^='bottom'] > .apos-context-menu__tip {
     top: -11px;
+    bottom: auto;
   }
 
-  [x-placement^='top'] .apos-context-menu__tip {
+  [x-placement^='top'] > .apos-context-menu__tip {
+    top: auto;
     bottom: -11px;
     transform: rotate(180deg);
   }

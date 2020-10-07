@@ -1,16 +1,13 @@
 <template>
-  <!-- <button 
-    @click="click"
-    class="apos-tiptap-control apos-tiptap-control--button"
-    :class="{ 'apos-active': active }"
-  > -->
-  <!-- </button> -->
   <AposButton
-    :label="tool.label"
-    :icon-only="true"
-    icon="label-icon"
     type="rich-text"
-    :modifiers="['no-border']"
+    @click="click"
+    class="apos-rich-text-editor__control"
+    :class="{ 'apos-active': active }"
+    :label="tool.label"
+    :icon-only="tool.icon"
+    :icon="tool.icon ? tool.icon : false"
+    :modifiers="['no-border', 'no-motion']"
   />
 </template>
 

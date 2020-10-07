@@ -222,10 +222,6 @@ export default {
     text-decoration: underline;
     color: var(--a-primary-button-hover);
   }
-  &:hover:not([disabled]),
-  &:focus:not([disabled]) {
-    transform: none;
-  }
   &:focus {
     box-shadow: none;
     outline: none;
@@ -482,6 +478,13 @@ export default {
 
 .apos-button--no-border {
   border: none;
+}
+
+.apos-button--no-motion {
+  &:hover:not([disabled]),
+  &:focus:not([disabled]) {
+    transform: none;
+  }
 }
 
 @keyframes animateGradient {

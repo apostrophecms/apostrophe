@@ -1,11 +1,11 @@
 <template>
   <div class="apos-rich-text-editor">
     <AposContextMenuDialog
-      menu-placement="bottom"
+      menu-placement="top"
       class-list="apos-theme-dark apos-context-menu__dialog--unpadded"
     >
       <editor-menu-bar :editor="editor">
-        <div class="apos-rich-text-menubar" slot-scope="{ commands, isActive }">
+        <div class="apos-rich-text-toolbar" slot-scope="{ commands, isActive }">
           <component
             v-for="(item, index) in toolbar"
             :key="item + '-' + index"
@@ -130,12 +130,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-rich-text-editor /deep/ .apos-tiptap-control {
-    // @include apos-button-reset();
-    // padding: 20px 10px;
-    // &:hover {
-    //   background-color: var(--a-primary);
-    //   color: var(--a-white);
-    // }
+  .apos-rich-text-toolbar {
+    display: flex;
+    align-items: center;
   }
 </style>

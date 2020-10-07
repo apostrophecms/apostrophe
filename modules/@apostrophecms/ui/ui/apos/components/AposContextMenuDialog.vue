@@ -77,11 +77,11 @@ export default {
 
 <style lang="scss">
 
-.apos-context-menu__dialog--unpadded .apos-context-menu__pane  {
+.apos-context-menu__dialog--unpadded > .apos-context-menu__pane {
   padding: 0;
 }
 
-.apos-context-menu__dialog--tb-padded .apos-context-menu__pane{
+.apos-context-menu__dialog--tb-padded > .apos-context-menu__pane {
   padding-top: 20px;
   padding-bottom: 20px;
 }
