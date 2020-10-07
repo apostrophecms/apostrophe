@@ -325,19 +325,13 @@ export default {
       this.schemaOtherFields = [];
 
       this.schema.forEach(field => {
-        let schemaFields;
-        let docFields;
-
         if (field.group.name === 'utility') {
-          docFields = this.docUtilityFields;
-          schemaFields = this.schemaUtilityFields;
+          this.docUtilityFields.data[field.name] = this.doc.data[field.name] || field.def;
+          this.schemaUtilityFields.push(field);
         } else {
-          docFields = this.docOtherFields;
-          schemaFields = this.schemaOtherFields;
+          this.docOtherFields.data[field.name] = this.doc.data[field.name] || field.def;
+          this.schemaOtherFields.push(field);
         }
-
-        schemaFields.push(field);
-        docFields.data[field.name] = this.doc.data[field.name] || field.def;
       });
       this.splittingDoc = false;
     }
