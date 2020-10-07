@@ -296,8 +296,8 @@ export default {
     display: block;
     background-color: var(--a-overlay);
 
-    .apos-modal__inner & {
-      // A nested modal doesn't need an overlay.
+    .apos-modal + .apos-modal & {
+      // A second modal doesn't need an overlay.
       display: none;
     }
 

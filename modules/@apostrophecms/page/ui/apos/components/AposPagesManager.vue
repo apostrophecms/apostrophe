@@ -42,12 +42,14 @@
         </template>
       </AposModalBody>
       <!-- The pieces editor modal. -->
-      <component
-        v-if="editing"
-        :is="moduleOptions.components.insertModal"
-        :module-name="moduleName" :doc-id="editingDocId"
-        @saved="finishSaved" @safe-close="closeEditor"
-      />
+      <portal to="modal-target">
+        <component
+          v-if="editing"
+          :is="moduleOptions.components.insertModal"
+          :module-name="moduleName" :doc-id="editingDocId"
+          @saved="finishSaved" @safe-close="closeEditor"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
