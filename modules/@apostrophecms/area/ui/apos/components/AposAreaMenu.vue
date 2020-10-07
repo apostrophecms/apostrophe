@@ -106,6 +106,9 @@ export default {
     widgetOptions: {
       type: Object,
       required: true
+    },
+    maxReached: {
+      type: Boolean
     }
   },
   emits: [ 'menu-close', 'menu-open', 'add' ],
@@ -117,20 +120,23 @@ export default {
       addWidgetOptions: null,
       addWidgetType: null,
       widget: null,
-      adding: false,
-      buttonOptions: {
-        label: 'Add Content',
-        iconOnly: true,
-        icon: 'plus-icon',
-        type: 'primary',
-        modifiers: [ 'round', 'tiny' ],
-        iconSize: this.empty ? 20 : 11
-      }
+      adding: false
     };
   },
   computed: {
     moduleOptions() {
       return window.apos.area;
+    },
+    buttonOptions() {
+      return {
+        label: 'Add Content',
+        iconOnly: true,
+        icon: 'plus-icon',
+        type: 'primary',
+        modifiers: [ 'round', 'tiny' ],
+        iconSize: this.empty ? 20 : 11,
+        disabled: this.maxReached
+      };
     },
     extendedContextMenuOptions() {
       const modifiers = [ 'unpadded' ];
