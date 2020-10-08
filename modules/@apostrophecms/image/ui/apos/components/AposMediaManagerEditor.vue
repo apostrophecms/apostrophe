@@ -1,22 +1,22 @@
 <template>
-  <div class="apos-media-manager-editor">
-    <div class="apos-media-manager-editor__inner" v-if="activeMedia">
-      <div class="apos-media-manager-editor__thumb-wrapper">
+  <div class="apos-media-editor">
+    <div class="apos-media-editor__inner" v-if="activeMedia">
+      <div class="apos-media-editor__thumb-wrapper">
         <img
           v-if="activeMedia.attachment"
-          class="apos-media-manager-editor__thumb"
+          class="apos-media-editor__thumb"
           :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
         >
       </div>
-      <ul class="apos-media-manager-editor__details">
-        <li class="apos-media-manager-editor__detail" v-if="createdDate">
+      <ul class="apos-media-editor__details">
+        <li class="apos-media-editor__detail" v-if="createdDate">
           Uploaded: {{ createdDate }}
         </li>
-        <li class="apos-media-manager-editor__detail" v-if="fileSize">
+        <li class="apos-media-editor__detail" v-if="fileSize">
           File Size: {{ fileSize }}
         </li>
         <li
-          class="apos-media-manager-editor__detail"
+          class="apos-media-editor__detail"
           v-if="activeMedia.attachment && activeMedia.attachment.width"
         >
           Dimensions: {{ activeMedia.attachment.width }} 𝗑
@@ -36,15 +36,15 @@
     </div>
     <AposModalLip :refresh="lipKey">
       <div
-        class="apos-media-manager-editor__lip"
+        class="apos-media-editor__lip"
       >
         <AposButton
           @click="cancel"
-          class="apos-media-manager-editor__back" type="outline"
+          class="apos-media-editor__back" type="outline"
           label="Cancel"
         />
         <AposButton
-          @click="save" class="apos-media-manager-editor__save"
+          @click="save" class="apos-media-editor__save"
           :disabled="doc.hasErrors"
           label="Save" type="primary"
         />
@@ -263,13 +263,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-media-manager-editor {
+  .apos-media-editor {
     position: relative;
     height: 100%;
     padding: 20px;
   }
 
-  .apos-media-manager-editor__thumb-wrapper {
+  .apos-media-editor__thumb-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -277,16 +277,16 @@ export default {
     border: 1px solid var(--a-base-7);
     margin-bottom: 20px;
   }
-  .apos-media-manager-editor__thumb {
+  .apos-media-editor__thumb {
     max-width: 100%;
     max-height: 100%;
   }
 
-  .apos-media-manager-editor /deep/ .apos-field {
+  .apos-media-editor /deep/ .apos-field {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__details {
+  .apos-media-editor__details {
     @include apos-list-reset();
     color: var(--a-base-4);
     font-size: map-get($font-sizes, default);
@@ -294,11 +294,11 @@ export default {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__controls {
+  .apos-media-editor__controls {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__lip {
+  .apos-media-editor__lip {
     display: flex;
     justify-content: space-between;
   }
