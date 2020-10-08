@@ -1,17 +1,24 @@
 <template>
-  <select
-    :value="active"
-    @change="setStyle"
-    class="apos-tiptap-control apos-tiptap-control--select"
-  >
-    <option
-      v-for="(style, i) in options.styles"
-      :value="i"
-      :key="style.label + '-' + i"
+  <div class="apos-tiptap-select">
+    <select
+      :value="active"
+      @change="setStyle"
+      class="apos-tiptap-control apos-tiptap-control--select"
     >
-      {{ style.label }}
-    </option>
-  </select>
+      <option
+        v-for="(style, i) in options.styles"
+        :value="i"
+        :key="style.label + '-' + i"
+      >
+        {{ style.label }}
+      </option>
+    </select>
+    <chevron-down-icon
+      :size="11"
+      class="apos-tiptap-select__icon"
+      fill-color="currentColor"
+    />
+  </div>
 </template>
 
 <script>
@@ -62,3 +69,31 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+  // If another select el is needed for the rich-text toolbar these styles should be made global
+  .apos-tiptap-control--select {
+    @include apos-button-reset();
+    padding: 10px 15px 10px 10px;
+    &:focus, &:active {
+      background-color: var(--a-base-8);
+      outline: none;
+    }
+    &:hover {
+      background-color: var(--a-primary);
+    }
+  }
+
+  .apos-tiptap-select {
+    position: relative;
+  }
+
+  .apos-tiptap-select /deep/ .apos-tiptap-select__icon {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    height: 11px;
+    pointer-events: none;
+  }
+</style>

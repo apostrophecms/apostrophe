@@ -425,11 +425,13 @@ export default {
 }
 
 .apos-button--rich-text {
-  padding: 15px 10px;
   background-color: var(--a-background);
   border-radius: 0;
   &:hover {
     background-color: var(--a-primary);
+  }
+  &:focus, &:active {
+    background-color: var(--a-base-8);
   }
 }
 
@@ -484,6 +486,9 @@ export default {
   &:hover:not([disabled]),
   &:focus:not([disabled]) {
     transform: none;
+    box-shadow: none;
+    outline: none;
+    border: 0;
   }
 }
 

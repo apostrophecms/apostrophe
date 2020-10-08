@@ -14,7 +14,6 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
-        '|',
         'bold',
         'italic',
         'strike',
@@ -22,7 +21,6 @@ module.exports = {
         '|',
         'bullet_list',
         'ordered_list',
-        '|',
         'blockquote',
         'code_block',
         '|',
