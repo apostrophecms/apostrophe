@@ -10,7 +10,7 @@
         menu-placement="top"
         class-list="apos-theme-dark apos-context-menu__dialog--unpadded apos-rich-text-editor__dialog apos-rich-text-toolbar"
         :class="extraClasses(menu, focused)"
-        :style="position(menu)"
+        :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
@@ -142,16 +142,11 @@ export default {
         classes.push('is-active');
       }
 
-      if (focused) {
+      if (focused && !menu) {
         classes.push('is-active');
       }
 
       return classes.join(' ');
-    },
-    position(menu) {
-      if (menu) {
-        return `left:${menu.left}; top:${menu.top};`;
-      }
     },
     async update() {
       const content = this.editor.getHTML();
