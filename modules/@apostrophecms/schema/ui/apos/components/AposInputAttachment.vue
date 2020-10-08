@@ -65,7 +65,8 @@ export default {
         ? this.value.data : (this.field.def || {}),
       disabled: false,
       dragging: false,
-      uploading: false
+      uploading: false,
+      allowedExtensions: [ '*' ]
     };
   },
   computed: {
@@ -84,6 +85,14 @@ export default {
   },
   async mounted () {
     this.disabled = this.field.disabled || !!(this.value.data && this.value.data._id);
+
+    const groups = apos.modules['@apostrophecms/attachment'].fileGroups;
+    const groupInfo = groups.find(group => {
+      return group.name === this.field.fileGroup;
+    });
+    if (groupInfo && groupInfo.extensions) {
+      this.allowedExtensions = groupInfo.extensions;
+    }
   },
   methods: {
     watchNext () {
@@ -107,9 +116,21 @@ export default {
           this.dragging = false;
           this.disabled = true;
           this.uploading = true;
-          this.$emit('upload-started');
 
           const file = event.target.files ? event.target.files[0] : event.dataTransfer.files[0];
+
+          if (!this.checkFileGroup(file.name)) {
+            await apos.notify(`File type was not accepted. Allowed extensions: ${this.allowedExtensions.join(', ')}`, {
+              type: 'warning',
+              icon: 'alert-circle-icon'
+            });
+
+            this.disabled = false;
+            this.uploading = false;
+
+            return;
+          }
+
           await apos.notify(`Uploading ${file.name}`, {
             dismiss: true,
             icon: 'cloud-upload-icon'
@@ -142,6 +163,11 @@ export default {
           this.uploading = false;
         }
       }
+    },
+    checkFileGroup(filename) {
+      const fileExt = filename.split('.').pop();
+      return this.allowedExtensions[0] === '*' ||
+        this.allowedExtensions.includes(fileExt);
     },
     dragHandler (event) {
       event.preventDefault();

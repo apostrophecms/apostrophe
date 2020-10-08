@@ -35,7 +35,7 @@
             @click="allowReplace = true"
           />
         </li>
-        <li class="apos-media-editor__link" v-if="activeMedia.attachment._urls">
+        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
