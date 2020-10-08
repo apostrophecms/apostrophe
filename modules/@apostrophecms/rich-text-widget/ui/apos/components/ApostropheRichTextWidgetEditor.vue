@@ -114,7 +114,8 @@ export default {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
-      this.$emit('update', widget);
+      // ... removes need for deep watching in parent
+      this.$emit('update', { ...widget });
     },
     command(name, options) {
       this.commands[name](options);
