@@ -1,9 +1,14 @@
 <template>
-  <div class="apos-media-editor">
+  <div
+    class="apos-media-editor"
+    :class="{
+      'is-replacing': allowReplace
+    }"
+  >
     <div class="apos-media-editor__inner" v-if="activeMedia">
       <div class="apos-media-editor__thumb-wrapper">
         <img
-          v-if="activeMedia.attachment"
+          v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
           :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
         >
@@ -21,6 +26,20 @@
         >
           Dimensions: {{ activeMedia.attachment.width }} 𝗑
           {{ activeMedia.attachment.height }}
+        </li>
+      </ul>
+      <ul class="apos-media-editor__links">
+        <li class="apos-media-editor__link" aria-hidden="true">
+          <AposButton
+            type="quiet" label="Replace"
+            @click="allowReplace = true"
+          />
+        </li>
+        <li class="apos-media-editor__link">
+          <AposButton
+            type="quiet" label="View"
+            @click="viewMedia"
+          />
         </li>
       </ul>
       <AposSchema
@@ -64,6 +83,7 @@ import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
+import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 dayjs.extend(advancedFormat);
 
@@ -96,7 +116,7 @@ export default {
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
-      activeMedia: this.media,
+      activeMedia: klona(this.media),
       doc: {
         data: {},
         hasErrors: false
@@ -110,7 +130,8 @@ export default {
         affirmativeLabel: 'Discard Changes'
       },
       confirmingDiscard: false,
-      discardConfirmed: false
+      discardConfirmed: false,
+      allowReplace: false
     };
   },
   computed: {
@@ -119,9 +140,7 @@ export default {
     },
     schema() {
       if (this.moduleOptions.schema) {
-        return this.moduleOptions.schema.filter(field => {
-          return field.type !== 'attachment';
-        });
+        return this.moduleOptions.schema;
       }
       return [];
     },
@@ -161,7 +180,18 @@ export default {
             this.docEdited = true;
           }
         });
+
+        if ((this.activeMedia.attachment && !newData.attachment)) {
+          this.updateActiveAttachment({});
+        } else if (
+          (newData.attachment && !this.activeMedia.attachment) ||
+          (this.activeMedia.attachment && !newData.attachment) ||
+          !isEqual(newData.attachment, this.activeMedia.attachment)
+        ) {
+          this.updateActiveAttachment(newData.attachment);
+        }
       }
+
     },
     media(newVal) {
       // Ask for comfirmation to change the active media if the doc was edited,
@@ -186,7 +216,8 @@ export default {
   },
   methods: {
     updateActiveDoc(newMedia) {
-      this.activeMedia = newMedia;
+      this.allowReplace = false;
+      this.activeMedia = klona(newMedia);
       this.doc.data = klona(newMedia);
       this.generateLipKey();
     },
@@ -224,6 +255,7 @@ export default {
             dismiss: true
           });
         } finally {
+          this.allowReplace = false;
           apos.bus.$emit('busy', false);
         }
       });
@@ -239,7 +271,7 @@ export default {
 
         return;
       }
-
+      this.allowReplace = false;
       this.$emit('back');
     },
     async discardChanges () {
@@ -257,6 +289,13 @@ export default {
       await apos.notify(`${this.moduleLabels.label} changes discarded`, {
         dismiss: true
       });
+    },
+    updateActiveAttachment(attachment) {
+      console.info('☄️', attachment);
+      this.activeMedia.attachment = attachment;
+    },
+    viewMedia () {
+      window.open(this.activeMedia.attachment._urls.original, '_blank');
     }
   }
 };
@@ -292,6 +331,26 @@ export default {
     font-size: map-get($font-sizes, default);
     font-weight: 500;
     margin-bottom: 20px;
+  }
+
+  .apos-media-editor__links {
+    @include apos-list-reset();
+    margin-bottom: 30px;
+  }
+
+  .apos-media-editor__link {
+    display: inline-block;
+    & + & {
+      margin-left: 20px;
+    }
+  }
+
+  /deep/ [data-apos-field='attachment'] {
+    .apos-media-editor:not(.is-replacing) & {
+      position: absolute;
+      left: -999rem;
+      opacity: 0;
+    }
   }
 
   .apos-media-editor__controls {
