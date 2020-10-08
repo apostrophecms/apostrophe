@@ -1,34 +1,18 @@
 <template>
   <div class="apos-rich-text-editor">
-    <AposContextMenuDialog
-      menu-placement="top"
-      class-list="apos-context-menu__dialog--unpadded apos-rich-text-editor__dialog"
+    <component
+      :is="menuType"
+      :editor="editor"
+      :keep-in-bounds="false"
+      v-slot="{ commands, isActive, menu, focused }"
     >
-      <!-- <editor-menu-bar :editor="editor">
-        <div class="apos-rich-text-toolbar" slot-scope="{ commands, isActive }">
-          <component
-            v-for="(item, index) in toolbar"
-            :key="item + '-' + index"
-            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
-            :name="item"
-            :tool="tools[item]"
-            :options="options"
-            :editor="editor"
-          />
-        </div>
-      </editor-menu-bar> -->
-      <editor-menu-bubble
-        :editor="editor"
-        :keep-in-bounds="true"
-        v-slot="{ commands, isActive, menu }"
+      <AposContextMenuDialog
+        menu-placement="top"
+        class-list="apos-theme-dark apos-context-menu__dialog--unpadded apos-rich-text-editor__dialog apos-rich-text-toolbar"
+        :class="extraClasses(menu, focused)"
+        :style="position(menu)"
       >
-        <div
-          class="apos-rich-text-toolbar apos-theme-dark"
-          :style="`
-            left: ${menu.left}px;
-            bottom: ${menu.bottom}px;
-          `"
-        >
+        <div class="apos-rich-text-toolbar__inner">
           <component
             v-for="(item, index) in toolbar"
             :key="item + '-' + index"
@@ -39,9 +23,11 @@
             :editor="editor"
           />
         </div>
-      </editor-menu-bubble>
-    </AposContextMenuDialog>
-    <editor-content :editor="editor" />
+      </AposContextMenuDialog>
+    </component>
+    <div class="apos-rich-text-editor__editor">
+      <editor-content :editor="editor" />
+    </div>
   </div>
 </template>
 
@@ -135,12 +121,38 @@ export default {
   computed: {
     moduleOptions() {
       return moduleOptionsBody(this.type);
+    },
+    menuType() {
+      if (this.options.menuType && this.options.menuType === 'block') {
+        return 'editor-menu-bar';
+      }
+      return 'editor-menu-bubble';
     }
   },
   beforeDestroy() {
     this.editor.destroy();
   },
   methods: {
+    extraClasses(menu, focused) {
+      const classes = [];
+
+      classes.push(this.menuType);
+
+      if (menu && menu.isActive) {
+        classes.push('is-active');
+      }
+
+      if (focused) {
+        classes.push('is-active');
+      }
+
+      return classes.join(' ');
+    },
+    position(menu) {
+      if (menu) {
+        return `left:${menu.left}; top:${menu.top};`;
+      }
+    },
     async update() {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
@@ -157,7 +169,30 @@ export default {
 <style lang="scss" scoped>
 
   .apos-rich-text-toolbar {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .apos-rich-text-toolbar.editor-menu-bubble {
+    z-index: $z-index-manager-toolbar;
     position: absolute;
+    transform: translate3d(-50%, -50%, 0);
+  }
+
+  .apos-rich-text-toolbar.editor-menu-bar {
+    display: inline-block;
+    margin-bottom: 10px;
+    & /deep/ .apos-context-menu__tip {
+      display: none;
+    }
+  }
+
+  .apos-rich-text-toolbar.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .apos-rich-text-toolbar__inner {
     display: flex;
     align-items: center;
     background-color: var(--a-background-primary);
@@ -168,4 +203,11 @@ export default {
   .apos-rich-text-toolbar /deep/ .apos-active {
     background-color: var(--a-base-8);
   }
+
+  .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
+    border-radius: 3px;
+    box-shadow: 0 0 0 3px #3ea4ffe6;
+    outline: none;
+  }
+
 </style>
