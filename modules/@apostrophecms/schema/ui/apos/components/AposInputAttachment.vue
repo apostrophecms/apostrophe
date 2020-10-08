@@ -24,7 +24,7 @@
             <template v-else>
               <paperclip-icon :size="14" class="apos-attachment-icon" />
               {{ messages.primary }}&nbsp;
-              <span class="apos-attachment-highlight">
+              <span class="apos-attachment-highlight" v-if="messages.highlighted">
                 {{ messages.highlighted }}
               </span>
             </template>
@@ -157,7 +157,6 @@ export default {
   .apos-attachment-dropzone {
     @include apos-button-reset();
     display: block;
-    width: 100%;
     margin: 10px 0;
     padding: 20px;
     border: 2px dashed var(--a-base-8);
@@ -189,6 +188,7 @@ export default {
 
   .apos-attachment-instructions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     pointer-events: none;
