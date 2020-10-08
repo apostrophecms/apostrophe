@@ -15,7 +15,6 @@
       <div
         class="apos-link-control__dialog"
         :class="{
-          'is-ready': menu.isActive,
           'is-triggered': active,
           'has-selection': hasSelection
         }"
@@ -33,15 +32,18 @@
             <AposSchema
               :schema="schema"
               v-model="value"
+              :modifiers="formModifiers"
             />
             <footer class="apos-link-control__footer">
               <AposButton
                 type="default" label="Cancel"
                 @click="close"
+                :modifiers="formModifiers"
               />
               <AposButton
                 type="primary" label="Save"
                 @click="save"
+                :modifiers="formModifiers"
               />
             </footer>
           </form>
@@ -85,6 +87,7 @@ export default {
       value: {
         data: {}
       },
+      formModifiers: [ 'small' ],
       schema: [
         {
           name: 'href',
@@ -185,7 +188,7 @@ export default {
     pointer-events: none;
   }
 
-  .apos-link-control__dialog.is-triggered.has-selection.is-ready {
+  .apos-link-control__dialog.is-triggered.has-selection {
     opacity: 1;
     pointer-events: auto;
   }

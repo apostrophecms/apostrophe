@@ -101,7 +101,7 @@ export default {
       }
 
       if (this.iconOnly) {
-        modifiers.push('apos-button--icon');
+        modifiers.push('apos-button--icon-only');
       }
 
       if (this.state && this.state.length) {
@@ -422,7 +422,7 @@ export default {
   }
 }
 
-.apos-button--icon {
+.apos-button--icon-only {
   padding: 10px;
   .apos-button__icon {
     margin-right: 0;
@@ -448,6 +448,9 @@ export default {
   display: inline-flex;
   margin-right: 5px;
   align-items: center;
+}
+
+.apos-button:not(.apos-button--icon-only) .apos-button__icon {
   max-height: 13px;
 }
 
