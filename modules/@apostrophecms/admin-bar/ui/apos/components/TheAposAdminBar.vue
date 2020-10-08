@@ -131,7 +131,7 @@ $admin-bar-h-pad: 20px;
 $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar-wrapper {
-  z-index: $z-index-manager-toolbar;
+  z-index: $z-index-admin-bar;
   position: relative;
 }
 
