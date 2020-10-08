@@ -256,7 +256,7 @@ export default {
           return;
         }
 
-        this.doc.data = {
+        const body = {
           ...this.doc.data,
           ...this.docUtilityFields.data,
           ...this.docOtherFields.data
@@ -269,11 +269,16 @@ export default {
         } else {
           route = this.moduleAction;
           requestMethod = apos.http.post;
+
+          if (this.moduleName === '@apostrophecms/page') {
+            body._targetId = apos.page.page._id;
+            body._position = 'lastChild';
+          }
         }
 
         await requestMethod(route, {
           busy: true,
-          body: this.doc.data
+          body
         });
         this.$emit('saved');
         this.modal.showModal = false;
