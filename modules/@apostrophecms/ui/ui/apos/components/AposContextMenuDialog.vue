@@ -1,7 +1,7 @@
 <template>
   <div
     class="apos-primary-scrollbar apos-context-menu__dialog"
-    :class="classList"
+    :class="classes"
     role="dialog"
     :x-placement="menuPlacement"
   >
@@ -45,6 +45,12 @@ export default {
     isOpen: {
       type: Boolean,
       default: false
+    },
+    modifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'item-clicked' ],
@@ -65,6 +71,13 @@ export default {
       } else {
         return this.menuPositions[1];
       }
+    },
+    classes() {
+      const classes = this.classList.split(' ');
+      this.modifiers.forEach(c => {
+        classes.push(`apos-context-menu__dialog--${c}`);
+      });
+      return classes.join(' ');
     }
   },
   methods: {
@@ -77,11 +90,11 @@ export default {
 
 <style lang="scss">
 
-.apos-context-menu__dialog--unpadded .apos-context-menu__pane  {
+.apos-context-menu__dialog--unpadded > .apos-context-menu__pane {
   padding: 0;
 }
 
-.apos-context-menu__dialog--tb-padded .apos-context-menu__pane{
+.apos-context-menu__dialog--tb-padded > .apos-context-menu__pane {
   padding-top: 20px;
   padding-bottom: 20px;
 }

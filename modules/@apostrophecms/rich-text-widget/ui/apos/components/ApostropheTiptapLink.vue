@@ -1,12 +1,14 @@
 <template>
   <div class="apos-link-control">
-    <button
+    <AposButton
+      type="rich-text"
       @click="click"
-      ref="button"
       :class="{ 'apos-active': buttonActive }"
-    >
-      {{ tool.label }}
-    </button>
+      :label="tool.label"
+      :icon-only="!!tool.icon"
+      :icon="tool.icon ? tool.icon : false"
+      :modifiers="['no-border', 'no-motion']"
+    />
     <editor-menu-bubble
       :editor="editor"
       :keep-in-bounds="keepInBounds"

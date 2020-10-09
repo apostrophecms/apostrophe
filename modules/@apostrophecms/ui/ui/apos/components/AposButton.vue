@@ -52,10 +52,9 @@ export default {
       type: String,
       default: null
     },
-    iconOnly: Boolean,
-    iconSize: {
-      type: Number,
-      default: 15
+    iconOnly: {
+      type: Boolean,
+      default: false
     },
     state: {
       type: Array,
@@ -222,10 +221,6 @@ export default {
     background-color: transparent;
     text-decoration: underline;
     color: var(--a-primary-button-hover);
-  }
-  &:hover:not([disabled]),
-  &:focus:not([disabled]) {
-    transform: none;
   }
   &:focus {
     box-shadow: none;
@@ -429,6 +424,17 @@ export default {
   }
 }
 
+.apos-button--rich-text {
+  background-color: var(--a-background);
+  border-radius: 0;
+  &:hover {
+    background-color: var(--a-base-8);
+  }
+  &:focus, &:active {
+    background-color: var(--a-base-9);
+  }
+}
+
 .apos-button--icon.apos-button--small {
   padding: 7.5px 10px;
 }
@@ -472,6 +478,20 @@ export default {
     border: 0;
     background-color: transparent;
     box-shadow: none;
+  }
+}
+
+.apos-button--no-border {
+  border: none;
+}
+
+.apos-button--no-motion {
+  &:hover:not([disabled]),
+  &:focus:not([disabled]) {
+    transform: none;
+    box-shadow: none;
+    outline: none;
+    border: 0;
   }
 }
 

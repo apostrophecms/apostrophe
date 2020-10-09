@@ -54,7 +54,7 @@ export default {
       return {
         label: this.user.label || '',
         icon: 'chevron-down-icon',
-        modifiers: [ 'icon-right' ],
+        modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
       };
     }
