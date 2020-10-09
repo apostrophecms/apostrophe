@@ -201,8 +201,6 @@ export default {
   }
 
   .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
-    border-radius: 3px;
-    box-shadow: 0 0 0 3px #3ea4ffe6;
     outline: none;
   }
 
