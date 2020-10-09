@@ -428,10 +428,10 @@ export default {
   background-color: var(--a-background);
   border-radius: 0;
   &:hover {
-    background-color: var(--a-primary);
+    background-color: var(--a-base-8);
   }
   &:focus, &:active {
-    background-color: var(--a-base-8);
+    background-color: var(--a-base-9);
   }
 }
 

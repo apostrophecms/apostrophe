@@ -8,7 +8,7 @@
       <option
         v-for="(style, i) in options.styles"
         :value="i"
-        :key="style.label + '-' + i"
+        :key="style.label"
       >
         {{ style.label }}
       </option>
@@ -76,11 +76,11 @@ export default {
     @include apos-button-reset();
     padding: 10px 15px 10px 10px;
     &:focus, &:active {
-      background-color: var(--a-base-8);
+      background-color: var(--a-base-9);
       outline: none;
     }
     &:hover {
-      background-color: var(--a-primary);
+      background-color: var(--a-base-8);
     }
   }
 

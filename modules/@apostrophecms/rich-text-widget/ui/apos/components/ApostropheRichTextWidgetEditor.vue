@@ -4,11 +4,12 @@
       :is="menuType"
       :editor="editor"
       :keep-in-bounds="false"
-      v-slot="{ commands, isActive, menu, focused }"
+      v-slot="{ menu, focused }"
     >
       <AposContextMenuDialog
         menu-placement="top"
-        class-list="apos-theme-dark apos-context-menu__dialog--unpadded apos-rich-text-editor__dialog apos-rich-text-toolbar"
+        class-list="apos-rich-text-toolbar"
+        :modifiers="['unpadded']"
         :class="extraClasses(menu, focused)"
         :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
       >
@@ -195,8 +196,8 @@ export default {
     border-radius: var(--a-border-radius);
   }
 
-  .apos-rich-text-toolbar /deep/ .apos-active {
-    background-color: var(--a-base-8);
+  .apos-rich-text-toolbar /deep/ .is-active {
+    background-color: var(--a-base-9);
   }
 
   .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
