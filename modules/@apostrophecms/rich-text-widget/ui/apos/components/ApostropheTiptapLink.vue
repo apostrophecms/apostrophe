@@ -30,7 +30,6 @@
         <AposContextMenuDialog
           menu-placement="bottom-start"
           v-if="active"
-          class-list="apos-theme-light"
         >
           <form>
             <AposSchema
