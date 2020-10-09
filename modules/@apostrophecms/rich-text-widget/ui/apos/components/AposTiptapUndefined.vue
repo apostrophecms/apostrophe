@@ -5,9 +5,12 @@
 <script>
 
 export default {
-  name: 'ApostropheTiptapUndefined',
+  name: 'AposTiptapUndefined',
   props: {
-    name: String
+    name: {
+      type: String,
+      required: true
+    }
   }
 };
 </script>

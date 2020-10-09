@@ -1,14 +1,14 @@
 <template>
-  <div @click="clicked" v-html="rendered"></div>
+  <div @click="clicked" v-html="rendered" />
 </template>
 
 <script>
 
-import ApostropheWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/ApostropheWidgetMixin';
+import AposWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/AposWidgetMixin';
 
 export default {
   name: 'ApostropheWidget',
-  mixins: [ ApostropheWidgetMixin ]
-}
+  mixins: [ AposWidgetMixin ]
+};
 
 </script>

@@ -52,67 +52,67 @@ module.exports = {
     defaultOptions: {},
     browser: {
       components: {
-        widgetEditor: 'ApostropheRichTextWidgetEditor',
-        widget: 'ApostropheRichTextWidget'
+        widgetEditor: 'AposRichTextWidgetEditor',
+        widget: 'AposRichTextWidget'
       },
       tools: {
         styles: {
-          component: 'ApostropheTiptapStyles',
+          component: 'AposTiptapStyles',
           label: 'Styles'
         },
-        '|': { component: 'ApostropheTiptapDivider' },
+        '|': { component: 'AposTiptapDivider' },
         bold: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Bold',
           icon: 'format-bold-icon'
         },
         italic: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Italic',
           icon: 'format-italic-icon'
         },
         horizontal_rule: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Horizontal Rule',
           icon: 'minus-icon'
         },
         link: {
-          component: 'ApostropheTiptapLink',
+          component: 'AposTiptapLink',
           label: 'Link',
           icon: 'link-icon'
         },
         bullet_list: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Bulleted List',
           icon: 'format-list-bulleted-icon'
         },
         ordered_list: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Ordered List',
           icon: 'format-list-numbered-icon'
         },
         strike: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Strike',
           icon: 'format-strikethrough-variant-icon'
         },
         blockquote: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Blockquote',
           icon: 'format-quote-close-icon'
         },
         code_block: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Code Block',
           icon: 'code-tags-icon'
         },
         undo: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Undo',
           icon: 'undo-icon'
         },
         redo: {
-          component: 'ApostropheTiptapButton',
+          component: 'AposTiptapButton',
           label: 'Redo',
           icon: 'redo-icon'
         }

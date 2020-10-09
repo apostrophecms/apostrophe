@@ -15,7 +15,7 @@
 <script>
 
 export default {
-  name: 'ApostropheTiptapButton',
+  name: 'AposTiptapButton',
   props: {
     name: {
       type: String,

@@ -24,7 +24,7 @@
 <script>
 
 export default {
-  name: 'ApostropheTiptapStyles',
+  name: 'AposTiptapStyles',
   props: {
     name: {
       type: String,

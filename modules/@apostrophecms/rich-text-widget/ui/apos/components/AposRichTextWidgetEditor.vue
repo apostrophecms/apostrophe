@@ -17,7 +17,7 @@
           <component
             v-for="(item, index) in toolbar"
             :key="item + '-' + index"
-            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
+            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             :name="item"
             :tool="tools[item]"
             :options="options"
@@ -61,7 +61,7 @@ function moduleOptionsBody(type) {
 }
 
 export default {
-  name: 'ApostropheRichTextWidgetEditor',
+  name: 'AposRichTextWidgetEditor',
   components: {
     EditorMenuBar,
     EditorContent,
@@ -179,9 +179,10 @@ export default {
   .apos-rich-text-toolbar.editor-menu-bar {
     display: inline-block;
     margin-bottom: 10px;
-    & /deep/ .apos-context-menu__tip {
-      display: none;
-    }
+  }
+
+  .apos-rich-text-toolbar /deep/ .apos-context-menu__tip {
+    display: none;
   }
 
   .apos-rich-text-toolbar.is-active {
