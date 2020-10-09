@@ -177,7 +177,8 @@ export default {
       });
 
       if (changeFound) {
-        this.$emit('input', this.next);
+        // ... removes need for deep watch at parent level
+        this.$emit('input', { ...this.next });
       }
     },
     findRealChange(oldData, newData) {

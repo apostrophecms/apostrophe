@@ -17,44 +17,40 @@ module.exports = {
       }
     }
   },
-  methods(self, options) {
+  components(self, options) {
     return {
-      components(self, options) {
-        return {
-          render(req, data) {
-            // Be understanding of the panic that is probably going on in a user's mind as
-            // they try to remember how to use safe mode. -Tom
-            const safeModeVariations = [
-              'safemode',
-              'safeMode',
-              'safe_mode',
-              'safe-mode',
-              'safe mode'
-            ];
-            if (req.xhr) {
-              return {
-                render: false
-              };
+      render(req, data) {
+        // Be understanding of the panic that is probably going on in a user's mind as
+        // they try to remember how to use safe mode. -Tom
+        const safeModeVariations = [
+          'safemode',
+          'safeMode',
+          'safe_mode',
+          'safe-mode',
+          'safe mode'
+        ];
+        if (req.xhr) {
+          return {
+            render: false
+          };
+        }
+        if (req.query) {
+          let safe = false;
+          for (const variation of safeModeVariations) {
+            if (Object.keys(req.query).includes(variation)) {
+              safe = true;
+              break;
             }
-            if (req.query) {
-              let safe = false;
-              for (const variation of safeModeVariations) {
-                if (Object.keys(req.query).includes(variation)) {
-                  safe = true;
-                  break;
-                }
-              }
-              if (safe) {
-                return {
-                  render: 'safeMode'
-                };
-              }
-            }
+          }
+          if (safe) {
             return {
-              render: true,
-              code: data.code
+              render: 'safeMode'
             };
           }
+        }
+        return {
+          render: true,
+          code: data.code
         };
       }
     };
