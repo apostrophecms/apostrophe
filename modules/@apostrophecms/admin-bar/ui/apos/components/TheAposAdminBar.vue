@@ -136,7 +136,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar {
-  z-index: $z-index-default;
   position: fixed;
   top: 0;
   right: 0;
