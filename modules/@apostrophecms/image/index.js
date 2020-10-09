@@ -41,7 +41,7 @@ module.exports = {
         fileGroup: 'images',
         required: true
       },
-      altText: {
+      alt: {
         type: 'string',
         label: 'Alt Text',
         help: 'Image description used for accessibility',
@@ -68,7 +68,7 @@ module.exports = {
         fields: [
           'attachment',
           'title',
-          'altText',
+          'alt',
           '_tags',
           'credit',
           'creditUrl',
