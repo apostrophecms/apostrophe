@@ -331,10 +331,10 @@ export default {
 
       this.schema.forEach(field => {
         if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.doc.data[field.name] || field.def;
+          this.docUtilityFields.data[field.name] = this.doc.data[field.name];
           this.schemaUtilityFields.push(field);
         } else {
-          this.docOtherFields.data[field.name] = this.doc.data[field.name] || field.def;
+          this.docOtherFields.data[field.name] = this.doc.data[field.name];
           this.schemaOtherFields.push(field);
         }
       });
