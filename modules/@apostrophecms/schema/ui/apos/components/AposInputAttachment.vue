@@ -60,9 +60,10 @@ export default {
   emits: [ 'upload-started', 'upload-complete' ],
   data () {
     return {
-      // Next should consistently be an object.
-      next: (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || {}),
+      // Next should consistently be an object or null (an attachment field with
+      // no value yet is null, per server side).
+      next: (this.value && (typeof this.value.data === 'object'))
+        ? this.value.data : (this.field.def || null),
       disabled: false,
       dragging: false,
       uploading: false
@@ -92,7 +93,7 @@ export default {
     },
     updated (items) {
       // NOTE: This is limited to a single item.
-      this.next = items.length > 0 ? items[0] : {};
+      this.next = items.length > 0 ? items[0] : null;
     },
     validate (value) {
       if (this.field.required && !value) {

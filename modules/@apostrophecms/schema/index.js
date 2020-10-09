@@ -17,6 +17,7 @@ const joinr = require('./lib/joinr');
 const _ = require('lodash');
 const dayjs = require('dayjs');
 const tinycolor = require('tinycolor2');
+const klona = require('klona');
 
 module.exports = {
   options: {
@@ -619,31 +620,18 @@ module.exports = {
       convert: async function (req, field, data, object) {
         const schema = field.schema;
         data = data[field.name];
-        const output = {
-          metaType: 'array',
-          _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
-        };
-        if (Array.isArray(data)) {
-          data = {
-            entries: data
-          };
-        }
-        if ((typeof data) !== 'object') {
-          data = {};
-        }
-        if (!Array.isArray(data.entries)) {
-          data.entries = [];
+        if (!Array.isArray(data)) {
+          data = [];
         }
         const results = [];
-        if (field.limit && data.entries.length > field.limit) {
-          data.entries = data.entries.slice(0, field.limit);
+        if (field.limit && data.length > field.limit) {
+          data = data.slice(0, field.limit);
         }
         let i = 0;
         const errors = [];
-        for (const datum of data.entries) {
+        for (const datum of data) {
           const result = {};
           result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
-          result.metaType = 'entry';
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
@@ -657,26 +645,32 @@ module.exports = {
           i++;
           results.push(result);
         }
-        output.entries = results;
-        object[field.name] = output;
-        if (field.required && !output.entries.length) {
+        object[field.name] = results;
+        if (field.required && !results.length) {
           throw self.apos.error('required');
+        }
+        if ((field.min !== undefined) && (results.length < field.min)) {
+          throw self.apos.error('min');
+        }
+        if ((field.max !== undefined) && (results.length > field.max)) {
+          throw self.apos.error('max');
         }
         if (errors.length) {
           throw errors;
         }
       },
       isEmpty: function (field, value) {
-        return !value.entries.length;
+        return (!Array.isArray(value)) || (!value.length);
       },
       index: function (value, field, texts) {
-        _.each(value.entries, function (item) {
+        _.each(value || [], function (item) {
           self.apos.schema.indexFields(field.schema, item, texts);
         });
       },
       register: function (field) {
         self.register(field.schema);
-      }
+      },
+      def: []
     });
 
     self.addFieldType({
@@ -685,7 +679,6 @@ module.exports = {
         const schema = field.schema;
         const errors = [];
         const result = {
-          metaType: 'object',
           _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
         };
         if (data == null || typeof data !== 'object' || Array.isArray(data)) {
@@ -708,7 +701,8 @@ module.exports = {
       },
       register: function (field) {
         self.register(field.schema);
-      }
+      },
+      def: {}
     });
 
     self.addFieldType({
@@ -1340,13 +1334,13 @@ module.exports = {
       // Return a new object with all default settings
       // defined in the schema
       newInstance(schema) {
-        const def = {};
-        _.each(schema, function (field) {
+        const instance = {};
+        for (const field of schema) {
           if (field.def !== undefined) {
-            def[field.name] = field.def;
+            instance[field.name] = klona(field.def);
           }
-        });
-        return def;
+        }
+        return instance;
       },
 
       subsetInstance(schema, instance) {
@@ -2120,6 +2114,11 @@ module.exports = {
         for (const field of schema) {
           // _id needs to be consistent across processes
           field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
+          if (field.def === undefined) {
+            // Pull fallback default into field definition to save
+            // code and so that it is available on the browser side
+            field.def = self.fieldTypes[field.type].def;
+          }
           self.fieldsById[field._id] = field;
           const type = self.fieldTypes[field.type];
           if (type.register) {
