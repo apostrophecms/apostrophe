@@ -21,13 +21,13 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-modal-array-items">
-          <p v-if="minError">
-            Minimum items: {{ field.min }}
+          <p v-if="effectiveMin" :class="minError ? 'apos-modal-array-min-error' : ''">
+            Minimum items: {{ effectiveMin }}
           </p>
-          <p v-if="maxError">
+          <p v-if="field.max" :class="maxError ? 'apos-modal-array-max-error' : ''">
             Maximum items: {{ field.max }}
           </p>
-          <button :disabled="maxError || itemError" @click.prevent="add">
+          <button :disabled="maxed || itemError" @click.prevent="add">
             Add Item
           </button>
           <ul class="apos-modal-array-items__items">
@@ -135,9 +135,21 @@ export default {
     valid() {
       return !(this.minError || this.maxError || this.itemError);
     },
+    maxed() {
+      return (this.field.max !== undefined) && (this.next.length >= this.field.max);
+    },
     schema() {
       // For AposDocEditorMixin
       return this.field.schema;
+    },
+    effectiveMin() {
+      if (this.field.min) {
+        return this.field.min;
+      } else if (this.field.required) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   },
   async mounted() {
@@ -184,8 +196,8 @@ export default {
       });
     },
     updateMinMax() {
-      if (this.field.min !== undefined) {
-        if (this.next.length < this.field.min) {
+      if (this.effectiveMin) {
+        if (this.next.length < this.effectiveMin) {
           this.minError = true;
         }
       }
@@ -292,5 +304,9 @@ export default {
     max-width: 90%;
     margin-right: auto;
     margin-left: auto;
+  }
+
+  .apos-modal-array-min-error, .apos-modal-array-max-error {
+    color: var(--a-danger);
   }
 </style>
