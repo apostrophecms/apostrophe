@@ -27,6 +27,13 @@ export default {
     tabbable: {
       type: Boolean,
       default: true
+    },
+    hideMenu: {
+      // Usually not preferred in Vue, but in the case of communication
+      // with a slot parent it is the best option:
+      // https://github.com/vuejs/vue/issues/4332
+      type: Function,
+      required: true
     }
   },
   emits: [ 'click', 'up', 'down' ],
@@ -42,8 +49,7 @@ export default {
   methods: {
     click() {
       this.$emit('click');
-      // triggering the `AposContextMenu`'s `hide` method since slots cannot emit events
-      this.$parent.hide();
+      this.hideMenu();
     }
   }
 };

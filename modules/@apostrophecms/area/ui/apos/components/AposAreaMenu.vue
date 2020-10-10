@@ -5,6 +5,7 @@
       v-bind="extendedContextMenuOptions"
       @open="menuOpen"
       @close="menuClose"
+      v-slot="contextMenu"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -58,6 +59,7 @@
                     :tabbable="itemIndex === active"
                     @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
                     @down="switchItem(`child-${itemIndex}-${childIndex + 1}`, 1)"
+                    :hideMenu="contextMenu.hide"
                   />
                 </li>
               </ul>
@@ -69,6 +71,7 @@
             :item="item"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
+            :hideMenu="contextMenu.hide"
           />
         </li>
       </ul>
@@ -178,7 +181,7 @@ export default {
     },
     add(name) {
       if (this.widgetIsContextual(name)) {
-        return this.insert({
+        this.insert({
           _id: cuid(),
           type: name,
           ...this.contextualWidgetDefaultData(name)

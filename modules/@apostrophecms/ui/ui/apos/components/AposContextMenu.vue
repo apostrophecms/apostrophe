@@ -27,7 +27,7 @@
           :menu="menu"
           @item-clicked="menuItemClicked"
         >
-          <slot />
+          <slot :hide="hide" />
         </AposContextMenuDialog>
       </template>
     </v-popover>
