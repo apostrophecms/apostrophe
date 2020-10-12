@@ -38,7 +38,10 @@
         >
           <eye-icon :size="14" />
         </a>
-        <div v-if="item.extension" class="apos-slat__extension-wrapper">
+        <div v-if="item.group === 'images'" class="apos-slat__media-preview">
+          <img :src="item._urls['one-sixth']" :alt="item.title" class="apos-slat__media" >
+        </div>
+        <div v-else-if="item.extension" class="apos-slat__extension-wrapper">
           <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
             {{ item.extension }}
           </span>
@@ -212,6 +215,7 @@ export default {
 
   .apos-slat__main {
     display: flex;
+    align-items: center;
   }
 
   .apos-slat__label {
@@ -289,5 +293,18 @@ export default {
 
   .apos-slat__extension--pdf {
     background-color: var(--a-pdf);
+  }
+
+  .apos-slat__media-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--a-base-1);
+    border: 1px solid var(--a-base-9);
+  }
+
+  .apos-slat__media {
+    max-height: 30px;
+    max-width: 50px;
   }
 </style>
