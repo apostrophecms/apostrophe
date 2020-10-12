@@ -328,7 +328,7 @@ module.exports = {
       // Add the logout admin bar item.
 
       addAdminBarItems() {
-        self.apos.adminBar.add(self.__meta.name + '-logout', 'Log Out', null, {
+        self.apos.adminBar.add(`${self.__meta.name}-logout`, 'Log Out', null, {
           last: true
         });
       },

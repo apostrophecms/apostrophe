@@ -85,6 +85,7 @@ module.exports = {
     self.finalizeControls();
     self.addPermissions();
     self.addManagerModal();
+    self.addEditorModal();
     self.enableBrowserData();
     await self.createIndexes();
   },
@@ -1738,8 +1739,15 @@ database.`);
       },
       addManagerModal() {
         self.apos.modal.add(
-          self.__meta.name,
+          `${self.__meta.name}:manager`,
           self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('insertModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
