@@ -12,12 +12,11 @@
         :icon-only="true" icon="delete-icon"
         type="outline"
       /> -->
-      <AposContextMenu
-        v-if="more && more.menu.length"
+      <!-- <AposContextMenu
         :button="more.button"
         :menu="more.menu"
         @item-clicked="managerAction"
-      />
+      /> -->
     </template>
     <template #rightControls>
       <AposPager
