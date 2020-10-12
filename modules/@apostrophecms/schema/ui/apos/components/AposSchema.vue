@@ -134,9 +134,10 @@ export default {
       }
 
       this.schema.forEach(field => {
+        const value = this.value.data[field.name];
         fieldState[field.name] = {
           error: false,
-          data: this.value.data[field.name] || field.def
+          data: (value === undefined) ? field.def : value
         };
         next.data[field.name] = fieldState[field.name].data;
       });
