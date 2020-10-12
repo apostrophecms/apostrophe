@@ -26,7 +26,8 @@
       />
       <AposButton
         v-if="relationshipField"
-        :label="`Save`" type="primary"
+        type="primary"
+        :label="`Select ${moduleLabels.pluralLabel || ''}`"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
