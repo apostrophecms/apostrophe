@@ -2,26 +2,26 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
+        v-if="!options.hideSelectAll"
         label="Select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
       />
-      <AposTagApply :tags="applyTags" :apply-to="[]" />
-      <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
-      <AposButton
+      <!-- TODO: Return this delete button when batch updates are added -->
+      <!-- <AposButton
         label="Delete" @click="$emit('trash-click')"
         :icon-only="true" icon="delete-icon"
         type="outline"
-      />
-      <AposContextMenu
+      /> -->
+      <!-- <AposContextMenu
         :button="more.button"
         :menu="more.menu"
         @item-clicked="managerAction"
-      />
+      /> -->
     </template>
     <template #rightControls>
       <AposPager
-        v-if="!options.noPager"
+        v-if="!options.noPager && totalPages !== 0"
         @click="registerPageChange" @change="registerPageChange"
         :total-pages="totalPages" :current-page="currentPage"
       />
@@ -91,20 +91,21 @@ export default {
   ],
   data() {
     return {
-      more: {
-        button: {
-          label: 'More operations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'outline'
-        },
-        menu: [
-          {
-            label: 'Unpublish All',
-            action: 'unpublish-all'
-          }
-        ]
-      },
+      // TODO: Uncomment to return this when batch updates are added.
+      // more: {
+      //   button: {
+      //     label: 'More operations',
+      //     iconOnly: true,
+      //     icon: 'dots-vertical-icon',
+      //     type: 'outline'
+      //   },
+      //   menu: [
+      //     {
+      //       label: 'Unpublish All',
+      //       action: 'unpublish-all'
+      //     }
+      //   ]
+      // },
       searchField: {
         field: {
           name: 'search',

@@ -26,7 +26,8 @@
             @trash-click="trashClick"
             :options="{
               noSearch: true,
-              noPager: true
+              noPager: true,
+              hideSelectAll: !relationshipField
             }"
           />
         </template>
@@ -104,7 +105,7 @@ export default {
         ]
       },
       treeOptions: {
-        bulkSelect: true,
+        bulkSelect: !!this.relationshipField,
         draggable: true
       },
       editing: false,
@@ -201,6 +202,13 @@ export default {
     },
     setBusy(val) {
       apos.bus.$emit('busy', val);
+    },
+    toggleRowCheck(id) {
+      if (this.checked.includes(id)) {
+        this.checked = this.checked.filter(item => item !== id);
+      } else {
+        this.checked.push(id);
+      }
     },
     selectAll(event) {
       if (!this.checked.length) {

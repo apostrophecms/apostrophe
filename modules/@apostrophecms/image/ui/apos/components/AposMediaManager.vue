@@ -47,6 +47,7 @@
             :total-pages="totalPages" :current-page="currentPage"
             :filters="toolbarFilters" :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
+            :options="{ hideSelectAll: !relationshipField }"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
@@ -67,7 +68,10 @@
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideCheckboxes: !relationshipField
+            }"
           />
         </template>
       </AposModalBody>

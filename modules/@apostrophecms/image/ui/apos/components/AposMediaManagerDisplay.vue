@@ -14,7 +14,7 @@
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
-            v-show="item._id !== 'placeholder'"
+            v-show="item._id !== 'placeholder' && !options.hideCheckboxes"
             tabindex="-1"
             :field="{
               name: item._id,
