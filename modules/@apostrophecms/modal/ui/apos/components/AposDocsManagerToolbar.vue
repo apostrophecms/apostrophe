@@ -6,14 +6,14 @@
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
       />
-      <AposTagApply :tags="applyTags" :apply-to="[]" />
-      <!-- TODO: trash component needs to be worked out with confirm, maybe separate into its own component -->
-      <AposButton
+      <!-- TODO: Return this delete button when batch updates are added -->
+      <!-- <AposButton
         label="Delete" @click="$emit('trash-click')"
         :icon-only="true" icon="delete-icon"
         type="outline"
-      />
+      /> -->
       <AposContextMenu
+        v-if="more && more.menu.length"
         :button="more.button"
         :menu="more.menu"
         @item-clicked="managerAction"
@@ -91,20 +91,21 @@ export default {
   ],
   data() {
     return {
-      more: {
-        button: {
-          label: 'More operations',
-          iconOnly: true,
-          icon: 'dots-vertical-icon',
-          type: 'outline'
-        },
-        menu: [
-          {
-            label: 'Unpublish All',
-            action: 'unpublish-all'
-          }
-        ]
-      },
+      // TODO: Uncomment to return this when batch updates are added.
+      // more: {
+      //   button: {
+      //     label: 'More operations',
+      //     iconOnly: true,
+      //     icon: 'dots-vertical-icon',
+      //     type: 'outline'
+      //   },
+      //   menu: [
+      //     {
+      //       label: 'Unpublish All',
+      //       action: 'unpublish-all'
+      //     }
+      //   ]
+      // },
       searchField: {
         field: {
           name: 'search',
