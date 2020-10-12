@@ -52,7 +52,7 @@
         <AposButton
           type="default" label="Page Tree"
           icon="file-tree-icon" class="apos-admin-bar__btn"
-          @click="emitEvent('page-tree')"
+          @click="emitEvent('@apostrophecms/page')"
         />
       </div>
     </nav>

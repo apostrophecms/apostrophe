@@ -84,7 +84,6 @@ module.exports = {
     self.validateTypeChoices();
     self.finalizeControls();
     self.addPermissions();
-    self.addToAdminBar();
     self.addManagerModal();
     self.enableBrowserData();
     await self.createIndexes();
@@ -1736,9 +1735,6 @@ database.`);
       getEditControls(req) {
         const controls = _.cloneDeep(self.editControls);
         return controls;
-      },
-      addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, 'Pages', 'edit-@apostrophecms/page');
       },
       addManagerModal() {
         self.apos.modal.add(
