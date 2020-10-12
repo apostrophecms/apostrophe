@@ -300,11 +300,13 @@ export default {
 
         return newDoc;
       } catch (error) {
-        await apos.notify('Error while creating a new, empty item. Please check configured content types.', {
+        await apos.notify('Error while creating new, empty content.', {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
         });
+
+        console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
         this.cancel();
       }
