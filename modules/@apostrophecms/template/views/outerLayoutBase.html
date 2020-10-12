@@ -38,7 +38,7 @@
       </div>
       {{ apos.asset.scripts(data.when) }}
       {# Automatically does nothing in production #}
-      {{ apos.asset.reload() }}
+      {{ apos.asset.refreshOnRestart() }}
       {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
       {% block extraBody %}{% endblock %}
     {% if data.user %}
