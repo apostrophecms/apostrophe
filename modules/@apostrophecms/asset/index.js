@@ -18,8 +18,19 @@ function webpack(config, cb) {
 }
 
 module.exports = {
-  options: { alias: 'asset' },
+
+  options: {
+    alias: 'asset',
+    // If this option is true and process.env.NODE_ENV is not `production`,
+    // the browser will refresh when the Apostrophe application
+    // restarts. A useful companion to `nodemon`.
+    refreshOnRestart: false
+  },
+
   init(self, options) {
+
+    self.restartId = self.apos.util.generateId();
+
     self.addTask('build', 'Build Apostrophe frontend javascript master import files', async function (apos, argv) {
       const buildDir = `${apos.rootDir}/apos-build`;
       const modulesDir = `${buildDir}/modules`;
@@ -229,6 +240,9 @@ apos.tiptapExtensions.push(${name});
         return self.apos.template.safe(`
 ${bundle}
 `);
+      },
+      shouldRefreshOnRestart() {
+        return options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
       }
     };
   },
@@ -239,6 +253,32 @@ ${bundle}
       },
       scripts: function (when) {
         return self.scriptsHelper(when);
+      },
+      refreshOnRestart() {
+        if (!self.shouldRefreshOnRestart()) {
+          return '';
+        }
+        const script = fs.readFileSync(`${__dirname}/lib/refresh-on-restart.js`, 'utf8');
+        return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id">\n${script}</script>`);
+      }
+    };
+  },
+  apiRoutes(self, options) {
+    if (!self.shouldRefreshOnRestart()) {
+      return;
+    }
+    return {
+      get: {
+        async restartId(req) {
+          // Long polling: keep the logs quiet by responding slowly, except the
+          // first time. If we restart, the request will fail immediately,
+          // and the client will know to try again with `fast`. The client also
+          // uses `fast` the first time
+          if (!req.query.fast) {
+            await Promise.delay(30000);
+          }
+          return self.restartId;
+        }
       }
     };
   }
