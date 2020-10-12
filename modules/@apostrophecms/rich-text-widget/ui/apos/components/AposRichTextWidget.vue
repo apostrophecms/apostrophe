@@ -4,11 +4,11 @@
 
 <script>
 
-import ApostropheWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/ApostropheWidgetMixin';
+import AposWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/AposWidgetMixin';
 
 export default {
-  name: 'ApostropheRichTextWidget',
-  mixins: [ ApostropheWidgetMixin ],
+  name: 'AposRichTextWidget',
+  mixins: [ AposWidgetMixin ],
   emits: [ 'edit' ],
   methods: {
     clicked(e) {
