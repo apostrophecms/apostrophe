@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="modalTitle"
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
@@ -93,10 +93,6 @@ export default {
   name: 'AposPiecesManager',
   mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
   props: {
-    // TEMP From Manager Mixin:
-    // headers
-    // selectAllValue
-    // selectAllChoice
     moduleName: {
       type: String,
       required: true
@@ -105,9 +101,6 @@ export default {
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
-      // TEMP From Manager Mixin:
-      // icons: {},
-      // checked: [] <== OVERIDDEN BELOW
       modal: {
         active: false,
         type: 'overlay',
@@ -143,8 +136,7 @@ export default {
         plural: this.options.pluralLabel
       };
     },
-    // TODO: possibly move moduleTitle into manager mixin.
-    moduleTitle () {
+    modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },

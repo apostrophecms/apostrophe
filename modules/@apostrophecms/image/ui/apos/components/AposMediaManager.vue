@@ -6,7 +6,7 @@
 
 <template>
   <AposModal
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="modalTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
@@ -136,7 +136,7 @@ export default {
     };
   },
   computed: {
-    moduleTitle () {
+    modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.pluralLabel}`;
     },
