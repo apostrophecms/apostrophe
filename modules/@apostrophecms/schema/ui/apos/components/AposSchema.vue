@@ -3,7 +3,10 @@
 -->
 <template>
   <div class="apos-schema">
-    <div v-for="field in schema" :key="field.name">
+    <div
+      v-for="field in schema" :key="field.name"
+      :data-apos-field="field.name"
+    >
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"

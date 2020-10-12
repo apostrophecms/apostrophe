@@ -294,7 +294,7 @@ module.exports = {
         if (correctedExtensions) {
           let message = req.__('File type was not accepted.');
           if (correctedExtensions.length) {
-            message += ` ${req.__('Acceptable extensions:')} ${correctedExtensions.join(', ')}`;
+            message += ` ${req.__('Allowed extensions:')} ${correctedExtensions.join(', ')}`;
           }
           throw self.apos.error('invalid', message);
         }

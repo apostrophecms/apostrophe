@@ -105,8 +105,6 @@ export default {
 
       // When complete, refresh the image grid, with the new images at top.
       this.$emit('upload-complete', imageIds);
-
-      // TODO: Else if uploading multiple images, show them as a set of selected images for editing.
     },
     createPlaceholder(file) {
       const img = new Image();
