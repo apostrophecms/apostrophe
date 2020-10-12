@@ -1,69 +1,160 @@
 <template>
-  <div class="apostrophe-tiptap-link-control">
-    <button @click="click()">
-      {{ tool.label }}
-    </button>
-    <ApostropheModal v-if="active">
-      <template slot="header">
-        <!-- TODO i18n -->
-        <p>Link</p>
-      </template>
-      <template slot="body">
-        <form v-if="active">
-          <fieldset>
-            <label for="href">URL</label><input v-model="href" />
-          </fieldset>
-          <fieldset>
-            <label for="id">Anchor Name</label><input v-model="id" />
-          </fieldset>
-          <fieldset>
-            <label for="target">Target</label><input v-model="target" />
-          </fieldset>
-        </form>
-      </template>
-      <template slot="footer">
-        <slot name="footer">
-          <button class="modal-default-button" @click="close">
-            Cancel
-          </button>
-          <button class="modal-default-button" @click="save()">
-            Save
-          </button>
-        </slot>
-      </template>
-    </ApostropheModal>
-  </div>
-</template>
-
-
+  <div class="apos-link-control">
+    <AposButton
+      type="rich-text"
+      @click="click"
+      :class="{ 'apos-active': buttonActive }"
+      :label="tool.label"
+      :icon-only="!!tool.icon"
+      :icon="tool.icon ? tool.icon : false"
+      :modifiers="['no-border', 'no-motion']"
+    />
+    <editor-menu-bubble
+      :editor="editor"
+      :keep-in-bounds="keepInBounds"
+      v-slot="{ menu }"
+    >
+      <div
+        class="apos-link-control__dialog"
+        :class="{
+          'is-triggered': active,
+          'has-selection': hasSelection
+        }"
+        :style="
+          `left: ${menu.left}px;
+          bottom: ${menu.bottom}px;
+          transform: translate3d(-25px, calc(100% + ${offset}), 0);
+          `"
+      >
+        <AposContextMenuDialog
+          menu-placement="bottom-start"
+          v-if="active"
+        >
+          <form>
+            <AposSchema
+              :schema="schema"
+              v-model="value"
+              :modifiers="formModifiers"
+            />
+            <footer class="apos-link-control__footer">
+              <AposButton
+                type="default" label="Cancel"
+                @click="close"
+                :modifiers="formModifiers"
+              />
+              <AposButton
+                type="primary" label="Save"
+                @click="save"
+                :modifiers="formModifiers"
+              />
+            </footer>
+          </form>
+        </AposContextMenuDialog>
+      </div>
+    </editor-menu-bubble>
   </div>
 </template>
 
 <script>
 
+import { EditorMenuBubble } from 'tiptap';
+import { isEmpty } from 'lodash';
+
 export default {
   name: 'ApostropheTiptapLink',
+  components: {
+    EditorMenuBubble
+  },
   props: {
-    name: String,
-    tool: Object,
-    editor: Object
+    name: {
+      type: String,
+      required: true
+    },
+    tool: {
+      type: Object,
+      required: true
+    },
+    editor: {
+      type: Object,
+      required: true
+    }
   },
   data () {
     return {
-      href: '',
-      id: '',
-      target: '',
-      active: false
+      keepInBounds: true,
+      href: null,
+      id: null,
+      target: null,
+      active: false,
+      value: {
+        data: {}
+      },
+      formModifiers: [ 'small' ],
+      schema: [
+        {
+          name: 'href',
+          label: 'URL',
+          help: 'Where should the link go?',
+          placeholder: 'http://calm.com',
+          type: 'string'
+        },
+        {
+          name: 'id',
+          label: 'Anchor Name',
+          help: 'This becomes the ID of the anchor',
+          type: 'string'
+        },
+        {
+          name: 'target',
+          label: 'Target',
+          help: 'Where should this link open?',
+          type: 'select',
+          def: '_self',
+          choices: [
+            {
+              label: 'Current tab (_self)',
+              value: '_self'
+            },
+            {
+              label: 'New tab (_blank)',
+              value: '_blank'
+            }
+          ]
+        }
+      ]
     };
+  },
+  computed: {
+    buttonActive() {
+      return !isEmpty(this.value.data);
+    },
+    hasSelection() {
+      return this.editor.selection.from !== this.editor.selection.to;
+    },
+    offset() {
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      return (rect.height + 15) + 'px';
+    }
+  },
+  watch: {
+    'editor.selection.from': {
+      handler(newVal, oldVal) {
+        this.populateFields();
+      }
+    },
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
+    }
   },
   methods: {
     click() {
-      this.active = !this.active;
-      if (this.active) {
-        const values = this.editor.getMarkAttrs('link');
-        this.href = values.href;
-        this.id = values.id;
-        this.target = values.target;
+      if (this.hasSelection) {
+        this.active = !this.active;
+        this.populateFields();
       }
     },
     close() {
@@ -71,19 +162,50 @@ export default {
       this.editor.focus();
     },
     save() {
-      this.editor.commands[this.name]({
-        href: this.href,
-        id: this.id,
-        target: this.target
-      });
+      this.editor.commands[this.name](this.value.data);
       this.active = false;
+    },
+    populateFields() {
+      const attrs = this.editor.getMarkAttrs('link');
+      this.value.data = {};
+      this.schema.forEach((item) => {
+        if (attrs[item.name]) {
+          this.value.data[item.name] = attrs[item.name];
+        }
+      });
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apostrophe-tiptap-link-control {
+  .apos-link-control {
     display: inline-block;
+  }
+
+  .apos-link-control__dialog {
+    z-index: $z-index-modal-bg;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .apos-link-control__dialog.is-triggered.has-selection {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .apos-active {
+    background-color: var(--a-brand-blue);
+  }
+
+  .apos-link-control__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .apos-link-control__footer .apos-button {
+    margin-left: 7.5px;
   }
 </style>

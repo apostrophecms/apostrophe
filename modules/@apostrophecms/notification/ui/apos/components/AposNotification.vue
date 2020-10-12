@@ -171,6 +171,9 @@ export default {
 
   .apos-notification__label {
     letter-spacing: 0.75px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .apos-notification__progress {

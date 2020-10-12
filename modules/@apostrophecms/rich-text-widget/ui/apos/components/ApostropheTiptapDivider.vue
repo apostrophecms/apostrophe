@@ -1,5 +1,7 @@
 <template>
-  <span>&nbsp;|&nbsp;</span>
+  <div class="apos-rich-text-editor__control apos-rich-text-editor__control--divider">
+    |
+  </div>
 </template>
 
 <script>
@@ -7,10 +9,18 @@
 export default {
   name: 'ApostropheTiptapDivider',
   props: {
-    name: String
+    name: {
+      type: String,
+      required: true
+    }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+  .apos-rich-text-editor__control--divider {
+    padding: 0 10px;
+    font-size: map-get($font-sizes, meta);
+    opacity: 0.3;
+  }
 </style>

@@ -7,7 +7,6 @@ export default {
   },
   watch: {
     value: {
-      deep: true,
       handler() {
         this.renderContent();
       }

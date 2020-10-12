@@ -32,7 +32,8 @@
                 label: 'New item',
                 iconOnly: true,
                 icon: 'plus-icon',
-                type: 'primary'
+                type: 'primary',
+                modifiers: ['round', 'no-motion']
               }"
             />
           </li>
@@ -129,8 +130,12 @@ $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
 $admin-bar-border: 1px solid var(--a-base-9);
 
+.apos-admin-bar-wrapper {
+  z-index: $z-index-admin-bar;
+  position: relative;
+}
+
 .apos-admin-bar {
-  z-index: $z-index-default;
   position: fixed;
   top: 0;
   right: 0;
@@ -162,7 +167,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   height: 32px;
 }
 
-.apos-admin-bar__create /deep/ .apos-context-menu__btn,
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn.apos-button,
 .apos-admin-bar__btn {

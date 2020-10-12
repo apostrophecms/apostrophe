@@ -1,18 +1,34 @@
 <template>
-  <div class="apos-richtext-editor">
-    <editor-menu-bar :editor="editor">
-      <div class="apos-richtext-menubar" slot-scope="{ commands, isActive }">
-        <component v-for="item in toolbar"
-          v-bind:key="item"
-          :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
-          :name="item"
-          :tool="tools[item]"
-          :options="options"
-          :editor="editor"
-        />
-      </div>
-    </editor-menu-bar>
-    <editor-content :editor="editor" />
+  <div class="apos-rich-text-editor">
+    <component
+      :is="menuType"
+      :editor="editor"
+      :keep-in-bounds="false"
+      v-slot="{ menu, focused }"
+    >
+      <AposContextMenuDialog
+        menu-placement="top"
+        class-list="apos-rich-text-toolbar"
+        :modifiers="['unpadded']"
+        :class="extraClasses(menu, focused)"
+        :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
+      >
+        <div class="apos-rich-text-toolbar__inner">
+          <component
+            v-for="(item, index) in toolbar"
+            :key="item + '-' + index"
+            :is="(tools[item] && tools[item].component) || 'ApostropheTiptapUndefined'"
+            :name="item"
+            :tool="tools[item]"
+            :options="options"
+            :editor="editor"
+          />
+        </div>
+      </AposContextMenuDialog>
+    </component>
+    <div class="apos-rich-text-editor__editor">
+      <editor-content :editor="editor" />
+    </div>
   </div>
 </template>
 
@@ -20,7 +36,8 @@
 import {
   Editor,
   EditorContent,
-  EditorMenuBar
+  EditorMenuBar,
+  EditorMenuBubble
 } from 'tiptap';
 
 import {
@@ -47,7 +64,8 @@ export default {
   name: 'ApostropheRichTextWidgetEditor',
   components: {
     EditorMenuBar,
-    EditorContent
+    EditorContent,
+    EditorMenuBubble
   },
   props: {
     type: {
@@ -72,6 +90,7 @@ export default {
       }
     }
   },
+  emits: [ 'update' ],
   data() {
     return {
       tools: moduleOptionsBody(this.type).tools,
@@ -103,17 +122,39 @@ export default {
   computed: {
     moduleOptions() {
       return moduleOptionsBody(this.type);
+    },
+    menuType() {
+      if (this.options.menuType && this.options.menuType === 'block') {
+        return 'editor-menu-bar';
+      }
+      return 'editor-menu-bubble';
     }
   },
   beforeDestroy() {
     this.editor.destroy();
   },
   methods: {
+    extraClasses(menu, focused) {
+      const classes = [];
+
+      classes.push(this.menuType);
+
+      if (menu && menu.isActive) {
+        classes.push('is-active');
+      }
+
+      if (focused && !menu) {
+        classes.push('is-active');
+      }
+
+      return classes.join(' ');
+    },
     async update() {
       const content = this.editor.getHTML();
       const widget = this.widgetInfo.data;
       widget.content = content;
-      this.$emit('update', widget);
+      // ... removes need for deep watching in parent
+      this.$emit('update', { ...widget });
     },
     command(name, options) {
       this.commands[name](options);
@@ -123,7 +164,45 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-richtext-menubar {
-    margin: 12px 0;
+
+  .apos-rich-text-toolbar {
+    opacity: 0;
+    pointer-events: none;
   }
+
+  .apos-rich-text-toolbar.editor-menu-bubble {
+    z-index: $z-index-manager-toolbar;
+    position: absolute;
+    transform: translate3d(-50%, -50%, 0);
+  }
+
+  .apos-rich-text-toolbar.editor-menu-bar {
+    display: inline-block;
+    margin-bottom: 10px;
+    & /deep/ .apos-context-menu__tip {
+      display: none;
+    }
+  }
+
+  .apos-rich-text-toolbar.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .apos-rich-text-toolbar__inner {
+    display: flex;
+    align-items: center;
+    background-color: var(--a-background-primary);
+    color: var(--a-text-primary);
+    border-radius: var(--a-border-radius);
+  }
+
+  .apos-rich-text-toolbar /deep/ .is-active {
+    background-color: var(--a-base-9);
+  }
+
+  .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
+    outline: none;
+  }
+
 </style>

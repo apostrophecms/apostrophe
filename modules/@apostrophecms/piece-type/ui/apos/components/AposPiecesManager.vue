@@ -4,23 +4,34 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template v-if="relationshipField" #primaryControls>
+    <template #secondaryControls>
       <AposButton
+        v-if="relationshipField"
         type="default" label="Cancel"
         @click="cancel"
       />
       <AposButton
+        v-else
+        type="default" label="Finished"
+        @click="cancel"
+      />
+    </template>
+    <template #primaryControls>
+      <!-- TODO Make sure this gets positioned correctly after Vue3/teleport -->
+      <AposContextMenu
+        v-if="moreMenu.menu.length"
+        :button="moreMenu.button"
+        :menu="moreMenu.menu"
+        @item-clicked="moreMenuHandler"
+      />
+      <AposButton
+        v-if="relationshipField"
         :label="`Save`" type="primary"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
-    </template>
-    <template v-else #primaryControls>
       <AposButton
-        type="default" label="Finished"
-        @click="cancel"
-      />
-      <AposButton
+        v-else
         :label="`New ${ options.label }`" type="primary"
         @click="editing = true"
       />
@@ -55,13 +66,15 @@
         </template>
       </AposModalBody>
       <!-- The pieces editor modal. -->
-      <component
-        v-if="editing"
-        :is="options.components.insertModal"
-        :module-name="moduleName" :doc-id="editingDocId"
-        :filter-values="filterValues"
-        @saved="finishSaved" @safe-close="closeEditor"
-      />
+      <portal to="modal-target">
+        <component
+          v-if="editing"
+          :is="options.components.insertModal"
+          :module-name="moduleName" :doc-id="editingDocId"
+          :filter-values="filterValues"
+          @saved="finishSaved" @safe-close="closeEditor"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
@@ -102,7 +115,16 @@ export default {
       editing: false,
       editingDocId: '',
       queryExtras: {},
-      holdQueries: false
+      holdQueries: false,
+      moreMenu: {
+        button: {
+          label: 'More operations',
+          iconOnly: true,
+          icon: 'dots-vertical-icon',
+          type: 'outline'
+        },
+        menu: []
+      }
     };
   },
   computed: {
@@ -155,6 +177,13 @@ export default {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
+    if (this.relationshipField) {
+      // Add computed singular label to context menu
+      this.moreMenu.menu.unshift({
+        action: 'new',
+        label: `New ${this.moduleLabels.singular}`
+      });
+    }
   },
   methods: {
     // TEMP From Manager Mixin:
@@ -164,6 +193,14 @@ export default {
     // generateUi
     // generateIcons
     // generateCheckboxes
+    moreMenuHandler(action) {
+      if (action === 'new') {
+        this.new();
+      }
+    },
+    new() {
+      this.editing = true;
+    },
     async finishSaved() {
       await this.getPieces();
     },

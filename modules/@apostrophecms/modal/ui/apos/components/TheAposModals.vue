@@ -1,10 +1,13 @@
 <template>
   <div id="apos-modals">
-    <component
-      v-for="modal in activeModals" :key="modal.itemName"
-      :is="modal.componentName" :module-name="modal.itemName"
-      @safe-close="setIsActive(modal.itemName, false)"
-    />
+    <portal to="modal-target">
+      <component
+        v-for="modal in activeModals" :key="modal.itemName"
+        :is="modal.componentName" :module-name="modal.itemName"
+        @safe-close="setIsActive(modal.itemName, false)"
+      />
+    </portal>
+    <portal-target name="modal-target" multiple />
   </div>
 </template>
 

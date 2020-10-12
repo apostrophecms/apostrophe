@@ -52,10 +52,9 @@ export default {
       type: String,
       default: null
     },
-    iconOnly: Boolean,
-    iconSize: {
-      type: Number,
-      default: 15
+    iconOnly: {
+      type: Boolean,
+      default: false
     },
     state: {
       type: Array,
@@ -101,7 +100,7 @@ export default {
       }
 
       if (this.iconOnly) {
-        modifiers.push('apos-button--icon');
+        modifiers.push('apos-button--icon-only');
       }
 
       if (this.state && this.state.length) {
@@ -147,12 +146,11 @@ export default {
   position: relative;
   overflow: hidden;
   padding: 10px 20px;
-  // TODO: Uncomment this once style loading is resolved.
-  // font-size: map-get($font-sizes, modal);
-  letter-spacing: 0.75px;
   border: 1px solid var(--a-base-5);
-  border-radius: var(--a-border-radius);
   color: var(--a-text-primary);
+  font-size: map-get($font-sizes, button);
+  letter-spacing: 0.75px;
+  border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   transition: all 0.2s ease;
   &:hover {
@@ -223,10 +221,6 @@ export default {
     background-color: transparent;
     text-decoration: underline;
     color: var(--a-primary-button-hover);
-  }
-  &:hover:not([disabled]),
-  &:focus:not([disabled]) {
-    transform: none;
   }
   &:focus {
     box-shadow: none;
@@ -423,10 +417,21 @@ export default {
   }
 }
 
-.apos-button--icon {
+.apos-button--icon-only {
   padding: 10px;
   .apos-button__icon {
     margin-right: 0;
+  }
+}
+
+.apos-button--rich-text {
+  background-color: var(--a-background);
+  border-radius: 0;
+  &:hover {
+    background-color: var(--a-base-8);
+  }
+  &:focus, &:active {
+    background-color: var(--a-base-9);
   }
 }
 
@@ -451,6 +456,10 @@ export default {
   align-items: center;
 }
 
+.apos-button:not(.apos-button--icon-only) .apos-button__icon {
+  max-height: 13px;
+}
+
 .apos-button--danger-on-hover:hover {
   color: var(--a-danger);
 }
@@ -469,6 +478,20 @@ export default {
     border: 0;
     background-color: transparent;
     box-shadow: none;
+  }
+}
+
+.apos-button--no-border {
+  border: none;
+}
+
+.apos-button--no-motion {
+  &:hover:not([disabled]),
+  &:focus:not([disabled]) {
+    transform: none;
+    box-shadow: none;
+    outline: none;
+    border: 0;
   }
 }
 

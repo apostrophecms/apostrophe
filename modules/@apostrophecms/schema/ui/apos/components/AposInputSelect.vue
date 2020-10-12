@@ -1,7 +1,9 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field"
+    :error="error"
     :uid="uid"
+    :modifiers="modifiers"
   >
     <template #body>
       <div class="apos-input-wrapper">

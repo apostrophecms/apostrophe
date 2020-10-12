@@ -14,7 +14,6 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
-        '|',
         'bold',
         'italic',
         'strike',
@@ -22,7 +21,6 @@ module.exports = {
         '|',
         'bullet_list',
         'ordered_list',
-        '|',
         'blockquote',
         'code_block',
         '|',
@@ -65,47 +63,58 @@ module.exports = {
         '|': { component: 'ApostropheTiptapDivider' },
         bold: {
           component: 'ApostropheTiptapButton',
-          label: 'Bold'
+          label: 'Bold',
+          icon: 'format-bold-icon'
         },
         italic: {
           component: 'ApostropheTiptapButton',
-          label: 'Italic'
+          label: 'Italic',
+          icon: 'format-italic-icon'
         },
         horizontal_rule: {
           component: 'ApostropheTiptapButton',
-          label: 'Horizontal Rule'
+          label: 'Horizontal Rule',
+          icon: 'minus-icon'
         },
         link: {
           component: 'ApostropheTiptapLink',
-          label: 'Link'
+          label: 'Link',
+          icon: 'link-icon'
         },
         bullet_list: {
           component: 'ApostropheTiptapButton',
-          label: 'Bullets'
+          label: 'Bulleted List',
+          icon: 'format-list-bulleted-icon'
         },
         ordered_list: {
           component: 'ApostropheTiptapButton',
-          label: 'Ordered'
+          label: 'Ordered List',
+          icon: 'format-list-numbered-icon'
         },
         strike: {
           component: 'ApostropheTiptapButton',
-          label: 'Strike'
+          label: 'Strike',
+          icon: 'format-strikethrough-variant-icon'
         },
         blockquote: {
           component: 'ApostropheTiptapButton',
-          label: 'Blockquote'
+          label: 'Blockquote',
+          icon: 'format-quote-close-icon'
         },
         code_block: {
           component: 'ApostropheTiptapButton',
-          label: 'Code Block'
+          label: 'Code Block',
+          icon: 'code-tags-icon'
         },
         undo: {
           component: 'ApostropheTiptapButton',
-          label: 'Undo'
+          label: 'Undo',
+          icon: 'undo-icon'
         },
         redo: {
           component: 'ApostropheTiptapButton',
-          label: 'Redo'
+          label: 'Redo',
+          icon: 'redo-icon'
         }
       }
     }

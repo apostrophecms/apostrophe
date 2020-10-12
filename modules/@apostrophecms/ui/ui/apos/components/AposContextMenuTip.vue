@@ -37,7 +37,7 @@ export default {
     position: absolute;
   }
 
-  .apos-context-menu__tip--alignment-end {
+  .apos-context-menu__tip--alignment-start {
     left: 20px;
   }
 
@@ -48,15 +48,17 @@ export default {
     margin-right: auto;
   }
 
-  .apos-context-menu__tip--alignment-start {
+  .apos-context-menu__tip--alignment-end {
     right: 20px;
   }
 
-  [x-placement^='bottom'] .apos-context-menu__tip {
+  [x-placement^='bottom'] > .apos-context-menu__tip {
     top: -11px;
+    bottom: auto;
   }
 
-  [x-placement^='top'] .apos-context-menu__tip {
+  [x-placement^='top'] > .apos-context-menu__tip {
+    top: auto;
     bottom: -11px;
     transform: rotate(180deg);
   }

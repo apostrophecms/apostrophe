@@ -29,9 +29,7 @@
                 </span>
                 {{ modalTitle }}
               </h2>
-              <div
-                class="apos-modal__controls--primary" v-if="hasPrimaryControls"
-              >
+              <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
                 <slot name="primaryControls" />
               </div>
             </div>
@@ -298,8 +296,8 @@ export default {
     display: block;
     background-color: var(--a-overlay);
 
-    .apos-modal__inner & {
-      // A nested modal doesn't need an overlay.
+    .apos-modal + .apos-modal & {
+      // A second modal doesn't need an overlay.
       display: none;
     }
 
@@ -362,9 +360,18 @@ export default {
     background-color: var(--a-white);
   }
 
+  .apos-modal__controls--primary,
+  .apos-modal__controls--secondary {
+    display: flex;
+    align-items: center;
+  }
+
   .apos-modal__controls--primary {
+    justify-content: flex-end;
     flex-grow: 1;
-    text-align: right;
+  }
+  .apos-modal__controls--primary /deep/ > .apos-button {
+    margin-left: 7.5px;
   }
 
   .apos-modal__heading {
