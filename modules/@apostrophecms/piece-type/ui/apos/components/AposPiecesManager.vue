@@ -61,7 +61,10 @@
             :headers="headers"
             v-model="checked"
             @open="openEditor"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideCheckboxes: !relationshipField
+            }"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />

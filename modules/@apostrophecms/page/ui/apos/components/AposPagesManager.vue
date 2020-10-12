@@ -105,7 +105,7 @@ export default {
         ]
       },
       treeOptions: {
-        bulkSelect: true,
+        bulkSelect: !!this.relationshipField,
         draggable: true
       },
       editing: false,
