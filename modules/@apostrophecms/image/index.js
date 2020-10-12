@@ -41,10 +41,10 @@ module.exports = {
         fileGroup: 'images',
         required: true
       },
-      description: {
+      alt: {
         type: 'string',
-        label: 'Description',
-        textarea: true
+        label: 'Alt Text',
+        help: 'Image description used for accessibility'
       },
       credit: {
         type: 'string',
@@ -61,22 +61,19 @@ module.exports = {
       }
     },
     group: {
+      // The image editor has only one group.
       basics: {
         label: 'Basics',
         fields: [
           'attachment',
           'title',
+          'alt',
+          '_tags',
+          'credit',
+          'creditUrl',
           'slug',
           'published',
-          '_tags'
-        ]
-      },
-      details: {
-        label: 'Details',
-        fields: [
-          'description',
-          'credit',
-          'creditUrl'
+          'trash'
         ]
       }
     }
