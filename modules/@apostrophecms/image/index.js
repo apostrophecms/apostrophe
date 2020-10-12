@@ -44,8 +44,7 @@ module.exports = {
       alt: {
         type: 'string',
         label: 'Alt Text',
-        help: 'Image description used for accessibility',
-        textarea: true
+        help: 'Image description used for accessibility'
       },
       credit: {
         type: 'string',
