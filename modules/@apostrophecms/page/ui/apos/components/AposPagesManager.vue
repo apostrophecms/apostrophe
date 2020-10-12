@@ -26,7 +26,8 @@
             @trash-click="trashClick"
             :options="{
               noSearch: true,
-              noPager: true
+              noPager: true,
+              hideSelectAll: !relationshipField
             }"
           />
         </template>

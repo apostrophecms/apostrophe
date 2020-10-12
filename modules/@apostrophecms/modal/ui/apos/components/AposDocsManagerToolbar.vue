@@ -2,6 +2,7 @@
   <AposModalToolbar class-name="apos-manager-toolbar">
     <template #leftControls>
       <AposButton
+        v-if="!options.hideSelectAll"
         label="Select" :icon-only="true"
         :icon="checkboxIcon" type="outline"
         @click="$emit('select-click')"
@@ -20,7 +21,7 @@
     </template>
     <template #rightControls>
       <AposPager
-        v-if="!options.noPager"
+        v-if="!options.noPager && totalPages !== 0"
         @click="registerPageChange" @change="registerPageChange"
         :total-pages="totalPages" :current-page="currentPage"
       />

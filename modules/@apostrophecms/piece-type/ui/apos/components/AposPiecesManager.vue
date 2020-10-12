@@ -48,7 +48,10 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideSelectAll: !relationshipField
+            }"
           />
         </template>
         <template #bodyMain>

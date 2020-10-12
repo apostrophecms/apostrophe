@@ -47,6 +47,7 @@
             :total-pages="totalPages" :current-page="currentPage"
             :filters="toolbarFilters" :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
+            :options="{ hideSelectAll: !relationshipField }"
             @page-change="updatePage"
             @select-click="selectClick"
             @trash-click="trashClick"
