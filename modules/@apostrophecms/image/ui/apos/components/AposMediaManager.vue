@@ -168,10 +168,6 @@ export default {
   },
   watch: {
     checked (newVal) {
-      if (this.editing && newVal.includes(this.editing._id)) {
-        return;
-      }
-
       if (newVal.length > 1 || newVal.length === 0) {
         this.editing = undefined;
       }
