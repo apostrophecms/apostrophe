@@ -85,6 +85,7 @@ module.exports = {
     self.finalizeControls();
     self.addPermissions();
     self.addToAdminBar();
+    self.addManagerModal();
     self.enableBrowserData();
     await self.createIndexes();
   },
@@ -202,7 +203,7 @@ module.exports = {
       // `_targetId` is the _id of another page, and `_position` may be `before`, `after`,
       // `firstChild` or `lastChild`.
       //
-      // If you do not specify these properties they default to the homepage and `inside`,
+      // If you do not specify these properties they default to the homepage and `lastChild`,
       // creating a subpage of the home page.
       //
       // You may pass _copyingId. If you do all properties not in `req.body` are copied from it.
@@ -218,6 +219,15 @@ module.exports = {
           // cheeky
           throw self.apos.error('invalid');
         }
+
+        if (req.body._newInstance) {
+          // If we're looking for a fresh page instance and aren't saving yet,
+          // simply get a new page doc and return;
+          const parentPage = await self.findForEditing(req, { _id: targetId })
+            .permission('edit-@apostrophecms/page').toObject();
+          return self.newChild(parentPage);
+        }
+
         return self.withLock(req, async () => {
           const targetPage = await self.findForEditing(req, targetId ? { _id: targetId } : { level: 0 }).ancestors(true).permission('edit-@apostrophecms/page').toObject();
           if (!targetPage) {
@@ -430,12 +440,22 @@ database.`);
         });
       },
       getBrowserData(req) {
-        const options = _.pick(self, 'action', 'schema', 'types');
-        _.assign(options, _.pick(self.options, 'batchOperations'));
+        const browserOptions = _.pick(self, 'action', 'schema', 'types');
+        _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
+        _.defaults(browserOptions, {
+          label: 'Page',
+          pluralLabel: 'Pages',
+          components: {}
+        });
+        _.defaults(browserOptions.components, {
+          insertModal: 'AposDocEditor',
+          managerModal: 'AposPagesManager'
+        });
+
         if (req.data.bestPage) {
-          options.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
+          browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
-        return options;
+        return browserOptions;
       },
       // Returns a cursor that finds pages the current user can edit
       // in a batch operation, including unpublished and trashed pages.
@@ -1719,6 +1739,13 @@ database.`);
       },
       addToAdminBar() {
         self.apos.adminBar.add(self.__meta.name, 'Pages', 'edit-@apostrophecms/page');
+      },
+      addManagerModal() {
+        self.apos.modal.add(
+          self.__meta.name,
+          self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
       },
       // Returns the effective base URL for the given request.
       // If Apostrophe's top-level `baseUrl` option is set, it is returned,

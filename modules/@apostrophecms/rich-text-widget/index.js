@@ -14,7 +14,6 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
-        '|',
         'bold',
         'italic',
         'strike',
@@ -22,7 +21,6 @@ module.exports = {
         '|',
         'bullet_list',
         'ordered_list',
-        '|',
         'blockquote',
         'code_block',
         '|',
@@ -54,58 +52,69 @@ module.exports = {
     defaultOptions: {},
     browser: {
       components: {
-        widgetEditor: 'ApostropheRichTextWidgetEditor',
-        widget: 'ApostropheRichTextWidget'
+        widgetEditor: 'AposRichTextWidgetEditor',
+        widget: 'AposRichTextWidget'
       },
       tools: {
         styles: {
-          component: 'ApostropheTiptapStyles',
+          component: 'AposTiptapStyles',
           label: 'Styles'
         },
-        '|': { component: 'ApostropheTiptapDivider' },
+        '|': { component: 'AposTiptapDivider' },
         bold: {
-          component: 'ApostropheTiptapButton',
-          label: 'Bold'
+          component: 'AposTiptapButton',
+          label: 'Bold',
+          icon: 'format-bold-icon'
         },
         italic: {
-          component: 'ApostropheTiptapButton',
-          label: 'Italic'
+          component: 'AposTiptapButton',
+          label: 'Italic',
+          icon: 'format-italic-icon'
         },
         horizontal_rule: {
-          component: 'ApostropheTiptapButton',
-          label: 'Horizontal Rule'
+          component: 'AposTiptapButton',
+          label: 'Horizontal Rule',
+          icon: 'minus-icon'
         },
         link: {
-          component: 'ApostropheTiptapLink',
-          label: 'Link'
+          component: 'AposTiptapLink',
+          label: 'Link',
+          icon: 'link-icon'
         },
         bullet_list: {
-          component: 'ApostropheTiptapButton',
-          label: 'Bullets'
+          component: 'AposTiptapButton',
+          label: 'Bulleted List',
+          icon: 'format-list-bulleted-icon'
         },
         ordered_list: {
-          component: 'ApostropheTiptapButton',
-          label: 'Ordered'
+          component: 'AposTiptapButton',
+          label: 'Ordered List',
+          icon: 'format-list-numbered-icon'
         },
         strike: {
-          component: 'ApostropheTiptapButton',
-          label: 'Strike'
+          component: 'AposTiptapButton',
+          label: 'Strike',
+          icon: 'format-strikethrough-variant-icon'
         },
         blockquote: {
-          component: 'ApostropheTiptapButton',
-          label: 'Blockquote'
+          component: 'AposTiptapButton',
+          label: 'Blockquote',
+          icon: 'format-quote-close-icon'
         },
         code_block: {
-          component: 'ApostropheTiptapButton',
-          label: 'Code Block'
+          component: 'AposTiptapButton',
+          label: 'Code Block',
+          icon: 'code-tags-icon'
         },
         undo: {
-          component: 'ApostropheTiptapButton',
-          label: 'Undo'
+          component: 'AposTiptapButton',
+          label: 'Undo',
+          icon: 'undo-icon'
         },
         redo: {
-          component: 'ApostropheTiptapButton',
-          label: 'Redo'
+          component: 'AposTiptapButton',
+          label: 'Redo',
+          icon: 'redo-icon'
         }
       }
     }

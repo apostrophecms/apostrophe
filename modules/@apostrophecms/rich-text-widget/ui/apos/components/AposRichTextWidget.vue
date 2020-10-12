@@ -1,14 +1,15 @@
 <template>
-  <div @click="clicked" v-html="rendered"></div>
+  <div @click="clicked" v-html="rendered" />
 </template>
 
 <script>
 
-import ApostropheWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/ApostropheWidgetMixin';
+import AposWidgetMixin from 'Modules/@apostrophecms/widget-type/mixins/AposWidgetMixin';
 
 export default {
-  mixins: [ ApostropheWidgetMixin ],
-  name: 'ApostropheRichTextWidget',
+  name: 'AposRichTextWidget',
+  mixins: [ AposWidgetMixin ],
+  emits: [ 'edit' ],
   methods: {
     clicked(e) {
       const link = apos.util.closest(e.target, 'a');
@@ -20,6 +21,6 @@ export default {
       this.$emit('edit');
     }
   }
-}
+};
 
 </script>

@@ -39,15 +39,17 @@
       </div>
     </template>
     <template #secondary>
-      <component
-        :is="chooserComponent"
-        v-if="choosing"
-        :module-name="field.withType"
-        :chosen="next"
-        :relationship-field="field"
-        @chose="updateSelected"
-        @safe-close="choosing=false"
-      />
+      <portal to="modal-target">
+        <component
+          :is="chooserComponent"
+          v-if="choosing"
+          :module-name="field.withType"
+          :chosen="next"
+          :relationship-field="field"
+          @chose="updateSelected"
+          @safe-close="choosing=false"
+        />
+      </portal>
       <AposRelationshipEditor
         v-if="relationshipSchema"
         :schema="relationshipSchema"

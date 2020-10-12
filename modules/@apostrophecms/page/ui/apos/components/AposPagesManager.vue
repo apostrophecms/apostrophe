@@ -4,10 +4,17 @@
     @esc="cancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
-    <template #primaryControls>
+    <template #secondaryControls>
       <AposButton
         type="default" label="Finished"
         @click="cancel"
+      />
+    </template>
+    <template #primaryControls>
+      <AposButton
+        type="primary"
+        label="New Page"
+        @click="editing = true"
       />
     </template>
     <template #main>
@@ -19,7 +26,8 @@
             @trash-click="trashClick"
             :options="{
               noSearch: true,
-              noPager: true
+              noPager: true,
+              hideSelectAll: !relationshipField
             }"
           />
         </template>
@@ -34,6 +42,15 @@
           />
         </template>
       </AposModalBody>
+      <!-- The pieces editor modal. -->
+      <portal to="modal-target">
+        <component
+          v-if="editing"
+          :is="moduleOptions.components.insertModal"
+          :module-name="moduleName" :doc-id="editingDocId"
+          @saved="finishSaved" @safe-close="closeEditor"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
@@ -49,6 +66,7 @@ export default {
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
+      moduleName: '@apostrophecms/page',
       modal: {
         active: false,
         type: 'slide',
@@ -87,12 +105,17 @@ export default {
         ]
       },
       treeOptions: {
-        bulkSelect: true,
+        bulkSelect: !!this.relationshipField,
         draggable: true
-      }
+      },
+      editing: false,
+      editingDocId: ''
     };
   },
   computed: {
+    moduleOptions() {
+      return window.apos.modules[this.moduleName];
+    },
     items() {
       const items = [];
       if (!this.pages || !this.headers.length) {
@@ -145,7 +168,7 @@ export default {
             all: 1
           }
         }
-      )).results;
+      ));
 
       formatPage(pageTree);
 
@@ -166,12 +189,26 @@ export default {
         }
       }
     },
+    async finishSaved() {
+      await this.getPages();
+    },
+    closeEditor() {
+      this.editing = false;
+      this.editingDocId = '';
+    },
     update(obj) {
       // We'll hit a route here to update the docs.
       console.info('CHANGED ROW:', obj);
     },
     setBusy(val) {
       apos.bus.$emit('busy', val);
+    },
+    toggleRowCheck(id) {
+      if (this.checked.includes(id)) {
+        this.checked = this.checked.filter(item => item !== id);
+      } else {
+        this.checked.push(id);
+      }
     },
     selectAll(event) {
       if (!this.checked.length) {

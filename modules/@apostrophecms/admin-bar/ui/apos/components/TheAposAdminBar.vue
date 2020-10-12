@@ -1,12 +1,12 @@
 <template>
   <div class="apos-admin-bar-wrapper">
-    <div class="apos-admin-bar-spacer" ref="spacer"></div>
+    <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
         <AposLogo class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
           <li
-            v-for="(item, index) in menuItems" :key="item.name"
+            v-for="(item) in menuItems" :key="item.name"
             class="apos-admin-bar__item"
           >
             <component
@@ -32,7 +32,8 @@
                 label: 'New item',
                 iconOnly: true,
                 icon: 'plus-icon',
-                type: 'primary'
+                type: 'primary',
+                modifiers: ['round', 'no-motion']
               }"
             />
           </li>
@@ -129,8 +130,12 @@ $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
 $admin-bar-border: 1px solid var(--a-base-9);
 
+.apos-admin-bar-wrapper {
+  z-index: $z-index-admin-bar;
+  position: relative;
+}
+
 .apos-admin-bar {
-  z-index: $z-index-default;
   position: fixed;
   top: 0;
   right: 0;
@@ -162,7 +167,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   height: 32px;
 }
 
-.apos-admin-bar__create /deep/ .apos-context-menu__btn,
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn.apos-button,
 .apos-admin-bar__btn {

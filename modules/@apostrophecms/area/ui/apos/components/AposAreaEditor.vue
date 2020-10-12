@@ -140,17 +140,10 @@ export default {
   mounted() {
     if (this.docId) {
       this.areaUpdatedHandler = (area) => {
-        let patched = false;
         for (const item of this.next) {
           if (this.patchSubobject(item, area)) {
-            patched = true;
             break;
           }
-        }
-        if (patched) {
-          // Make sure our knowledge of the change is reflected
-          // everywhere via a refresh
-          this.next = this.next.slice();
         }
       };
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
@@ -161,8 +154,8 @@ export default {
   beforeDestroy() {
     if (this.areaUpdatedHandler) {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
-      apos.bus.$on('widget-hover', this.updateWidgetHovered);
-      apos.bus.$on('widget-focus', this.updateWidgetFocused);
+      apos.bus.$off('widget-hover', this.updateWidgetHovered);
+      apos.bus.$off('widget-focus', this.updateWidgetFocused);
     }
   },
   methods: {
@@ -305,11 +298,8 @@ export default {
     // its _id matches that of a sub-object of `object`. If found,
     // replace that sub-object with `subObject` and return `true`.
     patchSubobject(object, subObject) {
-      let key;
-      let val;
       let result;
-      for (key in object) {
-        val = object[key];
+      for (const [ key, val ] of Object.entries(object)) {
         if (val && typeof val === 'object') {
           if (val._id === subObject._id) {
             object[key] = subObject;

@@ -24,7 +24,8 @@ export const buttons = () => ({
             Outline: 'outline',
             Input: 'input',
             Danger: 'danger',
-            Quiet: 'quiet'
+            Quiet: 'quiet',
+            RichText: 'rich-text'
           },
           null
         )
@@ -33,7 +34,9 @@ export const buttons = () => ({
       default: options('Modifiers', {
         'Danger on Hover': 'danger-on-hover',
         Block: 'block',
-        'Gradient on Hover': 'gradient-on-hover'
+        'Gradient on Hover': 'gradient-on-hover',
+        'No Border': 'no-border',
+        'No Motion': 'no-motion'
       },
       [],
       { display: 'multi-select' },

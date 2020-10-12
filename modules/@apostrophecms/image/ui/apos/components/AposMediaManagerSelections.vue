@@ -4,8 +4,10 @@
       <p class="apos-media-manager-selections__heading">
         {{ items.length }} items selected
         <AposButton
-          label="Clear" type="quiet"
+          label="Clear"
+          type="quiet"
           @click="clear"
+          :modifiers="['no-motion']"
         />
       </p>
       <ol class="apos-media-manager-selections__items">
@@ -24,7 +26,9 @@
               {{ item.title }}
             </div>
             <AposButton
-              label="Edit" type="quiet"
+              label="Edit"
+              type="quiet"
+              :modifiers="['no-motion']"
               @click="edit(item._id)"
             />
           </div>
@@ -54,7 +58,8 @@ export default {
       },
       clearButton: {
         label: 'Clear Selection',
-        type: 'quiet'
+        type: 'quiet',
+        modifiers: [ 'no-motion' ]
       }
     };
   },

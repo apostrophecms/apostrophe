@@ -544,8 +544,8 @@
     },
     [`/api/v1/product/${grape._id}`]: grape,
     [`/api/v1/product/${strawberry._id}`]: strawberry,
-    '/api/v1/@apostrophecms/page?all=1': {
-      results: {
+    '/api/v1/@apostrophecms/page?all=1':
+      {
         title: 'Home',
         slug: '/',
         _id: 'ckd4y2m7j00074k9kbrxs0bat',
@@ -586,7 +586,6 @@
         published: true,
         updatedAt: '2020-07-27T20:09:06.031Z'
       }
-    }
   };
 
   apos.http.postResponses = {};

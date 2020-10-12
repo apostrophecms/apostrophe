@@ -1,6 +1,6 @@
 <template>
   <div :class="className" class="apos-toolbar">
-    <div v-if="hasLeftControls" class="apos-toolbar__group apos-toolbar__group--left">
+    <div class="apos-toolbar__group apos-toolbar__group--left">
       <slot name="leftControls" />
     </div>
     <div v-if="hasRightControls" class="apos-toolbar__group apos-toolbar__group--right">

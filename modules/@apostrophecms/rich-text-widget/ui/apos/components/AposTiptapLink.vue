@@ -1,12 +1,14 @@
 <template>
   <div class="apos-link-control">
-    <button
+    <AposButton
+      type="rich-text"
       @click="click"
-      ref="button"
       :class="{ 'apos-active': buttonActive }"
-    >
-      {{ tool.label }}
-    </button>
+      :label="tool.label"
+      :icon-only="!!tool.icon"
+      :icon="tool.icon ? tool.icon : false"
+      :modifiers="['no-border', 'no-motion']"
+    />
     <editor-menu-bubble
       :editor="editor"
       :keep-in-bounds="keepInBounds"
@@ -15,7 +17,6 @@
       <div
         class="apos-link-control__dialog"
         :class="{
-          'is-ready': menu.isActive,
           'is-triggered': active,
           'has-selection': hasSelection
         }"
@@ -33,15 +34,18 @@
             <AposSchema
               :schema="schema"
               v-model="value"
+              :modifiers="formModifiers"
             />
             <footer class="apos-link-control__footer">
               <AposButton
                 type="default" label="Cancel"
                 @click="close"
+                :modifiers="formModifiers"
               />
               <AposButton
                 type="primary" label="Save"
                 @click="save"
+                :modifiers="formModifiers"
               />
             </footer>
           </form>
@@ -57,7 +61,7 @@ import { EditorMenuBubble } from 'tiptap';
 import { isEmpty } from 'lodash';
 
 export default {
-  name: 'ApostropheTiptapLink',
+  name: 'AposTiptapLink',
   components: {
     EditorMenuBubble
   },
@@ -85,6 +89,7 @@ export default {
       value: {
         data: {}
       },
+      formModifiers: [ 'small' ],
       schema: [
         {
           name: 'href',
@@ -185,7 +190,7 @@ export default {
     pointer-events: none;
   }
 
-  .apos-link-control__dialog.is-triggered.has-selection.is-ready {
+  .apos-link-control__dialog.is-triggered.has-selection {
     opacity: 1;
     pointer-events: auto;
   }

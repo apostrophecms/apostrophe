@@ -71,6 +71,7 @@
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { defaultsDeep } from 'lodash';
 
 export default {
   name: 'AposDocEditor',
@@ -101,6 +102,7 @@ export default {
   emits: [ 'saved', 'safe-close' ],
   data() {
     return {
+      docType: this.moduleName,
       doc: {
         data: {},
         hasErrors: false
@@ -119,6 +121,7 @@ export default {
         type: 'overlay',
         showModal: false
       },
+      splittingDoc: false,
       schemaUtilityFields: [],
       schemaOtherFields: [],
       triggerValidation: false
@@ -126,7 +129,12 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return window.apos.modules[this.moduleName] || {};
+      return window.apos.modules[this.docType] || {};
+    },
+    moduleAction () {
+      // Use moduleName for the action since all page types use the
+      // `@apostrophecms/page` module action.
+      return (window.apos.modules[this.moduleName] || {}).action;
     },
     schema() {
       return this.moduleOptions.schema || [];
@@ -165,7 +173,7 @@ export default {
       return tabs;
     },
     modalTitle () {
-      return `Edit ${this.moduleOptions.label}`;
+      return `Edit ${this.moduleOptions.label || ''}`;
     },
     currentFields: function() {
       if (this.currentTab) {
@@ -179,13 +187,37 @@ export default {
       }
     }
   },
+  watch: {
+    'docUtilityFields.data': {
+      deep: true,
+      handler(newVal, oldVal) {
+        if (this.moduleName !== '@apostrophecms/page' || this.splittingDoc) {
+          return;
+        }
+
+        if (this.docType !== newVal.type) {
+          // Return the split data into `doc.data` before splitting again.
+          this.doc.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.doc.data);
+
+          this.docType = newVal.type;
+          this.docReady = false;
+
+          // Let the schema update before splitting up the doc again.
+          this.$nextTick(() => {
+            this.splitDoc();
+            this.docReady = true;
+          });
+        }
+      }
+    }
+  },
   async mounted() {
     this.modal.active = true;
 
     if (this.docId) {
       let docData;
       try {
-        const getOnePath = `${this.moduleOptions.action}/${this.docId}`;
+        const getOnePath = `${this.moduleAction}/${this.docId}`;
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues
@@ -207,7 +239,7 @@ export default {
       }
     } else {
       this.$nextTick(() => {
-        this.newInstance();
+        this.loadNewInstance();
       });
     }
   },
@@ -224,7 +256,7 @@ export default {
           return;
         }
 
-        this.doc.data = {
+        const body = {
           ...this.doc.data,
           ...this.docUtilityFields.data,
           ...this.docOtherFields.data
@@ -232,32 +264,73 @@ export default {
         let route;
         let requestMethod;
         if (this.docId) {
-          route = `${this.moduleOptions.action}/${this.docId}`;
+          route = `${this.moduleAction}/${this.docId}`;
           requestMethod = apos.http.put;
         } else {
-          route = this.moduleOptions.action;
+          route = this.moduleAction;
           requestMethod = apos.http.post;
+
+          if (this.moduleName === '@apostrophecms/page') {
+            body._targetId = apos.page.page._id;
+            body._position = 'lastChild';
+          }
         }
 
         await requestMethod(route, {
           busy: true,
-          body: this.doc.data
+          body
         });
         this.$emit('saved');
         this.modal.showModal = false;
       });
     },
-    async newInstance () {
-      const newInstance = await apos.http.post(this.moduleOptions.action, {
-        body: {
+    async getNewInstance () {
+      try {
+        const body = {
           _newInstance: true
+        };
+
+        if (this.moduleName === '@apostrophecms/page') {
+          body._targetId = apos.page.page._id;
+          body._position = 'lastChild';
         }
-      });
+        const newDoc = await apos.http.post(this.moduleAction, {
+          body
+        });
+
+        return newDoc;
+      } catch (error) {
+        await apos.notify('Error while creating new, empty content.', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+
+        console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
+
+        this.cancel();
+      }
+    },
+    async loadNewInstance () {
+      this.docReady = false;
+
+      const newInstance = await this.getNewInstance();
+
+      if (newInstance && newInstance.type !== this.docType) {
+        this.docType = newInstance.type;
+      }
       this.doc.data = newInstance;
-      this.docReady = true;
       this.splitDoc();
+      this.docReady = true;
     },
     splitDoc() {
+      this.splittingDoc = true;
+
+      this.docUtilityFields.data = {};
+      this.docOtherFields.data = {};
+      this.schemaUtilityFields = [];
+      this.schemaOtherFields = [];
+
       this.schema.forEach(field => {
         if (field.group.name === 'utility') {
           this.docUtilityFields.data[field.name] = this.doc.data[field.name];
@@ -267,6 +340,7 @@ export default {
           this.schemaOtherFields.push(field);
         }
       });
+      this.splittingDoc = false;
     }
   }
 };

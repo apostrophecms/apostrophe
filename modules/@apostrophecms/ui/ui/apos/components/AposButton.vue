@@ -52,10 +52,9 @@ export default {
       type: String,
       default: null
     },
-    iconOnly: Boolean,
-    iconSize: {
-      type: Number,
-      default: 15
+    iconOnly: {
+      type: Boolean,
+      default: false
     },
     state: {
       type: Array,
@@ -101,7 +100,7 @@ export default {
       }
 
       if (this.iconOnly) {
-        modifiers.push('apos-button--icon');
+        modifiers.push('apos-button--icon-only');
       }
 
       if (this.state && this.state.length) {
@@ -222,10 +221,6 @@ export default {
     background-color: transparent;
     text-decoration: underline;
     color: var(--a-primary-button-hover);
-  }
-  &:hover:not([disabled]),
-  &:focus:not([disabled]) {
-    transform: none;
   }
   &:focus {
     box-shadow: none;
@@ -422,10 +417,21 @@ export default {
   }
 }
 
-.apos-button--icon {
+.apos-button--icon-only {
   padding: 10px;
   .apos-button__icon {
     margin-right: 0;
+  }
+}
+
+.apos-button--rich-text {
+  background-color: var(--a-background);
+  border-radius: 0;
+  &:hover {
+    background-color: var(--a-base-8);
+  }
+  &:focus, &:active {
+    background-color: var(--a-base-9);
   }
 }
 
@@ -448,6 +454,9 @@ export default {
   display: inline-flex;
   margin-right: 5px;
   align-items: center;
+}
+
+.apos-button:not(.apos-button--icon-only) .apos-button__icon {
   max-height: 13px;
 }
 
@@ -469,6 +478,20 @@ export default {
     border: 0;
     background-color: transparent;
     box-shadow: none;
+  }
+}
+
+.apos-button--no-border {
+  border: none;
+}
+
+.apos-button--no-motion {
+  &:hover:not([disabled]),
+  &:focus:not([disabled]) {
+    transform: none;
+    box-shadow: none;
+    outline: none;
+    border: 0;
   }
 }
 

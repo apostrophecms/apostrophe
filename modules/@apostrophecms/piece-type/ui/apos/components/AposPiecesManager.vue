@@ -48,7 +48,10 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideSelectAll: !relationshipField
+            }"
           />
         </template>
         <template #bodyMain>
@@ -58,7 +61,10 @@
             :headers="headers"
             v-model="checked"
             @open="openEditor"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideCheckboxes: !relationshipField
+            }"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
@@ -66,13 +72,15 @@
         </template>
       </AposModalBody>
       <!-- The pieces editor modal. -->
-      <component
-        v-if="editing"
-        :is="options.components.insertModal"
-        :module-name="moduleName" :doc-id="editingDocId"
-        :filter-values="filterValues"
-        @saved="finishSaved" @safe-close="closeEditor"
-      />
+      <portal to="modal-target">
+        <component
+          v-if="editing"
+          :is="options.components.insertModal"
+          :module-name="moduleName" :doc-id="editingDocId"
+          :filter-values="filterValues"
+          @saved="finishSaved" @safe-close="closeEditor"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
