@@ -40,6 +40,7 @@ module.exports = {
     '@apostrophecms/area': {},
     '@apostrophecms/rich-text-widget': {},
     '@apostrophecms/html-widget': {},
+    '@apostrophecms/image-widget': {},
     '@apostrophecms/video-field': {},
     '@apostrophecms/video-widget': {},
     '@apostrophecms/group': {},

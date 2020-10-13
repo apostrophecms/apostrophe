@@ -5,14 +5,14 @@
   >
     <div class="apos-filters-menu">
       <div
-        v-for="(set, key) in filterSets" :key="key"
+        v-for="set in filterSets" :key="set.key"
         class="apos-filters-menu__set"
       >
         <component
           :is="map[set.field.type]" :field="set.field"
           :value="set.value" :status="set.status"
           :icon="set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''"
-          @input="input($event, key)"
+          @input="input($event, set.name)"
         />
       </div>
     </div>
@@ -28,6 +28,20 @@ export default {
     filters: {
       type: Array,
       required: true
+    },
+    choices: {
+      type: Object,
+      required: false,
+      default () {
+        return {};
+      }
+    },
+    values: {
+      type: Object,
+      required: false,
+      default () {
+        return {};
+      }
     },
     button: {
       type: Object,
@@ -48,33 +62,66 @@ export default {
         radio: 'AposInputRadio',
         checkbox: 'AposInputCheckboxes',
         select: 'AposInputSelect'
-      }
+      },
+      generation: 0
     };
   },
   computed: {
     filterSets() {
-      const sets = {};
-
+      const sets = [];
       this.filters.forEach(filter => {
-        sets[filter.name] = {
+        sets.push({
+          name: filter.name,
+          key: `${this.generation}:${filter.name}`,
           field: {
             name: filter.name,
-            type: filter.inputType || 'radio',
+            type: filter.inputType || 'select',
             label: filter.label || filter.name,
-            choices: filter.choices
+            choices: this.addNullChoice(filter, this.choices[filter.name] || filter.choices)
           },
           value: {
-            data: filter.def
+            data: this.values[filter.name]
           },
           status: {}
-        };
+        });
       });
       return sets;
+    }
+  },
+  watch: {
+    choices() {
+      // Need this to build a key that v-for doesn't take as
+      // permission to display an old version of the filter
+      // even though the choices have changed
+      this.generation++;
     }
   },
   methods: {
     input(value, filterName) {
       this.$emit('input', filterName, value);
+    },
+    addNullChoice(filter, choices) {
+      if (filter.required) {
+        return choices;
+      }
+      if (!choices) {
+        // Still pending
+        return [
+          {
+            label: 'Loading Choices...',
+            value: filter.def
+          }
+        ];
+      }
+      if (choices.find(choice => choice.value === null)) {
+        return choices;
+      }
+      return [
+        {
+          label: filter.nullLabel,
+          value: null
+        }
+      ].concat(choices);
     }
   }
 };

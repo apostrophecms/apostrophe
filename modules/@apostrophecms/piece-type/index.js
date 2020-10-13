@@ -58,7 +58,7 @@ module.exports = {
             label: 'Draft'
           },
           {
-            value: 'any',
+            value: null,
             label: 'Both'
           }
         ],
@@ -79,7 +79,8 @@ module.exports = {
           }
         ],
         allowedInChooser: false,
-        def: false
+        def: false,
+        required: true
       }
     }
   },
@@ -365,20 +366,27 @@ module.exports = {
       composeFilters() {
         self.filters = Object.keys(self.filters).map(key => ({
           name: key,
-          ...self.filters[key]
+          ...self.filters[key],
+          inputType: self.filters[key].inputType || 'select'
         }));
-        // Add a null choice if not already added or set to `required`
+        // Add an 'any' choice if not already added or set to `required`
         self.filters.forEach(filter => {
-          if (
-            !filter.required &&
-            filter.choices &&
-            !filter.choices.find(choice => choice.value === 'any')
-          ) {
-            filter.def = 'any';
-            filter.choices.push({
-              value: 'any',
-              label: 'None'
-            });
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find(choice => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'None'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'Choose One';
           }
         });
       },
@@ -640,6 +648,7 @@ module.exports = {
         });
       },
       getRestQuery(req) {
+        self.apos.util.restoreNullsInQuery(req);
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'edit-' + self.name)) {

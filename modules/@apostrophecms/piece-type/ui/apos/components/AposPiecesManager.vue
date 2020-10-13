@@ -41,8 +41,12 @@
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
-            :total-pages="totalPages" :current-page="currentPage"
-            :filters="options.filters" :labels="moduleLabels"
+            :total-pages="totalPages"
+            :current-page="currentPage"
+            :filters="options.filters"
+            :filter-choices="filterChoices"
+            :filter-values="filterValues"
+            :labels="moduleLabels"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -124,7 +128,8 @@ export default {
           type: 'outline'
         },
         menu: []
-      }
+      },
+      filterChoices: {}
     };
   },
   computed: {
@@ -170,7 +175,11 @@ export default {
   },
   created() {
     this.options.filters.forEach(filter => {
-      this.filterValues[filter.name] = filter.def || filter.choices[0].value;
+      this.filterValues[filter.name] = filter.def;
+      if (!filter.choices) {
+        this.queryExtras.choices = this.queryExtras.choices || [];
+        this.queryExtras.choices.push(filter.name);
+      }
     });
   },
   async mounted() {
@@ -234,6 +243,7 @@ export default {
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
       this.pieces = getResponse.results;
+      this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },
     updatePage(num) {

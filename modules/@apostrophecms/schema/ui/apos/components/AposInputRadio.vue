@@ -5,15 +5,17 @@
   >
     <template #body>
       <label
-        class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
+        class="apos-choice-label" :for="getChoiceId(uid, choice, choice.value)"
         v-for="choice in field.choices" :key="choice.value"
       >
         <input
           type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
-          :value="choice.value" :name="field.name"
-          :id="getChoiceId(uid, choice.value)"
-          v-model="next" :disabled="status.disabled"
+          :value="JSON.stringify(choice.value)" :name="field.name"
+          :id="getChoiceId(uid, choice, choice.value)"
+          :checked="next === choice.value"
+          :disabled="status.disabled"
           tabindex="1"
+          @change="change($event.target.value)"
         >
         <span class="apos-input-indicator" aria-hidden="true">
           <component
@@ -36,15 +38,8 @@ export default {
   name: 'AposInputRadio',
   mixins: [ AposInputMixin ],
   methods: {
-    getChoiceId(uid, value) {
-      // Convert any boolean values for this purpose.
-      if (typeof value !== 'string') {
-        value = !value ? 'undefined' : value.toString();
-      }
-
-      value = value.toString();
-      // Generate a choice ID, collapsing any whitespace in the value.
-      return uid + value.replace(/\s/g, '');
+    getChoiceId(uid, choice, value) {
+      return uid + JSON.stringify(value);
     },
     validate(value) {
       if (this.field.required && (!value || !value.length)) {
@@ -58,6 +53,10 @@ export default {
       }
 
       return false;
+    },
+    change(value) {
+      // Allows expression of non-string values
+      this.next = this.field.choices.find(choice => choice.value === JSON.parse(value)).value;
     }
   }
 };

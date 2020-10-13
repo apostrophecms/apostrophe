@@ -9,11 +9,12 @@
       <div class="apos-input-wrapper">
         <select
           class="apos-input apos-input--select" :id="uid"
-          v-model="next"
+          @change="change($event.target.value)"
         >
           <option
-            v-for="choice in choices" :key="choice.value"
-            :value="choice.value"
+            v-for="choice in choices" :key="JSON.stringify(choice.value)"
+            :value="JSON.stringify(choice.value)"
+            :selected="choice.value === value.data"
           >
             {{ choice.label }}
           </option>
@@ -45,13 +46,13 @@ export default {
     };
   },
   mounted() {
-    // Add an empty option if there isn't one already or an "any" option.
+    // Add an null option if there isn't one already
     if (!this.field.required && !this.field.choices.find(choice => {
-      return !choice.value || choice.value === 'any';
+      return choice.value === null;
     })) {
       this.choices.push({
         label: '',
-        value: ''
+        value: null
       });
     }
     this.choices = this.choices.concat(this.field.choices);
@@ -67,6 +68,10 @@ export default {
       }
 
       return false;
+    },
+    change(value) {
+      // Allows expression of non-string values
+      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
     }
   }
 };
