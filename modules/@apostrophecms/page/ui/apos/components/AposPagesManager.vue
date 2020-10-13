@@ -38,7 +38,7 @@
             v-model="checked"
             :options="treeOptions"
             @update="update" @busy="setBusy"
-            @open="openEditor"
+            @edit="openEditor"
           />
         </template>
       </AposModalBody>
@@ -228,8 +228,9 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    openEditor(page) {
-      console.info('📝 EDIT PAGE', page);
+    openEditor(pageId) {
+      this.editingDocId = pageId;
+      this.editing = true;
     }
   }
 };

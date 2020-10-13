@@ -232,6 +232,9 @@ export default {
         apos.bus.$emit('busy', false);
         this.cancel();
       } finally {
+        if (docData.type !== this.docType) {
+          this.docType = docData.type;
+        }
         this.doc.data = docData;
         this.docReady = true;
         this.splitDoc();

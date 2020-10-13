@@ -19,7 +19,7 @@
       :nested="nested"
       @busy="setBusy"
       @update="update"
-      @open="$emit('open', $event)"
+      @edit="$emit('edit', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -74,7 +74,7 @@ export default {
       }
     }
   },
-  emits: [ 'busy', 'update', 'change', 'open' ],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
