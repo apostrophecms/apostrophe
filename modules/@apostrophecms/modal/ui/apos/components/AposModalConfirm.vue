@@ -130,6 +130,7 @@ export default {
 }
 
 .apos-confirm__btns {
+  display: flex;
   margin-top: 30px;
 }
 
