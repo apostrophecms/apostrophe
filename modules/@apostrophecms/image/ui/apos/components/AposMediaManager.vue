@@ -357,6 +357,7 @@ export default {
       // TODO stub
       this.$emit('search', query);
     },
+    // Override the `cancel` method in `AposModalParentMixin`.
     cancel() {
       if (this.editsInProgress && !this.discardConfirmed) {
         // If the modal is a manager with an open editor, close the editor and
