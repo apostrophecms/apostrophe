@@ -32,9 +32,10 @@
           </button>
           <AposSlatList
             class="apos-modal-array-items__items"
-            @update="update"
+            @input="update"
             @select="select"
-            :initial-items="next"
+            :selected="currentId"
+            :value="withLabels(next)"
           />
         </div>
       </AposModalRail>
@@ -47,7 +48,7 @@
               <div class="apos-modal-array-item__pane">
                 <div class="apos-array-item__body">
                   <AposSchema
-                    v-if="currentId !== false"
+                    v-if="currentId"
                     :schema="field.schema"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
@@ -90,7 +91,7 @@ export default {
   emits: [ 'input', 'safe-close', 'update' ],
   data() {
     return {
-      currentId: false,
+      currentId: null,
       currentDoc: null,
       modal: {
         active: false,
@@ -134,12 +135,10 @@ export default {
     }
   },
   async mounted() {
-    console.log('sanity check');
     this.modal.active = true;
   },
   methods: {
     select(_id) {
-      console.log(`selecting ${_id}`);
       if (this.currentId === _id) {
         return;
       }
@@ -154,10 +153,13 @@ export default {
       });
     },
     update(items) {
-      this.next = items;
+      // Take care to use the same items in order to avoid
+      // losing too much state inside draggable, otherwise
+      // drags fail
+      this.next = items.map(item => this.next.find(_item => item._id === _item._id));
       if (this.currentId) {
         if (!this.next.find(item => item._id === this.currentId)) {
-          this.currentId = false;
+          this.currentId = null;
           this.currentDoc = null;
         }
       }
@@ -255,6 +257,13 @@ export default {
         }
       }
       return candidate;
+    },
+    withLabels(items) {
+      const result = items.map(item => ({
+        ...item,
+        title: this.label(item)
+      }));
+      return result;
     }
   }
 };

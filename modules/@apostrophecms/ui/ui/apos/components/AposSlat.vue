@@ -7,7 +7,8 @@
       tabindex="0"
       :class="{
         'is-engaged': engaged,
-        'is-only-child': slatCount === 1
+        'is-only-child': slatCount === 1,
+        'is-selected': selected
       }"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
@@ -90,9 +91,13 @@ export default {
     removable: {
       type: Boolean,
       default: true
+    },
+    selected: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'selected' ],
+  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
   data() {
     return {
       more: {
@@ -149,7 +154,7 @@ export default {
       this.$emit('remove', this.item, focusNext);
     },
     click(e) {
-      this.$emit('selected', this.item._id);
+      this.$emit('select', this.item._id);
     }
   }
 };
@@ -196,7 +201,8 @@ export default {
   .apos-slat.is-engaged,
   .apos-slat.is-engaged:focus,
   .apos-slat.sortable-chosen:focus,
-  .apos-slat.is-dragging:focus {
+  .apos-slat.is-dragging:focus,
+  .apos-slat.is-selected {
     background-color: var(--a-primary);
     &,
     /deep/ .apos-button {
