@@ -99,16 +99,13 @@ export default {
 }
 
 /deep/ .apos-modal__inner {
-  &,
-  .apos-modal__inner .apos-confirm & {
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    width: 420px;
-    height: auto;
-    text-align: center;
-  }
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 420px;
+  height: auto;
+  text-align: center;
 }
 
 /deep/ .apos-modal__overlay {
