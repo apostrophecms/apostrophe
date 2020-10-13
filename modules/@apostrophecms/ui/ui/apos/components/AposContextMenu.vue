@@ -106,6 +106,15 @@ export default {
     }
 
   },
+  watch: {
+    isOpen(newVal, oldVal) {
+      if (newVal) {
+        this.$emit('open');
+      } else {
+        this.$emit('close');
+      }
+    }
+  },
   mounted() {
     this.container = this.$refs.container;
   },

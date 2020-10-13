@@ -42,8 +42,6 @@ export default {
   methods: {
     click() {
       this.$emit('click');
-      // triggering the `AposContextMenu`'s `hide` method since slots cannot emit events
-      this.$parent.hide();
     }
   }
 };

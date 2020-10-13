@@ -1,26 +1,45 @@
 <template>
-  <div class="apos-media-manager-editor">
-    <div class="apos-media-manager-editor__inner" v-if="activeMedia">
-      <div class="apos-media-manager-editor__thumb-wrapper">
+  <div
+    class="apos-media-editor"
+    :class="{
+      'is-replacing': allowReplace
+    }"
+  >
+    <div class="apos-media-editor__inner" v-if="activeMedia">
+      <div class="apos-media-editor__thumb-wrapper">
         <img
-          v-if="activeMedia.attachment"
-          class="apos-media-manager-editor__thumb"
+          v-if="activeMedia.attachment && activeMedia.attachment._urls"
+          class="apos-media-editor__thumb"
           :src="activeMedia.attachment._urls['one-third']" :alt="activeMedia.description"
         >
       </div>
-      <ul class="apos-media-manager-editor__details">
-        <li class="apos-media-manager-editor__detail" v-if="createdDate">
+      <ul class="apos-media-editor__details">
+        <li class="apos-media-editor__detail" v-if="createdDate">
           Uploaded: {{ createdDate }}
         </li>
-        <li class="apos-media-manager-editor__detail" v-if="fileSize">
+        <li class="apos-media-editor__detail" v-if="fileSize">
           File Size: {{ fileSize }}
         </li>
         <li
-          class="apos-media-manager-editor__detail"
+          class="apos-media-editor__detail"
           v-if="activeMedia.attachment && activeMedia.attachment.width"
         >
           Dimensions: {{ activeMedia.attachment.width }} 𝗑
           {{ activeMedia.attachment.height }}
+        </li>
+      </ul>
+      <ul class="apos-media-editor__links">
+        <li class="apos-media-editor__link" aria-hidden="true">
+          <AposButton
+            type="quiet" label="Replace"
+            @click="allowReplace = true"
+          />
+        </li>
+        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
+          <AposButton
+            type="quiet" label="View"
+            @click="viewMedia"
+          />
         </li>
       </ul>
       <AposSchema
@@ -36,15 +55,15 @@
     </div>
     <AposModalLip :refresh="lipKey">
       <div
-        class="apos-media-manager-editor__lip"
+        class="apos-media-editor__lip"
       >
         <AposButton
           @click="cancel"
-          class="apos-media-manager-editor__back" type="outline"
+          class="apos-media-editor__back" type="outline"
           label="Cancel"
         />
         <AposButton
-          @click="save" class="apos-media-manager-editor__save"
+          @click="save" class="apos-media-editor__save"
           :disabled="doc.hasErrors"
           label="Save" type="primary"
         />
@@ -64,6 +83,7 @@ import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
+import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 dayjs.extend(advancedFormat);
 
@@ -96,7 +116,7 @@ export default {
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
-      activeMedia: this.media,
+      activeMedia: klona(this.media),
       doc: {
         data: {},
         hasErrors: false
@@ -110,7 +130,8 @@ export default {
         affirmativeLabel: 'Discard Changes'
       },
       confirmingDiscard: false,
-      discardConfirmed: false
+      discardConfirmed: false,
+      allowReplace: false
     };
   },
   computed: {
@@ -119,9 +140,7 @@ export default {
     },
     schema() {
       if (this.moduleOptions.schema) {
-        return this.moduleOptions.schema.filter(field => {
-          return field.type !== 'attachment';
-        });
+        return this.moduleOptions.schema;
       }
       return [];
     },
@@ -161,7 +180,18 @@ export default {
             this.docEdited = true;
           }
         });
+
+        if ((this.activeMedia.attachment && !newData.attachment)) {
+          this.updateActiveAttachment({});
+        } else if (
+          (newData.attachment && !this.activeMedia.attachment) ||
+          (this.activeMedia.attachment && !newData.attachment) ||
+          !isEqual(newData.attachment, this.activeMedia.attachment)
+        ) {
+          this.updateActiveAttachment(newData.attachment);
+        }
       }
+
     },
     media(newVal) {
       // Ask for comfirmation to change the active media if the doc was edited,
@@ -186,7 +216,8 @@ export default {
   },
   methods: {
     updateActiveDoc(newMedia) {
-      this.activeMedia = newMedia;
+      this.allowReplace = false;
+      this.activeMedia = klona(newMedia);
       this.doc.data = klona(newMedia);
       this.generateLipKey();
     },
@@ -224,6 +255,7 @@ export default {
             dismiss: true
           });
         } finally {
+          this.allowReplace = false;
           apos.bus.$emit('busy', false);
         }
       });
@@ -239,7 +271,7 @@ export default {
 
         return;
       }
-
+      this.allowReplace = false;
       this.$emit('back');
     },
     async discardChanges () {
@@ -257,19 +289,26 @@ export default {
       await apos.notify(`${this.moduleLabels.label} changes discarded`, {
         dismiss: true
       });
+    },
+    updateActiveAttachment(attachment) {
+      console.info('☄️', attachment);
+      this.activeMedia.attachment = attachment;
+    },
+    viewMedia () {
+      window.open(this.activeMedia.attachment._urls.original, '_blank');
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-media-manager-editor {
+  .apos-media-editor {
     position: relative;
     height: 100%;
     padding: 20px;
   }
 
-  .apos-media-manager-editor__thumb-wrapper {
+  .apos-media-editor__thumb-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -277,16 +316,16 @@ export default {
     border: 1px solid var(--a-base-7);
     margin-bottom: 20px;
   }
-  .apos-media-manager-editor__thumb {
+  .apos-media-editor__thumb {
     max-width: 100%;
     max-height: 100%;
   }
 
-  .apos-media-manager-editor /deep/ .apos-field {
+  .apos-media-editor /deep/ .apos-field {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__details {
+  .apos-media-editor__details {
     @include apos-list-reset();
     color: var(--a-base-4);
     font-size: map-get($font-sizes, default);
@@ -294,11 +333,31 @@ export default {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__controls {
+  .apos-media-editor__links {
+    @include apos-list-reset();
+    margin-bottom: 30px;
+  }
+
+  .apos-media-editor__link {
+    display: inline-block;
+    & + & {
+      margin-left: 20px;
+    }
+  }
+
+  /deep/ [data-apos-field='attachment'] {
+    .apos-media-editor:not(.is-replacing) & {
+      position: absolute;
+      left: -999rem;
+      opacity: 0;
+    }
+  }
+
+  .apos-media-editor__controls {
     margin-bottom: 20px;
   }
 
-  .apos-media-manager-editor__lip {
+  .apos-media-editor__lip {
     display: flex;
     justify-content: space-between;
   }

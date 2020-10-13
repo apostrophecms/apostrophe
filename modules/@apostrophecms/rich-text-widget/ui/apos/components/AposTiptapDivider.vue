@@ -7,7 +7,7 @@
 <script>
 
 export default {
-  name: 'ApostropheTiptapDivider',
+  name: 'AposTiptapDivider',
   props: {
     name: {
       type: String,

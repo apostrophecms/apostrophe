@@ -3,7 +3,10 @@
 -->
 <template>
   <div class="apos-schema">
-    <div v-for="field in schema" :key="field.name">
+    <div
+      v-for="field in schema" :key="field.name"
+      :data-apos-field="field.name"
+    >
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
@@ -134,9 +137,10 @@ export default {
       }
 
       this.schema.forEach(field => {
+        const value = this.value.data[field.name];
         fieldState[field.name] = {
           error: false,
-          data: this.value.data[field.name] || field.def
+          data: (value === undefined) ? field.def : value
         };
         next.data[field.name] = fieldState[field.name].data;
       });

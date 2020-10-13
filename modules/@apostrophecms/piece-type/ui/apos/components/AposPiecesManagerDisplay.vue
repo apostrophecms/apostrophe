@@ -2,7 +2,10 @@
   <table class="apos-table">
     <tbody>
       <tr>
-        <th class="apos-table__header" />
+        <th
+          class="apos-table__header"
+          v-if="!options.hideCheckboxes"
+        />
         <th
           v-for="header in headers" scope="col"
           class="apos-table__header" :key="header.label"
@@ -27,7 +30,10 @@
         :key="item._id"
         :class="{'is-selected': false }"
       >
-        <td class="apos-table__cell">
+        <td
+          class="apos-table__cell"
+          v-if="!options.hideCheckboxes"
+        >
           <AposCheckbox
             v-if="item._id"
             :field="{

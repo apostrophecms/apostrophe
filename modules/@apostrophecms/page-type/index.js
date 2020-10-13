@@ -31,14 +31,19 @@ module.exports = {
         },
         orphan: {
           type: 'boolean',
-          label: 'Hide in Navigation'
+          label: 'Hide in Navigation',
+          def: false
         }
       },
       remove: [ 'trash' ],
       group: {
-        meta: {
-          label: 'Meta',
-          fields: [ 'title', 'slug', 'type', 'published', 'orphan' ]
+        utility: {
+          fields: [
+            'published',
+            'slug',
+            'type',
+            'orphan'
+          ]
         }
       }
     };

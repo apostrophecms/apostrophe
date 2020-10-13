@@ -48,7 +48,10 @@
             @search="search"
             @page-change="updatePage"
             @filter="filter"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideSelectAll: !relationshipField
+            }"
           />
         </template>
         <template #bodyMain>
@@ -58,7 +61,10 @@
             :headers="headers"
             v-model="checked"
             @open="openEditor"
-            :options="{ disableUnchecked: relationshipErrors === 'max' }"
+            :options="{
+              disableUnchecked: relationshipErrors === 'max',
+              hideCheckboxes: !relationshipField
+            }"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />

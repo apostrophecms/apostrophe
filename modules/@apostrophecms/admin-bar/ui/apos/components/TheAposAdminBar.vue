@@ -1,12 +1,12 @@
 <template>
   <div class="apos-admin-bar-wrapper">
-    <div class="apos-admin-bar-spacer" ref="spacer"></div>
+    <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
         <AposLogo class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
           <li
-            v-for="(item, index) in menuItems" :key="item.name"
+            v-for="(item) in menuItems" :key="item.name"
             class="apos-admin-bar__item"
           >
             <component
@@ -52,7 +52,7 @@
         <AposButton
           type="default" label="Page Tree"
           icon="file-tree-icon" class="apos-admin-bar__btn"
-          @click="emitEvent('page-tree')"
+          @click="emitEvent('@apostrophecms/page')"
         />
       </div>
     </nav>

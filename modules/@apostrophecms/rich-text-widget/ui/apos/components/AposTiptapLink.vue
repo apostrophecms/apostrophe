@@ -61,7 +61,7 @@ import { EditorMenuBubble } from 'tiptap';
 import { isEmpty } from 'lodash';
 
 export default {
-  name: 'ApostropheTiptapLink',
+  name: 'AposTiptapLink',
   components: {
     EditorMenuBubble
   },

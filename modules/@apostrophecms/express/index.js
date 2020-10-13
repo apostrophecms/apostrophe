@@ -177,7 +177,7 @@ module.exports = {
           }
           await self.listen();
           // Emit the @apostrophecms/express:afterListen event
-          self.emit('afterListen');
+          await self.emit('afterListen');
         }
       },
       'apostrophe:destroy': {
