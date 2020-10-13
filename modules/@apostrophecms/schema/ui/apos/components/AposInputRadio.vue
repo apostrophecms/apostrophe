@@ -5,13 +5,13 @@
   >
     <template #body>
       <label
-        class="apos-choice-label" :for="getChoiceId(uid, choice, choice.value)"
+        class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
         v-for="choice in field.choices" :key="choice.value"
       >
         <input
           type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
           :value="JSON.stringify(choice.value)" :name="field.name"
-          :id="getChoiceId(uid, choice, choice.value)"
+          :id="getChoiceId(uid, choice.value)"
           :checked="next === choice.value"
           :disabled="status.disabled"
           tabindex="1"
@@ -38,8 +38,8 @@ export default {
   name: 'AposInputRadio',
   mixins: [ AposInputMixin ],
   methods: {
-    getChoiceId(uid, choice, value) {
-      return uid + JSON.stringify(value);
+    getChoiceId(uid, value) {
+      return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
       if (this.field.required && (!value || !value.length)) {

@@ -5,7 +5,7 @@ module.exports = {
   },
   fields: {
     add: {
-      _pieces: {
+      _image: {
         type: 'relationship',
         label: 'Image',
         max: 1,
