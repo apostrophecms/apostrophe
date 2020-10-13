@@ -29,6 +29,7 @@
           @remove="remove"
           @engage="engage"
           @disengage="disengage"
+          @select="select"
           @move="move"
           @item-clicked="$emit('item-clicked', item)"
           :key="item._id"
@@ -76,7 +77,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'item-clicked' ],
+  emits: [ 'update', 'item-clicked', 'select' ],
   data() {
     return {
       isDragging: false,
@@ -115,6 +116,7 @@ export default {
     }
   },
   mounted() {
+    console.log('sanity check');
     this.updateMessage();
   },
   methods: {
@@ -123,6 +125,9 @@ export default {
     },
     disengage(id) {
       this.engaged = null;
+    },
+    select(id) {
+      this.$emit('select', id);
     },
     remove(item, focusNext) {
       const itemIndex = this.getIndex(item._id);

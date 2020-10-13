@@ -15,6 +15,7 @@
       @keydown.prevent.arrow-down="move(1)"
       @keydown.prevent.arrow-up="move(-1)"
       @keydown.prevent.backspace="remove(true)"
+      @click="click"
       :aria-pressed="engaged"
       role="listitem"
       :aria-labelledby="parent"
@@ -91,7 +92,7 @@ export default {
       default: true
     }
   },
-  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked' ],
+  emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'selected' ],
   data() {
     return {
       more: {
@@ -146,6 +147,9 @@ export default {
     },
     remove(focusNext) {
       this.$emit('remove', this.item, focusNext);
+    },
+    click(e) {
+      this.$emit('selected', this.item._id);
     }
   }
 };
