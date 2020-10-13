@@ -648,7 +648,7 @@ module.exports = {
         });
       },
       getRestQuery(req) {
-        self.apos.util.restoreNullsInQuery(req);
+        // self.apos.util.restoreNullsInQuery(req);
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'edit-' + self.name)) {

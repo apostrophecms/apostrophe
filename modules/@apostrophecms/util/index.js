@@ -723,34 +723,6 @@ module.exports = {
         }
         p = path[i];
         o[p] = v;
-      },
-
-      // Restore Java-style `null` values in req.query
-      // (represented by ?key rather than ?key=, which is
-      // the empty string). Express does not do this by
-      // default and it is safer not to accept it universally,
-      // but it is useful for REST queries.
-      //
-      // Currently this method does not attempt to deal with
-      // null subproperties of nested objects.
-      restoreNullsInQuery(req) {
-        const index = req.url.indexOf('?');
-        if (index === -1) {
-          return req.query;
-        }
-        const rawQuery = req.url.substring(index + 1);
-        const pairs = rawQuery.split('&');
-        const nulls = [];
-        for (const pair of pairs) {
-          if (!pair.includes('=')) {
-            nulls.push(pair);
-          }
-        }
-        for (const [ name, value ] of Object.entries(req.query)) {
-          if ((value === '') && (nulls.includes(name))) {
-            req.query[name] = null;
-          }
-        }
       }
     };
   },

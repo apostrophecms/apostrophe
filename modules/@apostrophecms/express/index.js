@@ -157,6 +157,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
+const qs = require('qs');
 
 module.exports = {
   init(self, options) {
@@ -278,6 +279,11 @@ module.exports = {
       createApp() {
         self.apos.app = self.apos.baseApp = express();
         self.apos.express = express;
+        self.apos.app.set('query parser', function (str) {
+          return qs.parse(str, {
+            strictNullHandling: true
+          });
+        });
       },
 
       // Patch Express so that all calls to `res.redirect` honor

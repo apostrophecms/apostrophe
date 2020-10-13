@@ -1859,7 +1859,6 @@ database.`);
         }
       },
       getRestQuery(req) {
-        self.apos.util.restoreNullsInQuery(req);
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'edit-' + self.name)) {
           if (!self.options.publicApiProjection) {
