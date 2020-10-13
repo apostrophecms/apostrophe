@@ -1209,12 +1209,11 @@ describe('Schemas', function() {
     await apos.schema.convert(req, schema, input, result);
     assert(_.keys(result).length === 1);
     assert(result.addresses);
-    assert(result.addresses.metaType === 'array');
-    assert(result.addresses.entries.length === 2);
-    assert(result.addresses.entries[0]._id);
-    assert(result.addresses.entries[1]._id);
-    assert(result.addresses.entries[0].address === '500 test lane');
-    assert(result.addresses.entries[1].address === '602 test ave');
+    assert(result.addresses.length === 2);
+    assert(result.addresses[0]._id);
+    assert(result.addresses[1]._id);
+    assert(result.addresses[0].address === '500 test lane');
+    assert(result.addresses[1].address === '602 test ave');
   });
 
   it('should convert string values to areas correctly', async () => {
