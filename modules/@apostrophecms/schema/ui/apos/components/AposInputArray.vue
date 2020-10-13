@@ -60,7 +60,6 @@ export default {
     },
     update (items) {
       this.next = items;
-      this.editing = false;
     },
     safeClose () {
       this.editing = false;
