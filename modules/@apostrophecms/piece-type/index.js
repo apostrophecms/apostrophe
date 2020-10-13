@@ -369,7 +369,7 @@ module.exports = {
           ...self.filters[key],
           inputType: self.filters[key].inputType || 'select'
         }));
-        // Add an 'any' choice if not already added or set to `required`
+        // Add a null choice if not already added or set to `required`
         self.filters.forEach(filter => {
           if (filter.choices) {
             if (
@@ -648,7 +648,6 @@ module.exports = {
         });
       },
       getRestQuery(req) {
-        // self.apos.util.restoreNullsInQuery(req);
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
         if (!self.apos.permission.can(req, 'edit-' + self.name)) {
