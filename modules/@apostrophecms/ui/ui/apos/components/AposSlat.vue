@@ -202,7 +202,8 @@ export default {
   .apos-slat.is-engaged:focus,
   .apos-slat.sortable-chosen:focus,
   .apos-slat.is-dragging:focus,
-  .apos-slat.is-selected {
+  .apos-slat.is-selected,
+  .apos-slat.is-selected:focus {
     background-color: var(--a-primary);
     &,
     /deep/ .apos-button {
