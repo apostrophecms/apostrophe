@@ -87,6 +87,7 @@
             :media="editing" :selected="selected"
             :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
+            @edited="editsInProgress = $event"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -95,6 +96,15 @@
           />
         </div>
       </AposModalRail>
+      <portal to="modal-target">
+        <AposModalConfirm
+          v-if="confirmingDiscard"
+          :confirm-content="confirmContent"
+          :callback-name="confirmCallback"
+          @confirm="discardChanges"
+          @safe-close="confirmingDiscard = false"
+        />
+      </portal>
     </template>
   </AposModal>
 </template>
@@ -126,12 +136,21 @@ export default {
         showModal: false
       },
       editing: undefined,
+      editingOnDeck: undefined,
+      editsInProgress: false,
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
         title: 'No Media Found',
         message: 'Uploaded media will appear here',
         emoji: '🖼'
+      },
+      confirmingDiscard: false,
+      discardConfirmed: false,
+      confirmContent: {
+        heading: 'Unsaved Changes',
+        description: 'Do you want to discard changes to the active image?',
+        affirmativeLabel: 'Discard Changes'
       }
     };
   },
@@ -251,7 +270,20 @@ export default {
       this.editing = undefined;
     },
     updateEditing(id) {
-      this.editing = this.items.find(item => item._id === id);
+      if (this.editsInProgress && !this.discardConfirmed) {
+        // If the modal is a manager with an open editor, close the editor and
+        // keep the manager open.
+        this.confirmingDiscard = true;
+        this.confirmCallback = 'updateEditing';
+        this.editingOnDeck = this.items.find(item => item._id === id);
+      } else if (!id && this.editingOnDeck) {
+        this.editing = this.editingOnDeck;
+        this.editingOnDeck = undefined;
+        this.editsInProgress = false;
+      } else {
+        this.editing = this.items.find(item => item._id === id);
+        this.editsInProgress = false;
+      }
     },
 
     // select setters
@@ -324,8 +356,36 @@ export default {
     search(query) {
       // TODO stub
       this.$emit('search', query);
-    }
+    },
+    // Override the `cancel` method in `AposModalParentMixin`.
+    cancel() {
+      if (this.editsInProgress && !this.discardConfirmed) {
+        // If the modal is a manager with an open editor, close the editor and
+        // keep the manager open.
+        this.confirmingDiscard = true;
+        this.confirmCallback = 'cancel';
+        return;
+      }
+      this.modal.showModal = false;
+    },
+    cancelEditor() {
+      this.editing = undefined;
+      this.editsInProgress = false;
+    },
+    async discardChanges (callbackName) {
+      this.discardConfirmed = true;
 
+      if (callbackName) {
+        this[callbackName]();
+      }
+
+      this.discardConfirmed = false;
+      this.confirmingDiscard = false;
+
+      await apos.notify(`${this.moduleLabels.label} changes discarded`, {
+        dismiss: true
+      });
+    }
   }
 };
 </script>
