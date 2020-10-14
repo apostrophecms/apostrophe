@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.113.0 (2020-10-07)
+* Remove published columns in apostrophe-users and apostrophe-groups, the modules where this field does not exist.
+
 ## 2.112.1 (2020-10-07)
 * When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
 
