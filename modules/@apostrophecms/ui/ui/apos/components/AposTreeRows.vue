@@ -310,9 +310,6 @@ export default {
     &.is-dragging {
       opacity: 0.5;
     }
-    &.apos-flip-list-move {
-      transition: transform 0.4s;
-    }
   }
   .apos-tree__list {
     transition: max-height 0.3s ease;
