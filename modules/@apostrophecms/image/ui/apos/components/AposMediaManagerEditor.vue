@@ -41,6 +41,13 @@
             @click="viewMedia"
           />
         </li>
+        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
+          <AposButton
+            type="quiet" label="Download"
+            :href="activeMedia.attachment._urls.original"
+            download
+          />
+        </li>
       </ul>
       <AposSchema
         v-if="doc.data.title !== undefined"
@@ -336,6 +343,7 @@ export default {
 
   .apos-media-editor__links {
     @include apos-list-reset();
+    display: flex;
     margin-bottom: 30px;
   }
 
