@@ -160,7 +160,10 @@ module.exports = {
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
-                newNodes.push(_.pick(node, 'title', 'slug', '_id', 'type', 'metaType', '_url', '_children', 'published'));
+                newNodes.push(_.pick(node,
+                  'title', 'slug', 'path', '_id', 'type', 'metaType', '_url',
+                  '_children', 'published', 'parked'
+                ));
               }
             });
             return newNodes;
@@ -897,6 +900,10 @@ database.`);
               } else {
                 rank = 0;
               }
+            } else if (!isNaN(parseInt(position))) {
+              parent = target;
+              rank = parseInt(position);
+              return;
             } else {
               throw new Error('no such position option');
             }
