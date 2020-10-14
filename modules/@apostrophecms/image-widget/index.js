@@ -1,7 +1,8 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Image'
+    label: 'Image',
+    className: 'apos-image-widget'
   },
   fields: {
     add: {
