@@ -39,7 +39,7 @@
           @click="col.action ? $emit(col.action, row._id) : null"
         >
           <drag-icon
-            v-if="options.draggable && index === 0" class="apos-tree__row__handle"
+            v-if="options.draggable && index === 0 && !row.parked" class="apos-tree__row__handle"
             :size="20"
             :fill-color="null"
           />
@@ -67,6 +67,7 @@
       </div>
       <AposTreeRows
         data-apos-branch-height
+        :data-list-row="row._id"
         ref="tree-branches"
         :rows="row.children"
         :headers="headers"
@@ -177,7 +178,8 @@ export default {
         dataListId: this.listId,
         disabled: !this.options.draggable,
         handle: '.apos-tree__row__handle',
-        ghostClass: 'is-dragging'
+        ghostClass: 'is-dragging',
+        filter: '.is-parked'
       };
     }
   },
@@ -259,6 +261,7 @@ export default {
       return [
         'apos-tree__row',
         {
+          'is-parked': !!row.parked,
           'apos-tree__row--parent': row.children && row.children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
