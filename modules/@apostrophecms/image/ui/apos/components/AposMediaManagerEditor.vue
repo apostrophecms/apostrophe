@@ -125,6 +125,14 @@ export default {
       },
       lipKey: '',
       triggerValidation: false,
+      confirmContent: {
+        heading: 'Unsaved Changes',
+        description: 'Do you want to discard changes to the active image?',
+        negativeLabel: 'Resume Editing',
+        affirmativeLabel: 'Discard Changes'
+      },
+      confirmingDiscard: false,
+      discardConfirmed: false,
       showReplace: false
     };
   },

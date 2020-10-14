@@ -6,7 +6,7 @@
 
 <template>
   <AposModal
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="modalTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
@@ -25,7 +25,8 @@
     </template>
     <template v-if="relationshipField" #primaryControls>
       <AposButton
-        :label="`Save`" type="primary"
+        type="primary"
+        :label="`Select ${moduleLabels.pluralLabel || ''}`"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
@@ -155,7 +156,7 @@ export default {
     };
   },
   computed: {
-    moduleTitle () {
+    modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.pluralLabel}`;
     },
@@ -187,10 +188,6 @@ export default {
   },
   watch: {
     checked (newVal) {
-      if (this.editing && newVal.includes(this.editing._id)) {
-        return;
-      }
-
       if (newVal.length > 1 || newVal.length === 0) {
         this.editing = undefined;
       }
