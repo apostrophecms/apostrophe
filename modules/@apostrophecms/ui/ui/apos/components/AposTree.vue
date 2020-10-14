@@ -19,7 +19,7 @@
       :nested="nested"
       @busy="setBusy"
       @update="update"
-      @open="$emit('open', $event)"
+      @edit="$emit('edit', $event)"
       list-id="root"
       :options="options"
       :tree-id="treeId"
@@ -28,13 +28,12 @@
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import klona from 'klona';
+import cuid from 'cuid';
 
 export default {
   name: 'AposTree',
-  mixins: [ AposHelpers ],
-  model: {
+    model: {
     prop: 'checked',
     event: 'change'
   },
@@ -74,14 +73,14 @@ export default {
       }
     }
   },
-  emits: [ 'busy', 'update', 'change', 'open' ],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
       myItems: klona(this.items),
       nested: false,
       colWidths: null,
-      treeId: this.generateId()
+      treeId: cuid()
     };
   },
   computed: {

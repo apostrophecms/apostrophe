@@ -9,6 +9,10 @@
         v-bind="editButton"
         @click="edit"
       />
+      <AposButton
+        v-bind="cloneButton"
+        @click="clone"
+      />
     </AposButtonGroup>
   </div>
 </template>
@@ -18,7 +22,7 @@
 export default {
   props: {
   },
-  emits: [ 'edit', 'remove' ],
+  emits: [ 'edit', 'remove', 'clone' ],
   data() {
     return {
       buttonDefaults: {
@@ -42,11 +46,20 @@ export default {
         ...this.buttonDefaults,
         label: 'Edit'
       };
+    },
+    cloneButton() {
+      return {
+        ...this.buttonDefaults,
+        label: 'Clone'
+      };
     }
   },
   methods: {
     edit() {
       this.$emit('edit');
+    },
+    clone() {
+      this.$emit('clone');
     },
     remove() {
       this.$emit('remove');

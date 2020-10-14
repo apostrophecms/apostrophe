@@ -1,6 +1,8 @@
 <template>
-  <button
-    @click="click($event)"
+  <component
+    :is="href ? 'a' : 'button'"
+    v-on="href ? {} : {click: click}"
+    :href="href.length ? href : false"
     class="apos-button"
     :class="modifierClass" :tabindex="tabindex"
     :disabled="isDisabled"
@@ -20,7 +22,7 @@
         {{ label }}
       </span>
     </div>
-  </button>
+  </component>
 </template>
 
 <script>
@@ -37,6 +39,10 @@ export default {
       default() {
         return [];
       }
+    },
+    href: {
+      type: String,
+      default: ''
     },
     iconSize: {
       type: Number,
@@ -144,6 +150,7 @@ export default {
 
 .apos-button {
   position: relative;
+  display: inline-block;
   overflow: hidden;
   padding: 10px 20px;
   border: 1px solid var(--a-base-5);
@@ -153,6 +160,8 @@ export default {
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   transition: all 0.2s ease;
+  text-decoration: none;
+
   &:hover {
     cursor: pointer;
     background-color: var(--a-base-8);

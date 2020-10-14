@@ -18,10 +18,8 @@
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 
 export default {
-  mixins: [ AposHelpers ],
   props: {
     user: {
       type: Object,

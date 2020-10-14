@@ -48,6 +48,7 @@
         <AposWidgetModify
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
+          @clone="$emit('clone', i);"
         />
       </div>
       <component

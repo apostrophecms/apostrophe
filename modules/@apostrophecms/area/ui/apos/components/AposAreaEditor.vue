@@ -35,6 +35,7 @@
         @down="down"
         @remove="remove"
         @edit="edit"
+        @clone="clone"
         @close="close"
         @update="update"
         @insert="insert"
@@ -47,6 +48,7 @@
 
 import Vue from 'apostrophe/vue';
 import cuid from 'cuid';
+import klona from 'klona';
 
 export default {
   name: 'AposAreaEditor',
@@ -225,6 +227,14 @@ export default {
     },
     edit(i) {
       Vue.set(this.editing, this.next[i]._id, !this.editing[this.next[i]._id]);
+    },
+    clone(index) {
+      const widget = klona(this.next[index]);
+      delete widget._id;
+      this.insert({
+        widget,
+        index
+      });
     },
     async update(widget) {
       if (this.docId) {

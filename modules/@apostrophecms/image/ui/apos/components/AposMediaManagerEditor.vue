@@ -2,7 +2,7 @@
   <div
     class="apos-media-editor"
     :class="{
-      'is-replacing': allowReplace
+      'is-replacing': showReplace
     }"
   >
     <div class="apos-media-editor__inner" v-if="activeMedia">
@@ -32,13 +32,20 @@
         <li class="apos-media-editor__link" aria-hidden="true">
           <AposButton
             type="quiet" label="Replace"
-            @click="allowReplace = true"
+            @click="showReplace = true"
           />
         </li>
         <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
           <AposButton
             type="quiet" label="View"
             @click="viewMedia"
+          />
+        </li>
+        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
+          <AposButton
+            type="quiet" label="Download"
+            :href="activeMedia.attachment._urls.original"
+            download
           />
         </li>
       </ul>
@@ -50,7 +57,7 @@
         :trigger-validation="triggerValidation"
         :doc-id="doc.data._id"
         :following-values="followingValues()"
-        @reset="docEdited = false"
+        @reset="updateDocEdited(false)"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -69,26 +76,21 @@
         />
       </div>
     </AposModalLip>
-    <AposModalConfirm
-      v-if="confirmingDiscard"
-      @safe-close="confirmingDiscard = false"
-      :confirm-content="confirmContent"
-      @confirm="discardChanges"
-    />
   </div>
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
+import cuid from 'cuid';
+
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposHelpers, AposEditorMixin ],
+  mixins: [ AposEditorMixin ],
   props: {
     media: {
       type: Object,
@@ -112,7 +114,7 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'back' ],
+  emits: [ 'saved', 'back', 'edited' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
@@ -121,7 +123,6 @@ export default {
         data: {},
         hasErrors: false
       },
-      docEdited: false,
       lipKey: '',
       triggerValidation: false,
       confirmContent: {
@@ -132,7 +133,7 @@ export default {
       },
       confirmingDiscard: false,
       discardConfirmed: false,
-      allowReplace: false
+      showReplace: false
     };
   },
   computed: {
@@ -178,7 +179,7 @@ export default {
             Object.keys(oldData).length > 0 &&
             Object.keys(newData).length > 0
           ) {
-            this.docEdited = true;
+            this.updateDocEdited(true);
           }
         });
 
@@ -195,29 +196,16 @@ export default {
 
     },
     media(newVal) {
-      // Ask for comfirmation to change the active media if the doc was edited,
-      // we haven't confirmed it's okay to discard it yet, there's existing
-      // active media to replace, and that new media is different from the
-      // active media.
-      if (
-        this.docEdited && !this.discardConfirmed &&
-        this.activeMedia._id && (newVal._id !== this.activeMedia._id)
-      ) {
-        this.confirmingDiscard = true;
-
-        return;
-      }
-
       this.updateActiveDoc(newVal);
     }
   },
   mounted() {
     this.generateLipKey();
-    this.docEdited = false;
+    this.updateDocEdited(false);
   },
   methods: {
     updateActiveDoc(newMedia) {
-      this.allowReplace = false;
+      this.showReplace = false;
       this.activeMedia = klona(newMedia);
       this.doc.data = klona(newMedia);
       this.generateLipKey();
@@ -245,7 +233,7 @@ export default {
             body: this.doc.data
           });
 
-          this.docEdited = false;
+          this.updateDocEdited(false);
           this.$emit('saved');
         } catch (err) {
           console.error('Error saving image', err);
@@ -256,40 +244,20 @@ export default {
             dismiss: true
           });
         } finally {
-          this.allowReplace = false;
+          this.showReplace = false;
           apos.bus.$emit('busy', false);
         }
       });
     },
     generateLipKey() {
-      this.lipKey = this.generateId();
+      this.lipKey = cuid();
     },
     cancel() {
-      // If the doc was edited and we haven't confirmed the discard yet, ask
-      // for confirmation.
-      if (this.docEdited && !this.discardConfirmed) {
-        this.confirmingDiscard = true;
-
-        return;
-      }
-      this.allowReplace = false;
+      this.showReplace = false;
       this.$emit('back');
     },
-    async discardChanges () {
-      this.discardConfirmed = true;
-
-      if (this.media._id !== this.activeMedia._id) {
-        this.updateActiveDoc(this.media);
-      } else {
-        this.updateActiveDoc({});
-        this.cancel();
-      }
-
-      this.discardConfirmed = false;
-
-      await apos.notify(`${this.moduleLabels.label} changes discarded`, {
-        dismiss: true
-      });
+    updateDocEdited (val) {
+      this.$emit('edited', val);
     },
     updateActiveAttachment(attachment) {
       console.info('☄️', attachment);
@@ -336,6 +304,7 @@ export default {
 
   .apos-media-editor__links {
     @include apos-list-reset();
+    display: flex;
     margin-bottom: 30px;
   }
 

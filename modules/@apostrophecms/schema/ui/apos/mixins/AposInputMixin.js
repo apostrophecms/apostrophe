@@ -1,4 +1,6 @@
 export default {
+  // Implements v-model pattern
+  emits: [ 'input' ],
   props: {
     // The value passed in from the parent component through the v-model
     // directive.

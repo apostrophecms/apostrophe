@@ -8,6 +8,7 @@ const jsDiff = require('diff');
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
+    icon: 'format-text-icon',
     label: 'Rich Text',
     contextual: true,
     defaultData: { content: '' },
@@ -124,6 +125,9 @@ module.exports = {
       ...options.minimumDefaultOptions,
       ...options.defaultOptions
     };
+  },
+  init(self, optins) {
+    self.apos.asset.addIcon('format-text-icon', 'FormatText');
   },
   methods(self, options) {
     return {

@@ -53,6 +53,10 @@ export default {
     confirmContent: {
       type: Object,
       required: true
+    },
+    callbackName: {
+      type: String,
+      default: ''
     }
   },
   emits: [ 'safe-close', 'confirm' ],
@@ -75,7 +79,7 @@ export default {
   methods: {
     confirm() {
       this.modal.showModal = false;
-      this.$emit('confirm');
+      this.$emit('confirm', this.callbackName);
     }
   }
 };
@@ -83,9 +87,7 @@ export default {
 
 <style lang="scss" scoped>
 .apos-confirm {
-  // Repeat modal z-index here since this typically lives inside a modal.
-  // TODO: Remove z-index once using Vue 3 Teleport.
-  z-index: $z-index-modal-bg;
+  z-index: $z-index-modal-inner;
   position: fixed;
   top: 0;
   right: 0;
@@ -97,20 +99,17 @@ export default {
 }
 
 /deep/ .apos-modal__inner {
-  &,
-  .apos-modal__inner .apos-confirm & {
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    width: 420px;
-    height: auto;
-    text-align: center;
-  }
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 420px;
+  height: auto;
+  text-align: center;
 }
 
 /deep/ .apos-modal__overlay {
-  .apos-modal__inner .apos-confirm & {
+  .apos-modal + .apos-confirm & {
     display: block;
   }
 }

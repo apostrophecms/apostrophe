@@ -86,7 +86,7 @@
           }"
           @busy="$emit('busy', $event)"
           @update="$emit('update', $event)"
-          @open="$emit('open', $event)"
+          @edit="$emit('edit', $event)"
           v-model="checkedProxy"
         />
       </li>
@@ -158,9 +158,7 @@ export default {
       required: true
     }
   },
-  // TODO The 'open' event isn't actually currently emitted. Fix during UI
-  // integration.
-  emits: [ 'busy', 'update', 'change', 'open' ],
+  emits: [ 'busy', 'update', 'change', 'edit' ],
   computed: {
     myRows() {
       return this.rows;

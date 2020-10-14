@@ -84,8 +84,8 @@ module.exports = {
     self.validateTypeChoices();
     self.finalizeControls();
     self.addPermissions();
-    self.addToAdminBar();
     self.addManagerModal();
+    self.addEditorModal();
     self.enableBrowserData();
     await self.createIndexes();
   },
@@ -1737,13 +1737,17 @@ database.`);
         const controls = _.cloneDeep(self.editControls);
         return controls;
       },
-      addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, 'Pages', 'edit-@apostrophecms/page');
-      },
       addManagerModal() {
         self.apos.modal.add(
-          self.__meta.name,
+          `${self.__meta.name}:manager`,
           self.getComponentName('managerModal', 'AposPagesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('insertModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },

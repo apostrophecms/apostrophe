@@ -45,14 +45,20 @@
       </div>
       <div class="apos-admin-bar__row">
         <AposButton
+          v-if="currentPageId"
           type="default" label="Page Settings"
           icon="cog-icon" class="apos-admin-bar__btn"
-          @click="emitEvent('page-settings')"
+          @click="emitEvent({
+            name: '@apostrophecms/page:editor',
+            props: {
+              docId: currentPageId
+            }
+          })"
         />
         <AposButton
           type="default" label="Page Tree"
           icon="file-tree-icon" class="apos-admin-bar__btn"
-          @click="emitEvent('page-tree')"
+          @click="emitEvent('@apostrophecms/page:manager')"
         />
       </div>
     </nav>
@@ -84,6 +90,12 @@ export default {
       // TODO: get the user avatar via an async API call
       // when this.user._id is truthy
       return require('./userData').userAvatar;
+    },
+    currentPageId() {
+      if (apos.page && apos.page.page && apos.page.page._id) {
+        return apos.page.page._id;
+      }
+      return false;
     }
   },
   mounted() {
