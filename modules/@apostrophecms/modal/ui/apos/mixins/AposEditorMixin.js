@@ -4,33 +4,40 @@
 export default {
   methods: {
     // followedBy is either "other" or "utility". The returned object contains
-    // properties named for each field that follows another field; the values are
-    // those of the followed field. For instance if followedBy is "utility"
-    // then in our default configuration `followingValues` will be `{ slug: 'latest title here' }`
-    followingValues: function(followedBy) {
+    // properties named for each field that follows other fields. For instance if followedBy is "utility"
+    // then in our default configuration `followingValues` will be `{ slug: { title: 'latest title here' } }`
+    followingValues(followedBy) {
+      const self = this;
       let fields;
-      let source;
 
       if (followedBy) {
         fields = (followedBy === 'other')
           ? this.schema.filter(field => !this.utilityFields.includes(field.name)) : this.schema.filter(field => this.utilityFields.includes(field.name));
-
-        source = (followedBy === 'other') ? this.docUtilityFields
-          : this.docOtherFields;
       } else {
         fields = this.schema;
-        source = this.doc;
       }
 
       const followingValues = {};
 
       for (const field of fields) {
         if (field.following) {
-          followingValues[field.name] = source.data[field.following];
+          const following = Array.isArray(field.following) ? field.following : [ field.following ];
+          followingValues[field.name] = {};
+          for (const name of following) {
+            followingValues[field.name][name] = get(name);
+          }
         }
       }
-
       return followingValues;
+
+      function get(name) {
+        if (self.docUtilityFields && (self.docUtilityFields.data[name] !== undefined)) {
+          return self.docUtilityFields.data[name];
+        }
+        if (self.docOtherFields && (self.docOtherFields.data[name] !== undefined)) {
+          return self.docOtherFields.data[name];
+        }
+      }
     }
   }
 };
