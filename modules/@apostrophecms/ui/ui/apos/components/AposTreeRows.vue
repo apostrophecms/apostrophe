@@ -243,7 +243,7 @@ export default {
         return;
       }
 
-      const row = event.target.closest('[data-row-id]');
+      const row = event.target.closest('[data-apos-tree-row]');
       this.$emit('change', [ row.dataset.rowId ]);
 
       // Expand a row when the full parent row is selected.
