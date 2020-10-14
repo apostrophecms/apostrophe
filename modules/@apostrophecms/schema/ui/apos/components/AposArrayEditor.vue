@@ -136,6 +136,9 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    if (this.next.length) {
+      this.select(this.next[0]._id);
+    }
   },
   methods: {
     select(_id) {
