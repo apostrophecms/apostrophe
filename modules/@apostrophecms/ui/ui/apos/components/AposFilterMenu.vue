@@ -20,10 +20,8 @@
 </template>
 
 <script>
-import AposHelpers from '../mixins/AposHelpersMixin';
 
 export default {
-  mixins: [ AposHelpers ],
   props: {
     filters: {
       type: Array,

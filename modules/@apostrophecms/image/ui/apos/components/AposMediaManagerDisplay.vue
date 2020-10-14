@@ -9,7 +9,7 @@
       />
       <div
         class="apos-media-manager-display__cell" v-for="item in items"
-        :key="generateId(item._id)"
+        :key="idFor(item)"
         :class="{'is-selected': checked.includes(item._id)}"
       >
         <div class="apos-media-manager-display__checkbox">
@@ -69,10 +69,9 @@
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
+import cuid from 'cuid';
 
 export default {
-  mixins: [ AposHelpers ],
   // Custom model to handle the v-model connection on the parent.
   model: {
     prop: 'checked',
@@ -163,6 +162,9 @@ export default {
     },
     removeDragClass(event) {
       event.target.classList.remove('is-hovering');
+    },
+    idFor(item) {
+      return `${item._id}-${cuid()}`;
     }
   }
 };

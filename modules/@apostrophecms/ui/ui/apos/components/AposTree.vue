@@ -28,13 +28,12 @@
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import klona from 'klona';
+import cuid from 'cuid';
 
 export default {
   name: 'AposTree',
-  mixins: [ AposHelpers ],
-  model: {
+    model: {
     prop: 'checked',
     event: 'change'
   },
@@ -81,7 +80,7 @@ export default {
       myItems: klona(this.items),
       nested: false,
       colWidths: null,
-      treeId: this.generateId()
+      treeId: cuid()
     };
   },
   computed: {

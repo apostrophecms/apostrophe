@@ -57,10 +57,9 @@
 </template>
 
 <script>
-import AposHelpers from '../mixins/AposHelpersMixin';
+import cuid from 'cuid';
 
 export default {
-  mixins: [ AposHelpers ],
   props: {
     primaryAction: {
       type: Object,
@@ -98,7 +97,7 @@ export default {
       myTags: [ ...this.tags ],
       checked: [],
       searchInputValue: '',
-      keyPrefix: this.generateId('key'), // used to keep checkboxes in sync w state
+      keyPrefix: `key-${cuid()}`, // used to keep checkboxes in sync w state
       origin: 'below',
       open: false,
       button: {
@@ -224,7 +223,7 @@ export default {
         }
       }
       // Force refresh the checkboxes.
-      this.keyPrefix = this.generateId('key');
+      this.keyPrefix = `key-${cuid()}`;
 
       // TODO: This should probably have an "Apply" or "Save" button to confirm
       // before running emitting the updates.

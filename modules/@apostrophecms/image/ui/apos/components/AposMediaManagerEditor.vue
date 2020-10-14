@@ -79,16 +79,17 @@
 </template>
 
 <script>
-import AposHelpers from 'Modules/@apostrophecms/ui/mixins/AposHelpersMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import klona from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
+import cuid from 'cuid';
+
 dayjs.extend(advancedFormat);
 
 export default {
-  mixins: [ AposHelpers, AposEditorMixin ],
+  mixins: [ AposEditorMixin ],
   props: {
     media: {
       type: Object,
@@ -261,7 +262,7 @@ export default {
       });
     },
     generateLipKey() {
-      this.lipKey = this.generateId();
+      this.lipKey = cuid();
     },
     cancel() {
       // If the doc was edited and we haven't confirmed the discard yet, ask
