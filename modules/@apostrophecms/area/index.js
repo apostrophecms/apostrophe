@@ -125,10 +125,14 @@ module.exports = {
         const field = self.apos.schema.getFieldById(area._fieldId);
         const options = field.options;
         _.each(options.widgets, function (options, name) {
-          choices.push({
-            name: name,
-            label: options.addLabel || (self.widgetManagers[name] && self.widgetManagers[name].label) || '*ERROR*'
-          });
+          const manager = self.widgetManagers[name];
+          if (manager) {
+            choices.push({
+              name: name,
+              icon: manager.options.icon,
+              label: options.addLabel || manager.label || `No label for ${name}`
+            });
+          }
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
