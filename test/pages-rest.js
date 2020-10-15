@@ -402,7 +402,45 @@ describe('Pages REST', function() {
     // Is the rank correct?
     assert(page.rank > sibling.rank);
   });
+
+  it('allows positioning a page at its existing location (lastChild) using numerical position', async function() {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor', {
+      body: {
+        _targetId: 'parent',
+        _position: 4
+      },
+      jar
+    });
+
+    // `sibling` was previously the last child of `parent`.
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/neighbor`);
+    // Is the rank correct?
+    assert(page.rank > sibling.rank);
+  });
   it('is able to move root/parent/child/grandchild to the next-to-last position under `parent`', async function() {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
+      body: {
+        _targetId: 'parent',
+        _position: 4
+      },
+      jar
+    });
+
+    // `sibling` was previously the next-to-last child of `parent`.
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor', { jar });
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/grandchild`);
+    // Is the rank correct?
+    assert(page.rank > sibling.rank);
+    assert(page.rank < neighbor.rank);
+  });
+
+  it('allows positioning a page at its existing location (4 of 5) using numerical position', async function() {
     const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
       body: {
         _targetId: 'parent',

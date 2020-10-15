@@ -1007,7 +1007,7 @@ database.`);
 
         position = self.apos.launder.string(position);
 
-        if (isNaN(parseInt(position))) {
+        if (isNaN(parseInt(position)) || parseInt(position) < 0) {
           // Return an already-valid position or a potentially invalid, but
           // non-numeric position to be evaluated in `self.move`.
           return {
@@ -1031,16 +1031,19 @@ database.`);
           position = 'firstChild';
         } else if (childIndex > -1 && position >= (target._children.length - 1)) {
           position = 'lastChild';
+        } else if (childIndex === -1 && position >= (target._children.length)) {
+          position = 'lastChild';
+        } else if (childIndex === position) {
+          // If they're trying to put a page in the position it already has,
+          // allow them to proceed nonetheless.
+          targetId = target._children[position - 1]._id;
+          position = 'after';
+        } else if (childIndex > -1 && childIndex < position) {
+          targetId = target._children[position]._id;
+          position = 'after';
         } else {
-          if (childIndex === -1 && position >= (target._children.length)) {
-            position = 'lastChild';
-          } else if (childIndex > -1 && childIndex < position) {
-            targetId = target._children[position]._id;
-            position = 'after';
-          } else {
-            targetId = target._children[position]._id;
-            position = 'before';
-          }
+          targetId = target._children[position]._id;
+          position = 'before';
         }
 
         return {
