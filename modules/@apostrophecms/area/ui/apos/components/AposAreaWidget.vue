@@ -23,32 +23,25 @@
         <AposAreaMenu
           :max-reached="maxReached"
           @add="$emit('insert', $event);"
-          @menu-open="menuFocus('top')"
-          @menu-close="menuUnfocus('top')"
+          @menu-open="toggleMenuFocus($event, 'top', true)"
+          @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="options.widgets"
         />
       </div>
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--move"
-        :class="ui.move"
+        class="apos-area-widget-controls apos-area-widget-controls--modify"
+        :class="ui.controls"
       >
-        <AposWidgetMove
+        <AposWidgetControls
           :first="i === 0"
           :last="i === next.length - 1"
           @up="$emit('up', i);"
-          @down="$emit('down', i);"
-        />
-      </div>
-      <div
-        class="apos-area-widget-controls apos-area-widget-controls--modify"
-        :class="ui.modify"
-      >
-        <AposWidgetModify
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
           @clone="$emit('clone', i);"
+          @down="$emit('down', i);"
         />
       </div>
       <component
@@ -82,11 +75,11 @@
         <AposAreaMenu
           :max-reached="maxReached"
           @add="$emit('insert', $event)"
-          :context-menu-options="contextMenuOptions"
+          :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
-          @menu-open="menuFocus('bottom')"
-          @menu-close="menuUnfocus('bottom')"
+          @menu-open="toggleMenuFocus($event, 'bottom', true)"
+          @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
       </div>
     </div>
@@ -152,13 +145,10 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     const initialState = {
-      move: {
-        show: false
-      },
-      modify: {
+      controls: {
         show: false
       },
       container: {
@@ -191,6 +181,12 @@ export default {
     };
   },
   computed: {
+    bottomContextMenuOptions() {
+      return {
+        ...this.contextMenuOptions,
+        menuPlacement: 'top'
+      };
+    },
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
@@ -220,8 +216,7 @@ export default {
     // our real one.
     ui() {
       const state = {
-        move: this.state.move.show ? this.show : null,
-        modify: this.state.modify.show ? this.show : null,
+        controls: this.state.controls.show ? this.show : null,
         labels: this.state.labels.show ? this.show : null,
         container: this.state.container.focus ? this.focus
           : (this.state.container.highlight ? this.highlight : null),
@@ -243,6 +238,10 @@ export default {
     widgetFocused (newVal) {
       if (newVal === this.widgetId) {
         this.focused = true;
+      } else {
+        // reset everything
+        this.resetState();
+        this.focused = false;
       }
       const $parents = apos.util.closest(this.$el.parentNode, '[data-area-widget]');
       if (
@@ -259,14 +258,18 @@ export default {
     }
   },
   methods: {
-
     // EVENTS
 
     widgetMouseover(e) {
       if (e) {
         e.stopPropagation();
       }
-      this.state.move.show = true;
+      if (this.focused) {
+        return;
+      }
+      // this.state.move.show = true;
+      this.state.add.top.show = true;
+      this.state.add.bottom.show = true;
       this.state.container.highlight = true;
       this.state.labels.show = true;
       apos.bus.$emit('widget-hover', this.widgetId);
@@ -274,29 +277,33 @@ export default {
 
     widgetMouseleave() {
       // Force move controls while focused
-      if (!this.focused) {
-        this.state.move.show = false;
-      }
+      // if (!this.focused) {
+      //   this.state.move.show = false;
+      // }
       if (!this.highlightable) {
         // Force highlight when a parent has been focused
         this.state.container.highlight = false;
       }
       this.state.labels.show = false;
+      this.state.add.top.show = false;
+      this.state.add.bottom.show = false;
     },
 
     widgetFocus(e) {
+      console.log('focusing');
       e.stopPropagation();
       this.state.container.focus = true;
-      this.state.modify.show = true;
-      this.state.add.top.show = true;
-      this.state.add.bottom.show = true;
-      this.state.labels.show = false;
+      this.state.controls.show = true;
+      this.state.add.top.show = false;
+      this.state.add.bottom.show = false;
+      this.state.labels.show = true;
       document.addEventListener('click', this.widgetUnfocus);
       apos.bus.$emit('widget-focus', this.widgetId);
     },
 
     widgetUnfocus(event) {
       if (!this.$el.contains(event.target)) {
+        this.focused = false;
         this.resetState();
         this.highlightable = false;
         document.removeEventListener('click', this.blurUnfocus);
@@ -304,12 +311,12 @@ export default {
       }
     },
 
-    menuFocus(which) {
-      this.state.add[which].focus = true;
-    },
-
-    menuUnfocus(which) {
-      this.state.add[which].focus = false;
+    toggleMenuFocus(event, name, value) {
+      console.log('hi');
+      if (event) {
+        event.cancelBubble = true;
+      }
+      this.state.add[name].focus = value;
     },
 
     resetState() {
@@ -330,26 +337,56 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  $offset-0: 10px;
-  $offset-1: 5px;
 
   .apos-area-widget-inner {
     position: relative;
     min-height: 50px;
-    outline-offset: $offset-0;
+    // outline-offset: $offset-0;
+    &:before, &:after {
+      content: '';
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      border-top: 1px dashed var(--a-primary);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+    &:before {
+      top: 0;
+    }
+    &:after {
+      bottom: 0;
+    }
+    &.apos-highlight {
+      z-index: $z-index-widget-highlight;
+      &:before, &:after {
+        opacity: 0.4;
+      }
+    }
+    &.apos-focus {
+      z-index: $z-index-default;
+      &:before, &:after {
+        opacity: 1;
+        border-top: 1px solid var(--a-primary);
+      }
+    }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner {
-    outline-offset: $offset-1;
+  .apos-area-widget-inner .apos-area-widget-inner:before,
+  .apos-area-widget-inner .apos-area-widget-inner:after {
+    // outline-offset: $offset-1;
+    border-color: var(--a-secondary);
   }
 
-  .apos-highlight {
-    outline: 1px dotted var(--a-primary);
-  }
+  // .apos-highlight {
+  //   outline: 1px dotted var(--a-primary);
+  // }
 
   .apos-area-widget-inner.apos-focus {
-    z-index: $z-index-default;
-    outline: 1px solid var(--a-primary);
+    
+    // outline: 1px solid var(--a-primary);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner {
@@ -359,6 +396,7 @@ export default {
   }
 
   .apos-area-widget-controls {
+    z-index: $z-index-default;
     position: absolute;
     opacity: 0;
     pointer-events: none;
@@ -366,43 +404,52 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
-    top: calc(-1 * #{$offset-0});
-    transform: translateY(-85%);
+    // top: calc(-1 * #{$offset-0});
+    top: 50%;
+    right: 0;
+    transform: translate3d(50%, -50% , 0);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
-    top: calc(-1 * #{$offset-1});
-  }
-
-  .apos-area-widget-controls--move {
-    top: 50%;
+    right: auto;
     left: 0;
-    padding-right: $offset-0 * 2;
-    transform: translate3d(-100%, -50%, 0);
+    transform: translate3d(0, -50% , 0);
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--move {
-    padding-right: $offset-1 * 2;
-  }
+  // .apos-area-widget-controls--move {
+  //   top: 50%;
+  //   left: 0;
+  //   // padding-right: $offset-0 * 2;
+  //   transform: translate3d(-100%, -50%, 0);
+  // }
+
+  // .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--move {
+  //   // padding-right: $offset-1 * 2;
+  // }
 
   .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
-    transform: translate3d(-50%, calc(-50% - #{$offset-0}), 0);
+    transform: translateY(-50%);
+    // transform: translate3d(-50%, calc(-50% - #{$offset-0}), 0);
+    &.apos-focus {
+      z-index: $z-index-widget-add-focus;
+    }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--add--top {
-    transform: translate3d(-50%, calc(-50% - #{$offset-1}), 0);
+    // transform: translate3d(-50%, calc(-50% - #{$offset-1}), 0);
   }
 
   .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
-    transform: translate3d(-50%, calc(50% + #{$offset-0}), 0);
+    // transform: translate3d(-50%, calc(50% + #{$offset-0}), 0);
+    transform: translateY(50%);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--add--bottom {
-    transform: translate3d(-50%, calc(50% + #{$offset-1}), 0);
+    // transform: translate3d(-50%, calc(50% + #{$offset-1}), 0);
   }
 
   .apos-area-widget-inner /deep/ .apos-context-menu__popup.is-visible {
@@ -418,8 +465,8 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    bottom: calc(100% + #{$offset-0});
-    left: $offset-0;
+    // bottom: calc(100% + #{$offset-0});
+    // left: $offset-0;
     display: flex;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -427,7 +474,7 @@ export default {
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
-    bottom: calc(100% + #{$offset-1});
+    // bottom: calc(100% + #{$offset-1});
   }
 
   .apos-area-widget__type {
@@ -446,8 +493,8 @@ export default {
     pointer-events: auto;
   }
 
-  .apos-focus {
-    z-index: $z-index-default;
-  }
+  // .apos-focus {
+  //   z-index: $z-index-default;
+  // }
 
 </style>
