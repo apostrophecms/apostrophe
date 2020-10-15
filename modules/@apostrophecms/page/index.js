@@ -214,8 +214,13 @@ module.exports = {
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
         self.publicApiCheck(req);
-        const targetId = self.apos.launder.id(req.body._targetId);
-        const position = self.apos.launder.string(req.body._position) || 'lastChild';
+        req.body._position = req.body._position || 'lastChild';
+
+        const {
+          targetId,
+          position
+        } = await self.getTargetIdAndPosition(req, null, req.body._targetId, req.body._position);
+
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
@@ -505,7 +510,7 @@ database.`);
           }
           let parent;
           if ((position === 'before') || (position === 'after')) {
-            parent = await self.findOneForEditing(req, {
+            parent = await self.findForEditing(req, {
               path: self.getParentPath(target)
             }).children({
               depth: 1,

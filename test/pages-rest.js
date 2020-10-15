@@ -217,6 +217,29 @@ describe('Pages REST', function() {
     assert.strictEqual(page.level, 1);
   });
 
+  it('is able to make a subpage of the homepage at index `1` with numerical _position', async function() {
+    const body = {
+      slug: '/second-new',
+      published: true,
+      type: 'test-page',
+      title: 'Second New',
+      _targetId: '_home',
+      _position: '1'
+    };
+
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body,
+      jar
+    });
+
+    assert(page);
+    assert(page.title === 'Second New');
+    // Is the path generally correct?
+    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.level, 1);
+    assert.strictEqual(page.rank, 1);
+  });
+
   let newPageId;
   it('is able to make a subpage of /parent with _position and _targetId', async function() {
 
