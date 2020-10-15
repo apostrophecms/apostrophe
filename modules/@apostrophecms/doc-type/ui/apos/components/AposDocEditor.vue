@@ -42,7 +42,7 @@
                 :doc-id="docId"
                 v-model="docOtherFields"
                 :server-errors="serverErrors"
-                ref="schema"
+                ref="otherSchema"
               />
             </div>
           </AposModalTabsBody>
@@ -62,6 +62,7 @@
             :doc-id="docId"
             v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
+            ref="utilitySchema"
             :server-errors="serverErrors"
           />
         </div>
@@ -127,8 +128,7 @@ export default {
       splittingDoc: false,
       schemaUtilityFields: [],
       schemaOtherFields: [],
-      triggerValidation: false,
-      serverErrors: {}
+      triggerValidation: false
     };
   },
   computed: {
@@ -288,29 +288,9 @@ export default {
             body
           });
         } catch (e) {
-          if (e.body && e.body.data && e.body.data.errors) {
-            const serverErrors = {};
-            let first;
-            e.body.data.errors.map(e => {
-              first = first || e;
-              serverErrors[e.path] = e;
-            });
-            this.serverErrors = serverErrors;
-            if (first) {
-              const field = this.schema.find(field => field.name === first.path);
-              if (field) {
-                if (field.group.name !== 'utility') {
-                  this.switchPane(field.group.name);
-                }
-                // Let pane switching effects settle
-                this.$nextTick(() => {
-                  this.$refs.schema.scrollFieldIntoView(field.name);
-                });
-              }
-            }
-          } else {
-            await self.apos.notify((e.body && e.body.message) || 'An error occurred saving the document.', { type: 'error' });
-          }
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
+          });
           return;
         }
         this.$emit('saved');
@@ -374,6 +354,13 @@ export default {
         }
       });
       this.splittingDoc = false;
+    },
+    getAposSchema(field) {
+      if (field.group.name === 'utility') {
+        return this.$refs.utilitySchema;
+      } else {
+        return this.$refs.otherSchema;
+      }
     }
   }
 };

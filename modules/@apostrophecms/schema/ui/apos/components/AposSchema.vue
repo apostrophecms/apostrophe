@@ -66,7 +66,7 @@ export default {
     serverErrors: {
       type: Object,
       default() {
-        return {};
+        return null;
       }
     }
   },

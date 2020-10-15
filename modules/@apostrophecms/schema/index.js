@@ -109,6 +109,12 @@ module.exports = {
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+        if (object[field.name].length === 5) {
+          throw self.apos.error('invalid', 'This server hates five character strings.');
+        }
+
         if (object[field.name] && field.min && object[field.name].length < field.min) {
           // Would be unpleasant, but shouldn't happen since the browser
           // also implements this. We're just checking for naughty scripts
