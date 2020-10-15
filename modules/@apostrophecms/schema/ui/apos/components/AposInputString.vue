@@ -87,8 +87,8 @@ export default {
       handler(newValue, oldValue) {
         // Follow the value of the other field(s), but only if our
         // previous value matched the previous value of the other field(s)
-        oldValue = Object.values(oldValue).join(' ');
-        newValue = Object.values(newValue).join(' ');
+        oldValue = Object.values(oldValue).join(' ').trim();
+        newValue = Object.values(newValue).join(' ').trim();
         if ((!this.next.length) || (this.next === oldValue)) {
           this.next = newValue;
         }

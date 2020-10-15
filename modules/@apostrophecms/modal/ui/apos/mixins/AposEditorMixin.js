@@ -2,12 +2,19 @@
 // and the modal body.
 
 export default {
+  data() {
+    return {
+      docFields: {
+        data: {},
+        hasErrors: false
+      }
+    };
+  },
   methods: {
     // followedBy is either "other" or "utility". The returned object contains
     // properties named for each field that follows other fields. For instance if followedBy is "utility"
     // then in our default configuration `followingValues` will be `{ slug: { title: 'latest title here' } }`
     followingValues(followedBy) {
-      const self = this;
       let fields;
 
       if (followedBy) {
@@ -24,20 +31,15 @@ export default {
           const following = Array.isArray(field.following) ? field.following : [ field.following ];
           followingValues[field.name] = {};
           for (const name of following) {
-            followingValues[field.name][name] = get(name);
+            followingValues[field.name][name] = this.getFieldValue(name);
           }
         }
       }
       return followingValues;
-
-      function get(name) {
-        if (self.docUtilityFields && (self.docUtilityFields.data[name] !== undefined)) {
-          return self.docUtilityFields.data[name];
-        }
-        if (self.docOtherFields && (self.docOtherFields.data[name] !== undefined)) {
-          return self.docOtherFields.data[name];
-        }
-      }
+    },
+    // Overridden by components that split the fields into several AposSchemas
+    getFieldValue(name) {
+      return this.docFields.data[name];
     }
   }
 };

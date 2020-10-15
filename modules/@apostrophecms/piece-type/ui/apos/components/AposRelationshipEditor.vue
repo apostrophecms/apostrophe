@@ -63,10 +63,6 @@ export default {
   emits: [ 'input', 'safe-close' ],
   data() {
     return {
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       docReady: false,
       modal: {
         active: false,
@@ -79,11 +75,11 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    this.doc.data = this.value || {};
+    this.docFields.data = this.value || {};
   },
   methods: {
     async submit() {
-      this.$emit('input', this.doc.data);
+      this.$emit('input', this.docFields.data);
       this.cancel();
     },
   }

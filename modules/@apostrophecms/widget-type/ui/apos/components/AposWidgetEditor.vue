@@ -13,7 +13,9 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" v-model="docInfo"
+              :schema="schema"
+              v-model="docFields"
+              ref="schema"
             />
           </div>
         </template>
@@ -49,7 +51,7 @@ export default {
       type: String,
       default: ''
     },
-    doc: {
+    value: {
       type: Object,
       required: true
     },
@@ -61,8 +63,8 @@ export default {
   emits: ['safe-close', 'save'],
   data() {
     return {
-      docInfo: {
-        data: { ...this.doc },
+      docFields: {
+        data: { ...this.value },
         hasErrors: false
       },
       modal: {
@@ -90,7 +92,7 @@ export default {
   },
   methods: {
     save() {
-      this.$emit('save', this.docInfo.data);
+      this.$emit('save', this.docFields.data);
     }
   }
 };
