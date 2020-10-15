@@ -151,6 +151,7 @@ export default {
       confirmContent: {
         heading: 'Unsaved Changes',
         description: 'Do you want to discard changes to the active image?',
+        negativeLabel: 'Resume Editing',
         affirmativeLabel: 'Discard Changes'
       }
     };
