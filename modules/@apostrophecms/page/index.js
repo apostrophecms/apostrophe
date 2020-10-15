@@ -1005,10 +1005,9 @@ database.`);
       async getTargetIdAndPosition(req, pageId, targetId, position) {
         targetId = self.apos.launder.id(targetId);
 
-        const validPositions = [ 'firstChild', 'lastChild', 'before', 'after' ];
         position = self.apos.launder.string(position);
 
-        if (validPositions.includes(position) || isNaN(parseInt(position))) {
+        if (isNaN(parseInt(position))) {
           // Return an already-valid position or a potentially invalid, but
           // non-numeric position to be evaluated in `self.move`.
           return {
