@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid"
   >
     <template #body>
@@ -13,7 +13,6 @@
           :value="JSON.stringify(choice.value)" :name="field.name"
           :id="getChoiceId(uid, choice.value)"
           :checked="next === choice.value"
-          :disabled="status.disabled"
           tabindex="1"
           @change="change($event.target.value)"
         >

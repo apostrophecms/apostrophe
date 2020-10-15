@@ -153,29 +153,74 @@ module.exports = {
           self.apos.util.error('Looks like you did not pass req to self.routeSendError, you should not have to call this method yourself,\nit is usually called for you by self.apiRoute, self.htmlRoute or self.renderRoute', (new Error()).stack);
           return;
         }
-        let data;
-        let code;
-        let fn;
-        if (err && err.name && self.apos.http.errors[err.name]) {
-          data = {
-            message: err.message,
-            ...(err.data || {})
-          };
-          code = self.apos.http.errors[err.name];
-          fn = self.apos.util.info;
-        } else {
-          code = 500;
-          fn = self.apos.util.error;
-          data = {};
+        if (Array.isArray(err)) {
+          err = self.apos.error('invalid', {
+            errors: err.map(err => {
+              const response = getResponse(err);
+              return {
+                name: response.name,
+                message: response.message,
+                path: err.path,
+                code: response.code,
+                data: response.data
+              };
+            })
+          });
         }
+        const response = getResponse(err);
         // err.stack includes basic description of error
-        if (Object.keys(data).length > 1) {
-          fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(data, null, '  ')}`);
+        if (Object.keys(response.data).length > 1) {
+          response.fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(response.data, null, '  ')}`);
         } else {
-          fn(req.method + ' ' + req.url + ': ' + '\n\n' + err.stack);
+          response.fn(req.method + ' ' + req.url + ': ' + '\n\n' + err.stack);
         }
-        req.res.status(code);
-        return req.res.send(data);
+        req.res.status(response.code);
+        return req.res.send({
+          name: response.name,
+          data: response.data,
+          message: response.message
+        });
+        function getResponse(err) {
+          let name, data, code, fn, message, path;
+          if (err && err.name && self.apos.http.errors[err.name]) {
+            data = err.data || {};
+            code = self.apos.http.errors[err.name];
+            fn = self.apos.util.info;
+            name = err.name;
+            message = err.message;
+            path = err.path;
+          } else {
+            code = 500;
+            fn = self.apos.util.error;
+            name = 'error';
+            data = {};
+            message = 'An error occurred.';
+            path = err.path;
+          }
+          if ((name === 'invalid') && Array.isArray(data.errors)) {
+            // Sub-errors must get the same cleansing treatment
+            // before sending to the browser
+            data.errors = data.errors.map(error => {
+              const response = getResponse(error);
+              return {
+                // Omitting fn
+                name: response.name,
+                code: response.code,
+                message: response.message,
+                data: response.data,
+                path: response.path
+              };
+            });
+          }
+          return {
+            name,
+            data,
+            code,
+            path,
+            fn,
+            message
+          };
+        }
       },
 
       // Add nunjucks template helpers in the namespace for our module. Typically called

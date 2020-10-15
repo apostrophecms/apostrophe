@@ -102,8 +102,8 @@ export default {
 
       if (typeof this.error === 'string') {
         error = this.error;
-      } else if (this.error.type) {
-        error = this.error.type;
+      } else if (this.error.name) {
+        error = this.error.name;
       }
 
       return `apos-field--error apos-field--error-${error}`;

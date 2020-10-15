@@ -12,12 +12,6 @@ export default {
       type: Object,
       required: true
     },
-    status: {
-      type: Object,
-      default () {
-        return {};
-      }
-    },
     modifiers: {
       default: function () {
         return [];
@@ -38,6 +32,12 @@ export default {
     // uniqueness without regarding the document itself as a conflict
     docId: {
       type: String,
+      required: false
+    },
+    // An error for this field that was provided by the server on
+    // an attempt to save the larger document
+    serverError: {
+      type: Object,
       required: false
     }
   },
@@ -71,6 +71,9 @@ export default {
       } else {
         return 20;
       }
+    },
+    effectiveError () {
+      return this.error || this.serverError;
     }
   },
   watch: {

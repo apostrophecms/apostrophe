@@ -72,6 +72,7 @@
                     :utility-rail="false"
                     :following-values="followingValues()"
                     v-model="currentDoc"
+                    :server-errors="currentDocServerErrors"
                   />
                 </div>
               </div>
@@ -104,6 +105,10 @@ export default {
     field: {
       required: true,
       type: Object
+    },
+    serverError: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'input', 'safe-close' ],
@@ -150,6 +155,17 @@ export default {
       } else {
         return 0;
       }
+    },
+    currentDocServerErrors() {
+      let serverErrors = null;
+      ((this.serverError && this.serverError.data && this.serverError.data.errors) || []).forEach(error => {
+        const [ _id, fieldName ] = error.path.split('.');
+        if (_id === this.currentId) {
+          serverErrors = serverErrors || {};
+          serverErrors[fieldName] = error;
+        }
+      });
+      return serverErrors;
     }
   },
   async mounted() {
