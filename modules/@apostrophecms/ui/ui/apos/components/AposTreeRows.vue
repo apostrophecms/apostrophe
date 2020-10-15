@@ -38,9 +38,8 @@
           :style="getCellStyles(col.name, index)"
           @click="col.action ? $emit(col.action, row._id) : null"
         >
-          <!-- TODO: Make this v-if cleaner -->
           <drag-icon
-            v-if="options.draggable && index === 0 && !row.parked && row._url !== '/'"
+            v-if="options.draggable && index === 0 && !row.parked"
             class="apos-tree__row__handle"
             :size="20"
             :fill-color="null"
@@ -263,7 +262,7 @@ export default {
       return [
         'apos-tree__row',
         {
-          'is-parked': !!row.parked || row._url === '/',
+          'is-parked': !!row.parked,
           'apos-tree__row--parent': row.children && row.children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
           'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id

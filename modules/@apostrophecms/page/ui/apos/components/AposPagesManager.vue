@@ -131,6 +131,7 @@ export default {
           data[column.name] = page[column.name];
           data._id = page._id;
           data.children = page.children;
+          data.parked = page.parked;
         });
         items.push(data);
       });
