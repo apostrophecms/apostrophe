@@ -30,31 +30,13 @@
           <button :disabled="maxed || itemError" @click.prevent="add">
             Add Item
           </button>
-          <ul class="apos-modal-array-items__items">
-            <li
-              class="apos-modal-array-items__item"
-              v-for="( item, index ) in next"
-              :key="item._id"
-            >
-              <button @click.prevent="remove(item._id)">
-                ⓧ
-              </button>
-              <button v-if="index > 0" @click.prevent="up(item._id)">
-                ⬆️
-              </button>
-              <button v-if="index + 1 < next.length" @click.prevent="down(item._id)">
-                ⬇️
-              </button>
-              <button
-                :disabled="itemError"
-                :id="item._id" class="apos-modal-array-items__btn"
-                :aria-selected="item._id === currentId ? true : false"
-                @click="select(item._id)"
-              >
-                {{ label(item) }}
-              </button>
-            </li>
-          </ul>
+          <AposSlatList
+            class="apos-modal-array-items__items"
+            @input="update"
+            @select="select"
+            :selected="currentId"
+            :value="withLabels(next)"
+          />
         </div>
       </AposModalRail>
     </template>
@@ -66,7 +48,7 @@
               <div class="apos-modal-array-item__pane">
                 <div class="apos-array-item__body">
                   <AposSchema
-                    v-if="currentId !== false"
+                    v-if="currentId"
                     :schema="field.schema"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
@@ -111,10 +93,10 @@ export default {
       default: null
     }
   },
-  emits: [ 'input', 'safe-close' ],
+  emits: [ 'input', 'safe-close', 'update' ],
   data() {
     return {
-      currentId: false,
+      currentId: null,
       currentDoc: null,
       modal: {
         active: false,
@@ -170,6 +152,9 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    if (this.next.length) {
+      this.select(this.next[0]._id);
+    }
   },
   methods: {
     select(_id) {
@@ -186,21 +171,18 @@ export default {
         this.triggerValidation = false;
       });
     },
-    remove(_id) {
-      this.next = this.next.filter(item => !(item._id === _id));
-      if (_id === this.currentId) {
-        this.currentId = false;
-        this.currentDoc = null;
+    update(items) {
+      // Take care to use the same items in order to avoid
+      // losing too much state inside draggable, otherwise
+      // drags fail
+      this.next = items.map(item => this.next.find(_item => item._id === _item._id));
+      if (this.currentId) {
+        if (!this.next.find(item => item._id === this.currentId)) {
+          this.currentId = null;
+          this.currentDoc = null;
+        }
       }
       this.updateMinMax();
-    },
-    up(_id) {
-      const index = this.next.findIndex(item => item._id === _id);
-      this.next = this.next.slice(0, index - 1).concat([ this.next[index], this.next[index - 1] ]).concat(this.next.slice(index + 1));
-    },
-    down(_id) {
-      const index = this.next.findIndex(item => item._id === _id);
-      this.next = this.next.slice(0, index).concat([ this.next[index + 1], this.next[index] ]).concat(this.next.slice(index + 2));
     },
     add() {
       this.validateAndThen(true, false, () => {
@@ -294,6 +276,13 @@ export default {
         }
       }
       return candidate;
+    },
+    withLabels(items) {
+      const result = items.map(item => ({
+        ...item,
+        title: this.label(item)
+      }));
+      return result;
     }
   }
 };

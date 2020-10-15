@@ -40,5 +40,5 @@ export const slatList = () => ({
       initialItems: items
     };
   },
-  template: '<AposSlatList :initialItems="initialItems" />'
+  template: '<AposSlatList :value="initialItems" />'
 });
