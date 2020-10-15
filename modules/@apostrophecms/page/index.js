@@ -444,12 +444,10 @@ database.`);
           await self.update(req, page);
 
           if (input._targetId) {
-            console.info('🧧', input._targetId, input._position);
             const {
               targetId,
               position
             } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
-            console.info('💺', targetId, position);
 
             await self.move(req, page._id, targetId, position);
           }
@@ -1029,7 +1027,7 @@ database.`);
         const childIndex = target._children.findIndex(child => {
           return child._id === pageId;
         });
-        console.info('📗 STARTING>>>', childIndex);
+
         if (position === 0 || target._children.length === 0) {
           position = 'firstChild';
         } else if (childIndex > -1 && position >= (target._children.length - 1)) {
@@ -1046,7 +1044,6 @@ database.`);
           }
         }
 
-        console.info('GOT IT');
         return {
           targetId,
           position

@@ -385,12 +385,7 @@ describe('Pages REST', function() {
     assert(page.rank < sibling.rank);
   });
 
-  async function logKids() {
-    const page = await apos.http.get('/api/v1/@apostrophecms/page/parent', { jar });
-    console.info(page._children.map(c => c._id));
-  }
   it('is able to move root/neighbor as the last child of /root/parent using numerical position', async function() {
-    console.info('🚸');
     const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor', {
       body: {
         _targetId: 'parent',
@@ -401,7 +396,6 @@ describe('Pages REST', function() {
 
     // `sibling` was previously the last child of `parent`.
     const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
-    await logKids(); // TEMP
 
     // Is the new path correct?
     assert.strictEqual(page.path, `${homeId}/parent/neighbor`);
@@ -409,7 +403,6 @@ describe('Pages REST', function() {
     assert(page.rank > sibling.rank);
   });
   it('is able to move root/parent/child/grandchild to the next-to-last position under `parent`', async function() {
-    console.info('🚸');
     const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
       body: {
         _targetId: 'parent',
@@ -421,8 +414,6 @@ describe('Pages REST', function() {
     // `sibling` was previously the next-to-last child of `parent`.
     const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
     const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor', { jar });
-
-    await logKids(); // TEMP
 
     // Is the new path correct?
     assert.strictEqual(page.path, `${homeId}/parent/grandchild`);
