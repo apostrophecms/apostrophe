@@ -51,7 +51,7 @@ export default {
       type: String,
       default: ''
     },
-    value: {
+    doc: {
       type: Object,
       required: true
     },
@@ -64,7 +64,7 @@ export default {
   data() {
     return {
       docFields: {
-        data: { ...this.value },
+        data: { ...this.doc },
         hasErrors: false
       },
       modal: {
