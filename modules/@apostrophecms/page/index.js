@@ -289,8 +289,11 @@ module.exports = {
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
-            const targetId = self.apos.launder.id(input._targetId);
-            const position = self.apos.launder.string(input._position);
+            const {
+              targetId,
+              position
+            } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
+
             await self.move(req, page._id, targetId, position);
           }
           return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
@@ -434,9 +437,15 @@ database.`);
           await self.apos.schema.convert(req, schema, input, page);
           await self.emit('afterConvert', req, input, page);
           await self.update(req, page);
+
           if (input._targetId) {
-            const targetId = self.apos.launder.id(input._targetId);
-            const position = self.apos.launder.string(input._position);
+            console.info('🧧', input._targetId, input._position);
+            const {
+              targetId,
+              position
+            } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
+            console.info('💺', targetId, position);
+
             await self.move(req, page._id, targetId, position);
           }
           return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
@@ -798,7 +807,7 @@ database.`);
           let originalSlug;
           const moved = await getMoved();
           const oldParent = moved._ancestors[0];
-          const target = await getTarget();
+          const target = await self.getTarget(req, targetId, position);
           await self.emit('beforeMove', req, moved, target, position, options);
           determineRankAndNewParent();
           if (!moved._edit) {
@@ -850,36 +859,6 @@ database.`);
             }
             return moved;
           }
-          async function getTarget() {
-            const criteria = (targetId === '_home') ? {
-              level: 0
-            } : (targetId === '_trash') ? {
-              level: 1,
-              trash: true
-            } : {
-              _id: targetId
-            };
-            const target = await self.find(req, criteria).permission(false).trash(null).published(null).areas(false).ancestors(_.assign({
-              depth: 1,
-              trash: null,
-              published: null,
-              areas: false,
-              permission: false
-            }, options.builders || {})).children({
-              depth: 1,
-              trash: null,
-              published: null,
-              areas: false,
-              permission: false
-            }).applyBuilders(options.builders || {}).toObject();
-            if (!target) {
-              throw self.apos.error('notfound');
-            }
-            if (target.type === '@apostrophecms/trash' && target.level === 1 && position === 'after') {
-              throw self.apos.error('invalid');
-            }
-            return target;
-          }
           function determineRankAndNewParent() {
             if (position === 'firstChild') {
               parent = target;
@@ -900,9 +879,6 @@ database.`);
               } else {
                 rank = 0;
               }
-            } else if (!isNaN(parseInt(position))) {
-              parent = target;
-              rank = parseInt(position);
               return;
             } else {
               throw new Error('no such position option');
@@ -915,7 +891,9 @@ database.`);
               path: self.matchDescendants(parent),
               level: parent.level + 1,
               rank: { $gte: rank }
-            }, { $inc: { rank: 1 } });
+            }, {
+              $inc: { rank: 1 }
+            });
           }
           async function moveSelf() {
             originalPath = moved.path;
@@ -982,6 +960,92 @@ database.`);
             await self.apos.doc.db.updateMany({ path: matchParentPathPrefix }, action);
           }
         }
+      },
+      // A method to return a target page object based on a passed `targetId`
+      // value. `position` is used to prevent attempts to move after the trash
+      // "page."
+      async getTarget(req, targetId, position) {
+        const criteria = (targetId === '_home') ? {
+          level: 0
+        } : (targetId === '_trash') ? {
+          level: 1,
+          trash: true
+        } : {
+          _id: targetId
+        };
+        const target = await self.find(req, criteria).permission(false).trash(null).published(null).areas(false).ancestors(_.assign({
+          depth: 1,
+          trash: null,
+          published: null,
+          areas: false,
+          permission: false
+        }, options.builders || {})).children({
+          depth: 1,
+          trash: null,
+          published: null,
+          areas: false,
+          permission: false
+        }).applyBuilders(options.builders || {}).toObject();
+        if (!target) {
+          throw self.apos.error('notfound');
+        }
+        if (target.type === '@apostrophecms/trash' && target.level === 1 && position === 'after') {
+          throw self.apos.error('invalid');
+        }
+        return target;
+      },
+      // A method to support numeric positions while moving pages within the
+      // page tree. If a numeric position is submitted, this method assumes
+      // that the `targetId` is meant to be the moved page's parent. It will
+      // return a new `targetId` for a sibling page to use the 'before' position
+      // if applicable.
+      async getTargetIdAndPosition(req, pageId, targetId, position) {
+        targetId = self.apos.launder.id(targetId);
+
+        const validPositions = [ 'firstChild', 'lastChild', 'before', 'after' ];
+        position = self.apos.launder.string(position);
+
+        if (validPositions.includes(position) || isNaN(parseInt(position))) {
+          // Return an already-valid position or a potentially invalid, but
+          // non-numeric position to be evaluated in `self.move`.
+          return {
+            targetId,
+            position
+          };
+        }
+
+        // The position is a number, so we're converting it to one of the
+        // acceptable string values and treating the `target` as the
+        // moved pages's parent.
+        const target = await self.getTarget(req, targetId, position);
+
+        position = parseInt(position);
+        // Get the index of the moving page within the target's children.
+        const childIndex = target._children.findIndex(child => {
+          return child._id === pageId;
+        });
+        console.info('📗 STARTING>>>', childIndex);
+        if (position === 0 || target._children.length === 0) {
+          position = 'firstChild';
+        } else if (childIndex > -1 && position >= (target._children.length - 1)) {
+          position = 'lastChild';
+        } else {
+          if (childIndex === -1 && position >= (target._children.length)) {
+            position = 'lastChild';
+          } else if (childIndex > -1 && childIndex < position) {
+            targetId = target._children[position]._id;
+            position = 'after';
+          } else {
+            targetId = target._children[position]._id;
+            position = 'before';
+          }
+        }
+
+        console.info('GOT IT');
+        return {
+          targetId,
+          position
+        };
       },
       // Based on `req`, `moved`, `data.moved`, `data.oldParent` and `data.parent`, decide whether
       // this move should be permitted. If it should not be, throw an error.

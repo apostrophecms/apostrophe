@@ -177,14 +177,23 @@ describe('Pages REST', function() {
         published: true,
         path: `${homeId}/another-parent`,
         level: 1,
-        rank: 0
+        rank: 1
+      },
+      {
+        _id: 'neighbor',
+        type: 'test-page',
+        slug: '/neighbor',
+        published: true,
+        path: `${homeId}/neighbor`,
+        level: 1,
+        rank: 2
       }
     ];
 
     const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);
-    assert(items.insertedCount === 6);
+    assert(items.insertedCount === 7);
   });
 
   it('is able to make a subpage of the homepage without _position or _targetId', async function() {
@@ -208,6 +217,7 @@ describe('Pages REST', function() {
     assert.strictEqual(page.level, 1);
   });
 
+  let newPageId;
   it('is able to make a subpage of /parent with _position and _targetId', async function() {
 
     const body = {
@@ -224,6 +234,7 @@ describe('Pages REST', function() {
       jar
     });
 
+    newPageId = page._id;
     assert(page);
     assert(page.title === 'New Page');
     // Is the path generally correct?
@@ -317,6 +328,85 @@ describe('Pages REST', function() {
     assert.strictEqual(page.rank, 0);
   });
 
+  it('is able to move root/parent/child before root/parent/cousin using numerical position', async function() {
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/child', {
+      body: {
+        _targetId: 'parent',
+        _position: 0
+      },
+      jar
+    });
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/child`);
+    // Is the rank correct?
+    assert.strictEqual(page.rank, 0);
+  });
+
+  it('is able to move root/parent/new-page between root/parent/cousin and root/parent/sibling using numerical position', async function() {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${newPageId}`, {
+      body: {
+        _targetId: 'parent',
+        _position: 2
+      },
+      jar
+    });
+
+    const cousin = await apos.http.get('/api/v1/@apostrophecms/page/cousin', { jar });
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/${newPageId}`);
+    // Is the rank correct?
+    assert(page.rank > cousin.rank);
+    assert(page.rank < sibling.rank);
+  });
+
+  async function logKids() {
+    const page = await apos.http.get('/api/v1/@apostrophecms/page/parent', { jar });
+    console.info(page._children.map(c => c._id));
+  }
+  it('is able to move root/neighbor as the last child of /root/parent using numerical position', async function() {
+    console.info('🚸');
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/neighbor', {
+      body: {
+        _targetId: 'parent',
+        _position: 4
+      },
+      jar
+    });
+
+    // `sibling` was previously the last child of `parent`.
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    await logKids(); // TEMP
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/neighbor`);
+    // Is the rank correct?
+    assert(page.rank > sibling.rank);
+  });
+  it('is able to move root/parent/child/grandchild to the next-to-last position under `parent`', async function() {
+    console.info('🚸');
+    const page = await apos.http.patch('/api/v1/@apostrophecms/page/grandchild', {
+      body: {
+        _targetId: 'parent',
+        _position: 4
+      },
+      jar
+    });
+
+    // `sibling` was previously the next-to-last child of `parent`.
+    const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling', { jar });
+    const neighbor = await apos.http.get('/api/v1/@apostrophecms/page/neighbor', { jar });
+
+    await logKids(); // TEMP
+
+    // Is the new path correct?
+    assert.strictEqual(page.path, `${homeId}/parent/grandchild`);
+    // Is the rank correct?
+    assert(page.rank > sibling.rank);
+    assert(page.rank < neighbor.rank);
+  });
   it('is able to move root/parent/cousin inside root/parent/sibling', async function() {
     const page = await apos.http.patch('/api/v1/@apostrophecms/page/cousin', {
       body: {
