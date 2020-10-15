@@ -2,7 +2,7 @@
 <template>
   <div ref="root">
     <div v-if="field.min || field.max" class="apos-slat-limit">
-      <span>{{ items.length }} selected</span>
+      <span>{{ next.length }} selected</span>
       <span v-if="field.min">
         min: {{ field.min }}
       </span>
@@ -15,7 +15,7 @@
       class="apos-slat-list"
       tag="ol"
       role="list"
-      :list="items"
+      :list="next"
       :move="onMove"
       v-bind="dragOptions"
       @start="isDragging=true"
@@ -24,19 +24,21 @@
     >
       <transition-group type="transition" name="apos-flip-list">
         <AposSlat
-          v-for="item in items"
+          v-for="item in next"
           class="apos-slat-list__item"
           @remove="remove"
           @engage="engage"
           @disengage="disengage"
+          @select="select"
           @move="move"
           @item-clicked="$emit('item-clicked', item)"
           :key="item._id"
           :item="item"
+          :selected="selected === item._id"
           :class="{'apos-slat-list__item--disabled' : !editable}"
           :engaged="engaged === item._id"
           :parent="listId"
-          :slat-count="items.length"
+          :slat-count="next.length"
           :removable="removable"
         />
       </transition-group>
@@ -57,7 +59,7 @@ export default {
     draggable
   },
   props: {
-    initialItems: {
+    value: {
       type: Array,
       required: true
     },
@@ -69,6 +71,10 @@ export default {
       type: Boolean,
       default: true
     },
+    selected: {
+      type: String,
+      default: null
+    },
     field: {
       type: Object,
       default() {
@@ -76,26 +82,24 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'item-clicked' ],
+  emits: [ 'update', 'item-clicked', 'select', 'input' ],
   data() {
     return {
       isDragging: false,
       delayedDragging: false,
       engaged: null,
-      message: null
+      message: null,
+      next: this.value.slice()
     };
   },
   computed: {
-    items() {
-      return this.initialItems;
-    },
     listId() {
       return `sortableList-${(Math.floor(Math.random() * Math.floor(10000)))}`;
     },
     dragOptions() {
       return {
         animation: 0,
-        disabled: !this.editable || this.items.length <= 1,
+        disabled: !this.editable || this.next.length <= 1,
         ghostClass: 'is-dragging'
       };
     }
@@ -110,8 +114,25 @@ export default {
         this.delayedDragging = false;
       });
     },
-    items() {
-      this.updateMessage();
+    value() {
+      this.next = this.value.slice();
+    },
+    next(newValue, oldValue) {
+      let equal = true;
+      if (newValue.length === this.value.length) {
+        for (let i = 0; (i < newValue.length); i++) {
+          if ((newValue[i]._id !== this.value[i]._id) || (newValue[i].title !== this.value[i].title)) {
+            equal = false;
+            break;
+          }
+        }
+      } else {
+        equal = false;
+      }
+      if (!equal) {
+        this.updateMessage();
+        this.$emit('input', this.next);
+      }
     }
   },
   mounted() {
@@ -124,29 +145,31 @@ export default {
     disengage(id) {
       this.engaged = null;
     },
+    select(id) {
+      this.$emit('select', id);
+    },
     remove(item, focusNext) {
       const itemIndex = this.getIndex(item._id);
-      const items = this.items.filter(i => item._id !== i._id);
-      this.$emit('update', items);
-      if (focusNext && items[itemIndex]) {
-        this.focusElement(items[itemIndex]._id);
-        return;
+      this.next = this.next.filter(i => item._id !== i._id);
+      if (focusNext && this.next[itemIndex]) {
+        this.focusElement(this.next[itemIndex]._id);
+      } else if (focusNext && this.next[itemIndex - 1]) {
+        this.focusElement(this.next[itemIndex - 1]._id);
       }
-      if (focusNext && items[itemIndex - 1]) {
-        this.focusElement(items[itemIndex - 1]._id);
-      }
+      this.$emit('update', this.next);
     },
-    move (id, dir) {
+    move(id, dir) {
       const index = this.getIndex(id);
       const target = dir > 0 ? index + 1 : index - 1;
-      if (this.items[target]) {
-        this.items.splice(target, 0, this.items.splice(index, 1)[0]);
+      if (this.next[target]) {
+        this.next.splice(target, 0, this.next.splice(index, 1)[0]);
         this.focusElement(id);
+        return this.$emit('update', this.next);
       }
     },
     getIndex(id) {
       let i = null;
-      this.items.forEach((item, index) => {
+      this.next.forEach((item, index) => {
         if (item._id === id) {
           i = index;
         }
