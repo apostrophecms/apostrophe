@@ -1,1 +1,1 @@
-<div data-rich-text class="apos-rich-text">{{ data.widget.content | safe }}</div>
+<div data-rich-text{% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %}>{{ data.widget.content | safe }}</div>

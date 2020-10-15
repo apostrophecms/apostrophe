@@ -28,6 +28,8 @@
       <AposFilterMenu
         v-if="filters.length > 0"
         :filters="filters"
+        :choices="filterChoices"
+        :values="filterValues"
         @input="filter"
       />
       <AposInputString
@@ -59,6 +61,18 @@ export default {
       type: Array,
       default () {
         return [];
+      }
+    },
+    filterChoices: {
+      type: Object,
+      default () {
+        return {};
+      }
+    },
+    filterValues: {
+      type: Object,
+      default () {
+        return {};
       }
     },
     totalPages: {
