@@ -27,9 +27,9 @@
         <AposSlatList
           class="apos-input-relationship__items"
           v-if="next.length"
-          @update="updateSelected"
+          @input="updateSelected"
           @item-clicked="openRelationshipEditor"
-          :initial-items="next"
+          :value="next"
         />
         <AposSearchList
           :list="searchList"
