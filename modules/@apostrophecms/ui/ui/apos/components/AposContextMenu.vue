@@ -80,7 +80,8 @@ export default {
     return {
       isOpen: false,
       position: '',
-      container: null
+      container: null,
+      event: null
     };
   },
   computed: {
@@ -109,9 +110,9 @@ export default {
   watch: {
     isOpen(newVal, oldVal) {
       if (newVal) {
-        this.$emit('open');
+        this.$emit('open', this.event);
       } else {
-        this.$emit('close');
+        this.$emit('close', this.event);
       }
     }
   },
@@ -125,8 +126,9 @@ export default {
     hide() {
       this.isOpen = false;
     },
-    buttonClicked() {
+    buttonClicked(e) {
       this.isOpen = !this.isOpen;
+      this.event = e;
     },
     menuItemClicked(name) {
       this.$emit('item-clicked', name);
