@@ -151,7 +151,7 @@ export default {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
-      this.bindKeys();
+      this.bindEventListeners();
     }
   },
   beforeDestroy() {
@@ -159,18 +159,22 @@ export default {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
+      this.unbindEventListeners();
     }
   },
   methods: {
-    // todo move this to a single place
-    bindKeys() {
-      // const self = this;
-      window.addEventListener('keydown', (e) => {
-        if (e.metaKey && e.keyCode === 8) {
-          // meta + backspace
-          apos.bus.$emit('widget-back', this.focusedWidget);
-        }
-      });
+    bindEventListeners() {
+      window.addEventListener('keydown', this.focusParentEvent);
+    },
+    unbindEventListeners() {
+      window.removeEventListener('keydown', this.focusParentEvent);
+    },
+
+    focusParentEvent(event) {
+      if (event.metaKey && event.keyCode === 8) {
+        // meta + backspace
+        apos.bus.$emit('widget-focus-parent', this.focusedWidget);
+      }
     },
     updateWidgetHovered(widgetId) {
       this.hoveredWidget = widgetId;

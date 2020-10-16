@@ -1,20 +1,31 @@
 
 <template>
-  <div class="apos-area-widget-wrapper" :data-area-widget="widgetId">
+  <div class="apos-area-widget-wrapper" :data-area-widget="widgetId" :data-area-label="widgetLabel">
     <div
       class="apos-area-widget-inner"
       :class="ui.container"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
-      @click="getFocus($event)"
+      @click="getFocus($event, widgetId)"
     >
       <div
         class="apos-area-widget-controls apos-area-widget__label"
         :class="ui.labels"
       >
-        <p class="apos-area-widget__type">
-          {{ widgetLabel }}
-        </p>
+        <ol class="apos-area-widget__breadcrumbs">
+          <li
+            v-for="item in breadcrumbs.list"
+            :key="item.id"
+            class="apos-area-widget__breadcrumb"
+          >
+            <span @click="getFocus($event, item.id)">
+              {{ item.label }} >
+            </span>
+          </li>
+          <li class="apos-area-widget__breadcrumb">
+            {{ widgetLabel }}
+          </li>
+        </ol>
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
@@ -179,6 +190,10 @@ export default {
         open: 'apos-open',
         focus: 'apos-focus',
         highlight: 'apos-highlight'
+      },
+      breadcrumbs: {
+        $lastEl: null,
+        list: []
       }
     };
   },
@@ -262,7 +277,10 @@ export default {
   mounted() {
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
-    apos.bus.$on('widget-back', this.focusParent);
+    apos.bus.$on('widget-focus-parent', this.focusParent);
+
+    this.breadcrumbs.$lastEl = this.$el;
+    this.getBreadcrumbs();
   },
   methods: {
 
@@ -280,9 +298,9 @@ export default {
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e) {
+    getFocus(e, id) {
       e.stopPropagation();
-      apos.bus.$emit('widget-focus', this.widgetId);
+      apos.bus.$emit('widget-focus', id);
     },
 
     // Our widget was hovered
@@ -351,6 +369,22 @@ export default {
       return apos.util.closest(this.$el.parentNode, '[data-area-widget]');
     },
 
+    getBreadcrumbs() {
+      if (this.breadcrumbs.$lastEl) {
+        const $parent = apos.util.closest(this.breadcrumbs.$lastEl.parentNode, '[data-area-widget]');
+        if ($parent) {
+          this.breadcrumbs.list.unshift({
+            id: $parent.dataset.areaWidget,
+            label: $parent.dataset.areaLabel
+          });
+          this.breadcrumbs.$lastEl = $parent;
+          this.getBreadcrumbs();
+        } else {
+          this.breadcrumbs.$lastEl = null; // end
+        }
+      }
+    },
+
     widgetComponent(type) {
       return this.moduleOptions.components.widgets[type];
     },
@@ -393,7 +427,7 @@ export default {
       }
     }
     &.apos-focus {
-      z-index: $z-index-default;
+      z-index: $z-index-widget-focus;
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
@@ -410,7 +444,8 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    border: 1px solid var(--a-base-1);
+    outline: 1px solid var(--a-base-1);
+    outline-offset: -1px;
     background-color: var(--a-base-5);
   }
   .apos-area-widget-inner .apos-area-widget-inner {
@@ -437,15 +472,20 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
-    top: 50%;
     right: 0;
-    transform: translate3d(50%, -50%, 0);
+    transform: translate3d(calc(100% + 5px), 0, 0);
+    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+      transform: translate3d(-10px, 30px, 0);
+    }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
     right: auto;
     left: 0;
-    transform: translate3d(calc(-100% - 5px), -50%, 0);
+    transform: translate3d(calc(-100% - 5px), 0, 0);
+    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+      transform: translate3d(5px, 30px, 0);
+    }
   }
 
   .apos-area-widget-controls--add {
@@ -482,11 +522,33 @@ export default {
     font-size: map-get($font-sizes, meta);
   }
 
-  .apos-area-widget__type {
+  .apos-area-widget__label {
+    right: 0;
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
+    right: auto;
+    left: 0;
+  }
+
+  .apos-area-widget__breadcrumbs {
+    @include apos-list-reset();
+    display: flex;
     margin: 0;
-    padding: 2px 4px;
+    padding: 2px;
     background-color: var(--a-primary);
     color: var(--a-white);
+  }
+
+  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
+    background-color: var(--a-secondary);
+  }
+
+  .apos-area-widget__breadcrumb {
+    padding: 2px;
+    &:hover {
+      cursor: pointer;
+    }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__type {
@@ -497,5 +559,7 @@ export default {
     opacity: 1;
     pointer-events: auto;
   }
+
+  // .apos-area-widget__label  { opacity: 1; }
 
 </style>
