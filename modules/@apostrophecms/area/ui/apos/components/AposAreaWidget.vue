@@ -18,9 +18,14 @@
             :key="item.id"
             class="apos-area-widget__breadcrumb"
           >
-            <span @click="getFocus($event, item.id)">
-              {{ item.label }} >
-            </span>
+            <AposButton
+              type="quiet"
+              @click="getFocus($event, item.id)"
+              :label="item.label"
+              icon="chevron-right-icon"
+              :icon-size="9"
+              :modifiers="['icon-right', 'no-motion']"
+            />
           </li>
           <li class="apos-area-widget__breadcrumb">
             {{ widgetLabel }}
@@ -369,6 +374,8 @@ export default {
       return apos.util.closest(this.$el.parentNode, '[data-area-widget]');
     },
 
+    // Hacky way to get the parents tree of a widget
+    // would be easier of areas/widgets were recursively calling each other and able to pass data all the way down
     getBreadcrumbs() {
       if (this.breadcrumbs.$lastEl) {
         const $parent = apos.util.closest(this.breadcrumbs.$lastEl.parentNode, '[data-area-widget]');
@@ -517,9 +524,6 @@ export default {
   .apos-area-widget__label {
     position: absolute;
     display: flex;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: map-get($font-sizes, meta);
   }
 
   .apos-area-widget__label {
@@ -534,20 +538,32 @@ export default {
   .apos-area-widget__breadcrumbs {
     @include apos-list-reset();
     display: flex;
+    align-items: center;
     margin: 0;
     padding: 2px;
     background-color: var(--a-primary);
-    color: var(--a-white);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
     background-color: var(--a-secondary);
   }
 
-  .apos-area-widget__breadcrumb {
+  .apos-area-widget__breadcrumb,
+  .apos-area-widget__breadcrumb /deep/ .apos-button__content {
     padding: 2px;
+    color: var(--a-white);
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: map-get($font-sizes, meta);
     &:hover {
       cursor: pointer;
+    }
+  }
+
+  .apos-area-widget__breadcrumb /deep/ .apos-button {
+    &:hover, &:active, &:focus {
+      text-decoration: none;
     }
   }
 
@@ -559,7 +575,5 @@ export default {
     opacity: 1;
     pointer-events: auto;
   }
-
-  // .apos-area-widget__label  { opacity: 1; }
 
 </style>
