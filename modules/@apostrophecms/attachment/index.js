@@ -615,7 +615,7 @@ module.exports = {
             return false;
           }
           if (options.extension) {
-            if (attachment.extension !== options.extension) {
+            if (self.resolveExtension(attachment.extension) !== options.extension) {
               return false;
             }
           }
@@ -625,7 +625,7 @@ module.exports = {
             }
           }
           if (options.extensions) {
-            if (!_.includes(options.extensions, attachment.extension)) {
+            if (!_.contains(options.extensions, self.resolveExtension(attachment.extension))) {
               return false;
             }
           }
@@ -764,7 +764,7 @@ module.exports = {
       // Returns true if this type of attachment is croppable.
       // Available as a template helper.
       isCroppable(attachment) {
-        return attachment && self.croppable[attachment.extension];
+        return attachment && self.croppable[self.resolveExtension(attachment.extension)];
       },
       // Returns true if this type of attachment is sized,
       // i.e. uploadfs produces versions of it for each configured
@@ -772,11 +772,20 @@ module.exports = {
       //
       // Accepts either an entire attachment object or an extension.
       isSized(attachment) {
-        if (typeof attachment === 'object') {
-          return self.sized[attachment.extension];
+        if ((typeof attachment) === 'object') {
+          return self.sized[self.resolveExtension(attachment.extension)];
         } else {
-          return self.sized[attachment];
+          return self.sized[self.resolveExtension(attachment)];
         }
+      },
+      // Resolve a file extension such as jpeg to its canonical form (jpg).
+      // If no extension map is configured for this extension, return it as-is.
+      resolveExtension(extension) {
+        const group = self.getFileGroup(extension);
+        if (group) {
+          return group.extensionMaps[extension] || extension;
+        }
+        return extension;
       },
       // When the last doc that contains this attachment goes to the
       // trash, its permissions should change to reflect that so
@@ -892,11 +901,7 @@ module.exports = {
             return;
           }
           let sizes;
-          if (!_.includes([
-            'gif',
-            'jpg',
-            'png'
-          ], attachment.extension)) {
+          if (![ 'gif', 'jpg', 'png' ].includes(self.resolveExtension(attachment.extension))) {
             sizes = [ { name: 'original' } ];
           } else {
             sizes = self.imageSizes.concat([ { name: 'original' } ]);

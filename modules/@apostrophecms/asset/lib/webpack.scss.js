@@ -22,6 +22,7 @@ module.exports = (options, apos) => {
             {
               loader: 'sass-loader',
               options: {
+                implementation: require('node-sass'),
                 additionalData: `
 @import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
               `

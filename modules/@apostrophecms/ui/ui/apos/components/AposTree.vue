@@ -33,7 +33,7 @@ import cuid from 'cuid';
 
 export default {
   name: 'AposTree',
-    model: {
+  model: {
     prop: 'checked',
     event: 'change'
   },
@@ -184,11 +184,11 @@ export default {
         // The ID of the item that moved.
         changedId: event.item.dataset.rowId,
         // The ID of the original parent, or 'root' if top-level.
-        startContext: event.from.dataset.listId,
+        startContext: event.from.dataset.listRow,
         // The index of the moved item within its original context.
         startIndex: event.oldIndex,
         // The ID of the new parent, or 'root' if top-level.
-        endContext: event.to.dataset.listId,
+        endContext: event.to.dataset.listRow,
         // The index of the moved item within its new context.
         endIndex: event.newIndex
       });
