@@ -114,7 +114,7 @@ export default {
   },
   computed: {
     moduleOptions() {
-      return window.apos.modules[this.moduleName];
+      return apos.page;
     },
     items() {
       const items = [];
@@ -131,6 +131,7 @@ export default {
           data[column.name] = page[column.name];
           data._id = page._id;
           data.children = page.children;
+          data.parked = page.parked;
         });
         items.push(data);
       });
@@ -178,7 +179,9 @@ export default {
         page.published = page.published ? 'Published' : 'Unpublished';
         self.pagesFlat.push({
           title: page.title,
-          id: page._id
+          id: page._id,
+          path: page.path,
+          parked: page.parked
         });
 
         page.children = page._children;
@@ -196,9 +199,23 @@ export default {
       this.editing = false;
       this.editingDocId = '';
     },
-    update(obj) {
-      // We'll hit a route here to update the docs.
-      console.info('CHANGED ROW:', obj);
+    async update(page) {
+      const body = {
+        _targetId: page.endContext,
+        _position: page.endIndex
+      };
+
+      const route = `${this.moduleOptions.action}/${page.changedId}`;
+      try {
+        await apos.http.patch(route, {
+          busy: true,
+          body
+        });
+      } catch (error) {
+        console.error('Page tree update error:', error);
+      }
+
+      await this.getPages();
     },
     setBusy(val) {
       apos.bus.$emit('busy', val);
