@@ -1,5 +1,5 @@
 <template>
-  <ApostropheModal @close="$emit('close')">
+  <ApostropheModal @close="close">
     <template #header>
       <!-- TODO i18n -->
       <p>{{ (value ? 'Edit ' : 'New ') + label }}</p>
@@ -9,7 +9,7 @@
     </template>
     <template #footer>
       <slot name="footer">
-        <button class="modal-default-button" @click="$emit('close')">
+        <button class="modal-default-button" @click="close">
           Cancel
         </button>
         <button
@@ -46,6 +46,7 @@ export default {
       }
     }
   },
+  emits: [ 'close', 'insert', 'update' ],
   data() {
     return {
       id: this.value && this.value._id,
@@ -67,6 +68,13 @@ export default {
     }
   },
   methods: {
+    async close() {
+      const widget = this.widgetInfo.data;
+      if (!widget.type) {
+        widget.type = this.type;
+      }
+      this.$emit('close', widget);
+    },
     async save() {
       const widget = this.widgetInfo.data;
       if (!widget.type) {
