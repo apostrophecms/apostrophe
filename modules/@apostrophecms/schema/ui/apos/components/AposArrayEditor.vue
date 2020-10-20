@@ -54,6 +54,8 @@
                     :utility-rail="false"
                     :following-values="followingValues()"
                     v-model="currentDoc"
+                    :server-errors="currentDocServerErrors"
+                    ref="schema"
                   />
                 </div>
               </div>
@@ -86,6 +88,10 @@ export default {
     field: {
       required: true,
       type: Object
+    },
+    serverError: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'input', 'safe-close', 'update' ],
@@ -132,6 +138,17 @@ export default {
       } else {
         return 0;
       }
+    },
+    currentDocServerErrors() {
+      let serverErrors = null;
+      ((this.serverError && this.serverError.data && this.serverError.data.errors) || []).forEach(error => {
+        const [ _id, fieldName ] = error.path.split('.');
+        if (_id === this.currentId) {
+          serverErrors = serverErrors || {};
+          serverErrors[fieldName] = error;
+        }
+      });
+      return serverErrors;
     }
   },
   async mounted() {
@@ -139,13 +156,21 @@ export default {
     if (this.next.length) {
       this.select(this.next[0]._id);
     }
+    if (this.serverError && this.serverError.data && this.serverError.data.errors) {
+      const first = this.serverError.data.errors[0];
+      const [ _id, name ] = first.path.split('.');
+      await this.select(_id);
+      const aposSchema = this.$refs.schema;
+      await this.nextTick();
+      aposSchema.scrollFieldIntoView(name);
+    }
   },
   methods: {
-    select(_id) {
+    async select(_id) {
       if (this.currentId === _id) {
         return;
       }
-      this.validateAndThen(true, false, () => {
+      if (await this.validate(true, false)) {
         this.currentDocToCurrentItem();
         this.currentId = _id;
         this.currentDoc = {
@@ -153,7 +178,7 @@ export default {
           data: this.next.find(item => item._id === _id)
         };
         this.triggerValidation = false;
-      });
+      }
     },
     update(items) {
       // Take care to use the same items in order to avoid
@@ -168,14 +193,14 @@ export default {
       }
       this.updateMinMax();
     },
-    add() {
-      this.validateAndThen(true, false, () => {
+    async add() {
+      if (await this.validate(true, false)) {
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);
         this.select(item._id);
         this.updateMinMax();
-      });
+      }
     },
     updateMinMax() {
       if (this.effectiveMin) {
@@ -189,25 +214,12 @@ export default {
         }
       }
     },
-    submit() {
-      this.validateAndThen(true, true, async () => {
-        let error;
-        this.updateMinMax();
-        if (this.minError || this.maxError || (this.currentDoc && this.currentDoc.hasErrors)) {
-          error = true;
-        }
-        if (error) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
+    async submit() {
+      if (await this.validate(true, true)) {
         this.currentDocToCurrentItem();
         this.$emit('update', this.next);
         this.modal.showModal = false;
-      });
+      }
     },
     currentDocToCurrentItem() {
       if (!this.currentId) {
@@ -216,23 +228,34 @@ export default {
       const currentIndex = this.next.findIndex(item => item._id === this.currentId);
       this.next[currentIndex] = this.currentDoc.data;
     },
-    validateAndThen(validateItem, validateLength, then) {
+    async validate(validateItem, validateLength) {
       if (validateItem) {
         this.triggerValidation = true;
       }
-      this.$nextTick(async () => {
-        if (
-          (validateLength && (this.minError || this.maxError)) ||
-          (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
-        ) {
-          await apos.notify('Resolve errors first.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-        } else {
-          then();
-        }
+      await this.nextTick();
+      if (validateLength) {
+        this.updateMinMax();
+      }
+      if (
+        (validateLength && (this.minError || this.maxError)) ||
+        (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
+      ) {
+        await apos.notify('Resolve errors first.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return false;
+      } else {
+        return true;
+      }
+    },
+    // Awaitable nextTick
+    nextTick() {
+      return new Promise((resolve, reject) => {
+        this.$nextTick(() => {
+          return resolve();
+        });
       });
     },
     newInstance() {

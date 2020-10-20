@@ -3,6 +3,7 @@
 package-lock.json
 test/public/modules/*
 test/public/css/master-*
+test/locales
 npm-debug.log
 *.DS_Store
 *.npmignore

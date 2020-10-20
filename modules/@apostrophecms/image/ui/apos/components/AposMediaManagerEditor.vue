@@ -58,6 +58,8 @@
         :doc-id="doc.data._id"
         :following-values="followingValues()"
         @reset="updateDocEdited(false)"
+        ref="schema"
+        :server-errors="serverErrors"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -212,7 +214,6 @@ export default {
     },
     save() {
       this.triggerValidation = true;
-      apos.bus.$emit('busy', true);
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
       this.doc.data.attachment = this.activeMedia.attachment;
@@ -236,16 +237,11 @@ export default {
           this.updateDocEdited(false);
           this.$emit('saved');
         } catch (err) {
-          console.error('Error saving image', err);
-
-          await apos.notify(`Error Saving ${this.moduleLabels.label}`, {
-            type: 'danger',
-            icon: 'alert-circle-icon',
-            dismiss: true
+          await this.handleSaveError(err, {
+            fallback: `Error Saving ${this.moduleLabels.label}`
           });
         } finally {
           this.showReplace = false;
-          apos.bus.$emit('busy', false);
         }
       });
     },

@@ -1774,6 +1774,6 @@ async function testSchemaError(schema, input, path, name) {
     assert(Array.isArray(e));
     assert(e.length === 1);
     assert(e[0].path === path);
-    assert(e[0].error.name === name);
+    assert(e[0].name === name);
   }
 }

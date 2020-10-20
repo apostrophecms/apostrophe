@@ -109,6 +109,7 @@ module.exports = {
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
         if (object[field.name] && field.min && object[field.name].length < field.min) {
           // Would be unpleasant, but shouldn't happen since the browser
           // also implements this. We're just checking for naughty scripts
@@ -627,7 +628,6 @@ module.exports = {
         if (field.limit && data.length > field.limit) {
           data = data.slice(0, field.limit);
         }
-        let i = 0;
         const errors = [];
         for (const datum of data) {
           const result = {};
@@ -635,14 +635,15 @@ module.exports = {
           try {
             await self.convert(req, schema, datum, result);
           } catch (e) {
-            for (const error of e) {
-              errors.push({
-                path: i + '.' + error.path,
-                error: error.error
-              });
+            if (Array.isArray(e)) {
+              for (const error of e) {
+                error.path = `${result._id}.${error.path}`;
+                errors.push(error);
+              }
+            } else {
+              throw e;
             }
           }
-          i++;
           results.push(result);
         }
         object[field.name] = results;
@@ -1441,29 +1442,24 @@ module.exports = {
               await convert(req, field, data, object);
             } catch (e) {
               if (Array.isArray(e)) {
-                // Nested object or array will throw an array if it
-                // encounters an error or errors in its subsidiary fields
-                for (const error of e) {
-                  errors.push({
-                    path: field.name + '.' + error.path,
-                    error: error.error
-                  });
-                }
+                const invalid = self.apos.error('invalid', {
+                  errors: e
+                });
+                invalid.path = field.name;
+                errors.push(invalid);
               } else {
                 if ((typeof e) !== 'string') {
                   self.apos.util.error(e + '\n\n' + e.stack);
                 }
-                errors.push({
-                  path: field.name,
-                  error: e
-                });
+                e.path = field.name;
+                errors.push(e);
               }
             }
           }
         }
 
         errors = errors.filter(error => {
-          if ((error.error.name === 'required' || error.error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
+          if ((error.name === 'required' || error.name === 'mandatory') && !self.isVisible(schema, object, error.path)) {
             // It is not reasonable to enforce required for
             // fields hidden via showFields
             return false;
