@@ -41,6 +41,8 @@
                 :following-values="followingValues('other')"
                 :doc-id="docId"
                 v-model="docOtherFields"
+                :server-errors="serverErrors"
+                ref="otherSchema"
               />
             </div>
           </AposModalTabsBody>
@@ -60,6 +62,8 @@
             :doc-id="docId"
             v-model="docUtilityFields"
             :modifiers="['small', 'inverted']"
+            ref="utilitySchema"
+            :server-errors="serverErrors"
           />
         </div>
       </AposModalRail>
@@ -278,11 +282,17 @@ export default {
             body._position = 'lastChild';
           }
         }
-
-        await requestMethod(route, {
-          busy: true,
-          body
-        });
+        try {
+          await requestMethod(route, {
+            busy: true,
+            body
+          });
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
+          });
+          return;
+        }
         this.$emit('saved');
         this.modal.showModal = false;
       });
@@ -344,6 +354,13 @@ export default {
         }
       });
       this.splittingDoc = false;
+    },
+    getAposSchema(field) {
+      if (field.group.name === 'utility') {
+        return this.$refs.utilitySchema;
+      } else {
+        return this.$refs.otherSchema;
+      }
     }
   }
 };

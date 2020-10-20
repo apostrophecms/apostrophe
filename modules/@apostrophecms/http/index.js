@@ -13,6 +13,8 @@ module.exports = {
     // Everything else comes through as a 500, you don't have to register that one, and
     // shouldn't because clients should never be given sensitive details about 500 errors
     self.errors = {
+      min: 400,
+      max: 400,
       invalid: 400,
       forbidden: 403,
       notfound: 404,
