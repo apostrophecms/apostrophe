@@ -1,34 +1,33 @@
 import {
   withKnobs
 } from '@storybook/addon-knobs';
-import AposWidgetEditor from './AposWidgetEditor.vue';
-
-const data = getData();
 
 export default {
   title: 'Widget Editor ',
   decorators: [ withKnobs ]
 };
 
-const typeLabel = 'Marquee';
-
 export const widgetEditor = () => {
   return {
-    components: {
-      AposWidgetEditor
-    },
     data () {
       return {
-        schema: data.schema,
-        doc: data.doc,
+        type: 'address',
         active: true,
-        typeLabel,
+        value: {
+          _id: 'xyzpdq',
+          street1: '1168 E Passyunk Ave',
+          city: 'Philadelphia',
+          state: 'Pennsylvania',
+          zip: '19144',
+          country: 'United States'
+        },
         breadcrumbs: [
           {
             href: '#',
             label: 'Marquee'
           }
-        ]
+        ],
+        options: {}
       };
     },
     template: `
@@ -37,18 +36,22 @@ export const widgetEditor = () => {
         Activate modal
       </button>
       <AposWidgetEditor
-        v-if="active" :schema="schema" :doc="doc"
-        :breadcrumbs="breadcrumbs" :typeLabel="typeLabel"
+        v-if="active" :type="type" :value="value" :options="options"
+        :breadcrumbs="breadcrumbs" 
         @safe-close="finishExit"
+        @update="update"
       />
     </div>
     `,
     methods: {
-      toggleActive: function () {
+      toggleActive() {
         this.active = !this.active;
       },
-      finishExit: function () {
+      finishExit() {
         this.active = false;
+      },
+      update(value) {
+        console.log('Would update:', value);
       }
     }
   };
