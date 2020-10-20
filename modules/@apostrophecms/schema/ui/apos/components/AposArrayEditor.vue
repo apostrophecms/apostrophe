@@ -53,7 +53,8 @@
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
-                    v-model="currentDoc"
+                    :value="currentDoc"
+                    @input="currentDocUpdate"
                   />
                 </div>
               </div>
@@ -104,7 +105,9 @@ export default {
       next: klona(this.items),
       triggerValidation: false,
       minError: false,
-      maxError: false
+      maxError: false,
+      editing: false,
+      cancelDescription: 'Do you want to discard changes to this list?'
     };
   },
   computed: {
@@ -156,6 +159,7 @@ export default {
       });
     },
     update(items) {
+      this.modified = true;
       // Take care to use the same items in order to avoid
       // losing too much state inside draggable, otherwise
       // drags fail
@@ -168,7 +172,12 @@ export default {
       }
       this.updateMinMax();
     },
+    currentDocUpdate(currentDoc) {
+      this.currentDoc = currentDoc;
+      this.modified = true;
+    },
     add() {
+      this.modified = true;
       this.validateAndThen(true, false, () => {
         const item = this.newInstance();
         item._id = cuid();

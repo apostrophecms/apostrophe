@@ -59,7 +59,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'safe-close', 'confirm' ],
+  emits: [ 'safe-close', 'confirm-response' ],
   data() {
     return {
       modal: {
@@ -79,7 +79,11 @@ export default {
   methods: {
     confirm() {
       this.modal.showModal = false;
-      this.$emit('confirm', this.callbackName);
+      this.$emit('confirm-response', true);
+    },
+    async cancel() {
+      this.modal.showModal = false;
+      this.$emit('confirm-response', false);
     }
   }
 };

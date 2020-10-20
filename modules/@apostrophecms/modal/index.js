@@ -26,7 +26,10 @@ module.exports = {
       getBrowserData(req) {
         return {
           modals: self.modals,
-          components: { the: options.components.the || 'TheAposModals' }
+          components: {
+            the: options.components.the || 'TheAposModals',
+            confirm: options.components.confirm || 'AposModalConfirm'
+          }
         };
       }
     };

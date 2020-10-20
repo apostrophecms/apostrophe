@@ -40,7 +40,8 @@
                 :utility-rail="false"
                 :following-values="followingValues('other')"
                 :doc-id="docId"
-                v-model="docOtherFields"
+                :value="docOtherFields"
+                @input="updateDocOtherFields"
               />
             </div>
           </AposModalTabsBody>
@@ -58,7 +59,8 @@
             :utility-rail="true"
             :following-values="followingValues('utility')"
             :doc-id="docId"
-            v-model="docUtilityFields"
+            :value="docUtilityFields"
+            @input="updateDocUtilityFields"
             :modifiers="['small', 'inverted']"
           />
         </div>
@@ -213,7 +215,8 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-
+    // After computed properties become available
+    this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       let docData;
       try {
@@ -344,6 +347,14 @@ export default {
         }
       });
       this.splittingDoc = false;
+    },
+    updateDocUtilityFields(value) {
+      this.docUtilityFields = value;
+      this.modified = true;
+    },
+    updateDocOtherFields(value) {
+      this.docOtherFields = value;
+      this.modified = true;
     }
   }
 };

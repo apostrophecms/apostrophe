@@ -39,8 +39,8 @@ export default {
     select(item) {
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
-        selectedItems.push(item);
-        this.$emit('select', selectedItems);
+        // Never modify a prop
+        this.$emit('select', [ ...selectedItems, item ]);
       }
     }
   }

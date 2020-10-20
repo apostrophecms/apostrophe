@@ -13,7 +13,9 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" v-model="docInfo"
+              :schema="schema"
+              :value="docInfo"
+              @input="updateDocInfo"
             />
           </div>
         </template>
@@ -91,6 +93,10 @@ export default {
   methods: {
     save() {
       this.$emit('save', this.docInfo.data);
+    },
+    updateDocInfo(value) {
+      this.docInfo = value;
+      this.modified = true;
     }
   }
 };

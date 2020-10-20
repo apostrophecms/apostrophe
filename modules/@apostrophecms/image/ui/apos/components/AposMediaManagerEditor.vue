@@ -131,8 +131,6 @@ export default {
         negativeLabel: 'Resume Editing',
         affirmativeLabel: 'Discard Changes'
       },
-      confirmingDiscard: false,
-      discardConfirmed: false,
       showReplace: false
     };
   },
