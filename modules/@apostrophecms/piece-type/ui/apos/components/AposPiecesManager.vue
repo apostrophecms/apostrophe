@@ -1,19 +1,19 @@
 <template>
   <AposModal
     :modal="modal" :modal-title="modalTitle"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         v-else
         type="default" label="Finished"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -92,11 +92,11 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
+  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
   props: {
     moduleName: {
       type: String,

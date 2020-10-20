@@ -45,10 +45,8 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
 
 export default {
-  mixins: [ AposModalParentMixin ],
   props: {
     confirmContent: {
       type: Object,

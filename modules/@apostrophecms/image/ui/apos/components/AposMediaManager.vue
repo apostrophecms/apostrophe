@@ -9,18 +9,18 @@
     :modal="modal" :modal-title="modalTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template v-else #secondaryControls>
       <AposButton
         type="default" label="Exit"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template v-if="relationshipField" #primaryControls>
@@ -102,12 +102,12 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   props: {
     moduleName: {
       type: String,

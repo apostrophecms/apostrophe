@@ -3,12 +3,12 @@
     class="apos-doc-editor" :modal="modal"
     :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -70,7 +70,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { defaultsDeep } from 'lodash';
@@ -79,7 +79,7 @@ export default {
   name: 'AposDocEditor',
   mixins: [
     AposModalTabsMixin,
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -233,7 +233,7 @@ export default {
         });
         console.error('The requested piece was not found.', this.docId);
         apos.bus.$emit('busy', false);
-        this.cancel();
+        await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
           this.docType = docData.type;
@@ -314,7 +314,7 @@ export default {
 
         console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
-        this.cancel();
+        this.modal.showModal = false;
       }
     },
     async loadNewInstance () {

@@ -1,13 +1,13 @@
 <template>
   <AposModal
     :modal="modal" modal-title="Manage Page Tree"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Finished"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -56,13 +56,13 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {

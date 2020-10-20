@@ -3,12 +3,12 @@
     class="apos-array-editor" :modal="modal"
     :modal-title="`Edit ${field.label}`"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
 import klona from 'klona';
@@ -76,7 +76,7 @@ import { get } from 'lodash';
 export default {
   name: 'AposArrayEditor',
   mixins: [
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {

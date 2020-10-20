@@ -145,11 +145,7 @@ export default {
     },
     saveRelationship() {
       this.$emit('chose', this.checkedDocs);
-      if (this.cancel) {
-        // DocsManagers must also be modal parents with the
-        // AposModalParentMixin methods available.
-        this.cancel();
-      }
+      this.modal.showModal = false;
     }
   }
 };
