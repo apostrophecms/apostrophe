@@ -1,7 +1,7 @@
 <template>
   <AposModal
     class="apos-widget-editor"
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="editLabel"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
     @esc="cancel" @no-modal="$emit('safe-close')"
   >
@@ -36,39 +36,44 @@
 
 <script>
 import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import cuid from 'cuid';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [AposModalParentMixin],
+  mixins: [ AposModalParentMixin ],
   props: {
+    type: {
+      required: true,
+      type: String
+    },
     breadcrumbs: {
       type: Array,
       default: function () {
         return [];
       }
     },
-    typeLabel: {
-      type: String,
-      default: ''
+    options: {
+      required: true,
+      type: Object
     },
-    doc: {
+    value: {
+      required: false,
       type: Object,
-      required: true
-    },
-    schema: {
-      type: Array,
-      required: true
+      default() {
+        return {};
+      }
     }
   },
-  emits: ['safe-close', 'save'],
+  emits: [ 'safe-close', 'insert', 'update' ],
   data() {
     return {
-      docInfo: {
-        data: { ...this.doc },
+      id: this.value && this.value._id,
+      widgetInfo: {
+        data: { ...this.value },
         hasErrors: false
       },
       modal: {
-        title: `Edit ${this.typeLabel}`,
+        title: this.editLabel,
         active: false,
         type: 'slide',
         showModal: false
@@ -76,27 +81,50 @@ export default {
     };
   },
   computed: {
-    moduleTitle () {
-      return `Manage ${this.typeLabel}`;
+    moduleOptions() {
+      return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
-    saveLabel: function () {
-      if (this.typeLabel) {
+    typeLabel() {
+      return this.moduleOptions.label;
+    },
+    editLabel() {
+      if (this.moduleOptions.editLabel) {
+        return this.moduleOptions.editLabel;
+      } else {
+        return `Edit ${this.typeLabel}`;
+      }
+    },
+    saveLabel() {
+      if (this.moduleOptions.saveLabel) {
+        return this.moduleOptions.saveLabel;
+      } else {
         return `Save ${this.typeLabel}`;
       }
-      return 'Save';
+    },
+    schema() {
+      return this.moduleOptions.schema;
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
   },
   methods: {
-    save() {
-      this.$emit('save', this.docInfo.data);
-    },
     updateDocInfo(value) {
       this.docInfo = value;
       this.modified = true;
+    },
+    save() {
+      const widget = this.widgetInfo.data;
+      if (!widget.type) {
+        widget.type = this.type;
+      }
+      if (!this.id) {
+        widget._id = cuid();
+        this.$emit('insert', widget);
+      } else {
+        widget._id = this.id;
+        this.$emit('update', widget);
+      }
     }
   }
 };
