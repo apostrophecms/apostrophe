@@ -1,9 +1,6 @@
 module.exports = {
-  options: {
-    alias: 'error'
-  },
   init(self, options) {
-    // Aliased for brevity, encouraging use of the mechanism
+    // Actual error method is aliased for brevity, encouraging use of the mechanism
     self.apos.error = self.error;
   },
   methods(self, options) {
@@ -32,9 +29,6 @@ module.exports = {
         const error = new Error(message || name);
         error.name = name;
         error.data = data;
-        // Copying what is available on `error.message` onto an enumerable
-        // property.
-        error.description = message || name;
 
         // Establish a difference between errors built here and those elsewhere.
         error.aposError = true;

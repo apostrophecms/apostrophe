@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid" :items="next"
   >
     <template #body>
@@ -10,7 +10,7 @@
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="placeholder"
-            :disabled="status.disabled" :required="field.required"
+            :disabled="disabled" :required="field.required"
             :id="uid"
             @input="input"
             @focusout="handleFocusOut"
@@ -74,7 +74,7 @@ export default {
       searchList: [],
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || []),
-      originalDisabled: this.status.disabled,
+      disabled: false,
       searching: false,
       choosing: false,
       relationshipSchema: null,
@@ -105,19 +105,12 @@ export default {
       if (this.field.required && !value.length) {
         return { message: 'required' };
       }
-
-      // if the original status was disabled, no validation should change that
-      if (this.originalDisabled) {
-        this.status.disabled = true;
-        return;
-      }
-
       if (this.field.max && this.field.max <= value.length) {
         this.searchTerm = 'Limit reached!';
-        this.status.disabled = true;
+        this.disabled = true;
       } else {
         this.searchTerm = '';
-        this.status.disabled = false;
+        this.disabled = false;
       }
 
       if (this.field.min && this.field.min > value.length) {

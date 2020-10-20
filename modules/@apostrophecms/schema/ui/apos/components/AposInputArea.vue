@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :field="field"
-    :error="error" :uid="uid"
+    :error="effectiveError" :uid="uid"
   >
     <template #body>
       <Component

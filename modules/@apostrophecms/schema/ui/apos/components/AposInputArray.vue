@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid"
   >
     <template #body>
@@ -25,6 +25,7 @@
           :items="next"
           @update="update"
           @safe-close="safeClose"
+          :serverError="serverError"
         />
       </div>
     </template>
