@@ -6,7 +6,7 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
+        type="default" label="Cancel"
         @click="cancel"
       />
     </template>

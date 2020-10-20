@@ -80,7 +80,7 @@ export const tabs = () => {
       <div>
         <AposModal :modal="modal">
           <template #secondaryControls>
-            <AposButton label="Exit" />
+            <AposButton label="Cancel" />
           </template>
           <template #primaryControls>
             <AposButton type="primary" label="Save Page" />
