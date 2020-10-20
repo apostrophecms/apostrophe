@@ -1,10 +1,8 @@
 # Changelog
 
-## 2.113.1 (2020-10-21)
-* Add `type` to forbiddenFields for apostrophe-pieces schemas. Thanks to [Jose96GIT](https://github.com/Jose96GIT) for the contribution.
-
-## 2.113.0 (2020-10-07)
+## 2.113.0 (2020-10-21)
 * Remove published columns in apostrophe-users and apostrophe-groups, the modules where this field does not exist.
+* Add `type` to forbiddenFields for apostrophe-pieces schemas. Thanks to [Jose96GIT](https://github.com/Jose96GIT) for the contribution.
 
 ## 2.112.1 (2020-10-07)
 * When configuring columns in the pieces manager, the `listProjection` option was accidentally altered in a way that would impact other subclasses of pieces. This has been fixed.
