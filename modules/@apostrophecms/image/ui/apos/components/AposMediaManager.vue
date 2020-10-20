@@ -252,7 +252,7 @@ export default {
       this.editing = undefined;
     },
     updateEditing(id) {
-      if (this.editsInProgress && !this.discardConfirmed) {
+      if (this.editsInProgress) {
         // If the modal is a manager with an open editor, close the editor and
         // keep the manager open.
         this.editingOnDeck = this.items.find(item => item._id === id);
