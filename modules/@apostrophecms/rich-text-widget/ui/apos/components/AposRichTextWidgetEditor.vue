@@ -114,7 +114,9 @@ export default {
         content: this.value.content
       }),
       widgetInfo: {
-        data: this.value,
+        data: {
+          ...this.value
+        },
         hasErrors: false
       }
     };
