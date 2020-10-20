@@ -88,7 +88,7 @@
             :media="editing" :selected="selected"
             :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
-            @edited="updateEditsInProgress"
+            @edited="edited"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -128,8 +128,6 @@ export default {
         showModal: false
       },
       editing: undefined,
-      editingOnDeck: undefined,
-      editsInProgress: false,
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
@@ -251,24 +249,23 @@ export default {
       this.checked = [];
       this.editing = undefined;
     },
-    updateEditing(id) {
-      if (this.editsInProgress) {
-        // If the modal is a manager with an open editor, close the editor and
-        // keep the manager open.
-        this.editingOnDeck = this.items.find(item => item._id === id);
-      } else if (!id && this.editingOnDeck) {
-        this.editing = this.editingOnDeck;
-        this.editingOnDeck = undefined;
-        this.editsInProgress = false;
-      } else {
-        this.editing = this.items.find(item => item._id === id);
-        this.editsInProgress = false;
+    async updateEditing(id) {
+      if (this.modified) {
+        const discard = await apos.confirm({
+          heading: this.cancelHeading,
+          description: this.cancelDescription,
+          negativeLabel: this.cancelNegativeLabel,
+          affirmativeLabel: this.cancelAffirmativeLabel
+        });
+        if (!discard) {
+          return;
+        }
       }
-      this.modified = !!this.editing;
+      this.editing = this.items.find(item => item._id === id);
+      this.modified = false;
     },
-    updateEditsInProgress(e) {
-      this.editsInProgress = e;
-      this.modified = this.editsInProgress;
+    edited(value) {
+      this.modified = value;
     },
     // select setters
     select(id) {
@@ -281,7 +278,6 @@ export default {
       this.updateEditing(id);
       this.lastSelected = id;
     },
-
     selectAnother(id) {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(checkedId => checkedId !== id);
