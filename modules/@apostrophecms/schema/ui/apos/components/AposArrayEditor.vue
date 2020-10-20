@@ -106,7 +106,6 @@ export default {
       triggerValidation: false,
       minError: false,
       maxError: false,
-      editing: false,
       cancelDescription: 'Do you want to discard changes to this list?'
     };
   },
