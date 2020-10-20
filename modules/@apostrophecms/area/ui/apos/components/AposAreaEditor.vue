@@ -131,7 +131,11 @@ export default {
   },
   computed: {
     isEmptySingleton() {
-      return this.next.length === 0 && Object.keys(this.options.widgets).length === 1;
+      return this.next.length === 0 &&
+        this.options.widgets &&
+        Object.keys(this.options.widgets).length === 1 &&
+        this.options.max &&
+        this.options.max === 1;
     },
     emptyState() {
       // TODO this needs to i18next'd
