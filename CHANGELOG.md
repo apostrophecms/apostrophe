@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.113.1 (2020-10-19)
+## 2.113.1 (2020-10-21)
 * Add `type` to forbiddenFields for apostrophe-pieces schemas. Thanks to [Jose96GIT](https://github.com/Jose96GIT) for the contribution.
 
 ## 2.113.0 (2020-10-07)
