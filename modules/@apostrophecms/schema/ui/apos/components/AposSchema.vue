@@ -13,10 +13,11 @@
         :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
-        :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :trigger-validation="triggerValidation"
+        :server-error="fields[field.name].serverError"
         :doc-id="docId"
+        :ref="field.name"
       />
     </div>
   </div>
@@ -61,6 +62,12 @@ export default {
       default() {
         return null;
       }
+    },
+    serverErrors: {
+      type: Object,
+      default() {
+        return null;
+      }
     }
   },
   emits: [ 'input', 'reset' ],
@@ -84,10 +91,7 @@ export default {
         fields[item.name].value = {
           data: this.value[item.name]
         };
-        // What is this TODO supposed to be? We have error and value already. -Tom
-        // TODO populate a dynamic status
-        fields[item.name].status = {};
-
+        fields[item.name].serverError = this.serverErrors && this.serverErrors[item.name];
         fields[item.name].modifiers = this.modifiers;
       });
       return fields;
@@ -198,6 +202,12 @@ export default {
     },
     displayComponent(fieldName) {
       return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
+    },
+    scrollFieldIntoView(fieldName) {
+      // The refs for a name are an array if that ref was assigned
+      // in a v-for. We know there is only one in this case
+      // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
+      this.$refs[fieldName][0].$el.scrollIntoView();
     }
   }
 };

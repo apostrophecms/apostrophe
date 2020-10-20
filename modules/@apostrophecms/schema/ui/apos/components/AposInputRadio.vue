@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid"
   >
     <template #body>
@@ -10,10 +10,11 @@
       >
         <input
           type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
-          :value="choice.value" :name="field.name"
+          :value="JSON.stringify(choice.value)" :name="field.name"
           :id="getChoiceId(uid, choice.value)"
-          v-model="next" :disabled="status.disabled"
+          :checked="next === choice.value"
           tabindex="1"
+          @change="change($event.target.value)"
         >
         <span class="apos-input-indicator" aria-hidden="true">
           <component
@@ -37,14 +38,7 @@ export default {
   mixins: [ AposInputMixin ],
   methods: {
     getChoiceId(uid, value) {
-      // Convert any boolean values for this purpose.
-      if (typeof value !== 'string') {
-        value = !value ? 'undefined' : value.toString();
-      }
-
-      value = value.toString();
-      // Generate a choice ID, collapsing any whitespace in the value.
-      return uid + value.replace(/\s/g, '');
+      return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
       if (this.field.required && (!value || !value.length)) {
@@ -58,6 +52,10 @@ export default {
       }
 
       return false;
+    },
+    change(value) {
+      // Allows expression of non-string values
+      this.next = this.field.choices.find(choice => choice.value === JSON.parse(value)).value;
     }
   }
 };

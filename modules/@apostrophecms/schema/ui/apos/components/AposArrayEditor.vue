@@ -3,12 +3,12 @@
     class="apos-array-editor" :modal="modal"
     :modal-title="`Edit ${field.label}`"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
-        @click="cancel"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -30,31 +30,13 @@
           <button :disabled="maxed || itemError" @click.prevent="add">
             Add Item
           </button>
-          <ul class="apos-modal-array-items__items">
-            <li
-              class="apos-modal-array-items__item"
-              v-for="( item, index ) in next"
-              :key="item._id"
-            >
-              <button @click.prevent="remove(item._id)">
-                ⓧ
-              </button>
-              <button v-if="index > 0" @click.prevent="up(item._id)">
-                ⬆️
-              </button>
-              <button v-if="index + 1 < next.length" @click.prevent="down(item._id)">
-                ⬇️
-              </button>
-              <button
-                :disabled="itemError"
-                :id="item._id" class="apos-modal-array-items__btn"
-                :aria-selected="item._id === currentId ? true : false"
-                @click="select(item._id)"
-              >
-                {{ label(item) }}
-              </button>
-            </li>
-          </ul>
+          <AposSlatList
+            class="apos-modal-array-items__items"
+            @input="update"
+            @select="select"
+            :selected="currentId"
+            :value="withLabels(next)"
+          />
         </div>
       </AposModalRail>
     </template>
@@ -66,12 +48,15 @@
               <div class="apos-modal-array-item__pane">
                 <div class="apos-array-item__body">
                   <AposSchema
-                    v-if="currentId !== false"
+                    v-if="currentId"
                     :schema="field.schema"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
-                    v-model="currentDoc"
+                    :value="currentDoc"
+                    @input="currentDocUpdate"
+                    :server-errors="currentDocServerErrors"
+                    ref="schema"
                   />
                 </div>
               </div>
@@ -84,7 +69,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
 import klona from 'klona';
@@ -93,7 +78,7 @@ import { get } from 'lodash';
 export default {
   name: 'AposArrayEditor',
   mixins: [
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -104,12 +89,16 @@ export default {
     field: {
       required: true,
       type: Object
+    },
+    serverError: {
+      type: Object,
+      default: null
     }
   },
-  emits: [ 'input', 'safe-close' ],
+  emits: [ 'input', 'safe-close', 'update' ],
   data() {
     return {
-      currentId: false,
+      currentId: null,
       currentDoc: null,
       modal: {
         active: false,
@@ -122,7 +111,8 @@ export default {
       next: klona(this.items),
       triggerValidation: false,
       minError: false,
-      maxError: false
+      maxError: false,
+      cancelDescription: 'Do you want to discard changes to this list?'
     };
   },
   computed: {
@@ -150,17 +140,39 @@ export default {
       } else {
         return 0;
       }
+    },
+    currentDocServerErrors() {
+      let serverErrors = null;
+      ((this.serverError && this.serverError.data && this.serverError.data.errors) || []).forEach(error => {
+        const [ _id, fieldName ] = error.path.split('.');
+        if (_id === this.currentId) {
+          serverErrors = serverErrors || {};
+          serverErrors[fieldName] = error;
+        }
+      });
+      return serverErrors;
     }
   },
   async mounted() {
     this.modal.active = true;
+    if (this.next.length) {
+      this.select(this.next[0]._id);
+    }
+    if (this.serverError && this.serverError.data && this.serverError.data.errors) {
+      const first = this.serverError.data.errors[0];
+      const [ _id, name ] = first.path.split('.');
+      await this.select(_id);
+      const aposSchema = this.$refs.schema;
+      await this.nextTick();
+      aposSchema.scrollFieldIntoView(name);
+    }
   },
   methods: {
-    select(_id) {
+    async select(_id) {
       if (this.currentId === _id) {
         return;
       }
-      this.validateAndThen(true, false, () => {
+      if (await this.validate(true, false)) {
         this.currentDocToCurrentItem();
         this.currentId = _id;
         this.currentDoc = {
@@ -168,32 +180,35 @@ export default {
           data: this.next.find(item => item._id === _id)
         };
         this.triggerValidation = false;
-      });
+      }
     },
-    remove(_id) {
-      this.next = this.next.filter(item => !(item._id === _id));
-      if (_id === this.currentId) {
-        this.currentId = false;
-        this.currentDoc = null;
+    update(items) {
+      this.modified = true;
+      // Take care to use the same items in order to avoid
+      // losing too much state inside draggable, otherwise
+      // drags fail
+      this.next = items.map(item => this.next.find(_item => item._id === _item._id));
+      if (this.currentId) {
+        if (!this.next.find(item => item._id === this.currentId)) {
+          this.currentId = null;
+          this.currentDoc = null;
+        }
       }
       this.updateMinMax();
     },
-    up(_id) {
-      const index = this.next.findIndex(item => item._id === _id);
-      this.next = this.next.slice(0, index - 1).concat([ this.next[index], this.next[index - 1] ]).concat(this.next.slice(index + 1));
+    currentDocUpdate(currentDoc) {
+      this.currentDoc = currentDoc;
+      this.modified = true;
     },
-    down(_id) {
-      const index = this.next.findIndex(item => item._id === _id);
-      this.next = this.next.slice(0, index).concat([ this.next[index + 1], this.next[index] ]).concat(this.next.slice(index + 2));
-    },
-    add() {
-      this.validateAndThen(true, false, () => {
+    async add() {
+      if (await this.validate(true, false)) {
+        this.modified = true;
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);
         this.select(item._id);
         this.updateMinMax();
-      });
+      }
     },
     updateMinMax() {
       if (this.effectiveMin) {
@@ -207,25 +222,12 @@ export default {
         }
       }
     },
-    submit() {
-      this.validateAndThen(true, true, async () => {
-        let error;
-        this.updateMinMax();
-        if (this.minError || this.maxError || (this.currentDoc && this.currentDoc.hasErrors)) {
-          error = true;
-        }
-        if (error) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
+    async submit() {
+      if (await this.validate(true, true)) {
         this.currentDocToCurrentItem();
         this.$emit('update', this.next);
         this.modal.showModal = false;
-      });
+      }
     },
     currentDocToCurrentItem() {
       if (!this.currentId) {
@@ -234,23 +236,34 @@ export default {
       const currentIndex = this.next.findIndex(item => item._id === this.currentId);
       this.next[currentIndex] = this.currentDoc.data;
     },
-    validateAndThen(validateItem, validateLength, then) {
+    async validate(validateItem, validateLength) {
       if (validateItem) {
         this.triggerValidation = true;
       }
-      this.$nextTick(async () => {
-        if (
-          (validateLength && (this.minError || this.maxError)) ||
-          (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
-        ) {
-          await apos.notify('Resolve errors first.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-        } else {
-          then();
-        }
+      await this.nextTick();
+      if (validateLength) {
+        this.updateMinMax();
+      }
+      if (
+        (validateLength && (this.minError || this.maxError)) ||
+        (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
+      ) {
+        await apos.notify('Resolve errors first.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return false;
+      } else {
+        return true;
+      }
+    },
+    // Awaitable nextTick
+    nextTick() {
+      return new Promise((resolve, reject) => {
+        this.$nextTick(() => {
+          return resolve();
+        });
       });
     },
     newInstance() {
@@ -278,6 +291,13 @@ export default {
         }
       }
       return candidate;
+    },
+    withLabels(items) {
+      const result = items.map(item => ({
+        ...item,
+        title: this.label(item)
+      }));
+      return result;
     }
   }
 };

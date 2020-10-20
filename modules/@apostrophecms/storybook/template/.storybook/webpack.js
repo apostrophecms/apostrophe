@@ -27,6 +27,7 @@ module.exports = async (config) => {
         {
           loader: 'sass-loader',
           options: {
+            implementation: require('node-sass'),
             // sass-loader 9 changed this option name yet again
             additionalData:
 `@import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";

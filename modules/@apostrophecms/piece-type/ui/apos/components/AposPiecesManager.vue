@@ -1,19 +1,19 @@
 <template>
   <AposModal
-    :modal="modal" :modal-title="moduleTitle"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    :modal="modal" :modal-title="modalTitle"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         v-else
         type="default" label="Finished"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -26,7 +26,8 @@
       />
       <AposButton
         v-if="relationshipField"
-        :label="`Save`" type="primary"
+        type="primary"
+        :label="`Select ${moduleLabels.pluralLabel || ''}`"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
@@ -41,8 +42,12 @@
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
-            :total-pages="totalPages" :current-page="currentPage"
-            :filters="options.filters" :labels="moduleLabels"
+            :total-pages="totalPages"
+            :current-page="currentPage"
+            :filters="options.filters"
+            :filter-choices="filterChoices"
+            :filter-values="filterValues"
+            :labels="moduleLabels"
             @select-click="selectAll"
             @trash-click="trashClick"
             @search="search"
@@ -87,16 +92,12 @@
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
+  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
   props: {
-    // TEMP From Manager Mixin:
-    // headers
-    // selectAllValue
-    // selectAllChoice
     moduleName: {
       type: String,
       required: true
@@ -105,9 +106,6 @@ export default {
   emits: [ 'trash', 'search', 'safe-close', 'updated' ],
   data() {
     return {
-      // TEMP From Manager Mixin:
-      // icons: {},
-      // checked: [] <== OVERIDDEN BELOW
       modal: {
         active: false,
         type: 'overlay',
@@ -130,7 +128,8 @@ export default {
           type: 'outline'
         },
         menu: []
-      }
+      },
+      filterChoices: {}
     };
   },
   computed: {
@@ -143,8 +142,7 @@ export default {
         plural: this.options.pluralLabel
       };
     },
-    // TODO: possibly move moduleTitle into manager mixin.
-    moduleTitle () {
+    modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.plural}`;
     },
@@ -176,7 +174,11 @@ export default {
   },
   created() {
     this.options.filters.forEach(filter => {
-      this.filterValues[filter.name] = filter.def || filter.choices[0].value;
+      this.filterValues[filter.name] = filter.def;
+      if (!filter.choices) {
+        this.queryExtras.choices = this.queryExtras.choices || [];
+        this.queryExtras.choices.push(filter.name);
+      }
     });
   },
   async mounted() {
@@ -240,6 +242,7 @@ export default {
       this.currentPage = getResponse.currentPage;
       this.totalPages = getResponse.pages;
       this.pieces = getResponse.results;
+      this.filterChoices = getResponse.choices;
       this.holdQueries = false;
     },
     updatePage(num) {

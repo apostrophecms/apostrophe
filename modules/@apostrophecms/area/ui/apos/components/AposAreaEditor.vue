@@ -151,6 +151,7 @@ export default {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
+      this.bindEventListeners();
     }
   },
   beforeDestroy() {
@@ -158,9 +159,23 @@ export default {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
+      this.unbindEventListeners();
     }
   },
   methods: {
+    bindEventListeners() {
+      window.addEventListener('keydown', this.focusParentEvent);
+    },
+    unbindEventListeners() {
+      window.removeEventListener('keydown', this.focusParentEvent);
+    },
+
+    focusParentEvent(event) {
+      if (event.metaKey && event.keyCode === 8) {
+        // meta + backspace
+        apos.bus.$emit('widget-focus-parent', this.focusedWidget);
+      }
+    },
     updateWidgetHovered(widgetId) {
       this.hoveredWidget = widgetId;
     },

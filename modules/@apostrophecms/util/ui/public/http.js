@@ -262,7 +262,12 @@
         } else {
           url += '?';
         }
-        url += encodeURIComponent(key) + '=' + encodeURIComponent(val);
+        if (val == null) {
+          // Java-style distinction between null and empty string
+          url += encodeURIComponent(key);
+        } else {
+          url += encodeURIComponent(key) + '=' + encodeURIComponent(val);
+        }
       }
     }
     return url;

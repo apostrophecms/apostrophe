@@ -117,6 +117,29 @@ describe('Attachment', function() {
       assert(fs.existsSync(t));
     });
 
+    it('should handle a file with a jpeg extension properly and set extension to jpg', async function() {
+      let result = await insert('crop_image.jpeg');
+      const crop = {
+        top: 10,
+        left: 10,
+        width: 80,
+        height: 80
+      };
+      await apos.attachment.crop(
+        apos.task.getReq(),
+        result._id,
+        crop
+      );
+      result = await apos.db.collection(collectionName).findOne({
+        _id: result._id
+      });
+      assert(result);
+      assert(result.crops.length);
+      const t = uploadTarget + result._id + '-' + result.name + '.' + result.crops[0].left + '.' + result.crops[0].top + '.' + result.crops[0].width + '.' + result.crops[0].height + '.jpg';
+      assert(fs.existsSync(t));
+      assert(result.extension === 'jpg');
+    });
+
     it('should generate the "full" URL when no size specified for image', function() {
       const url = apos.attachment.url({
         group: 'images',

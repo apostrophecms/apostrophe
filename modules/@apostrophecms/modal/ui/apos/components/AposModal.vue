@@ -146,17 +146,24 @@ export default {
   },
   methods: {
     esc (e) {
+      if (apos.modal.stack[apos.modal.stack.length - 1] !== this) {
+        return;
+      }
       if (e.keyCode === 27) {
+        e.stopPropagation();
         this.$emit('esc');
       }
     },
     finishEnter () {
       this.$emit('show-modal');
       this.bindEventListeners();
+      apos.modal.stack = apos.modal.stack || [];
+      apos.modal.stack.push(this);
     },
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
+      apos.modal.stack.pop();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);

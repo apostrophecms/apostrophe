@@ -1,3 +1,3 @@
-<div data-raw-html>
+<div data-raw-html{% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %}>
   {% component '@apostrophecms/html-widget:render' with data.widget %}
 </div>

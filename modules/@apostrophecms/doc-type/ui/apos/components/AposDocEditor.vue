@@ -3,12 +3,12 @@
     class="apos-doc-editor" :modal="modal"
     :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
-        @click="cancel"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -40,7 +40,10 @@
                 :utility-rail="false"
                 :following-values="followingValues('other')"
                 :doc-id="docId"
-                v-model="docOtherFields"
+                :value="docOtherFields"
+                @input="updateDocOtherFields"
+                :server-errors="serverErrors"
+                ref="otherSchema"
               />
             </div>
           </AposModalTabsBody>
@@ -58,8 +61,11 @@
             :utility-rail="true"
             :following-values="followingValues('utility')"
             :doc-id="docId"
-            v-model="docUtilityFields"
+            :value="docUtilityFields"
+            @input="updateDocUtilityFields"
             :modifiers="['small', 'inverted']"
+            ref="utilitySchema"
+            :server-errors="serverErrors"
           />
         </div>
       </AposModalRail>
@@ -68,7 +74,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { defaultsDeep } from 'lodash';
@@ -77,7 +83,7 @@ export default {
   name: 'AposDocEditor',
   mixins: [
     AposModalTabsMixin,
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -209,7 +215,8 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-
+    // After computed properties become available
+    this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       let docData;
       try {
@@ -226,7 +233,7 @@ export default {
         });
         console.error('The requested piece was not found.', this.docId);
         apos.bus.$emit('busy', false);
-        this.cancel();
+        await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
           this.docType = docData.type;
@@ -274,11 +281,17 @@ export default {
             body._position = 'lastChild';
           }
         }
-
-        await requestMethod(route, {
-          busy: true,
-          body
-        });
+        try {
+          await requestMethod(route, {
+            busy: true,
+            body
+          });
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
+          });
+          return;
+        }
         this.$emit('saved');
         this.modal.showModal = false;
       });
@@ -307,7 +320,7 @@ export default {
 
         console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
-        this.cancel();
+        this.modal.showModal = false;
       }
     },
     async loadNewInstance () {
@@ -348,6 +361,21 @@ export default {
       }
       if (this.docOtherFields.data[name] !== undefined) {
         return this.docOtherFields.data[name];
+      }
+    },
+    updateDocUtilityFields(value) {
+      this.docUtilityFields = value;
+      this.modified = true;
+    },
+    updateDocOtherFields(value) {
+      this.docOtherFields = value;
+      this.modified = true;
+    },
+    getAposSchema(field) {
+      if (field.group.name === 'utility') {
+        return this.$refs.utilitySchema;
+      } else {
+        return this.$refs.otherSchema;
       }
     }
   }

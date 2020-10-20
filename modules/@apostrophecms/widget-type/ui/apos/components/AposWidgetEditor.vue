@@ -1,9 +1,9 @@
 <template>
   <AposModal
     class="apos-widget-editor"
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="editLabel"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs :items="breadcrumbs" />
@@ -14,7 +14,8 @@
           <div class="apos-widget-editor__body">
             <AposSchema
               :schema="schema"
-              v-model="docFields"
+              :value="docFields"
+              @input="updateDocFields"
               ref="schema"
             />
           </div>
@@ -24,51 +25,57 @@
     <template #footer>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         type="primary" @click="save"
         :label="saveLabel"
+        :disabled="docFields.hasErrors"
       />
     </template>
   </AposModal>
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import cuid from 'cuid';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [AposModalParentMixin],
+  mixins: [ AposModalModifiedMixin ],
   props: {
+    type: {
+      required: true,
+      type: String
+    },
     breadcrumbs: {
       type: Array,
       default: function () {
         return [];
       }
     },
-    typeLabel: {
-      type: String,
-      default: ''
+    options: {
+      required: true,
+      type: Object
     },
-    doc: {
+    value: {
+      required: false,
       type: Object,
-      required: true
-    },
-    schema: {
-      type: Array,
-      required: true
+      default() {
+        return {};
+      }
     }
   },
-  emits: ['safe-close', 'save'],
+  emits: [ 'safe-close', 'insert', 'update' ],
   data() {
     return {
+      id: this.value && this.value._id,
       docFields: {
-        data: { ...this.doc },
+        data: { ...this.value },
         hasErrors: false
       },
       modal: {
-        title: `Edit ${this.typeLabel}`,
+        title: this.editLabel,
         active: false,
         type: 'slide',
         showModal: false
@@ -76,23 +83,50 @@ export default {
     };
   },
   computed: {
-    moduleTitle () {
-      return `Manage ${this.typeLabel}`;
+    moduleOptions() {
+      return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
-    saveLabel: function () {
-      if (this.typeLabel) {
+    typeLabel() {
+      return this.moduleOptions.label;
+    },
+    editLabel() {
+      if (this.moduleOptions.editLabel) {
+        return this.moduleOptions.editLabel;
+      } else {
+        return `Edit ${this.typeLabel}`;
+      }
+    },
+    saveLabel() {
+      if (this.moduleOptions.saveLabel) {
+        return this.moduleOptions.saveLabel;
+      } else {
         return `Save ${this.typeLabel}`;
       }
-      return 'Save';
+    },
+    schema() {
+      return this.moduleOptions.schema;
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
   },
   methods: {
+    updateDocFields(value) {
+      this.docFields = value;
+      this.modified = true;
+    },
     save() {
-      this.$emit('save', this.docFields.data);
+      const widget = this.docFields.data;
+      if (!widget.type) {
+        widget.type = this.type;
+      }
+      if (!this.id) {
+        widget._id = cuid();
+        this.$emit('insert', widget);
+      } else {
+        widget._id = this.id;
+        this.$emit('update', widget);
+      }
     }
   }
 };

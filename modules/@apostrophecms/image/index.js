@@ -19,11 +19,6 @@ module.exports = {
     sort: { createdAt: -1 },
     insertViaUpload: true,
     searchable: false,
-    browser: {
-      components: {
-        managerModal: 'AposMediaManager'
-      }
-    },
     slugPrefix: 'image-'
   },
   fields: {
@@ -221,6 +216,15 @@ module.exports = {
           self.getComponentName('managerModal', 'AposMediaManager'),
           { moduleName: self.__meta.name }
         );
+      }
+    };
+  },
+  extendMethods(self, options) {
+    return {
+      getBrowserData(_super, req) {
+        const data = _super(req);
+        data.components.managerModal = 'AposMediaManager';
+        return data;
       }
     };
   },

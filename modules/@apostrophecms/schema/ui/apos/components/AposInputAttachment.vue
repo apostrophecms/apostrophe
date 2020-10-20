@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid"
   >
     <template #body>
@@ -38,8 +38,8 @@
         </label>
         <div v-if="next && next._id" class="apos-attachment-files">
           <AposSlatList
-            :initial-items="[ next ]"
-            @update="updated"
+            :value="next ? [ next ] : []"
+            @input="updated"
           />
         </div>
       </div>
@@ -98,7 +98,7 @@ export default {
   methods: {
     watchNext () {
       this.validateAndEmit();
-      this.disabled = typeof this.next === 'object' && this.next._id;
+      this.disabled = !!this.next;
     },
     updated (items) {
       // NOTE: This is limited to a single item.

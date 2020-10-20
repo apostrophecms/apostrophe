@@ -116,7 +116,7 @@ describe('Docs', function() {
     } catch (error) {
       assert(error);
       assert(error.status === 409);
-      assert(error.body.me);
+      assert(error.body.data.me);
     }
   });
 

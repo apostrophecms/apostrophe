@@ -6,26 +6,27 @@
 
 <template>
   <AposModal
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="modalTitle"
     class="apos-media-manager"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template v-else #secondaryControls>
       <AposButton
         type="default" label="Exit"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template v-if="relationshipField" #primaryControls>
       <AposButton
-        :label="`Save`" type="primary"
+        type="primary"
+        :label="`Select ${moduleLabels.pluralLabel || ''}`"
         :disabled="relationshipErrors === 'min'"
         @click="saveRelationship"
       />
@@ -87,7 +88,7 @@
             :media="editing" :selected="selected"
             :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
-            @edited="editsInProgress = $event"
+            @edited="edited"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -96,26 +97,17 @@
           />
         </div>
       </AposModalRail>
-      <portal to="modal-target">
-        <AposModalConfirm
-          v-if="confirmingDiscard"
-          :confirm-content="confirmContent"
-          :callback-name="confirmCallback"
-          @confirm="discardChanges"
-          @safe-close="confirmingDiscard = false"
-        />
-      </portal>
     </template>
   </AposModal>
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
 
 export default {
-  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   props: {
     moduleName: {
       type: String,
@@ -136,8 +128,6 @@ export default {
         showModal: false
       },
       editing: undefined,
-      editingOnDeck: undefined,
-      editsInProgress: false,
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
@@ -145,17 +135,11 @@ export default {
         message: 'Uploaded media will appear here',
         emoji: '🖼'
       },
-      confirmingDiscard: false,
-      discardConfirmed: false,
-      confirmContent: {
-        heading: 'Unsaved Changes',
-        description: 'Do you want to discard changes to the active image?',
-        affirmativeLabel: 'Discard Changes'
-      }
+      cancelDescription: 'Do you want to discard changes to the active image?'
     };
   },
   computed: {
-    moduleTitle () {
+    modalTitle () {
       const verb = this.relationshipField ? 'Choose' : 'Manage';
       return `${verb} ${this.moduleLabels.pluralLabel}`;
     },
@@ -187,10 +171,6 @@ export default {
   },
   watch: {
     checked (newVal) {
-      if (this.editing && newVal.includes(this.editing._id)) {
-        return;
-      }
-
       if (newVal.length > 1 || newVal.length === 0) {
         this.editing = undefined;
       }
@@ -269,23 +249,24 @@ export default {
       this.checked = [];
       this.editing = undefined;
     },
-    updateEditing(id) {
-      if (this.editsInProgress && !this.discardConfirmed) {
-        // If the modal is a manager with an open editor, close the editor and
-        // keep the manager open.
-        this.confirmingDiscard = true;
-        this.confirmCallback = 'updateEditing';
-        this.editingOnDeck = this.items.find(item => item._id === id);
-      } else if (!id && this.editingOnDeck) {
-        this.editing = this.editingOnDeck;
-        this.editingOnDeck = undefined;
-        this.editsInProgress = false;
-      } else {
-        this.editing = this.items.find(item => item._id === id);
-        this.editsInProgress = false;
+    async updateEditing(id) {
+      if (this.modified) {
+        const discard = await apos.confirm({
+          heading: this.cancelHeading,
+          description: this.cancelDescription,
+          negativeLabel: this.cancelNegativeLabel,
+          affirmativeLabel: this.cancelAffirmativeLabel
+        });
+        if (!discard) {
+          return;
+        }
       }
+      this.editing = this.items.find(item => item._id === id);
+      this.modified = false;
     },
-
+    edited(value) {
+      this.modified = value;
+    },
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
@@ -297,7 +278,6 @@ export default {
       this.updateEditing(id);
       this.lastSelected = id;
     },
-
     selectAnother(id) {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(checkedId => checkedId !== id);
@@ -356,35 +336,6 @@ export default {
     search(query) {
       // TODO stub
       this.$emit('search', query);
-    },
-    // Override the `cancel` method in `AposModalParentMixin`.
-    cancel() {
-      if (this.editsInProgress && !this.discardConfirmed) {
-        // If the modal is a manager with an open editor, close the editor and
-        // keep the manager open.
-        this.confirmingDiscard = true;
-        this.confirmCallback = 'cancel';
-        return;
-      }
-      this.modal.showModal = false;
-    },
-    cancelEditor() {
-      this.editing = undefined;
-      this.editsInProgress = false;
-    },
-    async discardChanges (callbackName) {
-      this.discardConfirmed = true;
-
-      if (callbackName) {
-        this[callbackName]();
-      }
-
-      this.discardConfirmed = false;
-      this.confirmingDiscard = false;
-
-      await apos.notify(`${this.moduleLabels.label} changes discarded`, {
-        dismiss: true
-      });
     }
   }
 };

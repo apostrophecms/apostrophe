@@ -170,11 +170,11 @@ export default {
     }
   },
   methods: {
-    menuClose() {
-      this.$emit('menu-close');
+    menuClose(e) {
+      this.$emit('menu-close', e);
     },
-    menuOpen() {
-      this.$emit('menu-open');
+    menuOpen(e) {
+      this.$emit('menu-open', e);
     },
     add(name) {
       if (this.widgetIsContextual(name)) {

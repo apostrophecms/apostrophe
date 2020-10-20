@@ -58,7 +58,7 @@ module.exports = {
             label: 'Draft'
           },
           {
-            value: 'any',
+            value: null,
             label: 'Both'
           }
         ],
@@ -79,7 +79,8 @@ module.exports = {
           }
         ],
         allowedInChooser: false,
-        def: false
+        def: false,
+        required: true
       }
     }
   },
@@ -188,20 +189,7 @@ module.exports = {
       if (req.body._newInstance) {
         return self.newInstance();
       }
-
-      try {
-        return await self.convertInsertAndRefresh(req, req.body);
-      } catch (e) {
-        if (Array.isArray(e)) {
-          // TODO: Turn errors that should be 500 errors into uninformative,
-          // opaque errors. (the ones that don't have `aposError === true`).
-          throw self.apos.error('invalid', {
-            errors: e
-          });
-        } else {
-          throw e;
-        }
-      }
+      return await self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
       self.publicApiCheck(req);
@@ -365,20 +353,27 @@ module.exports = {
       composeFilters() {
         self.filters = Object.keys(self.filters).map(key => ({
           name: key,
-          ...self.filters[key]
+          ...self.filters[key],
+          inputType: self.filters[key].inputType || 'select'
         }));
         // Add a null choice if not already added or set to `required`
         self.filters.forEach(filter => {
-          if (
-            !filter.required &&
-            filter.choices &&
-            !filter.choices.find(choice => choice.value === 'any')
-          ) {
-            filter.def = 'any';
-            filter.choices.push({
-              value: 'any',
-              label: 'None'
-            });
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find(choice => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'None'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'Choose One';
           }
         });
       },

@@ -1,13 +1,13 @@
 <template>
   <AposModal
     :modal="modal" :modal-title="modalTitle"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
-        @click="cancel"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -31,13 +31,13 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocVersions',
-  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   props: {
     doc: {
       type: Object,

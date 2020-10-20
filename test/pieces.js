@@ -150,6 +150,21 @@ describe('Pieces', function() {
               }
             }
           }
+        },
+        constrained: {
+          options: {
+            alias: 'constrained'
+          },
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              description: {
+                type: 'string',
+                min: 5,
+                max: 10
+              }
+            }
+          }
         }
       }
     });
@@ -734,6 +749,41 @@ describe('Pieces', function() {
     assert(response._articles[0]._id === article._id);
   });
 
+  it('can insert a constrained piece that validates', async () => {
+    const constrained = await apos.http.post('/api/v1/constrained', {
+      body: {
+        title: 'First Constrained',
+        description: 'longenough'
+      },
+      jar
+    });
+    assert(constrained);
+    assert(constrained.title === 'First Constrained');
+    assert(constrained.description === 'longenough');
+  });
+
+  it('cannot insert a constrained piece that does not validate', async () => {
+    try {
+      await apos.http.post('/api/v1/constrained', {
+        body: {
+          title: 'Second Constrained',
+          description: 'shrt'
+        },
+        jar
+      });
+      // Getting here is bad
+      assert(false);
+    } catch (e) {
+      assert(e);
+      assert(e.status === 400);
+      assert(e.body.data.errors);
+      assert(e.body.data.errors.length === 1);
+      assert(e.body.data.errors[0].path === 'description');
+      assert(e.body.data.errors[0].name === 'min');
+      assert(e.body.data.errors[0].code === 400);
+    }
+  });
+
   it('can log out to destroy a session', async () => {
     return apos.http.post('/api/v1/@apostrophecms/login/logout', {
       followAllRedirects: true,
@@ -765,4 +815,5 @@ describe('Pieces', function() {
       assert(e.status === 403);
     }
   });
+
 });
