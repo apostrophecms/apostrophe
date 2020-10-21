@@ -109,10 +109,6 @@ export default {
   data() {
     return {
       docType: this.moduleName,
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       docUtilityFields: {
         data: {},
         hasErrors: false
@@ -202,8 +198,8 @@ export default {
         }
 
         if (this.docType !== newVal.type) {
-          // Return the split data into `doc.data` before splitting again.
-          this.doc.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.doc.data);
+          // Return the split data into `docFields.data` before splitting again.
+          this.docFields.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.docFields.data);
 
           this.docType = newVal.type;
           this.docReady = false;
@@ -242,7 +238,7 @@ export default {
         if (docData.type !== this.docType) {
           this.docType = docData.type;
         }
-        this.doc.data = docData;
+        this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
         apos.bus.$emit('busy', false);
@@ -267,7 +263,7 @@ export default {
         }
 
         const body = {
-          ...this.doc.data,
+          ...this.docFields.data,
           ...this.docUtilityFields.data,
           ...this.docOtherFields.data
         };
@@ -335,7 +331,7 @@ export default {
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
       }
-      this.doc.data = newInstance;
+      this.docFields.data = newInstance;
       this.splitDoc();
       this.docReady = true;
     },
@@ -349,14 +345,23 @@ export default {
 
       this.schema.forEach(field => {
         if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.doc.data[field.name];
+          this.docUtilityFields.data[field.name] = this.docFields.data[field.name];
           this.schemaUtilityFields.push(field);
         } else {
-          this.docOtherFields.data[field.name] = this.doc.data[field.name];
+          this.docOtherFields.data[field.name] = this.docFields.data[field.name];
           this.schemaOtherFields.push(field);
         }
       });
       this.splittingDoc = false;
+    },
+    // Override of a mixin method to accommodate the tabs/utility rail split
+    getFieldValue(name) {
+      if (this.docUtilityFields.data[name] !== undefined) {
+        return this.docUtilityFields.data[name];
+      }
+      if (this.docOtherFields.data[name] !== undefined) {
+        return this.docOtherFields.data[name];
+      }
     },
     updateDocUtilityFields(value) {
       this.docUtilityFields = value;

@@ -10,7 +10,7 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :following-value="followingValues[field.name]"
+        :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"

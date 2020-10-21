@@ -27,7 +27,8 @@ module.exports = {
     label: 'Group',
     pluralLabel: 'Groups',
     searchable: false,
-    adminOnly: true
+    adminOnly: true,
+    slugPrefix: 'group-'
   },
   fields: {
     add: {
@@ -47,6 +48,9 @@ module.exports = {
     remove: [ 'published' ]
   },
   filters: {
+    remove: [ 'published' ]
+  },
+  columns: {
     remove: [ 'published' ]
   },
   init(self, options) {

@@ -50,12 +50,12 @@
         </li>
       </ul>
       <AposSchema
-        v-if="doc.data.title !== undefined"
+        v-if="docFields.data.title !== undefined"
         :schema="schema"
-        v-model="doc"
+        v-model="docFields"
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
-        :doc-id="doc.data._id"
+        :doc-id="docFields.data._id"
         :following-values="followingValues()"
         @reset="updateDocEdited(false)"
         ref="schema"
@@ -73,7 +73,7 @@
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
-          :disabled="doc.hasErrors"
+          :disabled="docFields.hasErrors"
           label="Save" type="primary"
         />
       </div>
@@ -121,10 +121,6 @@ export default {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       lipKey: '',
       triggerValidation: false,
       showReplace: false
@@ -164,7 +160,7 @@ export default {
     }
   },
   watch: {
-    'doc.data': {
+    'docFields.data': {
       deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
@@ -201,17 +197,17 @@ export default {
     updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.doc.data = klona(newMedia);
+      this.docFields.data = klona(newMedia);
       this.generateLipKey();
     },
     save() {
       this.triggerValidation = true;
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
-      this.doc.data.attachment = this.activeMedia.attachment;
+      this.docFields.data.attachment = this.activeMedia.attachment;
 
       this.$nextTick(async () => {
-        if (this.doc.hasErrors) {
+        if (this.docFields.hasErrors) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
@@ -223,7 +219,7 @@ export default {
         try {
           await apos.http.put(route, {
             busy: true,
-            body: this.doc.data
+            body: this.docFields.data
           });
 
           this.updateDocEdited(false);

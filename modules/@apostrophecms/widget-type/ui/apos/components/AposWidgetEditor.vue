@@ -14,8 +14,9 @@
           <div class="apos-widget-editor__body">
             <AposSchema
               :schema="schema"
-              :value="widgetInfo"
-              @input="updateWidgetInfo"
+              :value="docFields"
+              @input="updateDocFields"
+              ref="schema"
             />
           </div>
         </template>
@@ -29,7 +30,7 @@
       <AposButton
         type="primary" @click="save"
         :label="saveLabel"
-        :disabled="widgetInfo.hasErrors"
+        :disabled="docFields.hasErrors"
       />
     </template>
   </AposModal>
@@ -69,7 +70,7 @@ export default {
   data() {
     return {
       id: this.value && this.value._id,
-      widgetInfo: {
+      docFields: {
         data: { ...this.value },
         hasErrors: false
       },
@@ -110,12 +111,12 @@ export default {
     this.modal.active = true;
   },
   methods: {
-    updateWidgetInfo(value) {
-      this.widgetInfo = value;
+    updateDocFields(value) {
+      this.docFields = value;
       this.modified = true;
     },
     save() {
-      const widget = this.widgetInfo.data;
+      const widget = this.docFields.data;
       if (!widget.type) {
         widget.type = this.type;
       }

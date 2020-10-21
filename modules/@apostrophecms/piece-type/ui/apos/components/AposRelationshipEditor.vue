@@ -14,7 +14,7 @@
     <template #primaryControls>
       <AposButton
         type="primary" label="Save"
-        :disabled="docInfo.hasErrors"
+        :disabled="docFields.hasErrors"
         @click="submit"
       />
     </template>
@@ -26,8 +26,8 @@
               <AposSchema
                 v-if="docReady"
                 :schema="schema"
-                :value="docInfo"
-                @input="updateDocInfo"
+                :value="docFields"
+                @input="updateDocFields"
               />
             </div>
           </AposModalTabsBody>
@@ -64,10 +64,6 @@ export default {
   emits: [ 'input', 'safe-close' ],
   data() {
     return {
-      docInfo: {
-        data: this.value || {},
-        hasErrors: false
-      },
       docReady: false,
       modal: {
         active: false,
@@ -80,14 +76,15 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
+    this.docFields.data = this.value || {};
   },
   methods: {
     async submit() {
-      this.$emit('input', this.docInfo.data);
-      this.modal.showModal = false;
+      this.$emit('input', this.docFields.data);
+      this.cancel();
     },
-    updateDocInfo(value) {
-      this.docInfo = value;
+    updateDocFields(value) {
+      this.docFields = value;
       this.modified = true;
     }
   }

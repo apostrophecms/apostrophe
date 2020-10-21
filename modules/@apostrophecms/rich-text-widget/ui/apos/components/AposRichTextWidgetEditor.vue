@@ -113,7 +113,7 @@ export default {
         onUpdate: this.update,
         content: this.value.content
       }),
-      widgetInfo: {
+      docFields: {
         data: {
           ...this.value
         },
@@ -153,7 +153,7 @@ export default {
     },
     async update() {
       const content = this.editor.getHTML();
-      const widget = this.widgetInfo.data;
+      const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });

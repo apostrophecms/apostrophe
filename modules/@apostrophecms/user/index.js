@@ -57,7 +57,8 @@ module.exports = {
     label: 'User',
     pluralLabel: 'Users',
     adminOnly: true,
-    searchable: false
+    searchable: false,
+    slugPrefix: 'user-'
   },
   fields(self, options) {
     return {
@@ -72,12 +73,13 @@ module.exports = {
         },
         title: {
           type: 'string',
-          label: 'Full Name'
+          label: 'Full Name',
+          following: [ 'firstName', 'lastName' ]
         },
         slug: {
           type: 'slug',
           label: 'Slug',
-          prefix: 'user',
+          following: 'title',
           required: true
         },
         disabled: {
@@ -106,6 +108,7 @@ module.exports = {
               type: 'select',
               label: 'Permission Group',
               def: 'guest',
+              required: true,
               choices: []
             },
             _groups: {
@@ -145,6 +148,14 @@ module.exports = {
         }
       }
     };
+  },
+
+  filters: {
+    remove: [ 'published' ]
+  },
+
+  columns: {
+    remove: [ 'published' ]
   },
 
   async init(self, options) {
