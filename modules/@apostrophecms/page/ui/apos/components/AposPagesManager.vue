@@ -14,7 +14,7 @@
       <AposButton
         type="primary"
         label="New Page"
-        @click="openEditor"
+        @click="openEditor(null)"
       />
     </template>
     <template #main>

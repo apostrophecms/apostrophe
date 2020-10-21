@@ -49,7 +49,7 @@
           type="default" label="Page Settings"
           icon="cog-icon" class="apos-admin-bar__btn"
           @click="emitEvent({
-            name: '@apostrophecms/page:editor',
+            itemName: '@apostrophecms/page:editor',
             props: {
               docId: currentPageId
             }

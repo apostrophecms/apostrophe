@@ -13,14 +13,13 @@ module.exports = {
   methods(self, options) {
     return {
       // Add a modal that appears when an `admin-menu-click` event corresponding
-      // to its `itemName` appears on the bus. The `options` are passed
-      // as the `options` prop, and the component will be of the type
-      // specified by `componentName`.
-      add(itemName, componentName, options) {
+      // to its `itemName` appears on the bus. `props` is merged with the props,
+      // and the component will be of the type specified by `componentName`.
+      add(itemName, componentName, props) {
         self.modals.push({
           itemName,
           componentName,
-          options
+          props
         });
       },
       getBrowserData(req) {

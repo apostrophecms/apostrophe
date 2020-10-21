@@ -27,13 +27,24 @@ export default {
     };
   },
   mounted() {
-    // Open one of the standard top level admin bar menus by name
+    // Open one of the server-side configured top level admin bar menus by name.
+    // To allow for injecting additional props dynamically, if itemName is an
+    // object, it must have an itemName property and a props property. The props
+    // property is merged with the props supplied by the server-side configuration.
     apos.bus.$on('admin-menu-click', async (itemName) => {
-      const item = apos.modal.modals.find(modal => modal.itemName === itemName);
+      let item;
+      if ((typeof itemName) === 'object') {
+        item = {
+          ...apos.modal.modals.find(modal => modal.itemName === itemName.itemName),
+          ...itemName
+        };
+      } else {
+        item = apos.modal.modals.find(modal => modal.itemName === itemName);
+      }
       if (item) {
         await this.execute(item.componentName, {
-          ...item.options,
-          moduleName: this.getModuleName(item.itemName)
+          ...item.props,
+          moduleName: item.moduleName || this.getModuleName(item.itemName)
         });
       }
     });
@@ -54,6 +65,9 @@ export default {
       modal.resolve(modal.result);
     },
     getModuleName(itemName) {
+      if (!itemName) {
+        return null;
+      }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     }
   }
