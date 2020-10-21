@@ -31,13 +31,12 @@
 </template>
 
 <script>
-import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import dayjs from 'dayjs';
 
 export default {
   name: 'AposDocVersions',
-  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
+  mixins: [ AposDocsManagerMixin ],
   props: {
     doc: {
       type: Object,
