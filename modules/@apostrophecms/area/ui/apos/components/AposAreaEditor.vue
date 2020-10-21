@@ -10,15 +10,6 @@
           type="primary"
           @click="add(contextMenuOptions.menu[0].name)"
         />
-        <component
-          :is="addWidgetEditor"
-          v-if="adding"
-          v-model="widget"
-          :type="addWidgetType"
-          @close="close"
-          @insert="insert"
-          :options="addWidgetOptions"
-        />
       </template>
       <template v-else>
         <AposEmptyState :empty-state="emptyState" />
@@ -116,7 +107,6 @@ export default {
       addWidgetOptions: null,
       addWidgetType: null,
       widget: null,
-      adding: false,
       areaId: cuid(),
       next: validItems,
       // Track contextual editing
@@ -318,7 +308,7 @@ export default {
         this.editing[widget._id] = false;
       }
     },
-    add(name) {
+    async add(name) {
       if (this.widgetIsContextual(name)) {
         return this.insert({
           _id: cuid(),
@@ -326,11 +316,15 @@ export default {
           ...this.contextualWidgetDefaultData(name)
         });
       } else {
-        this.adding = !this.adding;
-        if (this.adding) {
-          this.addWidgetEditor = this.widgetEditorComponent(name);
-          this.addWidgetOptions = this.options.widgets[name];
-          this.addWidgetType = name;
+        const componentName = this.widgetEditorComponent(name);
+        const result = await apos.modal.execute(componentName, {
+          value: null,
+          options: this.options.widgets[name],
+          type: name,
+          docId: this.docId
+        });
+        if (result) {
+          await this.insert(result);
         }
       }
     },

@@ -38,7 +38,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event);"
+          @insert="$emit('insert', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
@@ -359,7 +359,6 @@ export default {
     },
 
     toggleMenuFocus(event, name, value) {
-      console.log('hi');
       if (event) {
         event.cancelBubble = true;
       }

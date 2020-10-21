@@ -34,7 +34,7 @@
       <AposButton
         v-else
         :label="`New ${ options.label }`" type="primary"
-        @click="editing = true"
+        @click="edit(null)"
       />
     </template>
     <template #main>
@@ -65,7 +65,7 @@
             :items="items"
             :headers="headers"
             v-model="checked"
-            @open="openEditor"
+            @open="edit"
             :options="{
               disableUnchecked: relationshipErrors === 'max',
               hideCheckboxes: !relationshipField
@@ -76,16 +76,6 @@
           </div>
         </template>
       </AposModalBody>
-      <!-- The pieces editor modal. -->
-      <portal to="modal-target">
-        <component
-          v-if="editing"
-          :is="options.components.insertModal"
-          :module-name="moduleName" :doc-id="editingDocId"
-          :filter-values="filterValues"
-          @saved="finishSaved" @safe-close="closeEditor"
-        />
-      </portal>
     </template>
   </AposModal>
 </template>
@@ -116,8 +106,6 @@ export default {
       totalPages: 1,
       currentPage: 1,
       filterValues: {},
-      editing: false,
-      editingDocId: '',
       queryExtras: {},
       holdQueries: false,
       moreMenu: {
@@ -207,7 +195,7 @@ export default {
       }
     },
     new() {
-      this.editing = true;
+      this.edit(null);
     },
     async finishSaved() {
       await this.getPieces();
@@ -251,9 +239,13 @@ export default {
         this.getPieces();
       }
     },
-    openEditor(docId) {
-      this.editingDocId = docId;
-      this.editing = true;
+    async edit(docId) {
+      await apos.modal.execute(this.options.components.insertModal, {
+        moduleName: this.moduleName,
+        docId,
+        filterValues: this.filterValues
+      });
+      await this.getPieces();
     },
     closeEditor() {
       this.editing = false;
