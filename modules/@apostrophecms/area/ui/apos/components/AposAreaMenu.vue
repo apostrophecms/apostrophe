@@ -111,7 +111,7 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'menu-close', 'menu-open', 'add' ],
+  emits: [ 'menu-close', 'menu-open', 'insert' ],
   data() {
     return {
       active: 0,
@@ -206,7 +206,7 @@ export default {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     insert(widget) {
-      this.$emit('add', {
+      this.$emit('insert', {
         index: this.index,
         widget
       });
