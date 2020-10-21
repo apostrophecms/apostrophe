@@ -4,15 +4,33 @@
       v-if="next.length === 0"
       class="apos-empty-area"
     >
-      <AposEmptyState :empty-state="emptyState" />
-      <AposAreaMenu
-        @add="insert"
-        :context-menu-options="contextMenuOptions"
-        :empty="true"
-        :index="0"
-        :widget-options="options.widgets"
-        :max-reached="maxReached"
-      />
+      <template v-if="isEmptySingleton">
+        <AposButton
+          :label="'Add ' + contextMenuOptions.menu[0].label"
+          type="primary"
+          @click="add(contextMenuOptions.menu[0].name)"
+        />
+        <component
+          :is="addWidgetEditor"
+          v-if="adding"
+          v-model="widget"
+          :type="addWidgetType"
+          @close="close"
+          @insert="insert"
+          :options="addWidgetOptions"
+        />
+      </template>
+      <template v-else>
+        <AposEmptyState :empty-state="emptyState" />
+        <AposAreaMenu
+          @insert="insert"
+          :context-menu-options="contextMenuOptions"
+          :empty="true"
+          :index="0"
+          :widget-options="options.widgets"
+          :max-reached="maxReached"
+        />
+      </template>
     </div>
     <div class="apos-areas-widgets-list">
       <AposAreaWidget
@@ -94,6 +112,11 @@ export default {
     });
 
     return {
+      addWidgetEditor: null,
+      addWidgetOptions: null,
+      addWidgetType: null,
+      widget: null,
+      adding: false,
       areaId: cuid(),
       next: validItems,
       // Track contextual editing
@@ -102,13 +125,25 @@ export default {
       focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
-      },
-      emptyState: {
-        message: 'Add your content here'
       }
     };
   },
   computed: {
+    isEmptySingleton() {
+      return this.next.length === 0 &&
+        this.options.widgets &&
+        Object.keys(this.options.widgets).length === 1 &&
+        this.options.max &&
+        this.options.max === 1;
+    },
+    emptyState() {
+      // TODO this needs to i18next'd
+      const empty = { message: 'Add your content' };
+      if (this.isEmptySingleton) {
+        empty.message = `Add a ${this.contextMenuOptions.menu[0].label}`;
+      }
+      return empty;
+    },
     moduleOptions() {
       return window.apos.area;
     },
@@ -279,9 +314,35 @@ export default {
         widget,
         ...this.next.slice(index + 1)
       ];
+      if (!this.widgetIsContextual(widget.type)) {
+        this.editing[widget._id] = false;
+      }
+    },
+    add(name) {
+      if (this.widgetIsContextual(name)) {
+        return this.insert({
+          _id: cuid(),
+          type: name,
+          ...this.contextualWidgetDefaultData(name)
+        });
+      } else {
+        this.adding = !this.adding;
+        if (this.adding) {
+          this.addWidgetEditor = this.widgetEditorComponent(name);
+          this.addWidgetOptions = this.options.widgets[name];
+          this.addWidgetType = name;
+        }
+      }
     },
     async insert(e) {
-      const widget = e.widget;
+      let widget;
+      if (e.widget) {
+        widget = e.widget;
+      }
+      if (e.type) {
+        // e IS a widget
+        widget = e;
+      }
       if (!widget._id) {
         widget._id = cuid();
       }
