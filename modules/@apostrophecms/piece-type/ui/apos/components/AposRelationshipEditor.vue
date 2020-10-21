@@ -61,10 +61,16 @@ export default {
       required: true
     }
   },
-  emits: [ 'input', 'safe-close' ],
+  emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
       docReady: false,
+      docFields: {
+        data: {
+          ...this.value
+        },
+        hasErrors: false
+      },
       modal: {
         active: false,
         type: 'overlay',
@@ -76,12 +82,11 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    this.docFields.data = this.value || {};
   },
   methods: {
     async submit() {
-      this.$emit('input', this.docFields.data);
-      this.cancel();
+      this.$emit('modal-result', this.docFields.data);
+      this.modal.showModal = false;
     },
     updateDocFields(value) {
       this.docFields = value;

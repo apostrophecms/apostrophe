@@ -38,7 +38,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event);"
+          @insert="$emit('insert', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
@@ -60,10 +60,9 @@
           @down="$emit('down', i);"
         />
       </div>
+      <!-- Still used for contextual editing components -->
       <component
         v-if="editing"
-        @save="$emit('done', widget)"
-        @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -90,7 +89,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event)"
+          @insert="$emit('insert', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
@@ -110,6 +109,7 @@ import klona from 'klona';
 export default {
   name: 'AposAreaWidget',
   props: {
+    // For contextual editing
     editing: {
       type: Boolean,
       default: false
@@ -161,7 +161,7 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'clone', 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     const initialState = {
       controls: {
@@ -359,7 +359,6 @@ export default {
     },
 
     toggleMenuFocus(event, name, value) {
-      console.log('hi');
       if (event) {
         event.cancelBubble = true;
       }

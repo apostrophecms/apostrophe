@@ -10,15 +10,6 @@
           type="primary"
           @click="add(contextMenuOptions.menu[0].name)"
         />
-        <component
-          :is="addWidgetEditor"
-          v-if="adding"
-          v-model="widget"
-          :type="addWidgetType"
-          @close="close"
-          @insert="insert"
-          :options="addWidgetOptions"
-        />
       </template>
       <template v-else>
         <AposEmptyState :empty-state="emptyState" />
@@ -48,13 +39,11 @@
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
-        @done="done"
         @up="up"
         @down="down"
         @remove="remove"
         @edit="edit"
         @clone="clone"
-        @close="close"
         @update="update"
         @insert="insert"
       />
@@ -118,9 +107,9 @@ export default {
       addWidgetOptions: null,
       addWidgetType: null,
       widget: null,
-      adding: false,
       areaId: cuid(),
       next: validItems,
+      // Track contextual editing
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
@@ -275,8 +264,22 @@ export default {
         ...this.next.slice(i + 1)
       ];
     },
-    edit(i) {
-      Vue.set(this.editing, this.next[i]._id, !this.editing[this.next[i]._id]);
+    async edit(i) {
+      const widget = this.next[i];
+      if (this.widgetIsContextual(widget.type)) {
+        Vue.set(this.editing, widget._id, !this.editing[widget._id]);
+      } else {
+        const componentName = this.widgetEditorComponent(widget.type);
+        const result = await apos.modal.execute(componentName, {
+          value: widget,
+          options: this.options.widgets[widget.type],
+          type: widget.type,
+          docId: this.docId
+        });
+        if (result) {
+          return this.update(result);
+        }
+      }
     },
     clone(index) {
       const widget = klona(this.next[index]);
@@ -305,19 +308,7 @@ export default {
         this.editing[widget._id] = false;
       }
     },
-    async close(widget) {
-      if (!this.widgetIsContextual(widget.type)) {
-        if (widget._id) {
-          this.editing[widget._id] = false;
-        }
-      }
-    },
-    async done(widget) {
-      if (!this.widgetIsContextual(widget.type)) {
-        this.editing[widget._id] = false;
-      }
-    },
-    add(name) {
+    async add(name) {
       if (this.widgetIsContextual(name)) {
         return this.insert({
           _id: cuid(),
@@ -325,11 +316,15 @@ export default {
           ...this.contextualWidgetDefaultData(name)
         });
       } else {
-        this.adding = !this.adding;
-        if (this.adding) {
-          this.addWidgetEditor = this.widgetEditorComponent(name);
-          this.addWidgetOptions = this.options.widgets[name];
-          this.addWidgetType = name;
+        const componentName = this.widgetEditorComponent(name);
+        const result = await apos.modal.execute(componentName, {
+          value: null,
+          options: this.options.widgets[name],
+          type: name,
+          docId: this.docId
+        });
+        if (result) {
+          await this.insert(result);
         }
       }
     },
@@ -370,14 +365,11 @@ export default {
         this.edit(e.index);
       }
     },
-    widgetComponent(type) {
-      return this.moduleOptions.components.widgets[type];
+    widgetIsContextual(type) {
+      return this.moduleOptions.widgetIsContextual[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
     },
     // Recursively seek `subObject` within `object`, based on whether
     // its _id matches that of a sub-object of `object`. If found,

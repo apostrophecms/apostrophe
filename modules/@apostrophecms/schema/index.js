@@ -2272,7 +2272,9 @@ module.exports = {
           const base = key.split('.')[0];
           if (!clonedBases[base]) {
             if (_.has(existingPage, base)) {
-              patch[base] = self.apos.util.clonePermanent(existingPage[base]);
+              // We need all the properties, even impermanent ones,
+              // because relationships are read-write in 3.x
+              patch[base] = klona(existingPage[base]);
             }
             clonedBases[base] = true;
           }
