@@ -359,7 +359,8 @@ module.exports = {
           action: self.action,
           schema: schema,
           contextual: self.options.contextual,
-          skipInitialModal: self.options.skipInitialModal
+          skipInitialModal: self.options.skipInitialModal,
+          className: self.options.className
         });
         return result;
       }

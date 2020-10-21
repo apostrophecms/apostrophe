@@ -13,7 +13,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'Video',
-    className: 'apos-video-widget'
+    className: false
   },
   fields: {
     add: {
