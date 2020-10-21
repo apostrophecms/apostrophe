@@ -1,6 +1,9 @@
 
 <template>
-  <div class="apos-area-widget-wrapper" :data-area-widget="widgetId" :data-area-label="widgetLabel">
+  <div
+    class="apos-area-widget-wrapper" :data-area-widget="widgetId"
+    :data-area-label="widgetLabel"
+  >
     <div
       class="apos-area-widget-inner"
       :class="ui.container"
@@ -405,6 +408,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-area-widget-wrapper {
+    position: relative;
+  }
 
   .apos-area-widget-inner {
     position: relative;
@@ -570,7 +576,8 @@ export default {
     background-color: var(--a-secondary);
   }
 
-  .apos-show, .apos-focus {
+  .apos-show,
+  .apos-focus {
     opacity: 1;
     pointer-events: auto;
   }

@@ -1,13 +1,15 @@
+// NOTE: These should be kept in rank order for easy comparison.
 $z-index-under: -1;
+// Use `z-index-base` to simply establish a new stacking context.
 $z-index-base: 0;
 $z-index-default: 1;
-$z-index-widget-highlight: 2;
-$z-index-widget-focus: 3;
-$z-index-widget-add-focus: 2;
 $z-index-model-popup: 1;
 $z-index-manager-display: 2;
+$z-index-widget-add-focus: 3;
+$z-index-widget-focus: 3;
 $z-index-manager-toolbar: 3;
-$z-index-admin-bar: 3;
+$z-index-widget-highlight: 4;
 $z-index-modal-bg: 1000;
 $z-index-modal-inner: 1001;
 $z-index-notifications: 1003;
+$z-index-admin-bar: 2000;

@@ -406,7 +406,4 @@ export default {
   border: 2px dotted var(--a-primary);
 }
 
-.apos-area-widget-wrapper {
-  position: relative;
-}
 </style>
