@@ -27,7 +27,7 @@
       </AposContextMenuDialog>
     </component>
     <div class="apos-rich-text-editor__editor">
-      <editor-content :editor="editor" />
+      <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
   </div>
 </template>

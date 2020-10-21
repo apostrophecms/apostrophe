@@ -12,7 +12,7 @@ module.exports = {
     label: 'Rich Text',
     contextual: true,
     defaultData: { content: '' },
-    className: 'apos-rich-text-widget',
+    className: false,
     minimumDefaultOptions: {
       toolbar: [
         'styles',
