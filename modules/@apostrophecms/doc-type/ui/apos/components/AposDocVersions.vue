@@ -1,13 +1,13 @@
 <template>
   <AposModal
     :modal="modal" :modal-title="modalTitle"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @esc="modal.showModal = false" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="confirmAndCancel"
+        @click="modal.showModal = false"
       />
     </template>
     <template #primaryControls>
