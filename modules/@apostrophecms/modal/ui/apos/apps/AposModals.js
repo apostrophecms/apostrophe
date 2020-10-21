@@ -5,39 +5,27 @@ Vue.use(PortalVue);
 export default function() {
   const theAposModals = new Vue({
     el: '#apos-modals',
-    data() {
-      return {
-        confirmContent: null,
-        confirmResolve: null
-      };
-    },
     computed: {
       apos () {
         return window.apos;
       }
     },
     methods: {
-      confirm(confirmContent) {
-        this.confirmContent = confirmContent;
-        return new Promise((resolve, reject) => {
-          this.confirmResolve = resolve;
+      async confirm(confirmContent) {
+        return this.execute(apos.modal.components.confirm, {
+          confirmContent
         });
       },
-      confirmResponse(response) {
-        this.confirmContent = null;
-        const resolve = this.confirmResolve;
-        this.confirmResolve = null;
-        return resolve(response);
+      execute(componentName, props) {
+        return this.$refs.modals.execute(componentName, props);
       }
     },
     template: `<component
-      ref="implementation"
+      ref="modals"
       :is="apos.modal.components.the"
       :modals="apos.modal.modals"
-      :confirm-content="confirmContent"
-      :confirm="apos.modal.components.confirm"
-      @confirm-response="confirmResponse"
     />`
   });
+  apos.modal.execute = theAposModals.execute;
   apos.confirm = theAposModals.confirm;
 };

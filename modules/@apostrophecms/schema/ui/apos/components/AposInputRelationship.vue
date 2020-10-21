@@ -21,14 +21,14 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
-            @click="choosing=true"
+            @click="choose"
           />
         </div>
         <AposSlatList
           class="apos-input-relationship__items"
           v-if="next.length"
           @input="updateSelected"
-          @item-clicked="openRelationshipEditor"
+          @item-clicked="editRelationship"
           :value="next"
         />
         <AposSearchList
@@ -37,26 +37,6 @@
           :selected-items="next"
         />
       </div>
-    </template>
-    <template #secondary>
-      <portal to="modal-target">
-        <component
-          :is="chooserComponent"
-          v-if="choosing"
-          :module-name="field.withType"
-          :chosen="next"
-          :relationship-field="field"
-          @chose="updateSelected"
-          @safe-close="choosing=false"
-        />
-      </portal>
-      <AposRelationshipEditor
-        v-if="relationshipSchema"
-        :schema="relationshipSchema"
-        :title="clickedItem.title"
-        v-model="clickedItem._fields"
-        @safe-close="relationshipSchema=null"
-      />
     </template>
   </AposInputWrapper>
 </template>
@@ -77,8 +57,7 @@ export default {
       disabled: false,
       searching: false,
       choosing: false,
-      relationshipSchema: null,
-      clickedItem: null
+      relationshipSchema: null
     };
   },
   computed: {
@@ -152,9 +131,29 @@ export default {
       // Ensure the internal state is an array.
       this.next = Array.isArray(this.value.data) ? this.value.data : [];
     },
-    openRelationshipEditor (item) {
-      this.relationshipSchema = this.field.schema;
-      this.clickedItem = item;
+    async choose () {
+      const result = await apos.modal.execute(this.chooserComponent, {
+        moduleName: this.field.withType,
+        chosen: this.next,
+        relationshipField: this.field
+      });
+      if (result) {
+        this.updateSelected(result);
+      }
+    },
+    async editRelationship (item) {
+      const result = await apos.modal.execute('AposRelationshipEditor', {
+        schema: this.relationshipSchema,
+        title: item.title,
+        value: item._fields
+      });
+      if (result) {
+        const index = this.next.findIndex(_item => _item._id === item._id);
+        this.$set(this.next, index, {
+          ...this.next[index],
+          _fields: result
+        });
+      }
     }
   }
 };

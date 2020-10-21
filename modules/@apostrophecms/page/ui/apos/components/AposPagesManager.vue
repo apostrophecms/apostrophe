@@ -14,7 +14,7 @@
       <AposButton
         type="primary"
         label="New Page"
-        @click="editing = true"
+        @click="openEditor"
       />
     </template>
     <template #main>
@@ -42,15 +42,6 @@
           />
         </template>
       </AposModalBody>
-      <!-- The pieces editor modal. -->
-      <portal to="modal-target">
-        <component
-          v-if="editing"
-          :is="moduleOptions.components.insertModal"
-          :module-name="moduleName" :doc-id="editingDocId"
-          @saved="finishSaved" @safe-close="closeEditor"
-        />
-      </portal>
     </template>
   </AposModal>
 </template>
@@ -107,9 +98,7 @@ export default {
       treeOptions: {
         bulkSelect: !!this.relationshipField,
         draggable: true
-      },
-      editing: false,
-      editingDocId: ''
+      }
     };
   },
   computed: {
@@ -192,13 +181,6 @@ export default {
         }
       }
     },
-    async finishSaved() {
-      await this.getPages();
-    },
-    closeEditor() {
-      this.editing = false;
-      this.editingDocId = '';
-    },
     async update(page) {
       const body = {
         _targetId: page.endContext,
@@ -245,9 +227,13 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    openEditor(pageId) {
-      this.editingDocId = pageId;
-      this.editing = true;
+    async openEditor(pageId) {
+      if (await apos.modal.execute(this.moduleOptions.components.insertModal, {
+        moduleName: this.moduleName,
+        docId: pageId
+      })) {
+        await this.getPages();
+      }
     }
   }
 };

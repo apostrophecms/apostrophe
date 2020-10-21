@@ -105,7 +105,7 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'safe-close' ],
+  emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
       docType: this.moduleName,
@@ -281,8 +281,9 @@ export default {
             body._position = 'lastChild';
           }
         }
+        let doc;
         try {
-          await requestMethod(route, {
+          doc = await requestMethod(route, {
             busy: true,
             body
           });
@@ -292,7 +293,7 @@ export default {
           });
           return;
         }
-        this.$emit('saved');
+        this.$emit('modal-result', doc);
         this.modal.showModal = false;
       });
     },

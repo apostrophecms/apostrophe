@@ -77,11 +77,11 @@ export default {
   methods: {
     confirm() {
       this.modal.showModal = false;
-      this.$emit('confirm-response', true);
+      this.$emit('modal-result', true);
     },
     async cancel() {
       this.modal.showModal = false;
-      this.$emit('confirm-response', false);
+      this.$emit('modal-result', false);
     }
   }
 };

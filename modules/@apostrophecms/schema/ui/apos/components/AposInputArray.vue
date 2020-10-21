@@ -15,18 +15,10 @@
             {{ next.length }} Items
           </p>
           <button
-            @click="editing = true"
+            @click="edit"
             :disabled="field.disabled"
           >Edit {{ field.label }}</button>
         </label>
-        <AposArrayEditor
-          v-if="editing"
-          :field="field"
-          :items="next"
-          @update="update"
-          @safe-close="safeClose"
-          :serverError="serverError"
-        />
       </div>
     </template>
   </AposInputWrapper>
@@ -40,7 +32,6 @@ export default {
   mixins: [ AposInputMixin ],
   data () {
     return {
-      editing: false,
       // Next should consistently be an array.
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || [])
@@ -62,8 +53,15 @@ export default {
     update (items) {
       this.next = items;
     },
-    safeClose () {
-      this.editing = false;
+    async edit () {
+      const result = await apos.modal.execute('AposArrayEditor', {
+        field: this.field,
+        items: this.next,
+        serverError: this.serverError
+      });
+      if (result) {
+        this.next = result;
+      }
     }
   }
 };

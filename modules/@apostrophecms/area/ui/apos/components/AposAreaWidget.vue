@@ -60,10 +60,9 @@
           @down="$emit('down', i);"
         />
       </div>
+      <!-- Still used for contextual editing components -->
       <component
         v-if="editing"
-        @save="$emit('done', widget)"
-        @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -110,6 +109,7 @@ import klona from 'klona';
 export default {
   name: 'AposAreaWidget',
   props: {
+    // For contextual editing
     editing: {
       type: Boolean,
       default: false
@@ -161,7 +161,7 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'clone', 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     const initialState = {
       controls: {

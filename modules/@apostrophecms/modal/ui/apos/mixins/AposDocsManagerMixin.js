@@ -144,7 +144,7 @@ export default {
       // prep item checkbox fields
     },
     saveRelationship() {
-      this.$emit('chose', this.checkedDocs);
+      this.$emit('modal-result', this.checkedDocs);
       this.modal.showModal = false;
     }
   }

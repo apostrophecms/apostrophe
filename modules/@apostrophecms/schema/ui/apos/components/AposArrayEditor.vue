@@ -95,7 +95,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'input', 'safe-close', 'update' ],
+  emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
       currentId: null,
@@ -225,7 +225,7 @@ export default {
     async submit() {
       if (await this.validate(true, true)) {
         this.currentDocToCurrentItem();
-        this.$emit('update', this.next);
+        this.$emit('modal-result', this.next);
         this.modal.showModal = false;
       }
     },

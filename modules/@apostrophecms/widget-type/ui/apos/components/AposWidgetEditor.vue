@@ -66,7 +66,7 @@ export default {
       }
     }
   },
-  emits: [ 'safe-close', 'insert', 'update' ],
+  emits: [ 'safe-close', 'modal-result' ],
   data() {
     return {
       id: this.value && this.value._id,
@@ -122,11 +122,9 @@ export default {
       }
       if (!this.id) {
         widget._id = cuid();
-        this.$emit('insert', widget);
-      } else {
-        widget._id = this.id;
-        this.$emit('update', widget);
       }
+      this.$emit('modal-result', widget);
+      this.modal.showModal = false;
     }
   }
 };

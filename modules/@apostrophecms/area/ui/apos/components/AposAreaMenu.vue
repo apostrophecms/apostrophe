@@ -73,15 +73,6 @@
         </li>
       </ul>
     </AposContextMenu>
-    <component
-      :is="addWidgetEditor"
-      v-if="adding"
-      v-model="widget"
-      :type="addWidgetType"
-      @close="close"
-      @insert="insert"
-      :options="addWidgetOptions"
-    />
   </div>
 </template>
 
@@ -115,12 +106,7 @@ export default {
   data() {
     return {
       active: 0,
-      groupIsFocused: false,
-      addWidgetEditor: null,
-      addWidgetOptions: null,
-      addWidgetType: null,
-      widget: null,
-      adding: false
+      groupIsFocused: false
     };
   },
   computed: {
@@ -176,25 +162,24 @@ export default {
     menuOpen(e) {
       this.$emit('menu-open', e);
     },
-    add(name) {
+    async add(name) {
       if (this.widgetIsContextual(name)) {
-        return this.insert({
+        this.insert({
           _id: cuid(),
           type: name,
           ...this.contextualWidgetDefaultData(name)
         });
       } else {
-        this.adding = !this.adding;
-        if (this.adding) {
-          this.addWidgetEditor = this.widgetEditorComponent(name);
-          this.addWidgetOptions = this.widgetOptions[name];
-          this.addWidgetType = name;
+        const result = await apos.modal.execute(this.widgetEditorComponent(name), {
+          options: this.widgetOptions[name],
+          type: name,
+          value: null
+        });
+        if (result) {
+          this.insert(result);
         }
       }
       this.menuClose();
-    },
-    close() {
-      this.adding = false;
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
@@ -210,9 +195,7 @@ export default {
         index: this.index,
         widget
       });
-      this.close();
     },
-
     groupFocused() {
       this.groupIsFocused = true;
     },
