@@ -65,6 +65,12 @@ export default {
   data() {
     return {
       docReady: false,
+      docFields: {
+        data: {
+          ...this.value
+        },
+        hasErrors: false
+      },
       modal: {
         active: false,
         type: 'overlay',
@@ -76,10 +82,6 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    // Do not modify props
-    this.docFields.data = {
-      ...this.value
-    };
   },
   methods: {
     async submit() {
