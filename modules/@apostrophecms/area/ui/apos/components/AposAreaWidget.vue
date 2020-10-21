@@ -89,7 +89,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event)"
+          @insert="$emit('insert', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
