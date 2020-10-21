@@ -3,7 +3,7 @@
     class="apos-widget-editor"
     :modal="modal" :modal-title="editLabel"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs :items="breadcrumbs" />
@@ -13,7 +13,9 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" v-model="widgetInfo"
+              :schema="schema"
+              :value="widgetInfo"
+              @input="updateWidgetInfo"
             />
           </div>
         </template>
@@ -22,23 +24,24 @@
     <template #footer>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         type="primary" @click="save"
         :label="saveLabel"
+        :disabled="widgetInfo.hasErrors"
       />
     </template>
   </AposModal>
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import cuid from 'cuid';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModalParentMixin ],
+  mixins: [ AposModalModifiedMixin ],
   props: {
     type: {
       required: true,
@@ -107,6 +110,10 @@ export default {
     this.modal.active = true;
   },
   methods: {
+    updateWidgetInfo(value) {
+      this.widgetInfo = value;
+      this.modified = true;
+    },
     save() {
       const widget = this.widgetInfo.data;
       if (!widget.type) {

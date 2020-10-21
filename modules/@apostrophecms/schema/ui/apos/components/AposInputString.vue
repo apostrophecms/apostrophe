@@ -45,9 +45,6 @@ export default {
       step: undefined
     };
   },
-  mounted() {
-    this.defineStep();
-  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -81,6 +78,9 @@ export default {
         return null;
       }
     }
+  },
+  mounted() {
+    this.defineStep();
   },
   methods: {
     enterEmit() {

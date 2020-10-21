@@ -3,18 +3,18 @@
     class="apos-doc-editor" :modal="modal"
     :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="Saved"
-        :disabled="doc.hasErrors"
+        type="primary" label="Save"
+        :disabled="docInfo.hasErrors"
         @click="submit"
       />
     </template>
@@ -26,7 +26,8 @@
               <AposSchema
                 v-if="docReady"
                 :schema="schema"
-                v-model="doc"
+                :value="docInfo"
+                @input="updateDocInfo"
               />
             </div>
           </AposModalTabsBody>
@@ -37,12 +38,12 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposRelationshipEditor',
   mixins: [
-    AposModalParentMixin
+    AposModalModifiedMixin
   ],
   props: {
     schema: {
@@ -63,8 +64,8 @@ export default {
   emits: [ 'input', 'safe-close' ],
   data() {
     return {
-      doc: {
-        data: {},
+      docInfo: {
+        data: this.value || {},
         hasErrors: false
       },
       docReady: false,
@@ -79,13 +80,16 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.docReady = true;
-    this.doc.data = this.value || {};
   },
   methods: {
     async submit() {
-      this.$emit('input', this.doc.data);
-      this.cancel();
+      this.$emit('input', this.docInfo.data);
+      this.modal.showModal = false;
     },
+    updateDocInfo(value) {
+      this.docInfo = value;
+      this.modified = true;
+    }
   }
 };
 </script>

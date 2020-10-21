@@ -3,12 +3,12 @@
     class="apos-array-editor" :modal="modal"
     :modal-title="`Edit ${field.label}`"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -53,7 +53,8 @@
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
-                    v-model="currentDoc"
+                    :value="currentDoc"
+                    @input="currentDocUpdate"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
                   />
@@ -68,7 +69,7 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
 import klona from 'klona';
@@ -77,7 +78,7 @@ import { get } from 'lodash';
 export default {
   name: 'AposArrayEditor',
   mixins: [
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -110,7 +111,8 @@ export default {
       next: klona(this.items),
       triggerValidation: false,
       minError: false,
-      maxError: false
+      maxError: false,
+      cancelDescription: 'Do you want to discard changes to this list?'
     };
   },
   computed: {
@@ -181,6 +183,7 @@ export default {
       }
     },
     update(items) {
+      this.modified = true;
       // Take care to use the same items in order to avoid
       // losing too much state inside draggable, otherwise
       // drags fail
@@ -193,8 +196,13 @@ export default {
       }
       this.updateMinMax();
     },
+    currentDocUpdate(currentDoc) {
+      this.currentDoc = currentDoc;
+      this.modified = true;
+    },
     async add() {
       if (await this.validate(true, false)) {
+        this.modified = true;
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);

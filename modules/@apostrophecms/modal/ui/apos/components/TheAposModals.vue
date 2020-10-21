@@ -9,6 +9,15 @@
       />
     </portal>
     <portal-target name="modal-target" multiple />
+    <portal to="confirm-modal-target">
+      <component
+        v-if="confirmContent"
+        :is="confirm"
+        :confirm-content="confirmContent"
+        @confirm-response="confirmResponse"
+      />
+    </portal>
+    <portal-target name="confirm-modal-target" />
   </div>
 </template>
 
@@ -19,6 +28,14 @@ export default {
     modals: {
       type: Array,
       required: true
+    },
+    confirm: {
+      type: String,
+      required: true
+    },
+    confirmContent: {
+      type: Object,
+      default: null
     }
   },
   data() {
@@ -61,6 +78,9 @@ export default {
     },
     getModuleName(itemName) {
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
+    },
+    confirmResponse(value) {
+      this.$emit('confirm-response', value);
     }
   }
 };
