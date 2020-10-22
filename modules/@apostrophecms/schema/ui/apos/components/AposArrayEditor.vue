@@ -21,15 +21,28 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-modal-array-items">
-          <p v-if="effectiveMin" :class="minError ? 'apos-modal-array-min-error' : ''">
-            Minimum items: {{ effectiveMin }}
-          </p>
-          <p v-if="field.max" :class="maxError ? 'apos-modal-array-max-error' : ''">
-            Maximum items: {{ field.max }}
-          </p>
-          <button :disabled="maxed || itemError" @click.prevent="add">
-            Add Item
-          </button>
+          <div class="apos-modal-array-items__heading">
+            <p class="apos-modal-array-items__label">
+              <span v-if="countLabel">
+                {{ countLabel }}
+              </span>
+              <span v-if="minLabel" :class="minError ? 'apos-modal-array-min-error' : ''">
+                {{ minLabel }}
+              </span>
+              <span v-if="maxLabel" :class="maxError ? 'apos-modal-array-max-error' : ''">
+                {{ maxLabel }}
+              </span>
+            </p>
+            <AposButton
+              class="apos-modal-array-items__add"
+              label="Add Item"
+              :icon-only="true"
+              icon="plus-icon"
+              :modifiers="[ 'tiny', 'round' ]"
+              :disabled="maxed || itemError"
+              @click.prevent="add"
+            />
+          </div>
           <AposSlatList
             class="apos-modal-array-items__items"
             @input="update"
@@ -131,6 +144,27 @@ export default {
     schema() {
       // For AposDocEditorMixin
       return this.field.schema;
+    },
+    countLabel() {
+      return `${this.next.length} Added`;
+    },
+    // Here in the array editor we use effectiveMin to factor in the
+    // required property because there is no other good place to do that,
+    // unlike the input field wrapper which has a separate visual
+    // representation of "required".
+    minLabel() {
+      if (this.effectiveMin) {
+        return `Min: ${this.effectiveMin}`;
+      } else {
+        return false;
+      }
+    },
+    maxLabel() {
+      if ((typeof this.field.max) === 'number') {
+        return `Max: ${this.field.max}`;
+      } else {
+        return false;
+      }
     },
     effectiveMin() {
       if (this.field.min) {
@@ -328,5 +362,31 @@ export default {
 
   .apos-modal-array-min-error, .apos-modal-array-max-error {
     color: var(--a-danger);
+  }
+
+  .apos-modal-array-items {
+    margin: 10px;
+  }
+
+  .apos-modal-array-items__heading {
+    position: relative;
+    margin: 20px 4px;
+  }
+
+  // Specificity needed due to AposButton rules
+  .apos-modal-array-items__heading .apos-modal-array-items__add {
+    position: absolute;
+    top: -5px;
+    right: 0;
+  }
+
+  .apos-modal-array-items__label {
+    // Consistent with appearance of same information in input field
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    span {
+      margin-right: 10px;
+    }
   }
 </style>
