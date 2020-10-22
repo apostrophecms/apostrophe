@@ -215,7 +215,7 @@ export default {
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
-    moduleOptions() {
+    areaOptions() {
       return window.apos.area;
     },
     widgetId() {
@@ -395,13 +395,13 @@ export default {
     },
 
     widgetComponent(type) {
-      return this.moduleOptions.components.widgets[type];
+      return this.areaOptions.components.widgets[type];
     },
     widgetEditorComponent(type) {
-      return this.moduleOptions.components.widgetEditors[type];
+      return this.areaOptions.components.widgetEditors[type];
     },
     widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
+      return this.areaOptions.widgetIsContextual[type];
     }
   }
 };
