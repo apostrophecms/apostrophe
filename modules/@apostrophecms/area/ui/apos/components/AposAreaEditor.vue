@@ -106,10 +106,11 @@ export default {
       addWidgetEditor: null,
       addWidgetOptions: null,
       addWidgetType: null,
-      widget: null,
       areaId: cuid(),
       next: validItems,
       // Track contextual editing
+      // TODO: Check if `editing` is redundant if we're controlling for
+      // contextual widgets in `AposAreaWidget`
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
@@ -406,7 +407,4 @@ export default {
   border: 2px dotted var(--a-primary);
 }
 
-.apos-area-widget-wrapper {
-  position: relative;
-}
 </style>
