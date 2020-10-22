@@ -683,6 +683,7 @@ module.exports = {
         browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
+        browserOptions.quickCreate = true;
         _.defaults(browserOptions, {
           components: {}
         });

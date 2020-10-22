@@ -37,6 +37,7 @@
                 type: 'primary',
                 modifiers: ['round', 'no-motion']
               }"
+              @item-clicked="emitEvent"
             />
           </li>
         </ul>
@@ -114,20 +115,16 @@ export default {
       }
       return item;
     });
-    // TODO: This will need to be an async call to get pieces as well as the
-    // new page route.
-    this.createMenu = [
-      {
-        label: 'Sandwich',
-        name: 'sandwich-artists',
-        action: 'sandwich-piece'
-      },
-      {
-        label: 'Tree',
-        name: 'trees',
-        action: 'trees-piece'
+
+    Object.values(apos.modules).forEach(module => {
+      if (module.quickCreate && module.schema && module.schema.length > 0) {
+        this.createMenu.push({
+          label: module.label || module.name,
+          name: module.name,
+          action: `${module.name}:editor`
+        });
       }
-    ];
+    });
 
     this.user = require('./userData').user;
   },
