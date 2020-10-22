@@ -52,8 +52,8 @@ module.exports = {
       // on the case, such as `@apostrophecms/global:editor` or
       // `@apostrophecms/page:manager`.
       //
-      // Alternatively, `href` may be set to an ordinary URL. This is used
-      // for the logout button in the admin bar.
+      // Alternatively, an `href` option may be set to an ordinary URL in
+      // `options`. This creates a basic link in the admin menu.
       //
       // `permission` should be a permission name such as `admin`
       // (the user must be a full admin) or `edit-@apostrophecms/event`
