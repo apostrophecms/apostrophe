@@ -194,7 +194,11 @@ export default {
           body
         });
       } catch (error) {
-        console.error('Page tree update error:', error);
+        await apos.notify('An error occurred while updating the page tree.', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
       }
 
       await this.getPages();
