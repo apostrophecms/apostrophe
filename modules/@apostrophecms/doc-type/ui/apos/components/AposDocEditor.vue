@@ -78,6 +78,8 @@ import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModa
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { defaultsDeep } from 'lodash';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import klona from 'klona';
 
 export default {
   name: 'AposDocEditor',
@@ -126,7 +128,8 @@ export default {
       splittingDoc: false,
       schemaUtilityFields: [],
       schemaOtherFields: [],
-      triggerValidation: false
+      triggerValidation: false,
+      original: null
     };
   },
   computed: {
@@ -238,6 +241,7 @@ export default {
         if (docData.type !== this.docType) {
           this.docType = docData.type;
         }
+        this.original = klona(docData);
         this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
@@ -262,11 +266,7 @@ export default {
           return;
         }
 
-        const body = {
-          ...this.docFields.data,
-          ...this.docUtilityFields.data,
-          ...this.docOtherFields.data
-        };
+        const body = this.unsplitDoc();
         let route;
         let requestMethod;
         if (this.docId) {
@@ -310,7 +310,6 @@ export default {
         const newDoc = await apos.http.post(this.moduleAction, {
           body
         });
-
         return newDoc;
       } catch (error) {
         await apos.notify('Error while creating new, empty content.', {
@@ -326,9 +325,8 @@ export default {
     },
     async loadNewInstance () {
       this.docReady = false;
-
       const newInstance = await this.getNewInstance();
-
+      this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
       }
@@ -355,6 +353,19 @@ export default {
       });
       this.splittingDoc = false;
     },
+    unsplitDoc() {
+      return {
+        ...this.docFields.data,
+        ...this.docUtilityFields.data,
+        ...this.docOtherFields.data
+      };
+    },
+    isModified() {
+      if (!this.original) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+    },
     // Override of a mixin method to accommodate the tabs/utility rail split
     getFieldValue(name) {
       if (this.docUtilityFields.data[name] !== undefined) {
@@ -366,11 +377,9 @@ export default {
     },
     updateDocUtilityFields(value) {
       this.docUtilityFields = value;
-      this.modified = true;
     },
     updateDocOtherFields(value) {
       this.docOtherFields = value;
-      this.modified = true;
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

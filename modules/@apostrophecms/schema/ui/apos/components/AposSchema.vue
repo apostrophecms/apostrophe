@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import { isEqual } from 'lodash';
+import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposSchema',
@@ -172,10 +172,9 @@ export default {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
-
         if (
           this.fieldState[field.name].data !== undefined &&
-          this.findRealChange(this.next.data[field.name], this.fieldState[field.name].data)
+          detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
         ) {
           changeFound = true;
           this.next.data[field.name] = this.fieldState[field.name].data;
@@ -187,17 +186,6 @@ export default {
       if (changeFound) {
         // ... removes need for deep watch at parent level
         this.$emit('input', { ...this.next });
-      }
-    },
-    findRealChange(oldData, newData) {
-      if (isEqual(oldData, newData)) {
-        return false;
-      } else if (!oldData && !newData) {
-        return false;
-      } else if (!oldData && Array.isArray(newData) && newData.length === 0) {
-        return false;
-      } else {
-        return true;
       }
     },
     displayComponent(fieldName) {

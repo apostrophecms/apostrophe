@@ -57,7 +57,7 @@
         :trigger-validation="triggerValidation"
         :doc-id="docFields.data._id"
         :following-values="followingValues()"
-        @reset="updateDocEdited(false)"
+        @reset="$emit('modified', false)"
         ref="schema"
         :server-errors="serverErrors"
       />
@@ -83,6 +83,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import klona from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
@@ -116,11 +117,14 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'back', 'edited' ],
+  emits: [ 'saved', 'back', 'modified' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
+      // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
+      // For overall change detection.
+      original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
       showReplace: false
@@ -161,16 +165,13 @@ export default {
   },
   watch: {
     'docFields.data': {
-      deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
-          // If either old or new state are an empty object, it's not "edited"
-          if (
-            Object.keys(oldData).length > 0 &&
-            Object.keys(newData).length > 0
-          ) {
-            this.updateDocEdited(true);
+          // If either old or new state are an empty object, it's not "modified."
+          if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
+            this.$emit('modified', false);
           }
+          this.$emit('modified', detectDocChange(this.schema, this.original, newData));
         });
 
         if ((this.activeMedia.attachment && !newData.attachment)) {
@@ -191,12 +192,13 @@ export default {
   },
   mounted() {
     this.generateLipKey();
-    this.updateDocEdited(false);
+    this.$emit('modified', false);
   },
   methods: {
     updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
+      this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
     },
@@ -222,7 +224,8 @@ export default {
             body: this.docFields.data
           });
 
-          this.updateDocEdited(false);
+          this.original = klona(this.docFields.data);
+          this.$emit('modified', false);
           this.$emit('saved');
         } catch (err) {
           await this.handleSaveError(err, {
@@ -239,9 +242,6 @@ export default {
     cancel() {
       this.showReplace = false;
       this.$emit('back');
-    },
-    updateDocEdited (val) {
-      this.$emit('edited', val);
     },
     updateActiveAttachment(attachment) {
       console.info('☄️', attachment);

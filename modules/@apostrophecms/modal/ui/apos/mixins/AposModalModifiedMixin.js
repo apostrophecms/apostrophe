@@ -1,7 +1,7 @@
 /*
  * Provides a `confirmAndCancel` method which prompts for confirmation if
- * `this.modified` is true. Setting and clearing that data
- * attribute when appropriate is up to the component using the mixin.
+ * `this.isModified` returns true. Your component must supply that method.
+ *
  * The labels can be overridden by overriding data properties as shown below.
  *
  * If the cancellation is confirmed, or if `this.modified` is not true,
@@ -14,14 +14,13 @@ export default {
       cancelHeading: 'Unsaved Changes',
       cancelDescription: 'Do you want to discard changes?',
       cancelNegativeLabel: 'Resume Editing',
-      cancelAffirmativeLabel: 'Discard Changes',
-      modified: false
+      cancelAffirmativeLabel: 'Discard Changes'
     };
   },
   methods: {
     async confirmAndCancel() {
       let dismiss;
-      if (this.modified) {
+      if (this.isModified()) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
           description: this.cancelDescription,

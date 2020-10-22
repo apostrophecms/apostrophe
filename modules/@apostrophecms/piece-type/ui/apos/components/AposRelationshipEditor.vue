@@ -39,6 +39,7 @@
 
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposRelationshipEditor',
@@ -65,6 +66,7 @@ export default {
   data() {
     return {
       docReady: false,
+      original: this.value,
       docFields: {
         data: {
           ...this.value
@@ -90,7 +92,9 @@ export default {
     },
     updateDocFields(value) {
       this.docFields = value;
-      this.modified = true;
+    },
+    isModified() {
+      return detectDocChange(this.schema, this.original, this.docFields.data);
     }
   }
 };
