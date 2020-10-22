@@ -109,6 +109,8 @@ export default {
       areaId: cuid(),
       next: validItems,
       // Track contextual editing
+      // TODO: Check if `editing` is redundant if we're controlling for
+      // contextual widgets in `AposAreaWidget`
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
