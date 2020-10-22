@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.114.0 (2020-11-04)
+
+* When users are logged in, Apostrophe polls for notifications. By default "long polling" is used, which provides good responsiveness but can tie up a lot of sockets, which is an issue if thousands of users are logged in. The `longPolling: false` option may now be set to prevent long polling for notifications. Of course notifications are received more slowly when this option is enabled.
+* In addition, the `shouldPoll` method of `apostrophe-notifications` is now called with `req`. By default, this method returns `true` for any user, however this provides an easy place to override the behavior in project-level code. This is not a security feature, but rather a means to disable the browser-side polling entirely for some users.
+
 ## 2.113.0 (2020-10-21)
 * Remove published columns in apostrophe-users and apostrophe-groups, the modules where this field does not exist.
 * Add `type` to forbiddenFields for apostrophe-pieces schemas. Thanks to [Jose96GIT](https://github.com/Jose96GIT) for the contribution. If you are using Apostrophe Workflow, you must be on `2.38.2` or later of that module because of this update.
