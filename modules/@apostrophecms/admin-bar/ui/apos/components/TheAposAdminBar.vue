@@ -104,7 +104,7 @@ export default {
   },
   mounted() {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
-    const itemsSet = this.filterEmptySchema(klona(this.items));
+    const itemsSet = klona(this.items);
 
     this.menuItems = itemsSet.map(item => {
       if (item.items) {
@@ -131,25 +131,6 @@ export default {
   methods: {
     emitEvent: function (name) {
       apos.bus.$emit('admin-menu-click', name);
-    },
-    filterEmptySchema(menu) {
-      const filteredMenu = menu.filter(item => {
-        if (apos.modules[item.name] && apos.modules[item.name].schema) {
-          return apos.modules[item.name].schema.length > 0;
-        } else {
-          return true;
-        }
-      });
-
-      // Filter out any empty schemas in sub menu items.
-      filteredMenu.map(item => {
-        if (item.items) {
-          item.items = this.filterEmptySchema(item.items);
-        }
-        return item;
-      });
-
-      return filteredMenu;
     }
   }
 };

@@ -122,7 +122,14 @@ module.exports = {
       // to set the permission requirement to admin-@apostrophecms/global.
       // This is called for you.
       addToAdminBar() {
-        self.apos.adminBar.add(`${self.__meta.name}:editor`, self.pluralLabel, 'admin-' + self.name);
+        console.info('👚', self.schema);
+        if (self.schema.length > 0) {
+          self.apos.adminBar.add(
+            `${self.__meta.name}:editor`,
+            self.pluralLabel,
+            'admin-' + self.name
+          );
+        }
       }
     };
   },
