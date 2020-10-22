@@ -56,6 +56,7 @@
         <AposWidgetControls
           :first="i === 0"
           :last="i === next.length - 1"
+          :options="{ contextual: isContextual }"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -75,7 +76,7 @@
         data-apos-widget
       />
       <component
-        v-if="(!editing) || (!widgetIsContextual(widget.type))"
+        v-if="(!editing) || (!isContextual)"
         :is="widgetComponent(widget.type)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
@@ -214,6 +215,9 @@ export default {
     },
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
+    },
+    isContextual() {
+      return this.areaOptions.widgetIsContextual[this.widget.type];
     },
     areaOptions() {
       return window.apos.area;
@@ -399,9 +403,6 @@ export default {
     },
     widgetEditorComponent(type) {
       return this.areaOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.areaOptions.widgetIsContextual[type];
     }
   }
 };
