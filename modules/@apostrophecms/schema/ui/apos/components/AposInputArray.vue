@@ -4,20 +4,18 @@
     :uid="uid"
   >
     <template #body>
-      <div class="apos-attachment">
+      <div class="apos-input-array">
         <label
           class="apos-input-wrapper"
           :class="{
             'is-disabled': field.disabled
           }"
         >
-          <p class="apos-array-count">
-            {{ next.length }} Items
-          </p>
-          <button
+          <AposButton
+            :label="editLabel"
+            :modifiers="[]"
             @click="edit"
-            :disabled="field.disabled"
-          >Edit {{ field.label }}</button>
+          />
         </label>
       </div>
     </template>
@@ -36,6 +34,11 @@ export default {
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || [])
     };
+  },
+  computed: {
+    editLabel () {
+      return `Edit ${this.field.label}`;
+    }
   },
   methods: {
     validate (value) {
@@ -66,6 +69,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>
