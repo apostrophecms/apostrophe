@@ -106,7 +106,6 @@ export default {
       addWidgetEditor: null,
       addWidgetOptions: null,
       addWidgetType: null,
-      widget: null,
       areaId: cuid(),
       next: validItems,
       // Track contextual editing
