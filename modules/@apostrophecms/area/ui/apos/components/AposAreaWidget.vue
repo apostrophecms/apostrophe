@@ -217,9 +217,10 @@ export default {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
     isContextual() {
-      return this.areaOptions.widgetIsContextual[this.widget.type];
+      return this.moduleOptions.widgetIsContextual[this.widget.type];
     },
-    areaOptions() {
+    // Browser options from the `@apostrophecms/area` module.
+    moduleOptions() {
       return window.apos.area;
     },
     widgetId() {
@@ -399,10 +400,10 @@ export default {
     },
 
     widgetComponent(type) {
-      return this.areaOptions.components.widgets[type];
+      return this.moduleOptions.components.widgets[type];
     },
     widgetEditorComponent(type) {
-      return this.areaOptions.components.widgetEditors[type];
+      return this.moduleOptions.components.widgetEditors[type];
     }
   }
 };
