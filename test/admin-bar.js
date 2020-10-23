@@ -89,4 +89,41 @@ describe('Admin bar', function() {
       t.destroy(apos);
     }
   });
+
+  it('should should not have a "global" admin menu item by default', async function() {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module
+      });
+      assert(apos.modules['@apostrophecms/admin-bar']);
+      assert(apos.adminBar);
+      assert(apos.adminBar.items.findIndex(i => i.name === '@apostrophecms/global') === -1);
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should *should* have a "global" admin menu item with custom schema', async function() {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/global': {
+            fields: {
+              add: {
+                someField: { type: 'string' }
+              }
+            }
+          }
+        }
+      });
+      assert(apos.modules['@apostrophecms/admin-bar']);
+      assert(apos.adminBar);
+      assert(apos.adminBar.items.findIndex(i => i.name === '@apostrophecms/global') > -1);
+    } finally {
+      t.destroy(apos);
+    }
+  });
 });
