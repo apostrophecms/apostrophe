@@ -253,6 +253,7 @@ export default {
           return true;
         }
       }
+      return false;
     },
     async validate(validateItem, validateLength) {
       if (validateItem) {
