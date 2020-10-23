@@ -352,7 +352,7 @@ export default {
     flex-grow: 1;
   }
 
-  .apos-modal-array_item__pane {
+  .apos-modal-array-item__pane {
     width: 100%;
     border-width: 0;
   }
