@@ -89,7 +89,7 @@ export default {
         // previous value matched the previous value of the other field(s)
         oldValue = Object.values(oldValue).join(' ').trim();
         newValue = Object.values(newValue).join(' ').trim();
-        if ((!this.next.length) || (this.next === oldValue)) {
+        if (((this.next == null) || (!this.next.length)) || (this.next === oldValue)) {
           this.next = newValue;
         }
       }
@@ -112,6 +112,9 @@ export default {
       }
     },
     validate(value) {
+      if (value == null) {
+        value = '';
+      }
       if (this.field.required) {
         if (!value.length) {
           return 'required';

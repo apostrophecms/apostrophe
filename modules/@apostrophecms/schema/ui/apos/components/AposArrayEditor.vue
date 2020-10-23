@@ -245,16 +245,20 @@ export default {
       }
     },
     updateMinMax() {
+      let minError = false;
+      let maxError = false;
       if (this.effectiveMin) {
         if (this.next.length < this.effectiveMin) {
-          this.minError = true;
+          minError = true;
         }
       }
       if (this.field.max !== undefined) {
         if (this.next.length > this.field.max) {
-          this.maxError = true;
+          maxError = true;
         }
       }
+      this.minError = minError;
+      this.maxError = maxError;
     },
     async submit() {
       if (await this.validate(true, true)) {
@@ -374,7 +378,7 @@ export default {
   }
 
   // Specificity needed due to AposButton rules
-  .apos-modal-array-items__heading .apos-modal-array-items__add {
+  .apos-modal-array-items__add.apos-button {
     position: absolute;
     top: -5px;
     right: 0;

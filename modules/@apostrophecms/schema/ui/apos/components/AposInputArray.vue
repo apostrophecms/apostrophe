@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :field="field" :error="effectiveError"
-    :uid="uid"
+    :uid="uid" :items="next"
   >
     <template #body>
       <div class="apos-input-array">
@@ -13,7 +13,6 @@
         >
           <AposButton
             :label="editLabel"
-            :modifiers="[]"
             @click="edit"
           />
         </label>
