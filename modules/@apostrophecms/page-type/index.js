@@ -5,10 +5,6 @@ const pathToRegexp = require('path-to-regexp');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   fields(self, options) {
-    if (options.permissionsFields === undefined) {
-      // By default, pages have nuanced permissions
-      options.permissionsFields = true;
-    }
     return {
       add: {
         slug: {

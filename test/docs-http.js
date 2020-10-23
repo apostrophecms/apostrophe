@@ -55,7 +55,6 @@ describe('Docs', function() {
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
-    user.permissions = [ 'admin' ];
     await apos.user.insert(apos.task.getReq(), user);
 
     jar = apos.http.jar();

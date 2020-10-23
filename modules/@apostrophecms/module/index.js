@@ -265,8 +265,8 @@ module.exports = {
       // properties of the `data` object. Nunjucks helper functions
       // can be accessed via the `apos` object.
       //
-      // If not otherwise specified, `data.user` and
-      // `data.permissions` are provided for convenience.
+      // If not otherwise specified, `data.user` is
+      // provided for convenience.
       //
       // The data argument may be omitted.
       //
@@ -345,7 +345,6 @@ module.exports = {
       //
       // `data.user` (req.user)
       // `data.query` (req.query)
-      // `data.permissions` (req.user._permissions)
       // `data.calls` (javascript markup to insert all global and
       //   request-specific calls pushed by server-side code)
       //
@@ -391,7 +390,6 @@ module.exports = {
       //
       // `data.user` (req.user)
       // `data.query` (req.query)
-      // `data.permissions` (req.user._permissions)
       // `data.calls` (javascript markup to insert all global and
       //   request-specific calls pushed by server-side code)
       // `data.home` (basic information about the home page, usually with ._children)

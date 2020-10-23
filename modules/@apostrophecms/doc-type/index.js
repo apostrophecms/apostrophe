@@ -31,59 +31,21 @@ module.exports = {
           contextual: true,
           def: false
         },
-        ...(options.permissionsFields ? {
-          loginRequired: {
-            type: 'select',
-            label: 'Who can view this?',
-            def: '',
-            choices: [
-              {
-                value: '',
-                label: 'Public'
-              },
-              {
-                value: 'loginRequired',
-                label: 'Login Required'
-              },
-              {
-                value: 'certainUsers',
-                label: 'Certain People',
-                showFields: [
-                  '_viewGroups',
-                  '_viewUsers'
-                ]
-              }
-            ]
-          },
-          _viewUsers: {
-            type: 'relationship',
-            withType: '@apostrophecms/user',
-            label: 'These Users can View',
-            idsStorage: 'viewUsersIds'
-          },
-          _viewGroups: {
-            type: 'relationship',
-            withType: '@apostrophecms/group',
-            label: 'These Groups can View',
-            idsStorage: 'viewGroupsIds'
-          },
-          _editUsers: {
-            type: 'relationship',
-            withType: '@apostrophecms/user',
-            label: 'These Users can Edit',
-            idsStorage: 'editUsersIds',
-            // Gets patched after full initialization
-            permission: 'admin'
-          },
-          _editGroups: {
-            type: 'relationship',
-            withType: '@apostrophecms/group',
-            label: 'These Groups can Edit',
-            idsStorage: 'editGroupsIds',
-            // Gets patched after full initialization
-            permission: 'admin'
-          }
-        } : {})
+        visibility: {
+          type: 'select',
+          label: 'Who can view this?',
+          def: '',
+          choices: [
+            {
+              value: '',
+              label: 'Public'
+            },
+            {
+              value: 'loginRequired',
+              label: 'Login Required'
+            }
+          ]
+        }
       },
       group: {
         basics: {

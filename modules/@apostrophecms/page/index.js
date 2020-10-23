@@ -624,130 +624,12 @@ database.`);
         }
         await self.apos.lock.unlock('@apostrophecms/page:tree');
       },
-      // This method pushes a page's permissions to its subpages selectively based on
-      // whether the applyToSubpages choice was selected for each one. It also copies
-      // the `loginRequired` property to subpages if the `applyLoginRequiredToSubpages`
-      // choice was selected.
-      //
-      // Both additions and deletions from the permissions list can be propagated
-      // in this way.
-      //
-      // This requires some tricky mongo work to do it efficiently, especially since we
-      // need to update both the relationship ids and the denormalized docPermissions array.
-      //
-      // The applyToSubpages choice is actually a one-time action, not a permanently
-      // remembered setting, so the setting itself is cleared afterwards by this
-      // method.
-      //
-      // This method is called for us by the @apostrophecms/doc module on update
-      // operations, so we first make sure it's a page. We also make sure it's
-      // not a new page (no kids to propagate anything to).
-      async docAfterDenormalizePermissions(req, page, options) {
-        if (!self.isPage(page)) {
-          return;
-        }
-        if (!page._id) {
-          return;
-        }
-        const admin = req.user && req.user._permissions.admin;
-        const allowed = [ 'view' ];
-        if (admin) {
-          allowed.push('edit');
-        }
-        const propagateAdd = {};
-        const propagatePull = {};
-        const propagateSet = {};
-        const loginRequired = page.loginRequired;
-        if (page.applyLoginRequiredToSubpages) {
-          propagateSet.loginRequired = loginRequired;
-          // It's a one-time action, don't remember it
-          page.applyLoginRequiredToSubpages = false;
-        }
-        allowed.forEach(prefix => {
-          const fields = [
-            prefix + 'GroupsIds',
-            prefix + 'UsersIds'
-          ];
-          const removedFields = fields.map(field => {
-            return field.replace(/Ids$/, 'RemovedIds');
-          });
-          fields.forEach(field => {
-            (page[field] || []).forEach(id => {
-              const fieldsStorage = field.replace('Ids', 'Fields');
-              const fieldsById = page[fieldsStorage];
-              const fields = fieldsById && (fieldsById[id] || {});
-              const propagate = fields.applyToSubpages;
-              if (propagate) {
-                append(propagateAdd, 'docPermissions', prefix + '-' + id);
-                append(propagateAdd, field, id);
-                // This is not a persistent setting, it's a one-time indicator that
-                // we should propagate now
-                propagateSet[fieldsStorage + '.' + id + '.applyToSubpages'] = false;
-              }
-              fields.applyToSubpages = false;
-            });
-          });
-          removedFields.forEach(field => {
-            (page[field] || []).forEach(id => {
-              const fieldsStorage = field.replace('RemovedIds', 'Fields');
-              const fieldsById = page[fieldsStorage];
-              const fields = fieldsById && (fieldsById[id] || {});
-              const propagate = fields.applyToSubpages;
-              if (propagate) {
-                append(propagatePull, 'docPermissions', prefix + '-' + id);
-                append(propagatePull, field.replace('Removed', ''), id);
-              }
-              // This is a one-time operation each time it's chosen, so don't remember it
-              fields.applyToSubpages = false;
-            });
-          });
-        });
-        if (!_.isEmpty(propagatePull) || !_.isEmpty(propagateAdd) || !_.isEmpty(propagateSet)) {
-          const commands = [];
-          // Use separate commands because MongoDB is increasingly intolerant
-          // of using these operators in the same update call
-          if (!_.isEmpty(propagatePull)) {
-            commands.push({ $pull: operate(propagatePull, '$in') });
-          }
-          if (!_.isEmpty(propagateAdd)) {
-            commands.push({ $addToSet: operate(propagateAdd, '$each') });
-          }
-          if (!_.isEmpty(propagateSet)) {
-            commands.push({ $set: propagateSet });
-          }
-          // Oh brother, must do it in two passes
-          // https://jira.mongodb.org/browse/SERVER-1050
-          const criteria = {
-            $and: [
-              { path: self.matchDescendants(page) },
-              self.apos.permission.criteria(req, 'edit-' + page.type)
-            ]
-          };
-          for (const command of commands) {
-            await self.apos.doc.db.updateMany(criteria, command);
-          }
-        }
-        function append(container, key, value) {
-          if (!_.has(container, key)) {
-            container[key] = [];
-          }
-          container[key].push(value);
-        }
-        function operate(container, operator) {
-          const criterion = {};
-          _.each(container, function (val, key) {
-            criterion[key] = {};
-            criterion[key][operator] = val;
-          });
-          return criterion;
-        }
-      },
       // This method creates a new object suitable to be inserted
       // as a child of the specified parent via insert(). It DOES NOT
       // insert it at this time. If the parent page is locked down
       // such that no child page types are permitted, this method
-      // returns null. The permissions of the new child page match
-      // the permissions of the parent.
+      // returns null. Visibility settings are inherited from the
+      // parent page.
       newChild(parentPage) {
         const pageType = self.allowedChildTypes(parentPage)[0];
         if (!pageType) {
@@ -762,7 +644,7 @@ database.`);
           published: parentPage.published
         });
         // Inherit permissions from parent page
-        _.assign(page, _.pick(parentPage, 'loginRequired', 'applyLoginRequiredToSubpages', 'viewUsersIds', 'viewUsersFields', 'viewGroupsIds', 'viewGroupsFields', 'editUsersIds', 'editUsersFields', 'editGroupsIds', 'editGroupsFields', 'docPermissions'));
+        _.assign(page, _.pick(parentPage, 'visibility', 'applyVisibilityToSubpages'));
         if (!page.published) {
           page.published = false;
         }

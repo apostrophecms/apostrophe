@@ -78,7 +78,6 @@ describe('Pages REST', function() {
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
-    user.permissions = [ 'admin' ];
 
     return apos.user.insert(apos.task.getReq(), user);
   });
