@@ -39,7 +39,6 @@ export const piecesManager = () => {
         <AposPiecesManager
           v-if="active" @safe-close="finishExit"
           moduleName="product" @trash="handleTrash"
-          @sort="log"
         />
       </div>
     `

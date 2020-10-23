@@ -1,7 +1,9 @@
-
 // TODO: Reconcile the overlap in this mixin between the pages and pieces
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
+
+import klona from 'klona';
+
 export default {
   data() {
     return {
@@ -10,7 +12,7 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? this.chosen : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
     };
   },
   props: {
@@ -23,6 +25,7 @@ export default {
       default: false
     }
   },
+  emits: [ 'modal-result' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {
@@ -38,6 +41,9 @@ export default {
       }
 
       return false;
+    },
+    sort(action) {
+      this.$emit('sort', action);
     },
     headers() {
       return this.options.columns ? this.options.columns : [];
@@ -121,9 +127,6 @@ export default {
           return 10;
         }
       }
-    },
-    sort(action) {
-      this.$emit('sort', action);
     },
     generateUi () {
       this.generateIcons();
