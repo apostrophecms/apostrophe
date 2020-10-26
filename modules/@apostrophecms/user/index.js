@@ -95,12 +95,23 @@ module.exports = {
             'firstName',
             'lastName',
             'title',
+            'slug',
+            'slug',
+            'trash'
+          ]
+        },
+        utility: {
+          label: 'Utility',
+          fields: [
             'username',
             'email',
-            'password',
-            'slug',
-            'disabled',
-            'slug'
+            'password'
+          ]
+        },
+        permissions: {
+          label: 'Permissions',
+          fields: [
+            'disabled'
           ]
         }
       }
