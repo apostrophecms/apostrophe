@@ -5,10 +5,12 @@ $z-index-base: 0;
 $z-index-default: 1;
 $z-index-model-popup: 1;
 $z-index-manager-display: 2;
-$z-index-widget-add-focus: 3;
-$z-index-widget-focus: 3;
+// WIDGET Z-INDEX NOTE: It's important for all widgets in an area to be in the
+// same z-index stacking context. The only aspects that should be above the
+// base stacking context are the controls (including the label).
+$z-index-widget-label: 2;
+$z-index-widget-controls: 3;
 $z-index-manager-toolbar: 3;
-$z-index-widget-highlight: 4;
 $z-index-admin-bar: 1000;
 $z-index-modal-bg: 2000;
 $z-index-modal-inner: 2001;
