@@ -141,7 +141,7 @@ module.exports = {
       },
       '@apostrophecms/version:unversionedFields': {
         baseUnversionedFields(req, doc, fields) {
-          fields.push('loginRequired');
+          fields.push('visibility');
         }
       }
     };

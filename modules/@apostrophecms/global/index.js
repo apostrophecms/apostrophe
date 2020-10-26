@@ -48,7 +48,8 @@ module.exports = {
     remove: [
       'title',
       'slug',
-      'trash'
+      'trash',
+      'visibility'
     ]
   },
   init(self, options) {
@@ -119,14 +120,17 @@ module.exports = {
       // merely creating a new one (for which there is no UI). Thus we need
       // to set the permission requirement.
       addToAdminBar() {
-        self.apos.adminBar.add(
-          self.__meta.name,
-          self.pluralLabel,
-          {
-            action: 'admin',
-            type: self.name
-          }
-        );
+        if (self.schema.length > 0) {
+          self.apos.adminBar.add(
+            `${self.__meta.name}:editor`,
+            self.pluralLabel,
+            'admin-' + self.name,
+            {
+              action: 'admin',
+              type: self.name
+            }
+          );
+        }
       }
     };
   },

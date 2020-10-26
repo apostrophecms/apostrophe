@@ -122,11 +122,7 @@ const realWorldCase = {
       name: 'permissions',
       label: 'Permissions',
       fields: [
-        'loginRequired',
-        '_viewUsers',
-        '_viewGroups',
-        '_editUsers',
-        '_editGroups'
+        'visibility'
       ],
       last: true
     },

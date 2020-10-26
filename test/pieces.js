@@ -452,7 +452,7 @@ describe('Pieces', function() {
 
   let updateProduct;
 
-  it('can POST products with a session, some visibile', async () => {
+  it('can POST products with a session, some visible', async () => {
     // range is exclusive at the top end, I want 10 things
     for (let i = 1; (i <= 10); i++) {
       const response = await apos.http.post('/api/v1/product', {
@@ -656,9 +656,9 @@ describe('Pieces', function() {
     assert(response.choices.title);
     assert(response.choices.title[0].label.match(/Cool Product/));
     assert(response.choices.visibility);
-    console.log(response.choices);
-    assert(response.choices.visibility[0].value === 'public');
-    assert(response.choices.visibility[1].value === 'loginRequired');
+    assert(response.choices.visibility.length === 2);
+    assert(response.choices.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.choices.visibility.find(item => item.value === 'public'));
     assert(response.choices._articles);
     assert(response.choices._articles[0].label === 'First Article');
     // an _id
@@ -680,8 +680,9 @@ describe('Pieces', function() {
     // Doesn't work for every field type, but does for this
     assert(response.counts.title[0].count === 1);
     assert(response.counts.visibility);
-    assert(response.counts.visibility[0].value === 'public');
-    assert(response.counts.visibility[1].value === 'loginRequired');
+    assert(response.counts.visibility.length === 2);
+    assert(response.counts.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.counts.visibility.find(item => item.value === 'public'));
     assert(response.counts._articles);
     assert(response.counts._articles[0].label === 'First Article');
     // an _id

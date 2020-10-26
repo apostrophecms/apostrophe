@@ -1565,40 +1565,17 @@ database.`);
       // schema fields. Called by the update routes (for new pages, there are
       // no subpages to apply things to yet). Returns a new schema
       addApplyToSubpagesToSchema(schema) {
-        const fields = [
-          '_viewUsers',
-          '_viewGroups',
-          '_editUsers',
-          '_editGroups'
-        ];
         // Do only as much cloning as we have to to avoid modifying the original
         schema = _.clone(schema);
-        const index = _.findIndex(schema, { name: 'loginRequired' });
+        const index = _.findIndex(schema, { name: 'visibility' });
         if (index !== -1) {
           schema.splice(index + 1, 0, {
             type: 'boolean',
-            name: 'applyLoginRequiredToSubpages',
+            name: 'applyVisibilityToSubpages',
             label: 'Apply to Subpages',
             group: schema[index].group
           });
         }
-        _.each(fields, function (name) {
-          const index = _.findIndex(schema, { name: name });
-          if (index === -1) {
-            return;
-          }
-          const field = _.clone(schema[index]);
-          const base = name.replace(/^_/, '');
-          field.removedIdsField = base + 'RemovedIds';
-          field.fieldsStorage = base + 'Fields';
-          field.schema = [ {
-            name: 'applyToSubpages',
-            type: 'boolean',
-            label: 'Apply to Subpages',
-            inline: true
-          } ];
-          schema[index] = field;
-        });
         return schema;
       },
       // Get the page type names for all the parked pages, including parked children, recursively.
