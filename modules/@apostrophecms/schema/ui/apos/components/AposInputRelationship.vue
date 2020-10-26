@@ -76,8 +76,28 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
-  mounted() {
+  async mounted() {
     this.validateAndEmit();
+
+    // Check if this is joined to an image.
+    if (this.field.withType === '@apostrophecms/image' && this.value.data && this.value.data.length > 0) {
+      // If it is, go get the URLs and populate them on `value`.
+      let i = 0;
+      for (const image of this.value.data) {
+        if (image.attachment._urls) {
+          // If it was updated during this page session we'll already have it.
+          return;
+        }
+
+        const action = apos.modules['@apostrophecms/image'].action;
+        const imgData = await apos.http.get(`${action}/${image._id}`, {
+          busy: true
+        });
+
+        this.value.data.splice(i, 1, imgData);
+        i++;
+      }
+    }
   },
   methods: {
     validate(value) {

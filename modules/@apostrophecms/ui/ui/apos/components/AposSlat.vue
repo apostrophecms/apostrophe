@@ -40,8 +40,12 @@
         >
           <eye-icon :size="14" />
         </a>
-        <div v-if="item.group === 'images'" class="apos-slat__media-preview">
-          <img :src="item._urls['one-sixth']" :alt="item.title" class="apos-slat__media" >
+        <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
+          <img
+            :src="item.attachment._urls['one-sixth']"
+            :alt="item.description || item.title"
+            class="apos-slat__media"
+          >
         </div>
         <div v-else-if="item.extension" class="apos-slat__extension-wrapper">
           <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
