@@ -56,43 +56,29 @@ module.exports = {
         }
       },
 
-      // Determines whether the active user can carry out the
-      // action specified by `action` on the doc or type name
-      // specified by `docOrType`. Returns true if the action
-      // is permitted, false if not permitted.
-      //
-      // If `docOrType` is a doc, this method checks whether the user
-      // can carry out the specified action on that particular doc. If it is
-      // a string, this method checks whether the user can potentially carry out
-      // the action on that doc type generally.
-      //
-      // The doc passed need not already exist in the database.
-      //
-      // See also `criteria` which can be called to build a MongoDB
-      // criteria object returning only documents on which the active user
-      // can carry out the specified action.
-      //
-      criteria(req, action, type) {
+      // Returns a MongoDB criteria object that retrieves only documents
+      // the user is allowed to perform `action` on.
+
+      criteria(req, action) {
         if (req.user) {
+          // For now, users can do anything
           return {};
         }
         if (action !== 'view') {
+          // Public can only view for now
           return {
             _id: 'thisIdWillNeverMatch'
           };
         }
-        if (type) {
-          const manager = self.apos.doc.getManager(type);
-          if (manager.isAdminOnly) {
-            return {
-              _id: 'thisIdWillNeverMatch'
-            };
-          }
-        }
+        const restrictedTypes = Object.keys(self.apos.doc.managers).filter(name => self.apos.doc.getManager(name).isAdminOnly());
         return {
-          visibility: 'public'
+          visibility: 'public',
+          type: {
+            $nin: restrictedTypes
+          }
         };
       },
+
       // For each object in the array, if the user is able to
       // carry out the specified action, a property is added
       // to the object. For instance, if the action is "edit",
@@ -103,8 +89,8 @@ module.exports = {
       // This is most often used when an array of objects the user
       // can view have been retrieved and we wish to know which ones
       // the user can also edit.
+
       annotate(req, action, objects) {
-        console.log('>>> ANNOTATING:', action, objects);
         const property = `_${action}`;
         for (const object of objects) {
           if (self.can(req, action, object)) {

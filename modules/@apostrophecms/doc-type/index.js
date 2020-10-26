@@ -859,12 +859,6 @@ module.exports = {
         // If this method is never called, or you pass
         // `undefined` or `null`, `view` is still checked for.
         //
-        // The permission name is suffixed for you
-        // with a specific doc type name if the type query builder
-        // has been called, however for database queries
-        // this normally makes no difference unless the permissions
-        // module has been extended.
-        //
         // In all cases, all of the returned docs are marked
         // with `_edit: true` properties
         // if the user associated with the request is allowed to
@@ -874,9 +868,9 @@ module.exports = {
 
         permission: {
           finalize() {
-            let permission = query.get('permission');
+            const permission = query.get('permission');
             if (permission !== false) {
-              query.and(self.apos.permission.criteria(query.req, permission || 'view', query.get('type') || null));
+              query.and(self.apos.permission.criteria(query.req, permission || 'view'));
             }
           },
           after: function(results) {
