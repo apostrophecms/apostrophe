@@ -83,7 +83,6 @@ module.exports = {
     });
     self.validateTypeChoices();
     self.finalizeControls();
-    self.addPermissions();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -100,7 +99,7 @@ module.exports = {
         const all = self.apos.launder.boolean(req.query.all);
         const flat = self.apos.launder.boolean(req.query.flat);
         if (all) {
-          if (!self.apos.permission.can(req, 'admin-@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
             throw self.apos.error('forbidden');
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
@@ -1225,7 +1224,7 @@ database.`);
             if (!item.permission) {
               return true;
             }
-            if (self.apos.permission.can(req, item.permission)) {
+            if (self.apos.permission.can(req, item.permission.action, item.permission.type)) {
               return true;
             }
           });
@@ -1463,20 +1462,31 @@ database.`);
           await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
         }
         async function insert() {
-          const defaults = item._defaults;
-          if (defaults) {
-            delete item._defaults;
-            _.defaults(item, defaults);
-          }
-          if (existing) {
-            return;
-          }
-          if (!parent) {
-            item._id = self.apos.util.generateId();
-            item.path = item._id;
-            return self.apos.doc.insert(req, item);
+          const parkedDefaults = item._defaults || {};
+          delete item._defaults;
+          let ordinaryDefaults;
+          if (parent) {
+            ordinaryDefaults = self.newChild(parent);
           } else {
-            return self.insert(req, parent._id, 'lastChild', item);
+            // The home page is being parked
+            const type = item.type || parkedDefaults.type;
+            if (!type) {
+              throw new Error('Parked home page must have an explicit page type:\n\n' + JSON.stringify(item, null, '  '));
+            }
+            ordinaryDefaults = self.apos.doc.getManager(type).newInstance();
+          }
+          const _item = {
+            ...ordinaryDefaults,
+            ...parkedDefaults,
+            ...item
+          };
+          delete _item._children;
+          if (!parent) {
+            _item._id = self.apos.util.generateId();
+            _item.path = _item._id;
+            return self.apos.doc.insert(req, _item);
+          } else {
+            return self.insert(req, parent._id, 'lastChild', _item);
           }
         }
         async function children() {
@@ -1661,16 +1671,6 @@ database.`);
           }
         ];
       },
-      addPermissions() {
-        self.apos.permission.add({
-          value: 'admin-@apostrophecms/page',
-          label: 'Admin: Pages'
-        });
-        self.apos.permission.add({
-          value: 'edit-@apostrophecms/page',
-          label: 'Edit: Pages'
-        });
-      },
       removeParkedPropertiesFromSchema(page, schema) {
         return _.filter(schema, function (field) {
           return !_.includes(page.parked, field.name);
@@ -1821,7 +1821,7 @@ database.`);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -1852,7 +1852,7 @@ database.`);
       // nothing. Simplifies implementation of `getAll` and `getOne`.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
             throw self.apos.error('notfound');
           }
         }

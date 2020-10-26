@@ -133,7 +133,7 @@ module.exports = {
       '@apostrophecms/doc-type:beforeUpdate': {
         async checkPermissionsBeforeUpdate(req, doc, options) {
           if (options.permissions !== false) {
-            if (!self.apos.permission.can(req, 'edit-' + doc.type, doc)) {
+            if (!self.apos.permission.can(req, 'edit', doc)) {
               throw new Error('forbidden');
             }
           }
@@ -141,7 +141,7 @@ module.exports = {
       },
       '@apostrophecms/version:unversionedFields': {
         baseUnversionedFields(req, doc, fields) {
-          fields.push('slug', 'docPermissions', 'viewUserIds', 'viewGroupIds', 'editUserIds', 'editGroupIds', 'loginRequired');
+          fields.push('loginRequired');
         }
       }
     };
@@ -272,7 +272,6 @@ module.exports = {
         const m = self.getManager(doc.type);
         await m.emit('beforeInsert', req, doc, options);
         await m.emit('beforeSave', req, doc, options);
-        await self.denormalizePermissions(req, doc, options);
         await self.insertBody(req, doc, options);
         await m.emit('afterInsert', req, doc, options);
         await m.emit('afterSave', req, doc, options);
@@ -292,9 +291,6 @@ module.exports = {
       //
       // Returns the updated doc.
       //
-      // The `edit-doc` permission is checked for the
-      // specific object passed.
-      //
       // If a unique key error occurs, the `@apostrophecms/doc:fixUniqueError`
       // event is emitted and the doc is passed to all handlers.
       // Modify the document to fix any properties that may need to be
@@ -311,37 +307,11 @@ module.exports = {
         const m = self.getManager(doc.type);
         await m.emit('beforeUpdate', req, doc, options);
         await m.emit('beforeSave', req, doc, options);
-        await self.denormalizePermissions(req, doc, options);
         await self.updateBody(req, doc, options);
         await m.emit('afterUpdate', req, doc, options);
         await m.emit('afterSave', req, doc, options);
         await m.emit('afterLoad', req, [ doc ]);
         return doc;
-      },
-      // Apostrophe edits permissions via relationships,
-      // but for query performance then copies them to a single array with entries
-      // like: `[ 'edit-xxx', 'view-xxx' ]`, where `xxx` might be a user id
-      // or a group id. This method performs that copying. It also invokes
-      // the docAfterDenormalizePermissions method of every module that has one,
-      // which allows the pages module to piggyback and add `applyToSubpages` behavior.
-      //
-      // The `options` object is for future extension and is passed on
-      // to this method by `insert` and `update`.
-      async denormalizePermissions(req, doc, options) {
-        const fields = {
-          viewGroupsIds: 'view',
-          viewUsersIds: 'view',
-          editGroupsIds: 'edit',
-          editUsersIds: 'edit'
-        };
-        let docPermissions = [];
-        _.each(fields, function (prefix, name) {
-          docPermissions = docPermissions.concat(_.map(doc[name] || [], function (id) {
-            return prefix + '-' + id;
-          }));
-        });
-        doc.docPermissions = docPermissions;
-        return self.emit('afterDenormalizePermissions', req, doc, options);
       },
       // Recursively visit every property of a doc,
       // invoking an iterator function for each one. Optionally
@@ -457,8 +427,8 @@ module.exports = {
       // content.
       testInsertPermissions(req, doc, options) {
         if (!(options.permissions === false)) {
-          if (!self.apos.permission.can(req, 'edit-' + doc.type, null, doc)) {
-            throw new Error('forbidden');
+          if (!self.apos.permission.can(req, 'edit', doc)) {
+            throw self.apos.error('forbidden');
           }
         }
       },
@@ -469,7 +439,7 @@ module.exports = {
           if (doc.title) {
             doc.slug = self.apos.util.slugify(doc.title);
           } else if (doc.slug !== 'none') {
-            throw new Error('Document has neither slug nor title, giving up');
+            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
       },

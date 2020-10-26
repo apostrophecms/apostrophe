@@ -145,7 +145,6 @@ module.exports = {
 
     self.composeFilters();
     self.composeColumns();
-    self.addPermissions();
     self.addToAdminBar();
     self.addManagerModal();
     self.finalizeControls();
@@ -210,21 +209,8 @@ module.exports = {
   handlers(self, options) {
     return {
       beforeInsert: {
-        ensureTypeAndCreatorPermissions(req, piece, options) {
+        ensureType(req, piece, options) {
           piece.type = self.name;
-          if (options.permissions !== false && !self.apos.permission.can(req, 'admin-' + self.name)) {
-            // If we are not an admin for this type and we just created something,
-            // make sure we wind up on the list of people who can edit it. Note that
-            // permissions will still keep us from actually inserting it, and thus
-            // making this change, if we're not cool enough to create one. However if
-            // we are ignoring permissions via `permissions: false` do not do this
-            // (leave it up to the developer to decide if anybody gets permission to
-            // edit later).
-            if (req.user) {
-              piece.editUsersIds = (piece.editUsersIds || []).concat([ req.user._id ]);
-              piece.docPermissions = (piece.docPermissions || []).concat([ 'edit-' + req.user._id ]);
-            }
-          }
         }
       },
       afterInsert: {
@@ -389,24 +375,11 @@ module.exports = {
           types.push(self.name);
         }
       },
-      addPermissions() {
-        if (!self.isAdminOnly()) {
-          self.apos.permission.add({
-            value: 'admin-' + self.name,
-            label: 'Admin: ' + self.label
-          });
-          self.apos.permission.add({
-            value: 'edit-' + self.name,
-            label: 'Edit: ' + self.label
-          });
-          self.apos.permission.add({
-            value: 'submit-' + self.name,
-            label: 'Submit: ' + self.label
-          });
-        }
-      },
       addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, self.getEditPermissionName());
+        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, {
+          action: 'edit',
+          type: self.name
+        });
       },
       addManagerModal() {
         self.apos.modal.add(
@@ -637,7 +610,7 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.name)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -654,7 +627,7 @@ module.exports = {
       // nothing. Simplifies implementation of `getAll` and `getOne`.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.name)) {
             throw self.apos.error('notfound');
           }
         }

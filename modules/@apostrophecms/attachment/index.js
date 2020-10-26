@@ -129,7 +129,6 @@ module.exports = {
     await self.enableCollection();
     await self.initUploadfs();
     self.addFieldType();
-    self.addPermissions();
     self.enableBrowserData();
     self.apos.task.add('@apostrophecms/attachment', 'rescale', 'Usage: node app @apostrophecms/attachment:rescale\n\n' + 'Regenerate all sizes of all image attachments. Useful after a new size\n' + 'is added to the configuration. Takes a long time!', async function (apos, argv) {
       return self.rescaleTask(argv);
@@ -253,15 +252,6 @@ module.exports = {
         await self.db.createIndex({ trashDocIds: 1 });
       },
 
-      addPermissions() {
-        self.apos.permission.add({
-          value: 'edit-attachment',
-          // We need the edit- prefix so those with the blanket editor permission
-          // are good to go, but for a label we want to convey that this is
-          // something almost everyone with editing privileges anywhere should be given
-          label: 'Upload & Crop'
-        });
-      },
       addFieldType() {
         self.apos.schema.addFieldType({
           name: self.name,
@@ -398,7 +388,7 @@ module.exports = {
           trashDocIds: []
         };
         if (!(options.permissions === false)) {
-          if (!self.apos.permission.can(req, 'edit-attachment')) {
+          if (!self.apos.permission.can(req, 'edit', 'attachment')) {
             throw self.apos.error('forbidden');
           }
         }
@@ -974,7 +964,7 @@ module.exports = {
       },
       // Middleware method used when only those with attachment privileges should be allowed to do something
       canUpload(req, res, next) {
-        if (!self.apos.permission.can(req, 'edit-attachment')) {
+        if (!self.apos.permission.can(req, 'edit', 'attachment')) {
           res.statusCode = 403;
           return res.send({
             type: 'forbidden',

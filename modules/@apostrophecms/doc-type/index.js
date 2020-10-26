@@ -34,10 +34,10 @@ module.exports = {
         visibility: {
           type: 'select',
           label: 'Who can view this?',
-          def: '',
+          def: 'public',
           choices: [
             {
-              value: '',
+              value: 'public',
               label: 'Public'
             },
             {
@@ -92,7 +92,6 @@ module.exports = {
     // them from earlier components in the path or slug as required.
     self.trashPrefixFields = [ 'slug' ];
     self.trashSuffixFields = [];
-    self.patchAdminPermissionInSchema();
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
@@ -287,20 +286,6 @@ module.exports = {
       removeTrashSuffixFields(fields) {
         self.trashSuffixFields = _.difference(self.trashSuffixFields, fields);
       },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has some edit privileges for
-      // this doc type (not necessarily every instance of it),
-      // for example the ability to create one. Determines
-      // admin bar menu item visibility
-      getEditPermissionName() {
-        return self.isAdminOnly() ? 'admin' : 'edit-' + self.name;
-      },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has full admin privileges for
-      // this doc type
-      getAdminPermissionName() {
-        return self.isAdminOnly() ? 'admin' : 'admin-' + self.name;
-      },
       // Returns a query that will only yield docs of the appropriate type
       // as determined by the `name` option of the module.
       // `criteria` is the MongoDB criteria object, and any properties of
@@ -394,7 +379,7 @@ module.exports = {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission);
+          return !field.permission || self.apos.permission.can(req, field.permission && field.permission.action, field.permission && field.permission.type);
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
@@ -435,7 +420,6 @@ module.exports = {
         // logic, such as `_id` or `docPermissions`
         const forbiddenFields = [
           '_id',
-          'docPermissions',
           'titleSortified',
           'highSearchText',
           'highSearchWords',
@@ -447,25 +431,8 @@ module.exports = {
             throw new Error('Doc type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
-        self.patchAdminPermissionInSchema();
       },
-      // In the schema, `_editUsers` and `_editGroups` are
-      // initially locked down to sitewide admins. Now that
-      // we've constructed the module completely, take advantage
-      // of `getAdminPermissionName` to specify a more nuanced permission,
-      // such as the admin permission for this piece type, or for pages
-      patchAdminPermissionInSchema() {
-        const fieldNames = [
-          '_editUsers',
-          '_editGroups'
-        ];
-        _.each(fieldNames, function (fieldName) {
-          const field = _.find(self.schema, { name: fieldName });
-          if (field) {
-            field.permission = self.getAdminPermissionName();
-          }
-        });
-      },
+
       // This method provides the back end of /autocomplete routes.
       // For the implementation of the autocomplete() query builder see autocomplete.js.
       //
@@ -883,14 +850,14 @@ module.exports = {
 
         // `.permission('admin')` would limit the returned docs to those for which the
         // user associated with the query's `req` has the named permission.
-        // By default, `view-doc` is checked for. You might want to specify
-        // `edit-doc`, or `admin` if you are interested in the global admin permission.
+        // By default, `view` is checked for. You might want to specify
+        // `edit`.
         //
         // USE WITH CARE: If you pass `false`, permissions checks are disabled
         // for this particular query.
         //
         // If this method is never called, or you pass
-        // `undefined` or `null`, `view-doc` is still checked for.
+        // `undefined` or `null`, `view` is still checked for.
         //
         // The permission name is suffixed for you
         // with a specific doc type name if the type query builder
@@ -907,19 +874,15 @@ module.exports = {
 
         permission: {
           finalize() {
-            const typeSuffix = '-' + (query.get('type') || 'doc');
             let permission = query.get('permission');
             if (permission !== false) {
-              if (permission && (!permission.match(/-/))) {
-                permission = permission + typeSuffix;
-              }
-              query.and(self.apos.permission.criteria(query.req, permission || ('view-' + typeSuffix)));
+              query.and(self.apos.permission.criteria(query.req, permission || 'view', query.get('type') || null));
             }
           },
           after: function(results) {
             // In all cases we mark the docs with ._edit if
             // the req is permitted to do that
-            self.apos.permission.annotate(query.req, 'edit-doc', results);
+            self.apos.permission.annotate(query.req, 'edit', results);
           }
         },
 

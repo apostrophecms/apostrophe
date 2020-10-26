@@ -236,7 +236,7 @@ module.exports = {
         const doc = await find();
         return update(doc);
         async function find() {
-          const doc = await self.apos.doc.find(req, { _id: docId }).permission('edit-doc').published(null).toObject();
+          const doc = await self.apos.doc.find(req, { _id: docId }).permission('edit').published(null).toObject();
           if (!doc) {
             throw self.apos.error('notfound');
           }

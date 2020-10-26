@@ -119,10 +119,16 @@ module.exports = {
       // There is only one useful object of this type, so having access to the admin
       // bar button is not helpful unless you can edit that one, rather than
       // merely creating a new one (for which there is no UI). Thus we need
-      // to set the permission requirement to admin-@apostrophecms/global.
-      // This is called for you.
+      // to set the permission requirement.
       addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, 'admin-' + self.name);
+        self.apos.adminBar.add(
+          self.__meta.name,
+          self.pluralLabel,
+          {
+            action: 'admin',
+            type: self.name
+          }
+        );
       }
     };
   },

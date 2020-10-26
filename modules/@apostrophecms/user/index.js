@@ -130,7 +130,6 @@ module.exports = {
     self.initializeCredential();
     self.addOurTrashPrefixFields();
     self.enableSecrets();
-    await self.ensureGroups();
     await self.ensureSafe();
   },
   apiRoutes(self, options) {
@@ -382,30 +381,6 @@ module.exports = {
         const changes = { $unset: {} };
         changes.$unset[secret + 'Hash'] = 1;
         await self.safe.updateOne({ _id: user._id }, changes);
-      },
-
-      // Ensure the existence of the groups configured via the `groups` option,
-      // if any, and refresh their permissions.
-
-      async ensureGroups() {
-        if (!options.groups) {
-          return;
-        }
-
-        for (const group of options.groups) {
-          await self.ensureGroup(group);
-        }
-        const groupField = _.find(self.schema, { name: 'group' });
-
-        for (const group of options.groups) {
-          groupField.choices.push({
-            label: group.title,
-            value: group._id
-          });
-        }
-        if (options.groups.length) {
-          groupField.def = options.groups[0]._id;
-        }
       },
 
       // Initialize the [credential](https://npmjs.org/package/credential) module.

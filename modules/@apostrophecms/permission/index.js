@@ -46,10 +46,10 @@ module.exports = {
         if (action === 'view') {
           if (manager.isAdminOnly()) {
             return false;
+          } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
+            return false;
           } else {
-            if (docOrType.visibility !== 'public') {
-              return false;
-            }
+            return true;
           }
         } else {
           return false;
@@ -81,13 +81,21 @@ module.exports = {
             _id: 'thisIdWillNeverMatch'
           };
         }
+        if (type) {
+          const manager = self.apos.doc.getManager(type);
+          if (manager.isAdminOnly) {
+            return {
+              _id: 'thisIdWillNeverMatch'
+            };
+          }
+        }
         return {
           visibility: 'public'
         };
       },
       // For each object in the array, if the user is able to
       // carry out the specified action, a property is added
-      // to the object. For instance, if the action is "edit-doc",
+      // to the object. For instance, if the action is "edit",
       // each doc the user can edit gets a "._edit = true" property.
       //
       // Note the underscore.
@@ -96,6 +104,7 @@ module.exports = {
       // can view have been retrieved and we wish to know which ones
       // the user can also edit.
       annotate(req, action, objects) {
+        console.log('>>> ANNOTATING:', action, objects);
         const property = `_${action}`;
         for (const object of objects) {
           if (self.can(req, action, object)) {
