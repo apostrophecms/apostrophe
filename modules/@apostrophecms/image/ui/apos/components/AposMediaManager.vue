@@ -273,9 +273,6 @@ export default {
       }
       this.editing = this.items.find(item => item._id === id);
     },
-    edited(value) {
-      this.editing = value;
-    },
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
