@@ -16,9 +16,6 @@ export const piecesManager = () => {
       handleTrash(selected) {
         console.log(`trash ${selected}`);
       },
-      log(action) {
-        console.log(`sort by ${action}`);
-      },
       toggleActive: function () {
         this.active = !this.active;
       },
