@@ -428,6 +428,7 @@ export default {
       transition: opacity 0.2s ease;
       pointer-events: none;
     }
+
     &:before {
       top: 0;
     }
@@ -445,23 +446,21 @@ export default {
         border-top: 1px solid var(--a-primary);
       }
     }
-  }
 
-  .apos-area-widget-inner .apos-area-widget-inner:after {
-    display: none;
-  }
-  .apos-area-widget-inner .apos-area-widget-inner:before {
-    z-index: $z-index-under;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    outline: 1px solid var(--a-base-1);
-    outline-offset: -1px;
-    background-color: var(--a-base-5);
-    pointer-events: none;
-  }
-  .apos-area-widget-inner {
+    .apos-area-widget-inner &:after {
+      display: none;
+    }
+    .apos-area-widget-inner &:before {
+      z-index: $z-index-under;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      outline: 1px solid var(--a-base-1);
+      outline-offset: -1px;
+      background-color: var(--a-base-5);
+      pointer-events: none;
+    }
     .apos-area-widget-inner &.apos-focus:before,
     .apos-area-widget-inner &.apos-highlight:before {
       z-index: $z-index-default;
@@ -475,10 +474,9 @@ export default {
     &.apos-focus:before {
       opacity: 0.15;
     }
-  }
 
-  .apos-area-widget-inner .apos-area-widget-inner {
-    &.apos-highlight, &.apos-focus {
+    &.apos-highlight,
+    &.apos-focus {
       outline-color: var(--a-secondary);
     }
   }
