@@ -88,7 +88,7 @@
             :media="editing" :selected="selected"
             :module-labels="moduleLabels"
             @back="updateEditing(null)" @saved="updateMedia"
-            @edited="edited"
+            @modified="editorModified"
           />
           <AposMediaManagerSelections
             :items="selected"
@@ -128,6 +128,7 @@ export default {
         showModal: false
       },
       editing: undefined,
+      modified: false,
       uploading: false,
       lastSelected: null,
       emptyDisplay: {
@@ -181,6 +182,15 @@ export default {
     await this.getMedia();
   },
   methods: {
+    // Whether a cancellation requires confirmation or not
+    isModified () {
+      return (this.editing && this.modified) || this.relationshipIsModified();
+    },
+    // Update our current idea of whether the doc in the right hand rail
+    // has been modified (via event from the editor)
+    editorModified (val) {
+      this.modified = val;
+    },
     async getMedia () {
       const qs = {
         ...this.filterValues,
@@ -250,7 +260,7 @@ export default {
       this.editing = undefined;
     },
     async updateEditing(id) {
-      if (this.modified) {
+      if (this.isModified()) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
           description: this.cancelDescription,
@@ -262,10 +272,6 @@ export default {
         }
       }
       this.editing = this.items.find(item => item._id === id);
-      this.modified = false;
-    },
-    edited(value) {
-      this.modified = value;
     },
     // select setters
     select(id) {

@@ -38,6 +38,7 @@
 
 <script>
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
 
 export default {
@@ -113,7 +114,10 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
-      this.modified = true;
+    },
+    isModified() {
+      const result = detectDocChange(this.schema, this.value, this.docFields.data);
+      return result;
     },
     save() {
       const widget = this.docFields.data;

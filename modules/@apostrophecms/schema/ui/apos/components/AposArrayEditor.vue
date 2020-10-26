@@ -87,6 +87,7 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 import cuid from 'cuid';
 import klona from 'klona';
 import { get } from 'lodash';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposArrayEditor',
@@ -122,6 +123,7 @@ export default {
       // permanent modifications whether the user
       // clicks save or not
       next: klona(this.items),
+      original: klona(this.items),
       triggerValidation: false,
       minError: false,
       maxError: false,
@@ -217,7 +219,6 @@ export default {
       }
     },
     update(items) {
-      this.modified = true;
       // Take care to use the same items in order to avoid
       // losing too much state inside draggable, otherwise
       // drags fail
@@ -232,11 +233,9 @@ export default {
     },
     currentDocUpdate(currentDoc) {
       this.currentDoc = currentDoc;
-      this.modified = true;
     },
     async add() {
       if (await this.validate(true, false)) {
-        this.modified = true;
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);
@@ -273,6 +272,26 @@ export default {
       }
       const currentIndex = this.next.findIndex(item => item._id === this.currentId);
       this.next[currentIndex] = this.currentDoc.data;
+    },
+    isModified() {
+      if (this.currentId) {
+        const currentIndex = this.next.findIndex(item => item._id === this.currentId);
+        if (detectDocChange(this.field.schema, this.next[currentIndex], this.currentDoc.data)) {
+          return true;
+        }
+      }
+      if (this.next.length !== this.original.length) {
+        return true;
+      }
+      for (let i = 0; (i < this.next.length); i++) {
+        if (this.next[i]._id !== this.original[i]._id) {
+          return true;
+        }
+        if (detectDocChange(this.field.schema, this.next[i], this.original[i])) {
+          return true;
+        }
+      }
+      return false;
     },
     async validate(validateItem, validateLength) {
       if (validateItem) {

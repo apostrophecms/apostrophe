@@ -1,3 +1,5 @@
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+
 // TODO: Reconcile the overlap in this mixin between the pages and pieces
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
@@ -149,6 +151,32 @@ export default {
     saveRelationship() {
       this.$emit('modal-result', this.checkedDocs);
       this.modal.showModal = false;
+    },
+    // Default implementation of isModified is based on whether the
+    // selection has changed, but you can override this and combine
+    // that bit with your own if your manager allows in-context editing
+    // of a piece (i.e. AposMediaManager)
+    isModified() {
+      return this.relationshipIsModified();
+    },
+    // Easy to reuse if you have a custom isModified method
+    relationshipIsModified() {
+      if (!this.relationshipField) {
+        return false;
+      }
+      if (this.chosen.length !== this.checkedDocs.length) {
+        return true;
+      }
+      for (let i = 0; (i < this.chosen.length); i++) {
+        if (this.chosen[i]._id !== this.checkedDocs[i]._id) {
+          return true;
+        }
+        if (this.relationshipField.schema) {
+          if (detectDocChange(this.relationshipField.schema, this.chosen[i]._fields, this.checkedDocs[i]._fields)) {
+            return true;
+          }
+        }
+      }
     }
   }
 };
