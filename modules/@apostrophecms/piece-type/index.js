@@ -5,7 +5,8 @@ module.exports = {
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     manageViews: [ 'list' ],
-    perPage: 10
+    perPage: 10,
+    quickCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -683,6 +684,7 @@ module.exports = {
         browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
+        browserOptions.quickCreate = self.options.quickCreate;
         _.defaults(browserOptions, {
           components: {}
         });
