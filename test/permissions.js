@@ -45,9 +45,7 @@ describe('Permissions', function() {
         home.visibility = 'loginRequired';
         await apos.page.update(req, home);
       } catch (e) {
-        console.error(e);
-        assert(e.status === 403);
-        assert(e.name === 'forbidden');
+        assert(e.message === 'forbidden');
       }
     });
     it('admin can update via actual update api', async () => {
@@ -58,13 +56,12 @@ describe('Permissions', function() {
       await apos.page.update(req, home);
     });
     it('public cannot access when visibility is loginRequired', async () => {
-      const anonReq = apos.task.getReq();
+      const anonReq = apos.task.getAnonReq();
       try {
-        await apos.page.find(anonReq, { slug: '/' }).toObject();
-        assert(false);
+        const home = await apos.page.find(anonReq, { slug: '/' }).toObject();
+        assert(!home);
       } catch (e) {
-        assert(e.status === 403);
-        assert(e.name === 'forbidden');
+        assert(e.message === 'forbidden');
       }
     });
   });
