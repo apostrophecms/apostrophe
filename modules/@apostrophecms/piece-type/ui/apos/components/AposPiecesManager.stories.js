@@ -16,9 +16,6 @@ export const piecesManager = () => {
       handleTrash(selected) {
         console.log(`trash ${selected}`);
       },
-      log(action) {
-        console.log(`sort by ${action}`);
-      },
       toggleActive: function () {
         this.active = !this.active;
       },
@@ -39,7 +36,6 @@ export const piecesManager = () => {
         <AposPiecesManager
           v-if="active" @safe-close="finishExit"
           moduleName="product" @trash="handleTrash"
-          @sort="log"
         />
       </div>
     `
