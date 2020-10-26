@@ -116,7 +116,7 @@ export default {
       this.docFields = value;
     },
     isModified() {
-      const result = detectDocChange(this.schema, this.value || {}, this.docFields.data);
+      const result = detectDocChange(this.schema, this.value, this.docFields.data);
       return result;
     },
     save() {

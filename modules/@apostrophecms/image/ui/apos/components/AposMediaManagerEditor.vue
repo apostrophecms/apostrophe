@@ -170,8 +170,9 @@ export default {
           // If either old or new state are an empty object, it's not "modified."
           if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
             this.$emit('modified', false);
+          } else {
+            this.$emit('modified', detectDocChange(this.schema, this.original, newData));
           }
-          this.$emit('modified', detectDocChange(this.schema, this.original, newData));
         });
 
         if ((this.activeMedia.attachment && !newData.attachment)) {

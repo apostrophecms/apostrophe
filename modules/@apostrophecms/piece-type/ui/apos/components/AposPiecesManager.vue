@@ -239,17 +239,23 @@ export default {
         this.getPieces();
       }
     },
-    async edit(docId) {
-      await apos.modal.execute(this.options.components.insertModal, {
+    async edit(pieceId) {
+      const doc = await apos.modal.execute(this.options.components.insertModal, {
         moduleName: this.moduleName,
-        docId,
-        filterValues: this.filterValues
+        docId: pieceId
       });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
       await this.getPieces();
-    },
-    closeEditor() {
-      this.editing = false;
-      this.editingDocId = '';
+      if (this.relationshipField && (!pieceId)) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
+      }
     },
     // Toolbar handlers
     trashClick() {

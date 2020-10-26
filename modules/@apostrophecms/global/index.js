@@ -142,6 +142,7 @@ module.exports = {
         // from the copy the middleware fetched for this specific request,
         // if not fall back to self._id
         browserOptions._id = req.data.global && (req.data.global._id || self._id);
+        browserOptions.quickCreate = false;
         return browserOptions;
       },
       getEditControls(_super, req) {
