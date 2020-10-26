@@ -32,8 +32,8 @@ module.exports = {
         updatedAt: {
           label: 'Edited on'
         },
-        published: {
-          label: 'Published'
+        visibility: {
+          label: 'Visibility'
         },
         ...(self.options.contextual ? {
           _url: {
@@ -45,21 +45,21 @@ module.exports = {
   },
   filters: {
     add: {
-      published: {
-        label: 'Published',
+      visibility: {
+        label: 'Visibility',
         inputType: 'radio',
         choices: [
           {
-            value: true,
-            label: 'Published'
+            value: 'public',
+            label: 'Public'
           },
           {
-            value: false,
-            label: 'Draft'
+            value: 'loginRequired',
+            label: 'Login Required'
           },
           {
             value: null,
-            label: 'Both'
+            label: 'Any'
           }
         ],
         allowedInChooser: false,
@@ -101,33 +101,34 @@ module.exports = {
           trash: false
         }
       },
-      publish: {
-        name: 'publish',
-        label: 'Publish',
-        unlessFilter: {
-          published: true
-        },
-        requiredField: 'published'
-      },
-      unpublish: {
-        name: 'unpublish',
-        label: 'Unpublish',
-        unlessFilter: {
-          published: false
-        },
-        requiredField: 'published'
+      visibility: {
+        name: 'visibility',
+        label: 'Visibility',
+        requiredField: 'visibility',
+        fields: {
+          add: {
+            visibility: {
+              type: 'select',
+              label: 'Who can view this?',
+              def: 'public',
+              choices: [
+                {
+                  value: 'public',
+                  label: 'Public'
+                },
+                {
+                  value: 'loginRequired',
+                  label: 'Login Required'
+                }
+              ]
+            }
+          }
+        }
       }
     }
   },
   init(self, options) {
     self.contextual = options.contextual;
-    if (self.contextual) {
-      // If the piece is edited contextually, default the published state to false
-      const published = self.schema.find(field => field.name === 'published');
-      if (published) {
-        published.def = false;
-      }
-    }
 
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
@@ -211,22 +212,6 @@ module.exports = {
       beforeInsert: {
         ensureType(req, piece, options) {
           piece.type = self.name;
-        }
-      },
-      afterInsert: {
-        insertNotif(req, doc) {
-          self.apos.notify(req, `New ${self.label.toLowerCase()} added: %s`, doc.title, {
-            dismiss: true,
-            type: 'success'
-          });
-        }
-      },
-      afterUpdate: {
-        updateNotif(req, doc) {
-          self.apos.notify(req, `${self.label} %s updated`, doc.title, {
-            dismiss: true,
-            type: 'success'
-          });
         }
       },
       'apostrophe:modulesReady': {
@@ -573,7 +558,6 @@ module.exports = {
       generate(i) {
         const piece = self.newInstance();
         piece.title = 'Generated #' + (i + 1);
-        piece.published = true;
         return piece;
       },
       addTasks() {

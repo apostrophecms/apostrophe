@@ -33,7 +33,7 @@ module.exports = {
       // be asked to do the work. Simplifies browse-side logic for
       // on-page editing: the frontend only has to know the doc _id.
       async patch(req, _id) {
-        const doc = await self.find(req, { _id }).published(null).project({
+        const doc = await self.find(req, { _id }).project({
           type: 1,
           slug: 1
         }).toObject();
@@ -71,7 +71,7 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).trash(null).published(null).project({ slug: 1 }).toObject();
+          const doc = await self.find(req, criteria).permission(false).trash(null).project({ slug: 1 }).toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -169,7 +169,6 @@ module.exports = {
         await self.createSlugIndex();
         await self.db.createIndex({ titleSortified: 1 }, {});
         await self.db.createIndex({ updatedAt: -1 }, {});
-        await self.db.createIndex({ published: 1 }, {});
         await self.db.createIndex({ 'advisoryLock._id': 1 }, {});
         await self.createTextIndex();
         await self.db.createIndex({ parkedId: 1 }, {});

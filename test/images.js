@@ -6,7 +6,7 @@ const mockImages = [
   {
     type: '@apostrophecms/image',
     slug: 'image-1',
-    published: true,
+    visibility: 'public',
     attachment: {
       extension: 'jpg',
       width: 500,
@@ -16,7 +16,7 @@ const mockImages = [
   {
     type: '@apostrophecms/image',
     slug: 'image-2',
-    published: true,
+    visibility: 'public',
     attachment: {
       extension: 'jpg',
       width: 500,
@@ -26,7 +26,7 @@ const mockImages = [
   {
     type: '@apostrophecms/image',
     slug: 'image-3',
-    published: true,
+    visibility: 'public',
     attachment: {
       extension: 'jpg',
       width: 150,
@@ -36,7 +36,7 @@ const mockImages = [
   {
     type: '@apostrophecms/image',
     slug: 'image-4',
-    published: true,
+    visibility: 'public',
     attachment: {
       extension: 'svg'
     }

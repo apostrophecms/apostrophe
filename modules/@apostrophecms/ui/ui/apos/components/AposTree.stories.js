@@ -61,13 +61,6 @@ function getData () {
         name: 'updatedAt'
       },
       {
-        label: 'Published',
-        action: 'published-desc',
-        name: 'published',
-        labelIcon: 'circle',
-        icon: 'circle'
-      },
-      {
         label: 'Link',
         name: 'url',
         icon: 'link',
@@ -111,7 +104,6 @@ function generateRow(maxDepth = 5) {
     _id: id,
     title,
     updatedAt: randomDay(),
-    published: randomBoolean() ? 'Published' : 'Unpublished',
     url: `/${id}`,
     // Even items without children need to have an `children` array eventually.
     // This is to support dragging other items into them as children.

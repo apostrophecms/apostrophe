@@ -67,7 +67,6 @@ module.exports = {
           'credit',
           'creditUrl',
           'slug',
-          'published',
           'trash'
         ]
       }

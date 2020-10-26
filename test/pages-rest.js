@@ -127,7 +127,7 @@ describe('Pages REST', function() {
         _id: 'parent',
         type: 'test-page',
         slug: '/parent',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent`,
         level: 1,
         rank: 0
@@ -136,7 +136,7 @@ describe('Pages REST', function() {
         _id: 'child',
         type: 'test-page',
         slug: '/child',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/child`,
         level: 2,
         rank: 0
@@ -145,7 +145,7 @@ describe('Pages REST', function() {
         _id: 'grandchild',
         type: 'test-page',
         slug: '/grandchild',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/child/grandchild`,
         level: 3,
         rank: 0
@@ -154,7 +154,7 @@ describe('Pages REST', function() {
         _id: 'sibling',
         type: 'test-page',
         slug: '/sibling',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/sibling`,
         level: 2,
         rank: 1
@@ -164,7 +164,7 @@ describe('Pages REST', function() {
         _id: 'cousin',
         type: 'test-page',
         slug: '/cousin',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/sibling/cousin`,
         level: 3,
         rank: 0
@@ -173,7 +173,7 @@ describe('Pages REST', function() {
         _id: 'another-parent',
         type: 'test-page',
         slug: '/another-parent',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/another-parent`,
         level: 1,
         rank: 1
@@ -182,7 +182,7 @@ describe('Pages REST', function() {
         _id: 'neighbor',
         type: 'test-page',
         slug: '/neighbor',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/neighbor`,
         level: 1,
         rank: 2
@@ -199,7 +199,7 @@ describe('Pages REST', function() {
 
     const body = {
       slug: '/new-tab',
-      published: true,
+      visibility: 'public',
       type: 'test-page',
       title: 'New Tab'
     };
@@ -219,7 +219,7 @@ describe('Pages REST', function() {
   it('is able to make a subpage of the homepage at index `1` with numerical _position', async function() {
     const body = {
       slug: '/second-new',
-      published: true,
+      visibility: 'public',
       type: 'test-page',
       title: 'Second New',
       _targetId: '_home',
@@ -244,7 +244,7 @@ describe('Pages REST', function() {
 
     const body = {
       slug: '/new-page',
-      published: true,
+      visibility: 'public',
       type: 'test-page',
       title: 'New Page',
       _targetId: 'parent',
@@ -268,7 +268,7 @@ describe('Pages REST', function() {
   it('cannot POST a page without a session', async () => {
     const body = {
       slug: '/new-tab',
-      published: true,
+      visibility: 'public',
       type: 'test-page',
       title: 'New Tab'
     };

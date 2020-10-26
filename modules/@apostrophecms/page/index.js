@@ -61,7 +61,6 @@ module.exports = {
     self.parked = (self.options.minimumPark || [ {
       slug: '/',
       parkedId: 'home',
-      published: true,
       _defaults: {
         title: 'Home',
         type: '@apostrophecms/home-page'
@@ -71,7 +70,6 @@ module.exports = {
         parkedId: 'trash',
         type: '@apostrophecms/trash',
         trash: true,
-        published: false,
         orphan: true,
         _defaults: { title: 'Trash' }
       } ]
@@ -104,7 +102,6 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            published: null,
             trash: false,
             orphan: null,
             relationships: false,
@@ -161,7 +158,7 @@ module.exports = {
               if (node.good) {
                 newNodes.push(_.pick(node,
                   'title', 'slug', 'path', '_id', 'type', 'metaType', '_url',
-                  '_children', 'published', 'parked'
+                  '_children', 'parked'
                 ));
               }
             });
@@ -472,12 +469,13 @@ database.`);
         return browserOptions;
       },
       // Returns a cursor that finds pages the current user can edit
-      // in a batch operation, including unpublished and trashed pages.
+      // in a batch operation.
+      //
       // `req` determines what the user is eligible to edit, `criteria`
       // is the MongoDB criteria object, and any properties of `options`
       // are invoked as methods on the query with their values.
       findForBatch(req, criteria = {}, options = {}) {
-        const cursor = self.find(req, criteria, options).permission('edit').published(null).trash(null);
+        const cursor = self.find(req, criteria, options).permission('edit').trash(null);
         return cursor;
       },
       // Insert a page. `targetId` must be an existing page id, and
@@ -496,7 +494,6 @@ database.`);
             query.children({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             });
@@ -512,7 +509,6 @@ database.`);
             }).children({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             }).toObject();
@@ -640,13 +636,8 @@ database.`);
           title: 'New Page',
           slug: self.apos.util.addSlashIfNeeded(parentPage.slug) + 'new-page',
           type: pageType,
-          published: parentPage.published
+          visibility: parentPage.visibility
         });
-        // Inherit permissions from parent page
-        _.assign(page, _.pick(parentPage, 'visibility', 'applyVisibilityToSubpages'));
-        if (!page.published) {
-          page.published = false;
-        }
         return page;
       },
       allowedChildTypes(page) {
@@ -721,10 +712,9 @@ database.`);
             options
           };
           async function getMoved() {
-            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).published(null).areas(false).ancestors({
+            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).areas(false).ancestors({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             }).applyBuilders(options.builders || {}).toObject();
@@ -857,16 +847,14 @@ database.`);
         } : {
           _id: targetId
         };
-        const target = await self.find(req, criteria).permission(false).trash(null).published(null).areas(false).ancestors(_.assign({
+        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
-          published: null,
           areas: false,
           permission: false
         }, options.builders || {})).children({
           depth: 1,
           trash: null,
-          published: null,
           areas: false,
           permission: false
         }).applyBuilders(options.builders || {}).toObject();
@@ -1012,13 +1000,12 @@ database.`);
           return self.find(req, {
             trash: true,
             level: 1
-          }).permission(false).published(null).trash(null).areas(false).toObject();
+          }).permission(false).trash(null).areas(false).toObject();
         }
         async function findPage() {
           // Also checks permissions
           return self.find(req, { _id: _id }).permission('edit').ancestors({
             depth: 1,
-            published: null,
             trash: null,
             areas: false
           }).toObject();
@@ -1344,7 +1331,6 @@ database.`);
             'slug',
             '_id',
             'type',
-            'published',
             '_url'
           ]);
         });
@@ -1834,11 +1820,11 @@ database.`);
         return query;
       },
       // Returns a cursor that finds pages the current user can edit. Unlike
-      // find(), this cursor defaults to including unpublished docs. Trash too because
-      // trash is editable however we'll apply a filter from the UI.
+      // find(), this cursor defaults to including docs in the trash, although
+      // we apply filters in the UI.
       findForEditing(req, criteria, projection, options) {
         // Include ancestors to help with determining allowed types
-        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null).ancestors(true);
+        const cursor = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
         if (projection) {
           cursor.project(projection);
         }

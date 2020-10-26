@@ -1,19 +1,14 @@
-const _ = require('lodash');
-
 // This module manages the permissions of docs in Apostrophe.
 //
 // A new permissions model is coming in 3.x. For alpha 1, logged-in users
 // can do anything, and the public can only view content.
 //
 // In 3.0 final, users will be subdivided into guests, contributors,
-// editors and admins, in ascending order of privilege. Guests can
-// view "login required" pages, but have no other special privileges.
-// Contributors can create drafts but cannot publish them alone.
-// Editors can edit anything except user accounts, and admins can
-// edit anything. This simplified permissions model meets the needs
-// of most sites much better than the 2.x model. In addition, more
-// granular permissions modules will be available as part of
-// our enterprise edition.
+// editors and admins, in ascending order of privilege. In the final
+// 3.0 model, guests can view "login required" pages, but have no other
+// special privileges. Contributors can create drafts but cannot publish
+// them alone. Editors can edit anything except user accounts, and admins
+// can edit anything.
 
 module.exports = {
   options: { alias: 'permission' },

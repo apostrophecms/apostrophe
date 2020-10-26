@@ -35,7 +35,6 @@ module.exports = {
       group: {
         utility: {
           fields: [
-            'published',
             'slug',
             'type',
             'orphan'

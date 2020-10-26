@@ -38,7 +38,6 @@
 
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
-const _ = require('lodash');
 const Promise = require('bluebird');
 
 module.exports = {

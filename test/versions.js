@@ -107,7 +107,7 @@ describe('Versions', function() {
   it('inserting a doc should result in a version', async () => {
     const object = {
       slug: 'one',
-      published: true,
+      visibility: 'public',
       type: 'test-people',
       firstName: 'Gary',
       lastName: 'Ferber',

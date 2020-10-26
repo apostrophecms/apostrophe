@@ -7,9 +7,7 @@
 //
 // In our experience, combining the concept of a "user" who can log in and do things
 // with the concept of a "staff member" who appears in a staff directory is more
-// trouble than it is worth. That's why the `published` field is not present in
-// `@apostrophecms/user`. You can add it back in, but then you have to deal with
-// the confusing concept of "users" who shouldn't actually be allowed to log in.
+// trouble than it is worth.
 //
 // So for a staff directory, we suggest you create a separate `employee` module
 // or similar, extending `@apostrophecms/piece-type`, unless it's true that basically
@@ -31,7 +29,6 @@
 // secret property. This is convenient when implementing a module
 // such as `@apostrophecms/signup`.
 
-const _ = require('lodash');
 const credential = require('credential');
 const prompt = require('prompt');
 const Promise = require('bluebird');
@@ -90,7 +87,7 @@ module.exports = {
           label: 'Password'
         }
       },
-      remove: [ 'published', 'visibility' ],
+      remove: [ 'visibility' ],
       group: {
         basics: {
           label: 'Basics',
@@ -111,11 +108,11 @@ module.exports = {
   },
 
   filters: {
-    remove: [ 'published' ]
+    remove: [ 'visibility' ]
   },
 
   columns: {
-    remove: [ 'published' ]
+    remove: [ 'visibility' ]
   },
 
   async init(self, options) {
@@ -445,13 +442,6 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
-      }
-    };
-  },
-  extendMethods(self, options) {
-    return {
-      find(_super, req, criteria, projection) {
-        return _super(req, criteria, projection).published(null);
       }
     };
   }

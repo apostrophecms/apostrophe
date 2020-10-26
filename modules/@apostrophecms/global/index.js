@@ -48,7 +48,6 @@ module.exports = {
     remove: [
       'title',
       'slug',
-      'published',
       'trash'
     ]
   },
@@ -67,7 +66,6 @@ module.exports = {
           if (!existing) {
             const _new = {
               slug: self.slug,
-              published: true,
               type: self.name
             };
             await self.apos.doc.insert(req, _new);

@@ -41,7 +41,7 @@ describe('Docs', function() {
       testItems.push({
         _id: 'i' + i,
         slug: 'i' + i,
-        published: true,
+        visibility: 'public',
         type: 'test',
         title: 'title: ' + i
       });

@@ -20,11 +20,6 @@ module.exports = {
           following: 'title',
           required: true
         },
-        published: {
-          type: 'boolean',
-          label: 'Published',
-          def: true
-        },
         trash: {
           type: 'boolean',
           label: 'Trash',
@@ -57,7 +52,6 @@ module.exports = {
         utility: {
           label: 'Utilities',
           fields: [
-            'published',
             'slug'
           ]
         },
@@ -576,10 +570,10 @@ module.exports = {
         }
       },
       // Returns a cursor that finds docs the current user can edit. Unlike
-      // find(), this cursor defaults to including unpublished docs. Subclasses
+      // find(), this cursor defaults to including docs in the trash. Subclasses
       // of @apostrophecms/piece-type often extend this to remove more default filters
       findForEditing(req, criteria, projection) {
-        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null);
+        const cursor = self.find(req, criteria).permission('edit').trash(null);
         if (projection) {
           cursor.project(projection);
         }
@@ -964,54 +958,6 @@ module.exports = {
           choices() {
             // For the trash query builder, it is generally a mistake not to offer "No" as a choice,
             // even if everything is in the trash, as "No" is often the default.
-            return [
-              {
-                value: '0',
-                label: 'No'
-              },
-              {
-                value: '1',
-                label: 'Yes'
-              }
-            ];
-          }
-        },
-
-        // `.published(flag)`. If flag is `undefined`, `true` or this
-        // method is never called, return only published docs.
-        //
-        // If flag is `false`, return only unpublished docs.
-        //
-        // If flag is `null`, return docs without regard
-        // to published status.
-        //
-        // Regardless of this query builder the user's permissions are
-        // always taken into account. For instance, a logged-out user will never
-        // see unpublished documents unless `permissions(false)` is called.
-
-        published: {
-          def: true,
-          finalize() {
-            const published = query.get('published');
-            if (published === null) {
-              return;
-            }
-            if (published) {
-              query.and({
-                published: true
-              });
-              return;
-            }
-            query.and({
-              published: { $ne: true }
-            });
-          },
-          launder(s) {
-            return self.apos.launder.booleanOrNull(s);
-          },
-          choices() {
-            // For the published query builder, it is generally a mistake not to offer "Yes" as a choice,
-            // even if everything is unpublished, as "Yes" is often the default.
             return [
               {
                 value: '0',
