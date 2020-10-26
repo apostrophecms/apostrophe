@@ -136,14 +136,25 @@ module.exports = {
             'firstName',
             'lastName',
             'title',
+            'slug',
+            'slug',
+            'trash'
+          ]
+        },
+        utility: {
+          label: 'Utility',
+          fields: [
             'username',
             'email',
-            'password',
-            'slug',
+            'password'
+          ]
+        },
+        permissions: {
+          label: 'Permissions',
+          fields: [
             'group',
             '_groups',
-            'disabled',
-            'slug'
+            'disabled'
           ]
         }
       }

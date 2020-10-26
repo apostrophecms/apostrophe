@@ -5,7 +5,8 @@ module.exports = {
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     manageViews: [ 'list' ],
-    perPage: 10
+    perPage: 10,
+    quickCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -148,6 +149,7 @@ module.exports = {
     self.addPermissions();
     self.addToAdminBar();
     self.addManagerModal();
+    self.addEditorModal();
     self.finalizeControls();
     self.addTasks();
   },
@@ -406,12 +408,23 @@ module.exports = {
         }
       },
       addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, self.getEditPermissionName());
+        self.apos.adminBar.add(
+          `${self.__meta.name}:manager`,
+          self.pluralLabel,
+          self.getEditPermissionName()
+        );
       },
       addManagerModal() {
         self.apos.modal.add(
-          self.__meta.name,
+          `${self.__meta.name}:manager`,
           self.getComponentName('managerModal', 'AposPiecesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('insertModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -671,6 +684,7 @@ module.exports = {
         browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
+        browserOptions.quickCreate = self.options.quickCreate;
         _.defaults(browserOptions, {
           components: {}
         });

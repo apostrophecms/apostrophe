@@ -122,7 +122,13 @@ module.exports = {
       // to set the permission requirement to admin-@apostrophecms/global.
       // This is called for you.
       addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, 'admin-' + self.name);
+        if (self.schema.length > 0) {
+          self.apos.adminBar.add(
+            `${self.__meta.name}:editor`,
+            self.pluralLabel,
+            'admin-' + self.name
+          );
+        }
       }
     };
   },
@@ -134,6 +140,7 @@ module.exports = {
         // from the copy the middleware fetched for this specific request,
         // if not fall back to self._id
         browserOptions._id = req.data.global && (req.data.global._id || self._id);
+        browserOptions.quickCreate = false;
         return browserOptions;
       },
       getEditControls(_super, req) {

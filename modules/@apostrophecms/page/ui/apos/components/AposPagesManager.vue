@@ -232,11 +232,21 @@ export default {
       this.$emit('trash', this.selected);
     },
     async openEditor(pageId) {
-      if (await apos.modal.execute(this.moduleOptions.components.insertModal, {
+      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
         moduleName: this.moduleName,
         docId: pageId
-      })) {
-        await this.getPages();
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      await this.getPages();
+      if (this.relationshipField && (!pageId)) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
       }
     }
   }

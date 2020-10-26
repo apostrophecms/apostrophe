@@ -165,6 +165,7 @@ export default {
         return;
       }
 
+      const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
       let changeFound = false;
 
@@ -182,6 +183,10 @@ export default {
           this.next.data[field.name] = this.value.data[field.name];
         }
       });
+      if (oldHasErrors !== this.next.hasErrors) {
+        // Otherwise the save button may never unlock
+        changeFound = true;
+      }
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
