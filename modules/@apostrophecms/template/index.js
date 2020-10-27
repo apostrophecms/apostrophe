@@ -189,8 +189,7 @@ module.exports = {
       // If there is a conflict, your `data` argument wins,
       // followed by `req.data`.
 
-      // If not overridden, `data.user` and `data.permissions`
-      // are provided for convenience.
+      // If not overridden, `data.user` is provided for convenience.
 
       // If there is no extension, looks for `.njk`, or `.html`
       // if `.njk` is not found.

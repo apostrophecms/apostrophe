@@ -34,18 +34,18 @@ function getData() {
     },
     filters: [
       {
-        label: 'Published',
-        name: 'published',
+        label: 'Visibility',
+        name: 'visibility',
         choices: [
           {
-            value: true,
-            label: 'Published'
+            value: 'public',
+            label: 'Public'
           }, {
-            value: false,
-            label: 'Draft'
+            value: 'loginRequired',
+            label: 'Login Required'
           }, {
             value: null,
-            label: 'Both'
+            label: 'Any'
           }
         ],
         def: true,

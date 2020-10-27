@@ -33,7 +33,7 @@ module.exports = {
   extendMethods(self, options) {
     return {
       find(_super, req, criteria, projection) {
-        return _super(req, criteria, projection).type(false).isPage(true).published(null);
+        return _super(req, criteria, projection).type(false).isPage(true);
       },
       // Returns a MongoDB projection object to be used when querying
       // for this type if all that is needed is a title for display

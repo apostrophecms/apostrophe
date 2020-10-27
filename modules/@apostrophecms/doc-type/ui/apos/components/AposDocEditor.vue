@@ -101,7 +101,6 @@ export default {
       type: Object,
       default() {
         return {
-          published: true,
           trash: false
         };
       }

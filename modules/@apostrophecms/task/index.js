@@ -233,7 +233,9 @@ module.exports = {
 
       getReq(properties) {
         const req = {
-          user: { _permissions: { admin: true } },
+          user: {
+            title: 'System Task'
+          },
           res: {
             __: function (s) {
               return s;

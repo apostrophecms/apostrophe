@@ -51,8 +51,7 @@ describe('Docs', function() {
     const expectedIndexes = [
       'type',
       'slug',
-      'titleSortified',
-      'published'
+      'titleSortified'
     ];
     const actualIndexes = [];
 
@@ -86,7 +85,7 @@ describe('Docs', function() {
       {
         _id: 'lori',
         slug: 'lori',
-        published: true,
+        visibility: 'public',
         type: 'test-people',
         firstName: 'Lori',
         lastName: 'Pizzaroni',
@@ -96,7 +95,7 @@ describe('Docs', function() {
       {
         _id: 'larry',
         slug: 'larry',
-        published: true,
+        visibility: 'public',
         type: 'test-people',
         firstName: 'Larry',
         lastName: 'Cherber',
@@ -106,7 +105,7 @@ describe('Docs', function() {
       {
         _id: 'carl',
         slug: 'carl',
-        published: true,
+        visibility: 'public',
         type: 'test-people',
         firstName: 'Carl',
         lastName: 'Sagan',
@@ -149,13 +148,13 @@ describe('Docs', function() {
       await apos.doc.db.insertMany([
         {
           type: 'test-people',
-          published: false,
+          visibility: 'loginRequired',
           age: 70,
           slug: 'peter'
         },
         {
           type: 'test-people',
-          published: false,
+          visibility: 'loginRequired',
           age: 70,
           slug: 'peter'
         }
@@ -177,7 +176,7 @@ describe('Docs', function() {
     assert(cursor.toArray);
   });
 
-  it('should be able to find all PUBLISHED test documents and output them as an array', async function () {
+  it('should be able to find all test documents and output them as an array', async function () {
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
 
     const docs = await cursor.toArray();
@@ -204,44 +203,6 @@ describe('Docs', function() {
     assert(docs[0].age);
     // There SHOULD NOT be a firstName
     assert(!docs[0].firstName);
-  });
-
-  /// ///
-  // PUBLISHED vs UNPUBLISHED
-  /// ///
-
-  it('should be that non-admins DO NOT get unpublished docs by default', async function() {
-    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
-    const docs = await cursor.toArray();
-
-    _.forEach(docs, function(doc) {
-      // There SHOULD NOT be a firstName
-      assert(doc.published);
-    });
-
-    assert(docs.length === 3);
-  });
-
-  it('should be that non-admins do not get unpublished docs, even if they ask for them', async function() {
-    const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).published(false);
-
-    const docs = await cursor.toArray();
-    assert(docs.length === 0);
-  });
-
-  it('should be that admins can get unpublished docs if they ask for them', async function () {
-    const cursor = apos.doc.find(apos.task.getReq(), { type: 'test-people' }).published(false);
-    const docs = await cursor.toArray();
-
-    assert(docs.length === 1);
-    assert(!docs[0].published);
-  });
-
-  it('should be that admins can get a mixture of unpublished docs and published docs if they ask', async function() {
-    const cursor = apos.doc.find(apos.task.getReq(), { type: 'test-people' }).published(null);
-    const docs = await cursor.toArray();
-
-    assert(docs.length === 4);
   });
 
   /// ///
@@ -273,7 +234,7 @@ describe('Docs', function() {
   it('should have an "insert" method that returns a new database object', async function() {
     const object = {
       slug: 'one',
-      published: true,
+      visibility: 'public',
       type: 'test-people',
       firstName: 'Lori',
       lastName: 'Ferber',
@@ -300,7 +261,7 @@ describe('Docs', function() {
   it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', async function() {
     const object = {
       slug: 'one',
-      published: true,
+      visibility: 'public',
       type: 'test-people',
       firstName: 'Harry',
       lastName: 'Gerber',
@@ -317,7 +278,7 @@ describe('Docs', function() {
   it('should not allow you to call the insert method if you are not an admin', async function() {
     const object = {
       slug: 'not-for-you',
-      published: false,
+      visibility: 'loginRequired',
       type: 'test-people',
       firstName: 'Darry',
       lastName: 'Derrber',
@@ -518,7 +479,7 @@ describe('Docs', function() {
       testItems.push({
         _id: 'i' + i,
         slug: 'i' + i,
-        published: true,
+        visibility: 'public',
         type: 'test',
         title: 'title: ' + i
       });

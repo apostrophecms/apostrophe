@@ -88,11 +88,9 @@ describe('Schema builders', function() {
       cats[i] = {};
       cats[i].title = 'Cat ' + i;
       cats[i].i = i;
-      cats[i].published = true;
       people[i] = {};
       people[i].title = 'Person ' + i;
       people[i].i = i;
-      people[i].published = true;
     }
     cats[0].flavor = 'cherry';
     cats[1].flavor = 'mint';

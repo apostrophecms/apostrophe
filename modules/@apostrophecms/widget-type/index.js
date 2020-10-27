@@ -240,7 +240,7 @@ module.exports = {
 
       allowedSchema(req) {
         return _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission);
+          return !field.permission || self.apos.permission.can(req, field.permission.action, field.permission.type);
         });
       },
 

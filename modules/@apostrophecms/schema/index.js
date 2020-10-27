@@ -780,7 +780,7 @@ module.exports = {
           object[field.name] = [];
           return;
         }
-        const results = await manager.find(req, { $or: clauses }).relationships(false).published(null).toArray();
+        const results = await manager.find(req, { $or: clauses }).relationships(false).toArray();
         // Must maintain input order. Also discard things not actually found in the db
         const actualDocs = [];
         for (const item of input) {

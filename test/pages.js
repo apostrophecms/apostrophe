@@ -71,17 +71,16 @@ describe('Pages', function() {
     assert(home.path === home._id);
     assert(home.type === '@apostrophecms/home-page');
     assert(home.parked);
-    assert(home.published);
+    assert(home.visibility === 'public');
   });
 
   it('parked trash can exists', async function() {
-    const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).published(null).trash(null).toObject();
+    const trash = await apos.page.find(apos.task.getReq(), { slug: '/trash' }).trash(null).toObject();
     assert(trash);
     assert(trash.slug === '/trash');
     assert(trash.path === `${homeId}/${trash._id}`);
     assert(trash.type === '@apostrophecms/trash');
     assert(trash.parked);
-    assert(!trash.published);
     // Verify that clonePermanent did its
     // job and removed properties not meant
     // to be stored in mongodb
@@ -94,7 +93,7 @@ describe('Pages', function() {
         _id: 'parent',
         type: 'test-page',
         slug: '/parent',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent`,
         level: 1,
         rank: 0
@@ -103,7 +102,7 @@ describe('Pages', function() {
         _id: 'child',
         type: 'test-page',
         slug: '/child',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/child`,
         level: 2,
         rank: 0
@@ -112,7 +111,7 @@ describe('Pages', function() {
         _id: 'grandchild',
         type: 'test-page',
         slug: '/grandchild',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/child/grandchild`,
         level: 3,
         rank: 0
@@ -121,7 +120,7 @@ describe('Pages', function() {
         _id: 'sibling',
         type: 'test-page',
         slug: '/sibling',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/sibling`,
         level: 2,
         rank: 1
@@ -131,7 +130,7 @@ describe('Pages', function() {
         _id: 'cousin',
         type: 'test-page',
         slug: '/cousin',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/parent/sibling/cousin`,
         level: 3,
         rank: 0
@@ -140,7 +139,7 @@ describe('Pages', function() {
         _id: 'another-parent',
         type: 'test-page',
         slug: '/another-parent',
-        published: true,
+        visibility: 'public',
         path: `${homeId}/another-parent`,
         level: 1,
         rank: 0
@@ -234,7 +233,7 @@ describe('Pages', function() {
 
     const newPage = {
       slug: '/new-page',
-      published: true,
+      visibility: 'public',
       type: 'test-page',
       title: 'New Page'
     };

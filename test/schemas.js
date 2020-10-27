@@ -56,12 +56,6 @@ const realWorldCase = {
     },
     {
       type: 'boolean',
-      name: 'published',
-      label: 'Published',
-      def: true
-    },
-    {
-      type: 'boolean',
       name: 'trash',
       label: 'Trash',
       contextual: true,
@@ -79,14 +73,6 @@ const realWorldCase = {
       label: 'Description',
       type: 'string',
       required: true
-    },
-    {
-      type: 'boolean',
-      name: 'published',
-      label: 'Published',
-      required: true,
-      def: true,
-      contextual: true
     },
     {
       name: 'urlType',
@@ -129,19 +115,14 @@ const realWorldCase = {
       label: 'Basics',
       fields: [
         'title',
-        'slug',
-        'published'
+        'slug'
       ]
     },
     {
       name: 'permissions',
       label: 'Permissions',
       fields: [
-        'loginRequired',
-        '_viewUsers',
-        '_viewGroups',
-        '_editUsers',
-        '_editGroups'
+        'visibility'
       ],
       last: true
     },

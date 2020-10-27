@@ -18,6 +18,37 @@ module.exports = {
     await self.enableCollection();
     self.addMigrationTask();
   },
+  handlers(self, options) {
+    return {
+      'apostrophe:afterInit': {
+        addSortifyMigrations() {
+          const managers = self.apos.doc.managers;
+          _.each(managers, function (manager, name) {
+            const schema = manager.schema;
+            if (!schema) {
+              return;
+            }
+            _.each(schema, function (field) {
+              if (field.name === 'title') {
+                // Was always sortified, migration would be redundant
+                return;
+              }
+              if (!field.sortify) {
+                return;
+              }
+              manager.addSortifyMigration(field.name);
+            });
+          });
+        },
+        async executeMigrations() {
+          if (process.env.NODE_ENV !== 'production') {
+            // Run migrations at dev startup (low friction)
+            await self.migrate(self.apos.argv);
+          }
+        }
+      }
+    };
+  },
   methods(self, options) {
     return {
       // Add a migration function to be invoked when the @apostrophecms/migration:migrate task is invoked.
@@ -200,32 +231,6 @@ module.exports = {
       },
       async migrationTask(apos, argv) {
         return self.migrate(argv);
-      },
-      afterInit() {
-        // Add migrations for all Sortified schema fields in doc types
-        self.addSortifyMigrations();
-        // Add our own migration at the last possible minute so we can
-        // prepend before all others
-        self.addCollectionMigration();
-      },
-      addSortifyMigrations() {
-        const managers = self.apos.doc.managers;
-        _.each(managers, function (manager, name) {
-          const schema = manager.schema;
-          if (!schema) {
-            return;
-          }
-          _.each(schema, function (field) {
-            if (field.name === 'title') {
-              // Was always sortified, migration would be redundant
-              return;
-            }
-            if (!field.sortify) {
-              return;
-            }
-            manager.addSortifyMigration(field.name);
-          });
-        });
       },
       // Perform the actual migrations. Implementation of
       // the @apostrophecms/migration:migrate task
