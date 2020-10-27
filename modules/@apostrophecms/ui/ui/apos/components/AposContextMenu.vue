@@ -5,7 +5,6 @@
       @hide="hide"
       @show="show"
       :offset="menuOffset"
-      :placement="menuPlacement"
       trigger="manual"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
