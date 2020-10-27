@@ -3,7 +3,7 @@
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
-        <AposLogo class="apos-admin-bar__logo" />
+        <AposLogoIcon class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
           <li
             v-for="item in menuItems" :key="item.name"
@@ -174,6 +174,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
+  fill: none;
 }
 
 .apos-admin-bar__logo {
