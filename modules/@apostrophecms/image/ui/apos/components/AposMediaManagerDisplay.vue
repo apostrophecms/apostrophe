@@ -47,7 +47,8 @@
           <img
             v-else
             class="apos-media-manager-display__media"
-            :src="item.attachment._urls['one-sixth']" :alt="item.title"
+            :src="item.attachment._urls['one-sixth']"
+            :alt="item.description || item.title"
           >
         </button>
       </div>

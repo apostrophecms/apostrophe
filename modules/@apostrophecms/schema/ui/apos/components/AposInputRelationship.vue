@@ -76,9 +76,6 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
-  mounted() {
-    this.validateAndEmit();
-  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
