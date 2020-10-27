@@ -89,7 +89,7 @@ module.exports = {
   restApiRoutes(self, options) {
     return {
       // Trees are arranged in a tree, not a list. So this API returns the home page,
-      // with _children populated if ?_children=1 is in the query string. An admin can
+      // with _children populated if ?_children=1 is in the query string. An editor can
       // also get a light version of the entire tree with ?all=1, for use in a
       // drag-and-drop UI.
       async getAll(req) {
@@ -102,11 +102,12 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            trash: false,
+            trash: null,
             orphan: null,
             relationships: false,
             areas: false,
-            permission: false
+            permission: false,
+            project: self.getAllProjection()
           }).toObject();
 
           if (!page) {
@@ -505,6 +506,7 @@ database.`);
             query.children({
               depth: 1,
               trash: null,
+              orphan: null,
               areas: false,
               permission: false
             });
@@ -520,6 +522,7 @@ database.`);
             }).children({
               depth: 1,
               trash: null,
+              orphan: null,
               areas: false,
               permission: false
             }).toObject();
@@ -541,6 +544,9 @@ database.`);
             page.rank = 0;
             pushed = peers.map(child => child._id);
           } else if (position === 'lastChild') {
+            if (!parent.level && (page.type !== '@apostrophecms/trash')) {
+              throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+            }
             if (!peers.length) {
               page.rank = 0;
             } else {
@@ -554,6 +560,9 @@ database.`);
             }
             pushed = peers.slice(index).map(peer => peer._id);
           } else if (position === 'after') {
+            if (target.type === '@apostrophecms/trash') {
+              throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+            }
             page.rank = target.rank + 1;
             const index = peers.findIndex(peer => peer.id === target._id);
             if (index !== -1) {
@@ -752,13 +761,15 @@ database.`);
             } else if (position === 'before') {
               rank = target.rank;
             } else if (position === 'after') {
-              if (moved.parked) {
-                // Reserved range
-                throw new Error('cannot move a page after a parked page');
+              if (target.type === '@apostrophecms/trash') {
+                throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
               }
               rank = target.rank + 1;
             } else if (position === 'lastChild') {
               parent = target;
+              if (!parent.level && (moved.type !== '@apostrophecms/trash')) {
+                throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+              }
               if (target._children && target._children.length) {
                 rank = target._children[target._children.length - 1].rank + 1;
               } else {
@@ -861,11 +872,13 @@ database.`);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
+          orphan: null,
           areas: false,
           permission: false
         }, options.builders || {})).children({
           depth: 1,
           trash: null,
+          orphan: null,
           areas: false,
           permission: false
         }).applyBuilders(options.builders || {}).toObject();
@@ -898,9 +911,8 @@ database.`);
 
         // The position is a number, so we're converting it to one of the
         // acceptable string values and treating the `target` as the
-        // moved pages's parent.
+        // moved page's parent.
         const target = await self.getTarget(req, targetId, position);
-
         position = parseInt(position);
         // Get the index of the moving page within the target's children.
         const childIndex = target._children.findIndex(child => {
@@ -1830,6 +1842,17 @@ database.`);
             throw self.apos.error('notfound');
           }
         }
+      },
+      getAllProjection() {
+        return {
+          _url: 1,
+          title: 1,
+          type: 1,
+          path: 1,
+          rank: 1,
+          level: 1,
+          visibility: 1
+        };
       }
     };
   },
