@@ -13,6 +13,7 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
+              :trigger-validation="triggerValidation"
               :schema="schema"
               :value="docFields"
               @input="updateDocFields"
@@ -82,7 +83,8 @@ export default {
         active: false,
         type: 'slide',
         showModal: false
-      }
+      },
+      triggerValidation: false
     };
   },
   computed: {
@@ -125,15 +127,22 @@ export default {
       return result;
     },
     save() {
-      const widget = this.docFields.data;
-      if (!widget.type) {
-        widget.type = this.type;
-      }
-      if (!this.id) {
-        widget._id = cuid();
-      }
-      this.$emit('modal-result', widget);
-      this.modal.showModal = false;
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (this.docFields.hasErrors) {
+          this.triggerValidation = false;
+          return;
+        }
+        const widget = this.docFields.data;
+        if (!widget.type) {
+          widget.type = this.type;
+        }
+        if (!this.id) {
+          widget._id = cuid();
+        }
+        this.$emit('modal-result', widget);
+        this.modal.showModal = false;
+      });
     },
     getDefault() {
       const widget = {};
