@@ -8,11 +8,11 @@
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="confirmContent.icon" class="apos-confirm__icon"
+            v-if="confirmContent.icon" class="custom-confirm__logo"
             :src="confirmContent.icon" alt=""
           >
-          <AposLogo
-            v-else-if="confirmContent.icon !== false" class="apos-confirm__icon"
+          <AposLogoIcon
+            v-else-if="confirmContent.icon !== false" class="apos-confirm__logo"
           />
           <h2
             v-if="confirmContent.heading"
@@ -120,9 +120,9 @@ export default {
   padding: 60px;
 }
 
-.apos-confirm__icon {
-  width: 60px;
+.apos-confirm__logo {
   height: 60px;
+  fill: var(--a-black);
 }
 
 .apos-confirm__description {
