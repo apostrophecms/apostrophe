@@ -136,6 +136,12 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
+        const canEdit = area._edit && (options.edit !== false);
+        if (canEdit) {
+          // Ease of access to image URLs. When not editing we
+          // just use the helpers
+          self.apos.attachment.all(area, { annotate: true });
+        }
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
           // not so sloppy this time please
