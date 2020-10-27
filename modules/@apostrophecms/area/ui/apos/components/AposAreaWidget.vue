@@ -428,6 +428,7 @@ export default {
       transition: opacity 0.2s ease;
       pointer-events: none;
     }
+
     &:before {
       top: 0;
     }
@@ -435,33 +436,37 @@ export default {
       bottom: 0;
     }
     &.apos-highlight {
-      z-index: $z-index-widget-highlight;
       &:before, &:after {
         opacity: 0.4;
       }
     }
     &.apos-focus {
-      z-index: $z-index-widget-focus;
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
       }
     }
+
+    .apos-area-widget-inner &:after {
+      display: none;
+    }
+    .apos-area-widget-inner &:before {
+      z-index: $z-index-under;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      outline: 1px solid var(--a-base-1);
+      outline-offset: -1px;
+      background-color: var(--a-base-5);
+      pointer-events: none;
+    }
+    .apos-area-widget-inner &.apos-focus:before,
+    .apos-area-widget-inner &.apos-highlight:before {
+      z-index: $z-index-default;
+    }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner:after {
-    display: none;
-  }
-  .apos-area-widget-inner .apos-area-widget-inner:before {
-    z-index: $z-index-under;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    outline: 1px solid var(--a-base-1);
-    outline-offset: -1px;
-    background-color: var(--a-base-5);
-  }
   .apos-area-widget-inner .apos-area-widget-inner {
     &.apos-highlight:before {
       opacity: 0.1;
@@ -469,20 +474,23 @@ export default {
     &.apos-focus:before {
       opacity: 0.15;
     }
-  }
 
-  .apos-area-widget-inner .apos-area-widget-inner {
-    &.apos-highlight, &.apos-focus {
+    &.apos-highlight,
+    &.apos-focus {
       outline-color: var(--a-secondary);
     }
   }
 
   .apos-area-widget-controls {
-    z-index: $z-index-default;
+    z-index: $z-index-widget-controls;
     position: absolute;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
+
+    &.apos-area-widget__label {
+      z-index: $z-index-widget-label;
+    }
   }
 
   .apos-area-widget-controls--modify {
@@ -506,9 +514,6 @@ export default {
     top: 0;
     left: 50%;
     transform: translateY(-50%);
-    &.apos-focus {
-      z-index: $z-index-widget-add-focus;
-    }
   }
 
   .apos-area-widget-controls--add--bottom {
