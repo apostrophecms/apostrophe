@@ -73,12 +73,6 @@ export default {
             name: 'title'
           },
           {
-            label: 'Published',
-            name: 'published',
-            labelIcon: 'circle',
-            icon: 'circle'
-          },
-          {
             label: 'Edit',
             name: '_id',
             icon: 'pencil',
@@ -165,7 +159,6 @@ export default {
       this.pages = [ pageTree ];
 
       function formatPage(page) {
-        page.published = page.published ? 'Published' : 'Unpublished';
         self.pagesFlat.push({
           title: page.title,
           id: page._id,
