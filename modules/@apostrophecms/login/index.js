@@ -38,7 +38,6 @@
 
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
-const _ = require('lodash');
 const Promise = require('bluebird');
 
 module.exports = {
@@ -59,26 +58,6 @@ module.exports = {
   },
   handlers(self, options) {
     return {
-      deserialize: {
-        deserializePermissions(user) {
-          user._permissions = {};
-          _.each(user._groups, function (group) {
-            _.each(group.permissions || [], function (permission) {
-              user._permissions[permission] = true;
-            });
-          });
-          _.each(user.permissions || [], function (permission) {
-            user._permissions[permission] = true;
-          });
-          // The standard permissions are progressive
-          if (user._permissions.admin) {
-            user._permissions.edit = true;
-          }
-          if (user._permissions.edit) {
-            user._permissions.guest = true;
-          }
-        }
-      },
       apostrophe: {
         modulesReady() {
           // So this property is hashed and the hash kept in the safe,

@@ -247,7 +247,7 @@ module.exports = {
           // Being logged in is good enough to see this
           return true;
         }
-        return self.apos.permission.can(req, item.permission);
+        return self.apos.permission.can(req, item.permission.action, item.permission.type);
       },
 
       getBrowserData(req) {

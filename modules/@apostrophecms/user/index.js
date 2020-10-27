@@ -3,26 +3,11 @@
 // looks for instances of `@apostrophecms/user`. Of course you may implicitly subclass
 // it at project level (not changing the name) in order to alter its behavior.
 //
-// A user's permissions are determined by their membership in groups. See the
-// relationship with `@apostrophecms/group` in the schema.
-//
-// Groups are managed by the `@apostrophecms/group` module.
-//
-// There is also a simplified permissions model in which you just specify
-// an array of `groups` as an option to `@apostrophecms/user`, and a single-select
-// dropdown menu allows you to pick one and only one of those groups for each user.
-// The properties of each group in the array are `name`, `label` and
-// `permissions`, which is an array of permission names such as `guest`, `edit` and
-// `admin`. If you specify the `groups` option when configuring
-// `@apostrophecms/user`, the admin interface for `@apostrophecms/group` will hide itself.
-//
 // ### Public "staff directories" vs. users
 //
 // In our experience, combining the concept of a "user" who can log in and do things
 // with the concept of a "staff member" who appears in a staff directory is more
-// trouble than it is worth. That's why the `published` field is not present in
-// `@apostrophecms/user`. You can add it back in, but then you have to deal with
-// the confusing concept of "users" who shouldn't actually be allowed to log in.
+// trouble than it is worth.
 //
 // So for a staff directory, we suggest you create a separate `employee` module
 // or similar, extending `@apostrophecms/piece-type`, unless it's true that basically
@@ -44,7 +29,6 @@
 // secret property. This is convenient when implementing a module
 // such as `@apostrophecms/signup`.
 
-const _ = require('lodash');
 const credential = require('credential');
 const prompt = require('prompt');
 const Promise = require('bluebird');
@@ -101,34 +85,9 @@ module.exports = {
           type: 'password',
           name: 'password',
           label: 'Password'
-        },
-        ...(options.groups
-          ? {
-            group: {
-              type: 'select',
-              label: 'Permission Group',
-              def: 'guest',
-              required: true,
-              choices: []
-            },
-            _groups: {
-              type: 'relationship',
-              label: 'Groups',
-              idsStorage: 'groupIds',
-              withType: '@apostrophecms/group',
-              contextual: true
-            }
-          } : {
-            _groups: {
-              type: 'relationship',
-              label: 'Groups',
-              idsStorage: 'groupIds',
-              withType: '@apostrophecms/group'
-            }
-          }
-        )
+        }
       },
-      remove: [ 'published' ],
+      remove: [ 'visibility' ],
       group: {
         basics: {
           label: 'Basics',
@@ -152,8 +111,6 @@ module.exports = {
         permissions: {
           label: 'Permissions',
           fields: [
-            'group',
-            '_groups',
             'disabled'
           ]
         }
@@ -162,11 +119,11 @@ module.exports = {
   },
 
   filters: {
-    remove: [ 'published' ]
+    remove: [ 'visibility' ]
   },
 
   columns: {
-    remove: [ 'published' ]
+    remove: [ 'visibility' ]
   },
 
   async init(self, options) {
@@ -181,7 +138,6 @@ module.exports = {
     self.initializeCredential();
     self.addOurTrashPrefixFields();
     self.enableSecrets();
-    await self.ensureGroups();
     await self.ensureSafe();
   },
   apiRoutes(self, options) {
@@ -435,61 +391,6 @@ module.exports = {
         await self.safe.updateOne({ _id: user._id }, changes);
       },
 
-      // Ensure the existence of the groups configured via the `groups` option,
-      // if any, and refresh their permissions.
-
-      async ensureGroups() {
-        if (!options.groups) {
-          return;
-        }
-
-        for (const group of options.groups) {
-          await self.ensureGroup(group);
-        }
-        const groupField = _.find(self.schema, { name: 'group' });
-
-        for (const group of options.groups) {
-          groupField.choices.push({
-            label: group.title,
-            value: group._id
-          });
-        }
-        if (options.groups.length) {
-          groupField.def = options.groups[0]._id;
-        }
-      },
-
-      // Create and/or refresh a group as specified by the
-      // `groups` option. The group object is returned.
-      //
-      // The argument passed must have a `title` and
-      // may have a `permissions` array and other
-      // properties supported by groups. This is similar
-      // to parked pages.
-
-      async ensureGroup(group) {
-
-        const criteria = {};
-        const req = self.apos.task.getReq();
-
-        if (group._id) {
-          criteria._id = group._id;
-        } else {
-          criteria.title = group.title;
-        }
-
-        const _group = await self.apos.group.find(req, criteria).toObject();
-        if (_group) {
-          group._id = _group._id;
-          if (group.permissions) {
-            _group.permissions = group.permissions;
-          }
-          return self.apos.group.update(req, _group);
-        }
-
-        return self.apos.group.insert(req, group);
-      },
-
       // Initialize the [credential](https://npmjs.org/package/credential) module.
       initializeCredential() {
         self.pw = credential();
@@ -502,16 +403,10 @@ module.exports = {
         // Support positional arguments for bc, but the named
         // arguments make the intent clear
         const username = argv._[1] || argv.username;
-        const groupname = argv._[2] || argv.group || argv.groupname;
-        if (!(username && groupname)) {
-          throw 'You must specify --username=usernamehere and --group=groupnamehere';
+        if (!username) {
+          throw 'You must specify --username=usernamehere';
         }
         const req = self.apos.task.getReq();
-        // find the group
-        const group = await self.apos.group.find(req, { title: groupname }).toObject();
-        if (!group) {
-          throw 'That group does not exist.';
-        }
         prompt.start();
         const result = await Promise.promisify(prompt.get, { context: prompt })({
           properties: {
@@ -525,8 +420,7 @@ module.exports = {
           username: username,
           password: result.password,
           title: username,
-          firstName: username,
-          groupIds: [ group._id ]
+          firstName: username
         });
       },
 
@@ -559,46 +453,6 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
-      }
-    };
-  },
-  extendMethods(self, options) {
-    return {
-      // Extend the standard middleware for the piece-editing routes
-      // so that the `group` single-select property is automatically set
-      // to the id of the first group in `groupIds`. This allows the single-select
-      // dropdown element to work with data that actually lives in an array.
-      requirePiece(_super, req, res, next) {
-        return _super(req, res, function () {
-          if (req.piece && req.piece.groupIds && req.piece.groupIds.length) {
-            req.piece.group = req.piece.groupIds[0];
-          }
-          return next();
-        });
-      },
-      find(_super, req, criteria, projection) {
-        return _super(req, criteria, projection).published(null);
-      }
-    };
-  },
-
-  queries(self, query) {
-    return {
-      builders: {
-        singleGroup: {
-          def: self.options.groups,
-          after(results) {
-            const options = query.get('singleGroup');
-            if (!options) {
-              return;
-            }
-            for (const result of results) {
-              if (result.groupIds) {
-                result.group = result.groupIds[0];
-              }
-            }
-          }
-        }
       }
     };
   }

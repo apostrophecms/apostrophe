@@ -176,7 +176,6 @@ describe('Pieces', function() {
   async function findPiece(req, id) {
     const piece = apos.modules.things.find(req, { _id: id })
       .permission('edit')
-      .published(null)
       .trash(null)
       .toObject();
     if (!piece) {
@@ -198,13 +197,11 @@ describe('Pieces', function() {
     },
     {
       _id: 'thing2',
-      title: 'Blue',
-      published: true
+      title: 'Blue'
     },
     {
       _id: 'thing3',
-      title: 'Green',
-      published: true
+      title: 'Green'
     }
   ];
 
@@ -213,8 +210,7 @@ describe('Pieces', function() {
       _id: 'person1',
       title: 'Bob',
       type: 'person',
-      thingsIds: [ 'thing2', 'thing3' ],
-      published: true
+      thingsIds: [ 'thing2', 'thing3' ]
     }
   ];
 
@@ -349,7 +345,6 @@ describe('Pieces', function() {
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
-    user.permissions = [ 'admin' ];
 
     return apos.user.insert(apos.task.getReq(), user);
   });
@@ -457,13 +452,13 @@ describe('Pieces', function() {
 
   let updateProduct;
 
-  it('can POST products with a session, some published', async () => {
+  it('can POST products with a session, some visible', async () => {
     // range is exclusive at the top end, I want 10 things
     for (let i = 1; (i <= 10); i++) {
       const response = await apos.http.post('/api/v1/product', {
         body: {
           title: 'Cool Product #' + i,
-          published: !!(i & 1),
+          visibility: (i & 1) ? 'loginRequired' : 'public',
           body: {
             metaType: 'area',
             items: [
@@ -497,17 +492,8 @@ describe('Pieces', function() {
     assert(response.results.length === 5);
   });
 
-  it('can GET five of those products with a user session and no query parameters', async () => {
+  it('can GET all of those products with a user session', async () => {
     const response = await apos.http.get('/api/v1/product', {
-      jar
-    });
-    assert(response);
-    assert(response.results);
-    assert(response.results.length === 5);
-  });
-
-  it('can GET all ten of those products with a user session and published=any', async () => {
-    const response = await apos.http.get('/api/v1/product?published=any', {
       jar
     });
     assert(response);
@@ -518,7 +504,7 @@ describe('Pieces', function() {
   let firstId;
 
   it('can GET only 5 if perPage is 5', async () => {
-    const response = await apos.http.get('/api/v1/product?perPage=5&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5', {
       jar
     });
     assert(response);
@@ -529,7 +515,7 @@ describe('Pieces', function() {
   });
 
   it('can GET a different 5 on page 2', async () => {
-    const response = await apos.http.get('/api/v1/product?perPage=5&page=2&published=any', {
+    const response = await apos.http.get('/api/v1/product?perPage=5&page=2', {
       jar
     });
     assert(response);
@@ -662,16 +648,17 @@ describe('Pieces', function() {
   });
 
   it('can GET results plus filter choices', async () => {
-    const response = await apos.http.get('/api/v1/product?choices=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?choices=title,visibility,_articles,articles', {
       jar
     });
     assert(response);
     assert(response.results);
     assert(response.choices.title);
     assert(response.choices.title[0].label.match(/Cool Product/));
-    assert(response.choices.published);
-    assert(response.choices.published[0].value === '0');
-    assert(response.choices.published[1].value === '1');
+    assert(response.choices.visibility);
+    assert(response.choices.visibility.length === 2);
+    assert(response.choices.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.choices.visibility.find(item => item.value === 'public'));
     assert(response.choices._articles);
     assert(response.choices._articles[0].label === 'First Article');
     // an _id
@@ -682,7 +669,7 @@ describe('Pieces', function() {
   });
 
   it('can GET results plus filter counts', async () => {
-    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,published,_articles,articles', {
+    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,visibility,_articles,articles', {
       jar
     });
     assert(response);
@@ -692,9 +679,10 @@ describe('Pieces', function() {
     assert(response.counts.title[0].label.match(/Cool Product/));
     // Doesn't work for every field type, but does for this
     assert(response.counts.title[0].count === 1);
-    assert(response.counts.published);
-    assert(response.counts.published[0].value === '0');
-    assert(response.counts.published[1].value === '1');
+    assert(response.counts.visibility);
+    assert(response.counts.visibility.length === 2);
+    assert(response.counts.visibility.find(item => item.value === 'loginRequired'));
+    assert(response.counts.visibility.find(item => item.value === 'public'));
     assert(response.counts._articles);
     assert(response.counts._articles[0].label === 'First Article');
     // an _id

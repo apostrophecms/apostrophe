@@ -81,7 +81,7 @@ module.exports = async function(options) {
     // module name, i.e. they are of that type or they extend it.
     // For instance, `apos.instancesOf('@apostrophecms/piece-type')` returns
     // an array of active modules in your project that extend
-    // pieces, such as `@apostrophecms/user`, `@apostrophecms/group` and
+    // pieces, such as `@apostrophecms/user` and
     // your own piece types
 
     self.instancesOf = function(name) {

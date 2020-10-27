@@ -61,7 +61,6 @@ module.exports = {
     self.parked = (self.options.minimumPark || [ {
       slug: '/',
       parkedId: 'home',
-      published: true,
       _defaults: {
         title: 'Home',
         type: '@apostrophecms/home-page'
@@ -71,7 +70,6 @@ module.exports = {
         parkedId: 'trash',
         type: '@apostrophecms/trash',
         trash: true,
-        published: false,
         orphan: true,
         _defaults: { title: 'Trash' }
       } ]
@@ -83,7 +81,6 @@ module.exports = {
     });
     self.validateTypeChoices();
     self.finalizeControls();
-    self.addPermissions();
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
@@ -100,12 +97,11 @@ module.exports = {
         const all = self.apos.launder.boolean(req.query.all);
         const flat = self.apos.launder.boolean(req.query.flat);
         if (all) {
-          if (!self.apos.permission.can(req, 'admin-@apostrophecms/page')) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
             throw self.apos.error('forbidden');
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            published: null,
             trash: false,
             orphan: null,
             relationships: false,
@@ -162,7 +158,7 @@ module.exports = {
               if (node.good) {
                 newNodes.push(_.pick(node,
                   'title', 'slug', 'path', '_id', 'type', 'metaType', '_url',
-                  '_children', 'published', 'parked'
+                  '_children', 'parked'
                 ));
               }
             });
@@ -368,18 +364,19 @@ module.exports = {
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
           const types = (self.options.typeChoices || []).map(type => type.name);
-          for (const type of types) {
+          for (const [ type, i ] of Object.entries(types)) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The typeChoices option of the @apostrophecms/page module contains type
+              self.apos.util.warnDev(`The typeChoices option of the @apostrophecms/page module contains type
 ${type} but there is no module that manages that type. You must
 implement a module of that name that extends @apostrophecms/piece-type
 or @apostrophecms/page-type, or remove the entry from typeChoices.`);
+              types.splice(i, 1);
             }
           }
           const parkedTypes = self.getParkedTypes();
           for (const type of parkedTypes) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The park option of the @apostrophecms/page module contains type
+              self.apos.util.warnDev(`The park option of the @apostrophecms/page module contains type
 ${type} but there is no module that manages that type. You must
 implement a module of that name that extends @apostrophecms/piece-type
 or @apostrophecms/page-type, or remove the entry from park.`);
@@ -388,11 +385,21 @@ or @apostrophecms/page-type, or remove the entry from park.`);
           const distinct = await self.apos.doc.db.distinct('type');
           for (const type of distinct) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
+              self.apos.util.warnDev(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
 but there is no module that manages that type. You must implement
 a module of that name that extends @apostrophecms/piece-type or
 @apostrophecms/page-type, or remove these documents from the
 database.`);
+              self.apos.doc.managers[type] = {
+                // Do-nothing placeholder manager
+                schema: [],
+                find(req) {
+                  return [];
+                },
+                isAdminOnly() {
+                  return true;
+                }
+              };
             }
           }
         }
@@ -473,12 +480,13 @@ database.`);
         return browserOptions;
       },
       // Returns a cursor that finds pages the current user can edit
-      // in a batch operation, including unpublished and trashed pages.
+      // in a batch operation.
+      //
       // `req` determines what the user is eligible to edit, `criteria`
       // is the MongoDB criteria object, and any properties of `options`
       // are invoked as methods on the query with their values.
       findForBatch(req, criteria = {}, options = {}) {
-        const cursor = self.find(req, criteria, options).permission('edit').published(null).trash(null);
+        const cursor = self.find(req, criteria, options).permission('edit').trash(null);
         return cursor;
       },
       // Insert a page. `targetId` must be an existing page id, and
@@ -497,7 +505,6 @@ database.`);
             query.children({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             });
@@ -513,7 +520,6 @@ database.`);
             }).children({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             }).toObject();
@@ -624,130 +630,12 @@ database.`);
         }
         await self.apos.lock.unlock('@apostrophecms/page:tree');
       },
-      // This method pushes a page's permissions to its subpages selectively based on
-      // whether the applyToSubpages choice was selected for each one. It also copies
-      // the `loginRequired` property to subpages if the `applyLoginRequiredToSubpages`
-      // choice was selected.
-      //
-      // Both additions and deletions from the permissions list can be propagated
-      // in this way.
-      //
-      // This requires some tricky mongo work to do it efficiently, especially since we
-      // need to update both the relationship ids and the denormalized docPermissions array.
-      //
-      // The applyToSubpages choice is actually a one-time action, not a permanently
-      // remembered setting, so the setting itself is cleared afterwards by this
-      // method.
-      //
-      // This method is called for us by the @apostrophecms/doc module on update
-      // operations, so we first make sure it's a page. We also make sure it's
-      // not a new page (no kids to propagate anything to).
-      async docAfterDenormalizePermissions(req, page, options) {
-        if (!self.isPage(page)) {
-          return;
-        }
-        if (!page._id) {
-          return;
-        }
-        const admin = req.user && req.user._permissions.admin;
-        const allowed = [ 'view' ];
-        if (admin) {
-          allowed.push('edit');
-        }
-        const propagateAdd = {};
-        const propagatePull = {};
-        const propagateSet = {};
-        const loginRequired = page.loginRequired;
-        if (page.applyLoginRequiredToSubpages) {
-          propagateSet.loginRequired = loginRequired;
-          // It's a one-time action, don't remember it
-          page.applyLoginRequiredToSubpages = false;
-        }
-        allowed.forEach(prefix => {
-          const fields = [
-            prefix + 'GroupsIds',
-            prefix + 'UsersIds'
-          ];
-          const removedFields = fields.map(field => {
-            return field.replace(/Ids$/, 'RemovedIds');
-          });
-          fields.forEach(field => {
-            (page[field] || []).forEach(id => {
-              const fieldsStorage = field.replace('Ids', 'Fields');
-              const fieldsById = page[fieldsStorage];
-              const fields = fieldsById && (fieldsById[id] || {});
-              const propagate = fields.applyToSubpages;
-              if (propagate) {
-                append(propagateAdd, 'docPermissions', prefix + '-' + id);
-                append(propagateAdd, field, id);
-                // This is not a persistent setting, it's a one-time indicator that
-                // we should propagate now
-                propagateSet[fieldsStorage + '.' + id + '.applyToSubpages'] = false;
-              }
-              fields.applyToSubpages = false;
-            });
-          });
-          removedFields.forEach(field => {
-            (page[field] || []).forEach(id => {
-              const fieldsStorage = field.replace('RemovedIds', 'Fields');
-              const fieldsById = page[fieldsStorage];
-              const fields = fieldsById && (fieldsById[id] || {});
-              const propagate = fields.applyToSubpages;
-              if (propagate) {
-                append(propagatePull, 'docPermissions', prefix + '-' + id);
-                append(propagatePull, field.replace('Removed', ''), id);
-              }
-              // This is a one-time operation each time it's chosen, so don't remember it
-              fields.applyToSubpages = false;
-            });
-          });
-        });
-        if (!_.isEmpty(propagatePull) || !_.isEmpty(propagateAdd) || !_.isEmpty(propagateSet)) {
-          const commands = [];
-          // Use separate commands because MongoDB is increasingly intolerant
-          // of using these operators in the same update call
-          if (!_.isEmpty(propagatePull)) {
-            commands.push({ $pull: operate(propagatePull, '$in') });
-          }
-          if (!_.isEmpty(propagateAdd)) {
-            commands.push({ $addToSet: operate(propagateAdd, '$each') });
-          }
-          if (!_.isEmpty(propagateSet)) {
-            commands.push({ $set: propagateSet });
-          }
-          // Oh brother, must do it in two passes
-          // https://jira.mongodb.org/browse/SERVER-1050
-          const criteria = {
-            $and: [
-              { path: self.matchDescendants(page) },
-              self.apos.permission.criteria(req, 'edit-' + page.type)
-            ]
-          };
-          for (const command of commands) {
-            await self.apos.doc.db.updateMany(criteria, command);
-          }
-        }
-        function append(container, key, value) {
-          if (!_.has(container, key)) {
-            container[key] = [];
-          }
-          container[key].push(value);
-        }
-        function operate(container, operator) {
-          const criterion = {};
-          _.each(container, function (val, key) {
-            criterion[key] = {};
-            criterion[key][operator] = val;
-          });
-          return criterion;
-        }
-      },
       // This method creates a new object suitable to be inserted
       // as a child of the specified parent via insert(). It DOES NOT
       // insert it at this time. If the parent page is locked down
       // such that no child page types are permitted, this method
-      // returns null. The permissions of the new child page match
-      // the permissions of the parent.
+      // returns null. Visibility settings are inherited from the
+      // parent page.
       newChild(parentPage) {
         const pageType = self.allowedChildTypes(parentPage)[0];
         if (!pageType) {
@@ -759,13 +647,8 @@ database.`);
           title: 'New Page',
           slug: self.apos.util.addSlashIfNeeded(parentPage.slug) + 'new-page',
           type: pageType,
-          published: parentPage.published
+          visibility: parentPage.visibility
         });
-        // Inherit permissions from parent page
-        _.assign(page, _.pick(parentPage, 'loginRequired', 'applyLoginRequiredToSubpages', 'viewUsersIds', 'viewUsersFields', 'viewGroupsIds', 'viewGroupsFields', 'editUsersIds', 'editUsersFields', 'editGroupsIds', 'editGroupsFields', 'docPermissions'));
-        if (!page.published) {
-          page.published = false;
-        }
         return page;
       },
       allowedChildTypes(page) {
@@ -840,10 +723,9 @@ database.`);
             options
           };
           async function getMoved() {
-            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).published(null).areas(false).ancestors({
+            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).areas(false).ancestors({
               depth: 1,
               trash: null,
-              published: null,
               areas: false,
               permission: false
             }).applyBuilders(options.builders || {}).toObject();
@@ -976,16 +858,14 @@ database.`);
         } : {
           _id: targetId
         };
-        const target = await self.find(req, criteria).permission(false).trash(null).published(null).areas(false).ancestors(_.assign({
+        const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
-          published: null,
           areas: false,
           permission: false
         }, options.builders || {})).children({
           depth: 1,
           trash: null,
-          published: null,
           areas: false,
           permission: false
         }).applyBuilders(options.builders || {}).toObject();
@@ -1131,13 +1011,12 @@ database.`);
           return self.find(req, {
             trash: true,
             level: 1
-          }).permission(false).published(null).trash(null).areas(false).toObject();
+          }).permission(false).trash(null).areas(false).toObject();
         }
         async function findPage() {
           // Also checks permissions
           return self.find(req, { _id: _id }).permission('edit').ancestors({
             depth: 1,
-            published: null,
             trash: null,
             areas: false
           }).toObject();
@@ -1343,7 +1222,7 @@ database.`);
             if (!item.permission) {
               return true;
             }
-            if (self.apos.permission.can(req, item.permission)) {
+            if (self.apos.permission.can(req, item.permission.action, item.permission.type)) {
               return true;
             }
           });
@@ -1463,7 +1342,6 @@ database.`);
             'slug',
             '_id',
             'type',
-            'published',
             '_url'
           ]);
         });
@@ -1581,20 +1459,31 @@ database.`);
           await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
         }
         async function insert() {
-          const defaults = item._defaults;
-          if (defaults) {
-            delete item._defaults;
-            _.defaults(item, defaults);
-          }
-          if (existing) {
-            return;
-          }
-          if (!parent) {
-            item._id = self.apos.util.generateId();
-            item.path = item._id;
-            return self.apos.doc.insert(req, item);
+          const parkedDefaults = item._defaults || {};
+          delete item._defaults;
+          let ordinaryDefaults;
+          if (parent) {
+            ordinaryDefaults = self.newChild(parent);
           } else {
-            return self.insert(req, parent._id, 'lastChild', item);
+            // The home page is being parked
+            const type = item.type || parkedDefaults.type;
+            if (!type) {
+              throw new Error('Parked home page must have an explicit page type:\n\n' + JSON.stringify(item, null, '  '));
+            }
+            ordinaryDefaults = self.apos.doc.getManager(type).newInstance();
+          }
+          const _item = {
+            ...ordinaryDefaults,
+            ...parkedDefaults,
+            ...item
+          };
+          delete _item._children;
+          if (!parent) {
+            _item._id = self.apos.util.generateId();
+            _item.path = _item._id;
+            return self.apos.doc.insert(req, _item);
+          } else {
+            return self.insert(req, parent._id, 'lastChild', _item);
           }
         }
         async function children() {
@@ -1687,40 +1576,17 @@ database.`);
       // schema fields. Called by the update routes (for new pages, there are
       // no subpages to apply things to yet). Returns a new schema
       addApplyToSubpagesToSchema(schema) {
-        const fields = [
-          '_viewUsers',
-          '_viewGroups',
-          '_editUsers',
-          '_editGroups'
-        ];
         // Do only as much cloning as we have to to avoid modifying the original
         schema = _.clone(schema);
-        const index = _.findIndex(schema, { name: 'loginRequired' });
+        const index = _.findIndex(schema, { name: 'visibility' });
         if (index !== -1) {
           schema.splice(index + 1, 0, {
             type: 'boolean',
-            name: 'applyLoginRequiredToSubpages',
+            name: 'applyVisibilityToSubpages',
             label: 'Apply to Subpages',
             group: schema[index].group
           });
         }
-        _.each(fields, function (name) {
-          const index = _.findIndex(schema, { name: name });
-          if (index === -1) {
-            return;
-          }
-          const field = _.clone(schema[index]);
-          const base = name.replace(/^_/, '');
-          field.removedIdsField = base + 'RemovedIds';
-          field.fieldsStorage = base + 'Fields';
-          field.schema = [ {
-            name: 'applyToSubpages',
-            type: 'boolean',
-            label: 'Apply to Subpages',
-            inline: true
-          } ];
-          schema[index] = field;
-        });
         return schema;
       },
       // Get the page type names for all the parked pages, including parked children, recursively.
@@ -1778,16 +1644,6 @@ database.`);
             label: 'Save'
           }
         ];
-      },
-      addPermissions() {
-        self.apos.permission.add({
-          value: 'admin-@apostrophecms/page',
-          label: 'Admin: Pages'
-        });
-        self.apos.permission.add({
-          value: 'edit-@apostrophecms/page',
-          label: 'Edit: Pages'
-        });
       },
       removeParkedPropertiesFromSchema(page, schema) {
         return _.filter(schema, function (field) {
@@ -1939,7 +1795,7 @@ database.`);
       },
       getRestQuery(req) {
         const query = self.find(req).ancestors(true).children(true).applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -1952,11 +1808,11 @@ database.`);
         return query;
       },
       // Returns a cursor that finds pages the current user can edit. Unlike
-      // find(), this cursor defaults to including unpublished docs. Trash too because
-      // trash is editable however we'll apply a filter from the UI.
+      // find(), this cursor defaults to including docs in the trash, although
+      // we apply filters in the UI.
       findForEditing(req, criteria, projection, options) {
         // Include ancestors to help with determining allowed types
-        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null).ancestors(true);
+        const cursor = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
         if (projection) {
           cursor.project(projection);
         }
@@ -1970,7 +1826,7 @@ database.`);
       // nothing. Simplifies implementation of `getAll` and `getOne`.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.__meta.name)) {
             throw self.apos.error('notfound');
           }
         }

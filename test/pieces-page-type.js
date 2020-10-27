@@ -41,8 +41,7 @@ describe('Pieces Pages', function() {
                 title: 'Events',
                 type: 'eventPage',
                 slug: '/events',
-                parkedId: 'events',
-                published: true
+                parkedId: 'events'
               }
             ]
           }
@@ -61,7 +60,7 @@ describe('Pieces Pages', function() {
       testItems.push({
         _id: 'event' + paddedInt,
         slug: 'event-' + paddedInt,
-        published: true,
+        visibility: 'public',
         type: 'event',
         title: 'Event ' + paddedInt,
         titleSortified: 'event ' + paddedInt,

@@ -35,8 +35,7 @@ describe('Search', function() {
     await apos.doc.insert(req, {
       title: 'Testing Search Event',
       type: 'event',
-      slug: 'search-test-event',
-      published: true
+      slug: 'search-test-event'
     });
 
     const doc = await apos.doc.find(req, { slug: 'search-test-event' }).toObject();

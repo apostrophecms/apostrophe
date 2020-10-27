@@ -5,10 +5,6 @@ const pathToRegexp = require('path-to-regexp');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   fields(self, options) {
-    if (options.permissionsFields === undefined) {
-      // By default, pages have nuanced permissions
-      options.permissionsFields = true;
-    }
     return {
       add: {
         slug: {
@@ -39,7 +35,6 @@ module.exports = {
       group: {
         utility: {
           fields: [
-            'published',
             'slug',
             'type',
             'orphan'
@@ -168,22 +163,6 @@ module.exports = {
       // the slug as well.
       getAutocompleteTitle(doc, query) {
         return doc.title + ' (' + doc.slug + ')';
-      },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has some edit privileges for
-      // this doc type (not necessarily every instance of it),
-      // for example the ability to create one. Determines
-      // admin bar menu item visibility. For pages this is always
-      // `edit-@apostrophecms/page` because page types can be switched.
-      getEditPermissionName() {
-        return 'edit-@apostrophecms/page';
-      },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has blanket admin privileges for
-      // this doc type. For pages this is always `admin-@apostrophecms/page`
-      // because page types can be switched.
-      getAdminPermissionName() {
-        return 'admin-@apostrophecms/page';
       },
       // `req` determines what the user is eligible to edit, `criteria`
       // is the MongoDB criteria object, and any properties of `options`

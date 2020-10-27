@@ -43,7 +43,6 @@ module.exports = {
     '@apostrophecms/image-widget': {},
     '@apostrophecms/video-field': {},
     '@apostrophecms/video-widget': {},
-    '@apostrophecms/group': {},
     '@apostrophecms/ui': {},
     '@apostrophecms/user': {},
     '@apostrophecms/image': {},

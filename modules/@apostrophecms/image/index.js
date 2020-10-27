@@ -66,7 +66,6 @@ module.exports = {
           '_tags',
           'credit',
           'creditUrl',
-          'published',
           'slug',
           'trash'
         ]
