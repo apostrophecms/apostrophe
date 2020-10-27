@@ -21,8 +21,6 @@
                   :schema="schema"
                   v-model="doc"
                 />
-                <!-- TODO -->
-                <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
                   :busy="busy"
                   :disabled="disabled"
@@ -40,8 +38,7 @@
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
           <AposLogo class="apos-login__logo"/>
-          <label class="apos-login__logo-name">ApostropheCMS</label>
-          <label class="apos-login__project-version">Version {{ context.version }}</label>
+          <div class="apos-login__project-version">Version {{ context.version }}</div>
         </div>
       </transition>
     </div>
@@ -119,6 +116,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  $container: 320px;
+
   .fade-stage-enter-active {
     transition: opacity 0.2s linear;
     transition-delay: 0.3s;
@@ -162,7 +161,8 @@ export default {
     background-color: var(--a-background-primary);
 
     &__wrapper {
-      width: 320px;
+      width: 100%;
+      max-width: $container;
       margin: 0 auto;
     }
 
@@ -254,22 +254,15 @@ export default {
 
     &__footer {
       position: absolute;
-      right: 0;
       bottom: 32px;
-      left: 0;
+      left: 50%;
       display: flex;
-      width: 400px;
-      margin: auto;
+      width: 100%;
+      max-width: $container;
       align-items: center;
-      justify-content: start;
-      letter-spacing: 1px;
+      justify-content: space-between;
       font-size: map-get($font-sizes, input-label);
-    }
-
-    &__logo-name {
-      color: var(--a-text-primary);
-      margin-left: 10px;
-      margin-right: 30px;
+      transform: translateX(-50%);
     }
 
     &__project-version {
@@ -281,5 +274,8 @@ export default {
       margin-left: auto;
       font-weight: normal;
     }
+  }
+  .apos-login__logo {
+    width: 150px;
   }
 </style>
