@@ -3,25 +3,34 @@
     <div class="apos-admin-bar-spacer" ref="spacer" />
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
-        <AposLogo class="apos-admin-bar__logo" />
+        <AposLogoIcon class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
           <li
-            v-for="item in menuItems" :key="item.name"
+            v-for="item in menuItems"
+            :key="item.name"
             class="apos-admin-bar__item"
           >
             <component
-              v-if="item.options" :is="item.options.href ? 'a' : 'button'"
-              class="apos-admin-bar__btn" :href="item.options.href"
-              v-on="item.options.href ? {} : {
-                click: () => emitEvent(item.action)
-              }"
+              v-if="item.options"
+              :is="item.options.href ? 'a' : 'button'"
+              class="apos-admin-bar__btn"
+              :href="item.options.href"
+              v-on="
+                item.options.href
+                  ? {}
+                  : {
+                      click: () => emitEvent(item.action),
+                    }
+              "
             >
               {{ item.label }}
             </component>
             <AposContextMenu
-              v-else-if="item.items" class="apos-admin-bar__sub"
-              :menu="item.items" :button="{
-                label: item.label
+              v-else-if="item.items"
+              class="apos-admin-bar__sub"
+              :menu="item.items"
+              :button="{
+                label: item.label,
               }"
               @item-clicked="emitEvent"
             />
@@ -35,7 +44,7 @@
                 iconOnly: true,
                 icon: 'plus-icon',
                 type: 'primary',
-                modifiers: ['round', 'no-motion']
+                modifiers: ['round', 'no-motion'],
               }"
               @item-clicked="emitEvent"
             />
@@ -43,24 +52,31 @@
         </ul>
         <TheAposAdminBarUser
           class="apos-admin-bar__user"
-          :user="user" :avatar-url="userAvatar"
+          :user="user"
+          :avatar-url="userAvatar"
         />
       </div>
       <div class="apos-admin-bar__row">
         <AposButton
           v-if="currentPageId"
-          type="default" label="Page Settings"
-          icon="cog-icon" class="apos-admin-bar__btn"
-          @click="emitEvent({
-            itemName: '@apostrophecms/page:editor',
-            props: {
-              docId: currentPageId
-            }
-          })"
+          type="default"
+          label="Page Settings"
+          icon="cog-icon"
+          class="apos-admin-bar__btn"
+          @click="
+            emitEvent({
+              itemName: '@apostrophecms/page:editor',
+              props: {
+                docId: currentPageId,
+              },
+            })
+          "
         />
         <AposButton
-          type="default" label="Page Tree"
-          icon="file-tree-icon" class="apos-admin-bar__btn"
+          type="default"
+          label="Page Tree"
+          icon="file-tree-icon"
+          class="apos-admin-bar__btn"
           @click="emitEvent('@apostrophecms/page:manager')"
         />
       </div>
@@ -69,46 +85,46 @@
 </template>
 
 <script>
-import klona from 'klona';
+import klona from "klona";
 
 export default {
-  name: 'TheAposAdminBar',
+  name: "TheAposAdminBar",
   props: {
     items: {
       type: Array,
       default: function () {
         return [];
-      }
-    }
+      },
+    },
   },
-  emits: [ 'admin-menu-click' ],
+  emits: ["admin-menu-click"],
   data() {
     return {
       menuItems: [],
       createMenu: [],
-      user: {}
+      user: {},
     };
   },
   computed: {
     userAvatar() {
       // TODO: get the user avatar via an async API call
       // when this.user._id is truthy
-      return require('./userData').userAvatar;
+      return require("./userData").userAvatar;
     },
     currentPageId() {
       if (apos.page && apos.page.page && apos.page.page._id) {
         return apos.page.page._id;
       }
       return false;
-    }
+    },
   },
   mounted() {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
-    this.menuItems = itemsSet.map(item => {
+    this.menuItems = itemsSet.map((item) => {
       if (item.items) {
-        item.items.forEach(subitem => {
+        item.items.forEach((subitem) => {
           // The context menu needs an `action` property to emit.
           subitem.action = subitem.action || subitem.name;
         });
@@ -116,23 +132,23 @@ export default {
       return item;
     });
 
-    Object.values(apos.modules).forEach(module => {
+    Object.values(apos.modules).forEach((module) => {
       if (module.quickCreate && module.schema && module.schema.length > 0) {
         this.createMenu.push({
           label: module.label || module.name,
           name: module.name,
-          action: `${module.name}:editor`
+          action: `${module.name}:editor`,
         });
       }
     });
 
-    this.user = require('./userData').user;
+    this.user = require("./userData").user;
   },
   methods: {
     emitEvent: function (name) {
-      apos.bus.$emit('admin-menu-click', name);
-    }
-  }
+      apos.bus.$emit("admin-menu-click", name);
+    },
+  },
 };
 </script>
 
@@ -174,6 +190,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
+  fill: none;
 }
 
 .apos-admin-bar__logo {

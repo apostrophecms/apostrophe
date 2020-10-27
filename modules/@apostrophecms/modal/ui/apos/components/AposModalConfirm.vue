@@ -1,18 +1,24 @@
 <template>
   <AposModal
-    :modal="modal" class="apos-confirm"
-    @esc="cancel" @no-modal="$emit('safe-close')"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    :modal="modal"
+    class="apos-confirm"
+    @esc="cancel"
+    @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
   >
     <template #main>
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="confirmContent.icon" class="apos-confirm__icon"
-            :src="confirmContent.icon" alt=""
-          >
-          <AposLogo
-            v-else-if="confirmContent.icon !== false" class="apos-confirm__icon"
+            v-if="confirmContent.icon"
+            class="custom-confirm__icon"
+            :src="confirmContent.icon"
+            alt=""
+          />
+          <AposLogoIcon
+            v-else-if="confirmContent.icon !== false"
+            class="apos-confirm__icon"
           />
           <h2
             v-if="confirmContent.heading"
@@ -29,7 +35,8 @@
           <div class="apos-confirm__btns">
             <AposButton
               class="apos-confirm__btn"
-              :label="confirmContent.negativeLabel || 'Cancel'" @click="cancel"
+              :label="confirmContent.negativeLabel || 'Cancel'"
+              @click="cancel"
             />
             <AposButton
               class="apos-confirm__btn"
@@ -45,29 +52,28 @@
 </template>
 
 <script>
-
 export default {
   props: {
     confirmContent: {
       type: Object,
-      required: true
+      required: true,
     },
     callbackName: {
       type: String,
-      default: ''
-    }
+      default: "",
+    },
   },
-  emits: [ 'safe-close', 'confirm-response' ],
+  emits: ["safe-close", "confirm-response"],
   data() {
     return {
       modal: {
-        title: '',
+        title: "",
         active: false,
-        type: 'overlay',
+        type: "overlay",
         showModal: false,
         disableHeader: true,
-        trapFocus: true
-      }
+        trapFocus: true,
+      },
     };
   },
   async mounted() {
@@ -77,13 +83,13 @@ export default {
   methods: {
     confirm() {
       this.modal.showModal = false;
-      this.$emit('modal-result', true);
+      this.$emit("modal-result", true);
     },
     async cancel() {
       this.modal.showModal = false;
-      this.$emit('modal-result', false);
-    }
-  }
+      this.$emit("modal-result", false);
+    },
+  },
 };
 </script>
 
@@ -121,8 +127,8 @@ export default {
 }
 
 .apos-confirm__icon {
-  width: 60px;
   height: 60px;
+  fill: var(--a-black);
 }
 
 .apos-confirm__description {

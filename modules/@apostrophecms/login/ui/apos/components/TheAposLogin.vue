@@ -11,16 +11,15 @@
               >
                 {{ context.env }}
               </label>
-              <label class="apos-login__project apos-login__project-name">{{ context.name }}</label>
+              <label class="apos-login__project apos-login__project-name">{{
+                context.name
+              }}</label>
               <label class="apos-login--error">{{ error }}</label>
             </div>
 
             <div class="apos-login__body" v-show="loaded">
               <form @submit.prevent="submit">
-                <AposSchema
-                  :schema="schema"
-                  v-model="doc"
-                />
+                <AposSchema :schema="schema" v-model="doc" />
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -39,9 +38,10 @@
       </div>
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
-          <AposLogo class="apos-login__logo"/>
-          <label class="apos-login__logo-name">ApostropheCMS</label>
-          <label class="apos-login__project-version">Version {{ context.version }}</label>
+          <AposLogo class="apos-login__logo" />
+          <label class="apos-login__project-version"
+            >Version {{ context.version }}</label
+          >
         </div>
       </transition>
     </div>
@@ -50,47 +50,50 @@
 
 <script>
 export default {
-  name: 'TheAposLogin',
+  name: "TheAposLogin",
   data() {
     return {
       loaded: false,
-      error: '',
+      error: "",
       busy: false,
       doc: {
         data: {},
-        hasErrors: false
+        hasErrors: false,
       },
       schema: [
         {
-          name: 'username',
-          label: 'Username',
-          placeholder: 'Enter username',
-          type: 'string',
-          required: true
+          name: "username",
+          label: "Username",
+          placeholder: "Enter username",
+          type: "string",
+          required: true,
         },
         {
-          name: 'password',
-          label: 'Password',
-          placeholder: 'Enter password',
-          type: 'password',
-          required: true
-        }
+          name: "password",
+          label: "Password",
+          placeholder: "Enter password",
+          type: "password",
+          required: true,
+        },
       ],
-      context: {}
+      context: {},
     };
   },
   computed: {
     disabled: function () {
       return this.doc.hasErrors;
-    }
+    },
   },
-  async beforeCreate () {
+  async beforeCreate() {
     try {
-      this.context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {
-        busy: true
-      });
+      this.context = await apos.http.get(
+        `${apos.modules["@apostrophecms/login"].action}/context`,
+        {
+          busy: true,
+        }
+      );
     } catch (e) {
-      this.error = 'An error occurred. Please try again.';
+      this.error = "An error occurred. Please try again.";
     }
   },
   mounted() {
@@ -99,187 +102,189 @@ export default {
   methods: {
     async submit() {
       this.busy = true;
-      this.error = '';
+      this.error = "";
       try {
-        await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
-          busy: true,
-          body: this.doc.data
-        });
+        await apos.http.post(
+          `${apos.modules["@apostrophecms/login"].action}/login`,
+          {
+            busy: true,
+            body: this.doc.data,
+          }
+        );
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
         window.location.href = `/${apos.prefix}`;
       } catch (e) {
-        this.error = e.message || 'An error occurred. Please try again.';
+        this.error = e.message || "An error occurred. Please try again.";
       } finally {
         this.busy = false;
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style lang="scss" scoped>
-  .fade-stage-enter-active {
-    transition: opacity 0.2s linear;
-    transition-delay: 0.3s;
+$container: 320px;
+
+.fade-stage-enter-active {
+  transition: opacity 0.2s linear;
+  transition-delay: 0.3s;
+}
+
+.fade-stage-enter-to,
+.fade-body-enter-to,
+.fade-footer-enter-to {
+  opacity: 1;
+}
+
+.fade-stage-enter,
+.fade-body-enter,
+.fade-footer-enter {
+  opacity: 0;
+}
+
+.fade-body-enter-active {
+  transition: all 0.25s linear;
+  transition-delay: 0.6s;
+}
+
+.fade-body-enter-to {
+  transform: translateY(0);
+}
+
+.fade-body-enter {
+  transform: translateY(4px);
+}
+
+.fade-footer-enter-active {
+  transition: opacity 0.4s linear;
+  transition-delay: 1s;
+}
+
+.apos-login {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--a-background-primary);
+
+  &__wrapper {
+    width: 100%;
+    max-width: $container;
+    margin: 0 auto;
   }
 
-  .fade-stage-enter-to,
-  .fade-body-enter-to,
-  .fade-footer-enter-to {
-    opacity: 1;
+  &__loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    font-size: map-get($font-sizes, heading);
+    font-weight: lighter;
+
+    .apos-spinner {
+      width: 38px;
+      height: 38px;
+      margin-top: 20px;
+    }
   }
 
-  .fade-stage-enter,
-  .fade-body-enter,
-  .fade-footer-enter {
-    opacity: 0;
-  }
-
-  .fade-body-enter-active {
-    transition: all 0.25s linear;
-    transition-delay: 0.6s;
-  }
-
-  .fade-body-enter-to {
-    transform: translateY(0);
-  }
-
-  .fade-body-enter {
-    transform: translateY(4px);
-  }
-
-  .fade-footer-enter-active {
-    transition: opacity 0.4s linear;
-    transition-delay: 1s;
-  }
-
-  .apos-login {
+  &__header {
+    z-index: $z-index-manager-display;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    height: 100vh;
-    background-color: var(--a-background-primary);
+    align-items: start;
+    width: max-content;
+  }
 
-    &__wrapper {
-      width: 320px;
-      margin: 0 auto;
+  &__project {
+    color: var(--a-text-primary);
+    letter-spacing: 1px;
+    text-transform: capitalize;
+  }
+
+  &__project-name {
+    font-size: map-get($font-sizes, project-title);
+  }
+
+  &__project-env {
+    padding: 6px 12px;
+    color: var(--a-white);
+    background: var(--a-success);
+    font-size: map-get($font-sizes, default);
+    border-radius: 5px;
+    margin-bottom: 15px;
+
+    &--development {
+      background: var(--a-danger);
     }
 
-    &__loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100vw;
-      height: 100vh;
-      font-size: map-get($font-sizes, heading);
-      font-weight: lighter;
-
-      .apos-spinner {
-        width: 38px;
-        height: 38px;
-        margin-top: 20px;
-      }
-    }
-
-    &__header {
-      z-index: $z-index-manager-display;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: start;
-      width: max-content;
-    }
-
-    &__project {
-      color: var(--a-text-primary);
-      letter-spacing: 1px;
-      text-transform: capitalize;
-    }
-
-    &__project-name {
-      font-size: map-get($font-sizes, project-title);
-    }
-
-    &__project-env {
-      padding: 6px 12px;
-      color: var(--a-white);
-      background: var(--a-success);
-      font-size: map-get($font-sizes, default);
-      border-radius: 5px;
-      margin-bottom: 15px;
-
-      &--development {
-        background: var(--a-danger);
-      }
-
-      &--success {
-        background: var(--a-warning);
-      }
-    }
-
-    &--error {
-      color: var(--a-danger);
-      min-height: 13px;
-      font-size: map-get($font-sizes, meta);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      margin-top: 20px;
-      margin-bottom: 15px;
-    }
-
-    form {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-
-      .apos-login__link {
-        margin-top: 10px;
-        margin-left: auto;
-        margin-right: 0;
-        color: var(--a-base-5);
-        font-size: map-get($font-sizes, input-label);
-        font-weight: normal;
-        letter-spacing: 1px;
-        text-decoration-line: underline;
-      }
-
-      button {
-        font-size: map-get($font-sizes, input-label);
-        letter-spacing: 0.5px;
-        margin-top: 20px;
-      }
-    }
-
-    &__footer {
-      position: absolute;
-      right: 0;
-      bottom: 32px;
-      left: 0;
-      display: flex;
-      width: 400px;
-      margin: auto;
-      align-items: center;
-      justify-content: start;
-      letter-spacing: 1px;
-      font-size: map-get($font-sizes, input-label);
-    }
-
-    &__logo-name {
-      color: var(--a-text-primary);
-      margin-left: 10px;
-      margin-right: 30px;
-    }
-
-    &__project-version {
-      overflow: hidden;
-      text-overflow: clip;
-      white-space: nowrap;
-      color: var(--a-base-5);
-      margin-right: 0;
-      margin-left: auto;
-      font-weight: normal;
+    &--success {
+      background: var(--a-warning);
     }
   }
+
+  &--error {
+    color: var(--a-danger);
+    min-height: 13px;
+    font-size: map-get($font-sizes, meta);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 15px;
+  }
+
+  form {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    .apos-login__link {
+      margin-top: 10px;
+      margin-left: auto;
+      margin-right: 0;
+      color: var(--a-base-5);
+      font-size: map-get($font-sizes, input-label);
+      font-weight: normal;
+      letter-spacing: 1px;
+      text-decoration-line: underline;
+    }
+
+    button {
+      font-size: map-get($font-sizes, input-label);
+      letter-spacing: 0.5px;
+      margin-top: 20px;
+    }
+  }
+
+  &__footer {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    display: flex;
+    width: $container;
+    align-items: center;
+    justify-content: space-between;
+    font-size: map-get($font-sizes, input-label);
+    transform: translateX(-50%);
+  }
+
+  &__project-version {
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+    color: var(--a-base-5);
+    margin-right: 0;
+    margin-left: auto;
+    font-weight: normal;
+  }
+}
+
+.apos-login__logo {
+  width: 150px;
+}
 </style>
