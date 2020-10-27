@@ -277,11 +277,6 @@ export default {
         classes.push('apos-tree__cell--icon');
       }
 
-      // TODO: How does this work for i18n?
-      if (col.name === 'published' && row[col.name] === 'Unpublished') {
-        classes.push('apos-tree__cell--disabled');
-      }
-
       return classes;
     },
     getCellStyles(name, index) {
@@ -429,17 +424,4 @@ export default {
     border-bottom: 1px solid var(--a-base-8);
   }
 
-  .apos-tree__cell--published {
-    /deep/ .material-design-icon__svg {
-      fill: var(--a-success);
-    }
-
-    &.apos-tree__cell--disabled {
-      color: var(--a-base-2);
-
-      /deep/ .material-design-icon__svg {
-        fill: var(--a-base-2);
-      }
-    }
-  }
 </style>
