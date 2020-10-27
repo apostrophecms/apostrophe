@@ -14,6 +14,19 @@ module.exports = {
   options: { alias: 'permission' },
   init(self, options) {
     self.permissionPattern = /^([^-]+)-(.*)$/;
+    self.apos.migration.add('retire-published-field', async () => {
+      await self.apos.migration.eachDoc({}, 5, async (doc) => {
+        if (doc.published === true) {
+          doc.visibility = 'public';
+        } else if (doc.published === false) {
+          doc.visibility = 'loginRequired';
+        }
+        delete doc.published;
+        return self.apos.doc.db.replaceOne({
+          _id: doc._id
+        }, doc);
+      });
+    });
   },
   methods(self, options) {
     return {

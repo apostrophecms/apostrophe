@@ -364,18 +364,19 @@ module.exports = {
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
           const types = (self.options.typeChoices || []).map(type => type.name);
-          for (const type of types) {
+          for (const [ type, i ] of Object.entries(types)) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The typeChoices option of the @apostrophecms/page module contains type
+              self.apos.util.warnDev(`The typeChoices option of the @apostrophecms/page module contains type
 ${type} but there is no module that manages that type. You must
 implement a module of that name that extends @apostrophecms/piece-type
 or @apostrophecms/page-type, or remove the entry from typeChoices.`);
+              types.splice(i, 1);
             }
           }
           const parkedTypes = self.getParkedTypes();
           for (const type of parkedTypes) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The park option of the @apostrophecms/page module contains type
+              self.apos.util.warnDev(`The park option of the @apostrophecms/page module contains type
 ${type} but there is no module that manages that type. You must
 implement a module of that name that extends @apostrophecms/piece-type
 or @apostrophecms/page-type, or remove the entry from park.`);
@@ -384,11 +385,21 @@ or @apostrophecms/page-type, or remove the entry from park.`);
           const distinct = await self.apos.doc.db.distinct('type');
           for (const type of distinct) {
             if (!_.includes(managed, type)) {
-              throw new Error(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
+              self.apos.util.warnDev(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
 but there is no module that manages that type. You must implement
 a module of that name that extends @apostrophecms/piece-type or
 @apostrophecms/page-type, or remove these documents from the
 database.`);
+              self.apos.doc.managers[type] = {
+                // Do-nothing placeholder manager
+                schema: [],
+                find(req) {
+                  return [];
+                },
+                isAdminOnly() {
+                  return true;
+                }
+              };
             }
           }
         }
