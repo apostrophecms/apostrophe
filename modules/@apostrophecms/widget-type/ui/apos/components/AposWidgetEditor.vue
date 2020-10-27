@@ -40,6 +40,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
+import klona from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
@@ -71,6 +72,7 @@ export default {
   data() {
     return {
       id: this.value && this.value._id,
+      original: null,
       docFields: {
         data: { ...this.value },
         hasErrors: false
@@ -111,12 +113,15 @@ export default {
   async mounted() {
     this.modal.active = true;
   },
+  created() {
+    this.original = this.value ? klona(this.value) : this.getDefault();
+  },
   methods: {
     updateDocFields(value) {
       this.docFields = value;
     },
     isModified() {
-      const result = detectDocChange(this.schema, this.value, this.docFields.data);
+      const result = detectDocChange(this.schema, this.original, this.docFields.data);
       return result;
     },
     save() {
@@ -129,6 +134,13 @@ export default {
       }
       this.$emit('modal-result', widget);
       this.modal.showModal = false;
+    },
+    getDefault() {
+      const widget = {};
+      this.schema.forEach(field => {
+        widget[field.name] = field.def ? klona(field.def) : field.def;
+      });
+      return widget;
     }
   }
 };
