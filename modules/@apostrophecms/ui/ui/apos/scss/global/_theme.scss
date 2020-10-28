@@ -53,6 +53,23 @@
   --a-generic: var(--a-base-1);
   --a-spreadsheet: #2ecc71;
   --a-pdf: #e74c3c;
+
+  // Font-Family
+  --a-family-default: -apple-system, system-ui, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+  // Font-Weights
+  --a-weight-base: 500;
+
+  // Type Sizes
+  --a-type-small: 10px;
+  --a-type-base: 12px;
+  --a-type-large: 14px;
+  --a-type-heading: 22px;
+  --a-type-display: 32px;
+
+  // Letterspacing
+  --a-letter-base: 0.5px;
+  --a-letter-wide: 1px;
 }
 
 .apos-theme-dark {
