@@ -85,9 +85,9 @@ export default {
 
 <style lang="scss" scoped>
   .apos-pager {
+    @include typeBase;
     display: inline-flex;
     align-items: center;
-    font-size: map-get($font-sizes, default);
   }
 
   .apos-input-wrapper {

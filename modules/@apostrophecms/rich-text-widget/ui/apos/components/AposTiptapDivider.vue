@@ -19,8 +19,8 @@ export default {
 
 <style lang="scss" scoped>
   .apos-rich-text-editor__control--divider {
+    @include typeAffordance;
     padding: 0 10px;
-    font-size: map-get($font-sizes, meta);
     opacity: 0.3;
   }
 </style>

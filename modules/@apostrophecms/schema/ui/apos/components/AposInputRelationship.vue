@@ -165,7 +165,6 @@ export default {
       top: 5px;
       right: 5px;
       padding: ($input-padding - 5px) $input-padding;
-      font-size: map-get($font-sizes, input);
 
       &:hover:not([disabled]),
       &:focus:not([disabled]) {

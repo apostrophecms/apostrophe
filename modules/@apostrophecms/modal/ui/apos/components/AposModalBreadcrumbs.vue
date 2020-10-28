@@ -79,17 +79,14 @@ export default {
     padding-left: 0;
   }
   .apos-breadcrumb__item {
+    @include typeSmall;
     display: inline-flex;
     align-items: center;
     color: var(--a-text-primary);
-    font-family: map-get($font-families, default);
-    letter-spacing: 0.75px;
-    font-size: map-get($font-sizes, meta);
 
     button {
       @include apos-button-reset();
       @include link-primary;
-      letter-spacing: inherit;
       text-decoration: none;
 
       .apos-breadcrumb--dark & {

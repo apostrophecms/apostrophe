@@ -227,8 +227,7 @@ export default {
   }
 
   .apos-slat-limit {
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+    @include typeAffordance;
     margin: 10px 0 0;
     text-align: center;
 

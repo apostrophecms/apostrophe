@@ -562,12 +562,9 @@ export default {
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb /deep/ .apos-button__content {
+    @include typeAffordance;
     padding: 2px;
     color: var(--a-white);
-    font-weight: normal;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: map-get($font-sizes, meta);
     &:hover {
       cursor: pointer;
     }

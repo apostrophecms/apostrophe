@@ -166,11 +166,10 @@ export default {
 
   .apos-notification__label,
   .apos-notification__progress-value {
-    font-size: map-get($font-sizes, default);
+    @include typeMeta;
   }
 
   .apos-notification__label {
-    letter-spacing: 0.75px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

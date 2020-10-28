@@ -4,33 +4,6 @@ $brand-magenta: #b327bf;
 $brand-blue: #66f;
 $brand-green: #00bf9a;
 
-$font-default: -apple-system, system-ui, 'BlinkMacSystemFont', 'Segoe UI',
-  'Roboto', 'Helvetica', 'Arial', sans-serif, 'Apple Color Emoji',
-  'Segoe UI Emoji', 'Segoe UI Symbol';
-
-$font-families: (
-  default: $font-default
-);
-
-$font-weights: (
-  medium: 500,
-  bold: 700
-);
-
-$font-sizes: (
-  button: 12px,
-  default: 12px,
-  meta: 10px,
-  input-label: 14px,
-  input: 12px,
-  input-hint: 12px,
-  menu-label: 14px,
-  heading: 22px,
-  modal: 12px,
-  rail-title: 14px,
-  project-title: 32px
-);
-
 $spacing-base: 10px;
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
@@ -50,11 +23,14 @@ $input-color-disabled: var(--a-base-4);
   // stylelint-enable
 }
 
+//Application Styles
+
 @mixin typeSmall {
   font-family: var(--a-family-default);
   font-size: var(--a-type-small);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
 }
 
 @mixin typeBase {
@@ -62,6 +38,44 @@ $input-color-disabled: var(--a-base-4);
   font-size: var(--a-type-base);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+}
+
+@mixin typeTitle {
+  margin: 0;
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-heading);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
+@mixin typeDisplay {
+  margin: 0;
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-display);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+}
+
+@mixin typeAffordance {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+  text-transform: uppercase;
+}
+
+//Novella Styles
+
+@mixin typeHelp {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tallest);
 }
 
 @mixin typeLarge {
@@ -69,6 +83,15 @@ $input-color-disabled: var(--a-base-4);
   font-size: var(--a-type-large);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
+@mixin typeMeta {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-base);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tallest);
 }
 
 @mixin typeBody {
@@ -76,6 +99,7 @@ $input-color-disabled: var(--a-base-4);
   font-size: var(--a-type-large);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tallest);
 }
 
 @mixin typeHeading {
@@ -83,25 +107,5 @@ $input-color-disabled: var(--a-base-4);
   font-size: var(--a-type-heading);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
-}
-
-@mixin typeDisplay {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-display);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-}
-
-@mixin typeHelp {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-small);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-wide);
-}
-
-@mixin typeAffordance {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-small);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-wide);
+  line-height: var(--a-line-tall);
 }

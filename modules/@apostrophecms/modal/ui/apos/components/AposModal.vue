@@ -23,7 +23,7 @@
               <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
                 <slot name="secondaryControls" />
               </div>
-              <h2 :id="id" class="apos-modal__heading o-heading">
+              <h2 :id="id" class="apos-modal__heading">
                 <span v-if="modal.a11yTitle" class="apos-sr-only">
                   {{ modal.a11yTitle }}
                 </span>
@@ -373,11 +373,7 @@ export default {
   }
 
   .apos-modal__heading {
-    margin: 0;
-
-    &:first-child {
-      margin-left: 0;
-    }
+    @include typeTitle;
   }
 
   .apos-modal__controls--secondary {

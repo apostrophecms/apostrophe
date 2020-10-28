@@ -22,7 +22,7 @@
       <AposModalRail>
         <div class="apos-modal-array-items">
           <div class="apos-modal-array-items__heading">
-            <p class="apos-modal-array-items__label">
+            <div class="apos-modal-array-items__label">
               <span v-if="countLabel">
                 {{ countLabel }}
               </span>
@@ -32,7 +32,7 @@
               <span v-if="maxLabel" :class="maxError ? 'apos-modal-array-max-error' : ''">
                 {{ maxLabel }}
               </span>
-            </p>
+            </div>
             <AposButton
               class="apos-modal-array-items__add"
               label="Add Item"
@@ -388,28 +388,22 @@ export default {
   }
 
   .apos-modal-array-items {
-    margin: 10px;
+    margin: $spacing-base;
   }
 
   .apos-modal-array-items__heading {
     position: relative;
-    margin: 20px 4px;
-  }
-
-  // Specificity needed due to AposButton rules
-  .apos-modal-array-items__add.apos-button {
-    position: absolute;
-    top: -5px;
-    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: $spacing-double 4px;
   }
 
   .apos-modal-array-items__label {
-    // Consistent with appearance of same information in input field
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+    @include typeAffordance;
 
     span {
-      margin-right: 10px;
+      margin-right: $spacing-base;
     }
   }
 </style>

@@ -149,18 +149,25 @@ export default {
 <style lang="scss" scoped>
 
 .apos-button {
+  @include typeBase;
   position: relative;
   display: inline-block;
   overflow: hidden;
   padding: 10px 20px;
   border: 1px solid var(--a-base-5);
   color: var(--a-text-primary);
-  font-size: map-get($font-sizes, button);
-  letter-spacing: 0.75px;
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   transition: all 0.2s ease;
   text-decoration: none;
+
+  &.apos-context-menu__btn {
+    @include typeLarge;
+  }
+
+  &.apos-admin-bar__btn {
+    @include typeLarge;
+  }
 
   &:hover {
     cursor: pointer;
@@ -222,7 +229,6 @@ export default {
   border: none;
   color: var(--a-primary);
   background-color: transparent;
-  font-weight: 500;
   &:hover,
   &:active,
   &.is-active,

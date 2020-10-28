@@ -166,23 +166,6 @@ export default {
       margin: 0 auto;
     }
 
-    &__loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100vw;
-      height: 100vh;
-      font-size: map-get($font-sizes, heading);
-      font-weight: lighter;
-
-      .apos-spinner {
-        width: 38px;
-        height: 38px;
-        margin-top: 20px;
-      }
-    }
-
     &__header {
       z-index: $z-index-manager-display;
       display: flex;
@@ -192,21 +175,17 @@ export default {
       width: max-content;
     }
 
-    &__project {
+    &__project-name {
+      @include typeTitle;
       color: var(--a-text-primary);
-      letter-spacing: 1px;
       text-transform: capitalize;
     }
 
-    &__project-name {
-      font-size: map-get($font-sizes, project-title);
-    }
-
     &__project-env {
+      @include typeBase;
       padding: 6px 12px;
       color: var(--a-white);
       background: var(--a-success);
-      font-size: map-get($font-sizes, default);
       border-radius: 5px;
       margin-bottom: 15px;
 
@@ -220,11 +199,9 @@ export default {
     }
 
     &--error {
+      @include typeAffordance;
       color: var(--a-danger);
       min-height: 13px;
-      font-size: map-get($font-sizes, meta);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
       margin-top: 20px;
       margin-bottom: 15px;
     }
@@ -234,25 +211,28 @@ export default {
       display: flex;
       flex-direction: column;
 
-      .apos-login__link {
-        margin-top: 10px;
-        margin-left: auto;
-        margin-right: 0;
-        color: var(--a-base-5);
-        font-size: map-get($font-sizes, input-label);
-        font-weight: normal;
-        letter-spacing: 1px;
-        text-decoration-line: underline;
-      }
-
       button {
-        font-size: map-get($font-sizes, input-label);
-        letter-spacing: 0.5px;
+        margin-top: $spacing-double;
+      }
+    }
+
+    &__loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+
+      .apos-spinner {
+        width: 38px;
+        height: 38px;
         margin-top: 20px;
       }
     }
 
     &__footer {
+      @include typeBase;
       position: absolute;
       right: 0;
       bottom: 32px;
@@ -262,8 +242,6 @@ export default {
       margin: auto;
       align-items: center;
       justify-content: start;
-      letter-spacing: 1px;
-      font-size: map-get($font-sizes, input-label);
     }
 
     &__logo-name {
@@ -279,7 +257,6 @@ export default {
       color: var(--a-base-5);
       margin-right: 0;
       margin-left: auto;
-      font-weight: normal;
     }
   }
 </style>

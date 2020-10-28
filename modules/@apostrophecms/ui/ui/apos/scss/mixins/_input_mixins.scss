@@ -2,16 +2,13 @@ $input-max-width: 580px;
 $box-width: 12px;
 
 @mixin apos-input() {
+  @include typeBase;
   width: 100%;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   color: var(--a-text-primary);
-  font-family: inherit;
-  font-size: map-get($font-sizes, input);
   box-sizing: border-box;
-  // Some  browser styles set `textarea` to monospace.
-  resize: none;
   @include apos-transition(all);
 
   &::placeholder {

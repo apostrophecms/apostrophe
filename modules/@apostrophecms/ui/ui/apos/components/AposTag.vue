@@ -33,13 +33,12 @@ export default {
 
 <style lang="scss" scoped>
 .apos-tag {
+  @include typeBase;
   display: inline-flex;
   padding: 6px 12px;
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-1);
   color: var(--a-base-8);
-  font-size: map-get($font-sizes, default);
-  letter-spacing: 0.5px;
   align-items: center;
   justify-content: center;
 }

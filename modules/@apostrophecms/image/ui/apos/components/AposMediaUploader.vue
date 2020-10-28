@@ -10,15 +10,15 @@
         class="apos-media-uploader__icon"
       />
       <div class="apos-media-uploader__instructions">
-        <p class="apos-media-uploader__primary">
+        <div class="apos-media-uploader__primary">
           {{ dragover ? 'Drop’em when you’re ready' : 'Drop new media here' }}
-        </p>
-        <p
+        </div>
+        <div
           v-if="!dragover"
           class="apos-media-uploader__secondary"
         >
           Or click to open the file explorer
-        </p>
+        </div>
       </div>
     </div>
     <input
@@ -251,12 +251,14 @@ export default {
 
   .apos-media-uploader__primary,
   .apos-media-uploader__secondary {
-    @include apos-p-reset();
     text-align: center;
   }
+  .apos-media-uploader__secondary {
+    @include typeSmall;
+  }
   .apos-media-uploader__primary {
+    @include typeLarge;
     max-width: 100px;
     margin: 5px auto 10px;
-    font-size: map-get($font-sizes, input-label);
   }
 </style>

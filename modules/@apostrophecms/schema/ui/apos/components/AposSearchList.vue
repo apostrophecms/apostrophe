@@ -74,7 +74,6 @@ export default {
   justify-content: space-between;
   margin: 10px;
   padding: 10px 20px;
-  letter-spacing: 0.5px;
   border-radius: var(--a-border-radius);
   box-sizing: border-box;
   transition: background-color 0.3s ease;
@@ -99,14 +98,14 @@ export default {
   }
 
   &__title {
+    @include typeBase;
     color: var(--a-text-primary);
-    font-size: map-get($font-sizes, input-label);
     margin-bottom: 3px;
   }
 
   &__slug {
+    @include typeBase;
     color: var(--a-base-2);
-    font-size: map-get($font-sizes, default);
   }
 }
 </style>

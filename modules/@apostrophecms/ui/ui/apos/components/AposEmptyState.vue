@@ -1,6 +1,6 @@
 <template>
   <div class="apos-empty-state">
-    <p class="o-heading apos-title" v-if="emptyState.title">
+    <p class="apos-title" v-if="emptyState.title">
       {{ emptyState.title }}
     </p>
     <p class="apos-hint" v-if="emptyState.message">
@@ -32,15 +32,15 @@ export default {
   }
 
   .apos-title {
+    @include typeTitle;
     margin: 0 0 10px;
   }
 
   .apos-hint {
-    margin: 0 0 5px;
-    color: var(--a-primary-text);
-    font-size: map-get($font-sizes, default);
+    @include typeMeta;
+    font-style: italic;
+    color: var(--a-base-1);
     text-align: center;
-    line-height: 1.6;
   }
 
   .apos-emoji {

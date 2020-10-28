@@ -16,7 +16,7 @@
           />
           <h2
             v-if="confirmContent.heading"
-            class="apos-confirm__heading apos-heading"
+            class="apos-confirm__heading"
           >
             {{ confirmContent.heading }}
           </h2>
@@ -125,9 +125,12 @@ export default {
   height: 60px;
 }
 
+.apos-confirm__heading {
+  @include typeHeading;
+}
+
 .apos-confirm__description {
-  font-size: map-get($font-sizes, default);
-  font-weight: 400;
+  @include typeBody;
 }
 
 .apos-confirm__btns {

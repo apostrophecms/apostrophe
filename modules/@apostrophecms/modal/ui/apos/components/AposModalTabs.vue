@@ -66,17 +66,14 @@ export default {
 }
 
 .apos-modal-tabs__btn {
+  @include apos-button-reset();
+  @include typeBase;
   position: relative;
   width: 100%;
-  margin: 0;
   padding: 25px 20px;
-  border-width: 0;
   border-bottom: 1px solid var(--a-base-4);
-  border-radius: 0;
   color: var(--a-text-primary);
   background-color: var(--a-base-9);
-  font-size: map-get($font-sizes, modal);
-  letter-spacing: 0.5px;
   text-align: left;
   cursor: pointer;
 

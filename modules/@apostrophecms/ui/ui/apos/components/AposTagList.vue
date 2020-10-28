@@ -71,10 +71,9 @@ export default {
   margin: 30px 0 0 30px;
 }
 .apos-tag-list__title {
+  @include typeBase;
   margin-bottom: 15px;
   color: var(--a-base-3);
-  font-weight: 700;
-  font-size: map-get($font-sizes, default);
 }
 .apos-tag-list__items {
   @include apos-list-reset();
