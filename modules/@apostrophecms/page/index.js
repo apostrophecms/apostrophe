@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 
+// trash should be peer of home page!
 module.exports = {
   cascades: [ 'batchOperations' ],
   options: {
@@ -546,7 +547,12 @@ database.`);
             pushed = peers.map(child => child._id);
           } else if (position === 'lastChild') {
             if (!parent.level && (page.type !== '@apostrophecms/trash')) {
-              throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
+              const trash = peers.find(peer => peer.type === '@apostrophecms/trash');
+              if (trash) {
+                // Trash has to be last child of the home page, but don't be punitive,
+                // just put this page before it
+                return self.insert(req, trash._id, 'before', page, options);
+              }
             }
             if (!peers.length) {
               page.rank = 0;
@@ -562,7 +568,7 @@ database.`);
             pushed = peers.slice(index).map(peer => peer._id);
           } else if (position === 'after') {
             if (target.type === '@apostrophecms/trash') {
-              throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
+              return self.insert(req, target._id, 'before', page, options);
             }
             page.rank = target.rank + 1;
             const index = peers.findIndex(peer => peer.id === target._id);
@@ -769,7 +775,12 @@ database.`);
             } else if (position === 'lastChild') {
               parent = target;
               if (!parent.level && (moved.type !== '@apostrophecms/trash')) {
-                throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
+                const trash = parent._children.find(peer => peer.type === '@apostrophecms/trash');
+                if (trash) {
+                  // Trash has to be last child of the home page, but don't be punitive,
+                  // just put this page before it
+                  return self.move(req, moved._id, trash._id, 'before', options);
+                }
               }
               if (target._children && target._children.length) {
                 rank = target._children[target._children.length - 1].rank + 1;
