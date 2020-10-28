@@ -33,13 +33,6 @@ export default {
           action: 'image-manager'
         }
       ]
-    },
-    {
-      label: 'Log out',
-      name: 'logOut',
-      options: {
-        href: '#logout'
-      }
     }
   ]
 };
