@@ -332,8 +332,10 @@ module.exports = {
           action: self.action,
           ...(req.user ? {
             user: {
-              title: req.user.title,
               _id: req.user._id,
+              firstName: req.user.firstName,
+              lastName: req.user.lastName,
+              title: req.user.title,
               username: req.user.username,
               email: req.user.email
             }
