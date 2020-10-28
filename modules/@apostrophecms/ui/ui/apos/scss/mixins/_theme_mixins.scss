@@ -49,3 +49,59 @@ $input-color-disabled: var(--a-base-4);
   --a-primary-button-disabled: #{mix(white, $color, 40%)};
   // stylelint-enable
 }
+
+@mixin typeSmall {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeBase {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-base);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeLarge {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-large);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeBody {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-large);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeHeading {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-heading);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeDisplay {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-display);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+}
+
+@mixin typeHelp {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-wide);
+}
+
+@mixin typeAffordance {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-wide);
+}
