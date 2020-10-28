@@ -1,9 +1,3 @@
-body {
-  font-family: $font-default;
-  font-weight: map-get($font-weights, medium);
-  font-size: 10px; // stylelint-disable-line
-}
-
 :root,
 .apos-theme-light {
   --a-danger: #eb443b;
