@@ -95,17 +95,6 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'singleton',
-      extend: 'area',
-      isEmpty: function (field, value) {
-        return self.apos.area.isEmptySingleton({
-          area: value,
-          type: field.widgetType
-        });
-      }
-    });
-
-    self.addFieldType({
       name: 'string',
       convert: function (req, field, data, object) {
         object[field.name] = self.apos.launder.string(data[field.name], field.def);
