@@ -227,7 +227,7 @@ export default {
       return cuid();
     },
     isSuppressed() {
-      if (this.widgetFocused === this.widgetId) {
+      if (this.focused) {
         return false;
       }
 
@@ -294,6 +294,13 @@ export default {
 
     this.breadcrumbs.$lastEl = this.$el;
     this.getBreadcrumbs();
+
+    if (this.widgetFocused) {
+      // If another widget was in focus (because the user clicked the "add"
+      // menu, for example), and this widget was created, give the new widget
+      // focus.
+      apos.bus.$emit('widget-focus', this.widgetId);
+    }
   },
   methods: {
 
@@ -301,7 +308,7 @@ export default {
     focusParent() {
       // Something above us asked the focused widget to try and focus its parent
       // We only care about this if we're focused ...
-      if (this.widgetFocused === this.widgetId) {
+      if (this.focused) {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
@@ -371,6 +378,10 @@ export default {
         event.cancelBubble = true;
       }
       this.state.add[name].focus = value;
+
+      if (value) {
+        this.focus();
+      }
     },
 
     resetState() {
@@ -535,11 +546,8 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
-    display: flex;
-  }
-
-  .apos-area-widget__label {
     right: 0;
+    display: flex;
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
