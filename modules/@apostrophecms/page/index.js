@@ -84,6 +84,7 @@ module.exports = {
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
+    self.addDeduplicateRanksMigration();
     await self.createIndexes();
   },
   restApiRoutes(self, options) {
@@ -1854,6 +1855,26 @@ database.`);
           visibility: 1,
           trash: 1
         };
+      },
+      addDeduplicateRanksMigration() {
+        self.apos.migration.add('deduplicate-trash-rank', async () => {
+          const tabs = await self.apos.doc.db.find({
+            slug: /^\//,
+            level: 1
+          }).sort({
+            trash: 1,
+            rank: 1
+          }).toArray();
+          for (let i = 0; (i < tabs.length); i++) {
+            await self.apos.doc.db.updateOne({
+              _id: tabs[i]._id
+            }, {
+              $set: {
+                rank: i
+              }
+            });
+          }
+        });
       }
     };
   },
