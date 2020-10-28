@@ -4,7 +4,7 @@
     class="apos-avatar"
     :style="style" :alt="alt"
   >
-    <span v-if="user.firstName || user.title" class="apos-avatar-first">{{ (user.firstName || user.title).substring(0, 1) }}</span><span v-if="user.lastName" class="apos-avatar-last">{{ user.lastName.substring(0, 1) }}</span>
+    <span>{{ initials }}</span>
   </div>
 </template>
 
@@ -43,6 +43,13 @@ export default {
         'background-image': backgroundImages[index],
         width: this.size
       };
+    },
+    initials() {
+      let initials = (this.user.firstName || this.user.title || this.user.username).substring(0, 1);
+      if (this.user.lastName) {
+        initials += this.user.lastName.substring(0, 1);
+      }
+      return initials;
     }
   }
 };
@@ -50,7 +57,9 @@ export default {
 
 <style lang="scss" scoped>
   .apos-avatar {
-    display: inline-block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 30px;
     height: 30px;
     border: 1px solid var(--a-base-9);
@@ -60,6 +69,5 @@ export default {
     /* stylelint-enable */
     color: var(--a-white);
     text-transform: uppercase;
-    text-align: center;
   }
 </style>
