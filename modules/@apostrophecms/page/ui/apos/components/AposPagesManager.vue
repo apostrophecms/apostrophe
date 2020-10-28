@@ -180,6 +180,11 @@ export default {
         _targetId: page.endContext,
         _position: page.endIndex
       };
+      if ((page.endContext === this.pages[0]._id) && (page.endIndex >= this.pages[0].children.length - 1)) {
+        // If the user attempts to drag a page after (not into)
+        // the trash, just make it the last child before the trash
+        body._position = this.pages[0].children.length - 1;
+      }
 
       const route = `${this.moduleOptions.action}/${page.changedId}`;
       try {
@@ -188,7 +193,7 @@ export default {
           body
         });
       } catch (error) {
-        await apos.notify('An error occurred while updating the page tree.', {
+        await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true

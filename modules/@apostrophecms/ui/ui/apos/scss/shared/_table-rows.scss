@@ -38,3 +38,10 @@ span.apos-tree__cell:first-of-type {
     padding-top: 0;
   }
 }
+
+.apos-tree__cell[disabled] {
+  color: $input-color-disabled;
+  &:hover {
+    cursor: not-allowed;
+  }
+}

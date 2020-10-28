@@ -545,7 +545,7 @@ database.`);
             pushed = peers.map(child => child._id);
           } else if (position === 'lastChild') {
             if (!parent.level && (page.type !== '@apostrophecms/trash')) {
-              throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+              throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
             }
             if (!peers.length) {
               page.rank = 0;
@@ -561,7 +561,7 @@ database.`);
             pushed = peers.slice(index).map(peer => peer._id);
           } else if (position === 'after') {
             if (target.type === '@apostrophecms/trash') {
-              throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+              throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
             }
             page.rank = target.rank + 1;
             const index = peers.findIndex(peer => peer.id === target._id);
@@ -739,17 +739,17 @@ database.`);
               permission: false
             }).applyBuilders(options.builders || {}).toObject();
             if (!moved) {
-              throw new Error('no such page');
+              throw self.apos.error('invalid', 'No such page');
             }
             if (!moved.level) {
-              throw new Error('cannot move root');
-            }
-            if (moved.parked) {
-              throw new Error('cannot move parked page via move() API, see park() API');
+              throw self.apos.error('invalid', 'Cannot move the home page');
             }
             // You can't move the trashcan itself
             if (moved.type === '@apostrophecms/trash') {
-              throw new Error('cannot move trashcan');
+              throw self.apos.error('invalid', 'Cannot move the trash can');
+            }
+            if (moved.parked) {
+              throw self.apos.error('invalid', 'Cannot move a parked page');
             }
             return moved;
           }
@@ -762,13 +762,13 @@ database.`);
               rank = target.rank;
             } else if (position === 'after') {
               if (target.type === '@apostrophecms/trash') {
-                throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+                throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
               }
               rank = target.rank + 1;
             } else if (position === 'lastChild') {
               parent = target;
               if (!parent.level && (moved.type !== '@apostrophecms/trash')) {
-                throw self.apos.error('invalid', 'Only the trash page can be the last child of the home page');
+                throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
               }
               if (target._children && target._children.length) {
                 rank = target._children[target._children.length - 1].rank + 1;
@@ -1851,7 +1851,8 @@ database.`);
           path: 1,
           rank: 1,
           level: 1,
-          visibility: 1
+          visibility: 1,
+          trash: 1
         };
       }
     };

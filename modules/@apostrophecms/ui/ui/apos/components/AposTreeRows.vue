@@ -34,6 +34,7 @@
           :href="col.type === 'link' ? row[col.name] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
+          :disabled="getCellDisabled(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
           @click="col.action ? $emit(col.action, row._id) : null"
@@ -276,8 +277,14 @@ export default {
       if (col.iconOnly) {
         classes.push('apos-tree__cell--icon');
       }
-
       return classes;
+    },
+    getCellDisabled(col, row) {
+      if ((col.type === 'link') && (!row[col.name])) {
+        return true;
+      } else {
+        return false;
+      }
     },
     getCellStyles(name, index) {
       const styles = {};
