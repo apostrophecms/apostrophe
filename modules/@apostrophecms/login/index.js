@@ -53,7 +53,6 @@ module.exports = {
     if (self.options.localLogin !== false) {
       self.enableLocalStrategy();
     }
-    self.addAdminBarItems();
     self.enableBrowserData();
   },
   handlers(self, options) {
@@ -302,14 +301,6 @@ module.exports = {
 
       getPasswordResetLifetimeInMilliseconds() {
         return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
-      },
-
-      // Add the logout admin bar item.
-
-      addAdminBarItems() {
-        self.apos.adminBar.add(`${self.__meta.name}-logout`, 'Log Out', null, {
-          last: true
-        });
       },
 
       // Invoked by passport after an authentication strategy succeeds
