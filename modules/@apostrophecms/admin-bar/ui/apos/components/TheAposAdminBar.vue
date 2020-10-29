@@ -171,10 +171,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   padding: 0;
 }
 
-.apos-admin-bar__btn {
-  @include typeLarge;
-}
-
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
 }
