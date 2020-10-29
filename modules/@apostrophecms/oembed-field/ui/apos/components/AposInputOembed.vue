@@ -96,6 +96,7 @@ export default {
       this.validateAndEmit();
     },
     async loadOembed () {
+      this.field.disabled = true;
       this.oembedResult = {};
       this.oembedError = null;
       this.dynamicRatio = '';
@@ -114,12 +115,12 @@ export default {
         if (typeof result.height === 'number' && typeof result.width === 'number') {
           this.dynamicRatio = (result.height / result.width);
         }
-        console.info('📹', result);
       } catch (error) {
-        console.error('🦧', error);
         this.oembedError = error;
         this.next.title = '';
         this.next.thumbnail = '';
+      } finally {
+        this.field.disabled = false;
       }
     }
   }
