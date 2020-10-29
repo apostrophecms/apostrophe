@@ -55,27 +55,14 @@ module.exports = {
       // Alternatively, an `href` option may be set to an ordinary URL in
       // `options`. This creates a basic link in the admin menu.
       //
-      // `permission` should be a permission name such as `admin`
-      // (the user must be a full admin) or `edit-@apostrophecms/event`
-      // (the user can create events and edit their own). If
-      // `permission` is null then being logged in is
-      // good enough to see the item. (Securing your backend routes that
-      // respond to user actions is up to you.)
+      // `permission` should be an object with `action` and `type`
+      // properties. This determines visibility of the option, securing
+      // actual actions is a separate concern.
       //
       // You can use the `after` option to specify an admin bar item name
       // this item should appear immediately following.
       //
-      // Usually just one admin bar item per module makes sense, and
-      // the appropriate Vue component name is found via
-      // the `self.componentName()` method of the module.
-      //
-      // For example, the blog module (and every pieces subclass) does this:
-      //
-      // ```
-      // self.apos.adminBar.add(self.componentName('ManagerModal'), self.pluralLabel, 'edit')
-      // ```
-      //
-      // This results in the component name `ApostropheBlogManagerModal`.
+      // Usually just one admin bar item per module makes sense.
       //
       // On the browser side, it is possible to write
       // `apos.bus.$on('admin-menu-click', (name) => { ... })` to catch

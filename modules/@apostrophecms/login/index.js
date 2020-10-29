@@ -53,7 +53,6 @@ module.exports = {
     if (self.options.localLogin !== false) {
       self.enableLocalStrategy();
     }
-    self.addAdminBarItems();
     self.enableBrowserData();
   },
   handlers(self, options) {
@@ -74,6 +73,9 @@ module.exports = {
     return {
       get: {
         [self.login()]: async (req) => {
+          if (req.user) {
+            return req.res.redirect('/');
+          }
           req.scene = 'apos';
           await self.sendPage(req, 'login', {});
         }
@@ -304,14 +306,6 @@ module.exports = {
         return 1000 * 60 * 60 * (self.options.passwordResetHours || 48);
       },
 
-      // Add the logout admin bar item.
-
-      addAdminBarItems() {
-        self.apos.adminBar.add(`${self.__meta.name}-logout`, 'Log Out', null, {
-          last: true
-        });
-      },
-
       // Invoked by passport after an authentication strategy succeeds
       // and the user has been logged in. Invokes `loginAfterLogin` on
       // any modules that have one and redirects to `req.redirect` or,
@@ -332,8 +326,10 @@ module.exports = {
           action: self.action,
           ...(req.user ? {
             user: {
-              title: req.user.title,
               _id: req.user._id,
+              firstName: req.user.firstName,
+              lastName: req.user.lastName,
+              title: req.user.title,
               username: req.user.username,
               email: req.user.email
             }

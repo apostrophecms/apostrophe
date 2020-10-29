@@ -325,10 +325,10 @@ module.exports = {
           // Do not save sesions until something is stored in them.
           // Greatly reduces aposSessions collection size
           saveUninitialized: false,
-          // The mongo store uses TTL which means we do need
-          // to signify that the session is still alive when someone
-          // views a page, even if their session has not changed
-          resave: true,
+          // We are using the 3.x mongo store which is compatible
+          // with resave: false, preventing the vast majority of
+          // session-related race conditions
+          resave: false,
           // Always update the cookie, so that each successive
           // access revives your login session timeout
           rolling: true,
@@ -339,15 +339,24 @@ module.exports = {
         _.defaults(sessionOptions.cookie, {
           path: '/',
           httpOnly: true,
-          secure: false,
-          // Default login lifetime between requests is one day
-          maxAge: 86400000
+          secure: false
+          // maxAge is set for us by connect-mongo,
+          // and defaults to 2 weeks
         });
         if (sessionOptions.secret === 'you should have a secret') {
           self.apos.util.error('WARNING: No session secret provided, please set the `secret` property of the `session` property of the @apostrophecms/express module in app.js');
         }
         if (!sessionOptions.store) {
-          sessionOptions.store = {};
+          sessionOptions.store = {
+            options: {
+              // Performance enhancement: we need to touch the session
+              // on at least some accesses to prevent expiration, but
+              // once an hour is sufficient
+              touchAfter: 3600
+              // ttl (time to live) can be set in seconds here,
+              // defaults to 2 weeks in mongo
+            }
+          };
         }
         if (sessionOptions.store.createSession) {
           // Already an instantiated store object.

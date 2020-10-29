@@ -6,6 +6,12 @@
   >
     <template #secondaryControls>
       <AposButton
+        v-if="relationshipField"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
+      />
+      <AposButton
+        v-else
         type="default" label="Finished"
         @click="confirmAndCancel"
       />
@@ -15,6 +21,13 @@
         type="primary"
         label="New Page"
         @click="openEditor(null)"
+      />
+      <AposButton
+        v-if="relationshipField"
+        type="primary"
+        label="Select Pages"
+        :disabled="relationshipErrors === 'min'"
+        @click="saveRelationship"
       />
     </template>
     <template #main>
@@ -65,7 +78,6 @@ export default {
       },
       pages: [],
       pagesFlat: [],
-      checked: [],
       options: {
         columns: [
           {
@@ -118,7 +130,6 @@ export default {
         });
         items.push(data);
       });
-
       return items;
     },
     selectAllChoice() {
@@ -159,12 +170,7 @@ export default {
       this.pages = [ pageTree ];
 
       function formatPage(page) {
-        self.pagesFlat.push({
-          title: page.title,
-          id: page._id,
-          path: page.path,
-          parked: page.parked
-        });
+        self.pagesFlat.push(klona(page));
 
         page.children = page._children;
         delete page._children;
@@ -209,7 +215,7 @@ export default {
     selectAll(event) {
       if (!this.checked.length) {
         this.pagesFlat.forEach((row) => {
-          this.toggleRowCheck(row.id);
+          this.toggleRowCheck(row._id);
         });
         return;
       }
@@ -241,6 +247,9 @@ export default {
         this.checkedDocs.push(doc);
         this.checked.push(doc._id);
       }
+    },
+    updateCheckedDocs() {
+      this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
     }
   }
 };

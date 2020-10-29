@@ -646,7 +646,6 @@ module.exports = {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          filters: 'ApostrophePiecesFilters', // TODO: Remove component and this.
           insertModal: 'AposDocEditor',
           managerModal: 'AposPiecesManager'
         });
