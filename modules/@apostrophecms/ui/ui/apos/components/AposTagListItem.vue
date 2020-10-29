@@ -125,7 +125,7 @@ export default {
 }
 
 .apos-tag-list__label {
-  font-size: map-get($font-sizes, default);
+  @include type-base;
 }
 
 </style>

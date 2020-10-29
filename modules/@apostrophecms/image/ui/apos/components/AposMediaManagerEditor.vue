@@ -276,21 +276,24 @@ export default {
   }
 
   .apos-media-editor /deep/ .apos-field {
-    margin-bottom: 20px;
+    margin-bottom: $spacing-double;
   }
 
   .apos-media-editor__details {
     @include apos-list-reset();
+    margin-bottom: $spacing-double;
+  }
+
+  .apos-media-editor__detail {
+    @include type-base;
+    line-height: var(--a-line-tallest);
     color: var(--a-base-4);
-    font-size: map-get($font-sizes, default);
-    font-weight: 500;
-    margin-bottom: 20px;
   }
 
   .apos-media-editor__links {
     @include apos-list-reset();
     display: flex;
-    margin-bottom: 30px;
+    margin-bottom: $spacing-triple;
   }
 
   .apos-media-editor__link {

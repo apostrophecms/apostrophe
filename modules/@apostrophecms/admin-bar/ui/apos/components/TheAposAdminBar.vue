@@ -155,7 +155,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   right: 0;
   left: 0;
   background: var(--a-background-primary);
-  font-size: map-get($font-sizes, menu-label);
 }
 
 .apos-admin-bar__row {
