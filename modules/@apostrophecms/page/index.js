@@ -94,10 +94,34 @@ module.exports = {
       // with _children populated if ?_children=1 is in the query string. An editor can
       // also get a light version of the entire tree with ?all=1, for use in a
       // drag-and-drop UI.
+      //
+      // If flat=1 is present, the pages are returned as a flat list rather than a tree,
+      // and the `_children` property of each is just an array of `_id`s.
+      //
+      // If ?autocomplete=x is present, then an autocomplete prefix search for pages
+      // matching that string is carried out, and a flat list of pages is returned,
+      // with no `_children`. This is mainly useful to our relationship editor.
+      // The user must have some page editing privileges to use it. The 10 best
+      // matches are returned as an object with a `results` property containing the
+      // array of pages.
+
       async getAll(req) {
         self.publicApiCheck(req);
         const all = self.apos.launder.boolean(req.query.all);
         const flat = self.apos.launder.boolean(req.query.flat);
+        const autocomplete = self.apos.launder.string(req.query.autocomplete);
+
+        if (autocomplete.length) {
+          if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
+            throw self.apos.error('forbidden');
+          }
+          return {
+            // For consistency with the pieces REST API we
+            // use a results property when returning a flat list
+            results: await self.getRestQuery(req).limit(10).relationships(false).areas(false).toArray()
+          };
+        }
+
         if (all) {
           if (!self.apos.permission.can(req, 'edit', '@apostrophecms/page')) {
             throw self.apos.error('forbidden');
@@ -123,7 +147,11 @@ module.exports = {
           if (flat) {
             const result = [];
             flatten(result, data[0]);
-            return result;
+            return {
+              // For consistency with the pieces REST API we
+              // use a results property when returning a flat list
+              results: result
+            };
           }
           return data[0];
         } else {

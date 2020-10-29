@@ -74,6 +74,9 @@ module.exports = {
     return {
       get: {
         [self.login()]: async (req) => {
+          if (req.user) {
+            return req.res.redirect('/');
+          }
           req.scene = 'apos';
           await self.sendPage(req, 'login', {});
         }

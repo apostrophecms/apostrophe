@@ -33,7 +33,16 @@ export default {
     // property is merged with the props supplied by the server-side configuration.
     apos.bus.$on('admin-menu-click', async (itemName) => {
       let item;
-      if ((typeof itemName) === 'object') {
+      if (itemName === '@apostrophecms/global:singleton-editor') {
+        // Special case: the global doc is a singleton, and we know its
+        // _id in browserland
+        item = {
+          ...apos.modal.modals.find(modal => modal.itemName === '@apostrophecms/global:editor'),
+          props: {
+            docId: apos.modules['@apostrophecms/global']._id
+          }
+        };
+      } else if ((typeof itemName) === 'object') {
         item = {
           ...apos.modal.modals.find(modal => modal.itemName === itemName.itemName),
           ...itemName
