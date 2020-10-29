@@ -187,10 +187,7 @@ module.exports = {
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
-                newNodes.push(_.pick(node,
-                  'title', 'slug', 'path', '_id', 'type', 'metaType', '_url',
-                  '_children', 'parked'
-                ));
+                newNodes.push(node);
               }
             });
             return newNodes;
@@ -1892,7 +1889,8 @@ database.`);
           rank: 1,
           level: 1,
           visibility: 1,
-          trash: 1
+          trash: 1,
+          parked: 1
         };
       },
       addDeduplicateRanksMigration() {
