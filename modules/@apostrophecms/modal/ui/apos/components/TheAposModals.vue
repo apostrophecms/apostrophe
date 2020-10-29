@@ -1,18 +1,18 @@
 <template>
   <div id="apos-modals">
-    <portal to="modal-target">
-      <component
-        v-for="modal in activeModals" :key="modal.itemName"
-        :is="modal.componentName" :module-name="getModuleName(modal.itemName)"
-        v-bind="activeProps[modal.itemName]"
-        @safe-close="finishExit(modal.itemName)"
-      />
-    </portal>
-    <portal-target name="modal-target" multiple />
+    <component
+      v-for="modal in stack" :key="modal.id"
+      :is="modal.componentName"
+      v-bind="modal.props"
+      @modal-result="modal.result = $event"
+      @safe-close="resolve(modal)"
+    />
   </div>
 </template>
 
 <script>
+import cuid from 'cuid';
+
 export default {
   name: 'TheAposModals',
   props: {
@@ -23,43 +23,51 @@ export default {
   },
   data() {
     return {
-      active: {},
-      activeProps: {}
+      stack: []
     };
   },
-  computed: {
-    activeModals() {
-      return this.modals.filter(modal => {
-        return this.active[modal.itemName];
-      });
-    }
-  },
   mounted() {
-    // If you need to pass props into the modal, emit an object instead of the
-    // itemName string. The object should have a `name` property, which would be
-    // the itemName if not using props. Then include any props on a `props`
-    // object that will be passed in using the `v-bind` directive.
-    apos.bus.$on('admin-menu-click', (itemName) => {
-      if (typeof itemName === 'object') {
-        this.setIsActive(itemName.name, true);
-        this.activeProps[itemName.name] = itemName.props
-          ? { ...itemName.props } : {};
+    // Open one of the server-side configured top level admin bar menus by name.
+    // To allow for injecting additional props dynamically, if itemName is an
+    // object, it must have an itemName property and a props property. The props
+    // property is merged with the props supplied by the server-side configuration.
+    apos.bus.$on('admin-menu-click', async (itemName) => {
+      let item;
+      if ((typeof itemName) === 'object') {
+        item = {
+          ...apos.modal.modals.find(modal => modal.itemName === itemName.itemName),
+          ...itemName
+        };
       } else {
-        this.setIsActive(itemName, true);
-        this.activeProps[itemName] = {};
+        item = apos.modal.modals.find(modal => modal.itemName === itemName);
+      }
+      if (item) {
+        await this.execute(item.componentName, {
+          ...item.props,
+          moduleName: item.moduleName || this.getModuleName(item.itemName)
+        });
       }
     });
   },
   methods: {
-    setIsActive(itemName, state) {
-      // https://vuejs.org/v2/guide/reactivity.html#Change-Detection-Caveats
-      this.$set(this.active, itemName, state);
+    async execute(componentName, props) {
+      return new Promise((resolve, reject) => {
+        this.stack.push({
+          id: cuid(),
+          componentName,
+          resolve,
+          props: props || {}
+        });
+      });
     },
-    finishExit: function (moduleName) {
-      this.setIsActive(moduleName, false);
-      delete this.activeProps[moduleName];
+    resolve(modal) {
+      this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
+      modal.resolve(modal.result);
     },
     getModuleName(itemName) {
+      if (!itemName) {
+        return null;
+      }
       return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
     }
   }

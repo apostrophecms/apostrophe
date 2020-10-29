@@ -16,13 +16,15 @@
       <p v-if="field.help" class="apos-field-help">
         {{ field.help }}
       </p>
-      <div v-if="field.min || field.max" class="apos-field-limit">
-        <span v-if="field.type === 'relationship'">{{ items.length }} selected</span>
-        <span v-if="field.min">
-          min: {{ field.min }}
+      <div v-if="countLabel || minLabel || maxLabel" class="apos-field-limit">
+        <span v-if="countLabel">
+          {{ countLabel }}
         </span>
-        <span v-if="field.max">
-          max: {{ field.max }}
+        <span v-if="minLabel">
+          {{ minLabel }}
+        </span>
+        <span v-if="maxLabel">
+          {{ maxLabel }}
         </span>
       </div>
       <slot name="body" />
@@ -102,8 +104,8 @@ export default {
 
       if (typeof this.error === 'string') {
         error = this.error;
-      } else if (this.error.type) {
-        error = this.error.type;
+      } else if (this.error.name) {
+        error = this.error.name;
       }
 
       return `apos-field--error apos-field--error-${error}`;
@@ -115,6 +117,29 @@ export default {
         } else {
           return 'Error';
         }
+      } else {
+        return false;
+      }
+    },
+    countLabel() {
+      if (this.field.type === 'relationship') {
+        return `${this.items.length} Selected`;
+      } else if (this.field.type === 'array') {
+        return `${this.items.length} Added`;
+      } else {
+        return false;
+      }
+    },
+    minLabel() {
+      if ((typeof this.field.min) === 'number') {
+        return `Min: ${this.field.min}`;
+      } else {
+        return false;
+      }
+    },
+    maxLabel() {
+      if ((typeof this.field.max) === 'number') {
+        return `Max: ${this.field.max}`;
       } else {
         return false;
       }

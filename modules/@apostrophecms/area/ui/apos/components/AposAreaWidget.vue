@@ -1,6 +1,9 @@
 
 <template>
-  <div class="apos-area-widget-wrapper" :data-area-widget="widgetId" :data-area-label="widgetLabel">
+  <div
+    class="apos-area-widget-wrapper" :data-area-widget="widgetId"
+    :data-area-label="widgetLabel"
+  >
     <div
       class="apos-area-widget-inner"
       :class="ui.container"
@@ -38,7 +41,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event);"
+          @insert="$emit('insert', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
           @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
@@ -53,6 +56,7 @@
         <AposWidgetControls
           :first="i === 0"
           :last="i === next.length - 1"
+          :options="{ contextual: isContextual }"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -60,10 +64,9 @@
           @down="$emit('down', i);"
         />
       </div>
+      <!-- Still used for contextual editing components -->
       <component
         v-if="editing"
-        @save="$emit('done', widget)"
-        @close="$emit('close', widget)"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -73,7 +76,7 @@
         data-apos-widget
       />
       <component
-        v-if="(!editing) || (!widgetIsContextual(widget.type))"
+        v-if="(!editing) || (!isContextual)"
         :is="widgetComponent(widget.type)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
@@ -90,7 +93,7 @@
       >
         <AposAreaMenu
           :max-reached="maxReached"
-          @add="$emit('insert', $event)"
+          @insert="$emit('insert', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="options.widgets"
@@ -110,6 +113,7 @@ import klona from 'klona';
 export default {
   name: 'AposAreaWidget',
   props: {
+    // For contextual editing
     editing: {
       type: Boolean,
       default: false
@@ -161,7 +165,7 @@ export default {
       type: Boolean
     }
   },
-  emits: [ 'clone', 'done', 'close', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
   data() {
     const initialState = {
       controls: {
@@ -212,6 +216,10 @@ export default {
     widgetLabel() {
       return window.apos.modules[`${this.widget.type}-widget`].label;
     },
+    isContextual() {
+      return this.moduleOptions.widgetIsContextual[this.widget.type];
+    },
+    // Browser options from the `@apostrophecms/area` module.
     moduleOptions() {
       return window.apos.area;
     },
@@ -359,7 +367,6 @@ export default {
     },
 
     toggleMenuFocus(event, name, value) {
-      console.log('hi');
       if (event) {
         event.cancelBubble = true;
       }
@@ -397,15 +404,15 @@ export default {
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+  .apos-area-widget-wrapper {
+    position: relative;
+  }
 
   .apos-area-widget-inner {
     position: relative;
@@ -421,6 +428,7 @@ export default {
       transition: opacity 0.2s ease;
       pointer-events: none;
     }
+
     &:before {
       top: 0;
     }
@@ -428,33 +436,37 @@ export default {
       bottom: 0;
     }
     &.apos-highlight {
-      z-index: $z-index-widget-highlight;
       &:before, &:after {
         opacity: 0.4;
       }
     }
     &.apos-focus {
-      z-index: $z-index-widget-focus;
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
       }
     }
+
+    .apos-area-widget-inner &:after {
+      display: none;
+    }
+    .apos-area-widget-inner &:before {
+      z-index: $z-index-under;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      outline: 1px solid var(--a-base-1);
+      outline-offset: -1px;
+      background-color: var(--a-base-5);
+      pointer-events: none;
+    }
+    .apos-area-widget-inner &.apos-focus:before,
+    .apos-area-widget-inner &.apos-highlight:before {
+      z-index: $z-index-default;
+    }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner:after {
-    display: none;
-  }
-  .apos-area-widget-inner .apos-area-widget-inner:before {
-    z-index: $z-index-under;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    outline: 1px solid var(--a-base-1);
-    outline-offset: -1px;
-    background-color: var(--a-base-5);
-  }
   .apos-area-widget-inner .apos-area-widget-inner {
     &.apos-highlight:before {
       opacity: 0.1;
@@ -462,20 +474,23 @@ export default {
     &.apos-focus:before {
       opacity: 0.15;
     }
-  }
 
-  .apos-area-widget-inner .apos-area-widget-inner {
-    &.apos-highlight, &.apos-focus {
+    &.apos-highlight,
+    &.apos-focus {
       outline-color: var(--a-secondary);
     }
   }
 
   .apos-area-widget-controls {
-    z-index: $z-index-default;
+    z-index: $z-index-widget-controls;
     position: absolute;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
+
+    &.apos-area-widget__label {
+      z-index: $z-index-widget-label;
+    }
   }
 
   // TODO commented code awaiting the triumphant return of the canvas -SR
@@ -502,9 +517,6 @@ export default {
     top: 0;
     left: 50%;
     transform: translateY(-50%);
-    &.apos-focus {
-      z-index: $z-index-widget-add-focus;
-    }
   }
 
   .apos-area-widget-controls--add--bottom {
@@ -574,7 +586,8 @@ export default {
     background-color: var(--a-secondary);
   }
 
-  .apos-show, .apos-focus {
+  .apos-show,
+  .apos-focus {
     opacity: 1;
     pointer-events: auto;
   }

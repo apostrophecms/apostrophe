@@ -1,19 +1,19 @@
 <template>
   <AposModal
     :modal="modal" :modal-title="modalTitle"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         v-else
         type="default" label="Finished"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -34,7 +34,7 @@
       <AposButton
         v-else
         :label="`New ${ options.label }`" type="primary"
-        @click="editing = true"
+        @click="edit(null)"
       />
     </template>
     <template #main>
@@ -65,7 +65,7 @@
             :items="items"
             :headers="headers"
             v-model="checked"
-            @open="openEditor"
+            @open="edit"
             :options="{
               disableUnchecked: relationshipErrors === 'max',
               hideCheckboxes: !relationshipField
@@ -76,27 +76,17 @@
           </div>
         </template>
       </AposModalBody>
-      <!-- The pieces editor modal. -->
-      <portal to="modal-target">
-        <component
-          v-if="editing"
-          :is="options.components.insertModal"
-          :module-name="moduleName" :doc-id="editingDocId"
-          :filter-values="filterValues"
-          @saved="finishSaved" @safe-close="closeEditor"
-        />
-      </portal>
     </template>
   </AposModal>
 </template>
 
 <script>
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 
 export default {
   name: 'AposPiecesManager',
-  mixins: [ AposDocsManagerMixin, AposModalParentMixin ],
+  mixins: [ AposDocsManagerMixin, AposModalModifiedMixin ],
   props: {
     moduleName: {
       type: String,
@@ -116,8 +106,6 @@ export default {
       totalPages: 1,
       currentPage: 1,
       filterValues: {},
-      editing: false,
-      editingDocId: '',
       queryExtras: {},
       holdQueries: false,
       moreMenu: {
@@ -207,7 +195,7 @@ export default {
       }
     },
     new() {
-      this.editing = true;
+      this.edit(null);
     },
     async finishSaved() {
       await this.getPieces();
@@ -251,13 +239,23 @@ export default {
         this.getPieces();
       }
     },
-    openEditor(docId) {
-      this.editingDocId = docId;
-      this.editing = true;
-    },
-    closeEditor() {
-      this.editing = false;
-      this.editingDocId = '';
+    async edit(pieceId) {
+      const doc = await apos.modal.execute(this.options.components.insertModal, {
+        moduleName: this.moduleName,
+        docId: pieceId
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      await this.getPieces();
+      if (this.relationshipField && (!pieceId)) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
+      }
     },
     // Toolbar handlers
     trashClick() {

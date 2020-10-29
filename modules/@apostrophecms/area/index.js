@@ -136,6 +136,12 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
+        const canEdit = area._edit && (options.edit !== false);
+        if (canEdit) {
+          // Ease of access to image URLs. When not editing we
+          // just use the helpers
+          self.apos.attachment.all(area, { annotate: true });
+        }
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
           // not so sloppy this time please
@@ -236,7 +242,7 @@ module.exports = {
         const doc = await find();
         return update(doc);
         async function find() {
-          const doc = await self.apos.doc.find(req, { _id: docId }).permission('edit-doc').published(null).toObject();
+          const doc = await self.apos.doc.find(req, { _id: docId }).permission('edit').toObject();
           if (!doc) {
             throw self.apos.error('notfound');
           }
@@ -478,8 +484,8 @@ module.exports = {
         const widgetIsContextual = {};
         const contextualWidgetDefaultData = {};
         _.each(self.widgetManagers, function (manager, name) {
-          widgets[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widget) || 'ApostropheWidget';
-          widgetEditors[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widgetEditor) || 'ApostropheWidgetEditor';
+          widgets[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widget) || 'AposWidget';
+          widgetEditors[name] = (manager.options.browser && manager.options.browser.components && manager.options.browser.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           contextualWidgetDefaultData[name] = manager.options.defaultData;

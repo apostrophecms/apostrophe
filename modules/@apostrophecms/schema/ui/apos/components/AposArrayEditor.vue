@@ -3,12 +3,12 @@
     class="apos-array-editor" :modal="modal"
     :modal-title="`Edit ${field.label}`"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
-        @click="cancel"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -21,15 +21,28 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-modal-array-items">
-          <p v-if="effectiveMin" :class="minError ? 'apos-modal-array-min-error' : ''">
-            Minimum items: {{ effectiveMin }}
-          </p>
-          <p v-if="field.max" :class="maxError ? 'apos-modal-array-max-error' : ''">
-            Maximum items: {{ field.max }}
-          </p>
-          <button :disabled="maxed || itemError" @click.prevent="add">
-            Add Item
-          </button>
+          <div class="apos-modal-array-items__heading">
+            <p class="apos-modal-array-items__label">
+              <span v-if="countLabel">
+                {{ countLabel }}
+              </span>
+              <span v-if="minLabel" :class="minError ? 'apos-modal-array-min-error' : ''">
+                {{ minLabel }}
+              </span>
+              <span v-if="maxLabel" :class="maxError ? 'apos-modal-array-max-error' : ''">
+                {{ maxLabel }}
+              </span>
+            </p>
+            <AposButton
+              class="apos-modal-array-items__add"
+              label="Add Item"
+              :icon-only="true"
+              icon="plus-icon"
+              :modifiers="[ 'tiny', 'round' ]"
+              :disabled="maxed || itemError"
+              @click.prevent="add"
+            />
+          </div>
           <AposSlatList
             class="apos-modal-array-items__items"
             @input="update"
@@ -53,7 +66,10 @@
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
-                    v-model="currentDoc"
+                    :value="currentDoc"
+                    @input="currentDocUpdate"
+                    :server-errors="currentDocServerErrors"
+                    ref="schema"
                   />
                 </div>
               </div>
@@ -66,16 +82,17 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import cuid from 'cuid';
 import klona from 'klona';
 import { get } from 'lodash';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposArrayEditor',
   mixins: [
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -86,9 +103,13 @@ export default {
     field: {
       required: true,
       type: Object
+    },
+    serverError: {
+      type: Object,
+      default: null
     }
   },
-  emits: [ 'input', 'safe-close', 'update' ],
+  emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
       currentId: null,
@@ -102,9 +123,11 @@ export default {
       // permanent modifications whether the user
       // clicks save or not
       next: klona(this.items),
+      original: klona(this.items),
       triggerValidation: false,
       minError: false,
-      maxError: false
+      maxError: false,
+      cancelDescription: 'Do you want to discard changes to this list?'
     };
   },
   computed: {
@@ -124,6 +147,27 @@ export default {
       // For AposDocEditorMixin
       return this.field.schema;
     },
+    countLabel() {
+      return `${this.next.length} Added`;
+    },
+    // Here in the array editor we use effectiveMin to factor in the
+    // required property because there is no other good place to do that,
+    // unlike the input field wrapper which has a separate visual
+    // representation of "required".
+    minLabel() {
+      if (this.effectiveMin) {
+        return `Min: ${this.effectiveMin}`;
+      } else {
+        return false;
+      }
+    },
+    maxLabel() {
+      if ((typeof this.field.max) === 'number') {
+        return `Max: ${this.field.max}`;
+      } else {
+        return false;
+      }
+    },
     effectiveMin() {
       if (this.field.min) {
         return this.field.min;
@@ -132,6 +176,17 @@ export default {
       } else {
         return 0;
       }
+    },
+    currentDocServerErrors() {
+      let serverErrors = null;
+      ((this.serverError && this.serverError.data && this.serverError.data.errors) || []).forEach(error => {
+        const [ _id, fieldName ] = error.path.split('.');
+        if (_id === this.currentId) {
+          serverErrors = serverErrors || {};
+          serverErrors[fieldName] = error;
+        }
+      });
+      return serverErrors;
     }
   },
   async mounted() {
@@ -139,13 +194,21 @@ export default {
     if (this.next.length) {
       this.select(this.next[0]._id);
     }
+    if (this.serverError && this.serverError.data && this.serverError.data.errors) {
+      const first = this.serverError.data.errors[0];
+      const [ _id, name ] = first.path.split('.');
+      await this.select(_id);
+      const aposSchema = this.$refs.schema;
+      await this.nextTick();
+      aposSchema.scrollFieldIntoView(name);
+    }
   },
   methods: {
-    select(_id) {
+    async select(_id) {
       if (this.currentId === _id) {
         return;
       }
-      this.validateAndThen(true, false, () => {
+      if (await this.validate(true, false)) {
         this.currentDocToCurrentItem();
         this.currentId = _id;
         this.currentDoc = {
@@ -153,7 +216,7 @@ export default {
           data: this.next.find(item => item._id === _id)
         };
         this.triggerValidation = false;
-      });
+      }
     },
     update(items) {
       // Take care to use the same items in order to avoid
@@ -168,46 +231,40 @@ export default {
       }
       this.updateMinMax();
     },
-    add() {
-      this.validateAndThen(true, false, () => {
+    currentDocUpdate(currentDoc) {
+      this.currentDoc = currentDoc;
+    },
+    async add() {
+      if (await this.validate(true, false)) {
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);
         this.select(item._id);
         this.updateMinMax();
-      });
+      }
     },
     updateMinMax() {
+      let minError = false;
+      let maxError = false;
       if (this.effectiveMin) {
         if (this.next.length < this.effectiveMin) {
-          this.minError = true;
+          minError = true;
         }
       }
       if (this.field.max !== undefined) {
         if (this.next.length > this.field.max) {
-          this.maxError = true;
+          maxError = true;
         }
       }
+      this.minError = minError;
+      this.maxError = maxError;
     },
-    submit() {
-      this.validateAndThen(true, true, async () => {
-        let error;
-        this.updateMinMax();
-        if (this.minError || this.maxError || (this.currentDoc && this.currentDoc.hasErrors)) {
-          error = true;
-        }
-        if (error) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
+    async submit() {
+      if (await this.validate(true, true)) {
         this.currentDocToCurrentItem();
-        this.$emit('update', this.next);
+        this.$emit('modal-result', this.next);
         this.modal.showModal = false;
-      });
+      }
     },
     currentDocToCurrentItem() {
       if (!this.currentId) {
@@ -216,23 +273,54 @@ export default {
       const currentIndex = this.next.findIndex(item => item._id === this.currentId);
       this.next[currentIndex] = this.currentDoc.data;
     },
-    validateAndThen(validateItem, validateLength, then) {
+    isModified() {
+      if (this.currentId) {
+        const currentIndex = this.next.findIndex(item => item._id === this.currentId);
+        if (detectDocChange(this.field.schema, this.next[currentIndex], this.currentDoc.data)) {
+          return true;
+        }
+      }
+      if (this.next.length !== this.original.length) {
+        return true;
+      }
+      for (let i = 0; (i < this.next.length); i++) {
+        if (this.next[i]._id !== this.original[i]._id) {
+          return true;
+        }
+        if (detectDocChange(this.field.schema, this.next[i], this.original[i])) {
+          return true;
+        }
+      }
+      return false;
+    },
+    async validate(validateItem, validateLength) {
       if (validateItem) {
         this.triggerValidation = true;
       }
-      this.$nextTick(async () => {
-        if (
-          (validateLength && (this.minError || this.maxError)) ||
-          (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
-        ) {
-          await apos.notify('Resolve errors first.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-        } else {
-          then();
-        }
+      await this.nextTick();
+      if (validateLength) {
+        this.updateMinMax();
+      }
+      if (
+        (validateLength && (this.minError || this.maxError)) ||
+        (validateItem && (this.currentDoc && this.currentDoc.hasErrors))
+      ) {
+        await apos.notify('Resolve errors first.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return false;
+      } else {
+        return true;
+      }
+    },
+    // Awaitable nextTick
+    nextTick() {
+      return new Promise((resolve, reject) => {
+        this.$nextTick(() => {
+          return resolve();
+        });
       });
     },
     newInstance() {
@@ -283,7 +371,7 @@ export default {
     flex-grow: 1;
   }
 
-  .apos-modal-array_item__pane {
+  .apos-modal-array-item__pane {
     width: 100%;
     border-width: 0;
   }
@@ -297,5 +385,31 @@ export default {
 
   .apos-modal-array-min-error, .apos-modal-array-max-error {
     color: var(--a-danger);
+  }
+
+  .apos-modal-array-items {
+    margin: 10px;
+  }
+
+  .apos-modal-array-items__heading {
+    position: relative;
+    margin: 20px 4px;
+  }
+
+  // Specificity needed due to AposButton rules
+  .apos-modal-array-items__add.apos-button {
+    position: absolute;
+    top: -5px;
+    right: 0;
+  }
+
+  .apos-modal-array-items__label {
+    // Consistent with appearance of same information in input field
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    span {
+      margin-right: 10px;
+    }
   }
 </style>

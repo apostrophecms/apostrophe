@@ -3,12 +3,12 @@
     class="apos-doc-editor" :modal="modal"
     :modal-title="modalTitle"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="Exit"
-        @click="cancel"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
@@ -40,7 +40,10 @@
                 :utility-rail="false"
                 :following-values="followingValues('other')"
                 :doc-id="docId"
-                v-model="docOtherFields"
+                :value="docOtherFields"
+                @input="updateDocOtherFields"
+                :server-errors="serverErrors"
+                ref="otherSchema"
               />
             </div>
           </AposModalTabsBody>
@@ -58,8 +61,11 @@
             :utility-rail="true"
             :following-values="followingValues('utility')"
             :doc-id="docId"
-            v-model="docUtilityFields"
+            :value="docUtilityFields"
+            @input="updateDocUtilityFields"
             :modifiers="['small', 'inverted']"
+            ref="utilitySchema"
+            :server-errors="serverErrors"
           />
         </div>
       </AposModalRail>
@@ -68,16 +74,18 @@
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { defaultsDeep } from 'lodash';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import klona from 'klona';
 
 export default {
   name: 'AposDocEditor',
   mixins: [
     AposModalTabsMixin,
-    AposModalParentMixin,
+    AposModalModifiedMixin,
     AposEditorMixin
   ],
   props: {
@@ -93,20 +101,15 @@ export default {
       type: Object,
       default() {
         return {
-          published: true,
           trash: false
         };
       }
     }
   },
-  emits: [ 'saved', 'safe-close' ],
+  emits: [ 'modal-result', 'safe-close' ],
   data() {
     return {
       docType: this.moduleName,
-      doc: {
-        data: {},
-        hasErrors: false
-      },
       docUtilityFields: {
         data: {},
         hasErrors: false
@@ -124,7 +127,8 @@ export default {
       splittingDoc: false,
       schemaUtilityFields: [],
       schemaOtherFields: [],
-      triggerValidation: false
+      triggerValidation: false,
+      original: null
     };
   },
   computed: {
@@ -196,8 +200,8 @@ export default {
         }
 
         if (this.docType !== newVal.type) {
-          // Return the split data into `doc.data` before splitting again.
-          this.doc.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.doc.data);
+          // Return the split data into `docFields.data` before splitting again.
+          this.docFields.data = defaultsDeep(this.docOtherFields.data, this.docUtilityFields.data, this.docFields.data);
 
           this.docType = newVal.type;
           this.docReady = false;
@@ -213,7 +217,8 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-
+    // After computed properties become available
+    this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       let docData;
       try {
@@ -230,12 +235,13 @@ export default {
         });
         console.error('The requested piece was not found.', this.docId);
         apos.bus.$emit('busy', false);
-        this.cancel();
+        await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
           this.docType = docData.type;
         }
-        this.doc.data = docData;
+        this.original = klona(docData);
+        this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
         apos.bus.$emit('busy', false);
@@ -259,11 +265,7 @@ export default {
           return;
         }
 
-        const body = {
-          ...this.doc.data,
-          ...this.docUtilityFields.data,
-          ...this.docOtherFields.data
-        };
+        const body = this.unsplitDoc();
         let route;
         let requestMethod;
         if (this.docId) {
@@ -278,12 +280,19 @@ export default {
             body._position = 'lastChild';
           }
         }
-
-        await requestMethod(route, {
-          busy: true,
-          body
-        });
-        this.$emit('saved');
+        let doc;
+        try {
+          doc = await requestMethod(route, {
+            busy: true,
+            body
+          });
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred saving the document.'
+          });
+          return;
+        }
+        this.$emit('modal-result', doc);
         this.modal.showModal = false;
       });
     },
@@ -300,7 +309,6 @@ export default {
         const newDoc = await apos.http.post(this.moduleAction, {
           body
         });
-
         return newDoc;
       } catch (error) {
         await apos.notify('Error while creating new, empty content.', {
@@ -311,18 +319,17 @@ export default {
 
         console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
-        this.cancel();
+        this.modal.showModal = false;
       }
     },
     async loadNewInstance () {
       this.docReady = false;
-
       const newInstance = await this.getNewInstance();
-
+      this.original = newInstance;
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
       }
-      this.doc.data = newInstance;
+      this.docFields.data = newInstance;
       this.splitDoc();
       this.docReady = true;
     },
@@ -336,14 +343,49 @@ export default {
 
       this.schema.forEach(field => {
         if (field.group.name === 'utility') {
-          this.docUtilityFields.data[field.name] = this.doc.data[field.name];
+          this.docUtilityFields.data[field.name] = this.docFields.data[field.name];
           this.schemaUtilityFields.push(field);
         } else {
-          this.docOtherFields.data[field.name] = this.doc.data[field.name];
+          this.docOtherFields.data[field.name] = this.docFields.data[field.name];
           this.schemaOtherFields.push(field);
         }
       });
       this.splittingDoc = false;
+    },
+    unsplitDoc() {
+      return {
+        ...this.docFields.data,
+        ...this.docUtilityFields.data,
+        ...this.docOtherFields.data
+      };
+    },
+    isModified() {
+      if (!this.original) {
+        return false;
+      }
+      return detectDocChange(this.schema, this.original, this.unsplitDoc());
+    },
+    // Override of a mixin method to accommodate the tabs/utility rail split
+    getFieldValue(name) {
+      if (this.docUtilityFields.data[name] !== undefined) {
+        return this.docUtilityFields.data[name];
+      }
+      if (this.docOtherFields.data[name] !== undefined) {
+        return this.docOtherFields.data[name];
+      }
+    },
+    updateDocUtilityFields(value) {
+      this.docUtilityFields = value;
+    },
+    updateDocOtherFields(value) {
+      this.docOtherFields = value;
+    },
+    getAposSchema(field) {
+      if (field.group.name === 'utility') {
+        return this.$refs.utilitySchema;
+      } else {
+        return this.$refs.otherSchema;
+      }
     }
   }
 };

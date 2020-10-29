@@ -33,7 +33,7 @@ module.exports = {
       post: {
         async list(req) {
           const _id = self.apos.launder.id(req.body._id);
-          const doc = await self.apos.doc.find(req, { _id: _id }).published(null).permission('edit').toObject();
+          const doc = await self.apos.doc.find(req, { _id: _id }).permission('edit').toObject();
           if (!doc) {
             throw self.apos.error('notfound');
           }
@@ -203,7 +203,7 @@ module.exports = {
         // We already checked that they all have the same document
         if (versions.length) {
           const docId = versions[0].docId;
-          const doc = await self.apos.doc.find(req, { _id: docId }).published(null).permission('edit').toObject();
+          const doc = await self.apos.doc.find(req, { _id: docId }).permission('edit').toObject();
           if (!doc) {
             throw self.apos.error('notfound');
           }
@@ -257,7 +257,7 @@ module.exports = {
           if (!manager) {
             continue;
           }
-          const docs = await manager.find(req, { _id: { $in: ids } }).published(null).toArray();
+          const docs = await manager.find(req, { _id: { $in: ids } }).toArray();
           _.each(docs, function (doc) {
             manager.decorateChange(doc, changesById[doc._id]);
           });

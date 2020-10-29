@@ -1,31 +1,21 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
-    :uid="uid"
+    :field="field" :error="effectiveError"
+    :uid="uid" :items="next"
   >
     <template #body>
-      <div class="apos-attachment">
+      <div class="apos-input-array">
         <label
           class="apos-input-wrapper"
           :class="{
             'is-disabled': field.disabled
           }"
         >
-          <p class="apos-array-count">
-            {{ next.length }} Items
-          </p>
-          <button
-            @click="editing = true"
-            :disabled="field.disabled"
-          >Edit {{ field.label }}</button>
+          <AposButton
+            :label="editLabel"
+            @click="edit"
+          />
         </label>
-        <AposArrayEditor
-          v-if="editing"
-          :field="field"
-          :items="next"
-          @update="update"
-          @safe-close="safeClose"
-        />
       </div>
     </template>
   </AposInputWrapper>
@@ -39,11 +29,15 @@ export default {
   mixins: [ AposInputMixin ],
   data () {
     return {
-      editing: false,
       // Next should consistently be an array.
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || [])
     };
+  },
+  computed: {
+    editLabel () {
+      return `Edit ${this.field.label}`;
+    }
   },
   methods: {
     validate (value) {
@@ -61,12 +55,16 @@ export default {
     update (items) {
       this.next = items;
     },
-    safeClose () {
-      this.editing = false;
+    async edit () {
+      const result = await apos.modal.execute('AposArrayEditor', {
+        field: this.field,
+        items: this.next,
+        serverError: this.serverError
+      });
+      if (result) {
+        this.next = result;
+      }
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>

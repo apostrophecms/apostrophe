@@ -50,14 +50,16 @@
         </li>
       </ul>
       <AposSchema
-        v-if="doc.data.title !== undefined"
+        v-if="docFields.data.title !== undefined"
         :schema="schema"
-        v-model="doc"
+        v-model="docFields"
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
-        :doc-id="doc.data._id"
+        :doc-id="docFields.data._id"
         :following-values="followingValues()"
-        @reset="updateDocEdited(false)"
+        @reset="$emit('modified', false)"
+        ref="schema"
+        :server-errors="serverErrors"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -71,7 +73,7 @@
         />
         <AposButton
           @click="save" class="apos-media-editor__save"
-          :disabled="doc.hasErrors"
+          :disabled="docFields.hasErrors"
           label="Save" type="primary"
         />
       </div>
@@ -81,6 +83,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import klona from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
@@ -114,25 +117,16 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'back', 'edited' ],
+  emits: [ 'saved', 'back', 'modified' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
       activeMedia: klona(this.media),
-      doc: {
-        data: {},
-        hasErrors: false
-      },
+      // Unlike `activeMedia` this changes ONLY when a new doc is swapped in.
+      // For overall change detection.
+      original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
-      confirmContent: {
-        heading: 'Unsaved Changes',
-        description: 'Do you want to discard changes to the active image?',
-        negativeLabel: 'Resume Editing',
-        affirmativeLabel: 'Discard Changes'
-      },
-      confirmingDiscard: false,
-      discardConfirmed: false,
       showReplace: false
     };
   },
@@ -170,16 +164,14 @@ export default {
     }
   },
   watch: {
-    'doc.data': {
-      deep: true,
+    'docFields.data': {
       handler(newData, oldData) {
         this.$nextTick(() => {
-          // If either old or new state are an empty object, it's not "edited"
-          if (
-            Object.keys(oldData).length > 0 &&
-            Object.keys(newData).length > 0
-          ) {
-            this.updateDocEdited(true);
+          // If either old or new state are an empty object, it's not "modified."
+          if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
+            this.$emit('modified', false);
+          } else {
+            this.$emit('modified', detectDocChange(this.schema, this.original, newData));
           }
         });
 
@@ -201,24 +193,24 @@ export default {
   },
   mounted() {
     this.generateLipKey();
-    this.updateDocEdited(false);
+    this.$emit('modified', false);
   },
   methods: {
     updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.doc.data = klona(newMedia);
+      this.original = klona(newMedia);
+      this.docFields.data = klona(newMedia);
       this.generateLipKey();
     },
     save() {
       this.triggerValidation = true;
-      apos.bus.$emit('busy', true);
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
-      this.doc.data.attachment = this.activeMedia.attachment;
+      this.docFields.data.attachment = this.activeMedia.attachment;
 
       this.$nextTick(async () => {
-        if (this.doc.hasErrors) {
+        if (this.docFields.hasErrors) {
           await apos.notify('Resolve errors before saving.', {
             type: 'warning',
             icon: 'alert-circle-icon',
@@ -230,22 +222,18 @@ export default {
         try {
           await apos.http.put(route, {
             busy: true,
-            body: this.doc.data
+            body: this.docFields.data
           });
 
-          this.updateDocEdited(false);
+          this.original = klona(this.docFields.data);
+          this.$emit('modified', false);
           this.$emit('saved');
         } catch (err) {
-          console.error('Error saving image', err);
-
-          await apos.notify(`Error Saving ${this.moduleLabels.label}`, {
-            type: 'danger',
-            icon: 'alert-circle-icon',
-            dismiss: true
+          await this.handleSaveError(err, {
+            fallback: `Error Saving ${this.moduleLabels.label}`
           });
         } finally {
           this.showReplace = false;
-          apos.bus.$emit('busy', false);
         }
       });
     },
@@ -255,9 +243,6 @@ export default {
     cancel() {
       this.showReplace = false;
       this.$emit('back');
-    },
-    updateDocEdited (val) {
-      this.$emit('edited', val);
     },
     updateActiveAttachment(attachment) {
       console.info('☄️', attachment);

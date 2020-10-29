@@ -20,70 +20,27 @@ module.exports = {
           following: 'title',
           required: true
         },
-        published: {
-          type: 'boolean',
-          label: 'Published',
-          def: true
-        },
         trash: {
           type: 'boolean',
           label: 'Trash',
           contextual: true,
           def: false
         },
-        ...(options.permissionsFields ? {
-          loginRequired: {
-            type: 'select',
-            label: 'Who can view this?',
-            def: '',
-            choices: [
-              {
-                value: '',
-                label: 'Public'
-              },
-              {
-                value: 'loginRequired',
-                label: 'Login Required'
-              },
-              {
-                value: 'certainUsers',
-                label: 'Certain People',
-                showFields: [
-                  '_viewGroups',
-                  '_viewUsers'
-                ]
-              }
-            ]
-          },
-          _viewUsers: {
-            type: 'relationship',
-            withType: '@apostrophecms/user',
-            label: 'These Users can View',
-            idsStorage: 'viewUsersIds'
-          },
-          _viewGroups: {
-            type: 'relationship',
-            withType: '@apostrophecms/group',
-            label: 'These Groups can View',
-            idsStorage: 'viewGroupsIds'
-          },
-          _editUsers: {
-            type: 'relationship',
-            withType: '@apostrophecms/user',
-            label: 'These Users can Edit',
-            idsStorage: 'editUsersIds',
-            // Gets patched after full initialization
-            permission: 'admin'
-          },
-          _editGroups: {
-            type: 'relationship',
-            withType: '@apostrophecms/group',
-            label: 'These Groups can Edit',
-            idsStorage: 'editGroupsIds',
-            // Gets patched after full initialization
-            permission: 'admin'
-          }
-        } : {})
+        visibility: {
+          type: 'select',
+          label: 'Who can view this?',
+          def: 'public',
+          choices: [
+            {
+              value: 'public',
+              label: 'Public'
+            },
+            {
+              value: 'loginRequired',
+              label: 'Login Required'
+            }
+          ]
+        }
       },
       group: {
         basics: {
@@ -95,18 +52,13 @@ module.exports = {
         utility: {
           label: 'Utilities',
           fields: [
-            'published',
             'slug'
           ]
         },
         permissions: {
           label: 'Permissions',
           fields: [
-            'loginRequired',
-            '_viewUsers',
-            '_viewGroups',
-            '_editUsers',
-            '_editGroups'
+            'visibility'
           ],
           last: true
         }
@@ -130,7 +82,6 @@ module.exports = {
     // them from earlier components in the path or slug as required.
     self.trashPrefixFields = [ 'slug' ];
     self.trashSuffixFields = [];
-    self.patchAdminPermissionInSchema();
     self.composeSchema();
     self.apos.doc.setManager(self.name, self);
     self.enableBrowserData();
@@ -325,20 +276,6 @@ module.exports = {
       removeTrashSuffixFields(fields) {
         self.trashSuffixFields = _.difference(self.trashSuffixFields, fields);
       },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has some edit privileges for
-      // this doc type (not necessarily every instance of it),
-      // for example the ability to create one. Determines
-      // admin bar menu item visibility
-      getEditPermissionName() {
-        return self.isAdminOnly() ? 'admin' : 'edit-' + self.name;
-      },
-      // Returns the minimum permission name that should be checked for
-      // to determine if this user has full admin privileges for
-      // this doc type
-      getAdminPermissionName() {
-        return self.isAdminOnly() ? 'admin' : 'admin-' + self.name;
-      },
       // Returns a query that will only yield docs of the appropriate type
       // as determined by the `name` option of the module.
       // `criteria` is the MongoDB criteria object, and any properties of
@@ -432,7 +369,7 @@ module.exports = {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
-          return !field.permission || self.apos.permission.can(req, field.permission);
+          return !field.permission || self.apos.permission.can(req, field.permission && field.permission.action, field.permission && field.permission.type);
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
@@ -473,7 +410,6 @@ module.exports = {
         // logic, such as `_id` or `docPermissions`
         const forbiddenFields = [
           '_id',
-          'docPermissions',
           'titleSortified',
           'highSearchText',
           'highSearchWords',
@@ -485,25 +421,8 @@ module.exports = {
             throw new Error('Doc type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
-        self.patchAdminPermissionInSchema();
       },
-      // In the schema, `_editUsers` and `_editGroups` are
-      // initially locked down to sitewide admins. Now that
-      // we've constructed the module completely, take advantage
-      // of `getAdminPermissionName` to specify a more nuanced permission,
-      // such as the admin permission for this piece type, or for pages
-      patchAdminPermissionInSchema() {
-        const fieldNames = [
-          '_editUsers',
-          '_editGroups'
-        ];
-        _.each(fieldNames, function (fieldName) {
-          const field = _.find(self.schema, { name: fieldName });
-          if (field) {
-            field.permission = self.getAdminPermissionName();
-          }
-        });
-      },
+
       // This method provides the back end of /autocomplete routes.
       // For the implementation of the autocomplete() query builder see autocomplete.js.
       //
@@ -647,10 +566,10 @@ module.exports = {
         }
       },
       // Returns a cursor that finds docs the current user can edit. Unlike
-      // find(), this cursor defaults to including unpublished docs. Subclasses
+      // find(), this cursor defaults to including docs in the trash. Subclasses
       // of @apostrophecms/piece-type often extend this to remove more default filters
       findForEditing(req, criteria, projection) {
-        const cursor = self.find(req, criteria).permission('edit').published(null).trash(null);
+        const cursor = self.find(req, criteria).permission('edit').trash(null);
         if (projection) {
           cursor.project(projection);
         }
@@ -921,20 +840,14 @@ module.exports = {
 
         // `.permission('admin')` would limit the returned docs to those for which the
         // user associated with the query's `req` has the named permission.
-        // By default, `view-doc` is checked for. You might want to specify
-        // `edit-doc`, or `admin` if you are interested in the global admin permission.
+        // By default, `view` is checked for. You might want to specify
+        // `edit`.
         //
         // USE WITH CARE: If you pass `false`, permissions checks are disabled
         // for this particular query.
         //
         // If this method is never called, or you pass
-        // `undefined` or `null`, `view-doc` is still checked for.
-        //
-        // The permission name is suffixed for you
-        // with a specific doc type name if the type query builder
-        // has been called, however for database queries
-        // this normally makes no difference unless the permissions
-        // module has been extended.
+        // `undefined` or `null`, `view` is still checked for.
         //
         // In all cases, all of the returned docs are marked
         // with `_edit: true` properties
@@ -945,19 +858,15 @@ module.exports = {
 
         permission: {
           finalize() {
-            const typeSuffix = '-' + (query.get('type') || 'doc');
-            let permission = query.get('permission');
+            const permission = query.get('permission');
             if (permission !== false) {
-              if (permission && (!permission.match(/-/))) {
-                permission = permission + typeSuffix;
-              }
-              query.and(self.apos.permission.criteria(query.req, permission || ('view-' + typeSuffix)));
+              query.and(self.apos.permission.criteria(query.req, permission || 'view'));
             }
           },
           after: function(results) {
             // In all cases we mark the docs with ._edit if
             // the req is permitted to do that
-            self.apos.permission.annotate(query.req, 'edit-doc', results);
+            self.apos.permission.annotate(query.req, 'edit', results);
           }
         },
 
@@ -1045,54 +954,6 @@ module.exports = {
           choices() {
             // For the trash query builder, it is generally a mistake not to offer "No" as a choice,
             // even if everything is in the trash, as "No" is often the default.
-            return [
-              {
-                value: '0',
-                label: 'No'
-              },
-              {
-                value: '1',
-                label: 'Yes'
-              }
-            ];
-          }
-        },
-
-        // `.published(flag)`. If flag is `undefined`, `true` or this
-        // method is never called, return only published docs.
-        //
-        // If flag is `false`, return only unpublished docs.
-        //
-        // If flag is `null`, return docs without regard
-        // to published status.
-        //
-        // Regardless of this query builder the user's permissions are
-        // always taken into account. For instance, a logged-out user will never
-        // see unpublished documents unless `permissions(false)` is called.
-
-        published: {
-          def: true,
-          finalize() {
-            const published = query.get('published');
-            if (published === null) {
-              return;
-            }
-            if (published) {
-              query.and({
-                published: true
-              });
-              return;
-            }
-            query.and({
-              published: { $ne: true }
-            });
-          },
-          launder(s) {
-            return self.apos.launder.booleanOrNull(s);
-          },
-          choices() {
-            // For the published query builder, it is generally a mistake not to offer "Yes" as a choice,
-            // even if everything is unpublished, as "Yes" is often the default.
             return [
               {
                 value: '0',

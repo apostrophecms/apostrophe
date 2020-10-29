@@ -10,20 +10,21 @@
       <component
         v-show="displayComponent(field.name)"
         v-model="fieldState[field.name]"
-        :following-value="followingValues[field.name]"
+        :following-values="followingValues[field.name]"
         :is="fieldComponentMap[field.type]"
         :field="fields[field.name].field"
-        :status="fields[field.name].status"
         :modifiers="fields[field.name].modifiers"
         :trigger-validation="triggerValidation"
+        :server-error="fields[field.name].serverError"
         :doc-id="docId"
+        :ref="field.name"
       />
     </div>
   </div>
 </template>
 
 <script>
-import { isEqual } from 'lodash';
+import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
   name: 'AposSchema',
@@ -61,6 +62,12 @@ export default {
       default() {
         return null;
       }
+    },
+    serverErrors: {
+      type: Object,
+      default() {
+        return null;
+      }
     }
   },
   emits: [ 'input', 'reset' ],
@@ -84,10 +91,7 @@ export default {
         fields[item.name].value = {
           data: this.value[item.name]
         };
-        // What is this TODO supposed to be? We have error and value already. -Tom
-        // TODO populate a dynamic status
-        fields[item.name].status = {};
-
+        fields[item.name].serverError = this.serverErrors && this.serverErrors[item.name];
         fields[item.name].modifiers = this.modifiers;
       });
       return fields;
@@ -161,6 +165,7 @@ export default {
         return;
       }
 
+      const oldHasErrors = this.next.hasErrors;
       this.next.hasErrors = false;
       let changeFound = false;
 
@@ -168,10 +173,9 @@ export default {
         if (this.fieldState[field.name].error) {
           this.next.hasErrors = true;
         }
-
         if (
           this.fieldState[field.name].data !== undefined &&
-          this.findRealChange(this.next.data[field.name], this.fieldState[field.name].data)
+          detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
         ) {
           changeFound = true;
           this.next.data[field.name] = this.fieldState[field.name].data;
@@ -179,25 +183,24 @@ export default {
           this.next.data[field.name] = this.value.data[field.name];
         }
       });
+      if (oldHasErrors !== this.next.hasErrors) {
+        // Otherwise the save button may never unlock
+        changeFound = true;
+      }
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
         this.$emit('input', { ...this.next });
       }
     },
-    findRealChange(oldData, newData) {
-      if (isEqual(oldData, newData)) {
-        return false;
-      } else if (!oldData && !newData) {
-        return false;
-      } else if (!oldData && Array.isArray(newData) && newData.length === 0) {
-        return false;
-      } else {
-        return true;
-      }
-    },
     displayComponent(fieldName) {
       return this.currentFields.length ? this.currentFields.includes(fieldName) : true;
+    },
+    scrollFieldIntoView(fieldName) {
+      // The refs for a name are an array if that ref was assigned
+      // in a v-for. We know there is only one in this case
+      // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
+      this.$refs[fieldName][0].$el.scrollIntoView();
     }
   }
 };

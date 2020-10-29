@@ -45,14 +45,15 @@ module.exports = {
       // Add an item to the admin bar.
       //
       // When the item is activated, the `name` argument will be emitted on
-      // `apos.bus` as the value of an `admin-bar-item` event. The
-      // `AposModals` app will typically catch this and respond by
-      // displaying the appropriate modal. So in most cases `name` should
-      // be the appropriate modal component name, such as
-      // `ApostropheUsersManagerModal`.
+      // `apos.bus` as the value of an `admin-menu-click` event. The
+      // `TheAposModals` app will typically catch this and respond by
+      // displaying the appropriate modal. So `name` should
+      // be the module name, with `:editor` or `:manager` suffix, depending
+      // on the case, such as `@apostrophecms/global:editor` or
+      // `@apostrophecms/page:manager`.
       //
-      // Alternatively, `href` may be set to an ordinary URL. This is used
-      // for the logout button in the admin bar.
+      // Alternatively, an `href` option may be set to an ordinary URL in
+      // `options`. This creates a basic link in the admin menu.
       //
       // `permission` should be a permission name such as `admin`
       // (the user must be a full admin) or `edit-@apostrophecms/event`
@@ -84,8 +85,10 @@ module.exports = {
 
       add(name, label, permission, options) {
         let index;
+
         const item = {
-          name: name,
+          name: name.indexOf(':') === -1 ? name : name.split(':')[0],
+          action: name,
           label: label,
           permission: permission,
           options: options || {}
@@ -128,7 +131,7 @@ module.exports = {
         // admin bar items with menus.
         const groupedItems = [];
         let menu = false;
-        _.each(items, function (item, i) {
+        items.forEach(function (item, i) {
           if (menu) {
             // We are already building up a grouped menu, but stop doing that
             // if this next item isn't part of it
@@ -196,17 +199,21 @@ module.exports = {
       // user only sees one of them, etc. Called by `afterInit`
 
       groupItems() {
-        // Implement the groups and addGroups options. Mark the grouped items with a
-        // `menuLeader` property.
-        _.each(self.options.groups || self.groups.concat(self.options.addGroups || []), function (group) {
-          if (group.label) {
-            self.groupLabels[group.items[0]] = group.label;
-            group = group.items;
+        // Implement the groups and addGroups options. Mark the grouped items
+        // with a `menuLeader` property.
+        const groups = self.options.groups || self.groups.concat(self.options.addGroups || []);
+
+        groups.forEach(function (group) {
+          if (!group.label) {
+            return;
           }
-          _.each(group, function (name, groupIndex) {
+
+          self.groupLabels[group.items[0]] = group.label;
+
+          group.items.forEach(function (name, groupIndex) {
             const item = _.find(self.items, { name: name });
             if (item) {
-              item.menuLeader = group[0];
+              item.menuLeader = group.items[0];
             } else {
               return;
             }
@@ -240,7 +247,7 @@ module.exports = {
           // Being logged in is good enough to see this
           return true;
         }
-        return self.apos.permission.can(req, item.permission);
+        return self.apos.permission.can(req, item.permission.action, item.permission.type);
       },
 
       getBrowserData(req) {

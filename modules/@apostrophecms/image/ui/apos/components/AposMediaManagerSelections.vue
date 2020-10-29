@@ -15,9 +15,13 @@
           v-for="item in items"
           :key="item._id" class="apos-media-manager-selections__item"
         >
-          <div class="apos-media-manager-selections__item-thumb-container">
+          <div
+            v-if="item.attachment && item.attachment._urls"
+            class="apos-media-manager-selections__item-thumb-container"
+          >
             <img
-              :src="item.path" alt=""
+              :src="item.attachment._urls['one-sixth']"
+              :alt="item.description || item.title"
               class="apos-media-manager-selections__item-thumb"
             >
           </div>

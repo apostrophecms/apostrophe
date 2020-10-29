@@ -138,7 +138,7 @@ describe('page-type', function() {
       _id: 'niftyPages1',
       type: 'nifty-page',
       slug: '/niftyPages',
-      published: true,
+      visibility: 'public',
       path: '/niftyPages',
       level: 1,
       rank: 5,

@@ -1,6 +1,6 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="error"
+    :field="field" :error="effectiveError"
     :uid="uid" :items="next"
   >
     <template #body>
@@ -10,7 +10,7 @@
             class="apos-input apos-input--text apos-input--relationship"
             v-model="searchTerm" type="text"
             :placeholder="placeholder"
-            :disabled="status.disabled" :required="field.required"
+            :disabled="disabled" :required="field.required"
             :id="uid"
             @input="input"
             @focusout="handleFocusOut"
@@ -21,14 +21,14 @@
             :label="browseLabel"
             :modifiers="['small']"
             type="input"
-            @click="choosing=true"
+            @click="choose"
           />
         </div>
         <AposSlatList
           class="apos-input-relationship__items"
           v-if="next.length"
           @input="updateSelected"
-          @item-clicked="openRelationshipEditor"
+          @item-clicked="editRelationship"
           :value="next"
         />
         <AposSearchList
@@ -37,26 +37,6 @@
           :selected-items="next"
         />
       </div>
-    </template>
-    <template #secondary>
-      <portal to="modal-target">
-        <component
-          :is="chooserComponent"
-          v-if="choosing"
-          :module-name="field.withType"
-          :chosen="next"
-          :relationship-field="field"
-          @chose="updateSelected"
-          @safe-close="choosing=false"
-        />
-      </portal>
-      <AposRelationshipEditor
-        v-if="relationshipSchema"
-        :schema="relationshipSchema"
-        :title="clickedItem.title"
-        v-model="clickedItem._fields"
-        @safe-close="relationshipSchema=null"
-      />
     </template>
   </AposInputWrapper>
 </template>
@@ -74,11 +54,10 @@ export default {
       searchList: [],
       next: (this.value && Array.isArray(this.value.data))
         ? this.value.data : (this.field.def || []),
-      originalDisabled: this.status.disabled,
+      disabled: false,
       searching: false,
       choosing: false,
-      relationshipSchema: null,
-      clickedItem: null
+      relationshipSchema: null
     };
   },
   computed: {
@@ -97,27 +76,17 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
-  mounted() {
-    this.validateAndEmit();
-  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
         return { message: 'required' };
       }
-
-      // if the original status was disabled, no validation should change that
-      if (this.originalDisabled) {
-        this.status.disabled = true;
-        return;
-      }
-
       if (this.field.max && this.field.max <= value.length) {
         this.searchTerm = 'Limit reached!';
-        this.status.disabled = true;
+        this.disabled = true;
       } else {
         this.searchTerm = '';
-        this.status.disabled = false;
+        this.disabled = false;
       }
 
       if (this.field.min && this.field.min > value.length) {
@@ -159,9 +128,29 @@ export default {
       // Ensure the internal state is an array.
       this.next = Array.isArray(this.value.data) ? this.value.data : [];
     },
-    openRelationshipEditor (item) {
-      this.relationshipSchema = this.field.schema;
-      this.clickedItem = item;
+    async choose () {
+      const result = await apos.modal.execute(this.chooserComponent, {
+        moduleName: this.field.withType,
+        chosen: this.next,
+        relationshipField: this.field
+      });
+      if (result) {
+        this.updateSelected(result);
+      }
+    },
+    async editRelationship (item) {
+      const result = await apos.modal.execute('AposRelationshipEditor', {
+        schema: this.field.schema,
+        title: item.title,
+        value: item._fields
+      });
+      if (result) {
+        const index = this.next.findIndex(_item => _item._id === item._id);
+        this.$set(this.next, index, {
+          ...this.next[index],
+          _fields: result
+        });
+      }
     }
   }
 };

@@ -67,7 +67,6 @@ module.exports = {
           'credit',
           'creditUrl',
           'slug',
-          'published',
           'trash'
         ]
       }
@@ -212,7 +211,7 @@ module.exports = {
       },
       addManagerModal() {
         self.apos.modal.add(
-          self.__meta.name,
+          `${self.__meta.name}:manager`,
           self.getComponentName('managerModal', 'AposMediaManager'),
           { moduleName: self.__meta.name }
         );

@@ -6,13 +6,15 @@
         <AposLogo class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
           <li
-            v-for="(item) in menuItems" :key="item.name"
+            v-for="item in menuItems" :key="item.name"
             class="apos-admin-bar__item"
           >
             <component
               v-if="item.options" :is="item.options.href ? 'a' : 'button'"
               class="apos-admin-bar__btn" :href="item.options.href"
-              v-on="item.options.href ? {} : { click: () => emitEvent(item.name) }"
+              v-on="item.options.href ? {} : {
+                click: () => emitEvent(item.action)
+              }"
             >
               {{ item.label }}
             </component>
@@ -35,6 +37,7 @@
                 type: 'primary',
                 modifiers: ['round', 'no-motion']
               }"
+              @item-clicked="emitEvent"
             />
           </li>
         </ul>
@@ -49,7 +52,7 @@
           type="default" label="Page Settings"
           icon="cog-icon" class="apos-admin-bar__btn"
           @click="emitEvent({
-            name: '@apostrophecms/page:editor',
+            itemName: '@apostrophecms/page:editor',
             props: {
               docId: currentPageId
             }
@@ -66,6 +69,7 @@
 </template>
 
 <script>
+import klona from 'klona';
 
 export default {
   name: 'TheAposAdminBar',
@@ -100,29 +104,27 @@ export default {
   },
   mounted() {
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
-    this.menuItems = this.items.map(item => {
+    const itemsSet = klona(this.items);
+
+    this.menuItems = itemsSet.map(item => {
       if (item.items) {
         item.items.forEach(subitem => {
           // The context menu needs an `action` property to emit.
-          subitem.action = subitem.name;
+          subitem.action = subitem.action || subitem.name;
         });
       }
       return item;
     });
-    // TODO: This will need to be an async call to get pieces as well as the
-    // new page route.
-    this.createMenu = [
-      {
-        label: 'Sandwich',
-        name: 'sandwich-artists',
-        action: 'sandwich-piece'
-      },
-      {
-        label: 'Tree',
-        name: 'trees',
-        action: 'trees-piece'
+
+    Object.values(apos.modules).forEach(module => {
+      if (module.quickCreate && module.schema && module.schema.length > 0) {
+        this.createMenu.push({
+          label: module.label || module.name,
+          name: module.name,
+          action: `${module.name}:editor`
+        });
       }
-    ];
+    });
 
     this.user = require('./userData').user;
   },

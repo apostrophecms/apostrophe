@@ -1,9 +1,9 @@
 <template>
   <AposModal
     class="apos-widget-editor"
-    :modal="modal" :modal-title="moduleTitle"
+    :modal="modal" :modal-title="editLabel"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs :items="breadcrumbs" />
@@ -13,7 +13,11 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              :schema="schema" v-model="docInfo"
+              :trigger-validation="triggerValidation"
+              :schema="schema"
+              :value="docFields"
+              @input="updateDocFields"
+              ref="schema"
             />
           </div>
         </template>
@@ -22,75 +26,130 @@
     <template #footer>
       <AposButton
         type="default" label="Cancel"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
       <AposButton
         type="primary" @click="save"
         :label="saveLabel"
+        :disabled="docFields.hasErrors"
       />
     </template>
   </AposModal>
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import cuid from 'cuid';
+import klona from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [AposModalParentMixin],
+  mixins: [ AposModalModifiedMixin ],
   props: {
+    type: {
+      required: true,
+      type: String
+    },
     breadcrumbs: {
       type: Array,
       default: function () {
         return [];
       }
     },
-    typeLabel: {
-      type: String,
-      default: ''
+    options: {
+      required: true,
+      type: Object
     },
-    doc: {
+    value: {
+      required: false,
       type: Object,
-      required: true
-    },
-    schema: {
-      type: Array,
-      required: true
+      default() {
+        return {};
+      }
     }
   },
-  emits: ['safe-close', 'save'],
+  emits: [ 'safe-close', 'modal-result' ],
   data() {
     return {
-      docInfo: {
-        data: { ...this.doc },
+      id: this.value && this.value._id,
+      original: null,
+      docFields: {
+        data: { ...this.value },
         hasErrors: false
       },
       modal: {
-        title: `Edit ${this.typeLabel}`,
+        title: this.editLabel,
         active: false,
         type: 'slide',
         showModal: false
-      }
+      },
+      triggerValidation: false
     };
   },
   computed: {
-    moduleTitle () {
-      return `Manage ${this.typeLabel}`;
+    moduleOptions() {
+      return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
-    saveLabel: function () {
-      if (this.typeLabel) {
+    typeLabel() {
+      return this.moduleOptions.label;
+    },
+    editLabel() {
+      if (this.moduleOptions.editLabel) {
+        return this.moduleOptions.editLabel;
+      } else {
+        return `Edit ${this.typeLabel}`;
+      }
+    },
+    saveLabel() {
+      if (this.moduleOptions.saveLabel) {
+        return this.moduleOptions.saveLabel;
+      } else {
         return `Save ${this.typeLabel}`;
       }
-      return 'Save';
+    },
+    schema() {
+      return this.moduleOptions.schema;
     }
   },
   async mounted() {
-    // TODO: Get data here.
     this.modal.active = true;
   },
+  created() {
+    this.original = this.value ? klona(this.value) : this.getDefault();
+  },
   methods: {
+    updateDocFields(value) {
+      this.docFields = value;
+    },
+    isModified() {
+      const result = detectDocChange(this.schema, this.original, this.docFields.data);
+      return result;
+    },
     save() {
-      this.$emit('save', this.docInfo.data);
+      this.triggerValidation = true;
+      this.$nextTick(async () => {
+        if (this.docFields.hasErrors) {
+          this.triggerValidation = false;
+          return;
+        }
+        const widget = this.docFields.data;
+        if (!widget.type) {
+          widget.type = this.type;
+        }
+        if (!this.id) {
+          widget._id = cuid();
+        }
+        this.$emit('modal-result', widget);
+        this.modal.showModal = false;
+      });
+    },
+    getDefault() {
+      const widget = {};
+      this.schema.forEach(field => {
+        widget[field.name] = field.def ? klona(field.def) : field.def;
+      });
+      return widget;
     }
   }
 };

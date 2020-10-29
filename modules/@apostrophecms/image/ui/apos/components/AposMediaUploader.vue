@@ -93,8 +93,18 @@ export default {
       const imageIds = [];
       // Actually upload the images and send them up once all done.
       for (const file of files) {
-        const img = await this.insertImage(file, emptyDoc);
-        imageIds.push(img._id);
+        try {
+          const img = await this.insertImage(file, emptyDoc);
+          imageIds.push(img._id);
+        } catch (e) {
+          const msg = e.body && e.body.message ? e.body.message : 'Upload error';
+          await apos.notify(msg, {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          return;
+        }
       }
 
       // TODO: i18n
@@ -125,25 +135,11 @@ export default {
       const formData = new window.FormData();
 
       formData.append('file', file);
-      let attachment;
 
       // Make an async request to upload the image.
-      try {
-        attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
-          body: formData
-        });
-      } catch (error) {
-        console.error('Error uploading media.', error);
-
-        const msg = error.body && error.body.message ? error.body.message : 'Upload error';
-
-        await apos.notify(msg, {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        return;
-      }
+      const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+        body: formData
+      });
 
       const imageData = Object.assign(emptyDoc, {
         title: attachment.title,
@@ -162,17 +158,13 @@ export default {
       }
     },
     async notifyErrors(error, fallback) {
-      if (error.body && error.body.errors) {
-        for (const err of error.body.errors) {
-          console.error('Error saving media.', err);
-
-          if (err.error && err.error.description) {
-            await apos.notify(err.error.description || fallback, {
-              type: 'danger',
-              icon: 'alert-circle-icon',
-              dismiss: true
-            });
-          }
+      if (error.body && error.body.data && error.body.data.errors) {
+        for (const err of error.body.data.errors) {
+          await apos.notify(err.message || err.name || fallback, {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
         }
       }
     }

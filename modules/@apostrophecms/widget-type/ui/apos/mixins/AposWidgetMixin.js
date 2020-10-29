@@ -27,20 +27,25 @@ export default {
   },
   methods: {
     async renderContent() {
-      this.rendered = await apos.http.post(`${apos.area.action}/render-widget`, {
-        busy: true,
-        body: {
-          _docId: this.docId,
-          widget: this.value,
-          areaFieldId: this.areaFieldId,
-          type: this.type
-        }
-      });
-      // Wait for reactivity to populate v-html so the
-      // ApostropheAreas manager can spot any new area divs
-      setImmediate(function() {
-        apos.bus.$emit('widget-rendered');
-      });
+      try {
+        this.rendered = await apos.http.post(`${apos.area.action}/render-widget`, {
+          busy: true,
+          body: {
+            _docId: this.docId,
+            widget: this.value,
+            areaFieldId: this.areaFieldId,
+            type: this.type
+          }
+        });
+        // Wait for reactivity to populate v-html so the
+        // AposAreas manager can spot any new area divs
+        setImmediate(function() {
+          apos.bus.$emit('widget-rendered');
+        });
+      } catch (e) {
+        this.rendered = '<p>Unable to render this widget.</p>';
+        console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
+      }
     },
     clicked(e) {
       // If you do not want a particular click to swap to the edit view

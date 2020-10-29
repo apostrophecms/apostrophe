@@ -41,7 +41,7 @@ describe('Docs', function() {
       testItems.push({
         _id: 'i' + i,
         slug: 'i' + i,
-        published: true,
+        visibility: 'public',
         type: 'test',
         title: 'title: ' + i
       });
@@ -55,7 +55,6 @@ describe('Docs', function() {
     user.username = 'admin';
     user.password = 'admin';
     user.email = 'ad@min.com';
-    user.permissions = [ 'admin' ];
     await apos.user.insert(apos.task.getReq(), user);
 
     jar = apos.http.jar();
@@ -116,7 +115,7 @@ describe('Docs', function() {
     } catch (error) {
       assert(error);
       assert(error.status === 409);
-      assert(error.body.me);
+      assert(error.body.data.me);
     }
   });
 

@@ -11,7 +11,7 @@
           class="apos-table__header" :key="header.label"
         >
           <component
-            :is="getEl(header)" @click="sort(header.action)"
+            :is="getEl(header)" 
             class="apos-table__header-label"
           >
             <component

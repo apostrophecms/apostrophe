@@ -1,20 +1,20 @@
 <template>
   <AposModal
     :modal="modal" modal-title="Manage Page Tree"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         type="default" label="Finished"
-        @click="cancel"
+        @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
         type="primary"
         label="New Page"
-        @click="editing = true"
+        @click="openEditor(null)"
       />
     </template>
     <template #main>
@@ -42,27 +42,18 @@
           />
         </template>
       </AposModalBody>
-      <!-- The pieces editor modal. -->
-      <portal to="modal-target">
-        <component
-          v-if="editing"
-          :is="moduleOptions.components.insertModal"
-          :module-name="moduleName" :doc-id="editingDocId"
-          @saved="finishSaved" @safe-close="closeEditor"
-        />
-      </portal>
     </template>
   </AposModal>
 </template>
 
 <script>
-import AposModalParentMixin from 'Modules/@apostrophecms/modal/mixins/AposModalParentMixin';
+import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import klona from 'klona';
 
 export default {
   name: 'AposPagesManager',
-  mixins: [ AposModalParentMixin, AposDocsManagerMixin ],
+  mixins: [ AposModalModifiedMixin, AposDocsManagerMixin ],
   emits: [ 'trash', 'search', 'safe-close' ],
   data() {
     return {
@@ -80,12 +71,6 @@ export default {
           {
             label: 'Page Title',
             name: 'title'
-          },
-          {
-            label: 'Published',
-            name: 'published',
-            labelIcon: 'circle',
-            icon: 'circle'
           },
           {
             label: 'Edit',
@@ -107,9 +92,7 @@ export default {
       treeOptions: {
         bulkSelect: !!this.relationshipField,
         draggable: true
-      },
-      editing: false,
-      editingDocId: ''
+      }
     };
   },
   computed: {
@@ -176,7 +159,6 @@ export default {
       this.pages = [ pageTree ];
 
       function formatPage(page) {
-        page.published = page.published ? 'Published' : 'Unpublished';
         self.pagesFlat.push({
           title: page.title,
           id: page._id,
@@ -192,13 +174,6 @@ export default {
         }
       }
     },
-    async finishSaved() {
-      await this.getPages();
-    },
-    closeEditor() {
-      this.editing = false;
-      this.editingDocId = '';
-    },
     async update(page) {
       const body = {
         _targetId: page.endContext,
@@ -212,7 +187,11 @@ export default {
           body
         });
       } catch (error) {
-        console.error('Page tree update error:', error);
+        await apos.notify('An error occurred while updating the page tree.', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
       }
 
       await this.getPages();
@@ -245,9 +224,23 @@ export default {
       // TODO: Trigger a confirmation modal and execute the deletion.
       this.$emit('trash', this.selected);
     },
-    openEditor(pageId) {
-      this.editingDocId = pageId;
-      this.editing = true;
+    async openEditor(pageId) {
+      const doc = await apos.modal.execute(this.moduleOptions.components.insertModal, {
+        moduleName: this.moduleName,
+        docId: pageId
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      await this.getPages();
+      if (this.relationshipField && (!pageId)) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
+      }
     }
   }
 };

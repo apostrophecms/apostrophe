@@ -8,7 +8,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'Raw HTML',
-    className: 'apos-raw-html-widget'
+    className: false
   },
   fields: {
     add: {

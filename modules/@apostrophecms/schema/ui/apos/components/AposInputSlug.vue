@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
-    :error="error" :uid="uid"
+    :error="effectiveError" :uid="uid"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -81,15 +81,23 @@ export default {
     }
   },
   watch: {
-    followingValue(newValue, oldValue) {
-      if (this.compatible(oldValue, this.next)) {
-        // If this is a page slug, we only replace the last section of the slug.
-        if (this.field.page) {
-          const parts = this.next.match(/[^/]+/g);
-          parts.pop();
-          this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
-        } else {
-          this.next = this.slugify(newValue);
+    followingValues: {
+      // We are usually interested in followingValue.title, but a
+      // secondary slug field could be configured to watch
+      // one or more other fields
+      deep: true,
+      handler(newValue, oldValue) {
+        oldValue = Object.values(oldValue).join(' ');
+        newValue = Object.values(newValue).join(' ');
+        if (this.compatible(oldValue, this.next)) {
+          // If this is a page slug, we only replace the last section of the slug.
+          if (this.field.page) {
+            const parts = this.next.match(/[^/]+/g);
+            parts.pop();
+            this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
+          } else {
+            this.next = this.slugify(newValue);
+          }
         }
       }
     }

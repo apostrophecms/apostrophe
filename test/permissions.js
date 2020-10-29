@@ -1,6 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const _ = require('lodash');
 
 describe('Permissions', function() {
   this.timeout(t.timeout);
@@ -18,127 +17,51 @@ describe('Permissions', function() {
     assert(apos.permission.__meta.name = '@apostrophecms/permission');
   });
 
-  // mock up a request
-  function req(d) {
-    const o = {
-      traceIn: function() {},
-      traceOut: function() {}
-    };
-    _.extend(o, d);
-    return o;
-  }
-
   describe('test permissions.can', function() {
-    it('allows view-doc in the generic case', function() {
-      assert(apos.permission.can(req(), 'view-doc'));
+    it('allows the public to view by type', function() {
+      assert(apos.permission.can(apos.task.getAnonReq(), 'view', '@apostrophecms/home-page'));
     });
-    it('rejects edit-doc in the generic case', function() {
-      assert(!apos.permission.can(req(), 'edit-doc'));
+    it('allows the admin to view by type', function() {
+      assert(apos.permission.can(apos.task.getReq(), 'view', '@apostrophecms/home-page'));
     });
-    it('forbids view-doc for public with loginRequired', function() {
-      assert(!apos.permission.can(req(), 'view-doc', {
-        published: true,
-        loginRequired: 'loginRequired'
-      }));
+    it('Forbids the public to update by type', function() {
+      assert(!apos.permission.can(apos.task.getAnonReq(), 'edit', '@apostrophecms/home-page'));
     });
-    it('permits view-doc for public without loginRequired', function() {
-      assert(apos.permission.can(req(), 'view-doc', { published: true }));
+    it('Allows the admin to update by type', function() {
+      assert(apos.permission.can(apos.task.getReq(), 'edit', '@apostrophecms/home-page'));
     });
-    it('prohibits view-doc for public without published', function() {
-      assert(!apos.permission.can(req(), 'view-doc', {}));
+    it('allows the public to view a particular doc via criteria and via can()', async () => {
+      const req = apos.task.getAnonReq();
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      assert(home);
+      assert(apos.permission.can(apos.task.getAnonReq(), 'view', home));
     });
-    it('prohibits view-doc for public with loginRequired', function() {
-      assert(!apos.permission.can(req(), 'view-doc', {
-        published: true,
-        loginRequired: 'loginRequired'
-      }));
+    it('public cannot update via actual update api', async () => {
+      const req = apos.task.getAnonReq();
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      assert(home);
+      try {
+        home.visibility = 'loginRequired';
+        await apos.page.update(req, home);
+      } catch (e) {
+        assert(e.message === 'forbidden');
+      }
     });
-    it('permits view-doc for guest user with loginRequired', function() {
-      assert(apos.permission.can(req({ user: { _permissions: { guest: 1 } } }), 'view-doc', {
-        published: true,
-        loginRequired: 'loginRequired'
-      }));
+    it('admin can update via actual update api', async () => {
+      const req = apos.task.getReq();
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      assert(home);
+      home.visibility = 'loginRequired';
+      await apos.page.update(req, home);
     });
-    it('permits view-doc for individual with proper id', function() {
-      assert(apos.permission.can(req({ user: { _id: 1 } }), 'view-doc', {
-        published: true,
-        loginRequired: 'certainUsers',
-        docPermissions: [ 'view-1' ]
-      }));
-    });
-    it('forbids view-doc for individual with wrong id', function() {
-      assert(!apos.permission.can(req({ user: { _id: 2 } }), 'view-doc', {
-        published: true,
-        loginRequired: 'certainUsers',
-        docPermissions: [ 'view-1' ]
-      }));
-    });
-    it('permits view-doc for individual with group id', function() {
-      assert(apos.permission.can(req({
-        user: {
-          _id: 1,
-          groupIds: [ 1001, 1002 ]
-        }
-      }), 'view-doc', {
-        published: true,
-        loginRequired: 'certainUsers',
-        docPermissions: [ 'view-1002' ]
-      }));
-    });
-    it('forbids view-doc for individual with wrong group id', function() {
-      assert(!apos.permission.can(req({
-        user: {
-          _id: 2,
-          groupIds: [ 1001, 1002 ]
-        }
-      }), 'view-doc', {
-        published: true,
-        loginRequired: 'certainUsers',
-        docPermissions: [ 'view-1003' ]
-      }));
-    });
-    it('certainUsers will not let you slide past to an unpublished doc', function() {
-      assert(!apos.permission.can(req({ user: { _id: 1 } }), 'view-doc', {
-        loginRequired: 'certainUsers',
-        docPermissions: [ 'view-1' ]
-      }));
-    });
-    it('permits view-doc for unpublished doc for individual with group id for editing', function() {
-      assert(apos.permission.can(req({
-        user: {
-          _id: 1,
-          groupIds: [ 1001, 1002 ]
-        }
-      }), 'view-doc', { docPermissions: [ 'edit-1002' ] }));
-    });
-    it('permits edit-doc for individual with group id for editing and the edit permission', function() {
-      assert(apos.permission.can(req({
-        user: {
-          _id: 1,
-          groupIds: [ 1001, 1002 ],
-          _permissions: { edit: true }
-        }
-      }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
-    });
-    it('forbids edit-doc for individual with group id for editing but no edit permission', function() {
-      assert(!apos.permission.can(req({
-        user: {
-          _id: 1,
-          groupIds: [ 1001, 1002 ]
-        }
-      }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
-    });
-    it('permits edit-doc for individual with group id for managing and edit permission', function() {
-      assert(apos.permission.can(req({
-        user: {
-          _id: 1,
-          groupIds: [ 1001, 1002 ],
-          _permissions: { edit: true }
-        }
-      }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
-    });
-    it('forbids edit-doc for other person', function() {
-      assert(!apos.permission.can(req({ user: { _id: 7 } }), 'edit-doc', { docPermissions: [ 'edit-1002' ] }));
+    it('public cannot access when visibility is loginRequired', async () => {
+      const anonReq = apos.task.getAnonReq();
+      try {
+        const home = await apos.page.find(anonReq, { slug: '/' }).toObject();
+        assert(!home);
+      } catch (e) {
+        assert(e.message === 'forbidden');
+      }
     });
   });
 });

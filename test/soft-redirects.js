@@ -21,8 +21,7 @@ describe('Soft Redirects', function() {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default-page',
-                published: true
+                type: 'default-page'
               }
             ]
           }
@@ -83,8 +82,7 @@ describe('Soft Redirects - with `statusCode` option', async() => {
                 parkedId: 'child',
                 title: 'Child',
                 slug: '/child',
-                type: 'default-page',
-                published: true
+                type: 'default-page'
               }
             ]
           }

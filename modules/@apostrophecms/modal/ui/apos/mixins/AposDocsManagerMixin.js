@@ -1,7 +1,11 @@
+import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 // TODO: Reconcile the overlap in this mixin between the pages and pieces
 // managers. Does it need to be a mixin? This may be resolved when switching to
 // Vue 3 using the composition API. - AB
+
+import klona from 'klona';
+
 export default {
   data() {
     return {
@@ -10,7 +14,7 @@ export default {
       // as initially checked.
       checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
         : [],
-      checkedDocs: Array.isArray(this.chosen) ? this.chosen : false
+      checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : false
     };
   },
   props: {
@@ -23,6 +27,7 @@ export default {
       default: false
     }
   },
+  emits: [ 'modal-result' ],
   computed: {
     relationshipErrors() {
       if (!this.relationshipField) {
@@ -38,6 +43,9 @@ export default {
       }
 
       return false;
+    },
+    sort(action) {
+      this.$emit('sort', action);
     },
     headers() {
       return this.options.columns ? this.options.columns : [];
@@ -122,9 +130,6 @@ export default {
         }
       }
     },
-    sort(action) {
-      this.$emit('sort', action);
-    },
     generateUi () {
       this.generateIcons();
     },
@@ -144,11 +149,33 @@ export default {
       // prep item checkbox fields
     },
     saveRelationship() {
-      this.$emit('chose', this.checkedDocs);
-      if (this.cancel) {
-        // DocsManagers must also be modal parents with the
-        // AposModalParentMixin methods available.
-        this.cancel();
+      this.$emit('modal-result', this.checkedDocs);
+      this.modal.showModal = false;
+    },
+    // Default implementation of isModified is based on whether the
+    // selection has changed, but you can override this and combine
+    // that bit with your own if your manager allows in-context editing
+    // of a piece (i.e. AposMediaManager)
+    isModified() {
+      return this.relationshipIsModified();
+    },
+    // Easy to reuse if you have a custom isModified method
+    relationshipIsModified() {
+      if (!this.relationshipField) {
+        return false;
+      }
+      if (this.chosen.length !== this.checkedDocs.length) {
+        return true;
+      }
+      for (let i = 0; (i < this.chosen.length); i++) {
+        if (this.chosen[i]._id !== this.checkedDocs[i]._id) {
+          return true;
+        }
+        if (this.relationshipField.schema) {
+          if (detectDocChange(this.relationshipField.schema, this.chosen[i]._fields, this.checkedDocs[i]._fields)) {
+            return true;
+          }
+        }
       }
     }
   }

@@ -5,7 +5,8 @@ module.exports = {
   cascades: [ 'filters', 'columns', 'batchOperations' ],
   options: {
     manageViews: [ 'list' ],
-    perPage: 10
+    perPage: 10,
+    quickCreate: true
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -32,8 +33,8 @@ module.exports = {
         updatedAt: {
           label: 'Edited on'
         },
-        published: {
-          label: 'Published'
+        visibility: {
+          label: 'Visibility'
         },
         ...(self.options.contextual ? {
           _url: {
@@ -45,21 +46,21 @@ module.exports = {
   },
   filters: {
     add: {
-      published: {
-        label: 'Published',
+      visibility: {
+        label: 'Visibility',
         inputType: 'radio',
         choices: [
           {
-            value: true,
-            label: 'Published'
+            value: 'public',
+            label: 'Public'
           },
           {
-            value: false,
-            label: 'Draft'
+            value: 'loginRequired',
+            label: 'Login Required'
           },
           {
             value: null,
-            label: 'Both'
+            label: 'Any'
           }
         ],
         allowedInChooser: false,
@@ -101,33 +102,34 @@ module.exports = {
           trash: false
         }
       },
-      publish: {
-        name: 'publish',
-        label: 'Publish',
-        unlessFilter: {
-          published: true
-        },
-        requiredField: 'published'
-      },
-      unpublish: {
-        name: 'unpublish',
-        label: 'Unpublish',
-        unlessFilter: {
-          published: false
-        },
-        requiredField: 'published'
+      visibility: {
+        name: 'visibility',
+        label: 'Visibility',
+        requiredField: 'visibility',
+        fields: {
+          add: {
+            visibility: {
+              type: 'select',
+              label: 'Who can view this?',
+              def: 'public',
+              choices: [
+                {
+                  value: 'public',
+                  label: 'Public'
+                },
+                {
+                  value: 'loginRequired',
+                  label: 'Login Required'
+                }
+              ]
+            }
+          }
+        }
       }
     }
   },
   init(self, options) {
     self.contextual = options.contextual;
-    if (self.contextual) {
-      // If the piece is edited contextually, default the published state to false
-      const published = self.schema.find(field => field.name === 'published');
-      if (published) {
-        published.def = false;
-      }
-    }
 
     if (!options.name) {
       throw new Error('@apostrophecms/pieces require name option');
@@ -145,9 +147,9 @@ module.exports = {
 
     self.composeFilters();
     self.composeColumns();
-    self.addPermissions();
     self.addToAdminBar();
     self.addManagerModal();
+    self.addEditorModal();
     self.finalizeControls();
     self.addTasks();
   },
@@ -189,20 +191,7 @@ module.exports = {
       if (req.body._newInstance) {
         return self.newInstance();
       }
-
-      try {
-        return await self.convertInsertAndRefresh(req, req.body);
-      } catch (e) {
-        if (Array.isArray(e)) {
-          // TODO: Turn errors that should be 500 errors into uninformative,
-          // opaque errors. (the ones that don't have `aposError === true`).
-          throw self.apos.error('invalid', {
-            errors: e
-          });
-        } else {
-          throw e;
-        }
-      }
+      return await self.convertInsertAndRefresh(req, req.body);
     },
     async put(req, _id) {
       self.publicApiCheck(req);
@@ -223,37 +212,8 @@ module.exports = {
   handlers(self, options) {
     return {
       beforeInsert: {
-        ensureTypeAndCreatorPermissions(req, piece, options) {
+        ensureType(req, piece, options) {
           piece.type = self.name;
-          if (options.permissions !== false && !self.apos.permission.can(req, 'admin-' + self.name)) {
-            // If we are not an admin for this type and we just created something,
-            // make sure we wind up on the list of people who can edit it. Note that
-            // permissions will still keep us from actually inserting it, and thus
-            // making this change, if we're not cool enough to create one. However if
-            // we are ignoring permissions via `permissions: false` do not do this
-            // (leave it up to the developer to decide if anybody gets permission to
-            // edit later).
-            if (req.user) {
-              piece.editUsersIds = (piece.editUsersIds || []).concat([ req.user._id ]);
-              piece.docPermissions = (piece.docPermissions || []).concat([ 'edit-' + req.user._id ]);
-            }
-          }
-        }
-      },
-      afterInsert: {
-        insertNotif(req, doc) {
-          self.apos.notify(req, `New ${self.label.toLowerCase()} added: %s`, doc.title, {
-            dismiss: true,
-            type: 'success'
-          });
-        }
-      },
-      afterUpdate: {
-        updateNotif(req, doc) {
-          self.apos.notify(req, `${self.label} %s updated`, doc.title, {
-            dismiss: true,
-            type: 'success'
-          });
         }
       },
       'apostrophe:modulesReady': {
@@ -402,29 +362,27 @@ module.exports = {
           types.push(self.name);
         }
       },
-      addPermissions() {
-        if (!self.isAdminOnly()) {
-          self.apos.permission.add({
-            value: 'admin-' + self.name,
-            label: 'Admin: ' + self.label
-          });
-          self.apos.permission.add({
-            value: 'edit-' + self.name,
-            label: 'Edit: ' + self.label
-          });
-          self.apos.permission.add({
-            value: 'submit-' + self.name,
-            label: 'Submit: ' + self.label
-          });
-        }
-      },
       addToAdminBar() {
-        self.apos.adminBar.add(self.__meta.name, self.pluralLabel, self.getEditPermissionName());
+        self.apos.adminBar.add(
+          `${self.__meta.name}:manager`,
+          self.pluralLabel,
+          {
+            action: 'edit',
+            type: self.name
+          }
+        );
       },
       addManagerModal() {
         self.apos.modal.add(
-          self.__meta.name,
+          `${self.__meta.name}:manager`,
           self.getComponentName('managerModal', 'AposPiecesManager'),
+          { moduleName: self.__meta.name }
+        );
+      },
+      addEditorModal() {
+        self.apos.modal.add(
+          `${self.__meta.name}:editor`,
+          self.getComponentName('insertModal', 'AposDocEditor'),
           { moduleName: self.__meta.name }
         );
       },
@@ -613,7 +571,6 @@ module.exports = {
       generate(i) {
         const piece = self.newInstance();
         piece.title = 'Generated #' + (i + 1);
-        piece.published = true;
         return piece;
       },
       addTasks() {
@@ -650,7 +607,7 @@ module.exports = {
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
-        if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+        if (!self.apos.permission.can(req, 'edit', self.name)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -667,7 +624,7 @@ module.exports = {
       // nothing. Simplifies implementation of `getAll` and `getOne`.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
-          if (!self.apos.permission.can(req, 'edit-' + self.name)) {
+          if (!self.apos.permission.can(req, 'edit', self.name)) {
             throw self.apos.error('notfound');
           }
         }
@@ -684,11 +641,11 @@ module.exports = {
         browserOptions.contextual = self.contextual;
         browserOptions.batchOperations = self.batchOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
+        browserOptions.quickCreate = self.options.quickCreate;
         _.defaults(browserOptions, {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          filters: 'ApostrophePiecesFilters', // TODO: Remove component and this.
           insertModal: 'AposDocEditor',
           managerModal: 'AposPiecesManager'
         });

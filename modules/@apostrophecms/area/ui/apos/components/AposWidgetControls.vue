@@ -10,6 +10,7 @@
       <!-- <AposButton v-bind="dragButton" /> -->
       <AposButton
         v-bind="editButton"
+        v-if="!options.contextual"
         @click="$emit('edit')"
       />
       <AposButton
@@ -40,6 +41,12 @@ export default {
     last: {
       type: Boolean,
       required: true
+    },
+    options: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'remove', 'edit', 'clone', 'up', 'down' ],

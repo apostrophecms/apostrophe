@@ -4,15 +4,24 @@
       v-if="next.length === 0"
       class="apos-empty-area"
     >
-      <AposEmptyState :empty-state="emptyState" />
-      <AposAreaMenu
-        @add="insert"
-        :context-menu-options="contextMenuOptions"
-        :empty="true"
-        :index="0"
-        :widget-options="options.widgets"
-        :max-reached="maxReached"
-      />
+      <template v-if="isEmptySingleton">
+        <AposButton
+          :label="'Add ' + contextMenuOptions.menu[0].label"
+          type="primary"
+          @click="add(contextMenuOptions.menu[0].name)"
+        />
+      </template>
+      <template v-else>
+        <AposEmptyState :empty-state="emptyState" />
+        <AposAreaMenu
+          @insert="insert"
+          :context-menu-options="contextMenuOptions"
+          :empty="true"
+          :index="0"
+          :widget-options="options.widgets"
+          :max-reached="maxReached"
+        />
+      </template>
     </div>
     <div class="apos-areas-widgets-list">
       <AposAreaWidget
@@ -30,13 +39,11 @@
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
-        @done="done"
         @up="up"
         @down="down"
         @remove="remove"
         @edit="edit"
         @clone="clone"
-        @close="close"
         @update="update"
         @insert="insert"
       />
@@ -96,20 +103,38 @@ export default {
     });
 
     return {
+      addWidgetEditor: null,
+      addWidgetOptions: null,
+      addWidgetType: null,
       areaId: cuid(),
       next: validItems,
+      // Track contextual editing
+      // TODO: Check if `editing` is redundant if we're controlling for
+      // contextual widgets in `AposAreaWidget`
       editing: {},
       hoveredWidget: null,
       focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
-      },
-      emptyState: {
-        message: 'Add your content here'
       }
     };
   },
   computed: {
+    isEmptySingleton() {
+      return this.next.length === 0 &&
+        this.options.widgets &&
+        Object.keys(this.options.widgets).length === 1 &&
+        this.options.max &&
+        this.options.max === 1;
+    },
+    emptyState() {
+      // TODO this needs to i18next'd
+      const empty = { message: 'Add your content' };
+      if (this.isEmptySingleton) {
+        empty.message = `Add a ${this.contextMenuOptions.menu[0].label}`;
+      }
+      return empty;
+    },
     moduleOptions() {
       return window.apos.area;
     },
@@ -240,8 +265,22 @@ export default {
         ...this.next.slice(i + 1)
       ];
     },
-    edit(i) {
-      Vue.set(this.editing, this.next[i]._id, !this.editing[this.next[i]._id]);
+    async edit(i) {
+      const widget = this.next[i];
+      if (this.widgetIsContextual(widget.type)) {
+        Vue.set(this.editing, widget._id, !this.editing[widget._id]);
+      } else {
+        const componentName = this.widgetEditorComponent(widget.type);
+        const result = await apos.modal.execute(componentName, {
+          value: widget,
+          options: this.options.widgets[widget.type],
+          type: widget.type,
+          docId: this.docId
+        });
+        if (result) {
+          return this.update(result);
+        }
+      }
     },
     clone(index) {
       const widget = klona(this.next[index]);
@@ -270,18 +309,35 @@ export default {
         this.editing[widget._id] = false;
       }
     },
-    async close(widget) {
-      if (!this.widgetIsContextual(widget.type)) {
-        this.editing[widget._id] = false;
-      }
-    },
-    async done(widget) {
-      if (!this.widgetIsContextual(widget.type)) {
-        this.editing[widget._id] = false;
+    async add(name) {
+      if (this.widgetIsContextual(name)) {
+        return this.insert({
+          _id: cuid(),
+          type: name,
+          ...this.contextualWidgetDefaultData(name)
+        });
+      } else {
+        const componentName = this.widgetEditorComponent(name);
+        const result = await apos.modal.execute(componentName, {
+          value: null,
+          options: this.options.widgets[name],
+          type: name,
+          docId: this.docId
+        });
+        if (result) {
+          await this.insert(result);
+        }
       }
     },
     async insert(e) {
-      const widget = e.widget;
+      let widget;
+      if (e.widget) {
+        widget = e.widget;
+      }
+      if (e.type) {
+        // e IS a widget
+        widget = e;
+      }
       if (!widget._id) {
         widget._id = cuid();
       }
@@ -310,14 +366,11 @@ export default {
         this.edit(e.index);
       }
     },
-    widgetComponent(type) {
-      return this.moduleOptions.components.widgets[type];
+    widgetIsContextual(type) {
+      return this.moduleOptions.widgetIsContextual[type];
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
-    },
-    widgetIsContextual(type) {
-      return this.moduleOptions.widgetIsContextual[type];
     },
     // Recursively seek `subObject` within `object`, based on whether
     // its _id matches that of a sub-object of `object`. If found,
@@ -354,7 +407,4 @@ export default {
   border: 2px dotted var(--a-primary);
 }
 
-.apos-area-widget-wrapper {
-  position: relative;
-}
 </style>

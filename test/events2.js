@@ -49,7 +49,7 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
                 findMeAgain: true,
                 title: 'Test',
                 slug: '/test',
-                published: true,
+                visibility: 'public',
                 parkedId: 'test'
               }
             ]

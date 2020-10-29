@@ -212,7 +212,6 @@
         }
       ],
       components: {
-        filters: 'ApostrophePiecesFilters',
         list: 'ApostrophePiecesList',
         pager: 'ApostrophePager',
         insertModal: 'AposDocEditor',
@@ -416,7 +415,6 @@
       ],
       insertViaUpload: true,
       components: {
-        filters: 'ApostrophePiecesFilters',
         list: 'ApostrophePiecesList',
         pager: 'ApostrophePager',
         insertModal: 'AposDocEditor',
@@ -477,6 +475,75 @@
         png: true
       },
       alias: 'attachment'
+    },
+    area: {
+      components: {
+        editor: 'AposAreaEditor',
+        widgets: {
+          address: 'AposWidget'
+        },
+        widgetEditors: {
+          '@apostrophecms/rich-text': 'AposRichTextWidgetEditor',
+          address: 'AposWidgetEditor'
+        }
+      },
+      widgetIsContextual: {
+        '@apostrophecms/rich-text': true
+      },
+      contextualWidgetDefaultData: {
+        '@apostrophecms/rich-text': {
+          content: ''
+        }
+      },
+      widgetManagers: {
+        address: 'address-widget'
+      },
+      action: '/api/v1/@apostrophecms/area',
+      alias: 'area'
+    },
+    'address-widget': {
+      name: 'address',
+      label: 'Address',
+      action: '/api/v1/address',
+      schema: [
+        {
+          name: 'street1',
+          type: 'string',
+          label: 'Street Address Line 1',
+          required: true
+        },
+        {
+          name: 'street2',
+          type: 'string',
+          label: 'Street Address Line 2',
+          required: false
+        },
+        {
+          name: 'city',
+          type: 'string',
+          label: 'City',
+          required: true
+        },
+        {
+          name: 'state',
+          type: 'string',
+          label: 'State / Province',
+          required: false
+        },
+        {
+          name: 'zip',
+          type: 'string',
+          label: 'Zip / Postal Code',
+          required: false
+        },
+        {
+          name: 'country',
+          type: 'string',
+          label: 'Country',
+          def: 'United States',
+          required: true
+        }
+      ]
     }
   };
 

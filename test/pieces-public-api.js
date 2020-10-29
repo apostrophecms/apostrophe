@@ -45,11 +45,13 @@ describe('Pieces Public API', function() {
     _id: 'testThing',
     title: 'hello',
     foo: 'bar',
-    published: true
+    visibility: 'public'
   };
 
   it('should be able to insert a piece into the database', async () => {
     await apos.thing.insert(apos.task.getReq(), testThing);
+    const thing = await apos.thing.find(apos.task.getReq(), { _id: 'testThing' }).toObject();
+    console.log(thing);
   });
 
   it('should not be able to anonymously retrieve a piece by id from the database without a public API projection', async () => {
@@ -71,6 +73,7 @@ describe('Pieces Public API', function() {
     const response = await apos.http.get('/api/v1/thing');
     assert(response);
     assert(response.results);
+    console.log(response.results);
     assert(response.results.length === 1);
     assert(response.results[0].title === 'hello');
     assert(!response.results[0].foo);

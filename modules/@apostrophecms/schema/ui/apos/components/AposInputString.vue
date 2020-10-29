@@ -1,7 +1,7 @@
 <template>
   <AposInputWrapper
     :modifiers="modifiers" :field="field"
-    :error="error" :uid="uid"
+    :error="effectiveError" :uid="uid"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -45,9 +45,6 @@ export default {
       step: undefined
     };
   },
-  mounted() {
-    this.defineStep();
-  },
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -82,6 +79,25 @@ export default {
       }
     }
   },
+  watch: {
+    followingValues: {
+      // We may be following multiple fields, like firstName and lastName,
+      // or none at all, depending
+      deep: true,
+      handler(newValue, oldValue) {
+        // Follow the value of the other field(s), but only if our
+        // previous value matched the previous value of the other field(s)
+        oldValue = Object.values(oldValue).join(' ').trim();
+        newValue = Object.values(newValue).join(' ').trim();
+        if (((this.next == null) || (!this.next.length)) || (this.next === oldValue)) {
+          this.next = newValue;
+        }
+      }
+    }
+  },
+  mounted() {
+    this.defineStep();
+  },
   methods: {
     enterEmit() {
       if (this.field.enterSubmittable) {
@@ -96,6 +112,9 @@ export default {
       }
     },
     validate(value) {
+      if (value == null) {
+        value = '';
+      }
       if (this.field.required) {
         if (!value.length) {
           return 'required';

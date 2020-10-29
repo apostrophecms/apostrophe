@@ -56,7 +56,6 @@ module.exports = {
           'attachment',
           'title',
           'slug',
-          'published',
           '_tags'
         ]
       },

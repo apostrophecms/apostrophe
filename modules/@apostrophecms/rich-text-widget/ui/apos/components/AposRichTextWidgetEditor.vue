@@ -27,7 +27,7 @@
       </AposContextMenuDialog>
     </component>
     <div class="apos-rich-text-editor__editor">
-      <editor-content :editor="editor" />
+      <editor-content :editor="editor" :class="moduleOptions.className" />
     </div>
   </div>
 </template>
@@ -113,8 +113,10 @@ export default {
         onUpdate: this.update,
         content: this.value.content
       }),
-      widgetInfo: {
-        data: this.value,
+      docFields: {
+        data: {
+          ...this.value
+        },
         hasErrors: false
       }
     };
@@ -151,7 +153,7 @@ export default {
     },
     async update() {
       const content = this.editor.getHTML();
-      const widget = this.widgetInfo.data;
+      const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
