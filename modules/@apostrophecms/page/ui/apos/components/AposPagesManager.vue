@@ -104,8 +104,7 @@ export default {
       treeOptions: {
         bulkSelect: !!this.relationshipField,
         draggable: true
-      },
-      originalPageTree: null
+      }
     };
   },
   computed: {
@@ -166,22 +165,12 @@ export default {
         }
       ));
 
-      // Clone before it is rewritten in the tree's preferred format.
-      // We need the original for checkedDocs and delivering results
-      // to AposInputRelationship
-      this.originalPageTree = klona(pageTree);
-
       formatPage(pageTree);
 
       this.pages = [ pageTree ];
 
       function formatPage(page) {
-        self.pagesFlat.push({
-          title: page.title,
-          id: page._id,
-          path: page.path,
-          parked: page.parked
-        });
+        self.pagesFlat.push(klona(page));
 
         page.children = page._children;
         delete page._children;
@@ -226,7 +215,7 @@ export default {
     selectAll(event) {
       if (!this.checked.length) {
         this.pagesFlat.forEach((row) => {
-          this.toggleRowCheck(row.id);
+          this.toggleRowCheck(row._id);
         });
         return;
       }
@@ -260,25 +249,7 @@ export default {
       }
     },
     updateCheckedDocs() {
-      this.checkedDocs = this.checked.map(_id => find([ this.originalPageTree ], item => {
-        return item._id === _id;
-      }));
-      // Could be a page tree structure, or just a flat list,
-      // works either way
-      function find(items, fn) {
-        for (const item of items) {
-          const result = fn(item);
-          if (result) {
-            return item;
-          }
-          if (item._children) {
-            const result = find(item._children, fn);
-            if (result) {
-              return result;
-            }
-          }
-        }
-      }
+      this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
     }
   }
 };
