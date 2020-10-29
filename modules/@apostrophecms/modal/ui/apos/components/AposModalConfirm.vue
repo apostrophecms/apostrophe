@@ -126,11 +126,11 @@ export default {
 }
 
 .apos-confirm__heading {
-  @include typeHeading;
+  @include novella-heading;
 }
 
 .apos-confirm__description {
-  @include typeBody;
+  @include novella-body;
 }
 
 .apos-confirm__btns {

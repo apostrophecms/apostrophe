@@ -163,7 +163,7 @@ export default {
 }
 
 .apos-context-menu__pane {
-  @include typeBase;
+  @include type-base;
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);

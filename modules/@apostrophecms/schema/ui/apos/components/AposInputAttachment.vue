@@ -183,7 +183,7 @@ export default {
 <style lang="scss" scoped>
   .apos-attachment-dropzone {
     @include apos-button-reset();
-    @include typeBase;
+    @include type-base;
     display: block;
     margin: 10px 0;
     padding: 20px;

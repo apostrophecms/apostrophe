@@ -17,7 +17,7 @@
 }
 
 .apos-table__header-label {
-  @include typeBase;
+  @include type-base;
   @include apos-button-reset();
   display: flex;
   align-items: center;
@@ -53,7 +53,7 @@ span.apos-table__header-label:hover {
 }
 
 .apos-table__cell-field {
-  @include typeBase;
+  @include type-base;
   margin: 0;
 }
 

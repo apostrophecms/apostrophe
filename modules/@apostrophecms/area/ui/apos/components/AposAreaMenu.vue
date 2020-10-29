@@ -286,7 +286,7 @@ export default {
 
 .apos-area-menu__button {
   @include apos-button-reset();
-  @include typeBase;
+  @include type-base;
   display: flex;
   width: 100%;
   padding: 5px 20px;

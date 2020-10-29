@@ -8,7 +8,7 @@
 }
 
 @mixin apos-input() {
-  @include typeBase;
+  @include type-base;
   width: 100%;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
@@ -96,7 +96,7 @@
 }
 
 .apos-choice-label {
-  @include typeBase;
+  @include type-base;
   display: flex;
   color: var(--a-base-2);
   align-items: center;
@@ -175,7 +175,7 @@
 }
 
 .apos-choice-label-text {
-  @include typeBase;
+  @include type-base;
   margin-left: $spacing-base;
 }
 

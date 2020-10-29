@@ -227,7 +227,7 @@ export default {
   }
 
   .apos-slat-limit {
-    @include typeAffordance;
+    @include type-help;
     margin: 10px 0 0;
     text-align: center;
 

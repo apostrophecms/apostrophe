@@ -71,7 +71,7 @@ export default {
   margin: 30px 0 0 30px;
 }
 .apos-tag-list__title {
-  @include typeBase;
+  @include type-base;
   margin-bottom: 15px;
   color: var(--a-base-3);
 }

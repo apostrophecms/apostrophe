@@ -98,13 +98,13 @@ export default {
   }
 
   &__title {
-    @include typeBase;
+    @include type-base;
     color: var(--a-text-primary);
     margin-bottom: 3px;
   }
 
   &__slug {
-    @include typeBase;
+    @include type-base;
     color: var(--a-base-2);
   }
 }

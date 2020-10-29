@@ -183,13 +183,13 @@ export default {
   }
 
   &__project-name {
-    @include typeTitle;
+    @include type-title;
     color: var(--a-text-primary);
     text-transform: capitalize;
   }
 
   &__project-env {
-    @include typeBase;
+    @include type-base;
     text-transform: capitalize;
     padding: 6px 12px;
     color: var(--a-white);
@@ -207,7 +207,7 @@ export default {
   }
 
   &--error {
-    @include typeAffordance;
+    @include type-help;
     color: var(--a-danger);
     min-height: 13px;
     margin-top: 20px;
@@ -240,7 +240,7 @@ export default {
   }
 
   &__footer {
-    @include typeBase;
+    @include type-base;
     position: absolute;
     right: 0;
     bottom: 32px;

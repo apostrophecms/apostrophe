@@ -33,7 +33,7 @@ export default {
 
 <style lang="scss" scoped>
 .apos-tag {
-  @include typeBase;
+  @include type-base;
   display: inline-flex;
   padding: 6px 12px;
   border-radius: var(--a-border-radius);

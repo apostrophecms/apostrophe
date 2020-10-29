@@ -80,13 +80,13 @@ export default {
 
 <style lang="scss" scoped>
 .apos-media-manager-selections {
-  @include typeBase;
+  @include type-base;
   height: 100%;
   padding: 20px;
 }
 
 .apos-media-manager-selections__heading {
-  @include typeBase;
+  @include type-base;
   margin-bottom: $spacing-double;
 }
 
@@ -125,7 +125,7 @@ export default {
 }
 
 .apos-media-manager-selections__item-title {
-  @include typeBase;
+  @include type-base;
   max-width: 150px;
   white-space: nowrap;
   overflow: hidden;

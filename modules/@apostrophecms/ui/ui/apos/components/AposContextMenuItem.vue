@@ -36,7 +36,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-context-menu__button {
-    @include typeBase;
+    @include type-base;
     display: inline-block;
     width: 100%;
     padding: 10px 20px;

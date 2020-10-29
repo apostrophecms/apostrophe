@@ -74,7 +74,7 @@ export default {
   // If another select el is needed for the rich-text toolbar these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();
-    @include typeSmall;
+    @include type-small;
     padding: 10px 15px 10px 10px;
     &:focus, &:active {
       background-color: var(--a-base-9);

@@ -32,12 +32,12 @@ export default {
   }
 
   .apos-title {
-    @include typeTitle;
+    @include type-title;
     margin: 0 0 10px;
   }
 
   .apos-hint {
-    @include typeMeta;
+    @include novella-meta;
     font-style: italic;
     color: var(--a-base-1);
     text-align: center;

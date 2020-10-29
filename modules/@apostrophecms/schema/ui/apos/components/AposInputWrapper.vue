@@ -164,11 +164,11 @@ export default {
   }
 
   .apos-field-text {
-    @include typeBase;
+    @include type-base;
   }
 
   .apos-field-label {
-    @include typeBase;
+    @include type-base;
     display: block;
     padding: 0;
     color: var(--a-text-primary);
@@ -180,12 +180,12 @@ export default {
   }
 
   .apos-field-help {
-    @include typeBase;
+    @include type-base;
     color: var(--a-base-3);
   }
 
   .apos-field-error {
-    @include typeAffordance;
+    @include type-help;
     color: var(--a-danger);
   }
 
@@ -194,7 +194,7 @@ export default {
   }
 
   .apos-field-limit {
-    @include typeAffordance;
+    @include type-help;
     margin: $spacing-base 0;
 
     span {

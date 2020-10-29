@@ -202,7 +202,7 @@ export default {
   @import '../scss/shared/_table-vars';
 
   .apos-tree {
-    @include typeBase;
+    @include type-base;
     color: var(--a-text-primary);
   }
 

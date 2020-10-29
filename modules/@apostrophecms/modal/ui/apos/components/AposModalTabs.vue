@@ -67,7 +67,7 @@ export default {
 
 .apos-modal-tabs__btn {
   @include apos-button-reset();
-  @include typeBase;
+  @include type-base;
   position: relative;
   width: 100%;
   padding: 25px 20px;

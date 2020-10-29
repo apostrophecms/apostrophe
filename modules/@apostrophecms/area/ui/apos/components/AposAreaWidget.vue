@@ -562,7 +562,7 @@ export default {
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb /deep/ .apos-button__content {
-    @include typeAffordance;
+    @include type-help;
     padding: 2px;
     color: var(--a-white);
     &:hover {

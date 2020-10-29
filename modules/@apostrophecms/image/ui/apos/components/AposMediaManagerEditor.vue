@@ -285,7 +285,7 @@ export default {
   }
 
   .apos-media-editor__detail {
-    @include typeMeta;
+    @include novella-meta;
     color: var(--a-base-4);
   }
 

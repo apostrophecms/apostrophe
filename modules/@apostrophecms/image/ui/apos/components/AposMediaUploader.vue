@@ -254,10 +254,10 @@ export default {
     text-align: center;
   }
   .apos-media-uploader__secondary {
-    @include typeSmall;
+    @include type-small;
   }
   .apos-media-uploader__primary {
-    @include typeLarge;
+    @include novella-large;
     max-width: 100px;
     margin: 5px auto 10px;
   }

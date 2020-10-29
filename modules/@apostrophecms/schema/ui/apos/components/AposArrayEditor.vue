@@ -400,7 +400,7 @@ export default {
   }
 
   .apos-modal-array-items__label {
-    @include typeAffordance;
+    @include type-help;
 
     span {
       margin-right: $spacing-base;

@@ -25,7 +25,7 @@ $input-color-disabled: var(--a-base-4);
 
 //Application Styles
 
-@mixin typeSmall {
+@mixin type-small {
   font-family: var(--a-family-default);
   font-size: var(--a-type-small);
   font-weight: var(--a-weight-base);
@@ -33,7 +33,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-tall);
 }
 
-@mixin typeBase {
+@mixin type-base {
   font-family: var(--a-family-default);
   font-size: var(--a-type-base);
   font-weight: var(--a-weight-base);
@@ -41,7 +41,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-base);
 }
 
-@mixin typeTitle {
+@mixin type-title {
   margin: 0;
   font-family: var(--a-family-default);
   font-size: var(--a-type-heading);
@@ -50,7 +50,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-tall);
 }
 
-@mixin typeDisplay {
+@mixin type-display {
   margin: 0;
   font-family: var(--a-family-default);
   font-size: var(--a-type-display);
@@ -59,7 +59,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-base);
 }
 
-@mixin typeAffordance {
+@mixin type-help {
   font-family: var(--a-family-default);
   font-size: var(--a-type-small);
   font-weight: var(--a-weight-base);
@@ -70,15 +70,7 @@ $input-color-disabled: var(--a-base-4);
 
 //Novella Styles
 
-@mixin typeHelp {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-small);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-tallest);
-}
-
-@mixin typeLarge {
+@mixin novella-large {
   font-family: var(--a-family-default);
   font-size: var(--a-type-large);
   font-weight: var(--a-weight-base);
@@ -86,7 +78,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-tall);
 }
 
-@mixin typeMeta {
+@mixin novella-meta {
   font-family: var(--a-family-default);
   font-size: var(--a-type-base);
   font-weight: var(--a-weight-base);
@@ -94,7 +86,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-tallest);
 }
 
-@mixin typeBody {
+@mixin novella-body {
   font-family: var(--a-family-default);
   font-size: var(--a-type-large);
   font-weight: var(--a-weight-base);
@@ -102,7 +94,7 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-tallest);
 }
 
-@mixin typeHeading {
+@mixin novella-heading {
   font-family: var(--a-family-default);
   font-size: var(--a-type-heading);
   font-weight: var(--a-weight-base);

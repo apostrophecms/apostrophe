@@ -1,20 +1,20 @@
 .apos-admin-bar__user {
   .apos-button {
     &.apos-context-menu__btn {
-      @include typeBase;
+      @include type-base;
     }
   }
 }
 
 .apos-admin-bar__btn {
-  @include typeLarge;
+  @include novella-large;
   .apos-button {
-    @include typeLarge;
+    @include novella-large;
   }
 }
 
 .apos-button {
-  @include typeBase;
+  @include type-base;
   position: relative;
   display: inline-block;
   overflow: hidden;
@@ -28,7 +28,7 @@
 
   &.apos-context-menu__btn,
   &.apos-admin-bar__btn {
-    @include typeLarge;
+    @include novella-large;
   }
 
   &:hover {

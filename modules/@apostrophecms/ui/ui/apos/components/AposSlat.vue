@@ -234,7 +234,7 @@ export default {
   }
 
   .apos-slat__label {
-    @include typeSmall;
+    @include type-small;
     overflow: hidden;
     margin-left: 10px;
     max-width: 220px;
@@ -265,7 +265,7 @@ export default {
   }
 
   .apos-slat__size {
-    @include typeSmall;
+    @include type-small;
     margin-right: 5px;
   }
 
@@ -274,7 +274,7 @@ export default {
   }
 
   .apos-slat__extension {
-    @include typeAffordance;
+    @include type-help;
     display: inline-block;
     padding: 4px;
     background-color: var(--a-generic);

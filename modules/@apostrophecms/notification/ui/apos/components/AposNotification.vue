@@ -166,7 +166,7 @@ export default {
 
   .apos-notification__label,
   .apos-notification__progress-value {
-    @include typeMeta;
+    @include novella-meta;
   }
 
   .apos-notification__label {

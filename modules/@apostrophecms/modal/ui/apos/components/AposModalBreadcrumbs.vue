@@ -79,7 +79,7 @@ export default {
     padding-left: 0;
   }
   .apos-breadcrumb__item {
-    @include typeSmall;
+    @include type-small;
     display: inline-flex;
     align-items: center;
     color: var(--a-text-primary);

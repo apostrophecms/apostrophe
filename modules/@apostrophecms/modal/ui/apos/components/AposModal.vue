@@ -373,7 +373,7 @@ export default {
   }
 
   .apos-modal__heading {
-    @include typeTitle;
+    @include type-title;
   }
 
   .apos-modal__controls--secondary {

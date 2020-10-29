@@ -125,7 +125,7 @@ export default {
 }
 
 .apos-tag-list__label {
-  @include typeBase;
+  @include type-base;
 }
 
 </style>
