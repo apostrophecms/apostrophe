@@ -176,7 +176,8 @@ export default {
     }
 
     &__project-name {
-      @include type-title;
+      @include type-display;
+      margin: 0;
       color: var(--a-text-primary);
       text-transform: capitalize;
     }

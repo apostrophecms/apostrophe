@@ -25,6 +25,15 @@ $input-color-disabled: var(--a-base-4);
 
 //Application Styles
 
+@mixin type-help {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+  text-transform: uppercase;
+}
+
 @mixin type-small {
   font-family: var(--a-family-default);
   font-size: var(--a-type-small);
@@ -41,8 +50,15 @@ $input-color-disabled: var(--a-base-4);
   line-height: var(--a-line-base);
 }
 
+@mixin type-large {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-large);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
 @mixin type-title {
-  margin: 0;
   font-family: var(--a-family-default);
   font-size: var(--a-type-heading);
   font-weight: var(--a-weight-base);
@@ -51,53 +67,9 @@ $input-color-disabled: var(--a-base-4);
 }
 
 @mixin type-display {
-  margin: 0;
   font-family: var(--a-family-default);
   font-size: var(--a-type-display);
   font-weight: var(--a-weight-base);
   letter-spacing: var(--a-letter-base);
   line-height: var(--a-line-base);
-}
-
-@mixin type-help {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-small);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-base);
-  text-transform: uppercase;
-}
-
-//Novella Styles
-
-@mixin novella-large {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-large);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-tall);
-}
-
-@mixin novella-meta {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-base);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-tallest);
-}
-
-@mixin novella-body {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-large);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-tallest);
-}
-
-@mixin novella-heading {
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-heading);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-tall);
 }

@@ -374,6 +374,7 @@ export default {
 
   .apos-modal__heading {
     @include type-title;
+    margin: 0;
   }
 
   .apos-modal__controls--secondary {

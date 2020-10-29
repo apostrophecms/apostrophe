@@ -7,9 +7,9 @@
 }
 
 .apos-admin-bar__btn {
-  @include novella-large;
+  @include type-large;
   .apos-button {
-    @include novella-large;
+    @include type-large;
   }
 }
 
@@ -28,7 +28,7 @@
 
   &.apos-context-menu__btn,
   &.apos-admin-bar__btn {
-    @include novella-large;
+    @include type-large;
   }
 
   &:hover {

@@ -258,7 +258,7 @@ export default {
     @include type-small;
   }
   .apos-media-uploader__primary {
-    @include novella-large;
+    @include type-large;
     max-width: 100px;
     margin: 5px auto 10px;
   }

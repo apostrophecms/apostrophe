@@ -339,6 +339,7 @@ export default {
     // Variable sizes are less important for icons.
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     @include type-title;
+    margin: 0;
   }
 
   .fade-enter-active, .fade-leave-active {

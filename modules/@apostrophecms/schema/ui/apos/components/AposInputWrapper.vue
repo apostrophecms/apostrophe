@@ -181,6 +181,7 @@ export default {
 
   .apos-field-help {
     @include type-base;
+    line-height: var(--a-line-tallest);
     color: var(--a-base-3);
   }
 

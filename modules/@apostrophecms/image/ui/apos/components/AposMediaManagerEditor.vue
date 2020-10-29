@@ -285,7 +285,8 @@ export default {
   }
 
   .apos-media-editor__detail {
-    @include novella-meta;
+    @include type-base;
+    line-height: var(--a-line-tallest);
     color: var(--a-base-4);
   }
 

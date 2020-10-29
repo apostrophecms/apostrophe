@@ -166,7 +166,8 @@ export default {
 
   .apos-notification__label,
   .apos-notification__progress-value {
-    @include novella-meta;
+    @include type-base;
+    line-height: var(--a-line-tallest);
   }
 
   .apos-notification__label {

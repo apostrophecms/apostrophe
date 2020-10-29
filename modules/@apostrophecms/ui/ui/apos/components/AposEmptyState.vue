@@ -37,8 +37,9 @@ export default {
   }
 
   .apos-hint {
-    @include novella-meta;
+    @include type-base;
     font-style: italic;
+    line-height: var(--a-line-tallest);
     color: var(--a-base-1);
     text-align: center;
   }

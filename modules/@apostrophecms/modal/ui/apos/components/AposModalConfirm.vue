@@ -126,11 +126,14 @@ export default {
 }
 
 .apos-confirm__heading {
-  @include novella-heading;
+  @include type-title;
+  line-height: var(--a-line-tall);
+  margin: 0;
 }
 
 .apos-confirm__description {
-  @include novella-body;
+  @include type-large;
+  line-height: var(--a-line-tallest);
 }
 
 .apos-confirm__btns {
