@@ -11,15 +11,16 @@
               >
                 {{ context.env }}
               </label>
-              <label class="apos-login__project apos-login__project-name">{{
-                context.name
-              }}</label>
+              <label class="apos-login__project apos-login__project-name">{{ context.name }}</label>
               <label class="apos-login--error">{{ error }}</label>
             </div>
 
             <div class="apos-login__body" v-show="loaded">
               <form @submit.prevent="submit">
-                <AposSchema :schema="schema" v-model="doc" />
+                <AposSchema
+                  :schema="schema"
+                  v-model="doc"
+                />
                 <!-- TODO -->
                 <!-- <a href="#" class="apos-login__link">Forgot Password</a> -->
                 <AposButton
@@ -38,11 +39,9 @@
       </div>
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
-          <AposLogo class="apos-login__logo" />
+          <AposLogo class="apos-login__logo"/>
           <label class="apos-login__logo-name">ApostropheCMS</label>
-          <label class="apos-login__project-version"
-            >Version {{ context.version }}</label
-          >
+          <label class="apos-login__project-version">Version {{ context.version }}</label>
         </div>
       </transition>
     </div>
@@ -51,50 +50,47 @@
 
 <script>
 export default {
-  name: "TheAposLogin",
+  name: 'TheAposLogin',
   data() {
     return {
       loaded: false,
-      error: "",
+      error: '',
       busy: false,
       doc: {
         data: {},
-        hasErrors: false,
+        hasErrors: false
       },
       schema: [
         {
-          name: "username",
-          label: "Username",
-          placeholder: "Enter username",
-          type: "string",
-          required: true,
+          name: 'username',
+          label: 'Username',
+          placeholder: 'Enter username',
+          type: 'string',
+          required: true
         },
         {
-          name: "password",
-          label: "Password",
-          placeholder: "Enter password",
-          type: "password",
-          required: true,
-        },
+          name: 'password',
+          label: 'Password',
+          placeholder: 'Enter password',
+          type: 'password',
+          required: true
+        }
       ],
-      context: {},
+      context: {}
     };
   },
   computed: {
     disabled: function () {
       return this.doc.hasErrors;
-    },
+    }
   },
-  async beforeCreate() {
+  async beforeCreate () {
     try {
-      this.context = await apos.http.get(
-        `${apos.modules["@apostrophecms/login"].action}/context`,
-        {
-          busy: true,
-        }
-      );
+      this.context = await apos.http.get(`${apos.modules['@apostrophecms/login'].action}/context`, {
+        busy: true
+      });
     } catch (e) {
-      this.error = "An error occurred. Please try again.";
+      this.error = 'An error occurred. Please try again.';
     }
   },
   mounted() {
@@ -103,26 +99,23 @@ export default {
   methods: {
     async submit() {
       this.busy = true;
-      this.error = "";
+      this.error = '';
       try {
-        await apos.http.post(
-          `${apos.modules["@apostrophecms/login"].action}/login`,
-          {
-            busy: true,
-            body: this.doc.data,
-          }
-        );
+        await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
+          busy: true,
+          body: this.doc.data
+        });
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
         window.location.href = `/${apos.prefix}`;
       } catch (e) {
-        this.error = e.message || "An error occurred. Please try again.";
+        this.error = e.message || 'An error occurred. Please try again.';
       } finally {
         this.busy = false;
       }
-    },
-  },
-};
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>
