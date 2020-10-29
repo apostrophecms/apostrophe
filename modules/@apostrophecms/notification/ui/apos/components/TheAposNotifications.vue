@@ -123,14 +123,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-  .apos-notifications {
-    z-index: $z-index-notifications;
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    display: flex;
-    flex-direction: column;
-  }
-</style>
