@@ -538,7 +538,9 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
+    top: 0;
     display: flex;
+    transform: translateY(-100%);
   }
 
   .apos-area-widget__label {
