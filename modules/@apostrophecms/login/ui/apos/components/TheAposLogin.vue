@@ -119,145 +119,145 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.fade-stage-enter-active {
-  transition: opacity 0.2s linear;
-  transition-delay: 0.3s;
-}
-
-.fade-stage-enter-to,
-.fade-body-enter-to,
-.fade-footer-enter-to {
-  opacity: 1;
-}
-
-.fade-stage-enter,
-.fade-body-enter,
-.fade-footer-enter {
-  opacity: 0;
-}
-
-.fade-body-enter-active {
-  transition: all 0.25s linear;
-  transition-delay: 0.6s;
-}
-
-.fade-body-enter-to {
-  transform: translateY(0);
-}
-
-.fade-body-enter {
-  transform: translateY(4px);
-}
-
-.fade-footer-enter-active {
-  transition: opacity 0.4s linear;
-  transition-delay: 1s;
-}
-
-.apos-login {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100vh;
-  background-color: var(--a-background-primary);
-
-  &__wrapper {
-    width: 320px;
-    margin: 0 auto;
+  .fade-stage-enter-active {
+    transition: opacity 0.2s linear;
+    transition-delay: 0.3s;
   }
 
-  &__header {
-    z-index: $z-index-manager-display;
+  .fade-stage-enter-to,
+  .fade-body-enter-to,
+  .fade-footer-enter-to {
+    opacity: 1;
+  }
+
+  .fade-stage-enter,
+  .fade-body-enter,
+  .fade-footer-enter {
+    opacity: 0;
+  }
+
+  .fade-body-enter-active {
+    transition: all 0.25s linear;
+    transition-delay: 0.6s;
+  }
+
+  .fade-body-enter-to {
+    transform: translateY(0);
+  }
+
+  .fade-body-enter {
+    transform: translateY(4px);
+  }
+
+  .fade-footer-enter-active {
+    transition: opacity 0.4s linear;
+    transition-delay: 1s;
+  }
+
+  .apos-login {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: start;
-    width: max-content;
-  }
-
-  &__project-name {
-    @include type-title;
-    color: var(--a-text-primary);
-    text-transform: capitalize;
-  }
-
-  &__project-env {
-    @include type-base;
-    text-transform: capitalize;
-    padding: 6px 12px;
-    color: var(--a-white);
-    background: var(--a-success);
-    border-radius: 5px;
-    margin-bottom: 15px;
-
-    &--development {
-      background: var(--a-danger);
-    }
-
-    &--success {
-      background: var(--a-warning);
-    }
-  }
-
-  &--error {
-    @include type-help;
-    color: var(--a-danger);
-    min-height: 13px;
-    margin-top: 20px;
-    margin-bottom: 15px;
-  }
-
-  form {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-
-    button {
-      margin-top: $spacing-double;
-    }
-  }
-
-  &__loader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100vw;
     height: 100vh;
+    background-color: var(--a-background-primary);
 
-    .apos-spinner {
-      width: 38px;
-      height: 38px;
+    &__wrapper {
+      width: 320px;
+      margin: 0 auto;
+    }
+
+    &__header {
+      z-index: $z-index-manager-display;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: start;
+      width: max-content;
+    }
+
+    &__project-name {
+      @include type-title;
+      color: var(--a-text-primary);
+      text-transform: capitalize;
+    }
+
+    &__project-env {
+      @include type-base;
+      text-transform: capitalize;
+      padding: 6px 12px;
+      color: var(--a-white);
+      background: var(--a-success);
+      border-radius: 5px;
+      margin-bottom: 15px;
+
+      &--development {
+        background: var(--a-danger);
+      }
+
+      &--success {
+        background: var(--a-warning);
+      }
+    }
+
+    &--error {
+      @include type-help;
+      color: var(--a-danger);
+      min-height: 13px;
       margin-top: 20px;
+      margin-bottom: 15px;
+    }
+
+    form {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+
+      button {
+        margin-top: $spacing-double;
+      }
+    }
+
+    &__loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+
+      .apos-spinner {
+        width: 38px;
+        height: 38px;
+        margin-top: 20px;
+      }
+    }
+
+    &__footer {
+      @include type-base;
+      position: absolute;
+      right: 0;
+      bottom: 32px;
+      left: 0;
+      display: flex;
+      width: 400px;
+      margin: auto;
+      align-items: center;
+      justify-content: start;
+    }
+
+    &__logo-name {
+      color: var(--a-text-primary);
+      margin-left: 10px;
+      margin-right: 30px;
+    }
+
+    &__project-version {
+      overflow: hidden;
+      text-overflow: clip;
+      white-space: nowrap;
+      color: var(--a-base-5);
+      margin-right: 0;
+      margin-left: auto;
     }
   }
-
-  &__footer {
-    @include type-base;
-    position: absolute;
-    right: 0;
-    bottom: 32px;
-    left: 0;
-    display: flex;
-    width: 400px;
-    margin: auto;
-    align-items: center;
-    justify-content: start;
-  }
-
-  &__logo-name {
-    color: var(--a-text-primary);
-    margin-left: 10px;
-    margin-right: 30px;
-  }
-
-  &__project-version {
-    overflow: hidden;
-    text-overflow: clip;
-    white-space: nowrap;
-    color: var(--a-base-5);
-    margin-right: 0;
-    margin-left: auto;
-  }
-}
 </style>
