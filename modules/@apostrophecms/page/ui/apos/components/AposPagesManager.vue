@@ -6,6 +6,12 @@
   >
     <template #secondaryControls>
       <AposButton
+        v-if="relationshipField"
+        type="default" label="Cancel"
+        @click="confirmAndCancel"
+      />
+      <AposButton
+        v-else
         type="default" label="Finished"
         @click="confirmAndCancel"
       />
@@ -15,6 +21,13 @@
         type="primary"
         label="New Page"
         @click="openEditor(null)"
+      />
+      <AposButton
+        v-if="relationshipField"
+        type="primary"
+        label="Select Pages"
+        :disabled="relationshipErrors === 'min'"
+        @click="saveRelationship"
       />
     </template>
     <template #main>
@@ -65,7 +78,6 @@ export default {
       },
       pages: [],
       pagesFlat: [],
-      checked: [],
       options: {
         columns: [
           {
@@ -92,7 +104,8 @@ export default {
       treeOptions: {
         bulkSelect: !!this.relationshipField,
         draggable: true
-      }
+      },
+      originalPageTree: null
     };
   },
   computed: {
@@ -118,7 +131,6 @@ export default {
         });
         items.push(data);
       });
-
       return items;
     },
     selectAllChoice() {
@@ -153,6 +165,11 @@ export default {
           }
         }
       ));
+
+      // Clone before it is rewritten in the tree's preferred format.
+      // We need the original for checkedDocs and delivering results
+      // to AposInputRelationship
+      this.originalPageTree = klona(pageTree);
 
       formatPage(pageTree);
 
@@ -240,6 +257,27 @@ export default {
         // and not include _fields
         this.checkedDocs.push(doc);
         this.checked.push(doc._id);
+      }
+    },
+    updateCheckedDocs() {
+      this.checkedDocs = this.checked.map(_id => find([ this.originalPageTree ], item => {
+        return item._id === _id;
+      }));
+      // Could be a page tree structure, or just a flat list,
+      // works either way
+      function find(items, fn) {
+        for (const item of items) {
+          const result = fn(item);
+          if (result) {
+            return item;
+          }
+          if (item._children) {
+            const result = find(item._children, fn);
+            if (result) {
+              return result;
+            }
+          }
+        }
       }
     }
   }
