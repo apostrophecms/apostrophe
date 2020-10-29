@@ -24,10 +24,10 @@
       <div id="apos-context-menu"></div>
       <div id="apos-notification"></div>
     {% endblock %}
-    {% if data.user %} {# TODO expand this check to editing mode #}
+    {# if data.user %} <!-- TODO expand this check to editing mode -->
       <div class="apos-editor-context">
         <div class="apos-editor-canvas">
-    {% endif %}
+    {% endif #}
       <div class="apos-refreshable" data-apos-refreshable>
         {% block beforeMain %}{% endblock %}
         {% block mainAnchor %}<a name="main"></a>{% endblock %}
@@ -42,8 +42,8 @@
       {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
       {% block extraBody %}{% endblock %}
     {% if data.user %}
-        </div> {# .apos-editor-canvas #}
-      </div> {# .apos-editor-context #}
+        {# </div> .apos-editor-canvas #}
+      {# </div> .apos-editor-context #}
     {% endif %}
     <div id="apos-modals"></div>
   </body>
