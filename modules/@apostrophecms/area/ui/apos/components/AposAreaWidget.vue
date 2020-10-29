@@ -493,22 +493,25 @@ export default {
     }
   }
 
+  // TODO commented code awaiting the triumphant return of the canvas -SR
+
   .apos-area-widget-controls--modify {
     right: 0;
-    transform: translate3d(calc(100% + 5px), 0, 0);
-    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-      transform: translate3d(-10px, 30px, 0);
-    }
+    // transform: translate3d(calc(100% + 5px), 0, 0);
+    // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+    // transform: translate3d(-10px, 30px, 0);
+    transform: translate3d(-10px, 30px, 0);
+    // }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
-    right: auto;
-    left: 0;
-    transform: translate3d(calc(-100% - 5px), 0, 0);
-    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-      transform: translate3d(5px, 30px, 0);
-    }
-  }
+  // .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
+  // right: auto;
+  // left: 0;
+  // transform: translate3d(calc(-100% - 5px), 0, 0);
+  // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+  // transform: translate3d(5px, 30px, 0);
+  // }
+  // }
 
   .apos-area-widget-controls--add {
     top: 0;
