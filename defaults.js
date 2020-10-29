@@ -41,7 +41,7 @@ module.exports = {
     '@apostrophecms/rich-text-widget': {},
     '@apostrophecms/html-widget': {},
     '@apostrophecms/image-widget': {},
-    '@apostrophecms/video-field': {},
+    '@apostrophecms/oembed-field': {},
     '@apostrophecms/video-widget': {},
     '@apostrophecms/ui': {},
     '@apostrophecms/user': {},

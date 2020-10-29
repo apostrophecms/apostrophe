@@ -58,7 +58,7 @@ const rename = {
   users: 'user',
   utils: 'util',
   versions: 'version',
-  'video-fields': 'video-field',
+  'video-fields': 'oembed-field',
   'video-widgets': 'video-widget',
   'widget-type': 'widget-type'
 };

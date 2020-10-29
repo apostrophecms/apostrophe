@@ -12,15 +12,17 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Video',
+    label: 'Embed',
     className: false
   },
   fields: {
     add: {
       video: {
-        type: 'video',
+        type: 'oembed',
         name: 'video',
-        label: 'Video URL',
+        oembedType: 'video',
+        label: 'Embed URL',
+        help: 'Enter the URL for a media source you wish to embed (e.g., YouTube, Vimeo).',
         required: true
       }
     }
