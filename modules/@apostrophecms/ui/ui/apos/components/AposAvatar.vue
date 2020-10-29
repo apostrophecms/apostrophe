@@ -57,6 +57,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-avatar {
+    @include type-small;
     display: flex;
     justify-content: center;
     align-items: center;
