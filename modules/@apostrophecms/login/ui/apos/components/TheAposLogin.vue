@@ -254,12 +254,6 @@ export default {
       justify-content: start;
     }
 
-    &__logo-name {
-      color: var(--a-text-primary);
-      margin-left: 10px;
-      margin-right: 30px;
-    }
-
     &__project-version {
       overflow: hidden;
       text-overflow: clip;
