@@ -50,9 +50,9 @@ module.exports = {
           ]
         },
         utility: {
-          label: 'Utilities',
           fields: [
-            'slug'
+            'slug',
+            'trash'
           ]
         },
         permissions: {
