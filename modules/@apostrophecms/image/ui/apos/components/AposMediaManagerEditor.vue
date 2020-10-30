@@ -294,6 +294,10 @@ export default {
     @include apos-list-reset();
     display: flex;
     margin-bottom: $spacing-triple;
+
+    /deep/ .apos-button--quiet {
+      display: block;
+    }
   }
 
   .apos-media-editor__link {
