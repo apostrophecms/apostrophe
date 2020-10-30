@@ -26,6 +26,7 @@
       type="file" class="apos-sr-only"
       ref="upload"
       @input="uploadMedia"
+      :accept="accept"
       multiple="true"
       :disabled="disabled"
     >
@@ -43,6 +44,11 @@ export default {
     disabled: {
       type: Boolean,
       required: false
+    },
+    accept: {
+      type: String,
+      required: false,
+      default: null
     }
   },
   emits: [
