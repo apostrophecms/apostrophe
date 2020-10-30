@@ -123,7 +123,7 @@ export default {
 .apos-confirm__logo,
 .apos-confirm__custom-logo {
   height: 40px;
-  margin-bottom: $spacing-double;
+  margin-bottom: $spacing-base;
 }
 
 .apos-confirm__heading {
