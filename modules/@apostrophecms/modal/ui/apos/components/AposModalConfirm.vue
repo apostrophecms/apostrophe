@@ -105,7 +105,7 @@ export default {
   right: auto;
   bottom: auto;
   left: auto;
-  width: 420px;
+  width: 430px;
   height: auto;
   text-align: center;
 }
@@ -138,6 +138,7 @@ export default {
 
 .apos-confirm__btns {
   display: flex;
+  justify-content: center;
   margin-top: 30px;
 }
 
