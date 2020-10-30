@@ -72,6 +72,7 @@ export default {
   align-items: center;
 
   /deep/ .apos-button {
+    @include type-base;
     color: var(--a-text-primary);
   }
 

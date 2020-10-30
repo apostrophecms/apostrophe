@@ -183,6 +183,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn.apos-button,
 .apos-admin-bar__btn {
+  @include type-large;
   border-radius: 0;
 
   &:hover,
