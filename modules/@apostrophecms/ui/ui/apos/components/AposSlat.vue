@@ -40,8 +40,12 @@
         >
           <eye-icon :size="14" />
         </a>
-        <div v-if="item.group === 'images'" class="apos-slat__media-preview">
-          <img :src="item._urls['one-sixth']" :alt="item.title" class="apos-slat__media" >
+        <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
+          <img
+            :src="item.attachment._urls['one-sixth']"
+            :alt="item.description || item.title"
+            class="apos-slat__media"
+          >
         </div>
         <div v-else-if="item.extension" class="apos-slat__extension-wrapper">
           <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
@@ -230,8 +234,8 @@ export default {
   }
 
   .apos-slat__label {
+    @include type-small;
     overflow: hidden;
-    font-size: map-get($font-sizes, meta);
     margin-left: 10px;
     max-width: 220px;
     white-space: nowrap;
@@ -257,10 +261,11 @@ export default {
 
   .apos-slat__secondary {
     display: flex;
+    align-items: center;
   }
 
   .apos-slat__size {
-    line-height: 1.4;
+    @include type-small;
     margin-right: 5px;
   }
 
@@ -268,13 +273,10 @@ export default {
     color: inherit;
   }
 
-  .apos-slat__extension-wrapper {
-    width: 35px;
-  }
   .apos-slat__extension {
+    @include type-help;
     display: inline-block;
-    padding: 1px 4px;
-    text-transform: uppercase;
+    padding: 4px;
     background-color: var(--a-generic);
     color: var(--a-white);
   }

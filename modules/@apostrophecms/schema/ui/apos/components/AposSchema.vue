@@ -209,8 +209,7 @@ export default {
 <style lang="scss" scoped>
   .apos-field {
     .apos-schema /deep/ & {
-      margin-bottom: 30px;
-      letter-spacing: 0.5px;
+      margin-bottom: $spacing-triple;
     }
 
     .apos-schema /deep/ .apos-toolbar & {

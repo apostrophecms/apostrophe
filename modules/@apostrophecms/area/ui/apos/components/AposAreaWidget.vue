@@ -504,22 +504,25 @@ export default {
     }
   }
 
+  // TODO commented code awaiting the triumphant return of the canvas -SR
+
   .apos-area-widget-controls--modify {
     right: 0;
-    transform: translate3d(calc(100% + 5px), 0, 0);
-    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-      transform: translate3d(-10px, 30px, 0);
-    }
+    // transform: translate3d(calc(100% + 5px), 0, 0);
+    // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+    // transform: translate3d(-10px, 30px, 0);
+    transform: translate3d(-10px, 30px, 0);
+    // }
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
-    right: auto;
-    left: 0;
-    transform: translate3d(calc(-100% - 5px), 0, 0);
-    @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
-      transform: translate3d(5px, 30px, 0);
-    }
-  }
+  // .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget-controls--modify {
+  // right: auto;
+  // left: 0;
+  // transform: translate3d(calc(-100% - 5px), 0, 0);
+  // @media (max-width: ($a-canvas-max + 100px)) { // include extra space for tools
+  // transform: translate3d(5px, 30px, 0);
+  // }
+  // }
 
   .apos-area-widget-controls--add {
     top: 0;
@@ -546,8 +549,10 @@ export default {
 
   .apos-area-widget__label {
     position: absolute;
+    top: 0;
     right: 0;
     display: flex;
+    transform: translateY(-100%);
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
@@ -570,12 +575,9 @@ export default {
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb /deep/ .apos-button__content {
+    @include type-help;
     padding: 2px;
     color: var(--a-white);
-    font-weight: normal;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: map-get($font-sizes, meta);
     &:hover {
       cursor: pointer;
     }

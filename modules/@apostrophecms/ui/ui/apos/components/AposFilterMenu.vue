@@ -144,7 +144,6 @@ export default {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--a-base-9);
     color: var(--a-base-3);
-    font-weight: 400;
     margin-bottom: 10px;
   }
 

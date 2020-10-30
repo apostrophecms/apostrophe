@@ -1,7 +1,7 @@
 <template>
   <div class="apos-media-manager-selections">
     <div v-if="items.length">
-      <p class="apos-media-manager-selections__heading">
+      <div class="apos-media-manager-selections__heading">
         {{ items.length }} items selected
         <AposButton
           label="Clear"
@@ -9,15 +9,19 @@
           @click="clear"
           :modifiers="['no-motion']"
         />
-      </p>
+      </div>
       <ol class="apos-media-manager-selections__items">
         <li
           v-for="item in items"
           :key="item._id" class="apos-media-manager-selections__item"
         >
-          <div class="apos-media-manager-selections__item-thumb-container">
+          <div
+            v-if="item.attachment && item.attachment._urls"
+            class="apos-media-manager-selections__item-thumb-container"
+          >
             <img
-              :src="item.path" alt=""
+              :src="item.attachment._urls['one-sixth']"
+              :alt="item.description || item.title"
               class="apos-media-manager-selections__item-thumb"
             >
           </div>
@@ -76,18 +80,18 @@ export default {
 
 <style lang="scss" scoped>
 .apos-media-manager-selections {
+  @include type-base;
   height: 100%;
   padding: 20px;
-  font-size: map-get($font-sizes, default);
 }
 
 .apos-media-manager-selections__heading {
-  @include apos-p-reset();
-  margin-bottom: 20px;
+  @include type-base;
+  margin-bottom: $spacing-double;
 }
 
 .apos-media-manager-selections__heading /deep/ .apos-button {
-  margin-left: 10px;
+  margin-left: $spacing-base;
 }
 
 .apos-media-manager-selections__items {
@@ -121,7 +125,7 @@ export default {
 }
 
 .apos-media-manager-selections__item-title {
-  @include apos-p-reset();
+  @include type-base;
   max-width: 150px;
   white-space: nowrap;
   overflow: hidden;

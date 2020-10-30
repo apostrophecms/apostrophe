@@ -112,12 +112,12 @@ export default {
 }
 
 .apos-context-menu__pane {
+  @include type-base;
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   box-shadow: var(--a-box-shadow);
   background-color: var(--a-background-primary);
-  font-size: map-get($font-sizes, default);
 }
 
 .apos-context-menu__items {

@@ -76,9 +76,6 @@ export default {
       return apos.modules[this.field.withType].components.managerModal;
     }
   },
-  mounted() {
-    this.validateAndEmit();
-  },
   methods: {
     validate(value) {
       if (this.field.required && !value.length) {
@@ -165,10 +162,9 @@ export default {
 
     .apos-input-relationship__button {
       position: absolute;
-      top: 5px;
+      top: 6.5px;
       right: 5px;
       padding: ($input-padding - 5px) $input-padding;
-      font-size: map-get($font-sizes, input);
 
       &:hover:not([disabled]),
       &:focus:not([disabled]) {
