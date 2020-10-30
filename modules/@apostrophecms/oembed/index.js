@@ -86,7 +86,7 @@ module.exports = {
           throw new Error('Video URL invalid');
         }
         const key = url + ':' + JSON.stringify(options);
-        let response = await apos.cache.get('@apostrophecms/oembed', key);
+        let response = await self.apos.cache.get('@apostrophecms/oembed', key);
         if (response !== undefined) {
           return response;
         }
@@ -255,7 +255,9 @@ module.exports = {
       },
       getBrowserData(req) {
         // api is public
-        return { action: self.action };
+        return {
+          action: self.action
+        };
       }
     };
   },

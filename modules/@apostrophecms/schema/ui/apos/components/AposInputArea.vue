@@ -19,7 +19,7 @@
 
 <script>
 
-import AposInputMixin from '../mixins/AposInputMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import cuid from 'cuid';
 
 export default {

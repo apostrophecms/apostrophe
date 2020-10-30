@@ -61,11 +61,13 @@
   &--select,
   &--password,
   &--number,
-  &--email {
+  &--email,
+  &--url {
     padding: $input-padding;
     padding-right: $input-padding * 2;
   }
 }
+
 .apos-input {
   @include apos-input();
 }
@@ -83,7 +85,10 @@
     &--textarea,
     &--date,
     &--select,
-    &--password {
+    &--password,
+    &--number,
+    &--email,
+    &--url {
       padding-top: 10px;
       padding-bottom: 10px;
     }

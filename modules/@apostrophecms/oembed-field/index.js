@@ -12,9 +12,8 @@
 
 module.exports = {
   options: {
-    name: 'video',
-    oembedType: 'video',
-    alias: 'videoFields'
+    name: 'oembed',
+    alias: 'oembedFields'
   },
   init(self, options) {
     self.name = options.name;
@@ -29,7 +28,9 @@ module.exports = {
           name: self.name,
           convert: async function (req, field, data, object) {
             if (typeof data[field.name] === 'string') {
-              object[field.name] = { url: self.apos.launder.url(data[field.name]) };
+              object[field.name] = {
+                url: self.apos.launder.url(data[field.name])
+              };
             } else if (data[field.name]) {
               object[field.name] = {
                 url: self.apos.launder.url(data[field.name].url),

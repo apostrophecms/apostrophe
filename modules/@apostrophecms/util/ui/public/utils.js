@@ -168,29 +168,22 @@
   // This is a computer science principle known as "separation of concerns."
 
   apos.util.runPlayers = function(el) {
-    var widgets = (el || document).querySelectorAll('[data-apos-widget]');
-    var i;
-    if (el && el.getAttribute('data-apos-widget')) {
-      // el is itself a widget. Might still contain some too
-      play(el);
-    }
-    for (i = 0; (i < widgets.length); i++) {
-      play(widgets[i]);
-    }
+    const players = apos.util.widgetPlayers;
+    const playerList = Object.keys(players);
 
-    function play(widget) {
-      if (widget.getAttribute('data-apos-played')) {
-        return;
-      }
-      var data = JSON.parse(widget.getAttribute('data'));
-      var options = JSON.parse(widget.getAttribute('data-options'));
-      widget.setAttribute('data-apos-played', '1');
-      // bc with the old lean module
-      var player = apos.util.widgetPlayers[data.type] || (apos.lean && apos.lean.widgetPlayers && apos.lean.widgetPlayers[data.type]);
-      if (!player) {
-        return;
-      }
-      player(widget, data, options);
+    for (let i = 0; i < playerList.length; i++) {
+      const playerOpts = players[playerList[i]];
+      const playerEls = (el || document).querySelectorAll(playerOpts.selector);
+
+      playerEls.forEach(function (el) {
+        if (el.getAttribute('data-apos-played')) {
+          return;
+        }
+
+        el.setAttribute('data-apos-played', true);
+
+        playerOpts.player(el);
+      });
     }
   };
 
@@ -201,14 +194,6 @@
     // Indirection so you can override `apos.util.runPlayers` first if you want to for some reason
     apos.util.runPlayers();
   });
-
-  // In the event (cough) that we're in the full-blown Apostrophe editing world,
-  // we also need to run widget players when content is edited
-  if (apos.on) {
-    apos.on('enhance', function($el) {
-      apos.util.runPlayers($el[0]);
-    });
-  }
 
   // Given an attachment field value,
   // return the file URL. If options.size is set, return the URL for

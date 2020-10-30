@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import AposInputMixin from '../mixins/AposInputMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 
 export default {
   name: 'AposInputRelationship',

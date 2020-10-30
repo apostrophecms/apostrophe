@@ -1,6 +1,14 @@
 {# oembed repopulates me #}
-<div{% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %} data-apos-video-player>
-  <h4 class="apos-video-thumbnail-title">{{ data.widget.video.title }}</h4>
-  <img class="apos-video-thumbnail" src="{{ data.widget.video.thumbnail }}" />
-  <div class="apos-video-busy-indicator"></div>
-</div>
+{% if data.widget.video %}
+  <div
+    {% if data.manager.options.className %} class="{{ data.manager.options.className }}"{% endif %}
+    data-apos-video-widget
+    data-apos-video-url={{ data.widget.video.url }}
+  >
+    {% if data.widget.video.thumbnail %}
+    <img src="{{ data.widget.video.thumbnail }}" alt="{{ data.widget.video.thumbnail }}"/>
+    {% endif %}
+  </div>
+{% elif data.user %}
+  <p {% if data.manager.options.className %} class="{{ data.manager.options.className }} {{ data.manager.options.className }}--error"{% endif %}>No video selected</p>
+{% endif %}
