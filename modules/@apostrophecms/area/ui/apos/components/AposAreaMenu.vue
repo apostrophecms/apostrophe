@@ -131,6 +131,7 @@ export default {
       }
       return {
         menuPlacement: 'bottom',
+        menuOffset: 15,
         ...this.contextMenuOptions,
         modifiers
       };
