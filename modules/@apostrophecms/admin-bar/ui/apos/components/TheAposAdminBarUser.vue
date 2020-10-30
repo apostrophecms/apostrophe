@@ -39,7 +39,7 @@ export default {
   computed: {
     button() {
       return {
-        label: this.user.label || '',
+        label: this.user.title || '',
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
