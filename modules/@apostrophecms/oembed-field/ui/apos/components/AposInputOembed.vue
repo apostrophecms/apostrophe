@@ -40,7 +40,7 @@ export default {
   data () {
     return {
       next: (this.value && this.value.data !== undefined)
-        ? this.value.data : (this.field.def || ''),
+        ? this.value.data : '',
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null
