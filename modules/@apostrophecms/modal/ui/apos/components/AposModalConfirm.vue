@@ -8,7 +8,7 @@
       <AposModalBody>
         <template #bodyMain>
           <img
-            v-if="confirmContent.icon" class="custome-confirm__icon"
+            v-if="confirmContent.icon" class="custom-confirm__icon"
             :src="confirmContent.icon" alt=""
           >
           <AposLogoIcon
