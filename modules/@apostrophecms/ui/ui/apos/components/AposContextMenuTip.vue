@@ -61,12 +61,12 @@ export default {
     right: 20px;
   }
 
-  [x-placement^='bottom'] .apos-context-menu__tip {
+  [x-placement^='bottom'] > .apos-popover__wrapper > .apos-popover__inner > div > .apos-context-menu__dialog > .apos-context-menu__tip {
     top: -27px;
     bottom: auto;
   }
 
-  [x-placement^='top'] .apos-context-menu__tip {
+  [x-placement^='top'] > .apos-popover__wrapper > .apos-popover__inner > div > .apos-context-menu__dialog > .apos-context-menu__tip {
     top: auto;
     bottom: -27px;
     transform: rotate(180deg);

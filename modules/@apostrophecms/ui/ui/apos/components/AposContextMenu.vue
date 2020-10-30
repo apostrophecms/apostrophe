@@ -9,6 +9,8 @@
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
       popover-class="apos-popover"
+      popover-wrapper-class="apos-popover__wrapper"
+      popover-inner-class="apos-popover__inner"
       :container="container"
     >
       <!-- TODO refactor buttons to take a single config obj -->
@@ -19,7 +21,7 @@
         :state="buttonState"
         ref="button"
       />
-      <template #popover>
+      <template #popover class="apos-popover__slot">
         <AposContextMenuDialog
           :menu-placement="menuPlacement"
           :class-list="classList"
