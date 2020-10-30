@@ -40,7 +40,6 @@
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
           <AposLogo class="apos-login__logo"/>
-          <label class="apos-login__logo-name">ApostropheCMS</label>
           <label class="apos-login__project-version">Version {{ context.version }}</label>
         </div>
       </transition>
@@ -119,6 +118,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  $login-container: 330px;
+
+  .apos-login__logo {
+    width: 100%;
+    max-width: 150px;
+  }
+
   .fade-stage-enter-active {
     transition: opacity 0.2s linear;
     transition-delay: 0.3s;
@@ -162,7 +168,8 @@ export default {
     background-color: var(--a-background-primary);
 
     &__wrapper {
-      width: 320px;
+      width: 100%;
+      max-width: $login-container;
       margin: 0 auto;
     }
 
@@ -240,16 +247,11 @@ export default {
       bottom: 32px;
       left: 0;
       display: flex;
-      width: 400px;
+      width: 100%;
+      max-width: $login-container;
       margin: auto;
       align-items: center;
       justify-content: start;
-    }
-
-    &__logo-name {
-      color: var(--a-text-primary);
-      margin-left: 10px;
-      margin-right: 30px;
     }
 
     &__project-version {
