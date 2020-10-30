@@ -38,7 +38,7 @@ export default {
         return 'min';
       }
 
-      if (this.relationshipField.max && this.checked.length >= this.relationshipField.max) {
+      if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
         return 'max';
       }
 
@@ -88,6 +88,14 @@ export default {
     }
   },
   methods: {
+    // It would have been nice for this to be computed, however
+    // AposMediaManagerDisplay does not re-render when it is
+    // a computed prop rather than a method call in the template.
+    maxReached() {
+      // Reaching max and exceeding it are different things
+      const result = this.relationshipField.max && this.checked.length >= this.relationshipField.max;
+      return result;
+    },
     selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {

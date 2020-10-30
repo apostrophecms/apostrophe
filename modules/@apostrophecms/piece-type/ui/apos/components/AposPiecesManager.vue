@@ -54,7 +54,7 @@
             @page-change="updatePage"
             @filter="filter"
             :options="{
-              disableUnchecked: relationshipErrors === 'max',
+              disableUnchecked: maxReached(),
               hideSelectAll: !relationshipField
             }"
           />
@@ -67,7 +67,7 @@
             v-model="checked"
             @open="edit"
             :options="{
-              disableUnchecked: relationshipErrors === 'max',
+              disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
           />
