@@ -211,7 +211,6 @@
         }
       ],
       components: {
-        filters: 'ApostrophePiecesFilters',
         list: 'ApostrophePiecesList',
         pager: 'ApostrophePager',
         insertModal: 'AposDocEditor',
@@ -415,7 +414,6 @@
       ],
       insertViaUpload: true,
       components: {
-        filters: 'ApostrophePiecesFilters',
         list: 'ApostrophePiecesList',
         pager: 'ApostrophePager',
         insertModal: 'AposDocEditor',

@@ -151,7 +151,10 @@ ${bundle}
           const iconImports = getIcons();
           const componentImports = getImports('apos/components', '*.vue', { registerComponents: true });
           const tiptapExtensionImports = getImports('apos/tiptap-extensions', '*.js', { registerTiptapExtensions: true });
-          const appImports = getImports('apos/apps', '*.js', { invokeApps: true });
+          const appImports = getImports('apos/apps', '*.js', {
+            invokeApps: true,
+            importSuffix: 'App'
+          });
           const importFile = `${buildDir}/import.js`;
 
           fs.writeFileSync(importFile, `
@@ -242,7 +245,7 @@ ${appImports.invokeCode}
             const jsName = JSON.stringify(name);
             output.paths.push(component);
             const importCode = `
-            import ${name} from ${jsFilename};
+            import ${name}${options.importSuffix || ''} from ${jsFilename};
             `;
             output.importCode += `${importCode}\n`;
 
@@ -257,7 +260,7 @@ apos.tiptapExtensions.push(${name});
   `;
             }
             if (options.invokeApps) {
-              output.invokeCode += `${name}();\n`;
+              output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
             }
           });
           return output;

@@ -16,7 +16,7 @@
           />
           <h2
             v-if="confirmContent.heading"
-            class="apos-confirm__heading apos-heading"
+            class="apos-confirm__heading"
           >
             {{ confirmContent.heading }}
           </h2>
@@ -105,7 +105,7 @@ export default {
   right: auto;
   bottom: auto;
   left: auto;
-  width: 420px;
+  width: 430px;
   height: auto;
   text-align: center;
 }
@@ -125,13 +125,20 @@ export default {
   height: 60px;
 }
 
+.apos-confirm__heading {
+  @include type-title;
+  line-height: var(--a-line-tall);
+  margin: 0;
+}
+
 .apos-confirm__description {
-  font-size: map-get($font-sizes, default);
-  font-weight: 400;
+  @include type-large;
+  line-height: var(--a-line-tallest);
 }
 
 .apos-confirm__btns {
   display: flex;
+  justify-content: center;
   margin-top: 30px;
 }
 

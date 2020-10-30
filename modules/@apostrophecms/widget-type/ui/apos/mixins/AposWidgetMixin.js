@@ -44,7 +44,7 @@ export default {
           }
         });
         // Wait for reactivity to populate v-html so the
-        // ApostropheAreas manager can spot any new area divs
+        // AposAreas manager can spot any new area divs
         setImmediate(function() {
           apos.bus.$emit('widget-rendered');
         });

@@ -122,9 +122,8 @@ module.exports = {
       addToAdminBar() {
         if (self.schema.length > 0) {
           self.apos.adminBar.add(
-            `${self.__meta.name}:editor`,
-            self.pluralLabel,
-            'admin-' + self.name,
+            '@apostrophecms/global:singleton-editor',
+            self.label,
             {
               action: 'admin',
               type: self.name
@@ -138,10 +137,8 @@ module.exports = {
     return {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
-        // For compatibility with the workflow module try to get the _id
-        // from the copy the middleware fetched for this specific request,
-        // if not fall back to self._id
-        browserOptions._id = req.data.global && (req.data.global._id || self._id);
+        // _id of the piece, which is a singleton
+        browserOptions._id = req.data.global && req.data.global._id;
         browserOptions.quickCreate = false;
         return browserOptions;
       },

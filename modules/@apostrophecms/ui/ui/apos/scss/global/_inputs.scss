@@ -8,13 +8,12 @@
 }
 
 @mixin apos-input() {
+  @include type-base;
   width: 100%;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   color: var(--a-text-primary);
-  font-family: inherit;
-  font-size: map-get($font-sizes, input);
   box-sizing: border-box;
   // Some  browser styles set `textarea` to monospace.
   resize: none;
@@ -80,10 +79,6 @@
 }
 
 .apos-field--small {
-  .apos-input,
-  .apos-field-label {
-    font-size: map-get($font-sizes, default);
-  }
   .apos-input {
     &--time,
     &--text,
@@ -106,11 +101,10 @@
 }
 
 .apos-choice-label {
+  @include type-base;
   display: flex;
   color: var(--a-base-2);
-  font-size: map-get($font-sizes, input-hint);
   align-items: center;
-  font-weight: map-get($font-weights, medium);
   &:hover {
     color: var(--a-primary-text);
     cursor: pointer;
@@ -186,6 +180,7 @@
 }
 
 .apos-choice-label-text {
+  @include type-base;
   margin-left: $spacing-base;
 }
 

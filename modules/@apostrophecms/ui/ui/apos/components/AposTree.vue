@@ -202,8 +202,8 @@ export default {
   @import '../scss/shared/_table-vars';
 
   .apos-tree {
+    @include type-base;
     color: var(--a-text-primary);
-    font-size: map-get($font-sizes, default);
   }
 
 </style>

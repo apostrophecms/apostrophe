@@ -155,7 +155,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   right: 0;
   left: 0;
   background: var(--a-background-primary);
-  font-size: map-get($font-sizes, menu-label);
 }
 
 .apos-admin-bar__row {
@@ -184,6 +183,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
 .apos-admin-bar__btn.apos-button,
 .apos-admin-bar__btn {
+  @include type-large;
   border-radius: 0;
 
   &:hover,

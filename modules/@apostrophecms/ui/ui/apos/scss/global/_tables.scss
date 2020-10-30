@@ -1,14 +1,12 @@
 .apos-table {
   width: 100%;
-  font-size: map-get($font-sizes, default);
   border-collapse: collapse;
 }
 
 .apos-table__header {
-  margin-bottom: 10px;
+  margin-bottom: $spacing-base;
   padding: 12.5px 4.5px;
   border-bottom: 1px solid var(--a-base-8);
-  font-weight: 500;
   color: var(--a-base-3);
   text-align: left;
 }
@@ -19,6 +17,7 @@
 }
 
 .apos-table__header-label {
+  @include type-base;
   @include apos-button-reset();
   display: flex;
   align-items: center;
@@ -54,6 +53,7 @@ span.apos-table__header-label:hover {
 }
 
 .apos-table__cell-field {
+  @include type-base;
   margin: 0;
 }
 
