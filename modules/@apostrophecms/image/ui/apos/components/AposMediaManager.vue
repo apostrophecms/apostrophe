@@ -27,7 +27,7 @@
       <AposButton
         type="primary"
         :label="`Select ${moduleLabels.pluralLabel || ''}`"
-        :disabled="relationshipErrors === 'min'"
+        :disabled="relationshipErrors"
         @click="saveRelationship"
       />
     </template>
@@ -69,8 +69,9 @@
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
+            :max-reached="maxReached()"
             :options="{
-              disableUnchecked: relationshipErrors === 'max',
+              disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
           />
@@ -171,9 +172,11 @@ export default {
     }
   },
   watch: {
-    checked (newVal) {
+    checked (newVal, oldVal) {
       if (newVal.length > 1 || newVal.length === 0) {
-        this.editing = undefined;
+        if (!this.updateEditing(null)) {
+          this.checked = oldVal;
+        }
       }
     }
   },
@@ -260,7 +263,10 @@ export default {
       this.editing = undefined;
     },
     async updateEditing(id) {
-      if (this.isModified()) {
+      // We only care about the current doc for this prompt,
+      // we are not in danger of discarding a selection when
+      // we switch images
+      if (this.editing && this.modified) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
           description: this.cancelDescription,
@@ -268,10 +274,11 @@ export default {
           affirmativeLabel: this.cancelAffirmativeLabel
         });
         if (!discard) {
-          return;
+          return false;
         }
       }
       this.editing = this.items.find(item => item._id === id);
+      return true;
     },
     // select setters
     select(id) {
@@ -280,7 +287,6 @@ export default {
       } else {
         this.checked = [ id ];
       }
-
       this.updateEditing(id);
       this.lastSelected = id;
     },

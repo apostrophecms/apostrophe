@@ -2,6 +2,7 @@
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
+        :disabled="maxReached"
         :action="moduleOptions.action"
         @upload-started="$emit('upload-started')"
         @upload-complete="$emit('upload-complete', $event)"
@@ -79,6 +80,10 @@ export default {
     event: 'change'
   },
   props: {
+    maxReached: {
+      type: Boolean,
+      default: false
+    },
     checked: {
       type: [ Array, Boolean ],
       default: false

@@ -1,6 +1,7 @@
 <template>
   <label
     :class="dropzoneClasses"
+    :disabled="disabled"
     @drop.prevent="uploadMedia"
     @dragover.prevent="dragover = true"
     @dragleave="dragover = false"
@@ -23,9 +24,10 @@
     </div>
     <input
       type="file" class="apos-sr-only"
-      ref="apos-upload-input"
+      ref="upload"
       @input="uploadMedia"
       multiple="true"
+      :disabled="disabled"
     >
   </label>
 </template>
@@ -37,6 +39,10 @@ export default {
     action: {
       type: String,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      required: false
     }
   },
   emits: [
@@ -57,64 +63,74 @@ export default {
         {
           'is-dragging': this.dragover
         }
-      ];
+      ].concat(this.disabled ? [] : [ 'apos-media-uploader--enabled' ]);
     }
   },
   methods: {
     dragHandler (event) {
+      if (this.disabled) {
+        return;
+      }
       event.preventDefault();
       this.dragging = true;
     },
     async uploadMedia (event) {
-      // Set `dragover` in case the media was dropped.
-      this.dragover = false;
-
-      this.$emit('upload-started');
-      const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
-      const fileCount = files.length;
-
-      const emptyDoc = await apos.http.post(this.action, {
-        body: {
-          _newInstance: true
-        }
-      });
-      await apos.notify(
-        // TODO: i18n
-        `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
-          dismiss: true
-        }
-      );
-
-      // Send up placeholders
-      for (const file of files) {
-        this.createPlaceholder(file);
-      }
-
-      const imageIds = [];
-      // Actually upload the images and send them up once all done.
-      for (const file of files) {
-        try {
-          const img = await this.insertImage(file, emptyDoc);
-          imageIds.push(img._id);
-        } catch (e) {
-          const msg = e.body && e.body.message ? e.body.message : 'Upload error';
-          await apos.notify(msg, {
-            type: 'danger',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
+      try {
+        if (this.disabled) {
           return;
         }
+        // Set `dragover` in case the media was dropped.
+        this.dragover = false;
+
+        this.$emit('upload-started');
+        const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
+        const fileCount = files.length;
+
+        const emptyDoc = await apos.http.post(this.action, {
+          body: {
+            _newInstance: true
+          }
+        });
+        await apos.notify(
+          // TODO: i18n
+          `Uploading ${fileCount} image${fileCount > 1 ? 's' : ''}`, {
+            dismiss: true
+          }
+        );
+
+        // Send up placeholders
+        for (const file of files) {
+          this.createPlaceholder(file);
+        }
+
+        const imageIds = [];
+        // Actually upload the images and send them up once all done.
+        for (const file of files) {
+          try {
+            const img = await this.insertImage(file, emptyDoc);
+            imageIds.push(img._id);
+          } catch (e) {
+            const msg = e.body && e.body.message ? e.body.message : 'Upload error';
+            await apos.notify(msg, {
+              type: 'danger',
+              icon: 'alert-circle-icon',
+              dismiss: true
+            });
+            return;
+          }
+        }
+
+        // TODO: i18n
+        await apos.notify('Upload Successful', {
+          type: 'success',
+          dismiss: true
+        });
+
+        // When complete, refresh the image grid, with the new images at top.
+        this.$emit('upload-complete', imageIds);
+      } finally {
+        this.$refs.upload.value = '';
       }
-
-      // TODO: i18n
-      await apos.notify('Upload Successful', {
-        type: 'success',
-        dismiss: true
-      });
-
-      // When complete, refresh the image grid, with the new images at top.
-      this.$emit('upload-complete', imageIds);
     },
     createPlaceholder(file) {
       const img = new Image();
@@ -183,7 +199,9 @@ export default {
     grid-column: 1 / 3;
     grid-row: 1 / 3;
     @include apos-transition();
-
+    color: inherit;
+  }
+  .apos-media-uploader--enabled {
     &::after {
       z-index: $z-index-under;
       position: absolute;
