@@ -3,11 +3,9 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
   player: function(el) {
     const videoUrl = el.getAttribute('data-apos-video-url');
 
-    if (!videoUrl || el.getAttribute('data-apos-widget-played')) {
+    if (!videoUrl) {
       return;
     }
-
-    el.setAttribute('data-apos-widget-played', true);
 
     queryAndPlay(el, {
       url: videoUrl,
@@ -30,12 +28,12 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
     }
 
     function query(options, callback) {
-      const body = {
+      const opts = {
         qs: {
           url: options.url
         }
       };
-      return apos.http.get('/api/v1/@apostrophecms/oembed/query', body, callback);
+      return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, callback);
     }
 
     function play(el, result) {

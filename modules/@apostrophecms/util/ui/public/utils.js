@@ -176,6 +176,12 @@
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
       playerEls.forEach(function (el) {
+        if (el.getAttribute('data-apos-played')) {
+          return;
+        }
+
+        el.setAttribute('data-apos-played', true);
+
         playerOpts.player(el);
       });
     }
