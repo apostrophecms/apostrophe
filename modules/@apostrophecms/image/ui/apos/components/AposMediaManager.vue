@@ -172,9 +172,9 @@ export default {
     }
   },
   watch: {
-    checked (newVal, oldVal) {
+    async checked (newVal, oldVal) {
       if (newVal.length > 1 || newVal.length === 0) {
-        if (!this.updateEditing(null)) {
+        if (!await this.updateEditing(null)) {
           this.checked = oldVal;
         }
       }
