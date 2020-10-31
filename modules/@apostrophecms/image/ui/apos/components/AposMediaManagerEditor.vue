@@ -135,10 +135,7 @@ export default {
       return window.apos.modules[this.activeMedia.type] || {};
     },
     schema() {
-      if (this.moduleOptions.schema) {
-        return this.moduleOptions.schema;
-      }
-      return [];
+      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     fileSize() {
       if (
