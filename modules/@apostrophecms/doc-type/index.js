@@ -30,6 +30,7 @@ module.exports = {
           type: 'select',
           label: 'Who can view this?',
           def: 'public',
+          required: true,
           choices: [
             {
               value: 'public',
