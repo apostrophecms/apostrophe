@@ -60,10 +60,9 @@ module.exports = {
     if (options.suggestions === undefined) {
       // bc fallback, not great
       options.suggestions = { url: '/search' };
-    } else if (options.suggestions === true) {
+    } else {
       // will catch the new, better standard route URL
       options.suggestions = {};
-    } else {
     }
     options.suggestions.url = options.suggestions.url || self.action + '/suggest';
     self.dispatchAll();

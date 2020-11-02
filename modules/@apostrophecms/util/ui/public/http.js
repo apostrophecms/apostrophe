@@ -184,7 +184,7 @@
           return callback(null, data);
         }
       } else {
-        return callback({
+        return callback(null, {
           body: data,
           status: xmlhttp.status,
           headers: getHeaders()

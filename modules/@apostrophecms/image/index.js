@@ -177,9 +177,9 @@ module.exports = {
         if (!self.apos.attachment.isSized(attachment)) {
           return '';
         }
-        // Since images are never scaled up once uploaded, we only need to include a
-        // single image size that's larger than the original image (if such an image
-        // size exists) to cover as many bases as possible
+        // Since images are never scaled up once uploaded, we only need to
+        // include a single image size that's larger than the original image
+        // (if such an image size exists) to cover as many bases as possible
         let includedOriginalWidth = false;
         const sources = self.apos.attachment.imageSizes.filter(function (imageSize) {
           if (imageSize.width < attachment.width) {
@@ -187,6 +187,8 @@ module.exports = {
           } else if (!includedOriginalWidth) {
             includedOriginalWidth = true;
             return true;
+          } else {
+            return false;
           }
         }).map(function (imageSize) {
           const src = self.apos.attachment.url(attachment, {

@@ -214,7 +214,6 @@ module.exports = {
               criteria = {};
               criteria[field.name] = true;
               query.and(criteria);
-            } else {
             }
           },
           launder: function (b) {
