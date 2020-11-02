@@ -142,7 +142,7 @@ describe('Pages', function() {
         visibility: 'public',
         path: `${homeId}/another-parent`,
         level: 1,
-        rank: 0
+        rank: 1
       }
     ];
 
@@ -404,6 +404,32 @@ describe('Pages', function() {
     assert(page);
     assert(page.path === page._id);
     assert(page.rank === 0);
+  });
+
+  it('After everything else, ranks must still be unduplicated among peers and level must be consistent with path', async function() {
+    const pages = await apos.doc.db.find({
+      slug: /^\//
+    }).sort({
+      path: 1
+    }).toArray();
+    for (let i = 0; (i < pages.length); i++) {
+      const iLevel = pages[i].path.replace(/[^/]+/g, '').length;
+      assert(iLevel === pages[i].level);
+      const ranks = [];
+      for (let j = i + 1; (j < pages.length); j++) {
+        const jLevel = pages[j].path.replace(/[^/]+/g, '').length;
+        assert(jLevel === pages[j].level);
+        if (pages[j].path.substring(0, pages[i].path.length) !== pages[i].path) {
+          break;
+        }
+        if (pages[j].level !== (pages[i].level + 1)) {
+          // Ignore grandchildren etc.
+          continue;
+        }
+        assert(!ranks.includes(pages[j].rank));
+        ranks.push(pages[j].rank);
+      }
+    }
   });
 
 });

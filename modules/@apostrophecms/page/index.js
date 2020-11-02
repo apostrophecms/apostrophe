@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 
+// trash should be peer of home page!
 module.exports = {
   cascades: [ 'batchOperations' ],
   options: {
@@ -84,6 +85,7 @@ module.exports = {
     self.addManagerModal();
     self.addEditorModal();
     self.enableBrowserData();
+    self.addDeduplicateRanksMigration();
     await self.createIndexes();
   },
   restApiRoutes(self, options) {
@@ -126,11 +128,12 @@ module.exports = {
           }
           const page = await self.getRestQuery(req).and({ level: 0 }).children({
             depth: 1000,
-            trash: false,
+            trash: null,
             orphan: null,
             relationships: false,
             areas: false,
-            permission: false
+            permission: false,
+            project: self.getAllProjection()
           }).toObject();
 
           if (!page) {
@@ -184,10 +187,7 @@ module.exports = {
             _.each(nodes, function(node) {
               node._children = prune(node._children || []);
               if (node.good) {
-                newNodes.push(_.pick(node,
-                  'title', 'slug', 'path', '_id', 'type', 'metaType', '_url',
-                  '_children', 'parked'
-                ));
+                newNodes.push(node);
               }
             });
             return newNodes;
@@ -533,6 +533,7 @@ database.`);
             query.children({
               depth: 1,
               trash: null,
+              orphan: null,
               areas: false,
               permission: false
             });
@@ -548,6 +549,7 @@ database.`);
             }).children({
               depth: 1,
               trash: null,
+              orphan: null,
               areas: false,
               permission: false
             }).toObject();
@@ -569,6 +571,14 @@ database.`);
             page.rank = 0;
             pushed = peers.map(child => child._id);
           } else if (position === 'lastChild') {
+            if (!parent.level && (page.type !== '@apostrophecms/trash')) {
+              const trash = peers.find(peer => peer.type === '@apostrophecms/trash');
+              if (trash) {
+                // Trash has to be last child of the home page, but don't be punitive,
+                // just put this page before it
+                return self.insert(req, trash._id, 'before', page, options);
+              }
+            }
             if (!peers.length) {
               page.rank = 0;
             } else {
@@ -582,6 +592,9 @@ database.`);
             }
             pushed = peers.slice(index).map(peer => peer._id);
           } else if (position === 'after') {
+            if (target.type === '@apostrophecms/trash') {
+              return self.insert(req, target._id, 'before', page, options);
+            }
             page.rank = target.rank + 1;
             const index = peers.findIndex(peer => peer.id === target._id);
             if (index !== -1) {
@@ -758,17 +771,17 @@ database.`);
               permission: false
             }).applyBuilders(options.builders || {}).toObject();
             if (!moved) {
-              throw new Error('no such page');
+              throw self.apos.error('invalid', 'No such page');
             }
             if (!moved.level) {
-              throw new Error('cannot move root');
-            }
-            if (moved.parked) {
-              throw new Error('cannot move parked page via move() API, see park() API');
+              throw self.apos.error('invalid', 'Cannot move the home page');
             }
             // You can't move the trashcan itself
             if (moved.type === '@apostrophecms/trash') {
-              throw new Error('cannot move trashcan');
+              throw self.apos.error('invalid', 'Cannot move the trash can');
+            }
+            if (moved.parked) {
+              throw self.apos.error('invalid', 'Cannot move a parked page');
             }
             return moved;
           }
@@ -780,13 +793,20 @@ database.`);
             } else if (position === 'before') {
               rank = target.rank;
             } else if (position === 'after') {
-              if (moved.parked) {
-                // Reserved range
-                throw new Error('cannot move a page after a parked page');
+              if (target.type === '@apostrophecms/trash') {
+                throw self.apos.error('invalid', 'Only the trash can can be the last child of the home page.');
               }
               rank = target.rank + 1;
             } else if (position === 'lastChild') {
               parent = target;
+              if (!parent.level && (moved.type !== '@apostrophecms/trash')) {
+                const trash = parent._children.find(peer => peer.type === '@apostrophecms/trash');
+                if (trash) {
+                  // Trash has to be last child of the home page, but don't be punitive,
+                  // just put this page before it
+                  return self.move(req, moved._id, trash._id, 'before', options);
+                }
+              }
               if (target._children && target._children.length) {
                 rank = target._children[target._children.length - 1].rank + 1;
               } else {
@@ -889,11 +909,13 @@ database.`);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
+          orphan: null,
           areas: false,
           permission: false
         }, options.builders || {})).children({
           depth: 1,
           trash: null,
+          orphan: null,
           areas: false,
           permission: false
         }).applyBuilders(options.builders || {}).toObject();
@@ -926,9 +948,8 @@ database.`);
 
         // The position is a number, so we're converting it to one of the
         // acceptable string values and treating the `target` as the
-        // moved pages's parent.
+        // moved page's parent.
         const target = await self.getTarget(req, targetId, position);
-
         position = parseInt(position);
         // Get the index of the moving page within the target's children.
         const childIndex = target._children.findIndex(child => {
@@ -1861,6 +1882,39 @@ database.`);
             throw self.apos.error('notfound');
           }
         }
+      },
+      getAllProjection() {
+        return {
+          _url: 1,
+          title: 1,
+          type: 1,
+          path: 1,
+          rank: 1,
+          level: 1,
+          visibility: 1,
+          trash: 1,
+          parked: 1
+        };
+      },
+      addDeduplicateRanksMigration() {
+        self.apos.migration.add('deduplicate-trash-rank', async () => {
+          const tabs = await self.apos.doc.db.find({
+            slug: /^\//,
+            level: 1
+          }).sort({
+            trash: 1,
+            rank: 1
+          }).toArray();
+          for (let i = 0; (i < tabs.length); i++) {
+            await self.apos.doc.db.updateOne({
+              _id: tabs[i]._id
+            }, {
+              $set: {
+                rank: i
+              }
+            });
+          }
+        });
       }
     };
   },

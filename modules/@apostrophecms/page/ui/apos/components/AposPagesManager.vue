@@ -160,7 +160,8 @@ export default {
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
-            all: 1
+            all: 1,
+            trash: null
           }
         }
       ));
@@ -193,7 +194,7 @@ export default {
           body
         });
       } catch (error) {
-        await apos.notify('An error occurred while updating the page tree.', {
+        await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true

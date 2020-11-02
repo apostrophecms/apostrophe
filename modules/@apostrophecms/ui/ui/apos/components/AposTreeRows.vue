@@ -30,13 +30,14 @@
         <component
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
-          :is="col.type === 'link' ? 'a' : col.type === 'button' ? 'button' : 'span'"
-          :href="col.type === 'link' ? row[col.name] : false"
+          :is="getEffectiveType(col, row)"
+          :href="(getEffectiveType(col, row) === 'a') ? row[col.name] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
+          :disabled="getCellDisabled(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
-          @click="col.action ? $emit(col.action, row._id) : null"
+          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
         >
           <drag-icon
             v-if="options.draggable && index === 0 && !row.parked"
@@ -58,7 +59,7 @@
             v-model="checkedProxy"
           />
           <component
-            v-if="col.icon" :is="icons[col.icon]"
+            v-if="getEffectiveIcon(col, row)" :is="getEffectiveIcon(col, row)"
             class="apos-tree__cell__icon"
           />
           <span v-show="!col.iconOnly">
@@ -265,9 +266,27 @@ export default {
           'is-parked': !!row.parked,
           'apos-tree__row--parent': row.children && row.children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
-          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
+          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id,
         }
       ];
+    },
+    getEffectiveType(col, row) {
+      if (row.type === '@apostrophecms/trash') {
+        return 'span';
+      } else if (col.type === 'link') {
+        return 'a';
+      } else if (col.type === 'button') {
+        return 'button';
+      } else {
+        return 'span';
+      }
+    },
+    getEffectiveIcon(col, row) {
+      if (row.type === '@apostrophecms/trash') {
+        return false;
+      } else {
+        return this.icons[col.icon];
+      }
     },
     getCellClasses(col, row) {
       const classes = [ 'apos-tree__cell' ];
@@ -276,8 +295,19 @@ export default {
       if (col.iconOnly) {
         classes.push('apos-tree__cell--icon');
       }
-
       return classes;
+    },
+    getCellDisabled(col, row) {
+      if (this.getEffectiveType(col, row) === 'span') {
+        return false;
+      }
+      if ((col.type === 'link') && (!row[col.name])) {
+        return true;
+      } else if (row.trash && (col.type === 'button')) {
+        return true;
+      } else {
+        return false;
+      }
     },
     getCellStyles(name, index) {
       const styles = {};

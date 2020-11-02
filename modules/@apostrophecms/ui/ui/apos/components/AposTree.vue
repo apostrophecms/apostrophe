@@ -126,9 +126,9 @@ export default {
         this.headers.forEach(col => {
           const key = col.name;
           if (
-            !spacingRow[key] ||
+            (!spacingRow[key]) ||
             (spacingRow[key] &&
-            spacingRow[key].toString().length < row[key].toString().length)
+            spacingRow[key].toString().length < (row[key] || '').toString().length)
           ) {
             spacingRow[key] = row[key];
           }

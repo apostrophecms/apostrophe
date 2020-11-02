@@ -330,7 +330,7 @@ describe('Pages REST', function() {
     // Is the new path correct?
     assert.strictEqual(page.path, `${homeId}/cousin`);
     // Is the rank correct?
-    assert.strictEqual(page.rank, 1);
+    assert.strictEqual(page.rank, 3);
   });
 
   it('is able to move root/cousin before root/parent/child', async function() {

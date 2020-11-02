@@ -1151,7 +1151,7 @@ module.exports = {
           def: true,
           after(results) {
             for (const result of results) {
-              if (result.slug && self.apos.page.isPage(result)) {
+              if ((!result.trash) && result.slug && self.apos.page.isPage(result)) {
                 const url = self.apos.page.getBaseUrl(query.req);
                 result._url = url + self.apos.prefix + result.slug;
               }
