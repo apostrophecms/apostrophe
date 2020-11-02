@@ -205,12 +205,9 @@ module.exports = {
         } catch (err) {
           self.apos.util.error(err);
           if (job) {
-            try {
-            } catch (err) {
-              // Not a lot we can do about this since we already
-              // stopped talking to the user
-              self.apos.util.error(err);
-            }
+            // Not a lot we can do about this since we already
+            // stopped talking to the user
+            self.apos.util.error(err);
           } else {
             // If we never made a job, then we never responded
             return res.status(500).send('error');

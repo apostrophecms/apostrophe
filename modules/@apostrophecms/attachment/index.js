@@ -238,8 +238,7 @@ module.exports = {
           try {
             mkdirp.sync(path);
           } catch (e) {
-            if (require('fs').existsSync(path)) {
-            } else {
+            if (!require('fs').existsSync(path)) {
               throw e;
             }
           }

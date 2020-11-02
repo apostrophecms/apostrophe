@@ -67,7 +67,7 @@ export default {
       if (e.body && e.body.data && e.body.data.errors) {
         const serverErrors = {};
         let first;
-        e.body.data.errors.map(e => {
+        e.body.data.errors.forEach(e => {
           first = first || e;
           serverErrors[e.path] = e;
         });
