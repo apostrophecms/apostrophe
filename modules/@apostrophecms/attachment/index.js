@@ -256,7 +256,8 @@ module.exports = {
           name: self.name,
           partial: self.fieldTypePartial,
           convert: self.convert,
-          index: self.index
+          index: self.index,
+          register: self.register
         });
       },
       async convert(req, field, data, object) {
@@ -307,6 +308,41 @@ module.exports = {
           text: value.title,
           silent: silent
         });
+      },
+      // When the field is registered in the schema,
+      // canonicalize .group and .extensions and .extension
+      // into .accept for convenience, as a comma-separated
+      // list of dotted file extensions suitable to pass to
+      // the "accept" HTML5 attribute, including mapped extensions
+      // like jpeg. If none of these options are set, .accept is
+      // set to an array of all accepted file extensions across
+      // all groups
+      register(field) {
+        let fileGroups = self.fileGroups;
+        if (field.fileGroups) {
+          fileGroups = fileGroups.filter(group => field.fileGroups.includes(group.name));
+        }
+        if (field.fileGroup) {
+          fileGroups = fileGroups.filter(group => group.name === field.fileGroup);
+        }
+        let extensions = [];
+        fileGroups.forEach(group => {
+          extensions = [ ...extensions, ...group.extensions ];
+        });
+        if (field.extensions) {
+          extensions = extensions.filter(extension => field.extensions.includes(extension));
+        }
+        if (field.extension) {
+          extensions = extensions.filter(extension => extension === field.extension);
+        }
+        fileGroups.forEach(group => {
+          for (const [ from, to ] of Object.entries(group.extensionMaps || {})) {
+            if (extensions.includes(to) && (!extensions.includes(from))) {
+              extensions.push(from);
+            }
+          }
+        });
+        field.accept = extensions.map(extension => `.${extension}`).join(',');
       },
       // Checked a given attachment's file extension against the extensions
       // allowed by a particular schema field. If the attachment's file

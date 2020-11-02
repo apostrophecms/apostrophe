@@ -59,6 +59,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
+            :accept="accept"
             :items="items"
             :module-options="options"
             @edit="updateEditing"
@@ -169,6 +170,9 @@ export default {
     },
     selected() {
       return this.items.filter(item => this.checked.includes(item._id));
+    },
+    accept() {
+      return this.options.schema.find(field => field.name === 'attachment').accept;
     }
   },
   watch: {
