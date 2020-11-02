@@ -34,6 +34,7 @@
             class="apos-sr-only"
             :disabled="disabled"
             @input="uploadMedia"
+            :accept="field.accept"
           >
         </label>
         <div v-if="next && next._id" class="apos-attachment-files">

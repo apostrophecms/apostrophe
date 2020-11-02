@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
 
 let apos;
 
@@ -12,12 +13,12 @@ describe('Attachment', function() {
 
   this.timeout(t.timeout);
 
-  const uploadSource = __dirname + '/data/upload_tests/';
-  const uploadTarget = __dirname + '/public/uploads/attachments/';
+  const uploadSource = path.join(__dirname, '/data/upload_tests/');
+  const uploadTarget = path.join(__dirname, '/public/uploads/attachments/');
   const collectionName = 'aposAttachments';
 
   async function wipeIt() {
-    deleteFolderRecursive(__dirname + '/public/uploads');
+    deleteFolderRecursive(path.join(__dirname, '/public/uploads'));
 
     function deleteFolderRecursive (path) {
       let files = [];

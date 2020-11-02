@@ -112,7 +112,9 @@ export default {
     },
     errorMessage () {
       if (this.error) {
-        if (this.error.message) {
+        if (typeof this.error === 'string') {
+          return this.error;
+        } else if (this.error.message) {
           return this.error.message;
         } else {
           return 'Error';
@@ -133,6 +135,9 @@ export default {
     minLabel() {
       if ((typeof this.field.min) === 'number') {
         return `Min: ${this.field.min}`;
+      } else if (this.field.required && (this.field.type === 'array')) {
+        // For consistency with the array editor's behavior
+        return 'Min: 1';
       } else {
         return false;
       }

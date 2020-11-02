@@ -83,7 +83,7 @@ module.exports = {
         // Tolerant URL handling
         url = self.apos.launder.url(url);
         if (!url) {
-          throw new Error('Video URL invalid');
+          throw self.apos.error('invalid', 'Video URL invalid');
         }
         const key = url + ':' + JSON.stringify(options);
         let response = await self.apos.cache.get('@apostrophecms/oembed', key);
@@ -96,9 +96,7 @@ module.exports = {
           try {
             response = await require('util').promisify(self.oembetter.fetch)(url, options);
           } catch (err) {
-            if (!options.neverOpenGraph) {
-              response = await self.openGraph(req, url);
-            }
+            throw self.apos.error('invalid', 'Video URL invalid');
           }
         }
         // Make non-secure URLs protocol relative and
@@ -261,32 +259,23 @@ module.exports = {
       }
     };
   },
-  routes(self, options) {
+  apiRoutes(self, options) {
     return {
       // Simple API to self.query, with caching. Accepts url and
       // alwaysIframe parameters; alwaysIframe is assumed false
       // if not provided. The response is a JSON object as returned
       // by apos.oembed. A GET request because it is cache-friendly.
       get: {
-        async query(req, res) {
+        async query(req) {
           const url = self.apos.launder.string(req.query.url);
           const options = {
             alwaysIframe: self.apos.launder.boolean(req.query.alwaysIframe),
             iframeHeight: self.apos.launder.integer(req.query.iframeHeight),
             neverOpenGraph: self.apos.launder.boolean(req.query.neverOpenGraph)
           };
-          try {
-            const result = await self.query(req, url, options);
-            res.send(result);
-          } catch (err) {
-            if ((typeof err) === 'number' && (err >= 400 && err < 600)) {
-              // Disclose the HTTP error from upstream
-              res.status(err).send('error');
-            } else {
-              // Doesn't look like a clean HTTP status code
-              res.status(404).send('error');
-            }
-          }
+
+          const result = await self.query(req, url, options);
+          return result;
         }
       }
     };
