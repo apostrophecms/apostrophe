@@ -12,7 +12,7 @@
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
-    label: 'Embed',
+    label: 'Video',
     className: false
   },
   fields: {
