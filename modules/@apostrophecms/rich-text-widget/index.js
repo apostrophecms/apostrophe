@@ -20,16 +20,9 @@ module.exports = {
         'italic',
         'strike',
         'link',
-        '|',
         'bullet_list',
         'ordered_list',
-        'blockquote',
-        'code_block',
-        '|',
-        'horizontal_rule',
-        '|',
-        'undo',
-        'redo'
+        'blockquote'
       ],
       styles: [
         // you may also use a `class` property with these
