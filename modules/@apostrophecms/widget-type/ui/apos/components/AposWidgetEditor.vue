@@ -111,7 +111,7 @@ export default {
       }
     },
     schema() {
-      return this.moduleOptions.schema;
+      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     }
   },
   async mounted() {

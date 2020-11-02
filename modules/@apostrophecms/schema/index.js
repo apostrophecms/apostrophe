@@ -893,6 +893,7 @@ module.exports = {
 
     self.addFieldType({
       name: 'relationshipReverse',
+      vueComponent: false,
       relate: async function (req, field, objects, options) {
         return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
       },
@@ -2336,7 +2337,13 @@ module.exports = {
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {
-          fields[name] = self.fieldTypes[name].vueComponent || 'AposInput' + self.apos.util.capitalizeFirst(name);
+          let component = self.fieldTypes[name].vueComponent;
+          // If explicitly false, it intentionally has no UI at all
+          if (component !== false) {
+            // Otherwise fall back to the standard naming pattern if not otherwise specified
+            component = component || 'AposInput' + self.apos.util.capitalizeFirst(name);
+          }
+          fields[name] = component;
         }
 
         browserOptions.components = { fields: fields };
