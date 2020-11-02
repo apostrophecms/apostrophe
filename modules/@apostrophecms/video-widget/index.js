@@ -21,8 +21,8 @@ module.exports = {
         type: 'oembed',
         name: 'video',
         oembedType: 'video',
-        label: 'Embed URL',
-        help: 'Enter the URL for a media source you wish to embed (e.g., YouTube, Vimeo).',
+        label: 'Video URL',
+        help: 'Enter the URL for a media source you wish to embed (e.g., YouTube, Vimeo, or other hosted video URL).',
         required: true
       }
     }
