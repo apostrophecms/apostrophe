@@ -9,6 +9,7 @@
 
 const fs = require('fs-extra');
 const childProcess = require('child_process');
+const path = require('path');
 
 const IMPORTS_PLACEHOLDER = /(\/\/ IMPORTS)/g;
 const COMPONENTS_PLACEHOLDER = /(\/\/ COMPONENTS)/g;
@@ -58,9 +59,9 @@ module.exports = {
           fs.removeSync(buildDir);
           fs.ensureDirSync(`${buildDir}/.storybook`);
         }
-        fs.copySync(`${__dirname}/template`, buildDir);
+        fs.copySync(path.join(__dirname, '/template'), buildDir);
 
-        const previewTemplate = fs.readFileSync(`${__dirname}/template/.storybook/preview.tmpl.js`, 'UTF-8');
+        const previewTemplate = fs.readFileSync(path.join(__dirname, '/template/.storybook/preview.tmpl.js'), 'UTF-8');
 
         const imports = JSON.parse(fs.readFileSync(importsFile, 'utf8'));
         let importsCode = imports.components.importCode + imports.icons.importCode; // + imports.tiptapExtensions.importCode;
@@ -79,16 +80,16 @@ module.exports = {
         fs.writeFileSync(previewFile, preview);
 
         // Write the manager and theme files
-        const managerTemplate = fs.readFileSync(`${__dirname}/template/.storybook/manager.tmpl.js`, 'UTF-8');
+        const managerTemplate = fs.readFileSync(path.join(__dirname, '/template/.storybook/manager.tmpl.js'), 'UTF-8');
         const managerFile = `${buildDir}/.storybook/manager.js`;
         fs.writeFileSync(managerFile, managerTemplate);
 
-        const themeTemplate = fs.readFileSync(`${__dirname}/template/.storybook/theme.tmpl.js`, 'UTF-8');
+        const themeTemplate = fs.readFileSync(path.join(__dirname, '/template/.storybook/theme.tmpl.js'), 'UTF-8');
         const themeFile = `${buildDir}/.storybook/theme.js`;
         fs.writeFileSync(themeFile, themeTemplate);
 
         // Write the main file
-        const mainTemplate = fs.readFileSync(`${__dirname}/template/.storybook/main.tmpl.js`, 'UTF-8');
+        const mainTemplate = fs.readFileSync(path.join(__dirname, '/template/.storybook/main.tmpl.js'), 'UTF-8');
 
         const stories = imports.components.paths.filter(path => fs.existsSync(path.replace(/\.vue$/, '.stories.js'))).map(path => path.replace(/\.vue$/, '.stories.js'));
         const storiesCode = JSON.stringify(stories, null, '  ');

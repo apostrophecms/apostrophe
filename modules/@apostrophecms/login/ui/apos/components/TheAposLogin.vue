@@ -40,7 +40,6 @@
       <transition name="fade-footer">
         <div class="apos-login__footer" v-show="loaded">
           <AposLogo class="apos-login__logo"/>
-          <label class="apos-login__logo-name">ApostropheCMS</label>
           <label class="apos-login__project-version">Version {{ context.version }}</label>
         </div>
       </transition>
@@ -119,6 +118,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  $login-container: 330px;
+
+  .apos-login__logo {
+    width: 100%;
+    max-width: 150px;
+  }
+
   .fade-stage-enter-active {
     transition: opacity 0.2s linear;
     transition-delay: 0.3s;
@@ -162,25 +168,9 @@ export default {
     background-color: var(--a-background-primary);
 
     &__wrapper {
-      width: 320px;
+      width: 100%;
+      max-width: $login-container;
       margin: 0 auto;
-    }
-
-    &__loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100vw;
-      height: 100vh;
-      font-size: map-get($font-sizes, heading);
-      font-weight: lighter;
-
-      .apos-spinner {
-        width: 38px;
-        height: 38px;
-        margin-top: 20px;
-      }
     }
 
     &__header {
@@ -192,21 +182,19 @@ export default {
       width: max-content;
     }
 
-    &__project {
+    &__project-name {
+      @include type-display;
+      margin: 0;
       color: var(--a-text-primary);
-      letter-spacing: 1px;
       text-transform: capitalize;
     }
 
-    &__project-name {
-      font-size: map-get($font-sizes, project-title);
-    }
-
     &__project-env {
+      @include type-base;
+      text-transform: capitalize;
       padding: 6px 12px;
       color: var(--a-white);
       background: var(--a-success);
-      font-size: map-get($font-sizes, default);
       border-radius: 5px;
       margin-bottom: 15px;
 
@@ -220,11 +208,9 @@ export default {
     }
 
     &--error {
+      @include type-help;
       color: var(--a-danger);
       min-height: 13px;
-      font-size: map-get($font-sizes, meta);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
       margin-top: 20px;
       margin-bottom: 15px;
     }
@@ -234,42 +220,38 @@ export default {
       display: flex;
       flex-direction: column;
 
-      .apos-login__link {
-        margin-top: 10px;
-        margin-left: auto;
-        margin-right: 0;
-        color: var(--a-base-5);
-        font-size: map-get($font-sizes, input-label);
-        font-weight: normal;
-        letter-spacing: 1px;
-        text-decoration-line: underline;
-      }
-
       button {
-        font-size: map-get($font-sizes, input-label);
-        letter-spacing: 0.5px;
+        margin-top: $spacing-double;
+      }
+    }
+
+    &__loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+
+      .apos-spinner {
+        width: 38px;
+        height: 38px;
         margin-top: 20px;
       }
     }
 
     &__footer {
+      @include type-base;
       position: absolute;
       right: 0;
       bottom: 32px;
       left: 0;
       display: flex;
-      width: 400px;
+      width: 100%;
+      max-width: $login-container;
       margin: auto;
       align-items: center;
       justify-content: start;
-      letter-spacing: 1px;
-      font-size: map-get($font-sizes, input-label);
-    }
-
-    &__logo-name {
-      color: var(--a-text-primary);
-      margin-left: 10px;
-      margin-right: 30px;
     }
 
     &__project-version {
@@ -279,7 +261,6 @@ export default {
       color: var(--a-base-5);
       margin-right: 0;
       margin-left: auto;
-      font-weight: normal;
     }
   }
 </style>

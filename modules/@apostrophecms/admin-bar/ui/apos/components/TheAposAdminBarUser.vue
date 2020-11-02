@@ -5,12 +5,12 @@
     :menu="menu"
     menu-placement="bottom-start"
     :menu-offset="2"
+    @item-clicked="emitEvent"
   >
     <template #prebutton>
       <AposAvatar
-        v-if="avatarUrl"
         class="apos-admin-user__avatar"
-        :src="avatarUrl"
+        :user="user"
         size="32px" alt=""
       />
     </template>
@@ -20,17 +20,6 @@
 <script>
 
 export default {
-  props: {
-    user: {
-      type: Object,
-      required: true
-    },
-    avatarUrl: {
-      type: String,
-      default: ''
-    }
-  },
-  emits: [ 'input' ],
   data() {
     return {
       menu: [
@@ -42,7 +31,7 @@ export default {
         {
           label: 'Log out',
           name: 'logOut',
-          actions: 'user-logout'
+          action: 'user-logout'
         }
       ]
     };
@@ -50,16 +39,28 @@ export default {
   computed: {
     button() {
       return {
-        label: this.user.label || '',
+        label: this.user.title || '',
         icon: 'chevron-down-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
       };
+    },
+    user() {
+      return window.apos.login.user;
     }
   },
   methods: {
-    input(value, name) {
-      this.$emit('input', name, value);
+    emitEvent(e) {
+      if (e === 'user-profile') {
+        apos.bus.$emit('admin-menu-click', {
+          itemName: '@apostrophecms/user:editor',
+          props: {
+            docId: this.user._id
+          }
+        });
+      } else if (e === 'user-logout') {
+        apos.bus.$emit('admin-menu-click', '@apostrophecms/login-logout');
+      }
     }
   }
 };
@@ -71,6 +72,7 @@ export default {
   align-items: center;
 
   /deep/ .apos-button {
+    @include type-base;
     color: var(--a-text-primary);
   }
 

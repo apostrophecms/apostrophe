@@ -6,7 +6,9 @@
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
-      <AposModalBreadcrumbs :items="breadcrumbs" />
+      <AposModalBreadcrumbs
+        v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs"
+      />
     </template>
     <template #main>
       <AposModalBody>
@@ -109,7 +111,7 @@ export default {
       }
     },
     schema() {
-      return this.moduleOptions.schema;
+      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     }
   },
   async mounted() {

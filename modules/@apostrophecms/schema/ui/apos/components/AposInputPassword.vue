@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import AposInputMixin from '../mixins/AposInputMixin';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 
 export default {
   name: 'AposInputPassword',

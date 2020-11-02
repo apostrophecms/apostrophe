@@ -184,11 +184,11 @@
           return callback(null, data);
         }
       } else {
-        return callback({
-          body: data,
-          status: xmlhttp.status,
-          headers: getHeaders()
-        });
+        const error = new Error(xmlhttp.status);
+        error.body = data;
+        error.headers = getHeaders();
+        error.status = xmlhttp.status;
+        return callback(error);
       }
     });
     xmlhttp.addEventListener('abort', function(evt) {

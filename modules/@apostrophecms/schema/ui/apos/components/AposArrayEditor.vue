@@ -22,7 +22,7 @@
       <AposModalRail>
         <div class="apos-modal-array-items">
           <div class="apos-modal-array-items__heading">
-            <p class="apos-modal-array-items__label">
+            <div class="apos-modal-array-items__label">
               <span v-if="countLabel">
                 {{ countLabel }}
               </span>
@@ -32,7 +32,7 @@
               <span v-if="maxLabel" :class="maxError ? 'apos-modal-array-max-error' : ''">
                 {{ maxLabel }}
               </span>
-            </p>
+            </div>
             <AposButton
               class="apos-modal-array-items__add"
               label="Add Item"
@@ -62,7 +62,7 @@
                 <div class="apos-array-item__body">
                   <AposSchema
                     v-if="currentId"
-                    :schema="field.schema"
+                    :schema="schema"
                     :trigger-validation="triggerValidation"
                     :utility-rail="false"
                     :following-values="followingValues()"
@@ -145,7 +145,7 @@ export default {
     },
     schema() {
       // For AposDocEditorMixin
-      return this.field.schema;
+      return (this.field.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     countLabel() {
       return `${this.next.length} Added`;
@@ -276,7 +276,7 @@ export default {
     isModified() {
       if (this.currentId) {
         const currentIndex = this.next.findIndex(item => item._id === this.currentId);
-        if (detectDocChange(this.field.schema, this.next[currentIndex], this.currentDoc.data)) {
+        if (detectDocChange(this.schema, this.next[currentIndex], this.currentDoc.data)) {
           return true;
         }
       }
@@ -287,7 +287,7 @@ export default {
         if (this.next[i]._id !== this.original[i]._id) {
           return true;
         }
-        if (detectDocChange(this.field.schema, this.next[i], this.original[i])) {
+        if (detectDocChange(this.schema, this.next[i], this.original[i])) {
           return true;
         }
       }
@@ -325,7 +325,7 @@ export default {
     },
     newInstance() {
       const instance = {};
-      for (const field of this.field.schema) {
+      for (const field of this.schema) {
         if (field.def !== undefined) {
           instance[field.name] = klona(field.def);
         }
@@ -336,7 +336,7 @@ export default {
       let candidate;
       if (this.field.titleField) {
         candidate = get(item, this.field.titleField);
-      } else if (this.field.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
+      } else if (this.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
         candidate = item.title;
       }
       if ((candidate == null) || candidate === '') {
@@ -388,28 +388,22 @@ export default {
   }
 
   .apos-modal-array-items {
-    margin: 10px;
+    margin: $spacing-base;
   }
 
   .apos-modal-array-items__heading {
     position: relative;
-    margin: 20px 4px;
-  }
-
-  // Specificity needed due to AposButton rules
-  .apos-modal-array-items__add.apos-button {
-    position: absolute;
-    top: -5px;
-    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: $spacing-double 4px;
   }
 
   .apos-modal-array-items__label {
-    // Consistent with appearance of same information in input field
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+    @include type-help;
 
     span {
-      margin-right: 10px;
+      margin-right: $spacing-base;
     }
   }
 </style>

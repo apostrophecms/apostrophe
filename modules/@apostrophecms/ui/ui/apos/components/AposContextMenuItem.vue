@@ -36,14 +36,13 @@ export default {
 
 <style lang="scss" scoped>
   .apos-context-menu__button {
+    @include type-base;
     display: inline-block;
     width: 100%;
     padding: 10px 20px;
     border: none;
     color: var(--a-base-1);
-    font-size: map-get($font-sizes, default);
     text-align: left;
-    letter-spacing: 0.5px;
     background-color: var(--a-background-primary);
     &:hover {
       cursor: pointer;

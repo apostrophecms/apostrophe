@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import AposInputMixin from '../mixins/AposInputMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 
 export default {
   name: 'AposInputRelationship',
@@ -162,10 +162,9 @@ export default {
 
     .apos-input-relationship__button {
       position: absolute;
-      top: 5px;
+      top: 6.5px;
       right: 5px;
       padding: ($input-padding - 5px) $input-padding;
-      font-size: map-get($font-sizes, input);
 
       &:hover:not([disabled]),
       &:focus:not([disabled]) {

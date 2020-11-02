@@ -30,7 +30,6 @@ describe('Admin bar', function() {
                 {
                   label: 'Content',
                   items: [
-                    '@apostrophecms/login-logout',
                     '@apostrophecms/file',
                     '@apostrophecms/image'
                   ]
@@ -42,10 +41,9 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert.strictEqual(apos.adminBar.items.length, 6);
-      assert(apos.adminBar.items[3].name === '@apostrophecms/login-logout');
-      assert(apos.adminBar.items[4].name === '@apostrophecms/file');
-      assert(apos.adminBar.items[5].name === '@apostrophecms/image');
+      assert.strictEqual(apos.adminBar.items.length, 5);
+      assert(apos.adminBar.items[2].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[3].name === '@apostrophecms/image');
     } finally {
       t.destroy(apos);
     }
@@ -70,8 +68,7 @@ describe('Admin bar', function() {
                   label: 'Content',
                   items: [
                     '@apostrophecms/file',
-                    '@apostrophecms/image',
-                    '@apostrophecms/login-logout'
+                    '@apostrophecms/image'
                   ]
                 }
               ]
@@ -81,10 +78,9 @@ describe('Admin bar', function() {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-      assert(apos.adminBar.items.length === 6);
+      assert(apos.adminBar.items.length === 5);
       assert(apos.adminBar.items[1].name === '@apostrophecms/file');
       assert(apos.adminBar.items[2].name === '@apostrophecms/image');
-      assert(apos.adminBar.items[3].name === '@apostrophecms/login-logout');
     } finally {
       t.destroy(apos);
     }

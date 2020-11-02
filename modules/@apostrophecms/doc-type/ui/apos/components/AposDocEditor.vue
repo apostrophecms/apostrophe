@@ -141,7 +141,7 @@ export default {
       return (window.apos.modules[this.moduleName] || {}).action;
     },
     schema() {
-      return this.moduleOptions.schema || [];
+      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
     },
     groups() {
       const groupSet = {};

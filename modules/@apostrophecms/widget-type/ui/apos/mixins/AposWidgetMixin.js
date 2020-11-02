@@ -14,11 +14,17 @@ export default {
   },
   data() {
     return {
-      rendered: '...'
+      rendered: '...',
+      playerOpts: null
     };
   },
   mounted: function() {
     this.renderContent();
+    this.playerOpts = apos.util.widgetPlayers[this.type] || null;
+    this.runPlayer();
+  },
+  updated () {
+    this.runPlayer();
   },
   computed: {
     moduleOptions() {
@@ -45,6 +51,16 @@ export default {
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
+      }
+    },
+    runPlayer() {
+      if (!this.playerOpts) {
+        return;
+      }
+      const el = this.$el.querySelector(this.playerOpts.selector);
+      console.info(el);
+      if (el && this.playerOpts.player) {
+        this.playerOpts.player(el);
       }
     },
     clicked(e) {

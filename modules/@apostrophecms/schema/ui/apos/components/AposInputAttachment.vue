@@ -34,6 +34,7 @@
             class="apos-sr-only"
             :disabled="disabled"
             @input="uploadMedia"
+            :accept="field.accept"
           >
         </label>
         <div v-if="next && next._id" class="apos-attachment-files">
@@ -183,11 +184,11 @@ export default {
 <style lang="scss" scoped>
   .apos-attachment-dropzone {
     @include apos-button-reset();
+    @include type-base;
     display: block;
     margin: 10px 0;
     padding: 20px;
     border: 2px dashed var(--a-base-8);
-    font-size: map-get($font-sizes, default);
     transition: all 0.2s ease;
     &:hover {
       border-color: var(--a-primary);
@@ -222,7 +223,7 @@ export default {
     // v-html goofiness
     & /deep/ .apos-attachment-highlight {
       color: var(--a-primary);
-      font-weight: 700;
+      font-weight: var(--a-weight-bold);
     }
   }
 

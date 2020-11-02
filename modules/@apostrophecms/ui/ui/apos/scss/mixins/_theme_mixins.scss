@@ -4,33 +4,6 @@ $brand-magenta: #b327bf;
 $brand-blue: #66f;
 $brand-green: #00bf9a;
 
-$font-default: -apple-system, system-ui, 'BlinkMacSystemFont', 'Segoe UI',
-  'Roboto', 'Helvetica', 'Arial', sans-serif, 'Apple Color Emoji',
-  'Segoe UI Emoji', 'Segoe UI Symbol';
-
-$font-families: (
-  default: $font-default
-);
-
-$font-weights: (
-  medium: 500,
-  bold: 700
-);
-
-$font-sizes: (
-  button: 12px,
-  default: 12px,
-  meta: 10px,
-  input-label: 14px,
-  input: 12px,
-  input-hint: 12px,
-  menu-label: 14px,
-  heading: 22px,
-  modal: 12px,
-  rail-title: 14px,
-  project-title: 32px
-);
-
 $spacing-base: 10px;
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
@@ -48,4 +21,55 @@ $input-color-disabled: var(--a-base-4);
   --a-primary-button-active: #{mix(black, $color, 15%)};
   --a-primary-button-disabled: #{mix(white, $color, 40%)};
   // stylelint-enable
+}
+
+//Application Styles
+
+@mixin type-help {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+  text-transform: uppercase;
+}
+
+@mixin type-small {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-small);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
+@mixin type-base {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-base);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
+}
+
+@mixin type-large {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-large);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
+@mixin type-title {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-heading);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-tall);
+}
+
+@mixin type-display {
+  font-family: var(--a-family-default);
+  font-size: var(--a-type-display);
+  font-weight: var(--a-weight-base);
+  letter-spacing: var(--a-letter-base);
+  line-height: var(--a-line-base);
 }

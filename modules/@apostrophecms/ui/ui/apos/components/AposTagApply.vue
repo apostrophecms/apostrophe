@@ -325,9 +325,9 @@ export default {
   }
 
   .apos-apply-tag-menu__empty-message {
+    @include type-base;
     margin-bottom: 20px;
     max-width: 240px;
-    font-size: map-get($font-sizes, default);
     text-align: center;
   }
 
@@ -338,7 +338,8 @@ export default {
   .apos-apply-tag-menu__empty-icon {
     // Variable sizes are less important for icons.
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
-    font-size: 32px;
+    @include type-title;
+    margin: 0;
   }
 
   .fade-enter-active, .fade-leave-active {

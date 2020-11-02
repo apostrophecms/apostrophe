@@ -58,7 +58,8 @@ module.exports = {
         title: {
           type: 'string',
           label: 'Full Name',
-          following: [ 'firstName', 'lastName' ]
+          following: [ 'firstName', 'lastName' ],
+          required: true
         },
         slug: {
           type: 'slug',
@@ -95,17 +96,15 @@ module.exports = {
             'firstName',
             'lastName',
             'title',
-            'slug',
-            'slug',
-            'trash'
+            'slug'
           ]
         },
         utility: {
-          label: 'Utility',
           fields: [
             'username',
             'email',
-            'password'
+            'password',
+            'trash'
           ]
         },
         permissions: {

@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const Promise = require('bluebird');
 const webpackModule = require('webpack');
 const globalIcons = require('./lib/globalIcons');
+const path = require('path');
 
 // Wrap webpack to report its errors readably, in
 // preparation to promisify it
@@ -281,7 +282,7 @@ apos.tiptapExtensions.push(${name});
         if (!self.shouldRefreshOnRestart()) {
           return '';
         }
-        const script = fs.readFileSync(`${__dirname}/lib/refresh-on-restart.js`, 'utf8');
+        const script = fs.readFileSync(path.join(__dirname, '/lib/refresh-on-restart.js'), 'utf8');
         return self.apos.template.safe(`<script data-apos-refresh-on-restart="${self.action}/restart-id">\n${script}</script>`);
       }
     };

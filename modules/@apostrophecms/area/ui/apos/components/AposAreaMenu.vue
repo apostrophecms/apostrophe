@@ -131,6 +131,7 @@ export default {
       }
       return {
         menuPlacement: 'bottom',
+        menuOffset: 15,
         ...this.contextMenuOptions,
         modifiers
       };
@@ -265,9 +266,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-area-menu {
-  font-size: map-get($font-sizes, default);
-}
 
 .apos-area-menu.is-focused /deep/ .apos-context-menu__inner {
   border: 1px solid var(--a-base-4);
@@ -289,6 +287,7 @@ export default {
 
 .apos-area-menu__button {
   @include apos-button-reset();
+  @include type-base;
   display: flex;
   width: 100%;
   padding: 5px 20px;

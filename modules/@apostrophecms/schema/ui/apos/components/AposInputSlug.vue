@@ -36,7 +36,7 @@
 // NOTE: This is a temporary component, copying AposInputString. Base modules
 // already have `type: 'slug'` fields, so this is needed to avoid distracting
 // errors.
-import AposInputMixin from '../mixins/AposInputMixin';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import sluggo from 'sluggo';
 import debounce from 'debounce-async';
 

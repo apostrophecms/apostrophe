@@ -5,11 +5,12 @@
       @hide="hide"
       @show="show"
       :offset="menuOffset"
-      :placement="menuPlacement"
       trigger="manual"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
       popover-class="apos-popover"
+      popover-wrapper-class="apos-popover__wrapper"
+      popover-inner-class="apos-popover__inner"
       :container="container"
     >
       <!-- TODO refactor buttons to take a single config obj -->
@@ -20,7 +21,7 @@
         :state="buttonState"
         ref="button"
       />
-      <template #popover>
+      <template #popover class="apos-popover__slot">
         <AposContextMenuDialog
           :menu-placement="menuPlacement"
           :class-list="classList"
@@ -163,12 +164,12 @@ export default {
 }
 
 .apos-context-menu__pane {
+  @include type-base;
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   box-shadow: var(--a-box-shadow);
   background-color: var(--a-background-primary);
-  font-size: map-get($font-sizes, default);
 }
 
 .apos-context-menu__items {

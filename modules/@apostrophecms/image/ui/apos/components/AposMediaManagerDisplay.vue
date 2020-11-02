@@ -2,7 +2,9 @@
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
+        :disabled="maxReached"
         :action="moduleOptions.action"
+        :accept="accept"
         @upload-started="$emit('upload-started')"
         @upload-complete="$emit('upload-complete', $event)"
         @create-placeholder="$emit('create-placeholder', $event)"
@@ -79,6 +81,10 @@ export default {
     event: 'change'
   },
   props: {
+    maxReached: {
+      type: Boolean,
+      default: false
+    },
     checked: {
       type: [ Array, Boolean ],
       default: false
@@ -98,6 +104,11 @@ export default {
       default() {
         return {};
       }
+    },
+    accept: {
+      type: String,
+      required: false,
+      default: null
     }
   },
   emits: [
@@ -118,18 +129,6 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
-    }
-  },
-  mounted() {
-    // Get the acceptable file types, if set.
-    const imageGroup = apos.modules['@apostrophecms/attachment'].fileGroups
-      .find(group => group.name === 'images');
-
-    if (imageGroup && this.$refs['apos-upload-input']) {
-      const acceptTypes = imageGroup.extensions.map(type => `.${type}`)
-        .join(',');
-
-      this.$refs['apos-upload-input'].setAttribute('accept', acceptTypes);
     }
   },
   methods: {

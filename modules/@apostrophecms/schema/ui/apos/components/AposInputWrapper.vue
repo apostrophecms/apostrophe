@@ -112,7 +112,9 @@ export default {
     },
     errorMessage () {
       if (this.error) {
-        if (this.error.message) {
+        if (typeof this.error === 'string') {
+          return this.error;
+        } else if (this.error.message) {
           return this.error.message;
         } else {
           return 'Error';
@@ -133,6 +135,9 @@ export default {
     minLabel() {
       if ((typeof this.field.min) === 'number') {
         return `Min: ${this.field.min}`;
+      } else if (this.field.required && (this.field.type === 'array')) {
+        // For consistency with the array editor's behavior
+        return 'Min: 1';
       } else {
         return false;
       }
@@ -164,31 +169,30 @@ export default {
   }
 
   .apos-field-text {
-    font-size: map-get($font-sizes, input-label);
+    @include type-base;
   }
 
   .apos-field-label {
+    @include type-base;
     display: block;
     padding: 0;
     color: var(--a-text-primary);
-    font-size: map-get($font-sizes, input-label);
-    font-weight: map-get($font-weights, medium);
   }
 
   .apos-field-help,
   .apos-field-error {
     margin: $spacing-base 0 0;
-    font-size: map-get($font-sizes, input-hint);
-    font-weight: 500;
   }
 
   .apos-field-help {
+    @include type-base;
+    line-height: var(--a-line-tall);
     color: var(--a-base-3);
   }
 
   .apos-field-error {
+    @include type-help;
     color: var(--a-danger);
-    text-transform: uppercase;
   }
 
   .apos-field-required {
@@ -196,12 +200,11 @@ export default {
   }
 
   .apos-field-limit {
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin: 10px 0;
+    @include type-help;
+    margin: $spacing-base 0;
 
     span {
-      margin-right: 10px;
+      margin-right: $spacing-base;
     }
   }
 </style>
