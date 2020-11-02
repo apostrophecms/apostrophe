@@ -5,7 +5,7 @@
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend' } %}
     <title>{% block title %}{% endblock %}</title>
-    {{ apos.asset.stylesheets(data.when) }}
+    {{ apos.asset.stylesheets(data.scene) }}
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% endblock %}
@@ -17,34 +17,32 @@
   <body class="{{ data.aposBodyClasses }} apos-theme--primary-purple {% block bodyClass %}{% endblock %}"{{ data.aposBodyDataAttributes | safe }}>
     {% component '@apostrophecms/template:inject' with { where: 'body', end: 'prepend' } %}
     {% block apostropheMenu %}
-      <div id="apos-busy"></div>
-      <div id="apos-admin-bar"></div>
+      {% if data.scene == 'apos' %}
+        <div id="apos-busy"></div>
+        <div id="apos-admin-bar"></div>
+      {% endif %}
     {% endblock %}
     {% block apostropheUserInterface %}
-      <div id="apos-context-menu"></div>
-      <div id="apos-notification"></div>
+      {% if data.scene == 'apos' %}
+        <div id="apos-context-menu"></div>
+        <div id="apos-notification"></div>
+      {% endif %}
     {% endblock %}
-    {# if data.user %} <!-- TODO expand this check to editing mode -->
-      <div class="apos-editor-context">
-        <div class="apos-editor-canvas">
-    {% endif #}
-      <div class="apos-refreshable" data-apos-refreshable>
-        {% block beforeMain %}{% endblock %}
-        {% block mainAnchor %}<a name="main"></a>{% endblock %}
-        {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
-        {% block main %}{% endblock %}
-        {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
-        {% block afterMain %}{% endblock %}
-      </div>
-      {{ apos.asset.scripts(data.when) }}
-      {# Automatically does nothing in production #}
-      {{ apos.asset.refreshOnRestart() }}
-      {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
-      {% block extraBody %}{% endblock %}
-    {% if data.user %}
-        {# </div> .apos-editor-canvas #}
-      {# </div> .apos-editor-context #}
+    <div class="apos-refreshable" data-apos-refreshable>
+      {% block beforeMain %}{% endblock %}
+      {% block mainAnchor %}<a name="main"></a>{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
+      {% block main %}{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
+      {% block afterMain %}{% endblock %}
+    </div>
+    {{ apos.asset.scripts(data.scene) }}
+    {# Automatically does nothing in production #}
+    {{ apos.asset.refreshOnRestart() }}
+    {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
+    {% block extraBody %}{% endblock %}
+    {% if data.scene == 'apos' %}
+      <div id="apos-modals"></div>
     {% endif %}
-    <div id="apos-modals"></div>
   </body>
 </html>
