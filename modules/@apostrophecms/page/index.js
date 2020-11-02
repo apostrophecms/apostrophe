@@ -990,13 +990,13 @@ database.`);
           const descendants = _.filter(pages, function (descendant) {
             return descendant.path.match(match);
           });
-          // FIX: https://eslint.org/docs/rules/no-unreachable-loop
+
           for (const descendant of descendants) {
             descendant.path = descendant.path.replace(new RegExp('^' + self.apos.util.regExpQuote(oldPath)), page.path);
             descendant.slug = descendant.slug.replace(new RegExp('^' + self.apos.util.regExpQuote(oldSlug)), page.slug);
 
             try {
-              return await self.apos.doc.db.updateOne({ _id: descendant._id }, {
+              await self.apos.doc.db.updateOne({ _id: descendant._id }, {
                 $set: {
                   path: descendant.path,
                   slug: descendant.slug
@@ -1006,9 +1006,10 @@ database.`);
               if (self.apos.doc.isUniqueError(err)) {
                 // The slug is now in conflict for this subpage.
                 // Try again with path only
-                return self.apos.doc.db.updateOne({ _id: descendant._id }, { $set: { path: descendant.path } });
+                self.apos.doc.db.updateOne({ _id: descendant._id }, { $set: { path: descendant.path } });
+              } else {
+                throw err;
               }
-              throw err;
             }
           }
         }
