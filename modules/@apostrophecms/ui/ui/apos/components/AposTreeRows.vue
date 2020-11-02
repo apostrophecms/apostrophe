@@ -31,13 +31,13 @@
           v-for="(col, index) in headers"
           :key="`${col.name}-${index}`"
           :is="getEffectiveType(col, row)"
-          :href="col.type === 'link' ? row[col.name] : false"
+          :href="(getEffectiveType(col, row) === 'a') ? row[col.name] : false"
           :target="col.type === 'link' ? '_blank' : false"
           :class="getCellClasses(col, row)"
           :disabled="getCellDisabled(col, row)"
           :data-col="col.name"
           :style="getCellStyles(col.name, index)"
-          @click="col.action ? $emit(col.action, row._id) : null"
+          @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
         >
           <drag-icon
             v-if="options.draggable && index === 0 && !row.parked"
@@ -298,6 +298,9 @@ export default {
       return classes;
     },
     getCellDisabled(col, row) {
+      if (this.getEffectiveType(col, row) === 'span') {
+        return false;
+      }
       if ((col.type === 'link') && (!row[col.name])) {
         return true;
       } else if (row.trash && (col.type === 'button')) {
