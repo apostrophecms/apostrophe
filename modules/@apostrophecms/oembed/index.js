@@ -1,5 +1,4 @@
 const cheerio = require('cheerio');
-const { MongoNetworkError } = require('mongodb');
 
 // The oembed module provides an oembed query service for embedding
 // third-party website content, such as YouTube videos. The service includes
