@@ -646,7 +646,7 @@ module.exports = {
         const args = {
           outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
           permissions: req.user && (req.user._permissions || {}),
-          when: scene,
+          scene,
           refreshing: req.query && !!req.query.apos_refresh,
           // Make the query available to templates for easy access to
           // filter settings etc.
