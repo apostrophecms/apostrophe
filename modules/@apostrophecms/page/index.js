@@ -990,6 +990,7 @@ database.`);
           const descendants = _.filter(pages, function (descendant) {
             return descendant.path.match(match);
           });
+          // FIX: https://eslint.org/docs/rules/no-unreachable-loop
           for (const descendant of descendants) {
             descendant.path = descendant.path.replace(new RegExp('^' + self.apos.util.regExpQuote(oldPath)), page.path);
             descendant.slug = descendant.slug.replace(new RegExp('^' + self.apos.util.regExpQuote(oldSlug)), page.slug);
