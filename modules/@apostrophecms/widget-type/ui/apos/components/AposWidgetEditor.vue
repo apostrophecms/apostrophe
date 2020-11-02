@@ -6,7 +6,9 @@
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
-      <AposModalBreadcrumbs :items="breadcrumbs" />
+      <AposModalBreadcrumbs
+        v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs"
+      />
     </template>
     <template #main>
       <AposModalBody>

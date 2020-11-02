@@ -40,7 +40,7 @@ export default {
   data () {
     return {
       next: (this.value && this.value.data !== undefined)
-        ? this.value.data : '',
+        ? this.value.data : {},
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null
@@ -62,7 +62,7 @@ export default {
     }
   },
   async mounted() {
-    if (this.next) {
+    if (this.next && this.next.url) {
       await this.loadOembed();
     }
   },
@@ -116,7 +116,11 @@ export default {
           this.dynamicRatio = (result.height / result.width);
         }
       } catch (error) {
-        this.oembedError = error;
+        if (error.body && error.body.message) {
+          this.oembedError = error.body;
+        } else {
+          this.oembedError = { message: 'Invalid embed URL' };
+        }
         this.next.title = '';
         this.next.thumbnail = '';
       } finally {
