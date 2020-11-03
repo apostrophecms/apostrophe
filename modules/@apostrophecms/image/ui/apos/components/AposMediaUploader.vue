@@ -82,6 +82,11 @@ export default {
     },
     async uploadMedia (event) {
       try {
+        apos.bus.$emit('apos-busy', {
+          name: 'busy',
+          active: true
+        });
+
         if (this.disabled) {
           return;
         }
@@ -93,6 +98,7 @@ export default {
         const fileCount = files.length;
 
         const emptyDoc = await apos.http.post(this.action, {
+          busy: true,
           body: {
             _newInstance: true
           }
@@ -135,6 +141,10 @@ export default {
         // When complete, refresh the image grid, with the new images at top.
         this.$emit('upload-complete', imageIds);
       } finally {
+        apos.bus.$emit('apos-busy', {
+          name: 'busy',
+          active: false
+        });
         this.$refs.upload.value = '';
       }
     },
@@ -160,6 +170,7 @@ export default {
 
       // Make an async request to upload the image.
       const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+        busy: true,
         body: formData
       });
 
@@ -170,6 +181,7 @@ export default {
 
       try {
         const imgPiece = await apos.http.post(this.action, {
+          busy: true,
           body: imageData
         });
 
