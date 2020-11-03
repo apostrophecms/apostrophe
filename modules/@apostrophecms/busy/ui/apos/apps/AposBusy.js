@@ -8,6 +8,6 @@ export default function() {
         return window.apos;
       }
     },
-    template: '<component :is="`TheApostropheBusy`" />'
+    template: '<component :is="`TheAposBusy`" />'
   });
 };
