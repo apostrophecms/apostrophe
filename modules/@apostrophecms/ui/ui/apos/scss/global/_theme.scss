@@ -41,11 +41,11 @@
   --a-white: #fff;
 
   // Apostrophe brand
-  --a-brand-red: $brand-red;
-  --a-brand-gold: $brand-gold;
-  --a-brand-magenta: $brand-magenta;
-  --a-brand-blue: $brand-blue;
-  --a-brand-green: $brand-green;
+  --a-brand-red: #{$brand-red};
+  --a-brand-gold: #{$brand-gold};
+  --a-brand-magenta: #{$brand-magenta};
+  --a-brand-blue: #{$brand-blue};
+  --a-brand-green: #{$brand-green};
 
   // File colors
   --a-presentation: #f1c40f;

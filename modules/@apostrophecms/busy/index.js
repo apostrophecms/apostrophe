@@ -12,7 +12,7 @@ module.exports = {
       getBrowserData(req) {
         return {
           busy: self.busy,
-          components: { the: options.components.the || 'TheApostropheBusy' }
+          components: { the: options.components.the || 'TheAposBusy' }
         };
       }
     };

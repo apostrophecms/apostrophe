@@ -50,7 +50,7 @@
             :headers="headers" :icons="icons"
             v-model="checked"
             :options="treeOptions"
-            @update="update" @busy="setBusy"
+            @update="update"
             @edit="openEditor"
           />
         </template>
@@ -202,9 +202,6 @@ export default {
       }
 
       await this.getPages();
-    },
-    setBusy(val) {
-      apos.bus.$emit('busy', val);
     },
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {

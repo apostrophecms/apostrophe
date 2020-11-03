@@ -17,7 +17,6 @@
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
-      @busy="setBusy"
       @update="update"
       @edit="$emit('edit', $event)"
       list-id="root"
@@ -73,7 +72,7 @@ export default {
       }
     }
   },
-  emits: [ 'busy', 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change', 'edit' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
@@ -176,9 +175,6 @@ export default {
     setWidths(widths) {
       this.colWidths = widths;
     },
-    setBusy(val) {
-      this.$emit('busy', val);
-    },
     update(event) {
       this.$emit('update', {
         // The ID of the item that moved.
@@ -192,7 +188,6 @@ export default {
         // The index of the moved item within its new context.
         endIndex: event.newIndex
       });
-      this.setBusy(false);
     }
   }
 };
