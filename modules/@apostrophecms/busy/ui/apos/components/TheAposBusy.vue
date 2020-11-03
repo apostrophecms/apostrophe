@@ -1,6 +1,6 @@
 <template>
-  <div class="apos-busy">
-    <div v-if="busy" class="busy" />
+  <div v-if="busy" class="apos-busy">
+    <AposLoading class="apos-busy__spinner" />
   </div>
 </template>
 
@@ -14,6 +14,7 @@ export default {
   },
   mounted() {
     apos.bus.$on('apos-busy', state => {
+      console.info('BUSY', state);
       if (state.name === 'busy') {
         this.busy = state.active;
       }
@@ -23,14 +24,31 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.busy {
+.apos-busy {
+  z-index: $z-index-busy;
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
-  background: #e9e9e9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   pointer-events: none;
-  opacity: 0.5;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--a-overlay);
+    opacity: 0.5;
+  }
+}
+
+.apos-busy__spinner {
+  z-index: $z-index-default;
 }
 </style>

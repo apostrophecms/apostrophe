@@ -234,7 +234,6 @@ export default {
           dismiss: true
         });
         console.error('The requested piece was not found.', this.docId);
-        apos.bus.$emit('busy', false);
         await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
@@ -244,7 +243,6 @@ export default {
         this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
-        apos.bus.$emit('busy', false);
       }
     } else {
       this.$nextTick(() => {
