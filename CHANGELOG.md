@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.113.1 (2020-11-04)
+* Updates the logo in the README.
+
 ## 2.113.0 (2020-10-21)
 * Remove published columns in apostrophe-users and apostrophe-groups, the modules where this field does not exist.
 * Add `type` to forbiddenFields for apostrophe-pieces schemas. Thanks to [Jose96GIT](https://github.com/Jose96GIT) for the contribution. If you are using Apostrophe Workflow, you must be on `2.38.2` or later of that module because of this update.
