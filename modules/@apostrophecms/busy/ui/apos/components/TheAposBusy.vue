@@ -14,10 +14,10 @@ export default {
   },
   mounted() {
     apos.bus.$on('apos-busy', state => {
-      console.info('BUSY', state);
-      if (state.name === 'busy') {
-        this.busy = state.active;
-      }
+      // TODO: Eventually add a counter to track if busy state was enabled
+      // multiple times, to require clearing it an equal number of times.
+      // Possibly add a check for `state.name === 'busy'` again.
+      this.busy = state.active;
     });
   }
 };
