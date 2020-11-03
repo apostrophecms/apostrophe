@@ -9,15 +9,25 @@ export default {
   name: 'TheAposBusy',
   data() {
     return {
-      busy: false
+      busy: false,
+      busyCount: 0
     };
   },
   mounted() {
     apos.bus.$on('apos-busy', state => {
-      // TODO: Eventually add a counter to track if busy state was enabled
-      // multiple times, to require clearing it an equal number of times.
-      // Possibly add a check for `state.name === 'busy'` again.
-      this.busy = state.active;
+      // TODO: Possibly add a check for `state.name === 'busy'` again if other
+      // busy contexts are added.
+      if (state.active === false && this.busyCount >= 0) {
+        this.busyCount--;
+      }
+
+      if (this.busyCount === 0) {
+        this.busy = state.active;
+      }
+
+      if (state.active === true) {
+        this.busyCount++;
+      }
     });
   }
 };

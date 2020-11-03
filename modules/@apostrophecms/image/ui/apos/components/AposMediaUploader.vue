@@ -82,6 +82,11 @@ export default {
     },
     async uploadMedia (event) {
       try {
+        apos.bus.$emit('apos-busy', {
+          name: 'busy',
+          active: true
+        });
+
         if (this.disabled) {
           return;
         }
@@ -136,6 +141,10 @@ export default {
         // When complete, refresh the image grid, with the new images at top.
         this.$emit('upload-complete', imageIds);
       } finally {
+        apos.bus.$emit('apos-busy', {
+          name: 'busy',
+          active: false
+        });
         this.$refs.upload.value = '';
       }
     },
