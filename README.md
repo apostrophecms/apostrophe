@@ -1,4 +1,4 @@
-# [<img src="./ApostropheCMS_logo.png" height="140" title="ApostropheCMS" />](https://apostrophecms.com)
+# [<img src="./logo.png" height="120" title="ApostropheCMS" />](https://apostrophecms.com)
 
 ApostropheCMS is a content management system (CMS) for Node.js. It supports in-context editing, schema-driven content types, flexible widgets and a great deal more. This module contains everything necessary to build a website with ApostropheCMS.
 
