@@ -84,7 +84,6 @@
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
-        @busy="$emit('busy', $event)"
         @update="$emit('update', $event)"
         @edit="$emit('edit', $event)"
         v-model="checkedProxy"
@@ -157,7 +156,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'busy', 'update', 'change', 'edit' ],
+  emits: [ 'update', 'change', 'edit' ],
   computed: {
     myRows() {
       return this.rows;
@@ -204,9 +203,7 @@ export default {
         branch.$el.style.maxHeight = `${height}px`;
       });
     },
-    startDrag() {
-      this.$emit('busy', true);
-    },
+    startDrag() {},
     endDrag(event) {
       this.$emit('update', event);
       this.$nextTick(() => {
@@ -266,7 +263,7 @@ export default {
           'is-parked': !!row.parked,
           'apos-tree__row--parent': row.children && row.children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
-          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id,
+          'apos-tree__row--selected': this.options.selectable && this.checked[0] === row._id
         }
       ];
     },
