@@ -38,7 +38,7 @@
           :href="item._url || item._urls.original"
           target="_blank"
         >
-          <eye-icon :size="14" />
+          <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
         <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
           <img
@@ -236,7 +236,7 @@ export default {
   .apos-slat__label {
     @include type-small;
     overflow: hidden;
-    margin-left: 10px;
+    margin-left: 5px;
     max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -319,5 +319,10 @@ export default {
   .apos-slat__media {
     max-height: 30px;
     max-width: 50px;
+  }
+
+  .apos-slat__control--view-icon {
+    display: flex;
+    align-items: center;
   }
 </style>

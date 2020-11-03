@@ -98,9 +98,6 @@ export default {
       if (this.menu) {
         classes.push(`${baseClass}--unpadded`);
       }
-      if (this.autoPosition) {
-        classes.push(`${baseClass}--fixed`);
-      }
       return classes.join(' ');
     },
     buttonState() {

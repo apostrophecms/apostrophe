@@ -4,15 +4,17 @@
     :error="effectiveError" :uid="uid"
   >
     <template #body>
-      <Component
-        :is="editorComponent"
-        :options="field.options"
-        :items="next.items"
-        :choices="choices"
-        :id="next._id"
-        :field-id="field._id"
-        @changed="changed"
-      />
+      <div class="apos-input-wrapper">
+        <Component
+          :is="editorComponent"
+          :options="field.options"
+          :items="next.items"
+          :choices="choices"
+          :id="next._id"
+          :field-id="field._id"
+          @changed="changed"
+        />
+      </div>
     </template>
   </AposInputWrapper>
 </template>

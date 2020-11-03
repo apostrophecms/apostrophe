@@ -173,7 +173,7 @@ export default {
     }
   }
   .apos-input--time {
-    padding-right: $input-padding * 2.5;
+    padding-right: calc(#{$input-padding} - 2px);
   }
 
   .apos-field--small .apos-input--date,

@@ -403,8 +403,9 @@ export default {
   align-items: center;
   flex-direction: column;
   min-height: 50px;
-  background-color: var(--a-base-10);
-  border: 2px dotted var(--a-primary);
+  background-color: var(--a-base-9);
+  border: 1px solid var(--a-base-8);
+  border-radius: var(--a-border-radius);
 }
 
 </style>
