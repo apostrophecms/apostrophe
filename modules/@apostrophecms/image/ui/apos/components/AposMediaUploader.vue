@@ -93,6 +93,7 @@ export default {
         const fileCount = files.length;
 
         const emptyDoc = await apos.http.post(this.action, {
+          busy: true,
           body: {
             _newInstance: true
           }
@@ -160,6 +161,7 @@ export default {
 
       // Make an async request to upload the image.
       const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+        busy: true,
         body: formData
       });
 
@@ -170,6 +172,7 @@ export default {
 
       try {
         const imgPiece = await apos.http.post(this.action, {
+          busy: true,
           body: imageData
         });
 
