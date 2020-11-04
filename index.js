@@ -287,7 +287,7 @@ module.exports = async function(options) {
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
-      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'htmlRoutes', 'middleware', 'customTags', 'components' ],
+      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'middleware', 'customTags', 'components' ],
       unparsedSections: [ 'queries', 'extendQueries' ]
     });
 
