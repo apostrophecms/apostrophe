@@ -32,9 +32,8 @@
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
-          :menu-offset="40"
+          menu-offset="40, 10"
         />
-        <!-- :menu-offset="40, 30" -->
         <a
           class="apos-slat__control apos-slat__control--view"
           v-if="item._url || item._urls"

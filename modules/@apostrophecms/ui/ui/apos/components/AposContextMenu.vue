@@ -72,7 +72,7 @@ export default {
       default: 'bottom'
     },
     menuOffset: {
-      type: Number,
+      type: [ Number, String ],
       default: 15
     }
   },
