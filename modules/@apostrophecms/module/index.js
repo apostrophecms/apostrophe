@@ -133,7 +133,8 @@ module.exports = {
           return async function(req, res) {
             try {
               const result = await fn(req);
-              return res.send(self.render(name, result));
+              const markup = await self.render(req, name, result);
+              return res.send(markup);
             } catch (err) {
               return self.routeSendError(req, err);
             }
@@ -620,8 +621,12 @@ module.exports = {
           // fully to life here
           self.compileRestApiRoutesToApiRoutes();
           self.addSectionRoutes('routes');
-          self.addSectionRoutes('apiRoutes');
           self.addSectionRoutes('renderRoutes');
+          // Put the api routes last so the REST api routes
+          // they contain, with their wildcards, don't
+          // block ordinary apiRoute names by matching them
+          // as _ids
+          self.addSectionRoutes('apiRoutes');
         }
       },
       ...self.enabledBrowserData && {
