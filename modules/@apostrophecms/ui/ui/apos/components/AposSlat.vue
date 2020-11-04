@@ -31,6 +31,8 @@
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
+          menu-placement="bottom-start"
+          menu-offset="40, 10"
         />
         <a
           class="apos-slat__control apos-slat__control--view"
@@ -38,7 +40,7 @@
           :href="item._url || item._urls.original"
           target="_blank"
         >
-          <eye-icon :size="14" />
+          <eye-icon :size="14" class="apos-slat__control--view-icon" />
         </a>
         <div v-if="item.attachment && item.attachment.group === 'images' && item.attachment._urls" class="apos-slat__media-preview">
           <img
@@ -231,12 +233,17 @@ export default {
   .apos-slat__main {
     display: flex;
     align-items: center;
+    & /deep/ .trigger {
+      /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
+      /* stylelint-disable-next-line declaration-no-important */
+      display: flex !important;
+    }
   }
 
   .apos-slat__label {
     @include type-small;
     overflow: hidden;
-    margin-left: 10px;
+    margin-left: 5px;
     max-width: 220px;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -319,5 +326,10 @@ export default {
   .apos-slat__media {
     max-height: 30px;
     max-width: 50px;
+  }
+
+  .apos-slat__control--view-icon {
+    display: flex;
+    align-items: center;
   }
 </style>

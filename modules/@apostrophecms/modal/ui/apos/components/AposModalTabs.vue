@@ -71,7 +71,7 @@ export default {
   position: relative;
   width: 100%;
   padding: 25px 20px;
-  border-bottom: 1px solid var(--a-base-4);
+  border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
   background-color: var(--a-base-9);
   text-align: left;

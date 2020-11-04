@@ -72,7 +72,7 @@ export default {
       default: 'bottom'
     },
     menuOffset: {
-      type: Number,
+      type: [ Number, String ],
       default: 15
     }
   },
@@ -97,9 +97,6 @@ export default {
       }
       if (this.menu) {
         classes.push(`${baseClass}--unpadded`);
-      }
-      if (this.autoPosition) {
-        classes.push(`${baseClass}--fixed`);
       }
       return classes.join(' ');
     },

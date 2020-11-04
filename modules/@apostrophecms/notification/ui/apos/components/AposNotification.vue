@@ -111,7 +111,6 @@ export default {
   .apos-notification {
     position: relative;
     display: inline-flex;
-    align-items: center;
     min-width: 200px;
     max-width: 400px;
     padding: 15px 35px 15px 15px;
@@ -147,9 +146,11 @@ export default {
 
   .apos-notification__button {
     position: absolute;
+    top: 0;
     right: 0;
     display: flex;
     align-items: center;
+    height: 100%;
     padding: 20px 10px;
     border: none;
     background-color: transparent;

@@ -9,19 +9,18 @@
             v-for="item in menuItems" :key="item.name"
             class="apos-admin-bar__item"
           >
-            <component
-              v-if="item.options" :is="item.options.href ? 'a' : 'button'"
-              class="apos-admin-bar__btn" :href="item.options.href"
-              v-on="item.options.href ? {} : {
-                click: () => emitEvent(item.action)
-              }"
-            >
-              {{ item.label }}
-            </component>
+            <AposButton
+              v-if="item.options" type="quiet"
+              @click="emitEvent(item.action)"
+              :label="item.label"
+              :modifiers="['no-motion']"
+              class="apos-admin-bar__btn"
+            />
             <AposContextMenu
               v-else-if="item.items" class="apos-admin-bar__sub"
               :menu="item.items" :button="{
-                label: item.label
+                label: item.label,
+                modifiers: ['no-motion']
               }"
               @item-clicked="emitEvent"
             />
@@ -35,7 +34,8 @@
                 iconOnly: true,
                 icon: 'plus-icon',
                 type: 'primary',
-                modifiers: ['round', 'no-motion']
+                modifiers: ['round', 'no-motion'],
+                iconSize: 10
               }"
               @item-clicked="emitEvent"
             />
@@ -139,7 +139,7 @@ export default {
 <style lang="scss" scoped>
 $menu-row-height: 50px;
 $menu-v-pad: 18px;
-$menu-h-space: 16px;
+$menu-h-space: 12px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
 $admin-bar-border: 1px solid var(--a-base-9);
@@ -177,31 +177,23 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__logo {
   display: inline-block;
-  height: 20px;
+  height: 26px;
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__btn,
-.apos-admin-bar__btn.apos-button,
-.apos-admin-bar__btn {
-  @include type-large;
+.apos-admin-bar__btn,
+.apos-admin-bar__btn.apos-button {
+  @include type-base;
   border-radius: 0;
-
-  &:hover,
-  &:focus {
-    border-width: 0;
-    transform: none;
-  }
-}
-
-.apos-admin-bar__sub /deep/ .apos-context-menu__btn,
-.apos-admin-bar__btn {
   height: $menu-row-height;
 
   &:hover,
   &:focus {
     box-shadow: none;
     outline-width: 0;
-    background-color: var(--a-base-8);
+    background-color: var(--a-base-9);
+    color: currentColor;
+    text-decoration: none;
   }
 }
 .apos-admin-bar__item {
@@ -269,11 +261,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__create {
-  margin-left: 20px;
+  margin-left: 10px;
   // Adjust button padding and svg size to have a large plus icon while keeping
   // the button size the same.
   /deep/ .apos-context-menu__btn {
-    padding: 4px;
+    padding: 2px;
+    border-width: 0;
   }
 
   /deep/ .apos-context-menu__popup {

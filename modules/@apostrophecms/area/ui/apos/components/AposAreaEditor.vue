@@ -8,11 +8,11 @@
         <AposButton
           :label="'Add ' + contextMenuOptions.menu[0].label"
           type="primary"
+          :icon="icon"
           @click="add(contextMenuOptions.menu[0].name)"
         />
       </template>
       <template v-else>
-        <AposEmptyState :empty-state="emptyState" />
         <AposAreaMenu
           @insert="insert"
           :context-menu-options="contextMenuOptions"
@@ -127,13 +127,16 @@ export default {
         this.options.max &&
         this.options.max === 1;
     },
-    emptyState() {
-      // TODO this needs to i18next'd
-      const empty = { message: 'Add your content' };
-      if (this.isEmptySingleton) {
-        empty.message = `Add a ${this.contextMenuOptions.menu[0].label}`;
+    icon() {
+      let icon = null;
+      if (
+        this.isEmptySingleton &&
+        this.contextMenuOptions.menu[0] &&
+        this.contextMenuOptions.menu[0].icon
+      ) {
+        icon = this.contextMenuOptions.menu[0].icon;
       }
-      return empty;
+      return icon;
     },
     moduleOptions() {
       return window.apos.area;
@@ -403,8 +406,9 @@ export default {
   align-items: center;
   flex-direction: column;
   min-height: 50px;
-  background-color: var(--a-base-10);
-  border: 2px dotted var(--a-primary);
+  background-color: var(--a-base-9);
+  border: 1px solid var(--a-base-8);
+  border-radius: var(--a-border-radius);
 }
 
 </style>

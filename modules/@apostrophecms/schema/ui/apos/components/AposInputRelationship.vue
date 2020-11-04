@@ -174,7 +174,7 @@ export default {
   }
 
   .apos-input-relationship__items {
-    max-width: 220px;
+    padding: relative;
     margin-top: 10px;
   }
 </style>

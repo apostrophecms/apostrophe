@@ -1,6 +1,7 @@
 <template>
   <AposModal
-    :modal="modal" :modal-title="modalTitle"
+    :modal="modal" :modal-title="modalTitle" 
+    ref="modal"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
@@ -170,6 +171,7 @@ export default {
     });
   },
   async mounted() {
+    this.bindShortcuts();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     this.getPieces();
@@ -180,6 +182,9 @@ export default {
         label: `New ${this.moduleLabels.singular}`
       });
     }
+  },
+  destroyed() {
+    this.destroyShortcuts();
   },
   methods: {
     // TEMP From Manager Mixin:
@@ -284,6 +289,25 @@ export default {
       this.currentPage = 1;
 
       this.getPieces();
+    },
+
+    shortcutNew(event) {
+      const interesting = (event.keyCode === 78 || event.keyCode === 67); // C(reate) or N(ew)
+      const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
+      if (
+        interesting &&
+        document.activeElement.tagName !== 'INPUT' &&
+        this.$refs.modal.id === topModal
+      ) {
+        this.new();
+      }
+    },
+
+    bindShortcuts() {
+      window.addEventListener('keydown', this.shortcutNew);
+    },
+    destroyShortcuts() {
+      window.removeEventListener('keydown', this.shortcutNew);
     }
   }
 };

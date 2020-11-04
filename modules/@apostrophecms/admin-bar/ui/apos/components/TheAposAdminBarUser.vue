@@ -3,7 +3,7 @@
     class="apos-admin-user"
     :button="button"
     :menu="menu"
-    menu-placement="bottom-start"
+    menu-placement="bottom-end"
     :menu-offset="2"
     @item-clicked="emitEvent"
   >

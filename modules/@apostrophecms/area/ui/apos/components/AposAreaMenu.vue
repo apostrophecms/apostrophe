@@ -116,10 +116,10 @@ export default {
     buttonOptions() {
       return {
         label: 'Add Content',
-        iconOnly: true,
+        iconOnly: this.empty === false,
         icon: 'plus-icon',
         type: 'primary',
-        modifiers: [ 'round', 'tiny' ],
+        modifiers: this.empty ? [] : [ 'round', 'tiny' ],
         iconSize: this.empty ? 20 : 11,
         disabled: this.maxReached
       };
