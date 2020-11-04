@@ -31,7 +31,10 @@
           :button="more.button"
           :menu="more.menu"
           @item-clicked="$emit('item-clicked', item)"
+          menu-placement="bottom-start"
+          :menu-offset="40"
         />
+        <!-- :menu-offset="40, 30" -->
         <a
           class="apos-slat__control apos-slat__control--view"
           v-if="item._url || item._urls"
@@ -231,6 +234,11 @@ export default {
   .apos-slat__main {
     display: flex;
     align-items: center;
+    & /deep/ .trigger {
+      /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
+      /* stylelint-disable-next-line declaration-no-important */
+      display: flex !important;
+    }
   }
 
   .apos-slat__label {

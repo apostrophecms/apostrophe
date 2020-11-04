@@ -118,6 +118,10 @@ export default {
       type: Boolean,
       default: false
     },
+    uiVisible: {
+      type: Boolean,
+      default: false
+    },
     widgetHovered: {
       type: String,
       default: null
