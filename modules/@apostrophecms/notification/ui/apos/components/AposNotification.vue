@@ -5,7 +5,6 @@
         :is="iconComponent"
         :decorative="true"
         :size="icon ? 16 : 12"
-        class="apos-notification__icon"
       />
     </span>
     <span class="apos-notification__label">

@@ -266,7 +266,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   // the button size the same.
   /deep/ .apos-context-menu__btn {
     padding: 2px;
-    border: 0;
+    border-width: 0;
   }
 
   /deep/ .apos-context-menu__popup {
