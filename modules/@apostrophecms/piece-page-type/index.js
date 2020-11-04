@@ -79,7 +79,7 @@ module.exports = {
       // `@apostrophecms/piece-type-cursor` in your subclass of
       // `@apostrophecms/piece-type`.
 
-      indexCursor(req) {
+      indexQuery(req) {
         const cursor = self.pieces.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
         self.filterByIndexPage(cursor, req.data.page);
         return cursor;
@@ -104,7 +104,7 @@ module.exports = {
           });
         }
 
-        const cursor = self.indexCursor(req);
+        const cursor = self.indexQuery(req);
 
         await getFilters();
         await totalPieces();
@@ -224,7 +224,7 @@ module.exports = {
           if (!doc) {
             return;
           }
-          const cursor = self.indexCursor(req);
+          const cursor = self.indexQuery(req);
           previous = await cursor.previous(doc).applyBuilders(typeof self.options.previous === 'object' ? self.options.previous : {}).toObject();
         }
 
@@ -235,7 +235,7 @@ module.exports = {
           if (!doc) {
             return;
           }
-          const cursor = self.indexCursor(req);
+          const cursor = self.indexQuery(req);
           next = await cursor.next(doc).applyBuidlers(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
         }
       },
