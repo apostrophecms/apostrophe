@@ -6,6 +6,7 @@
     <template #body>
       <div class="apos-input-wrapper">
         <Component
+          :doc-id="docId"
           :is="editorComponent"
           :options="field.options"
           :items="next.items"
