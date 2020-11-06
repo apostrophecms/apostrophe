@@ -45,8 +45,8 @@ module.exports = ({ importFile, modulesDir }, apos) => {
       modules: [
         // TODO change this if we decide to namespace the
         // apostrophe module itself
-        `${apos.rootDir}/node_modules/apostrophe/node_modules`,
-        `${apos.rootDir}/node_modules`
+        `${apos.npmRootDir}/node_modules/apostrophe/node_modules`,
+        `${apos.npmRootDir}/node_modules`
       ]
     },
     stats: 'verbose',
