@@ -13,6 +13,9 @@
       :aria-labelledby="id"
       ref="modalEl"
     >
+      <transition :name="transitionType">
+        <div class="apos-modal__overlay" v-if="modal.showModal" />
+      </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
           v-if="modal.showModal"
@@ -49,9 +52,6 @@
           </footer>
         </div>
       </transition>
-      <transition :name="transitionType">
-        <div class="apos-modal__overlay" v-if="modal.showModal" />
-      </transition>
     </section>
   </transition>
 </template>
@@ -79,6 +79,11 @@ export default {
     }
   },
   emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
+  data() {
+    return {
+      topmost: false
+    };
+  },
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -120,6 +125,9 @@ export default {
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
       }
+      if (this.topmost) {
+        classes.push('apos-modal--topmost');
+      }
       return classes.join(' ');
     },
     gridModifier() {
@@ -158,12 +166,23 @@ export default {
       this.$emit('show-modal');
       this.bindEventListeners();
       apos.modal.stack = apos.modal.stack || [];
+      const stack = apos.modal.stack;
+      const previous = stack.length && stack[stack.length - 1];
+      if (previous) {
+        previous.topmost = false;
+      }
+      this.topmost = true;
       apos.modal.stack.push(this);
     },
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
-      apos.modal.stack.pop();
+      const stack = apos.modal.stack;
+      stack.pop();
+      const topmost = stack.length && stack[stack.length - 1];
+      if (topmost) {
+        topmost.topmost = true;
+      }
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);
@@ -285,18 +304,20 @@ export default {
   }
 
   .apos-modal__overlay {
-    z-index: $z-index-modal-bg;
+    // Same as inner so we can leverage the stacking order. -Tom
+    z-index: $z-index-modal-inner;
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    display: block;
+    display: none;
     background-color: var(--a-overlay);
 
-    .apos-modal + .apos-modal & {
-      // A second modal doesn't need an overlay.
-      display: none;
+    .apos-modal.apos-modal--topmost & {
+      // Only the topmost overlay should be displayed,
+      // to avoid gradual darkening.
+      display: block;
     }
 
     .apos-modal--slide & {
