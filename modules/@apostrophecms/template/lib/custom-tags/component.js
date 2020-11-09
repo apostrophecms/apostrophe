@@ -34,10 +34,10 @@ module.exports = function(self, options) {
       const [ dummy, moduleName, componentName ] = parsed;
       const module = self.apos.modules[moduleName];
       if (!module) {
-        throw new Error('{% component %} was invoked with the name of a module that does not exist. Hint:\nit must be a module that is actually live in your project, not a base class\nlike @apostrophecms/piece-type.');
+        throw new Error(`{% component %} was invoked with the name of a module that does not exist. Hint:\nit must be a module that is actually live in your project, not a base class\nlike @apostrophecms/piece-type.\nModule name: ${moduleName} Component name: ${componentName}`);
       }
       if (!(module.components && module.components[componentName])) {
-        throw new Error('{% component %} was invoked with the name of a component that does not exist in ' + moduleName + '.');
+        throw new Error(`{% component %} was invoked with the name of a component that does not exist.\nModule name: ${moduleName} Component name: ${componentName}`);
       }
       const input = await module.components[componentName](req, data);
       return module.render(req, componentName, input);
