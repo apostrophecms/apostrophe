@@ -211,15 +211,12 @@ export default {
       this.focusedWidget = widgetId;
     },
     async up(i) {
-      if (this.docId) {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: true,
-          body: {
-            $move: {
-              [`@${this.id}.items`]: {
-                $item: this.next[i]._id,
-                $before: this.next[i - 1]._id
-              }
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-edited', {
+          $move: {
+            [`@${this.id}.items`]: {
+              $item: this.next[i]._id,
+              $before: this.next[i - 1]._id
             }
           }
         });
@@ -232,15 +229,12 @@ export default {
       ];
     },
     async down(i) {
-      if (this.docId) {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: true,
-          body: {
-            $move: {
-              [`@${this.id}.items`]: {
-                $item: this.next[i]._id,
-                $after: this.next[i + 1]._id
-              }
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-edited', {
+          $move: {
+            [`@${this.id}.items`]: {
+              $item: this.next[i]._id,
+              $after: this.next[i + 1]._id
             }
           }
         });
@@ -253,13 +247,10 @@ export default {
       ];
     },
     async remove(i) {
-      if (this.docId) {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: true,
-          body: {
-            $pullAllById: {
-              [`@${this.id}.items`]: [ this.next[i]._id ]
-            }
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-edited', {
+          $pullAllById: {
+            [`@${this.id}.items`]: [ this.next[i]._id ]
           }
         });
       }
@@ -294,12 +285,9 @@ export default {
       });
     },
     async update(widget) {
-      if (this.docId) {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: 'contextual',
-          body: {
-            [`@${widget._id}`]: widget
-          }
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-edited', {
+          [`@${widget._id}`]: widget
         });
       }
       const index = this.next.findIndex(w => w._id === widget._id);
@@ -350,13 +338,10 @@ export default {
       if (e.index < this.next.length) {
         push.$before = this.next[e.index]._id;
       }
-      if (this.docId) {
-        await apos.http.patch(`${apos.doc.action}/${this.docId}`, {
-          busy: true,
-          body: {
-            $push: {
-              [`@${this.id}.items`]: push
-            }
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-edited', {
+          $push: {
+            [`@${this.id}.items`]: push
           }
         });
       }
