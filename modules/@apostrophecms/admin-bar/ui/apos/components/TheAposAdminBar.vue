@@ -132,8 +132,18 @@ export default {
     apos.bus.$on('context-edited', patch => {
       this.patches.push(patch);
     });
+
+    window.addEventListener('beforeunload', this.beforeUnload);
   },
   methods: {
+    beforeUnload(e) {
+      if (this.patches.length) {
+        e.preventDefault();
+        // No actual control over the message is possible in modern browsers,
+        // but Chrome requires we set a string here
+        e.returnValue = '';
+      }
+    },
     emitEvent: function (name) {
       apos.bus.$emit('admin-menu-click', name);
     },
