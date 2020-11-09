@@ -18,7 +18,7 @@
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary"
+        :type="relationshipField ? 'secondary' : 'primary'"
         label="New Page"
         @click="openEditor(null)"
       />
@@ -73,7 +73,6 @@ export default {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
-        type: 'slide',
         showModal: false
       },
       pages: [],
