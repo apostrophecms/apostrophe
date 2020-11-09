@@ -272,7 +272,6 @@ export default {
       // current page type module, so we don't use `moduleOptions`
       const component = window.apos.modules[this.moduleName].components.insertModal;
       const moduleName = this.moduleName;
-      console.log(`> ${component} ${moduleName}`);
       if (await this.submit()) {
         // The original modal has delivered its result and
         // resolved its promise. Open a new one for the copy
