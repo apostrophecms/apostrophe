@@ -92,9 +92,13 @@ export default {
         if (this.compatible(oldValue, this.next)) {
           // If this is a page slug, we only replace the last section of the slug.
           if (this.field.page) {
-            const parts = this.next.match(/[^/]+/g);
-            parts.pop();
-            this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
+            if (this.next == null) {
+              this.next = `/${this.slugify(newValue)}`;
+            } else {
+              const parts = this.next.match(/[^/]+/g);
+              parts.pop();
+              this.next = `/${parts.join('/')}${this.slugify(newValue)}`;
+            }
           } else {
             this.next = this.slugify(newValue);
           }
@@ -148,8 +152,8 @@ export default {
         title = '';
       }
       if (this.field.page) {
-        const matches = slug.match(/[^/]+$/);
-        slug = matches[0] || '';
+        const matches = (slug || '').match(/[^/]+$/);
+        slug = (matches && matches[0]) || '';
       }
       return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
     },

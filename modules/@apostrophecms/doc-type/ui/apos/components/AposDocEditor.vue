@@ -13,6 +13,12 @@
     </template>
     <template #primaryControls>
       <AposButton
+        type="secondary" label="Copy"
+        :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
+        @click="copy"
+        v-if="docId"
+      />
+      <AposButton
         type="primary" label="Save"
         :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
@@ -95,6 +101,14 @@ export default {
     },
     docId: {
       type: String,
+      default: null
+    },
+    copyOfId: {
+      type: String,
+      default: null
+    },
+    copyOf: {
+      type: Object,
       default: null
     },
     filterValues: {
@@ -251,49 +265,84 @@ export default {
     }
   },
   methods: {
-    submit() {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
-          await apos.notify('Resolve errors before saving.', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
-
-        const body = this.unsplitDoc();
-        let route;
-        let requestMethod;
-        if (this.docId) {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-        } else {
-          route = this.moduleAction;
-          requestMethod = apos.http.post;
-
-          if (this.moduleName === '@apostrophecms/page') {
-            body._targetId = apos.page.page._id;
-            body._position = 'lastChild';
+    async copy() {
+      const copyOfId = this.docId;
+      const copyOf = this.unsplitDoc();
+      // In this case if it's a page we need @apostrophecms/page, not the
+      // current page type module, so we don't use `moduleOptions`
+      const component = window.apos.modules[this.moduleName].components.insertModal;
+      const moduleName = this.moduleName;
+      console.log(`> ${component} ${moduleName}`);
+      if (await this.submit()) {
+        // The original modal has delivered its result and
+        // resolved its promise. Open a new one for the copy
+        await apos.modal.execute(
+          component,
+          {
+            moduleName,
+            docId: null,
+            copyOfId,
+            copyOf
           }
-        }
-        let doc;
-        try {
-          doc = await requestMethod(route, {
-            busy: true,
-            body
-          });
-        } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred saving the document.'
-          });
-          return;
-        }
-        this.$emit('modal-result', doc);
-        this.modal.showModal = false;
+        );
+      }
+    },
+    nextTick() {
+      return new Promise((resolve, reject) => {
+        this.$nextTick(() => {
+          resolve();
+        });
       });
     },
+    async submit() {
+      this.triggerValidation = true;
+      await this.nextTick();
+      if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
+        await apos.notify('Resolve errors before saving.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return false;
+      }
+
+      const body = this.unsplitDoc();
+      if (this.copyOfId) {
+        body.copyOfId = this.copyOfId;
+      }
+      let route;
+      let requestMethod;
+      if (this.docId) {
+        route = `${this.moduleAction}/${this.docId}`;
+        requestMethod = apos.http.put;
+      } else {
+        route = this.moduleAction;
+        requestMethod = apos.http.post;
+
+        if (this.moduleName === '@apostrophecms/page') {
+          body._targetId = apos.page.page._id;
+          body._position = 'lastChild';
+        }
+      }
+      let doc;
+      try {
+        doc = await requestMethod(route, {
+          busy: true,
+          body
+        });
+        apos.bus.$emit('content-changed', doc);
+      } catch (e) {
+        await this.handleSaveError(e, {
+          fallback: 'An error occurred saving the document.'
+        });
+        return false;
+      }
+      this.$emit('modal-result', doc);
+      this.modal.showModal = false;
+      return true;
+    },
+    // Returns a brand new unsaved instance with defaults, or the data
+    // to be copied if we are copying another document
     async getNewInstance () {
       try {
         const body = {
@@ -304,10 +353,15 @@ export default {
           body._targetId = apos.page.page._id;
           body._position = 'lastChild';
         }
-        const newDoc = await apos.http.post(this.moduleAction, {
-          body
-        });
-        return newDoc;
+        if (this.copyOfId) {
+          const content = this.copyOf;
+          content.title = `Copy of ${content.title}`;
+          return content;
+        } else {
+          return await apos.http.post(this.moduleAction, {
+            body
+          });
+        }
       } catch (error) {
         await apos.notify('Error while creating new, empty content.', {
           type: 'danger',

@@ -1,6 +1,5 @@
 import Vue from 'apostrophe/vue';
-import PortalVue from 'portal-vue';
-Vue.use(PortalVue);
+import cuid from 'cuid';
 
 export default function() {
   const theAposModals = new Vue({
@@ -28,4 +27,11 @@ export default function() {
   });
   apos.modal.execute = theAposModals.execute;
   apos.confirm = theAposModals.confirm;
+  apos.bus.$on('content-changed', async () => {
+    const content = await apos.http.get(`${window.location.href}?apos_refresh=${cuid()}`, {});
+    const refreshable = document.querySelector('[data-apos-refreshable]');
+    if (refreshable) {
+      refreshable.innerHTML = content;
+    }
+  });
 };

@@ -182,9 +182,11 @@ export default {
         label: `New ${this.moduleLabels.singular}`
       });
     }
+    apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
     this.destroyShortcuts();
+    apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
     // TEMP From Manager Mixin:
@@ -201,9 +203,6 @@ export default {
     },
     new() {
       this.edit(null);
-    },
-    async finishSaved() {
-      await this.getPieces();
     },
     async getPieces () {
       if (this.holdQueries) {
