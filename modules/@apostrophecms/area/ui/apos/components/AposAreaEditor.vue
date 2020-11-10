@@ -156,7 +156,6 @@ export default {
         this.$emit('changed', {
           items: this.next
         });
-      } else {
         // For the benefit of all other area editors on-page
         // which may have this one as a sub-area in some way, and
         // mistakenly think they know its contents have not changed
@@ -168,27 +167,16 @@ export default {
     }
   },
   mounted() {
-    if (this.docId) {
-      this.areaUpdatedHandler = (area) => {
-        for (const item of this.next) {
-          if (this.patchSubobject(item, area)) {
-            break;
-          }
-        }
-      };
-      apos.bus.$on('area-updated', this.areaUpdatedHandler);
-      apos.bus.$on('widget-hover', this.updateWidgetHovered);
-      apos.bus.$on('widget-focus', this.updateWidgetFocused);
-      this.bindEventListeners();
-    }
+    apos.bus.$on('area-updated', this.areaUpdatedHandler);
+    apos.bus.$on('widget-hover', this.updateWidgetHovered);
+    apos.bus.$on('widget-focus', this.updateWidgetFocused);
+    this.bindEventListeners();
   },
   beforeDestroy() {
-    if (this.areaUpdatedHandler) {
-      apos.bus.$off('area-updated', this.areaUpdatedHandler);
-      apos.bus.$off('widget-hover', this.updateWidgetHovered);
-      apos.bus.$off('widget-focus', this.updateWidgetFocused);
-      this.unbindEventListeners();
-    }
+    apos.bus.$off('area-updated', this.areaUpdatedHandler);
+    apos.bus.$off('widget-hover', this.updateWidgetHovered);
+    apos.bus.$off('widget-focus', this.updateWidgetFocused);
+    this.unbindEventListeners();
   },
   methods: {
     bindEventListeners() {
@@ -197,7 +185,13 @@ export default {
     unbindEventListeners() {
       window.removeEventListener('keydown', this.focusParentEvent);
     },
-
+    areaUpdatedHandler(area) {
+      for (const item of this.next) {
+        if (this.patchSubobject(item, area)) {
+          break;
+        }
+      }
+    },
     focusParentEvent(event) {
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace

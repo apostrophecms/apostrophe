@@ -47,16 +47,13 @@ export default class Styles extends Node {
 
   commands({ type, schema }) {
     return attrs => {
-      if (attrs.tag === 'p') {
-        type = schema.nodes.paragraph;
-      }
       return setBlockType(type, {
         class: null,
         ...attrs
       });
     };
   }
-
+  // TODO: Clean up.
   // keys({ type }) {
   //   return this.options.levels.reduce((items, level) => ({
   //     ...items,

@@ -89,7 +89,7 @@ export default {
 
 <style lang="scss" scoped>
 .apos-confirm {
-  z-index: $z-index-modal-inner;
+  z-index: $z-index-modal;
   position: fixed;
   top: 0;
   right: 0;

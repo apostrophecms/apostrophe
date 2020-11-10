@@ -181,7 +181,7 @@ export default {
 }
 
 .apos-popover {
-  z-index: $z-index-modal-inner;
+  z-index: $z-index-modal;
   display: block;
 
   .tooltip-arrow {
