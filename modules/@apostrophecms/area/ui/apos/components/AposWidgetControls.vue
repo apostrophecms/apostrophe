@@ -47,10 +47,6 @@ export default {
       default() {
         return {};
       }
-    },
-    item: {
-      type: Object,
-      default: null
     }
   },
   emits: [ 'remove', 'edit', 'clone', 'up', 'down' ],

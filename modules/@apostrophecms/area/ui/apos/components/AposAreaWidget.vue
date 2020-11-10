@@ -56,7 +56,6 @@
         <AposWidgetControls
           :first="i === 0"
           :last="i === next.length - 1"
-          :item="widget"
           :options="{ contextual: isContextual }"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
