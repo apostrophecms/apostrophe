@@ -10,6 +10,7 @@
       :modifiers="['no-border', 'no-motion']"
     />
     <editor-menu-bubble
+      v-if="active"
       :editor="editor"
       :keep-in-bounds="keepInBounds"
       v-slot="{ menu }"
