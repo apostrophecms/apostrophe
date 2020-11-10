@@ -292,6 +292,9 @@ export default {
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+        if ((this.moduleName === '@apostrophecms/page') && (!this.docId)) {
+          window.location.href = doc._url;
+        }
       });
     },
     async getNewInstance () {

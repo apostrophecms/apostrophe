@@ -42,7 +42,8 @@ module.exports = {
     publishMenu: [ {
       action: 'publish-page',
       label: 'Publish Page'
-    } ]
+    } ],
+    quickCreate: true
   },
   batchOperations: {
     add: {
@@ -505,6 +506,8 @@ database.`);
         if (req.data.bestPage) {
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
+        browserOptions.name = self.__meta.name;
+        browserOptions.quickCreate = self.options.quickCreate;
         return browserOptions;
       },
       // Returns a cursor that finds pages the current user can edit
