@@ -117,7 +117,7 @@ export default {
     });
 
     Object.values(apos.modules).forEach(module => {
-      if (module.quickCreate && module.schema && module.schema.length > 0) {
+      if (module.quickCreate) {
         this.createMenu.push({
           label: module.label || module.name,
           name: module.name,
