@@ -5,8 +5,9 @@
   >
     <template #body>
       <div class="apos-input-wrapper">
+        <!-- We do not pass docId here because it is solely for
+          contextual editing as far as the area editor is concerned. -Tom -->
         <Component
-          :doc-id="docId"
           :is="editorComponent"
           :options="field.options"
           :items="next.items"
