@@ -9,6 +9,11 @@
       :icon="tool.icon ? tool.icon : false"
       :modifiers="['no-border', 'no-motion']"
     />
+    <!--
+      TODO: Confirm if the `editor` object passed into this `editor-menu-bubble`
+      should be the same one from the parent, or a fresh one. It does not seem
+      to use any of the editor configurations from the parent. - AB
+     -->
     <editor-menu-bubble
       v-if="active"
       :editor="editor"
