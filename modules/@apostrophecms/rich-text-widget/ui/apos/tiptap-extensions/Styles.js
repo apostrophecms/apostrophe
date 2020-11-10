@@ -53,7 +53,7 @@ export default class Styles extends Node {
       });
     };
   }
-
+  // TODO: Clean up.
   // keys({ type }) {
   //   return this.options.levels.reduce((items, level) => ({
   //     ...items,
