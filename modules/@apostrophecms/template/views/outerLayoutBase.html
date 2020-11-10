@@ -8,9 +8,6 @@
     {{ apos.asset.stylesheets(data.scene) }}
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    {# For now because we haven't split out the stylesheets resulting #}
-    {# in a very jarring FOUC. I am opening a ticket about splitting. -Tom #}
-    {{ apos.asset.scripts(data.scene) }}
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append' } %}
     {% block extraHead %}
@@ -39,6 +36,7 @@
       {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
       {% block afterMain %}{% endblock %}
     </div>
+    {{ apos.asset.scripts(data.scene) }}
     {# Automatically does nothing in production #}
     {{ apos.asset.refreshOnRestart() }}
     {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
