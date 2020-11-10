@@ -477,8 +477,18 @@ database.`);
               await apply(patch);
             }
           } else {
-            apply(req.body);
+            await apply(req.body);
           }
+          await self.update(req, page);
+
+          if (_targetId) {
+            const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
+            const actualTargetId = result.targetId;
+            const actualPosition = result.position;
+            await self.move(req, page._id, actualTargetId, actualPosition);
+          }
+          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+
           async function apply(input) {
             const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
             if (!manager) {
@@ -499,17 +509,6 @@ database.`);
               _position = input._position;
             }
           }
-          await self.update(req, page);
-
-          if (_targetId) {
-            const {
-              actualTargetId,
-              actualPosition
-            } = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
-
-            await self.move(req, page._id, actualTargetId, actualPosition);
-          }
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
         });
       },
       getBrowserData(req) {
