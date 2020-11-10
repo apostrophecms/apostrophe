@@ -79,11 +79,6 @@ export default {
     }
   },
   emits: [ 'inactive', 'esc', 'show-modal', 'no-modal' ],
-  data() {
-    return {
-      topmost: false
-    };
-  },
   computed: {
     id() {
       const rand = (Math.floor(Math.random() * Math.floor(10000)));
@@ -125,9 +120,6 @@ export default {
       if (this.modal.type === 'slide') {
         classes.push('apos-modal--full-height');
       }
-      if (this.topmost) {
-        classes.push('apos-modal--topmost');
-      }
       return classes.join(' ');
     },
     gridModifier() {
@@ -166,23 +158,12 @@ export default {
       this.$emit('show-modal');
       this.bindEventListeners();
       apos.modal.stack = apos.modal.stack || [];
-      const stack = apos.modal.stack;
-      const previous = stack.length && stack[stack.length - 1];
-      if (previous) {
-        previous.topmost = false;
-      }
-      this.topmost = true;
       apos.modal.stack.push(this);
     },
     finishExit () {
       this.removeEventListeners();
       this.$emit('no-modal');
-      const stack = apos.modal.stack;
-      stack.pop();
-      const topmost = stack.length && stack[stack.length - 1];
-      if (topmost) {
-        topmost.topmost = true;
-      }
+      apos.modal.stack.pop();
     },
     bindEventListeners () {
       window.addEventListener('keydown', this.esc);
@@ -242,7 +223,7 @@ export default {
   // NOTE: Transition timings below are set to match the wrapper transition
   // timing in the template to coordinate the inner and overlay animations.
   .apos-modal__inner {
-    z-index: $z-index-modal-inner;
+    z-index: $z-index-modal;
     position: fixed;
     top: $spacing-double;
     right: $spacing-double;
@@ -304,35 +285,21 @@ export default {
   }
 
   .apos-modal__overlay {
-    // Same as inner so we can leverage the stacking order. -Tom
-    z-index: $z-index-modal-inner;
+    z-index: $z-index-modal;
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    display: none;
     background-color: var(--a-overlay);
 
-    .apos-modal.apos-modal--topmost & {
-      // Only the topmost overlay should be displayed,
-      // to avoid gradual darkening.
-      display: block;
-    }
-
-    .apos-modal--slide & {
-      transition: opacity 0.15s ease;
-    }
-
-    &.slide-enter,
-    &.slide-leave-to {
-      opacity: 0;
-    }
-
+    .apos-modal--slide &,
     .apos-modal--overlay & {
       transition: opacity 0.15s ease;
     }
 
+    &.slide-enter,
+    &.slide-leave-to,
     &.fade-enter,
     &.fade-leave-to {
       opacity: 0;
