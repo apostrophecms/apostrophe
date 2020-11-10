@@ -73,6 +73,7 @@ export default {
       moduleName: '@apostrophecms/page',
       modal: {
         active: false,
+        type: 'overlay',
         showModal: false
       },
       pages: [],
