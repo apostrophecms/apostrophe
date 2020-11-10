@@ -13,6 +13,9 @@
       :aria-labelledby="id"
       ref="modalEl"
     >
+      <transition :name="transitionType">
+        <div class="apos-modal__overlay" v-if="modal.showModal" />
+      </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
         <div
           v-if="modal.showModal"
@@ -48,9 +51,6 @@
             </div>
           </footer>
         </div>
-      </transition>
-      <transition :name="transitionType">
-        <div class="apos-modal__overlay" v-if="modal.showModal" />
       </transition>
     </section>
   </transition>
@@ -223,7 +223,7 @@ export default {
   // NOTE: Transition timings below are set to match the wrapper transition
   // timing in the template to coordinate the inner and overlay animations.
   .apos-modal__inner {
-    z-index: $z-index-modal-inner;
+    z-index: $z-index-modal;
     position: fixed;
     top: $spacing-double;
     right: $spacing-double;
@@ -285,33 +285,21 @@ export default {
   }
 
   .apos-modal__overlay {
-    z-index: $z-index-modal-bg;
+    z-index: $z-index-modal;
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    display: block;
     background-color: var(--a-overlay);
 
-    .apos-modal + .apos-modal & {
-      // A second modal doesn't need an overlay.
-      display: none;
-    }
-
-    .apos-modal--slide & {
-      transition: opacity 0.15s ease;
-    }
-
-    &.slide-enter,
-    &.slide-leave-to {
-      opacity: 0;
-    }
-
+    .apos-modal--slide &,
     .apos-modal--overlay & {
       transition: opacity 0.15s ease;
     }
 
+    &.slide-enter,
+    &.slide-leave-to,
     &.fade-enter,
     &.fade-leave-to {
       opacity: 0;
