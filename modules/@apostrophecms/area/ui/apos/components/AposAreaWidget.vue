@@ -1,7 +1,7 @@
 
 <template>
   <div
-    class="apos-area-widget-wrapper" :data-area-widget="widgetId"
+    class="apos-area-widget-wrapper" :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
   >
     <div
@@ -9,7 +9,7 @@
       :class="ui.container"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
-      @click="getFocus($event, widgetId)"
+      @click="getFocus($event, widget._id)"
     >
       <div
         class="apos-area-widget-controls apos-area-widget__label"
@@ -56,6 +56,7 @@
         <AposWidgetControls
           :first="i === 0"
           :last="i === next.length - 1"
+          :item="widget"
           :options="{ contextual: isContextual }"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
@@ -223,9 +224,6 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
-    widgetId() {
-      return cuid();
-    },
     isSuppressed() {
       if (this.focused) {
         return false;
@@ -236,7 +234,7 @@ export default {
       }
 
       if (this.widgetHovered) {
-        return this.widgetHovered !== this.widgetId;
+        return this.widgetHovered !== this.widget._id;
       } else {
         return false;
       }
@@ -266,7 +264,7 @@ export default {
   },
   watch: {
     widgetFocused (newVal) {
-      if (newVal === this.widgetId) {
+      if (newVal === this.widget._id) {
         this.focus();
       } else {
         // reset everything
@@ -299,7 +297,7 @@ export default {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', this.widgetId);
+      apos.bus.$emit('widget-focus', this.widget._id);
     }
   },
   methods: {
@@ -335,7 +333,7 @@ export default {
       this.state.add.bottom.show = true;
       this.state.container.highlight = true;
       this.state.labels.show = true;
-      apos.bus.$emit('widget-hover', this.widgetId);
+      apos.bus.$emit('widget-hover', this.widget._id);
     },
 
     mouseleave() {
