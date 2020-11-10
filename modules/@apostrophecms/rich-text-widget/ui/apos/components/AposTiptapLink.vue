@@ -185,7 +185,7 @@ export default {
   }
 
   .apos-link-control__dialog {
-    z-index: $z-index-modal-bg;
+    z-index: $z-index-modal;
     position: absolute;
     opacity: 0;
     pointer-events: none;
