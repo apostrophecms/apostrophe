@@ -5,6 +5,13 @@
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <ul class="apos-admin-bar__items">
+          <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+            <AposButton
+              type="default" label="Page Tree"
+              icon="file-tree-icon" class="apos-admin-bar__btn"
+              @click="emitEvent('@apostrophecms/page:manager')"
+            />
+          </li>
           <li
             v-for="item in menuItems" :key="item.name"
             class="apos-admin-bar__item"
@@ -46,28 +53,31 @@
         />
       </div>
       <div class="apos-admin-bar__row">
-        <AposButton
-          v-if="currentPageId"
-          type="default" label="Page Settings"
-          icon="cog-icon" class="apos-admin-bar__btn"
-          @click="emitEvent({
-            itemName: '@apostrophecms/page:editor',
-            props: {
-              docId: currentPageId
-            }
-          })"
-        />
-        <AposButton
-          type="default" label="Page Tree"
-          icon="file-tree-icon" class="apos-admin-bar__btn"
-          @click="emitEvent('@apostrophecms/page:manager')"
-        />
-        <AposButton
-          type="primary" label="Save"
-          :disabled="!readyToSave"
-          class="apos-admin-bar__btn"
-          @click="save"
-        />
+        <span class="apos-admin-bar__context-spacer" />
+        <span class="apos-admin-bar__context-title">
+          <information-outline-icon />
+          {{ moduleOptions.context.title }}
+        </span>
+        <span class="apos-admin-bar__context-controls">
+          <AposButton
+            v-if="moduleOptions.contextId"
+            type="default" label="Page Settings"
+            icon="cog-icon" class="apos-admin-bar__btn"
+            :icon-only="true"
+            @click="emitEvent({
+              itemName: contextEditorName,
+              props: {
+                docId: moduleOptions.contextId
+              }
+            })"
+          />
+          <AposButton
+            type="primary" label="Publish Changes"
+            :disabled="!readyToSave"
+            class="apos-admin-bar__btn"
+            @click="save"
+          />
+        </span>
       </div>
     </nav>
   </div>
@@ -103,6 +113,12 @@ export default {
     },
     readyToSave() {
       return this.patches.length;
+    },
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    contextEditorName() {
+      return this.moduleOptions.contextEditorName;
     }
   },
   mounted() {
@@ -145,10 +161,11 @@ export default {
       }
     },
     emitEvent: function (name) {
+      console.log(name);
       apos.bus.$emit('admin-menu-click', name);
     },
     async save() {
-      await apos.http.patch(`${window.apos.doc.action}/${window.apos.adminBar.contextId}`, {
+      await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
         body: {
           _patches: this.patches
         },
@@ -187,6 +204,25 @@ $admin-bar-border: 1px solid var(--a-base-9);
   height: $menu-row-height;
   padding: 0 $admin-bar-h-pad 0 0;
   border-bottom: $admin-bar-border;
+}
+
+.apos-admin-bar__context-spacer {
+  flex: 1;
+  // Using text-align because otherwise we don't wind
+  // up with quite the right centering for the middle one
+  // due to subtle issues with the way space is
+  // distributed
+  text-align: left;
+}
+
+.apos-admin-bar__context-title {
+  flex: 1;
+  text-align: center;
+}
+
+.apos-admin-bar__context-controls {
+  flex: 1;
+  text-align: right;
 }
 
 .apos-admin-bar__items {

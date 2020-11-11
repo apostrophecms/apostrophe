@@ -30,6 +30,7 @@ module.exports = {
   'format-italic-icon': 'FormatItalic',
   'format-strikethrough-variant-icon': 'FormatStrikethroughVariant',
   'format-quote-close-icon': 'FormatQuoteClose',
+  'information-outline-icon': 'InformationOutline',
   'image-icon': 'Image',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
   'play-box-icon': 'PlayBox',
