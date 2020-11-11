@@ -66,7 +66,7 @@
       </div>
       <!-- Still used for contextual editing components -->
       <component
-        v-if="editing"
+        v-if="isContextual"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -76,7 +76,7 @@
         data-apos-widget
       />
       <component
-        v-if="(!editing) || (!isContextual)"
+        v-else
         :is="widgetComponent(widget.type)"
         :options="options.widgets[widget.type]"
         :type="widget.type"
@@ -107,17 +107,11 @@
 
 <script>
 
-import cuid from 'cuid';
 import klona from 'klona';
 
 export default {
   name: 'AposAreaWidget',
   props: {
-    // For contextual editing
-    editing: {
-      type: Boolean,
-      default: false
-    },
     widgetHovered: {
       type: String,
       default: null
