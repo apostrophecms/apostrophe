@@ -543,8 +543,20 @@
           required: true
         }
       ]
+    },
+    login: {
+      user: {
+        _id: '8675309',
+        firstName: 'Admin',
+        lastName: 'Jones',
+        title: 'admin',
+        username: 'admin',
+        email: 'aj@nerd.net'
+      }
     }
   };
+
+  apos.login = apos.modules.login;
 
   apos.http = {};
 
