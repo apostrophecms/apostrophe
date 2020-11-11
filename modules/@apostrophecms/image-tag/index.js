@@ -1,7 +1,8 @@
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
-    label: 'Image Tag'
+    label: 'Image Tag',
+    quickCreate: false
   },
   fields: {
     remove: [ 'visibility' ]
