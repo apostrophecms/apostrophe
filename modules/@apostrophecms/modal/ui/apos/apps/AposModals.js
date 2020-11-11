@@ -1,6 +1,8 @@
 import Vue from 'apostrophe/vue';
 import PortalVue from 'portal-vue';
+import { VTooltip } from 'v-tooltip';
 Vue.use(PortalVue);
+Vue.directive('tooltip', VTooltip);
 
 export default function() {
   const theAposModals = new Vue({

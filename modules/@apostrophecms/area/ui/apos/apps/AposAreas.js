@@ -1,4 +1,6 @@
 import Vue from 'apostrophe/vue';
+import { VTooltip } from 'v-tooltip';
+Vue.directive('tooltip', VTooltip);
 
 export default function() {
 
