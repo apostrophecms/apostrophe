@@ -14,11 +14,8 @@
       should be the same one from the parent, or a fresh one. It does not seem
       to use any of the editor configurations from the parent. - AB
      -->
-    <editor-menu-bubble
+    <div
       v-if="active"
-      :editor="editor"
-      :keep-in-bounds="keepInBounds"
-      v-slot="{ menu }"
     >
       <div
         class="apos-link-control__dialog"
@@ -26,11 +23,6 @@
           'is-triggered': active,
           'has-selection': hasSelection
         }"
-        :style="
-          `left: ${menu.left}px;
-          bottom: ${menu.bottom}px;
-          transform: translate3d(-25px, calc(100% + ${offset}), 0);
-          `"
       >
         <AposContextMenuDialog
           menu-placement="bottom-start"
@@ -57,7 +49,7 @@
           </form>
         </AposContextMenuDialog>
       </div>
-    </editor-menu-bubble>
+    </div>
   </div>
 </template>
 
