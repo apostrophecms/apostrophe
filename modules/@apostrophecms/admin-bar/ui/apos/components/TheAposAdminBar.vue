@@ -43,7 +43,6 @@
         </ul>
         <TheAposAdminBarUser
           class="apos-admin-bar__user"
-          :user="user" :avatar-url="userAvatar"
         />
       </div>
       <div class="apos-admin-bar__row">
@@ -62,6 +61,12 @@
           type="default" label="Page Tree"
           icon="file-tree-icon" class="apos-admin-bar__btn"
           @click="emitEvent('@apostrophecms/page:manager')"
+        />
+        <AposButton
+          type="primary" label="Save"
+          :disabled="!readyToSave"
+          class="apos-admin-bar__btn"
+          @click="save"
         />
       </div>
     </nav>
@@ -86,20 +91,18 @@ export default {
     return {
       menuItems: [],
       createMenu: [],
-      user: {}
+      patches: []
     };
   },
   computed: {
-    userAvatar() {
-      // TODO: get the user avatar via an async API call
-      // when this.user._id is truthy
-      return require('./userData').userAvatar;
-    },
     currentPageId() {
       if (apos.page && apos.page.page && apos.page.page._id) {
         return apos.page.page._id;
       }
       return false;
+    },
+    readyToSave() {
+      return this.patches.length;
     }
   },
   mounted() {
@@ -126,11 +129,32 @@ export default {
       }
     });
 
-    this.user = require('./userData').user;
+    apos.bus.$on('context-edited', patch => {
+      this.patches.push(patch);
+    });
+
+    window.addEventListener('beforeunload', this.beforeUnload);
   },
   methods: {
+    beforeUnload(e) {
+      if (this.patches.length) {
+        e.preventDefault();
+        // No actual control over the message is possible in modern browsers,
+        // but Chrome requires we set a string here
+        e.returnValue = '';
+      }
+    },
     emitEvent: function (name) {
       apos.bus.$emit('admin-menu-click', name);
+    },
+    async save() {
+      await apos.http.patch(`${window.apos.doc.action}/${window.apos.adminBar.contextId}`, {
+        body: {
+          _patches: this.patches
+        },
+        busy: true
+      });
+      this.patches = [];
     }
   }
 };
