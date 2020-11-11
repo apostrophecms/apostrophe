@@ -16,10 +16,6 @@ export default {
       type: Object,
       required: true
     },
-    size: {
-      type: String,
-      default: null
-    },
     alt: {
       type: String,
       default: ''
@@ -40,8 +36,7 @@ export default {
       ];
       const index = parseInt(this.user._id, 36) % backgroundImages.length;
       return {
-        'background-image': backgroundImages[index],
-        width: this.size
+        'background-image': backgroundImages[index]
       };
     },
     initials() {

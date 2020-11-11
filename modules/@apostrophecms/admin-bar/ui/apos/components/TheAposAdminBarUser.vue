@@ -11,7 +11,6 @@
       <AposAvatar
         class="apos-admin-user__avatar"
         :user="user"
-        size="32px" alt=""
       />
     </template>
   </AposContextMenu>
