@@ -32,6 +32,7 @@ module.exports = {
   'format-quote-close-icon': 'FormatQuoteClose',
   'image-icon': 'Image',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
+  'play-box-icon': 'PlayBox',
   'instagram-icon': 'Instagram',
   'label-icon': 'Label',
   'link-icon': 'Link',

@@ -13,7 +13,8 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'Video',
-    className: false
+    className: false,
+    icon: 'play-box-icon'
   },
   fields: {
     add: {
