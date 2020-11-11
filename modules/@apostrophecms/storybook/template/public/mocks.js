@@ -121,7 +121,11 @@
               value: 'cats',
               label: 'Interfering cats'
             }
-          ]
+          ],
+          group: {
+            name: 'ungrouped',
+            label: 'Ungrouped'
+          }
         }
       ],
       filters: [
@@ -557,6 +561,9 @@
   };
 
   apos.login = apos.modules.login;
+  apos.modal = {
+    stack: []
+  };
 
   apos.http = {};
 
