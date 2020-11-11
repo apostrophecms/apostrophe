@@ -30,7 +30,6 @@
         :key="widget._id"
         :widget="widget"
         :i="i"
-        :editing="editing[widget._id] || false"
         :options="options"
         :next="next"
         :doc-id="docId"
@@ -108,10 +107,6 @@ export default {
       addWidgetType: null,
       areaId: cuid(),
       next: validItems,
-      // Track contextual editing
-      // TODO: Check if `editing` is redundant if we're controlling for
-      // contextual widgets in `AposAreaWidget`
-      editing: {},
       hoveredWidget: null,
       focusedWidget: null,
       contextMenuOptions: {
@@ -264,9 +259,7 @@ export default {
     },
     async edit(i) {
       const widget = this.next[i];
-      if (this.widgetIsContextual(widget.type)) {
-        Vue.set(this.editing, widget._id, !this.editing[widget._id]);
-      } else {
+      if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
         const result = await apos.modal.execute(componentName, {
           value: widget,
@@ -302,9 +295,6 @@ export default {
         widget,
         ...this.next.slice(index + 1)
       ];
-      if (!this.widgetIsContextual(widget.type)) {
-        this.editing[widget._id] = false;
-      }
     },
     async add(name) {
       if (this.widgetIsContextual(name)) {
