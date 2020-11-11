@@ -13,6 +13,7 @@ module.exports = {
     name: '@apostrophecms/file',
     label: 'File',
     alias: 'file',
+    quickCreate: false,
     insertViaUpload: true,
     slugPrefix: 'file-'
   },

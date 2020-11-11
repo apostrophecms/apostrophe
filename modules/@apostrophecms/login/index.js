@@ -57,11 +57,14 @@ module.exports = {
   },
   handlers(self, options) {
     return {
-      apostrophe: {
-        modulesReady() {
+      'apostrophe:modulesReady': {
+        addSecret() {
           // So this property is hashed and the hash kept in the safe,
           // rather than ever being stored literally
           self.apos.user.addSecret('passwordReset');
+        },
+        async checkForUser () {
+          await self.checkForUserAndAlert();
         }
       }
     };
@@ -335,8 +338,16 @@ module.exports = {
             }
           } : {})
         };
-      }
+      },
 
+      async checkForUserAndAlert() {
+        const adminReq = self.apos.task.getReq();
+        const user = await self.apos.user.find(adminReq, {}).limit(1).toObject();
+
+        if (!user) {
+          self.apos.util.warn('⚠️  There are no users created for this installation of ApostropheCMS yet.');
+        }
+      }
     };
   },
 

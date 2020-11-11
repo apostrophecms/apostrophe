@@ -40,6 +40,7 @@ module.exports = {
     name: '@apostrophecms/user',
     label: 'User',
     pluralLabel: 'Users',
+    quickCreate: false,
     adminOnly: true,
     searchable: false,
     slugPrefix: 'user-'
