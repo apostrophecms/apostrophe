@@ -46,6 +46,9 @@ export const buttons = () => ({
     disabled: {
       default: boolean('Disabled', false)
     },
+    tooltip: {
+      default: boolean('Activate Tooltip (on hover)', false)
+    },
     busy: {
       default: boolean('Busy', false)
     },
@@ -66,8 +69,10 @@ export const buttons = () => ({
         )
     }
   },
+  // Margin added to make room for demonstrating tooltip.
   template: `
     <AposButton
+      style="margin: 100px;"
       :disabled="disabled"
       :label="label"
       :busy="busy"
@@ -75,6 +80,7 @@ export const buttons = () => ({
       :icon="icon"
       :iconOnly="iconOnly"
       v-bind:modifiers="modifiers"
+      :tooltip="tooltip ? 'Duis mollis, est<br />porttitor ligula.' : null"
     />
   `
 });

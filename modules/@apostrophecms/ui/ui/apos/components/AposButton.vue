@@ -8,6 +8,7 @@
     :disabled="isDisabled"
     :type="buttonType"
     :role="role"
+    v-tooltip="tooltip"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -75,6 +76,10 @@ export default {
     },
     role: {
       type: [ String, Boolean ],
+      default: false
+    },
+    tooltip: {
+      type: [ String, Object, Boolean ],
       default: false
     }
   },

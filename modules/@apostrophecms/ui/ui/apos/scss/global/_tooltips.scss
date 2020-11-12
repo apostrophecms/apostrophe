@@ -1,48 +1,47 @@
-// stylelint-disable
-.tooltip {
-  display: block !important;
-  z-index: 10000;
+// Styles based on the v-tooltip example styles:
+// https://github.com/Akryum/v-tooltip/blob/83615e394c96ca491a4df04b892ae87e833beb97/demo-src/src/App.vue#L179-L303
+.apos-tooltip {
+  z-index: $z-index-notifications;
+  display: block;
 
-  .tooltip-inner {
-    background: black;
-    color: white;
-    border-radius: 16px;
-    padding: 5px 10px 4px;
+  .apos-tooltip__inner {
+    @include type-large;
+    z-index: $z-index-default;
+    position: relative;
+    padding: 16px;
+    border-radius: 5px;
+    border-width: 0;
+    color: var(--a-text-inverted);
+    background: var(--a-background-inverted);
   }
 
-  .tooltip-arrow {
-    width: 0;
-    height: 0;
-    border-style: solid;
+  .apos-tooltip__arrow {
+    z-index: $z-index-base;
     position: absolute;
+    width: 16px;
+    height: 16px;
     margin: 5px;
-    border-color: black;
-    z-index: 1;
+    border-radius: 5px;
+    border-style: solid;
+    background-color: var(--a-background-inverted);
+    transform: rotate(45deg);
   }
 
-  &[x-placement^="top"] {
+  &[x-placement^='top'] {
     margin-bottom: 5px;
 
-    .tooltip-arrow {
-      border-width: 5px 5px 0 5px;
-      border-left-color: transparent !important;
-      border-right-color: transparent !important;
-      border-bottom-color: transparent !important;
-      bottom: -5px;
+    .apos-tooltip__arrow {
+      bottom: -7px;
       left: calc(50% - 5px);
       margin-top: 0;
       margin-bottom: 0;
     }
   }
 
-  &[x-placement^="bottom"] {
+  &[x-placement^='bottom'] {
     margin-top: 5px;
 
-    .tooltip-arrow {
-      border-width: 0 5px 5px 5px;
-      border-left-color: transparent !important;
-      border-right-color: transparent !important;
-      border-top-color: transparent !important;
+    .apos-tooltip__arrow {
       top: -5px;
       left: calc(50% - 5px);
       margin-top: 0;
@@ -50,61 +49,37 @@
     }
   }
 
-  &[x-placement^="right"] {
+  &[x-placement^='right'] {
     margin-left: 5px;
 
-    .tooltip-arrow {
-      border-width: 5px 5px 5px 0;
-      border-left-color: transparent !important;
-      border-top-color: transparent !important;
-      border-bottom-color: transparent !important;
-      left: -5px;
+    .apos-tooltip__arrow {
       top: calc(50% - 5px);
+      left: -5px;
       margin-left: 0;
       margin-right: 0;
     }
   }
 
-  &[x-placement^="left"] {
+  &[x-placement^='left'] {
     margin-right: 5px;
 
-    .tooltip-arrow {
-      border-width: 5px 0 5px 5px;
-      border-top-color: transparent !important;
-      border-right-color: transparent !important;
-      border-bottom-color: transparent !important;
-      right: -5px;
+    .apos-tooltip__arrow {
       top: calc(50% - 5px);
+      right: -5px;
       margin-left: 0;
       margin-right: 0;
-    }
-  }
-
-  &.popover {
-    $color: #f9f9f9;
-
-    .popover-inner {
-      background: $color;
-      color: black;
-      padding: 24px;
-      border-radius: 5px;
-      box-shadow: 0 5px 30px rgba(black, .1);
-    }
-
-    .popover-arrow {
-      border-color: $color;
     }
   }
 
   &[aria-hidden='true'] {
     visibility: hidden;
     opacity: 0;
-    transition: opacity .15s, visibility .15s;
+    transition: opacity 0.15s, visibility 0.15s;
   }
 
   &[aria-hidden='false'] {
     visibility: visible;
     opacity: 1;
-    transition: opacity .15s;
+    transition: opacity 0.15s;
   }
 }

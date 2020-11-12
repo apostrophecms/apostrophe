@@ -10,6 +10,9 @@ import 'Modules/@apostrophecms/storybook/scss/storybook.scss';
 
 import Vue from 'apostrophe/vue';
 import { VTooltip } from 'v-tooltip';
+import tooltipConfig from 'Modules/@apostrophecms/ui/lib/tooltip';
+
+tooltipConfig.updateOptions(VTooltip);
 Vue.directive('tooltip', VTooltip);
 
 if (window.apos.modules) {
