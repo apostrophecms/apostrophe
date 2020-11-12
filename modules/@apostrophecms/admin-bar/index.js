@@ -244,14 +244,30 @@ module.exports = {
         }
         const closeDelay = self.options.closeDelay;
         const context = req.data.piece || req.data.page;
-        const contextId = context && context._id;
+        let contextEditorName;
+        if (context) {
+          if (self.apos.page.isPage(context)) {
+            contextEditorName = '@apostrophecms/page:editor';
+          } else {
+            contextEditorName = `${context.type}:editor`;
+          }
+        }
         return {
           items: items,
           components: { the: 'TheAposAdminBar' },
           openOnLoad: !!(typeof self.options.openOnLoad === 'undefined' || self.options.openOnLoad),
           openOnHomepageLoad: !!(typeof self.options.openOnHomepageLoad === 'undefined' || self.options.openOnHomepageLoad),
           closeDelay: typeof closeDelay === 'number' ? closeDelay : 3000,
-          contextId
+          context: context && {
+            _id: context._id,
+            title: context.title,
+            type: context.type,
+            _url: context._url,
+            slug: context.slug
+          },
+          // Simplifies frontend logic
+          contextId: context && context._id,
+          contextEditorName
         };
       }
     };

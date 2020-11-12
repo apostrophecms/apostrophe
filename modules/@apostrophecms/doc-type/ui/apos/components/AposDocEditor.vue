@@ -284,6 +284,7 @@ export default {
             busy: true,
             body
           });
+          apos.bus.$emit('content-changed', doc);
         } catch (e) {
           await this.handleSaveError(e, {
             fallback: 'An error occurred saving the document.'

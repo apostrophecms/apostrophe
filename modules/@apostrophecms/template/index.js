@@ -570,13 +570,8 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // Under **any** of the following conditions, "refreshLayout.html"
-      // is used in place of "outerLayout.html":
-      //
-      // * `req.xhr` is true (always set on AJAX requests by jQuery)
-      // * `req.query.xhr` is set to simulate an AJAX request
-      // * `req.decorate` is false
-      // * `req.query.apos_refresh` is true
+      // If `req.query.apos-refresh` is `'1'`,
+      // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are also provided on the `data` object
       // visible in Nunjucks:
@@ -628,30 +623,22 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        const decorate = !(req.query.apos_refresh || req.query.xhr || req.xhr || req.decorate === false);
+        const decorate = (req.query['apos-refresh'] !== '1');
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
         // refresh request, we remove that so that frontend templates don't build
         // URLs that also refresh
 
-        let dataUrl = req.url;
-
-        const parsed = new URL(req.absoluteUrl);
-        if (parsed.query && parsed.searchParams.get('apos_refresh')) {
-          parsed.searchParams.remove('apos_refresh');
-          dataUrl = parsed.toString();
-        }
-
         const args = {
           outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
           permissions: req.user && (req.user._permissions || {}),
           scene,
-          refreshing: req.query && !!req.query.apos_refresh,
+          refreshing: !decorate,
           // Make the query available to templates for easy access to
           // filter settings etc.
           query: req.query,
-          url: dataUrl
+          url: req.url
         };
 
         _.extend(args, data);
