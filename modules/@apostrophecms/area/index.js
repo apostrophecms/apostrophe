@@ -136,7 +136,7 @@ module.exports = {
         });
         // Guarantee that `items` at least exists
         area.items = area.items || [];
-        const canEdit = area._edit && (options.edit !== false);
+        const canEdit = area._edit && (options.edit !== false) && req.query['apos-edit'];
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers

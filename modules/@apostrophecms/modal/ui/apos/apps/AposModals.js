@@ -28,19 +28,4 @@ export default function() {
   });
   apos.modal.execute = theAposModals.execute;
   apos.confirm = theAposModals.confirm;
-  apos.bus.$on('content-changed', async () => {
-    const content = await apos.http.get(window.location.href, {
-      headers: {
-        'Cache-Control': 'no-cache'
-      },
-      qs: {
-        ...apos.http.parseQuery(window.location.search),
-        'apos-refresh': '1'
-      }
-    });
-    const refreshable = document.querySelector('[data-apos-refreshable]');
-    if (refreshable) {
-      refreshable.innerHTML = content;
-    }
-  });
 };

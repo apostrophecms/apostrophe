@@ -34,7 +34,7 @@ export default {
   methods: {
     async renderContent() {
       try {
-        this.rendered = await apos.http.post(`${apos.area.action}/render-widget`, {
+        this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1`, {
           busy: true,
           body: {
             _docId: this.docId,

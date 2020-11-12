@@ -60,6 +60,20 @@
         </span>
         <span class="apos-admin-bar__context-controls">
           <AposButton
+            v-if="editMode"
+            type="default" label="Preview Mode"
+            icon="eye-icon" class="apos-admin-bar__btn"
+            :icon-only="true"
+            @click="switchToPreviewMode"
+          />
+          <AposButton
+            v-if="!editMode"
+            type="default" label="Edit Mode"
+            icon="pencil-icon" class="apos-admin-bar__btn"
+            :icon-only="true"
+            @click="switchToEditMode"
+          />
+          <AposButton
             v-if="moduleOptions.contextId"
             type="default" label="Page Settings"
             icon="cog-icon" class="apos-admin-bar__btn"
@@ -101,7 +115,8 @@ export default {
     return {
       menuItems: [],
       createMenu: [],
-      patches: []
+      patches: [],
+      editMode: window.sessionStorage.getItem('aposEditMode') === 'true'
     };
   },
   computed: {
@@ -150,6 +165,21 @@ export default {
     });
 
     window.addEventListener('beforeunload', this.beforeUnload);
+    window.addEventListener('storage', (e) => {
+      if (e.storageArea === sessionStorage && e.key === 'aposEditMode') {
+        this.editMode = e.newValue;
+      }
+    });
+
+    apos.bus.$on('content-changed', async () => {
+      this.refresh();
+    });
+
+    if (this.editMode) {
+      // The page always initially loads with fully rendered content,
+      // so refetch the content with the area placeholders and data instead
+      this.refresh();
+    }
   },
   methods: {
     beforeUnload(e) {
@@ -172,6 +202,35 @@ export default {
         busy: true
       });
       this.patches = [];
+    },
+    switchToEditMode() {
+      window.sessionStorage.setItem('aposEditMode', 'true');
+      this.editMode = true;
+      this.refresh();
+    },
+    switchToPreviewMode() {
+      window.sessionStorage.setItem('aposEditMode', 'false');
+      this.editMode = false;
+      this.refresh();
+    },
+    async refresh() {
+      const content = await apos.http.get(window.location.href, {
+        headers: {
+          'Cache-Control': 'no-cache'
+        },
+        qs: {
+          ...apos.http.parseQuery(window.location.search),
+          'apos-refresh': '1',
+          ...(this.editMode ? {
+            'apos-edit': '1'
+          } : {})
+        }
+      });
+      const refreshable = document.querySelector('[data-apos-refreshable]');
+      if (refreshable) {
+        refreshable.innerHTML = content;
+      }
+      apos.bus.$emit('refreshed');
     }
   }
 };
