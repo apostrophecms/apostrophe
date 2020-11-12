@@ -1,6 +1,6 @@
 <template>
   <AposModal
-    :modal="modal" :modal-title="modalTitle" 
+    :modal="modal" :modal-title="modalTitle"
     ref="modal"
     @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
@@ -187,13 +187,6 @@ export default {
     this.destroyShortcuts();
   },
   methods: {
-    // TEMP From Manager Mixin:
-    // selectAll
-    // iconSize
-    // sort
-    // generateUi
-    // generateIcons
-    // generateCheckboxes
     moreMenuHandler(action) {
       if (action === 'new') {
         this.new();
