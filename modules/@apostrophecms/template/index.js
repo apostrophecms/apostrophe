@@ -570,7 +570,7 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // If `req.headers['apostrophe-refresh']` is `'true'`,
+      // If `req.query.apos-refresh` is `'1'`,
       // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are also provided on the `data` object
@@ -623,7 +623,7 @@ module.exports = {
         // Waits for DOMready to give other
         // things maximum opportunity to happen.
 
-        const decorate = (req.headers['apostrophe-refresh'] !== 'true');
+        const decorate = (req.query['apos-refresh'] !== '1');
 
         // data.url will be the original requested page URL, for use in building
         // relative links, adding or removing query parameters, etc. If this is a
