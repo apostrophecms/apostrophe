@@ -333,21 +333,14 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // Under the following conditions, `refreshLayout.html`
-      // is used in place of `outerLayout.html`:
-      //
-      // `req.xhr` is true (always set on AJAX requests by jQuery)
-      // `req.query.xhr` is set to simulate an AJAX request
-      // `req.decorate` is false
-      // `req.query.apos_refresh` is true
+      // If `req.headers['apostrophe-refresh']` is `'true'`,
+      // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are provided on
       // the `data` object in nunjucks:
       //
       // `data.user` (req.user)
       // `data.query` (req.query)
-      // `data.calls` (javascript markup to insert all global and
-      //   request-specific calls pushed by server-side code)
       //
       // This method is async in 3.x and must be awaited.
 
@@ -378,13 +371,8 @@ module.exports = {
       //
       // Note the lack of quotes.
       //
-      // Under the following conditions, `refreshLayout.html`
-      // is used in place of `outerLayout.html`:
-      //
-      // `req.xhr` is true (always set on AJAX requests by jQuery)
-      // `req.query.xhr` is set to simulate an AJAX request
-      // `req.decorate` is false
-      // `req.query.apos_refresh` is true
+      // If `req.headers['apostrophe-refresh']` is `'true'`,
+      // `refreshLayout.html` is used in place of `outerLayout.html`.
       //
       // These default properties are provided on
       // the `data` object in nunjucks:

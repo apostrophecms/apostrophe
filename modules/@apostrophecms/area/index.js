@@ -149,7 +149,8 @@ module.exports = {
           field,
           options,
           choices,
-          context
+          context,
+          canEdit
         });
       },
       // Sanitize an input array of items intended to become
