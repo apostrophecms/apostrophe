@@ -191,7 +191,6 @@ export default {
       }
     },
     emitEvent: function (name) {
-      console.log(name);
       apos.bus.$emit('admin-menu-click', name);
     },
     async save() {
