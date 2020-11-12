@@ -503,19 +503,33 @@ module.exports = {
       // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
       // populate all relationships and return it. Employs a lock to avoid overwriting the work of
       // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
-
+      //
+      // If `input._patches` is an array of patches to the same document, this method
+      // will iterate over those patches as if each were `input`, applying all of them
+      // within a single lock and without redundant network operations. This greatly
+      // improves the performance of saving all changes to a document at once after
+      // accumulating a number of changes in patch form on the front end.
       async convertPatchAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
           const piece = await self.findOneForEditing(req, { _id });
           if (!piece) {
             throw self.apos.error('notfound');
           }
-          self.apos.schema.implementPatchOperators(input, piece);
-          const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
-          await self.apos.schema.convert(req, schema, input, piece);
-          await self.emit('afterConvert', req, input, piece);
+          if (Array.isArray(input._patches)) {
+            for (const patch of input._patches) {
+              await apply(patch);
+            }
+          } else {
+            await apply(input);
+          }
           await self.update(req, piece);
           return self.findOneForEditing(req, { _id }, { annotate: true });
+          async function apply(input) {
+            self.apos.schema.implementPatchOperators(input, piece);
+            const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
+            await self.apos.schema.convert(req, schema, input, piece);
+            await self.emit('afterConvert', req, input, piece);
+          }
         });
       },
 

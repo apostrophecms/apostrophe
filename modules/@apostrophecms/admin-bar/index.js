@@ -243,12 +243,15 @@ module.exports = {
           return false;
         }
         const closeDelay = self.options.closeDelay;
+        const context = req.data.piece || req.data.page;
+        const contextId = context && context._id;
         return {
           items: items,
           components: { the: 'TheAposAdminBar' },
           openOnLoad: !!(typeof self.options.openOnLoad === 'undefined' || self.options.openOnLoad),
           openOnHomepageLoad: !!(typeof self.options.openOnHomepageLoad === 'undefined' || self.options.openOnHomepageLoad),
-          closeDelay: typeof closeDelay === 'number' ? closeDelay : 3000
+          closeDelay: typeof closeDelay === 'number' ? closeDelay : 3000,
+          contextId
         };
       }
     };

@@ -454,40 +454,62 @@ database.`);
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route
       // as well.
+      //
+      // If `req.body._patches` is an array of patches to the same document, this method
+      // will iterate over those patches as if each were `req.body`, applying all of them
+      // within a single lock and without redundant network operations. This greatly
+      // improves the performance of saving all changes to a document at once after
+      // accumulating a number of changes in patch form on the front end. This feature
+      // may not be used to patch `_targetId` and `_position`.
       async patch(req, _id) {
         // TODO watch out for _targetId and _position and trash and their implications
         return self.withLock(req, async () => {
           const page = await self.findOneForEditing(req, { _id });
+          let _targetId;
+          let _position;
           if (!page) {
             throw self.apos.error('notfound');
           }
           if (!page._edit) {
             throw self.apos.error('forbidden');
           }
-          const input = req.body;
-          const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
-          if (!manager) {
-            throw self.apos.error('invalid');
+          if (Array.isArray(req.body._patches)) {
+            for (const patch of req.body._patches) {
+              await apply(patch);
+            }
+          } else {
+            await apply(req.body);
           }
-          self.apos.schema.implementPatchOperators(input, page);
-          const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
-          const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
-            ...page,
-            type: manager.name
-          }, parentPage), input);
-          await self.apos.schema.convert(req, schema, input, page);
-          await self.emit('afterConvert', req, input, page);
           await self.update(req, page);
 
-          if (input._targetId) {
-            const {
-              targetId,
-              position
-            } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
-
-            await self.move(req, page._id, targetId, position);
+          if (_targetId) {
+            const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
+            const actualTargetId = result.targetId;
+            const actualPosition = result.position;
+            await self.move(req, page._id, actualTargetId, actualPosition);
           }
           return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+
+          async function apply(input) {
+            const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+            if (!manager) {
+              throw self.apos.error('invalid');
+            }
+            self.apos.schema.implementPatchOperators(input, page);
+            const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
+            const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
+              ...page,
+              type: manager.name
+            }, parentPage), input);
+            await self.apos.schema.convert(req, schema, input, page);
+            await self.emit('afterConvert', req, input, page);
+            // Since patches are applied consecutively, the last move
+            // is the move that matters
+            if (input._targetId) {
+              _targetId = input._targetId;
+              _position = input._position;
+            }
+          }
         });
       },
       getBrowserData(req) {
