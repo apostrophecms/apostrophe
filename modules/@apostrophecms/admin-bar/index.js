@@ -266,7 +266,7 @@ module.exports = {
             slug: context.slug
           },
           // Simplifies frontend logic
-          contextId: context._id,
+          contextId: context && context._id,
           contextEditorName
         };
       }
