@@ -22,6 +22,7 @@
     height: 16px;
     margin: 5px;
     border-radius: 5px;
+    // Solid border style needed to work with v-tooltip placement.
     border-style: solid;
     background-color: var(--a-background-inverted);
     transform: rotate(45deg);
