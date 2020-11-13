@@ -5,7 +5,7 @@
   display: block;
 
   .apos-tooltip__inner {
-    @include type-large;
+    @include type-small;
     z-index: $z-index-default;
     position: relative;
     padding: 16px;
