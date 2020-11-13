@@ -14,50 +14,39 @@
       should be the same one from the parent, or a fresh one. It does not seem
       to use any of the editor configurations from the parent. - AB
      -->
-    <editor-menu-bubble
+    <div
       v-if="active"
-      :editor="editor"
-      :keep-in-bounds="keepInBounds"
-      v-slot="{ menu }"
+      class="apos-link-control__dialog"
+      :class="{
+        'is-triggered': active,
+        'has-selection': hasSelection
+      }"
     >
-      <div
-        class="apos-link-control__dialog"
-        :class="{
-          'is-triggered': active,
-          'has-selection': hasSelection
-        }"
-        :style="
-          `left: ${menu.left}px;
-          bottom: ${menu.bottom}px;
-          transform: translate3d(-25px, calc(100% + ${offset}), 0);
-          `"
+      <AposContextMenuDialog
+        menu-placement="bottom-start"
+        v-if="active"
       >
-        <AposContextMenuDialog
-          menu-placement="bottom-start"
-          v-if="active"
-        >
-          <form>
-            <AposSchema
-              :schema="schema"
-              v-model="value"
+        <form>
+          <AposSchema
+            :schema="schema"
+            v-model="value"
+            :modifiers="formModifiers"
+          />
+          <footer class="apos-link-control__footer">
+            <AposButton
+              type="default" label="Cancel"
+              @click="close"
               :modifiers="formModifiers"
             />
-            <footer class="apos-link-control__footer">
-              <AposButton
-                type="default" label="Cancel"
-                @click="close"
-                :modifiers="formModifiers"
-              />
-              <AposButton
-                type="primary" label="Save"
-                @click="save"
-                :modifiers="formModifiers"
-              />
-            </footer>
-          </form>
-        </AposContextMenuDialog>
-      </div>
-    </editor-menu-bubble>
+            <AposButton
+              type="primary" label="Save"
+              @click="save"
+              :modifiers="formModifiers"
+            />
+          </footer>
+        </form>
+      </AposContextMenuDialog>
+    </div>
   </div>
 </template>
 
@@ -186,12 +175,16 @@ export default {
 
 <style lang="scss" scoped>
   .apos-link-control {
+    position: relative;
     display: inline-block;
   }
 
   .apos-link-control__dialog {
     z-index: $z-index-modal;
     position: absolute;
+    top: calc(100% + 5px);
+    left: -15px;
+    width: 250px;
     opacity: 0;
     pointer-events: none;
   }

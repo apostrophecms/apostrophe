@@ -9,6 +9,7 @@
       <AposContextMenuDialog
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
+        :has-tip="false"
         :modifiers="['unpadded']"
         :class="extraClasses(menu, focused)"
         :style="`left: ${menu ? menu.left : 0}px; bottom: ${menu ? menu.bottom : 0}px;`"
@@ -181,10 +182,6 @@ export default {
   .apos-rich-text-toolbar.editor-menu-bar {
     display: inline-block;
     margin-bottom: 10px;
-  }
-
-  .apos-rich-text-toolbar /deep/ .apos-context-menu__tip {
-    display: none;
   }
 
   .apos-rich-text-toolbar.is-active {
