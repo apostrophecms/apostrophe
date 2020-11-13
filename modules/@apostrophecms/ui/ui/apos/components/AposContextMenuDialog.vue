@@ -5,8 +5,10 @@
     role="dialog"
   >
     <AposContextMenuTip
+      v-if="hasTip"
       :align="tipAlignment"
       :origin="menuOrigin"
+      x-placement="bottom"
     />
     <div class="apos-context-menu__pane">
       <slot>
@@ -50,6 +52,10 @@ export default {
       default() {
         return [];
       }
+    },
+    hasTip: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'item-clicked' ],

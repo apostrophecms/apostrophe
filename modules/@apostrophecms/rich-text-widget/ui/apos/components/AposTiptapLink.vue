@@ -16,39 +16,36 @@
      -->
     <div
       v-if="active"
+      class="apos-link-control__dialog"
+      :class="{
+        'is-triggered': active,
+        'has-selection': hasSelection
+      }"
     >
-      <div
-        class="apos-link-control__dialog"
-        :class="{
-          'is-triggered': active,
-          'has-selection': hasSelection
-        }"
+      <AposContextMenuDialog
+        menu-placement="bottom-start"
+        v-if="active"
       >
-        <AposContextMenuDialog
-          menu-placement="bottom-start"
-          v-if="active"
-        >
-          <form>
-            <AposSchema
-              :schema="schema"
-              v-model="value"
+        <form>
+          <AposSchema
+            :schema="schema"
+            v-model="value"
+            :modifiers="formModifiers"
+          />
+          <footer class="apos-link-control__footer">
+            <AposButton
+              type="default" label="Cancel"
+              @click="close"
               :modifiers="formModifiers"
             />
-            <footer class="apos-link-control__footer">
-              <AposButton
-                type="default" label="Cancel"
-                @click="close"
-                :modifiers="formModifiers"
-              />
-              <AposButton
-                type="primary" label="Save"
-                @click="save"
-                :modifiers="formModifiers"
-              />
-            </footer>
-          </form>
-        </AposContextMenuDialog>
-      </div>
+            <AposButton
+              type="primary" label="Save"
+              @click="save"
+              :modifiers="formModifiers"
+            />
+          </footer>
+        </form>
+      </AposContextMenuDialog>
     </div>
   </div>
 </template>
@@ -178,12 +175,16 @@ export default {
 
 <style lang="scss" scoped>
   .apos-link-control {
+    position: relative;
     display: inline-block;
   }
 
   .apos-link-control__dialog {
     z-index: $z-index-modal;
     position: absolute;
+    top: calc(100% + 5px);
+    left: -15px;
+    width: 250px;
     opacity: 0;
     pointer-events: none;
   }
