@@ -11,7 +11,7 @@
           class="apos-table__header" :key="header.label"
         >
           <component
-            :is="getEl(header)" 
+            :is="getEl(header)"
             class="apos-table__header-label"
           >
             <component
@@ -48,18 +48,21 @@
           />
         </td>
         <td
-          class="apos-table__cell" v-for="header in headers"
+          class="apos-table__cell apos-table__cell--pointer" v-for="header in headers"
           :key="item[header.name]"
+          @click="$emit('open',item._id)"
         >
           <a
-            v-if="header.name === 'url'" class="apos-table__link"
+            v-if="header.name === '_url' && item[header.name]"
+            class="apos-table__link"
             :href="item[header.name]"
+            @click.stop
           >
-            <LinkIcon :size="12" />
+            <link-icon :size="14" />
           </a>
           <button
             v-else-if="header.name === 'title'"
-            @click="$emit('open',item._id)"
+            @click.stop="$emit('open',item._id)"
             class="apos-table__cell-field"
             :class="`apos-table__cell-field--${header.name}`"
           >
@@ -136,3 +139,9 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+  .apos-table__cell--pointer {
+    cursor: pointer;
+  }
+</style>
