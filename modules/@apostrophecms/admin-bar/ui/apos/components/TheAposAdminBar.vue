@@ -57,12 +57,9 @@
         <div class="apos-admin-bar__context-spacer" />
         <div class="apos-admin-bar__context-title">
           <span
-            v-tooltip="'Page Title'"
-            class="apos-admin-bar__context-title__icon"
+            v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
           >
-            <information-outline-icon
-              fill-color="var(--a-primary)" :size="16"
-            />
+            <information-outline-icon fill-color="var(--a-primary)" :size="16" />
           </span>
           {{ moduleOptions.context.title }}
         </div>
@@ -70,7 +67,10 @@
           <AposButton
             v-if="editMode"
             class="apos-admin-bar__context-button"
-            label="Preview Mode" tooltip="Preview Mode"
+            label="Preview Mode" :tooltip="{
+              content: 'Preview Mode',
+              offset: 0
+            }"
             type="outline" :modifiers="['no-motion']"
             icon="eye-icon" :icon-only="true"
             @click="switchToPreviewMode"
@@ -78,7 +78,10 @@
           <AposButton
             v-if="!editMode"
             class="apos-admin-bar__context-button"
-            label="Edit Mode" tooltip="Edit Mode"
+            label="Edit Mode" :tooltip="{
+              content: 'Edit Mode',
+              offset: 0
+            }"
             type="outline" :modifiers="['no-motion']"
             icon="pencil-icon" :icon-only="true"
             @click="switchToEditMode"
@@ -86,7 +89,10 @@
           <AposButton
             v-if="moduleOptions.contextId"
             class="apos-admin-bar__context-button"
-            label="Page Settings" tooltip="Page Settings"
+            label="Page Settings" :tooltip="{
+              content: 'Page Settings',
+              offset: 0
+            }"
             type="outline" :modifiers="['no-motion']"
             icon="cog-icon" :icon-only="true"
             @click="emitEvent({
