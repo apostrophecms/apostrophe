@@ -78,16 +78,12 @@
           <AposButton
             v-if="!editMode"
             class="apos-admin-bar__context-button"
-            label="Edit Mode" :tooltip="{
-              content: 'Edit Mode',
-              offset: 0
-            }"
-            type="outline" :modifiers="['no-motion']"
-            icon="pencil-icon" :icon-only="true"
+            label="Edit" icon="pencil-icon"
+            :modifiers="['no-motion']"
             @click="switchToEditMode"
           />
           <AposButton
-            v-if="moduleOptions.contextId"
+            v-if="editMode && moduleOptions.contextId"
             class="apos-admin-bar__context-button"
             label="Page Settings" :tooltip="{
               content: 'Page Settings',
@@ -103,6 +99,7 @@
             })"
           />
           <AposButton
+            v-if="editMode"
             type="primary" label="Publish Changes"
             :disabled="!readyToSave"
             class="apos-admin-bar__btn apos-admin-bar__context-button"
