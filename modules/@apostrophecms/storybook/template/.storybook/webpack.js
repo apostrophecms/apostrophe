@@ -45,8 +45,6 @@ module.exports = async (config) => {
     path.resolve(`${process.env.APOS_ROOT}/node_modules`)
   ];
 
-  // find vue like our components do
-  config.resolve.alias['apostrophe/vue$'] = 'vue/dist/vue.esm.js';
   // resolve frontend assets of apostrophe modules as Modules/@apostrophecms/modulename/something
   config.resolve.alias['Modules'] = path.resolve(`${process.env.APOS_ROOT}/apos-build/modules`);
 

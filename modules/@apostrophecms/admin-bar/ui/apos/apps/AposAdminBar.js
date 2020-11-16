@@ -1,4 +1,4 @@
-import Vue from 'apostrophe/vue';
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
   // Careful, login page is in user scene but has no admin bar

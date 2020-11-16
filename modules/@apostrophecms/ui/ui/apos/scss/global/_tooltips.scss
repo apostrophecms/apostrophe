@@ -1,0 +1,86 @@
+// Styles based on the v-tooltip example styles:
+// https://github.com/Akryum/v-tooltip/blob/83615e394c96ca491a4df04b892ae87e833beb97/demo-src/src/App.vue#L179-L303
+.apos-tooltip {
+  z-index: $z-index-notifications;
+  display: block;
+
+  .apos-tooltip__inner {
+    @include type-small;
+    z-index: $z-index-default;
+    position: relative;
+    padding: 16px;
+    border-radius: 5px;
+    border-width: 0;
+    color: var(--a-text-inverted);
+    background: var(--a-background-inverted);
+  }
+
+  .apos-tooltip__arrow {
+    z-index: $z-index-base;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    margin: 5px;
+    border-radius: 5px;
+    // Solid border style needed to work with v-tooltip placement.
+    border-style: solid;
+    background-color: var(--a-background-inverted);
+    transform: rotate(45deg);
+  }
+
+  &[x-placement^='top'] {
+    margin-bottom: 5px;
+
+    .apos-tooltip__arrow {
+      bottom: -7px;
+      left: calc(50% - 5px);
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  &[x-placement^='bottom'] {
+    margin-top: 5px;
+
+    .apos-tooltip__arrow {
+      top: -5px;
+      left: calc(50% - 5px);
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  &[x-placement^='right'] {
+    margin-left: 5px;
+
+    .apos-tooltip__arrow {
+      top: calc(50% - 5px);
+      left: -5px;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  &[x-placement^='left'] {
+    margin-right: 5px;
+
+    .apos-tooltip__arrow {
+      top: calc(50% - 5px);
+      right: -5px;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  &[aria-hidden='true'] {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s, visibility 0.15s;
+  }
+
+  &[aria-hidden='false'] {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.15s;
+  }
+}

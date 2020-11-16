@@ -1,6 +1,4 @@
-import Vue from 'apostrophe/vue';
-import PortalVue from 'portal-vue';
-Vue.use(PortalVue);
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
   const theAposModals = new Vue({
