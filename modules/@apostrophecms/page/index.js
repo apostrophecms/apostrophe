@@ -475,10 +475,22 @@ database.`);
           }
           if (Array.isArray(req.body._patches)) {
             for (const patch of req.body._patches) {
-              await apply(patch);
+              await self.applyPatch(req, page, patch);
+              // Since patches are applied consecutively, the last move
+              // is the move that matters
+              if (patch._targetId) {
+                _targetId = patch._targetId;
+                _position = patch._position;
+              }
             }
           } else {
-            await apply(req.body);
+            await self.applyPatch(req, page, req.body);
+            // Since patches are applied consecutively, the last move
+            // is the move that matters
+            if (req.body._targetId) {
+              _targetId = req.body._targetId;
+              _position = req.body._position;
+            }
           }
           await self.update(req, page);
 
@@ -490,27 +502,24 @@ database.`);
           }
           return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
 
-          async function apply(input) {
-            const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
-            if (!manager) {
-              throw self.apos.error('invalid');
-            }
-            self.apos.schema.implementPatchOperators(input, page);
-            const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
-            const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
-              ...page,
-              type: manager.name
-            }, parentPage), input);
-            await self.apos.schema.convert(req, schema, input, page);
-            await self.emit('afterConvert', req, input, page);
-            // Since patches are applied consecutively, the last move
-            // is the move that matters
-            if (input._targetId) {
-              _targetId = input._targetId;
-              _position = input._position;
-            }
-          }
         });
+      },
+      // Apply a single patch to the given page without saving. An implementation detail of the
+      // patch method, also used by the undo mechanism to simulate patches.
+      // Does not handle _targetId, that is implemented in the patch method.
+      async applyPatch(req, page, input) {
+        const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+        if (!manager) {
+          throw self.apos.error('invalid');
+        }
+        self.apos.schema.implementPatchOperators(input, page);
+        const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
+        const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req, {
+          ...page,
+          type: manager.name
+        }, parentPage), input);
+        await self.apos.schema.convert(req, schema, input, page);
+        await self.emit('afterConvert', req, input, page);
       },
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
