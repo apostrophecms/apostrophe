@@ -51,8 +51,6 @@
 </template>
 
 <script>
-
-import Vue from 'apostrophe/vue';
 import cuid from 'cuid';
 import klona from 'klona';
 
