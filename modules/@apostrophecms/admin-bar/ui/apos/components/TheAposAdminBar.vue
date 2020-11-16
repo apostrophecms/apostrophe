@@ -9,6 +9,7 @@
             <AposButton
               type="default" label="Page Tree"
               icon="file-tree-icon" class="apos-admin-bar__btn"
+              :modifiers="['no-motion']"
               @click="emitEvent('@apostrophecms/page:manager')"
             />
           </li>
@@ -64,23 +65,26 @@
         <span class="apos-admin-bar__context-controls">
           <AposButton
             v-if="editMode"
-            type="default" label="Preview Mode"
-            icon="eye-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
+            class="apos-admin-bar__context-button"
+            label="Preview Mode"
+            type="outline" :modifiers="['no-motion']"
+            icon="eye-icon" :icon-only="true"
             @click="switchToPreviewMode"
           />
           <AposButton
             v-if="!editMode"
-            type="default" label="Edit Mode"
-            icon="pencil-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
+            class="apos-admin-bar__context-button"
+            label="Edit Mode"
+            type="outline" :modifiers="['no-motion']"
+            icon="pencil-icon" :icon-only="true"
             @click="switchToEditMode"
           />
           <AposButton
             v-if="moduleOptions.contextId"
-            type="default" label="Page Settings"
-            icon="cog-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
+            class="apos-admin-bar__context-button"
+            label="Page Settings"
+            type="outline" :modifiers="['no-motion']"
+            icon="cog-icon" :icon-only="true"
             @click="emitEvent({
               itemName: contextEditorName,
               props: {
@@ -91,7 +95,7 @@
           <AposButton
             type="primary" label="Publish Changes"
             :disabled="!readyToSave"
-            class="apos-admin-bar__btn"
+            class="apos-admin-bar__btn apos-admin-bar__context-button"
             @click="save"
           />
         </span>
@@ -290,8 +294,17 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__context-controls {
+  display: flex;
+  align-items: center;
+  justify-content: end;
   flex: 1;
-  text-align: right;
+}
+
+.apos-admin-bar__context-button {
+  // All but the first.
+  .apos-admin-bar__context-controls &:nth-child(n+2) {
+    margin-left: 10px;
+  }
 }
 
 .apos-admin-bar__items {
