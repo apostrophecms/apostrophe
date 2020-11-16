@@ -1,11 +1,4 @@
-import Vue from 'apostrophe/vue';
-import PortalVue from 'portal-vue';
-import { VTooltip } from 'v-tooltip';
-import tooltipConfig from 'Modules/@apostrophecms/ui/lib/tooltip';
-
-tooltipConfig.updateOptions(VTooltip);
-Vue.directive('tooltip', VTooltip);
-Vue.use(PortalVue);
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
   const theAposModals = new Vue({

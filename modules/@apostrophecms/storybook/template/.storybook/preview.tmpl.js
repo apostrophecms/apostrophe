@@ -8,12 +8,7 @@
 
 import 'Modules/@apostrophecms/storybook/scss/storybook.scss';
 
-import Vue from 'apostrophe/vue';
-import { VTooltip } from 'v-tooltip';
-import tooltipConfig from 'Modules/@apostrophecms/ui/lib/tooltip';
-
-tooltipConfig.updateOptions(VTooltip);
-Vue.directive('tooltip', VTooltip);
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 if (window.apos.modules) {
   for (const module of Object.values(window.apos.modules)) {

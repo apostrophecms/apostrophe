@@ -1,9 +1,4 @@
-import Vue from 'apostrophe/vue';
-import { VTooltip } from 'v-tooltip';
-import tooltipConfig from 'Modules/@apostrophecms/ui/lib/tooltip';
-
-tooltipConfig.updateOptions(VTooltip);
-Vue.directive('tooltip', VTooltip);
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
 
