@@ -37,7 +37,6 @@ module.exports = ({ importFile, modulesDir }, apos) => {
     resolve: {
       extensions: [ '*', '.js', '.vue', '.json' ],
       alias: {
-        'apostrophe/vue$': 'vue/dist/vue.esm.js',
         vue$: 'vue/dist/vue.esm.js',
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
