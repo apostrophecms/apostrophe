@@ -54,19 +54,23 @@
         />
       </div>
       <div class="apos-admin-bar__row">
-        <span class="apos-admin-bar__context-spacer" />
-        <span class="apos-admin-bar__context-title">
-          <information-outline-icon
+        <div class="apos-admin-bar__context-spacer" />
+        <div class="apos-admin-bar__context-title">
+          <span
+            v-tooltip="'Page Title'"
             class="apos-admin-bar__context-title__icon"
-            fill-color="var(--a-primary)" :size="16"
-          />
+          >
+            <information-outline-icon
+              fill-color="var(--a-primary)" :size="16"
+            />
+          </span>
           {{ moduleOptions.context.title }}
-        </span>
-        <span class="apos-admin-bar__context-controls">
+        </div>
+        <div class="apos-admin-bar__context-controls">
           <AposButton
             v-if="editMode"
             class="apos-admin-bar__context-button"
-            label="Preview Mode"
+            label="Preview Mode" tooltip="Preview Mode"
             type="outline" :modifiers="['no-motion']"
             icon="eye-icon" :icon-only="true"
             @click="switchToPreviewMode"
@@ -74,7 +78,7 @@
           <AposButton
             v-if="!editMode"
             class="apos-admin-bar__context-button"
-            label="Edit Mode"
+            label="Edit Mode" tooltip="Edit Mode"
             type="outline" :modifiers="['no-motion']"
             icon="pencil-icon" :icon-only="true"
             @click="switchToEditMode"
@@ -82,7 +86,7 @@
           <AposButton
             v-if="moduleOptions.contextId"
             class="apos-admin-bar__context-button"
-            label="Page Settings"
+            label="Page Settings" tooltip="Page Settings"
             type="outline" :modifiers="['no-motion']"
             icon="cog-icon" :icon-only="true"
             @click="emitEvent({
@@ -98,7 +102,7 @@
             class="apos-admin-bar__btn apos-admin-bar__context-button"
             @click="save"
           />
-        </span>
+        </div>
       </div>
     </nav>
   </div>
@@ -289,7 +293,8 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__context-title__icon {
-  padding-right: 5px;
+  display: inline-block;
+  margin-right: 5px;
   line-height: 0;
 }
 
