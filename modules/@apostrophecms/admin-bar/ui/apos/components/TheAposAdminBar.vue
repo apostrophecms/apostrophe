@@ -55,7 +55,10 @@
       <div class="apos-admin-bar__row">
         <span class="apos-admin-bar__context-spacer" />
         <span class="apos-admin-bar__context-title">
-          <information-outline-icon />
+          <information-outline-icon
+            class="apos-admin-bar__context-title__icon"
+            fill-color="var(--a-primary)" :size="16"
+          />
           {{ moduleOptions.context.title }}
         </span>
         <span class="apos-admin-bar__context-controls">
@@ -274,8 +277,16 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__context-title {
+  @include type-base;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
   flex: 1;
-  text-align: center;
+}
+
+.apos-admin-bar__context-title__icon {
+  padding-right: 5px;
+  line-height: 0;
 }
 
 .apos-admin-bar__context-controls {
