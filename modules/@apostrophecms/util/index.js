@@ -389,10 +389,10 @@ module.exports = {
         return items;
       },
       // Return true if `req` is an AJAX request (`req.xhr` is set, or
-      // `req.query.xhr` is set to emulate it, or `req.query.apos_refresh` has
-      // been set by Apostrophe's content refresh mechanism).
+      // `req.query.xhr` is set to emulate it) and Apostrophe's
+      // main content area refresh mechanism is not in play.
       isAjaxRequest(req) {
-        return (req.xhr || req.query.xhr) && !req.query.apos_refresh;
+        return (req.xhr || req.query.xhr) && (req.query['apos-refresh'] !== '1');
       },
       // Sort the given array of strings in place, comparing strings in a case-insensitive way.
       insensitiveSort(strings) {

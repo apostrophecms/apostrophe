@@ -246,10 +246,76 @@
     }
   };
 
+  // Parse a query string. You can pass with or without the
+  // leading ?. Don't pass the entire URL. Supports objects,
+  // arrays and nesting with the classic PHP/Java bracket syntax.
+  // If a key is set with no = it is considered null, per
+  // the java convention. Good for use with window.location.search.
+
+  apos.http.parseQuery = function(query) {
+    query = query.replace(/^\?/, '');
+    var data = {};
+    var pairs = query.split('&');
+    pairs.forEach(function(pair) {
+      var parts;
+      if (pair.indexOf('=') === -1) {
+        patch(pair, null);
+      } else {
+        parts = pair.split('=');
+        if (parts) {
+          patch(parts[0], parts[1]);
+        }
+      }
+    });
+    return data.root || {};
+    function patch(key, value) {
+      var match;
+      var parentKey = 'root';
+      var context = data;
+      var path = key.split('[');
+      path.forEach(function(subKey) {
+        subKey = decodeURIComponent(subKey);
+        if (subKey === ']') {
+          if (!Array.isArray(context[parentKey])) {
+            context[parentKey] = [];
+          }
+          context = context[parentKey];
+          parentKey = context.length;
+        } else if (subKey.match(/^\d+]/)) {
+          match = subKey.match(/^\d+/);
+          if (!Array.isArray(context[parentKey])) {
+            context[parentKey] = [];
+          }
+          context = context[parentKey];
+          parentKey = parseInt(match);
+        } else {
+          match = subKey.replace(']', '');
+          if (!context[parentKey]) {
+            context[parentKey] = {};
+          }
+          context = context[parentKey];
+          parentKey = match;
+        }
+      });
+      value = (value === null) ? value : decodeURIComponent(value);
+      if (Array.isArray(context[parentKey])) {
+        context[parentKey].push(value);
+      } else if (context[parentKey] !== undefined) {
+        context[parentKey] = [ context[parentKey], value ];
+      } else {
+        context[parentKey] = value;
+      }
+    }
+  };
+
   // Adds query string data to url. Supports nested structures with objects
   // and arrays, in a way compatible with qs and most other parsers including
-  // those baked into PHP frameworks etc.
+  // those baked into PHP frameworks etc. If the URL already contains a query
+  // it is discarded and replaced with the new one. If `data` is an empty object
+  // no ? is added to the URL.
+
   apos.http.addQueryToUrl = function(url, data) {
+    url = url.replace(/\?.*$/, '');
     var i;
     var flat;
     if ((data != null) && ((typeof data) === 'object')) {
@@ -277,7 +343,7 @@
       var i;
       if (Array.isArray(data)) {
         for (i = 0; (i < data.length); i++) {
-          insert('', data[i]);
+          insert(i, data[i]);
         }
       } else {
         keys = Object.keys(data);
