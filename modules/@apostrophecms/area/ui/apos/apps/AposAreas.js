@@ -23,11 +23,30 @@ export default function() {
     const data = JSON.parse(el.getAttribute('data'));
     const fieldId = el.getAttribute('data-field-id');
     const choices = JSON.parse(el.getAttribute('data-choices'));
+    const renderings = {};
+    const _docId = data._docId;
+
+    for (const widgetEl of el.querySelectorAll('[data-apos-widget]')) {
+      const _id = widgetEl.getAttribute('data-apos-widget');
+      const item = data.items.find(item => _id === item._id);
+      if (item) {
+        renderings[_id] = {
+          html: widgetEl.innerHTML,
+          parameters: {
+            _docId,
+            widget: item,
+            areaFieldId: fieldId,
+            type: item.type
+          }
+        };
+        widgetEl.remove();
+      } else {
+        // Nested widget, none of our business, picked up later
+      }
+    }
     el.removeAttribute('data-apos-area-newly-editable');
 
     const component = window.apos.area.components.editor;
-
-    const _docId = data._docId;
 
     return new Vue({
       el: el,
@@ -38,10 +57,11 @@ export default function() {
           items: data.items,
           choices,
           docId: _docId,
-          fieldId
+          fieldId,
+          renderings
         };
       },
-      template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" />`
+      template: `<${component} :options="options" :items="items" :choices="choices" :id="$data.id" :docId="$data.docId" :fieldId="fieldId" :renderings="renderings" />`
     });
 
   }
