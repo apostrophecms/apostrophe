@@ -117,8 +117,7 @@ export default {
       createMenu: [],
       patches: [],
       editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
-      idleTimer: undefined,
-      idleTriggered: false
+      idleTimer: undefined
     };
   },
   computed: {
@@ -136,22 +135,6 @@ export default {
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
-    }
-  },
-  watch: {
-    async idleTriggered(newVal, oldVal) {
-      if (newVal && !oldVal) {
-        const response = await apos.confirm({
-          heading: 'You have been idle for 30 minutes with unsaved changes. Please save to avoid losing your updates.',
-          affirmativeLabel: 'Okay',
-          icon: false
-        }, { mode: 'alert' });
-
-        // The only possible response should be truthy since @esc is disabled.
-        if (response) {
-          this.resetTimer();
-        }
-      }
     }
   },
   mounted() {
@@ -224,8 +207,7 @@ export default {
       });
       this.patches = [];
 
-      this.idleTriggered = false;
-      clearTimeout(this.idleTimer);
+      this.idleTimer.abort();
       this.idleTimer = null;
     },
     switchToEditMode() {
@@ -257,15 +239,46 @@ export default {
       }
       apos.bus.$emit('refreshed');
     },
-    resetTimer () {
-      this.idleTriggered = false;
-      clearTimeout(this.idleTimer);
+    // Timer pattern from https://stackoverflow.com/a/59587639/888550
+    Timer (ms) {
+      let id;
 
-      const self = this;
+      const start = () => new Promise(resolve => {
+        if (id === -1) {
+          throw new Error('Timer already aborted');
+        }
 
-      this.idleTimer = setTimeout(() => {
-        self.idleTriggered = true;
-      }, 1800000);
+        id = setTimeout(resolve, ms);
+      });
+
+      const abort = () => {
+        if (id !== -1 || id === undefined) {
+          clearTimeout(id);
+          id = -1;
+        }
+      };
+
+      return {
+        start,
+        abort
+      };
+    },
+    async resetTimer () {
+      this.idleTimer = this.Timer(1800000);
+      await this.idleTimer.start();
+
+      const saveChanges = await apos.confirm({
+        heading: 'You have been idle for 30 minutes with unsaved changes. Would you like to save your changes?',
+        affirmativeLabel: 'Yes',
+        negativeLabel: 'Not yet',
+        icon: false
+      });
+
+      if (saveChanges) {
+        await this.save();
+      } else {
+        this.resetTimer();
+      }
     }
   }
 };
