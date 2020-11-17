@@ -2,6 +2,7 @@
   <div class="apos-area-modify-controls">
     <AposButtonGroup direction="vertical">
       <AposButton
+        v-if="!foreign"
         v-bind="upButton"
         :disabled="first"
         @click="$emit('up')"
@@ -10,18 +11,21 @@
       <!-- <AposButton v-bind="dragButton" /> -->
       <AposButton
         v-bind="editButton"
-        v-if="!options.contextual"
+        v-if="foreign || !options.contextual"
         @click="$emit('edit')"
       />
       <AposButton
+        v-if="!foreign"
         v-bind="cloneButton"
         @click="$emit('clone')"
       />
       <AposButton
+        v-if="!foreign"
         v-bind="removeButton"
         @click="$emit('remove')"
       />
       <AposButton
+        v-if="!foreign"
         v-bind="downButton"
         :disabled="last"
         @click="$emit('down')"
@@ -47,6 +51,10 @@ export default {
       default() {
         return {};
       }
+    },
+    foreign: {
+      type: Boolean,
+      required: true
     }
   },
   emits: [ 'remove', 'edit', 'clone', 'up', 'down' ],

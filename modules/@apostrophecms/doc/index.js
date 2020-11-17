@@ -28,9 +28,17 @@ module.exports = {
   },
   restApiRoutes(self, options) {
     return {
+      // GET /api/v1/@apostrophecms/doc/_id supports only the universal query
+      // features, but works for any document type, Simplifies browser-side
+      // logic for redirects to foreign documents; the frontend only has to
+      // know the doc _id.
+      async getOne(req, _id) {
+        return self.find(req, { _id }).toObject();
+      },
+
       // PATCH /api/v1/@apostrophecms/doc/_id works for any document type,
       // at the expense of one extra query to determine what module should
-      // be asked to do the work. Simplifies browse-side logic for
+      // be asked to do the work. Simplifies browser-side logic for
       // on-page editing: the frontend only has to know the doc _id.
       async patch(req, _id) {
         const doc = await self.find(req, { _id }).project({
