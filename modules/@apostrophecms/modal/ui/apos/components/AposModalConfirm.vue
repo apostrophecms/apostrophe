@@ -1,7 +1,8 @@
 <template>
   <AposModal
     :modal="modal" class="apos-confirm"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    v-on="mode !== 'alert' ? { 'esc': cancel } : null"
+    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #main>
@@ -28,7 +29,7 @@
           </p>
           <div class="apos-confirm__btns">
             <AposButton
-              v-if="confirmContent.negativeLabel !== false"
+              v-if="mode !== 'alert'"
               class="apos-confirm__btn"
               :label="confirmContent.negativeLabel || 'Cancel'" @click="cancel"
             />
@@ -49,6 +50,10 @@
 
 export default {
   props: {
+    mode: {
+      type: String,
+      default: 'confirm'
+    },
     confirmContent: {
       type: Object,
       required: true

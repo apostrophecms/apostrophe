@@ -9,9 +9,10 @@ export default function() {
       }
     },
     methods: {
-      async confirm(confirmContent) {
+      async confirm(confirmContent, options) {
         return this.execute(apos.modal.components.confirm, {
-          confirmContent
+          confirmContent,
+          ...options
         });
       },
       execute(componentName, props) {

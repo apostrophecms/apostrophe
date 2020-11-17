@@ -143,11 +143,11 @@ export default {
       if (newVal && !oldVal) {
         const response = await apos.confirm({
           heading: 'You have been idle for 30 minutes with unsaved changes. Please save to avoid losing your updates.',
-          negativeLabel: false,
           affirmativeLabel: 'Okay',
           icon: false
-        });
+        }, { mode: 'alert' });
 
+        // The only possible response should be truthy since @esc is disabled.
         if (response) {
           this.resetTimer();
         }
@@ -180,6 +180,10 @@ export default {
 
     apos.bus.$on('context-edited', patch => {
       this.patches.push(patch);
+
+      if (!this.idleTimer) {
+        this.resetTimer();
+      }
     });
 
     window.addEventListener('beforeunload', this.beforeUnload);
@@ -196,7 +200,6 @@ export default {
     if (this.editMode) {
       // The page always initially loads with fully rendered content,
       // so refetch the content with the area placeholders and data instead
-      this.resetTimer();
       this.refresh();
     }
   },
@@ -220,7 +223,10 @@ export default {
         busy: true
       });
       this.patches = [];
-      this.resetTimer();
+
+      this.idleTriggered = false;
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
     },
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');
@@ -231,9 +237,6 @@ export default {
     switchToPreviewMode() {
       window.sessionStorage.setItem('aposEditMode', 'false');
       this.editMode = false;
-      this.idleTriggered = false;
-      clearTimeout(this.idleTimer);
-      this.idleTimer = null;
 
       this.refresh();
     },
