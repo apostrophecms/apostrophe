@@ -28,6 +28,7 @@
           </p>
           <div class="apos-confirm__btns">
             <AposButton
+              v-if="confirmContent.negativeLabel !== false"
               class="apos-confirm__btn"
               :label="confirmContent.negativeLabel || 'Cancel'" @click="cancel"
             />
@@ -57,7 +58,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'safe-close', 'confirm-response' ],
+  emits: [ 'safe-close', 'confirm-response', 'modal-result' ],
   data() {
     return {
       modal: {

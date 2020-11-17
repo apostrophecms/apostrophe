@@ -116,7 +116,9 @@ export default {
       menuItems: [],
       createMenu: [],
       patches: [],
-      editMode: window.sessionStorage.getItem('aposEditMode') === 'true'
+      editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
+      idleTimer: undefined,
+      idleTriggered: false
     };
   },
   computed: {
@@ -134,6 +136,22 @@ export default {
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
+    }
+  },
+  watch: {
+    async idleTriggered(newVal, oldVal) {
+      if (newVal && !oldVal) {
+        const response = await apos.confirm({
+          heading: 'You have been idle for 30 minutes with unsaved changes. Please save to avoid losing your updates.',
+          negativeLabel: false,
+          affirmativeLabel: 'Okay',
+          icon: false
+        });
+
+        if (response) {
+          this.resetTimer();
+        }
+      }
     }
   },
   mounted() {
@@ -178,6 +196,7 @@ export default {
     if (this.editMode) {
       // The page always initially loads with fully rendered content,
       // so refetch the content with the area placeholders and data instead
+      this.resetTimer();
       this.refresh();
     }
   },
@@ -201,15 +220,21 @@ export default {
         busy: true
       });
       this.patches = [];
+      this.resetTimer();
     },
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');
       this.editMode = true;
+      this.resetTimer();
       this.refresh();
     },
     switchToPreviewMode() {
       window.sessionStorage.setItem('aposEditMode', 'false');
       this.editMode = false;
+      this.idleTriggered = false;
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+
       this.refresh();
     },
     async refresh() {
@@ -230,6 +255,16 @@ export default {
         refreshable.innerHTML = content;
       }
       apos.bus.$emit('refreshed');
+    },
+    resetTimer () {
+      this.idleTriggered = false;
+      clearTimeout(this.idleTimer);
+
+      const self = this;
+
+      this.idleTimer = setTimeout(() => {
+        self.idleTriggered = true;
+      }, 1800000);
     }
   }
 };
