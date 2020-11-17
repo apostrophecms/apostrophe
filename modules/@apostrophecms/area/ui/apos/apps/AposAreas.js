@@ -29,6 +29,8 @@ export default function() {
     for (const widgetEl of el.querySelectorAll('[data-apos-widget]')) {
       const _id = widgetEl.getAttribute('data-apos-widget');
       const item = data.items.find(item => _id === item._id);
+      // This will only match our own widgets, leaving the nested matches alone,
+      // another area app will handle them when the time comes
       if (item) {
         renderings[_id] = {
           html: widgetEl.innerHTML,
@@ -40,8 +42,6 @@ export default function() {
           }
         };
         widgetEl.remove();
-      } else {
-        // Nested widget, none of our business, picked up later
       }
     }
     el.removeAttribute('data-apos-area-newly-editable');
