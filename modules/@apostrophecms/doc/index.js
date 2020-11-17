@@ -13,15 +13,20 @@ const cuid = require('cuid');
 //
 // ## Options
 //
-// **`conflictResolution`: by default, Apostrophe will attempt to resolve
-// conflicts between users trying to edit the same document by presenting
-// the option to take control or leave the other user in control. This
-// mechanism can be disabled by explicitly setting `conflictResolution`
-// to false. Doing so is *not recommended* for normal operation but has
-// valid applications in automated testing.
+// ** `advisoryLockTimeout`: Apostrophe locks documents while they are
+// being edited so that another user, or another tab for the same user,
+// does not inadvertently interfere. These locks are refreshed frequently
+// by the browser while they are held. By default, if the browser
+// is not heard from for 30 seconds, the lock expires. Note that
+// the browser refreshes the lock every 5 seconds. This timeout should
+// be quite short as there is no longer any reliable way to force a browser
+// to unlock the document when leaving the page.
 
 module.exports = {
-  options: { alias: 'doc' },
+  options: {
+    alias: 'doc',
+    advisoryLockTimeout: 30
+  },
   async init(self, options) {
     self.managers = {};
     self.enableBrowserData();
@@ -62,15 +67,6 @@ module.exports = {
   apiRoutes(self, options) {
     return {
       post: {
-        async lock(req) {
-          await self.lock(req, self.apos.launder.id(req.body._id), self.apos.launder.id(req.body.htmlPageId), { force: !!req.body.force });
-        },
-        async verifyLock(req) {
-          await self.verifyLock(req, self.apos.launder.id(req.body._id), self.apos.launder.id(req.body.htmlPageId));
-        },
-        async unlock(req) {
-          await self.unlock(req, self.apos.launder.id(req.body._id), self.apos.launder.id(req.body.htmlPageId));
-        },
         async slugTaken(req) {
           if (!req.user) {
             throw self.apos.error('notfound');
@@ -580,31 +576,64 @@ module.exports = {
       getManager(type) {
         return self.managers[type];
       },
-      // Lock the given doc _id to a given `contextId`, such
-      // that other calls to `lock` for that doc id will
+      // Lock the given doc to a given `contextId`, such
+      // that other calls to `apos.doc.lock` for that doc id will
       // fail unless they have the same `contextId`. If
       // `options.force` is true, any existing lock is
       // overwritten. The `options` argument may be
       // omitted entirely.
       //
-      // `_id` must be truthy. If a doc is new and therefore
-      // has no _id yet, you don't need to lock it because
-      // it isn't possible that anyone else knows about it.
-      async lock(req, _id, contextId, options) {
+      // You cannot lock a document that has not yet been inserted,
+      // nor do you need to.
+      //
+      // If a lock cannot be obtained due to a conflict
+      // a 'locked' error is thrown, with the `me: true` property if
+      // the lock is held by the same user in another tab, or
+      // `username` and `title` properties if the lock is held
+      // by someone else. Other errors are thrown as appropriate.
+      //
+      // If you need to refresh a lock in order to avoid
+      // expiration, just lock it again. As long as the contextId
+      // is the same as the current lock holder you will receive
+      // another successful response.
+      //
+      // This method will set the `advisoryLock` property of the
+      // document both in the database and in the `doc` object
+      // that you pass to it. This ensures it is present if you
+      // follow this call up with an `update()` of the document.
+
+      async lock(req, doc, contextId, options) {
         if (!options) {
           options = {};
         }
-        if (!_id) {
-          throw new Error('no id');
+        if (!(req && req.res)) {
+          // Use 'error' because this is always a code bug, not a bad
+          // HTTP request, and the message should not be disclosed to the client
+          throw self.apos.error('error', 'You forgot to pass req as the first argument');
         }
+        if (!doc && doc._id) {
+          throw self.apos.error('invalid', 'No doc was passed');
+        }
+        const _id = doc._id;
         if (!contextId) {
-          throw new Error('no contextId');
+          throw self.apos.error('invalid', 'no contextId was passed');
         }
         let criteria = { _id };
         if (!options.force) {
           criteria.$or = [
-            { advisoryLock: { $exists: 0 } },
-            { 'advisoryLock._id': contextId }
+            {
+              advisoryLock: {
+                $exists: 0
+              }
+            },
+            {
+              'advisoryLock.updatedAt': {
+                $lt: self.getAdvisoryLockExpiration()
+              }
+            },
+            {
+              'advisoryLock._id': contextId
+            }
           ];
         }
         // Prevent nuisance locking by matching only
@@ -615,109 +644,83 @@ module.exports = {
             self.apos.permission.criteria(req, 'edit')
           ]
         };
+        doc.advisoryLock = {
+          username: req.user && req.user.username,
+          title: req.user && req.user.title,
+          _id: contextId,
+          updatedAt: new Date()
+        };
         const result = await self.db.updateOne(criteria, {
           $set: {
-            advisoryLock: {
-              username: req.user && req.user.username,
-              title: req.user && req.user.title,
-              _id: contextId,
-              updatedAt: new Date()
-            }
+            advisoryLock: doc.advisoryLock
           }
         });
         if (!result.result.nModified) {
-          const info = await self.db.findOne({ _id }, { projection: { advisoryLock: 1 } });
-          const now = new Date().getTime();
+          const info = await self.db.findOne({
+            _id
+          }, {
+            projection: {
+              advisoryLock: 1
+            }
+          });
           if (!info) {
             throw self.apos.error('notfound');
           }
-          const ago = Math.ceil((now - info.advisoryLock.updatedAt.getTime()) / 1000 / 60);
+          if (!info.advisoryLock) {
+            // Nobody else has a lock but you couldn't get one —
+            // must be permissions
+            throw self.apos.error('forbidden');
+          }
           if (!info.advisoryLock) {
             // Nobody else has a lock but you couldn't get one —
             // must be permissions
             throw self.apos.error('forbidden');
           }
           if (info.advisoryLock.username === req.user.username) {
-            // TODO add locked (423) to http module when I merge
-            // code that is at the office //
             throw self.apos.error('locked', {
-              me: true,
-              ago
+              me: true
             });
           }
           throw self.apos.error('locked', {
-            name: info.advisoryLock.title,
-            username: info.advisoryLock.username,
-            ago
-          });
-        }
-      },
-      // Verifies that a lock obtained with `lock` is
-      // still held by the given context id. If not,
-      // the error is the string `locked` and a second
-      // argument with an internationalized message
-      // is provided also. If the lock was taken
-      // by the same user in another tab or window,
-      // this is indicated but the error remains.
-      //
-      // If the `conflictResolution` option is set to false
-      // for the docs module, this method returns
-      // successfully without actually doing anything.
-      // This is *not recommended* but has valid applications
-      // in automated testing.
-      async verifyLock(req, id, contextId) {
-        if (self.options.conflictResolution === false) {
-          return;
-        }
-        const info = await self.db.findOne({ _id: id }, { projection: { advisoryLock: 1 } });
-        if (!info) {
-          throw self.apos.error('notfound');
-        }
-        if (!info.advisoryLock) {
-          // We lost our lock unexpectedly, the document
-          // is now unlocked. Treat this as a "somebody locked it"
-          // situation because we cannot continue as we expected to
-          throw self.apos.error('locked', { taken: true });
-        }
-        if (info.advisoryLock._id === contextId) {
-          // We still have the lock, all is well
-          return;
-        }
-        if (info.advisoryLock.username !== req.user.username) {
-          throw self.apos.error('locked', {
-            taken: true,
-            name: info.advisoryLock.title,
+            title: info.advisoryLock.title,
             username: info.advisoryLock.username
           });
-        } else {
-          throw self.apos.error('locked', {
-            taken: true,
-            me: true
-          });
         }
       },
-      // Release a document lock set via `lock` for
-      // a particular contextId.
+      // Any advisory lock whose `updatedAt` time is older than the Date
+      // object returned by this method should be considered expired
+      getAdvisoryLockExpiration() {
+        return new Date(Date.now() - 1000 * self.options.advisoryLockTimeout);
+      },
+      // Release a document lock set via `lock` for a particular contextId.
+      // If the lock is already gone no error occurs.
       //
-      // If the `conflictResolution` option is set to false
-      // for the docs module, this method resolves
-      // successfully without actually doing anything.
-      // This is *not recommended* but has valid applications
-      // in automated testing.
-      async unlock(req, id, contextId) {
-        if (self.options.conflictResolution === false) {
-          return;
+      // This method will unset the `advisoryLock` property of the
+      // document both in the database and in the `doc` object
+      // that you pass to it. This ensures it is present if you
+      // follow this call up with an `update()` of the document.
+      async unlock(req, doc, contextId) {
+        if (!(req && req.res)) {
+          // Use 'error' because this is always a code bug, not a bad
+          // HTTP request, and the message should not be disclosed to the client
+          throw self.apos.error('error', 'You forgot to pass req as the first argument');
         }
+        const id = doc && doc._id;
         if (!id) {
-          throw new Error('no id');
+          throw self.apos.error('invalid', 'no doc');
         }
         if (!contextId) {
-          throw new Error('no contextId');
+          throw self.apos.error('invalid', 'no contextId');
         }
         await self.db.updateOne({
           _id: id,
           'advisoryLock._id': contextId
-        }, { $unset: { advisoryLock: 1 } });
+        }, {
+          $unset: {
+            advisoryLock: 1
+          }
+        });
+        delete doc.advisoryLock;
       },
       // Returns the field names necessary to build URLs
       // for typical doc types. If a cursor specific to a

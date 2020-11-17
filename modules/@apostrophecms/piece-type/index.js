@@ -502,28 +502,68 @@ module.exports = {
       // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id, based on the
       // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
       // populate all relationships and return it. Employs a lock to avoid overwriting the work of
-      // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
+      // simultaneous PUT and PATCH calls or getting into race conditions with their side effects.
+      // However if you plan to submit many patches over a period of time while editing you may also
+      // want to use the advisory lock mechanism.
+      //
+      // If `_advisoryLock: { contextId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // lock on the document for the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
+      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { contextId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // released *after* addressing other items in the same patch. If `force: true` is added to
+      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      //
+      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a period of time
+      // and wish to avoid conflict with other users. You do not need it for one-time patches.
       //
       // If `input._patches` is an array of patches to the same document, this method
       // will iterate over those patches as if each were `input`, applying all of them
       // within a single lock and without redundant network operations. This greatly
       // improves the performance of saving all changes to a document at once after
       // accumulating a number of changes in patch form on the front end.
+
       async convertPatchAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
           const piece = await self.findOneForEditing(req, { _id });
+          let result;
           if (!piece) {
             throw self.apos.error('notfound');
           }
-          if (Array.isArray(input._patches)) {
-            for (const patch of input._patches) {
-              await self.applyPatch(req, piece, patch);
+          const patches = Array.isArray(input._patches) ? input._patches : [ input ];
+          // Conventional for loop so we can handle the last one specially
+          for (let i = 0; (i < patches.length); i++) {
+            const input = patches[i];
+            let contextId = null;
+            let lock = false;
+            let force = false;
+            if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+              contextId = self.apos.launder.string(input._advisoryLock.contextId);
+              lock = self.apos.launder.boolean(input._advisoryLock.lock);
+              force = self.apos.launder.boolean(input._advisoryLock.force);
             }
-          } else {
-            await self.applyPatch(req, piece, input);
+            if (contextId && lock) {
+              await self.apos.doc.lock(req, piece, contextId, {
+                force
+              });
+            }
+            await self.applyPatch(req, piece, input, {
+              force: self.apos.launder.boolean(input._advisory)
+            });
+            if (i === (patches.length - 1)) {
+              await self.update(req, piece);
+              result = self.findOneForEditing(req, { _id }, { annotate: true });
+            }
+            if (contextId && !lock) {
+              await self.apos.doc.unlock(req, piece, contextId);
+            }
           }
-          await self.update(req, piece);
-          return self.findOneForEditing(req, { _id }, { annotate: true });
+          if (!result) {
+            // Edge case: empty `_patches` array. Don't be a pain,
+            // return the document as-is
+            return self.findOneForEditing(req, { _id }, { annotate: true });
+          }
+          return result;
         });
       },
       // Apply a single patch to the given piece without saving. An implementation detail of
