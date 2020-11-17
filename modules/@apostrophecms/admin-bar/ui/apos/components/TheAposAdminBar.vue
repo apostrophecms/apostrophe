@@ -231,13 +231,11 @@ export default {
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');
       this.editMode = true;
-      this.resetTimer();
       this.refresh();
     },
     switchToPreviewMode() {
       window.sessionStorage.setItem('aposEditMode', 'false');
       this.editMode = false;
-
       this.refresh();
     },
     async refresh() {
