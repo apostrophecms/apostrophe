@@ -275,7 +275,7 @@ module.exports = {
 
       // Hash the `password` property of `doc`, then delete that property
       // and update the `passwordHash` property of `safeUser`. This method is
-      // called by the `docBeforeInsert` and `docBeforeSave handlers of this
+      // called by the `beforeInsert` and `beforeSave handlers of this
       // module. If `password` is falsy (i.e. the user left it blank,
       // requesting no change), it is left alone and `safeUser` is
       // not updated.
@@ -290,7 +290,7 @@ module.exports = {
       // a secret is named `signup`, the corresponding property in
       // `safeUser` will be named `signupHash`.
       //
-      // This method is called by the `docBeforeInsert` and `docBeforeSave`
+      // This method is called by the `beforeInsert` and `beforeSave`
       // handlers of this module.
 
       async hashSecrets(doc, safeUser) {

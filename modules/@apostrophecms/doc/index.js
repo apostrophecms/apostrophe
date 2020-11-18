@@ -420,7 +420,7 @@ module.exports = {
           }
         }
       },
-      // Called by `docBeforeInsert` to confirm that the user
+      // Called by `beforeInsert` to confirm that the user
       // has the appropriate permissions for the doc's type
       // and, in some extensions of Apostrophe, the new doc's
       // content.
