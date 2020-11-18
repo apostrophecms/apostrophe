@@ -201,6 +201,7 @@ export default {
         busy: true
       });
       this.patches = [];
+      await this.refresh();
     },
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');

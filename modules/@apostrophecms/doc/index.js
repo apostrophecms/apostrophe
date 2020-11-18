@@ -114,6 +114,9 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforeSave': {
+        cleanAreas(req, doc, options) {
+          self.clearEmptyRichText(req, doc);
+        },
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           self.ensureSlug(doc);
           const manager = self.getManager(doc.type);
@@ -430,6 +433,29 @@ module.exports = {
             throw self.apos.error('forbidden');
           }
         }
+      },
+      // Called by `beforeSave` to remove empty rich text widgets.
+      clearEmptyRichText(req, doc) {
+        self.apos.area.walk(doc, area => {
+
+          area.items = area.items.filter(w => {
+            return !isEmptyRte(w);
+          });
+
+          function isEmptyRte(widget) {
+            if (widget.type !== '@apostrophecms/rich-text') {
+              return false;
+            }
+
+            const plainText = self.apos.util.htmlToPlaintext(widget.content);
+
+            if (plainText.trim().length === 0) {
+              return true;
+            } else {
+              return false;
+            }
+          }
+        });
       },
       // If the doc does not yet have a slug, add one based on the
       // title; throw an error if there is no title
