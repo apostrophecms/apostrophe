@@ -240,7 +240,7 @@ export default {
       apos.bus.$emit('refreshed');
     },
     // Timer pattern from https://stackoverflow.com/a/59587639/888550
-    Timer (ms) {
+    createTimer (ms) {
       let id;
 
       const start = () => new Promise(resolve => {
@@ -264,7 +264,7 @@ export default {
       };
     },
     async resetTimer () {
-      this.idleTimer = this.Timer(1800000);
+      this.idleTimer = this.createTimer(1800000);
       await this.idleTimer.start();
 
       const saveChanges = await apos.confirm({
