@@ -117,7 +117,7 @@ export default {
       createMenu: [],
       patches: [],
       editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
-      idleTimer: undefined
+      idleTimer: this.createTimer(1800000)
     };
   },
   computed: {
@@ -164,9 +164,7 @@ export default {
     apos.bus.$on('context-edited', patch => {
       this.patches.push(patch);
 
-      if (!this.idleTimer) {
-        this.resetTimer();
-      }
+      this.resetTimer();
     });
 
     window.addEventListener('beforeunload', this.beforeUnload);
@@ -208,7 +206,6 @@ export default {
       this.patches = [];
 
       this.idleTimer.abort();
-      this.idleTimer = null;
     },
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');
@@ -244,18 +241,11 @@ export default {
       let id;
 
       const start = () => new Promise(resolve => {
-        if (id === -1) {
-          throw new Error('Timer already aborted');
-        }
-
         id = setTimeout(resolve, ms);
       });
 
       const abort = () => {
-        if (id !== -1 || id === undefined) {
-          clearTimeout(id);
-          id = -1;
-        }
+        clearTimeout(id);
       };
 
       return {
@@ -264,7 +254,7 @@ export default {
       };
     },
     async resetTimer () {
-      this.idleTimer = this.createTimer(1800000);
+      this.idleTimer.abort();
       await this.idleTimer.start();
 
       const saveChanges = await apos.confirm({
