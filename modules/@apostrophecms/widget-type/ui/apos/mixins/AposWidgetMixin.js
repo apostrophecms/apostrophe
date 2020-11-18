@@ -1,9 +1,17 @@
+import { isEqual } from 'lodash';
+
 export default {
   props: {
     docId: String,
     type: String,
     areaFieldId: String,
-    value: Object
+    value: Object,
+    rendering: {
+      type: Object,
+      default() {
+        return null;
+      }
+    }
   },
   watch: {
     value: {
@@ -33,16 +41,22 @@ export default {
   },
   methods: {
     async renderContent() {
+      const parameters = {
+        _docId: this.docId,
+        widget: this.value,
+        areaFieldId: this.areaFieldId,
+        type: this.type
+      };
       try {
-        this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1`, {
-          busy: true,
-          body: {
-            _docId: this.docId,
-            widget: this.value,
-            areaFieldId: this.areaFieldId,
-            type: this.type
-          }
-        });
+        if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
+          this.rendered = this.rendering.html;
+        } else {
+          this.rendered = '...';
+          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?apos-edit=1`, {
+            busy: true,
+            body: parameters
+          });
+        }
         // Wait for reactivity to populate v-html so the
         // AposAreas manager can spot any new area divs
         setImmediate(function() {
