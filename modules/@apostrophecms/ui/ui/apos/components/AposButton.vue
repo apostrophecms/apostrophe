@@ -501,7 +501,6 @@ export default {
       transform: none;
       box-shadow: none;
       outline: none;
-      border-color: transparent;
     }
   }
 

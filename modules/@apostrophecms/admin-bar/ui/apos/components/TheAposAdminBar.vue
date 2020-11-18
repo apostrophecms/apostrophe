@@ -306,14 +306,14 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__context-controls {
   display: flex;
   align-items: center;
-  justify-content: end;
+  justify-content: flex-end;
   flex: 1;
 }
 
 .apos-admin-bar__context-button {
   // All but the first.
   .apos-admin-bar__context-controls &:nth-child(n+2) {
-    margin-left: 10px;
+    margin-left: 7.5px;
   }
 }
 
