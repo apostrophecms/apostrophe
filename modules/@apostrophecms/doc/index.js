@@ -114,8 +114,8 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforeSave': {
-        cleanAreas(req, doc, options) {
-          self.clearEmptyRichText(req, doc);
+        async cleanAreas(req, doc, options) {
+          await self.clearEmptyRichText(req, doc);
         },
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           self.ensureSlug(doc);
@@ -435,9 +435,10 @@ module.exports = {
         }
       },
       // Called by `beforeSave` to remove empty rich text widgets.
-      clearEmptyRichText(req, doc) {
-        self.apos.area.walk(doc, area => {
+      async clearEmptyRichText(req, doc) {
+        let foundEmpty = false;
 
+        self.apos.area.walk(doc, area => {
           area.items = area.items.filter(w => {
             return !isEmptyRte(w);
           });
@@ -450,12 +451,21 @@ module.exports = {
             const plainText = self.apos.util.htmlToPlaintext(widget.content);
 
             if (plainText.trim().length === 0) {
+              foundEmpty = true;
               return true;
             } else {
               return false;
             }
           }
         });
+
+        if (foundEmpty) {
+          await self.apos.notify(req, 'At least one rich text widget with no text was removed during saving.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+        }
       },
       // If the doc does not yet have a slug, add one based on the
       // title; throw an error if there is no title
