@@ -7,7 +7,7 @@ const cuid = require('cuid');
 // The `getManager` method should be used to obtain a reference to the module
 // that manages a particular doc type, so that you can benefit from behavior
 // specific to that module. One method of this module that you may sometimes use directly
-// is `apos.doc.find()`, which returns a [cursor](server-@apostrophecms/cursor.html) for
+// is `apos.doc.find()`, which returns a query[query](server-@apostrophecms/query.html) for
 // fetching documents of all types. This is useful when implementing something
 // like the [@apostrophecms/search](../@apostrophecms/search/index.html) module.
 //
@@ -723,7 +723,7 @@ module.exports = {
         delete doc.advisoryLock;
       },
       // Returns the field names necessary to build URLs
-      // for typical doc types. If a cursor specific to a
+      // for typical doc types. If a query specific to a
       // doc type is used, the `getUrlFields` method of
       // that module is called instead. This method is
       // used to implement "projections" for the

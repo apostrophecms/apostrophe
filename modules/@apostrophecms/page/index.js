@@ -286,7 +286,7 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -326,7 +326,7 @@ module.exports = {
 
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
       },
       // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
@@ -520,7 +520,7 @@ database.`);
                 const actualPosition = result.position;
                 await self.move(req, page._id, actualTargetId, actualPosition);
               }
-              result = self.findOneForEditing(req, { _id }, { annotate: true });
+              result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
             if (contextId && !lock) {
               await self.apos.doc.unlock(req, page, contextId);
@@ -529,7 +529,7 @@ database.`);
           if (!result) {
             // Edge case: empty `_patches` array. Don't be a pain,
             // return the document as-is
-            return self.findOneForEditing(req, { _id }, { annotate: true });
+            return self.findOneForEditing(req, { _id }, { attachments: true });
           }
           return result;
         });
@@ -571,15 +571,15 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate;
         return browserOptions;
       },
-      // Returns a cursor that finds pages the current user can edit
+      // Returns a query that finds pages the current user can edit
       // in a batch operation.
       //
       // `req` determines what the user is eligible to edit, `criteria`
       // is the MongoDB criteria object, and any properties of `options`
       // are invoked as methods on the query with their values.
       findForBatch(req, criteria = {}, options = {}) {
-        const cursor = self.find(req, criteria, options).permission('edit').trash(null);
-        return cursor;
+        const query = self.find(req, criteria, options).permission('edit').trash(null);
+        return query;
       },
       // Insert a page. `targetId` must be an existing page id, and
       // `position` may be `before`, `inside` or `after`.
@@ -1923,19 +1923,21 @@ database.`);
         }
         return query;
       },
-      // Returns a cursor that finds pages the current user can edit. Unlike
-      // find(), this cursor defaults to including docs in the trash, although
+      // Returns a query that finds pages the current user can edit. Unlike
+      // find(), this query defaults to including docs in the trash, although
       // we apply filters in the UI.
-      findForEditing(req, criteria, projection, options) {
+      findForEditing(req, criteria, builders) {
         // Include ancestors to help with determining allowed types
-        const cursor = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
-        if (projection) {
-          cursor.project(projection);
+        const query = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
+        if (builders) {
+          for (const [ key, value ] of Object.entries(builders)) {
+            query[key](value);
+          }
         }
-        return cursor;
+        return query;
       },
-      async findOneForEditing(req, criteria, projection, options) {
-        return self.findForEditing(req, criteria, projection, options).toObject();
+      async findOneForEditing(req, criteria, builders) {
+        return self.findForEditing(req, criteria, builders).toObject();
       },
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does

@@ -465,7 +465,7 @@ module.exports = {
         });
         await self.emit('afterConvert', req, input, piece);
         await self.insert(req, piece);
-        return self.findOneForEditing(req, { _id: piece._id }, { annotate: true });
+        return self.findOneForEditing(req, { _id: piece._id }, { attachments: true });
       },
 
       // Similar to `convertInsertAndRefresh`. Update the piece with the given _id, based on the
@@ -488,7 +488,7 @@ module.exports = {
           await self.convert(req, input, piece);
           await self.emit('afterConvert', req, input, piece);
           await self.update(req, piece);
-          return self.findOneForEditing(req, { _id }, { annotate: true });
+          return self.findOneForEditing(req, { _id }, { attachments: true });
         });
       },
 
@@ -552,7 +552,7 @@ module.exports = {
             });
             if (i === (patches.length - 1)) {
               await self.update(req, piece);
-              result = self.findOneForEditing(req, { _id }, { annotate: true });
+              result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
             if (contextId && !lock) {
               await self.apos.doc.unlock(req, piece, contextId);
@@ -561,7 +561,7 @@ module.exports = {
           if (!result) {
             // Edge case: empty `_patches` array. Don't be a pain,
             // return the document as-is
-            return self.findOneForEditing(req, { _id }, { annotate: true });
+            return self.findOneForEditing(req, { _id }, { attachments: true });
           }
           return result;
         });
