@@ -38,6 +38,7 @@
         :widget-hovered="hoveredWidget"
         :widget-focused="focusedWidget"
         :max-reached="maxReached"
+        :rendering="renderings[widget._id]"
         @up="up"
         @down="down"
         @remove="remove"
@@ -51,8 +52,6 @@
 </template>
 
 <script>
-
-import Vue from 'apostrophe/vue';
 import cuid from 'cuid';
 import klona from 'klona';
 
@@ -90,6 +89,12 @@ export default {
     choices: {
       type: Array,
       required: true
+    },
+    renderings: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'changed' ],

@@ -160,7 +160,7 @@ ${bundle}
 
           fs.writeFileSync(importFile, `
 import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-import Vue from 'apostrophe/vue';
+import Vue from 'Modules/@apostrophecms/ui/lib/vue';
 if (window.apos.modules) {
   for (const module of Object.values(window.apos.modules)) {
     if (module.alias) {
