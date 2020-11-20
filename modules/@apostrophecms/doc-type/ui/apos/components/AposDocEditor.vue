@@ -128,7 +128,10 @@ export default {
       schemaUtilityFields: [],
       schemaOtherFields: [],
       triggerValidation: false,
-      original: null
+      original: null,
+      locked: false,
+      lockInterval: null,
+      lockRefreshing: null
     };
   },
   computed: {
@@ -223,6 +226,54 @@ export default {
       let docData;
       try {
         const getOnePath = `${this.moduleAction}/${this.docId}`;
+        try {
+          await apos.http.patch(getOnePath, {
+            body: {
+              advisoryLock: {
+                contextId: apos.contextId,
+                lock: true
+              }
+            }
+          });
+          this.locked = true;
+          this.lockInterval = setInterval(this.refreshLock, 10000);
+        } catch (e) {
+          if (e.body && e.body && e.body.name === 'locked') {
+            // We do not ask before busting our own advisory lock.
+            // We used to do this in A2 but end users told us they hated it and
+            // were constantly confused by it. This is because there is no
+            // way to guarantee a lock is dropped when leaving the page
+            // in edit mode. However, in the rare case where the "other tab"
+            // getting its lock busted really is another tab, we do notify
+            // the user there.
+            if (e.body.data.me ||
+              await apos.confirm({
+                heading: 'Another User Is Editing',
+                description: `${e.body.data.title} is editing that document. Do you want to take control?`
+              })
+            ) {
+              try {
+                await apos.http.patch(getOnePath, {
+                  body: {
+                    advisoryLock: {
+                      contextId: apos.contextId,
+                      lock: true,
+                      force: true
+                    }
+                  }
+                });
+                this.locked = true;
+              } catch (e) {
+                await apos.notify(e.message, {
+                  type: 'error'
+                });
+                this.modal.showModal = false;
+              }
+            } else {
+              this.modal.showModal = false;
+            }
+          }
+        }
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues
@@ -250,7 +301,52 @@ export default {
       });
     }
   },
+  async destroyed () {
+    if (this.locked) {
+      clearInterval(this.lockInterval);
+      if (this.lockRefreshing) {
+        // First await the promise we held onto to make sure there is
+        // no race condition that leaves the lock in place
+        await this.lockRefreshing;
+      }
+      try {
+        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+          body: {
+            advisoryLock: {
+              contextId: apos.contextId,
+              lock: false
+            }
+          }
+        });
+      } catch (e) {
+        // Not our concern, just being polite
+      }
+    }
+  },
   methods: {
+    refreshLock() {
+      this.lockRefreshing = (async () => {
+        try {
+          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+            body: {
+              advisoryLock: {
+                contextId: apos.contextId,
+                lock: true
+              }
+            }
+          });
+        } catch (e) {
+          if (e.body && e.body.name && (e.body.name === 'locked')) {
+            await apos.notify('Another user took control of the document.', {
+              type: 'error'
+            });
+            this.modal.showModal = false;
+          }
+          // Other errors on this are not critical
+        }
+        this.lockRefreshing = null;
+      })();
+    },
     submit() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -269,6 +365,11 @@ export default {
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
           requestMethod = apos.http.put;
+          // Make sure we fail if someone else took the advisory lock
+          body.advisoryLock = {
+            contextId: apos.contextId,
+            lock: true
+          };
         } else {
           route = this.moduleAction;
           requestMethod = apos.http.post;
@@ -286,10 +387,23 @@ export default {
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred saving the document.'
-          });
-          return;
+          if (e.body && (e.body.name === 'locked')) {
+            if (e.body.data.me) {
+              await apos.notify('You took control of the document in another tab or window.', {
+                type: 'error'
+              });
+            } else {
+              await apos.notify('Another user took control of the document.', {
+                type: 'error'
+              });
+            }
+            this.modal.showModal = false;
+          } else {
+            await this.handleSaveError(e, {
+              fallback: 'An error occurred saving the document.'
+            });
+            return;
+          }
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
