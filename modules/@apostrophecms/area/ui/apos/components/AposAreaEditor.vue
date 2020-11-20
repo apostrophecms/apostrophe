@@ -149,7 +149,7 @@ export default {
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
-      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
+      return !!(this.docId && (window.apos.contextId !== this.docId));
     }
   },
   watch: {
@@ -209,7 +209,7 @@ export default {
       this.focusedWidget = widgetId;
     },
     async up(i) {
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.docId === window.apos.contextId) {
         apos.bus.$emit('context-edited', {
           $move: {
             [`@${this.id}.items`]: {
@@ -227,7 +227,7 @@ export default {
       ];
     },
     async down(i) {
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.docId === window.apos.contextId) {
         apos.bus.$emit('context-edited', {
           $move: {
             [`@${this.id}.items`]: {
@@ -245,7 +245,7 @@ export default {
       ];
     },
     async remove(i) {
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.docId === window.apos.contextId) {
         apos.bus.$emit('context-edited', {
           $pullAllById: {
             [`@${this.id}.items`]: [ this.next[i]._id ]
@@ -309,7 +309,7 @@ export default {
       });
     },
     async update(widget) {
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.docId === window.apos.contextId) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
         });
@@ -362,7 +362,7 @@ export default {
       if (e.index < this.next.length) {
         push.$before = this.next[e.index]._id;
       }
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.docId === window.apos.contextId) {
         apos.bus.$emit('context-edited', {
           $push: {
             [`@${this.id}.items`]: push

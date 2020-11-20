@@ -130,7 +130,7 @@ export default {
       triggerValidation: false,
       original: null,
       locked: false,
-      lockInterval: null,
+      lockTimeout: null,
       lockRefreshing: null
     };
   },
@@ -229,14 +229,14 @@ export default {
         try {
           await apos.http.patch(getOnePath, {
             body: {
-              advisoryLock: {
+              _advisoryLock: {
                 contextId: apos.contextId,
                 lock: true
               }
             }
           });
           this.locked = true;
-          this.lockInterval = setInterval(this.refreshLock, 10000);
+          this.lockTimeout = setTimeout(this.refreshLock, 10000);
         } catch (e) {
           if (e.body && e.body && e.body.name === 'locked') {
             // We do not ask before busting our own advisory lock.
@@ -255,7 +255,7 @@ export default {
               try {
                 await apos.http.patch(getOnePath, {
                   body: {
-                    advisoryLock: {
+                    _advisoryLock: {
                       contextId: apos.contextId,
                       lock: true,
                       force: true
@@ -303,7 +303,7 @@ export default {
   },
   async destroyed () {
     if (this.locked) {
-      clearInterval(this.lockInterval);
+      clearTimeout(this.lockTimeout);
       if (this.lockRefreshing) {
         // First await the promise we held onto to make sure there is
         // no race condition that leaves the lock in place
@@ -312,7 +312,7 @@ export default {
       try {
         await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
           body: {
-            advisoryLock: {
+            _advisoryLock: {
               contextId: apos.contextId,
               lock: false
             }
@@ -329,17 +329,27 @@ export default {
         try {
           await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
-              advisoryLock: {
+              _advisoryLock: {
                 contextId: apos.contextId,
                 lock: true
               }
             }
           });
+          // Reset this each time to avoid various race conditions
+          this.lockTimeout = setTimeout(this.refreshLock, 10000);
         } catch (e) {
           if (e.body && e.body.name && (e.body.name === 'locked')) {
-            await apos.notify('Another user took control of the document.', {
-              type: 'error'
-            });
+            if (e.body.data.me) {
+              // Edge case: we cannot use a notification for this because they
+              // would see it in *both* tabs, the winner and the loser. After
+              // Bea's work on nice A3 alerts is merged, we will use that
+              // as a followup.
+              alert('You took control of this document in another tab or window.');
+            } else {
+              await apos.notify('Another user took control of the document.', {
+                type: 'error'
+              });
+            }
             this.modal.showModal = false;
           }
           // Other errors on this are not critical
@@ -366,7 +376,7 @@ export default {
           route = `${this.moduleAction}/${this.docId}`;
           requestMethod = apos.http.put;
           // Make sure we fail if someone else took the advisory lock
-          body.advisoryLock = {
+          body._advisoryLock = {
             contextId: apos.contextId,
             lock: true
           };
