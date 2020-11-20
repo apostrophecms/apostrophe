@@ -104,7 +104,7 @@
             v-if="editMode"
             type="primary" label="Publish Changes"
             :disabled="!readyToSave"
-            class="apos-admin-bar__btn apos-admin-bar__context-button"
+            class="apos-admin-bar__context-button"
             @click="save"
           />
           <AposButton
