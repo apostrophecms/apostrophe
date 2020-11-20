@@ -262,7 +262,7 @@ module.exports = {
       // only an empty object is supplied. If `playerData` is set to an
       // array, only the named permanent properties are supplied. If `playerData is `true`
       // (the default), all of the permanent properties are supplied.
-
+      // TODO: Remove if not used.
       filterForDataAttribute(widget) {
         const data = self.apos.util.clonePermanent(widget, true);
         if (widget._edit || self.options.playerData === true) {
@@ -287,7 +287,7 @@ module.exports = {
       // If we don't do a good job here we get 1MB+ of markup. So if you override
       // this, play nice. And think about fetching the data you need only when
       // you truly need it, such as via an AJAX request in response to a click.
-
+      // TODO: Remove is not used.
       filterOptionsForDataAttribute(options) {
         return self.apos.util.clonePermanent(options, true);
       },

@@ -47,6 +47,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           let options;
+          // TODO: Remove `singleton` check if no longer relevant.
           if (field.type === 'singleton') {
             options = field.options;
           } else {
@@ -536,6 +537,7 @@ module.exports = {
       //
       // home.addresses.0.fancy.0:@apostrophecms/rich-text
       //
+      // TODO: Remove if unused.
       getWidgetOptionsByPath(path) {
         path = path.split('.');
         const docType = path.shift();

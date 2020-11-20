@@ -66,6 +66,7 @@ module.exports = {
         return self.apos.area.isEmpty({ area: value });
       },
       getWidgetOptionsForPath(field, path) {
+        console.info('getWidgetOptionsForPath');
         // eslint-disable-next-line no-unused-vars
         let [ index, type ] = path.shift().split(':');
         // eslint-disable-next-line no-unused-vars
@@ -74,6 +75,7 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         const widgetOptions = field.options.widgets && field.options.widgets[type];
+        console.info('🟣', type, widgetOptions);
         if (!path.length) {
           return widgetOptions;
         }

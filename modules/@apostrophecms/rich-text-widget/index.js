@@ -246,6 +246,7 @@ module.exports = {
       // Rich text editor content is found in the
       // div itself as markup, so don't redundantly
       // represent it as a data attribute.
+      // TODO: Remove if not used.
       filterForDataAttribute(widget) {
         return _.omit(widget, 'content');
       },
