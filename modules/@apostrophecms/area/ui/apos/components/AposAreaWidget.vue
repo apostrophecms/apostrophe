@@ -75,7 +75,6 @@
         :options="options.widgets[widget.type]"
         :type="widget.type"
         :doc-id="docId"
-        data-apos-widget
       />
       <component
         v-else
@@ -88,7 +87,7 @@
         :foreign="foreign"
         @edit="$emit('edit', i);"
         :doc-id="docId"
-        data-apos-widget
+        :rendering="rendering"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
@@ -161,6 +160,12 @@ export default {
     },
     maxReached: {
       type: Boolean
+    },
+    rendering: {
+      type: Object,
+      default() {
+        return null;
+      }
     }
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'update', 'insert', 'changed' ],
