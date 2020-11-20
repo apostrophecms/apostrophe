@@ -498,6 +498,9 @@ export default {
     &.apos-area-widget__label {
       z-index: $z-index-widget-label;
     }
+    &.apos-focus {
+      z-index: $z-index-widget-focused-controls;
+    }
   }
 
   // TODO commented code awaiting the triumphant return of the canvas -SR
