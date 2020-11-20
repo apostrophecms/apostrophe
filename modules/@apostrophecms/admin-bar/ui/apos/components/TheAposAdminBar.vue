@@ -107,6 +107,20 @@
             class="apos-admin-bar__btn apos-admin-bar__context-button"
             @click="save"
           />
+          <AposButton
+            v-if="patches.length"
+            type="default" label="Undo"
+            icon="undo-icon" class="apos-admin-bar__btn"
+            :icon-only="true"
+            @click="undo"
+          />
+          <AposButton
+            v-if="undone.length"
+            type="default" label="Redo"
+            icon="redo-icon" class="apos-admin-bar__btn"
+            :icon-only="true"
+            @click="redo"
+          />
         </div>
       </div>
     </nav>
@@ -132,6 +146,7 @@ export default {
       menuItems: [],
       createMenu: [],
       patches: [],
+      undone: [],
       editMode: window.sessionStorage.getItem('aposEditMode') === 'true'
     };
   },
@@ -178,6 +193,7 @@ export default {
 
     apos.bus.$on('context-edited', patch => {
       this.patches.push(patch);
+      this.undone = [];
     });
 
     window.addEventListener('beforeunload', this.beforeUnload);
@@ -228,24 +244,50 @@ export default {
       this.editMode = false;
       this.refresh();
     },
-    async refresh() {
-      const content = await apos.http.get(window.location.href, {
-        headers: {
-          'Cache-Control': 'no-cache'
-        },
-        qs: {
-          ...apos.http.parseQuery(window.location.search),
-          'apos-refresh': '1',
-          ...(this.editMode ? {
-            'apos-edit': '1'
-          } : {})
-        }
-      });
+    async refresh({ asPatched } = {}) {
+      let content;
+      let url = window.location.href;
+      const qs = {
+        ...apos.http.parseQuery(window.location.search),
+        'apos-refresh': '1',
+        ...(this.editMode ? {
+          'apos-edit': '1'
+        } : {})
+      };
+      url = url.replace(/\?.*$/, '');
+      url = apos.http.addQueryToUrl(url, qs);
+      if (asPatched) {
+        content = await apos.http.post(`${window.apos.doc.action}/get-as-patched`, {
+          body: {
+            url,
+            _id: this.moduleOptions.contextId,
+            type: this.moduleOptions.context.type,
+            patches: asPatched
+          },
+          busy: true
+        });
+      } else {
+        content = await apos.http.get(window.location.href, {
+          qs,
+          headers: {
+            'Cache-Control': 'no-cache'
+          },
+          busy: true
+        });
+      }
       const refreshable = document.querySelector('[data-apos-refreshable]');
       if (refreshable) {
         refreshable.innerHTML = content;
       }
       apos.bus.$emit('refreshed');
+    },
+    async undo() {
+      this.undone.push(this.patches.pop());
+      this.refresh({ asPatched: this.patches });
+    },
+    async redo() {
+      this.patches.push(this.undone.pop());
+      this.refresh({ asPatched: this.patches });
     }
   }
 };

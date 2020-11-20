@@ -1485,12 +1485,20 @@ module.exports = {
           return count;
         },
 
-        // Returns an array of documents matching
-        // the query. Not chainable.
+        // Returns an array of documents matching the query. Not chainable.
 
         async toArray() {
           const mongo = await query.toMongo();
           const docs = await query.mongoToArray(mongo);
+          if (query.req.query['apos-as-patched']) {
+            const asPatched = await self.apos.cache.get('as-patched', query.req.query['apos-as-patched']);
+            if (asPatched) {
+              const doc = docs.find(doc => doc._id === asPatched._id);
+              if (doc) {
+                Object.assign(doc, asPatched);
+              }
+            }
+          }
           await query.after(docs);
           return docs;
         },
