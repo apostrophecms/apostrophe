@@ -54,7 +54,22 @@
         />
       </div>
       <div class="apos-admin-bar__row">
-        <div class="apos-admin-bar__context-spacer" />
+        <div class="apos-admin-bar__context-controls">
+          <AposButton
+            :disabled="patches.length === 0"
+            type="default" label="Undo"
+            class="apos-admin-bar__context-button"
+            icon="undo-icon" :icon-only="true"
+            @click="undo"
+          />
+          <AposButton
+            :disabled="undone.length === 0"
+            type="default" label="Redo"
+            class="apos-admin-bar__context-button"
+            icon="redo-icon" :icon-only="true"
+            @click="redo"
+          />
+        </div>
         <div class="apos-admin-bar__context-title">
           <span
             v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
@@ -106,20 +121,6 @@
             :disabled="!readyToSave"
             class="apos-admin-bar__context-button"
             @click="save"
-          />
-          <AposButton
-            v-if="patches.length"
-            type="default" label="Undo"
-            icon="undo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="undo"
-          />
-          <AposButton
-            v-if="undone.length"
-            type="default" label="Redo"
-            icon="redo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="redo"
           />
         </div>
       </div>
@@ -348,8 +349,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__context-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 1;
+
+  &:last-child {
+    justify-content: flex-end;
+  }
 }
 
 .apos-admin-bar__context-button {
@@ -365,6 +370,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   padding: 0;
 }
 
+.apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
 }
