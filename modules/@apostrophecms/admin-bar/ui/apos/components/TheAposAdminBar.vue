@@ -323,15 +323,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   border-bottom: $admin-bar-border;
 }
 
-.apos-admin-bar__context-spacer {
-  flex: 1;
-  // Using text-align because otherwise we don't wind
-  // up with quite the right centering for the middle one
-  // due to subtle issues with the way space is
-  // distributed
-  text-align: left;
-}
-
 .apos-admin-bar__context-title {
   @include type-base;
   display: inline-flex;
