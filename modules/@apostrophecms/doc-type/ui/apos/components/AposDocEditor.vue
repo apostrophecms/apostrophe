@@ -235,8 +235,7 @@ export default {
               }
             }
           });
-          this.locked = true;
-          this.lockTimeout = setTimeout(this.refreshLock, 10000);
+          this.markLockedAndScheduleRefresh();
         } catch (e) {
           if (e.body && e.body && e.body.name === 'locked') {
             // We do not ask before busting our own advisory lock.
@@ -262,7 +261,7 @@ export default {
                     }
                   }
                 });
-                this.locked = true;
+                this.markLockedAndScheduleRefresh();
               } catch (e) {
                 await apos.notify(e.message, {
                   type: 'error'
@@ -324,6 +323,10 @@ export default {
     }
   },
   methods: {
+    markLockedAndScheduleRefresh() {
+      this.locked = true;
+      this.lockTimeout = setTimeout(this.refreshLock, 10000);
+    },
     refreshLock() {
       this.lockRefreshing = (async () => {
         try {
@@ -340,14 +343,18 @@ export default {
         } catch (e) {
           if (e.body && e.body.name && (e.body.name === 'locked')) {
             if (e.body.data.me) {
-              // Edge case: we cannot use a notification for this because they
-              // would see it in *both* tabs, the winner and the loser. After
-              // Bea's work on nice A3 alerts is merged, we will use that
-              // as a followup.
-              alert('You took control of this document in another tab or window.');
+              // We use an alert because it is a clear interruption of their
+              // work, and because a notification would appear in both windows
+              // if control was taken by the same user in another window,
+              // which would be confusing.
+              await apos.alert({
+                heading: 'You Took Control in Another Window',
+                description: 'You took control of this document in another tab or window.'
+              });
             } else {
-              await apos.notify('Another user took control of the document.', {
-                type: 'error'
+              await apos.alert({
+                heading: 'Another User Took Control',
+                description: 'Another user took control of the document.'
               });
             }
             this.modal.showModal = false;
