@@ -1,7 +1,7 @@
 <template>
   <div :data-apos-area="areaId" class="apos-area">
     <div
-      v-if="next.length === 0"
+      v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
     >
       <template v-if="isEmptySingleton">
@@ -146,6 +146,10 @@ export default {
     },
     maxReached() {
       return this.options.max && this.next.length >= this.options.max;
+    },
+    foreign() {
+      // Cast to boolean is necessary to satisfy prop typing
+      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     }
   },
   watch: {
@@ -254,6 +258,39 @@ export default {
       ];
     },
     async edit(i) {
+      if (this.foreign) {
+        try {
+          const doc = await apos.http.get(
+            `${window.apos.doc.action}/${this.docId}`,
+            {
+              busy: true
+            }
+          );
+          if (doc._url) {
+            if (await apos.confirm({
+              heading: 'Open that document in a new tab?',
+              description: 'That content is part of another document. Would you like to edit that document in another tab?'
+            })) {
+              window.open(doc._url);
+            }
+          } else {
+            apos.bus.$emit('admin-menu-click', {
+              itemName: `${doc.type}:editor`,
+              props: {
+                docId: doc._id
+              }
+            });
+          }
+          return;
+        } catch (e) {
+          if (e.status === 404) {
+            apos.notify('Not found.', { type: 'error' });
+            return;
+          } else {
+            throw e;
+          }
+        }
+      }
       const widget = this.next[i];
       if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
@@ -308,6 +345,9 @@ export default {
           await this.insert(result);
         }
       }
+    },
+    contextualWidgetDefaultData(type) {
+      return this.moduleOptions.contextualWidgetDefaultData[type];
     },
     async insert(e) {
       let widget;

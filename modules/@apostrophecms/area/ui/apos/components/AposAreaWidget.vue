@@ -40,6 +40,7 @@
         :class="ui.addTop"
       >
         <AposAreaMenu
+          v-if="!foreign"
           :max-reached="maxReached"
           @insert="$emit('insert', $event);"
           @menu-open="toggleMenuFocus($event, 'top', true)"
@@ -57,6 +58,7 @@
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
+          :foreign="foreign"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -66,7 +68,7 @@
       </div>
       <!-- Still used for contextual editing components -->
       <component
-        v-if="isContextual"
+        v-if="isContextual && !foreign"
         :is="widgetEditorComponent(widget.type)"
         :value="widget"
         @update="$emit('update', $event)"
@@ -82,6 +84,7 @@
         :id="widget._id"
         :area-field-id="fieldId"
         :value="widget"
+        :foreign="foreign"
         @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
@@ -91,6 +94,7 @@
         :class="ui.addBottom"
       >
         <AposAreaMenu
+          v-if="!foreign"
           :max-reached="maxReached"
           @insert="$emit('insert', $event)"
           :context-menu-options="bottomContextMenuOptions"
@@ -197,7 +201,8 @@ export default {
         show: 'apos-show',
         open: 'apos-open',
         focus: 'apos-focus',
-        highlight: 'apos-highlight'
+        highlight: 'apos-highlight',
+        foreign: 'apos-foreign'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -251,6 +256,9 @@ export default {
         addBottom: this.state.add.bottom.focus ? this.classes.focus
           : (this.state.add.bottom.show ? this.classes.show : null)
       };
+      if ((this.state.container.focus || this.state.container.highlight) && this.foreign) {
+        state.container = this.classes.foreign;
+      }
 
       if (this.isSuppressed) {
         this.resetState();
@@ -258,6 +266,10 @@ export default {
       }
 
       return state;
+    },
+    foreign() {
+      // Cast to boolean is necessary to satisfy prop typing
+      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     }
   },
   watch: {
@@ -472,6 +484,14 @@ export default {
     .apos-area-widget-inner &.apos-highlight:before {
       z-index: $z-index-default;
     }
+
+    &.apos-foreign {
+      outline: 1px dashed var(--a-warning);
+      /deep/ .apos-button {
+        background-color: var(--a-warning);
+        color: var(--a-white);
+      }
+    }
   }
 
   .apos-area-widget-inner .apos-area-widget-inner {
@@ -565,8 +585,16 @@ export default {
     background-color: var(--a-primary);
   }
 
+  .apos-foreign .apos-area-widget__breadcrumbs {
+    background-color: var(--a-warning);
+  }
+
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
     background-color: var(--a-secondary);
+  }
+
+  .apos-area-widget-inner .apos-foreign.apos-area-widget-inner .apos-area-widget__breadcrumbs {
+    background-color: var(--a-warning);
   }
 
   .apos-area-widget__breadcrumb,
