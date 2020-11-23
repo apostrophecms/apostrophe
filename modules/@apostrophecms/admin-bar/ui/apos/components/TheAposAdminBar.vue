@@ -101,13 +101,6 @@
             })"
           />
           <AposButton
-            v-if="editMode"
-            type="primary" label="Publish Changes"
-            :disabled="!readyToSave"
-            class="apos-admin-bar__btn apos-admin-bar__context-button"
-            @click="save"
-          />
-          <AposButton
             v-if="patchesSinceLoaded.length"
             type="default" label="Undo"
             icon="undo-icon" class="apos-admin-bar__btn"
