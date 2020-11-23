@@ -243,14 +243,6 @@ module.exports = {
         return heading.class.split(/\s+/);
       },
 
-      // Rich text editor content is found in the
-      // div itself as markup, so don't redundantly
-      // represent it as a data attribute.
-      // TODO: Remove if not used.
-      filterForDataAttribute(widget) {
-        return _.omit(widget, 'content');
-      },
-
       addSearchTexts(item, texts) {
         texts.push({
           weight: 10,

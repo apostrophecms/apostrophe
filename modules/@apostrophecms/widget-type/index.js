@@ -244,54 +244,6 @@ module.exports = {
         });
       },
 
-      // Remove all properties of a widget that are the results of relationships
-      // (arrays or objects named with a leading `_`) for use in stuffing the
-      // "data" attribute of the widget.
-      //
-      // If we don't do a good job here we get 1MB+ of markup! So if you override
-      // this, play nice. And seriously consider using an AJAX route to fetch
-      // the data you need if you only need it under certain circumstances, such as
-      // in response to a user click.
-      //
-      // If the user has editing privileges for the widget, all of the permanent
-      // properties of the widget are serialized.
-      //
-      // If the user does not have editing privileges:
-      //
-      // If the `playerData` option of the widget's module is set to `false`,
-      // only an empty object is supplied. If `playerData` is set to an
-      // array, only the named permanent properties are supplied. If `playerData is `true`
-      // (the default), all of the permanent properties are supplied.
-      // TODO: Remove if not used.
-      filterForDataAttribute(widget) {
-        const data = self.apos.util.clonePermanent(widget, true);
-        if (widget._edit || self.options.playerData === true) {
-          return data;
-        }
-        if (self.options.playerData) {
-          const result = {};
-          _.each(self.options.playerData, function (key) {
-            result[key] = data[key];
-          });
-          return result;
-        }
-        // For bc; null might confuse older player code
-        return {};
-      },
-
-      // Filter options passed from the template to the widget before stuffing
-      // them into JSON for use by the widget editor. Again, we discard all
-      // properties that are the results of relationships or otherwise dynamic
-      // (arrays or objects named with a leading `_`).
-      //
-      // If we don't do a good job here we get 1MB+ of markup. So if you override
-      // this, play nice. And think about fetching the data you need only when
-      // you truly need it, such as via an AJAX request in response to a click.
-      // TODO: Remove is not used.
-      filterOptionsForDataAttribute(options) {
-        return self.apos.util.clonePermanent(options, true);
-      },
-
       // Implement the command line task that lists all widgets of
       // this type found in the database:
       //
