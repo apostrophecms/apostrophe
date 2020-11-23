@@ -489,6 +489,7 @@ export default {
       outline: 1px dashed var(--a-warning);
       /deep/ .apos-button {
         background-color: var(--a-warning);
+        color: var(--a-white);
       }
     }
   }
