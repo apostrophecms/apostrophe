@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const cuid = require('cuid');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
