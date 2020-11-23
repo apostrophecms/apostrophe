@@ -27,10 +27,6 @@ module.exports = {
     self.widgetManagers = {};
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
-    // These are the most frequently used helpers in A2,
-    // so we allow their use without typing .areas first
-    self.addHelperShortcut('area');
-    self.addHelperShortcut('singleton');
     self.enableBrowserData();
   },
   apiRoutes(self, options) {
@@ -560,20 +556,6 @@ module.exports = {
   },
   helpers(self, options) {
     return {
-      // Former 2.x way of inserting singletons. Throws an error in 3.x. See the new {% singleton %} tag.
-      singleton: function (doc, name, type, _options) {
-        throw new Error('3.x migration: you must replace {{ apos.area.singleton(...) }} calls with the new {% singleton doc, name, options %} syntax. Note the lack of parens, and the need for {% rather than {{. Otherwise all syntaxes accepted for apos.singleton work here too.');
-      },
-      // Former 2.x way of inserting areas. Throws an error in 3.x. See the new {% area %} tag.
-      area: function (doc, name, _options) {
-        throw new Error('3.x migration: you must replace {{ apos.area(...) }} calls with the new {% area doc, name, { options... } %} tag. Note the lack of parens, and the need for {% rather than {{. Otherwise all syntaxes that worked for apos.area work here too.');
-      },
-      // Throws an error in 3.x. See the new {% area %} or {% singleton %} tag.
-      // There is also a {% widget %} tag that corresponds directly to this, but
-      // that is usually not what you want.
-      widget: function (widget, options) {
-        throw new Error('3.x migration: you must replace {{ apos.area.widget(...) }} calls with the new {% widget item, options %} syntax. Note the lack of parens, and the need for {% rather than {{.');
-      },
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
       // within the provided doc or area, concatenated as a single string. In future this method
       // may improve to return the content of other widgets that consider themselves primarily

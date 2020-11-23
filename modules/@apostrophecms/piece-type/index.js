@@ -517,22 +517,23 @@ module.exports = {
           }
           if (Array.isArray(input._patches)) {
             for (const patch of input._patches) {
-              await apply(patch);
+              await self.applyPatch(req, piece, patch);
             }
           } else {
-            await apply(input);
+            await self.applyPatch(req, piece, input);
           }
           await self.update(req, piece);
           return self.findOneForEditing(req, { _id }, { annotate: true });
-          async function apply(input) {
-            self.apos.schema.implementPatchOperators(input, piece);
-            const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
-            await self.apos.schema.convert(req, schema, input, piece);
-            await self.emit('afterConvert', req, input, piece);
-          }
         });
       },
-
+      // Apply a single patch to the given piece without saving. An implementation detail of
+      // convertPatchAndRefresh, also used by the undo mechanism to simulate patches.
+      async applyPatch(req, piece, input) {
+        self.apos.schema.implementPatchOperators(input, piece);
+        const schema = self.apos.schema.subsetSchemaForPatch(self.allowedSchema(req), input);
+        await self.apos.schema.convert(req, schema, input, piece);
+        await self.emit('afterConvert', req, input, piece);
+      },
       getCreateControls(req) {
         const controls = _.cloneDeep(self.createControls);
         return controls;

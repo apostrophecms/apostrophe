@@ -111,7 +111,7 @@ export default {
           new HorizontalRule()
         ].concat((apos.tiptapExtensions || []).map(C => new C(this.options))),
         autoFocus: true,
-        onUpdate: this.update,
+        onUpdate: this.editorUpdate,
         content: this.value.content
       }),
       docFields: {
@@ -119,7 +119,8 @@ export default {
           ...this.value
         },
         hasErrors: false
-      }
+      },
+      pending: null
     };
   },
   computed: {
@@ -131,6 +132,15 @@ export default {
         return 'editor-menu-bar';
       }
       return 'editor-menu-bubble';
+    }
+  },
+  watch: {
+    focused(newVal) {
+      if (!newVal) {
+        if (this.pending) {
+          this.emitWidgetUpdate();
+        }
+      }
     }
   },
   beforeDestroy() {
@@ -152,7 +162,23 @@ export default {
 
       return classes.join(' ');
     },
-    async update() {
+    async editorUpdate() {
+      // Debounce updates. We have our own plumbing for
+      // this so that we can change our minds to update
+      // right away if we lose focus.
+      if (this.pending) {
+        clearTimeout(this.pending);
+        this.pending = null;
+      }
+      this.pending = setTimeout(() => {
+        this.emitWidgetUpdate();
+      }, 1000);
+    },
+    emitWidgetUpdate() {
+      if (this.pending) {
+        clearTimeout(this.pending);
+        this.pending = null;
+      }
       const content = this.editor.getHTML();
       const widget = this.docFields.data;
       widget.content = content;
