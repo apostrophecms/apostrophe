@@ -267,7 +267,12 @@ export default {
             }
           );
           if (doc._url) {
-            window.location.href = doc._url;
+            if (await apos.confirm({
+              heading: 'Open that document in a new tab?',
+              description: 'That content is part of another document. Would you like to edit that document in another tab?'
+            })) {
+              window.open(doc._url);
+            }
           } else {
             apos.bus.$emit('admin-menu-click', {
               itemName: `${doc.type}:editor`,
