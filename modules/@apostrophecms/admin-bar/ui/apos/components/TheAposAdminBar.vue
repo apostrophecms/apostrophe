@@ -579,5 +579,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__status {
   width: 100px;
+  margin-left: 7.5px;
 }
 </style>
