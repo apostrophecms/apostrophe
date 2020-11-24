@@ -612,7 +612,9 @@ module.exports = {
       'apostrophe:modulesReady': {
         // Enable CORS headers for all APIs of this module
         enableCors() {
-          self.apos.app.use(self.action, cors());
+          if (self.apos.app) {
+            self.apos.app.use(self.action, cors());
+          }
         },
         addHelpers() {
           // We check this just to allow init in bootstrap tests that

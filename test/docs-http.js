@@ -66,7 +66,8 @@ describe('Docs', function() {
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
-        password: 'admin'
+        password: 'admin',
+        session: true
       },
       jar
     });
