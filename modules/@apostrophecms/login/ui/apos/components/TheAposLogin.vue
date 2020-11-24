@@ -102,7 +102,10 @@ export default {
       try {
         await apos.http.post(`${apos.modules['@apostrophecms/login'].action}/login`, {
           busy: true,
-          body: this.doc.data
+          body: {
+            ...this.doc.data,
+            session: true
+          }
         });
         // TODO handle situation where user should be sent somewhere other than homepage.
         // Redisplay homepage with editing interface
