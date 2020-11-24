@@ -108,7 +108,6 @@ module.exports = {
     return {
       post: {
         async login(req) {
-          console.log('got into the login route');
           const username = self.apos.launder.string(req.body.username);
           const password = self.apos.launder.string(req.body.password);
           const session = self.apos.launder.boolean(req.body.session);
@@ -120,7 +119,6 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           if (session) {
-            console.log('logging in with session');
             const passportLogin = (user) => {
               return require('util').promisify(function(user, callback) {
                 return req.login(user, callback);
@@ -128,14 +126,12 @@ module.exports = {
             };
             await passportLogin(user);
           } else {
-            console.log('logging in with bearer token');
             const token = cuid();
             await self.bearerTokens.insert({
               _id: token,
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
             });
-            console.log('returning result');
             return {
               token
             };

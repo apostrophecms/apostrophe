@@ -212,9 +212,9 @@ module.exports = {
         if (_.has(self.options.apiKeys, key)) {
           const info = self.options.apiKeys[key];
           if (info.role === 'admin') {
-            taskReq = self.apos.tasks.getReq();
+            taskReq = self.apos.task.getReq();
           } else {
-            taskReq = self.apos.tasks.getAnonReq();
+            taskReq = self.apos.task.getAnonReq();
           }
           req.user = taskReq.user;
           req.csrfExempt = true;
@@ -227,7 +227,7 @@ module.exports = {
           if (!header) {
             return null;
           }
-          const matches = header.match(/^ApiKey\s+(\S+)$/i);
+          const matches = header.match(/^ApiKey\s+(\S.*)$/i);
           if (!matches) {
             return null;
           }
@@ -504,7 +504,9 @@ module.exports = {
           // See options.csrfExceptions
           if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
             res.statusCode = 403;
-            return res.send('forbidden');
+            return res.send({
+              name: 'forbidden'
+            });
           }
         }
         return next();
