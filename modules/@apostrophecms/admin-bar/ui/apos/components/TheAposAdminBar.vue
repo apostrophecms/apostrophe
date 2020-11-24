@@ -114,7 +114,7 @@
             :icon-only="true"
             @click="redo"
           />
-          <span class="apos-admin-bar__status">{{ status() }}</span>
+          <span class="apos-admin-bar__status">{{ status }}</span>
         </div>
       </div>
     </nav>
@@ -166,6 +166,17 @@ export default {
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
+    },
+    status() {
+      if (this.retrying) {
+        return 'Retrying...';
+      } else if (this.saving || this.editing) {
+        return 'Saving...';
+      } else if (this.saved) {
+        return 'Saved';
+      } else {
+        return '';
+      }
     }
   },
   mounted() {
@@ -235,17 +246,6 @@ export default {
     }
   },
   methods: {
-    status() {
-      if (this.retrying) {
-        return 'Retrying...';
-      } else if (this.saving || this.editing) {
-        return 'Saving...';
-      } else if (this.saved) {
-        return 'Saved';
-      } else {
-        return '';
-      }
-    },
     beforeUnload(e) {
       if (this.patchesSinceSave.length) {
         e.preventDefault();
