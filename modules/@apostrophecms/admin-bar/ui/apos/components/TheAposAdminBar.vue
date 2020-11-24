@@ -57,14 +57,16 @@
         <div class="apos-admin-bar__context-controls">
           <AposButton
             :disabled="patches.length === 0"
-            type="default" label="Undo"
+            type="outline" :modifiers="['no-motion']"
+            label="Undo" :tooltip="buttonLabels.undo"
             class="apos-admin-bar__context-button"
             icon="undo-icon" :icon-only="true"
             @click="undo"
           />
           <AposButton
             :disabled="undone.length === 0"
-            type="default" label="Redo"
+            type="outline" :modifiers="['no-motion']"
+            label="Redo" :tooltip="buttonLabels.redo"
             class="apos-admin-bar__context-button"
             icon="redo-icon" :icon-only="true"
             @click="redo"
@@ -148,7 +150,11 @@ export default {
       createMenu: [],
       patches: [],
       undone: [],
-      editMode: window.sessionStorage.getItem('aposEditMode') === 'true'
+      editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
+      buttonLabels: {
+        undo: 'Undo change',
+        redo: 'Redo change'
+      }
     };
   },
   computed: {
