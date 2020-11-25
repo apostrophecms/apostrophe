@@ -5,8 +5,9 @@
     :style="`height: ${iconSize}px`"
   >
     <component
-      :size="iconSize" class="apos-indicator__icon"
-      v-if="icon" :is="icon"
+      :is="icon"
+      :size="iconSize"
+      class="apos-indicator__icon"
       fill-color="currentColor"
     />
   </span>
@@ -19,7 +20,7 @@ export default {
   props: {
     icon: {
       type: String,
-      default: null
+      required: true
     },
     iconSize: {
       type: Number,

@@ -21,11 +21,6 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <!-- <component
-        :size="iconSize" class="apos-button__icon"
-        v-if="icon" :is="icon"
-        
-      /> -->
       <span class="apos-button__label" :class="{ 'apos-sr-only' : iconOnly }">
         {{ label }}
       </span>
