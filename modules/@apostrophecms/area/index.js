@@ -396,26 +396,15 @@ module.exports = {
       // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area. null and
       // undefined are tolerated and converted to empty areas.
       fromPlaintext(plaintext) {
-        const area = {
-          metaType: 'area',
-          items: []
-        };
-        if (plaintext && plaintext.length) {
-          plaintext = plaintext.toString();
-          area.items.push({
-            _id: self.apos.util.generateId(),
-            type: '@apostrophecms/rich-text',
-            content: self.apos.util.escapeHtml(plaintext, true)
-          });
-        }
-        return area;
+        return self.fromRichText(self.apos.util.escapeHtml(plaintext, true));
       },
       // Convert HTML to an area with one '@apostrophecms/rich-text' widget, otherwise
       // an empty area. null and undefined are tolerated and converted to empty areas.
       fromRichText(html) {
         const area = {
           metaType: 'area',
-          items: []
+          items: [],
+          _id: self.apos.util.generateId()
         };
         if (html && html.length) {
           html = html.toString();
