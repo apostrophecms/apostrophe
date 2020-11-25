@@ -866,7 +866,8 @@ describe('Pages REST', function() {
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin2',
-        password: 'admin2'
+        password: 'admin2',
+        session: true
       },
       jar: jar2
     });
