@@ -388,7 +388,7 @@ module.exports = {
 
       async enableBearerTokens() {
         self.bearerTokens = self.apos.db.collection('aposBearerTokens');
-        await self.bearerTokens.ensureIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        await self.bearerTokens.enableIndex({ expires: 1 }, { expireAfterSeconds: 0 });
       }
     };
   },
