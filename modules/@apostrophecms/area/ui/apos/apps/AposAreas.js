@@ -11,10 +11,31 @@ export default function() {
   });
 
   function createAreaApps() {
-    const els = document.querySelectorAll('[data-apos-area-newly-editable]');
+    // Sort the areas by DOM depth to ensure parents light up before children
+    const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]'));
+    els.sort((a, b) => {
+      const da = depth(a);
+      const db = depth(b);
+      if (da < db) {
+        return -1;
+      } else if (db > da) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
     for (const el of els) {
       createAreaApp(el);
     }
+  }
+
+  function depth(el) {
+    let depth = 0;
+    while (el) {
+      el = el.parentNode;
+      depth++;
+    }
+    return depth;
   }
 
   function createAreaApp(el) {

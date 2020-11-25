@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const cuid = require('cuid');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
@@ -85,59 +84,6 @@ module.exports = {
               available: true
             };
           }
-        }
-      }
-    };
-  },
-  routes(self, options) {
-    return {
-      post: {
-        // POST to /@apostrophecms/doc/api/v1/get-as-patched with
-        // the properties `url`, `_id`, `type` and `patches` in order
-        // to fetch the given document, apply the supplied patches
-        // without actually saving them, and then render the given
-        // `url` exactly as if it were a normal GET request for it,
-        // substituting the patched doc for any query that would
-        // otherwise return it. This is useful for re-rendering after
-        // undo/redo, given that we don't actually save edits
-        // on the fly, undo/redo included.
-        async getAsPatched(req, res) {
-          let url = self.apos.launder.string(req.body.url);
-          const _id = self.apos.launder.id(req.body._id);
-          const type = self.apos.launder.string(req.body.type);
-          const patches = Array.isArray(req.body.patches) ? req.body.patches : [];
-          const manager = self.getManager(type);
-          if (!manager) {
-            return self.routeSendError(req, self.apos.error('invalid'));
-          }
-          const query = await manager.find(req, { _id });
-          if (self.apos.instanceOf(manager, '@apostrophecms/page-type')) {
-            query.ancestors(true);
-          }
-          const doc = await query.toObject();
-          if (!doc) {
-            return self.routeSendError(req, self.apos.error('notfound'));
-          }
-          for (const input of patches) {
-            if (self.apos.page.isPage(doc)) {
-              await self.apos.page.applyPatch(req, doc, input);
-            } else {
-              await manager.applyPatch(req, doc, input);
-            }
-          }
-          // As far as applyPatch is concerned, relationships are
-          // real, but as far as mongo is concerned they're not, so
-          // we have to get back to real _ids before we try to substitute
-          // this document in the result of a mongo query
-          manager.prepareRelationshipsForStorage(req, doc);
-          const key = cuid();
-          await self.apos.cache.set('as-patched', key, self.apos.util.clonePermanent(doc), 300);
-          if (url.indexOf('?') !== -1) {
-            url += `&apos-as-patched=${key}`;
-          } else {
-            url += `?apos-as-patched=${key}`;
-          }
-          return res.redirect(url);
         }
       }
     };

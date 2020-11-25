@@ -163,12 +163,16 @@ export default {
       return classes.join(' ');
     },
     async editorUpdate() {
+      // Hint that we are typing, even though we're going to
+      // debounce the actual updates for performance
+      apos.bus.$emit('context-editing');
       // Debounce updates. We have our own plumbing for
       // this so that we can change our minds to update
       // right away if we lose focus.
       if (this.pending) {
-        clearTimeout(this.pending);
-        this.pending = null;
+        // Don't reset the timeout; we still want to save at
+        // least once per second if the user is actively typing
+        return;
       }
       this.pending = setTimeout(() => {
         this.emitWidgetUpdate();
