@@ -123,7 +123,6 @@
 
 <script>
 import klona from 'klona';
-import cuid from 'cuid';
 
 export default {
   name: 'TheAposAdminBar',
