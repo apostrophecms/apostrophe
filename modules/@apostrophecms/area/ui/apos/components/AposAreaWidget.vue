@@ -269,7 +269,7 @@ export default {
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
-      return !!(this.docId && (window.apos.contextId !== this.docId));
+      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     }
   },
   watch: {

@@ -230,7 +230,7 @@ export default {
           await apos.http.patch(getOnePath, {
             body: {
               _advisoryLock: {
-                contextId: apos.contextId,
+                htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
             }
@@ -255,7 +255,7 @@ export default {
                 await apos.http.patch(getOnePath, {
                   body: {
                     _advisoryLock: {
-                      contextId: apos.contextId,
+                      htmlPageId: apos.adminBar.htmlPageId,
                       lock: true,
                       force: true
                     }
@@ -312,7 +312,7 @@ export default {
         await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
           body: {
             _advisoryLock: {
-              contextId: apos.contextId,
+              htmlPageId: apos.adminBar.htmlPageId,
               lock: false
             }
           }
@@ -333,7 +333,7 @@ export default {
           await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
               _advisoryLock: {
-                contextId: apos.contextId,
+                htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
             }
@@ -384,7 +384,7 @@ export default {
           requestMethod = apos.http.put;
           // Make sure we fail if someone else took the advisory lock
           body._advisoryLock = {
-            contextId: apos.contextId,
+            htmlPageId: apos.adminBar.htmlPageId,
             lock: true
           };
         } else {

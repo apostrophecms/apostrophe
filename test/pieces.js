@@ -804,7 +804,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          contextId: 'xyz',
+          htmlPageId: 'xyz',
           lock: true
         },
         title: 'Advisory Test Patched'
@@ -819,7 +819,7 @@ describe('Pieces', function() {
         jar,
         body: {
           _advisoryLock: {
-            contextId: 'pdq',
+            htmlPageId: 'pdq',
             lock: true
           }
         }
@@ -837,7 +837,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          contextId: 'pdq',
+          htmlPageId: 'pdq',
           lock: true,
           force: true
         }
@@ -850,7 +850,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          contextId: 'pdq',
+          htmlPageId: 'pdq',
           lock: true
         }
       }
@@ -862,7 +862,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          contextId: 'pdq',
+          htmlPageId: 'pdq',
           lock: false
         },
         title: 'Advisory Test Patched Again'
@@ -876,7 +876,7 @@ describe('Pieces', function() {
       jar,
       body: {
         _advisoryLock: {
-          contextId: 'xyz',
+          htmlPageId: 'xyz',
           lock: true
         }
       }
@@ -914,13 +914,13 @@ describe('Pieces', function() {
     assert(page.match(/logged in/));
   });
 
-  it('second user with a distinct contextId gets an appropriate error specifying who has the lock', async () => {
+  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
     try {
       await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
-            contextId: 'nbc',
+            htmlPageId: 'nbc',
             lock: true
           }
         }
