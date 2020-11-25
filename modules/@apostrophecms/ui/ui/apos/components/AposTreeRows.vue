@@ -25,7 +25,10 @@
           aria-label="Toggle section" :aria-expanded="!options.startCollapsed"
           @click="toggleSection($event)"
         >
-          <chevron-down-icon :size="16" class="apos-tree__row__toggle-icon" />
+          <AposIndicator
+            icon="chevron-down-icon"
+            class="apos-tree__row__toggle-icon"
+          />
         </button>
         <component
           v-for="(col, index) in headers"
@@ -39,11 +42,22 @@
           :style="getCellStyles(col.name, index)"
           @click="((getEffectiveType(col, row) !== 'span') && col.action) ? $emit(col.action, row._id) : null"
         >
-          <drag-icon
+          <AposIndicator
             v-if="options.draggable && index === 0 && !row.parked"
-            class="apos-tree__row__handle"
-            :size="20"
-            :fill-color="null"
+            icon="drag-icon"
+            class="apos-tree__row__icon apos-tree__row__icon--handle"
+          />
+          <AposIndicator
+            v-if="index === 0 && row.parked && row.type !== '@apostrophecms/trash'"
+            icon="lock-icon"
+            class="apos-tree__row__icon apos-tree__row__icon--parked"
+            tooltip="This page is parked and cannot be moved"
+          />
+          <AposIndicator
+            v-if="index === 0 && row.type === '@apostrophecms/trash'"
+            icon="lock-icon"
+            class="apos-tree__row__icon apos-tree__row__icon--parked"
+            tooltip="You cannot move the Trash"
           />
           <AposCheckbox
             v-if="options.bulkSelect && index === 0"
@@ -58,11 +72,13 @@
             :choice="{ value: row._id }"
             v-model="checkedProxy"
           />
-          <component
-            v-if="getEffectiveIcon(col, row)" :is="getEffectiveIcon(col, row)"
+          <AposIndicator
+            v-if="getEffectiveIcon(col, row)"
+            :icon="getEffectiveIcon(col, row)"
             class="apos-tree__cell__icon"
+            :icon-size="15"
           />
-          <span v-show="!col.iconOnly">
+          <span class="apos-tree__cell__label" v-show="!col.iconOnly">
             {{ row[col.name] }}
           </span>
         </component>
@@ -178,7 +194,7 @@ export default {
         group: { name: this.treeId },
         dataListId: this.listId,
         disabled: !this.options.draggable,
-        handle: '.apos-tree__row__handle',
+        handle: '.apos-tree__row__icon--handle',
         ghostClass: 'is-dragging',
         filter: '.is-parked'
       };
@@ -392,21 +408,21 @@ export default {
       transform: none;
     }
   }
-  .apos-tree__row__handle {
-    margin-top: -0.25em;
-    margin-right: 0.25em;
-    line-height: 0;
-    cursor: grab;
 
-    &:active {
-      cursor: grabbing;
-    }
+  .apos-tree__row__icon {
+    margin-right: 0.25em;
 
     /deep/ .material-design-icon__svg {
       transition: fill 0.2s ease;
-      fill: var(--a-base-8);
+      fill: var(--a-base-5);
     }
+  }
 
+  .apos-tree__row__icon--handle {
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
     .sortable-chosen & /deep/ .material-design-icon__svg,
     &:hover /deep/ .material-design-icon__svg {
       fill: var(--a-base-2);
@@ -443,6 +459,11 @@ export default {
         width: 14px;
       }
     }
+  }
+
+  .apos-tree__cell__label {
+    display: flex;
+    align-self: center;
   }
 
   button.apos-tree__cell {

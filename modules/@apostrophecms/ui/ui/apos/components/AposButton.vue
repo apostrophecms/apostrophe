@@ -14,11 +14,18 @@
       <AposSpinner :color="spinnerColor" v-if="busy" />
     </transition>
     <div class="apos-button__content">
-      <component
-        :size="iconSize" class="apos-button__icon"
-        v-if="icon" :is="icon"
+      <AposIndicator
+        v-if="icon"
+        :icon="icon"
+        :icon-size="iconSize"
+        class="apos-button__icon"
         fill-color="currentColor"
       />
+      <!-- <component
+        :size="iconSize" class="apos-button__icon"
+        v-if="icon" :is="icon"
+        
+      /> -->
       <span class="apos-button__label" :class="{ 'apos-sr-only' : iconOnly }">
         {{ label }}
       </span>
