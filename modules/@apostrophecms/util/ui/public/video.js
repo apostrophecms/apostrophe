@@ -52,6 +52,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
         // If oembed results include width and height we can get the
         // video aspect ratio right
         if (result.width && result.height) {
+          inner.style.width = '100%';
           inner.style.height = ((result.height / result.width) * inner.offsetWidth) + 'px';
         } else {
           // No, so assume the oembed HTML code is responsive.
