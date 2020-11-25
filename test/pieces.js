@@ -5,6 +5,7 @@ const cuid = require('cuid');
 
 let apos;
 let jar;
+const apiKey = 'this is a test api key';
 
 describe('Pieces', function() {
 
@@ -23,6 +24,15 @@ describe('Pieces', function() {
       root: module,
 
       modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              [apiKey]: {
+                role: 'admin'
+              }
+            }
+          }
+        },
         things: {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -423,7 +433,8 @@ describe('Pieces', function() {
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
-        password: 'admin'
+        password: 'admin',
+        session: true
       },
       jar
     });
@@ -968,6 +979,126 @@ describe('Pieces', function() {
     } catch (e) {
       assert(e.status === 403);
     }
+  });
+
+  let token;
+  let bearerProductId;
+
+  it('should be able to log in as admin and get a bearer token', async () => {
+    // Log in
+    const response = await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin',
+        password: 'admin'
+      }
+    });
+    assert(response.token);
+    token = response.token;
+  });
+
+  it('can POST a product with the bearer token', async () => {
+    const response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'Bearer Token Product',
+        visibility: 'loginRequired',
+        slug: 'bearer-token-product',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is a bearer token thing</p>'
+            }
+          ]
+        }
+      },
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    assert(response);
+    assert(response._id);
+    assert(response.body);
+    assert(response.title === 'Bearer Token Product');
+    assert(response.slug === 'bearer-token-product');
+    assert(response.type === 'product');
+    bearerProductId = response._id;
+  });
+
+  it('can GET a loginRequired product with the bearer token', async () => {
+    const response = await apos.http.get(`/api/v1/product/${bearerProductId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    assert(response);
+    assert(response.title === 'Bearer Token Product');
+  });
+
+  it('can log out to destroy a bearer token', async () => {
+    return apos.http.post('/api/v1/@apostrophecms/login/logout', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  });
+
+  it('cannot GET a loginRequired product with a destroyed bearer token', async () => {
+    try {
+      await apos.http.get(`/api/v1/product/${bearerProductId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 401);
+    }
+  });
+
+  let apiKeyProductId;
+
+  it('can POST a product with the api key', async () => {
+    const response = await apos.http.post('/api/v1/product', {
+      body: {
+        title: 'API Key Product',
+        visibility: 'loginRequired',
+        slug: 'api-key-product',
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is an api key thing</p>'
+            }
+          ]
+        }
+      },
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      }
+    });
+    assert(response);
+    assert(response._id);
+    assert(response.body);
+    assert(response.title === 'API Key Product');
+    assert(response.slug === 'api-key-product');
+    assert(response.type === 'product');
+    apiKeyProductId = response._id;
+  });
+
+  it('can GET a loginRequired product with the api key', async () => {
+    const response = await apos.http.get(`/api/v1/product/${apiKeyProductId}`, {
+      headers: {
+        Authorization: `ApiKey ${apiKey}`
+      }
+    });
+    assert(response);
+    assert(response.title === 'API Key Product');
   });
 
 });
