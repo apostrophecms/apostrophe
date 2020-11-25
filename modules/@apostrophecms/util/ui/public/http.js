@@ -184,10 +184,11 @@
           return callback(null, data);
         }
       } else {
-        const error = new Error(xmlhttp.status);
+        const error = new Error((data && data.message) || (data && data.name) || 'Error');
+        error.status = xmlhttp.status;
+        error.name = (data && data.name);
         error.body = data;
         error.headers = getHeaders();
-        error.status = xmlhttp.status;
         return callback(error);
       }
     });
