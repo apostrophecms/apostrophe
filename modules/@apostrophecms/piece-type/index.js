@@ -475,6 +475,17 @@ module.exports = {
       // Any fields not present in `input` are regarded as empty, if permitted (REST PUT semantics).
       // For partial updates use convertPatchAndRefresh. Employs a lock to avoid overwriting the work of
       // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
+      //
+      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // lock on the document for the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
+      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // released *after* addressing other items in the same patch. If `force: true` is added to
+      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      //
+      // `_advisoryLock` is only relevant if you want to ask others not to edit the document while you are
+      // editing it in a modal or similar.
 
       async convertUpdateAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
@@ -485,9 +496,25 @@ module.exports = {
           if (!piece._edit) {
             throw self.apos.error('forbidden');
           }
+          let htmlPageId = null;
+          let lock = false;
+          let force = false;
+          if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+            htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+            lock = self.apos.launder.boolean(input._advisoryLock.lock);
+            force = self.apos.launder.boolean(input._advisoryLock.force);
+          }
+          if (htmlPageId && lock) {
+            await self.apos.doc.lock(req, piece, htmlPageId, {
+              force
+            });
+          }
           await self.convert(req, input, piece);
           await self.emit('afterConvert', req, input, piece);
           await self.update(req, piece);
+          if (htmlPageId && !lock) {
+            await self.apos.doc.unlock(req, piece, htmlPageId);
+          }
           return self.findOneForEditing(req, { _id }, { attachments: true });
         });
       },

@@ -342,27 +342,30 @@ export default {
           this.lockTimeout = setTimeout(this.refreshLock, 10000);
         } catch (e) {
           if (e.body && e.body.name && (e.body.name === 'locked')) {
-            if (e.body.data.me) {
-              // We use an alert because it is a clear interruption of their
-              // work, and because a notification would appear in both windows
-              // if control was taken by the same user in another window,
-              // which would be confusing.
-              await apos.alert({
-                heading: 'You Took Control in Another Window',
-                description: 'You took control of this document in another tab or window.'
-              });
-            } else {
-              await apos.alert({
-                heading: 'Another User Took Control',
-                description: 'Another user took control of the document.'
-              });
-            }
+            await this.showLockedError(e);
             this.modal.showModal = false;
           }
           // Other errors on this are not critical
         }
         this.lockRefreshing = null;
       })();
+    },
+    async showLockedError(e) {
+      if (e.body.data.me) {
+        // We use an alert because it is a clear interruption of their
+        // work, and because a notification would appear in both windows
+        // if control was taken by the same user in another window,
+        // which would be confusing.
+        await apos.alert({
+          heading: 'You Took Control in Another Window',
+          description: 'You took control of this document in another tab or window.'
+        });
+      } else {
+        await apos.alert({
+          heading: 'Another User Took Control',
+          description: 'Another user took control of the document.'
+        });
+      }
     },
     submit() {
       this.triggerValidation = true;
@@ -405,15 +408,7 @@ export default {
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
           if (e.body && (e.body.name === 'locked')) {
-            if (e.body.data.me) {
-              await apos.notify('You took control of the document in another tab or window.', {
-                type: 'error'
-              });
-            } else {
-              await apos.notify('Another user took control of the document.', {
-                type: 'error'
-              });
-            }
+            await this.showLockedError(e);
             this.modal.showModal = false;
           } else {
             await this.handleSaveError(e, {
