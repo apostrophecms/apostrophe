@@ -65,7 +65,7 @@
 //
 // ```javascript
 // {
-//   // Do not save sesions until something is stored in them.
+//   // Do not save sessions until something is stored in them.
 //   // Greatly reduces aposSessions collection size
 //   saveUninitialized: false,
 //   // We are using the 3.x mongo store which is compatible
@@ -148,7 +148,7 @@ const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
 
 module.exports = {
-  async init(self, options) {
+  init(self, options) {
     self.createApp();
     self.prefix();
     if (self.options.baseUrl && !self.apos.baseUrl) {
@@ -209,7 +209,7 @@ module.exports = {
         if (!key) {
           return next();
         }
-        if (_.has(self.options.apiKeys, key)) {
+        if (_.has(self.options.apiKeys && self.options.apiKeys, key)) {
           const info = self.options.apiKeys[key];
           if (info.role === 'admin') {
             taskReq = self.apos.task.getReq();
@@ -233,9 +233,6 @@ module.exports = {
           }
           return matches[1];
         }
-      },
-      beforeMiddleware(req, res, next) {
-        return next();
       },
       expressBearerTokenMiddleware: expressBearerToken(options.expressBearerToken || {}),
       async bearerTokens(req, res, next) {
@@ -385,7 +382,7 @@ module.exports = {
         let Store;
         const sessionOptions = self.options.session || {};
         _.defaults(sessionOptions, {
-          // Do not save sesions until something is stored in them.
+          // Do not save sessions until something is stored in them.
           // Greatly reduces aposSessions collection size
           saveUninitialized: false,
           // We are using the 3.x mongo store which is compatible
@@ -505,7 +502,8 @@ module.exports = {
           if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
             res.statusCode = 403;
             return res.send({
-              name: 'forbidden'
+              name: 'forbidden',
+              message: 'CSRF exception'
             });
           }
         }
