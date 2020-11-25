@@ -8,10 +8,18 @@
 // with sensible defaults for the current module. For instance,
 // any module can call `self.render(req, 'show', { data... })` to
 // render the `views/show.html` template of that module.
+//
+// ## Options
+//
+// `csrfExceptions` can be set to an array of URLs or route names
+// to be excluded from CSRF protection.
 
 const _ = require('lodash');
+const cors = require('cors');
 
 module.exports = {
+
+  cascades: [ 'csrfExceptions' ],
 
   init(self, options) {
     self.apos = self.options.apos;
@@ -40,7 +48,7 @@ module.exports = {
     // The URL for routes relating to this module is based on the
     // module name unless they are registered with a leading /.
     // self.action is used to implement this
-    self.action = `/api/v1/${self.__meta.name}`;
+    self.enableAction();
   },
 
   afterAllSections(self, options) {
@@ -588,6 +596,12 @@ module.exports = {
         req.template = `${self.__meta.name}:${name}`;
       },
 
+      // Sets `self.action` which is the base URL for all APIs of
+      // this module
+      enableAction() {
+        self.action = `/api/v1/${self.__meta.name}`;
+      },
+
       // Merge in the event emitter / responder capabilities
       ...require('./lib/events.js')(self, options)
     };
@@ -596,6 +610,12 @@ module.exports = {
   handlers(self, options) {
     return {
       'apostrophe:modulesReady': {
+        // Enable CORS headers for all APIs of this module
+        enableCors() {
+          if (self.apos.app) {
+            self.apos.app.use(self.action, cors());
+          }
+        },
         addHelpers() {
           // We check this just to allow init in bootstrap tests that
           // have no templates module

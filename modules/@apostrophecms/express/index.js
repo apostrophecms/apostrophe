@@ -65,25 +65,19 @@
 //
 // ```javascript
 // {
-//   // Do not save sessions until something is stored in them.
+//   // Do not save sesions until something is stored in them.
 //   // Greatly reduces aposSessions collection size
 //   saveUninitialized: false,
-//   // The mongo store uses TTL which means we do need
-//   // to signify that the session is still alive when someone
-//   // views a page, even if their session has not changed
-//   resave: true,
+//   // We are using the 3.x mongo store which is compatible
+//   // with resave: false, preventing the vast majority of
+//   // session-related race conditions
+//   resave: false,
 //   // Always update the cookie, so that each successive
 //   // access revives your login session timeout
 //   rolling: true,
 //   secret: 'you should have a secret',
-//   cookie: {
-//     path: '/',
-//     httpOnly: true,
-//     secure: false,
-//     // Default login lifetime between requests is one day
-//     maxAge: 86400000
-//   },
-//   store: (instance of connect-mongo/es5 provided by Apostrophe)
+//   name: self.apos.shortName + '.sid',
+//   cookie: {}
 // }
 // ```
 //
@@ -115,24 +109,20 @@
 // All non-safe HTTP requests (not `GET`, `HEAD`, `OPTIONS` or `TRACE`)
 // automatically receive this proection via the csrf middleware, which
 // rejects requests in which the CSRF token does not match the header.
+// If the request was made with a valid api key or bearer token it
+// bypasses this check.
 //
 // If the `csrf` option is set to `false`, CSRF protection is
 // disabled (NOT RECOMMENDED).
 //
-// If the `csrf` option is set to an object, you can configure
-// individual exceptions:
+// You can configure exceptions to CSRF protection
+// by setting the `csrfExceptions` option of ANY MODULE
+// to an array of route names specific to that module, or URLs
+// (starting with `/`). Exceptions may use minimatch wildcards
+// (`*` and `**`).
 //
-// ```javascript
-// csrf: {
-//   exceptions: [ '/cheesy-post-route' ]
-// }
-// ```
-//
-// Exceptions may use minimatch wildcards (`*` and `**`). They can
-// also be regular expression objects.
-//
-// You may need to use this feature when implementing POST form submissions that
-// do not use AJAX and thus don't send the header.
+// You may need to use this feature when implementing POST form
+// submissions that do not use AJAX and thus don't send the header.
 //
 // There is also a `minimumExceptions` option, which defaults
 // to `[ /login ]`. The login form is the only non-AJAX form
@@ -143,11 +133,8 @@
 // ### Adding your own middleware
 //
 // Use the `middleware` section in your module. That function should
-// return an object containing named middleware functions. To activate
-// them in general, use the `useMiddleware` section. To activate them
-// for individual routes, when configuring a route, pass an array of
-// middleware names followed by the route function. You may use
-// cross-module notation, like 'module-name:middlewarename'.
+// return an object containing named middleware functions. These are
+// activated for all requests.
 
 const fs = require('fs');
 const _ = require('lodash');
@@ -158,9 +145,10 @@ const bodyParser = require('body-parser');
 const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
 const qs = require('qs');
+const expressBearerToken = require('express-bearer-token');
 
 module.exports = {
-  init(self, options) {
+  async init(self, options) {
     self.createApp();
     self.prefix();
     if (self.options.baseUrl && !self.apos.baseUrl) {
@@ -191,7 +179,7 @@ module.exports = {
       },
       'apostrophe:modulesReady': {
         async addCsrfAndModuleMiddleware() {
-          await self.enableCsrf();
+          self.enableCsrf();
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
           // and before the adding of the catch-all route for pages
@@ -215,6 +203,78 @@ module.exports = {
       },
       sessions: expressSession(self.getSessionOptions()),
       cookieParser: cookieParser(),
+      apiKeys(req, res, next) {
+        const key = req.query.apikey || req.query.apiKey || getAuthorizationApiKey();
+        let taskReq;
+        if (!key) {
+          return next();
+        }
+        if (_.has(self.options.apiKeys, key)) {
+          const info = self.options.apiKeys[key];
+          if (info.role === 'admin') {
+            taskReq = self.apos.task.getReq();
+          } else {
+            taskReq = self.apos.task.getAnonReq();
+          }
+          req.user = taskReq.user;
+          req.csrfExempt = true;
+          return next();
+        }
+        return res.status(403).send({ error: 'invalid api key' });
+
+        function getAuthorizationApiKey() {
+          const header = req.headers.authorization;
+          if (!header) {
+            return null;
+          }
+          const matches = header.match(/^ApiKey\s+(\S.*)$/i);
+          if (!matches) {
+            return null;
+          }
+          return matches[1];
+        }
+      },
+      beforeMiddleware(req, res, next) {
+        return next();
+      },
+      expressBearerTokenMiddleware: expressBearerToken(options.expressBearerToken || {}),
+      async bearerTokens(req, res, next) {
+        if (!req.token) {
+          return next();
+        }
+        try {
+          const userId = await getBearer();
+          if (userId) {
+            req.user = await deserializeUser(userId);
+          }
+          if (!req.user) {
+            return res.status(401).send({
+              name: 'invalid',
+              message: 'bearer token invalid'
+            });
+          }
+          req.csrfExempt = true;
+          return next();
+        } catch (e) {
+          self.apos.utils.error(e);
+          return res.status(500).send({
+            name: 'error'
+          });
+        }
+        async function getBearer() {
+          // The expireAfterSeconds feature of mongodb
+          // is not instantaneous so we should check
+          // "expires" ourselves too
+          const bearer = await self.apos.login.bearerTokens.findOne({
+            _id: req.token,
+            expires: { $gte: new Date() }
+          });
+          return bearer && bearer.userId;
+        }
+        async function deserializeUser(userId) {
+          return self.apos.login.deserializeUser(userId);
+        }
+      },
       ...((options.csrf === false) ? {} : {
         // Angular-compatible CSRF protection middleware. On safe requests (GET, HEAD, OPTIONS, TRACE),
         // set the XSRF-TOKEN cookie if missing. On unsafe requests (everything else),
@@ -224,6 +284,9 @@ module.exports = {
         // This works because if we're running via a script tag or iframe, we won't
         // be able to read the cookie.
         csrf(req, res, next) {
+          if (req.csrfExempt) {
+            return next();
+          }
           if (_.find(self.csrfExceptions || [], function (e) {
             return req.url.match(e);
           })) {
@@ -388,22 +451,22 @@ module.exports = {
         return self.sessionOptions;
       },
 
-      async enableCsrf() {
+      enableCsrf() {
         // The kernel of apostrophe in browserland needs this info, so
         // make it conveniently available to the assets module when it
         // picks a few properties from apos to boot that up
         self.apos.csrfCookieName = (self.options.csrf && self.options.csrf.name) || self.apos.shortName + '.csrf';
-        await self.compileCsrfExceptions();
+        self.compileCsrfExceptions();
       },
 
       // Compile CSRF exceptions configured via the `addCsrfExceptions` option of each module
       // that has one.
 
-      async compileCsrfExceptions() {
+      compileCsrfExceptions() {
         let list = [];
         for (const module of Object.values(self.apos.modules)) {
-          if (module.options.addCsrfExceptions) {
-            list = list.concat(module.options.addCsrfExceptions.map(path => module.getRouteUrl(path)));
+          if (module.options.csrfExceptions) {
+            list = list.concat(module.options.csrfExceptions.map(path => module.getRouteUrl(path)));
           }
         }
         self.csrfExceptions = list.map(function (e) {
@@ -441,7 +504,9 @@ module.exports = {
           // See options.csrfExceptions
           if (!req.cookies[self.apos.csrfCookieName] || req.get('X-XSRF-TOKEN') !== req.cookies[self.apos.csrfCookieName] || req.session['XSRF-TOKEN'] !== req.cookies[self.apos.csrfCookieName]) {
             res.statusCode = 403;
-            return res.send('forbidden');
+            return res.send({
+              name: 'forbidden'
+            });
           }
         }
         return next();

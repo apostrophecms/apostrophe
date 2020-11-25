@@ -256,7 +256,7 @@ export default {
   },
   methods: {
     beforeUnload(e) {
-      if (this.patchesSinceSave.length) {
+      if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
