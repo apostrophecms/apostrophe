@@ -301,6 +301,18 @@ module.exports = {
       // to pass every time.
       //
       // This call is atomic with respect to other REST write operations on pages.
+      //
+      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // lock on the document for the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
+      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // released *after* addressing other items in the same patch. If `force: true` is added to
+      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      //
+      // `_advisoryLock` is only relevant if you want to ask others not to edit the document while you are
+      // editing it in a modal or similar.
+
       async put(req, _id) {
         self.publicApiCheck(req);
         return self.withLock(req, async () => {
@@ -316,6 +328,19 @@ module.exports = {
           if (!manager) {
             throw self.apos.error('invalid');
           }
+          let htmlPageId = null;
+          let lock = false;
+          let force = false;
+          if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+            htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+            lock = self.apos.launder.boolean(input._advisoryLock.lock);
+            force = self.apos.launder.boolean(input._advisoryLock.force);
+          }
+          if (htmlPageId && lock) {
+            await self.apos.doc.lock(req, page, htmlPageId, {
+              force
+            });
+          }
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
@@ -325,6 +350,9 @@ module.exports = {
             } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
 
             await self.move(req, page._id, targetId, position);
+          }
+          if (htmlPageId && !lock) {
+            await self.apos.doc.unlock(req, page, htmlPageId);
           }
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
