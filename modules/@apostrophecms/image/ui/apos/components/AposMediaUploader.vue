@@ -82,7 +82,7 @@ export default {
     },
     async uploadMedia (event) {
       try {
-        apos.bus.$emit('apos-busy', {
+        apos.bus.$emit('busy', {
           name: 'busy',
           active: true
         });
@@ -141,7 +141,7 @@ export default {
         // When complete, refresh the image grid, with the new images at top.
         this.$emit('upload-complete', imageIds);
       } finally {
-        apos.bus.$emit('apos-busy', {
+        apos.bus.$emit('busy', {
           name: 'busy',
           active: false
         });
