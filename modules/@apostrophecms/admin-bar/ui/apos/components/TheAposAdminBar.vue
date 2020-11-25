@@ -53,7 +53,24 @@
         />
       </div>
       <div class="apos-admin-bar__row">
-        <div class="apos-admin-bar__context-spacer" />
+        <div class="apos-admin-bar__context-controls">
+          <AposButton
+            :disabled="patchesSinceLoaded.length === 0"
+            type="outline" :modifiers="['no-motion']"
+            label="Undo" :tooltip="buttonLabels.undo"
+            class="apos-admin-bar__context-button"
+            icon="undo-icon" :icon-only="true"
+            @click="undo"
+          />
+          <AposButton
+            :disabled="undone.length === 0"
+            type="outline" :modifiers="['no-motion']"
+            label="Redo" :tooltip="buttonLabels.redo"
+            class="apos-admin-bar__context-button"
+            icon="redo-icon" :icon-only="true"
+            @click="redo"
+          />
+        </div>
         <div class="apos-admin-bar__context-title">
           <span
             v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
@@ -99,21 +116,9 @@
               }
             })"
           />
-          <AposButton
-            v-if="patchesSinceLoaded.length"
-            type="default" label="Undo"
-            icon="undo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="undo"
-          />
-          <AposButton
-            v-if="undone.length"
-            type="default" label="Redo"
-            icon="redo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="redo"
-          />
-          <span class="apos-admin-bar__status">{{ status }}</span>
+          <span class="apos-admin-bar__status">
+            {{ status }}
+          </span>
         </div>
       </div>
     </nav>
@@ -147,7 +152,11 @@ export default {
       editing: false,
       editingTimeout: null,
       retrying: false,
-      saved: false
+      saved: false,
+      buttonLabels: {
+        undo: 'Undo change',
+        redo: 'Redo change'
+      }
     };
   },
   computed: {
@@ -246,7 +255,7 @@ export default {
   },
   methods: {
     beforeUnload(e) {
-      if (this.patchesSinceSave.length) {
+      if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
@@ -412,15 +421,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   border-bottom: $admin-bar-border;
 }
 
-.apos-admin-bar__context-spacer {
-  flex: 1;
-  // Using text-align because otherwise we don't wind
-  // up with quite the right centering for the middle one
-  // due to subtle issues with the way space is
-  // distributed
-  text-align: left;
-}
-
 .apos-admin-bar__context-title {
   @include type-base;
   display: inline-flex;
@@ -438,8 +438,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__context-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 1;
+
+  &:last-child {
+    justify-content: flex-end;
+  }
 }
 
 .apos-admin-bar__context-button {
@@ -455,6 +459,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   padding: 0;
 }
 
+.apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
 }
@@ -568,5 +573,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__status {
   width: 100px;
+  margin-left: 7.5px;
 }
 </style>

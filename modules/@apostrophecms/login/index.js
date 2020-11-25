@@ -22,6 +22,15 @@
 // acted upon in time, the user must request a password reset again.
 // The default is `48`.
 //
+// `bearerTokens`
+//
+// If not explicitly set to `false`, apps may log in via the login route
+// and receive a `token` as a response, which can then be presented as a
+// bearer token. If set to `false`, only session-based logins are possible.
+//
+// May be set to an object with a `lifetime` property, in milliseconds.
+// The default bearer token lifetime is 2 weeks.
+//
 // ## Notable properties of apos.modules['@apostrophecms/login']
 //
 // `passport`
@@ -39,14 +48,19 @@
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
 const Promise = require('bluebird');
+const cuid = require('cuid');
 
 module.exports = {
   options: {
     alias: 'login',
     localLogin: true,
-    scene: 'apos'
+    scene: 'apos',
+    csrfExceptions: [
+      'login'
+    ],
+    bearerTokens: true
   },
-  init(self, options) {
+  async init(self, options) {
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
@@ -54,6 +68,7 @@ module.exports = {
       self.enableLocalStrategy();
     }
     self.enableBrowserData();
+    await self.enableBearerTokens();
   },
   handlers(self, options) {
     return {
@@ -75,6 +90,7 @@ module.exports = {
     }
     return {
       get: {
+        // Login page
         [self.login()]: async (req) => {
           if (req.user) {
             return req.res.redirect('/');
@@ -94,6 +110,7 @@ module.exports = {
         async login(req) {
           const username = self.apos.launder.string(req.body.username);
           const password = self.apos.launder.string(req.body.password);
+          const session = self.apos.launder.boolean(req.body.session);
           if (!(username && password)) {
             throw self.apos.error('invalid');
           }
@@ -101,24 +118,44 @@ module.exports = {
           if (!user) {
             throw self.apos.error('invalid');
           }
-          const passportLogin = (user) => {
-            return require('util').promisify(function(user, callback) {
-              return req.login(user, callback);
-            })(user);
-          };
-          await passportLogin(user);
+          if (session) {
+            const passportLogin = (user) => {
+              return require('util').promisify(function(user, callback) {
+                return req.login(user, callback);
+              })(user);
+            };
+            await passportLogin(user);
+          } else {
+            const token = cuid();
+            await self.bearerTokens.insert({
+              _id: token,
+              userId: user._id,
+              expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
+            });
+            return {
+              token
+            };
+          }
         },
         async logout(req) {
           if (!req.user) {
             throw self.apos.error('forbidden');
           }
-          const destroySession = () => {
-            return require('util').promisify(function(callback) {
-              // Be thorough, nothing in the session potentially related to the login should survive logout
-              return req.session.destroy(callback);
-            })();
-          };
-          await destroySession();
+          if (req.token) {
+            await self.bearerTokens.remove({
+              userId: req.user._id,
+              _id: req.token
+            });
+          }
+          if (req.session) {
+            const destroySession = () => {
+              return require('util').promisify(function(callback) {
+                // Be thorough, nothing in the session potentially related to the login should survive logout
+                return req.session.destroy(callback);
+              })();
+            };
+            await destroySession();
+          }
         },
         ...(options.passwordReset ? {
           async resetRequest(req) {
@@ -347,6 +384,11 @@ module.exports = {
         if (!user) {
           self.apos.util.warn('⚠️  There are no users created for this installation of ApostropheCMS yet.');
         }
+      },
+
+      async enableBearerTokens() {
+        self.bearerTokens = self.apos.db.collection('aposBearerTokens');
+        await self.bearerTokens.ensureIndex({ expires: 1 }, { expireAfterSeconds: 0 });
       }
     };
   },

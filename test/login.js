@@ -62,7 +62,8 @@ describe('Login', function() {
         method: 'POST',
         body: {
           username: 'HarryPutter',
-          password: 'crookshanks'
+          password: 'crookshanks',
+          session: true
         },
         jar
       }
@@ -83,7 +84,8 @@ describe('Login', function() {
       {
         body: {
           username: 'hputter@aol.com',
-          password: 'crookshanks'
+          password: 'crookshanks',
+          session: true
         },
         jar
       }
@@ -119,7 +121,8 @@ describe('Login', function() {
       {
         body: {
           username: 'hputter@aol.com',
-          password: 'crookshanks'
+          password: 'crookshanks',
+          session: true
         },
         jar
       }
@@ -141,7 +144,8 @@ describe('Login', function() {
       {
         body: {
           username: 'hputter@aol.com',
-          password: 'crookshanks'
+          password: 'crookshanks',
+          session: true
         },
         jar
       }
