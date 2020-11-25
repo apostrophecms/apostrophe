@@ -38,6 +38,21 @@
         @click="edit(null)"
       />
     </template>
+    <template v-if="relationshipField" #leftRail>
+      <div class="apos-pieces-manager__relationship__rail">
+        <div class="apos-pieces-manager__relationship__counts">
+          <AposMinMaxCount
+            :field="relationshipField"
+            :value="checkedDocs"
+          />
+        </div>
+        <AposSlatList
+          class="apos-pieces-manager__relationship__items"
+          @input="updateChecked"
+          :value="checkedDocs"
+        />
+      </div>
+    </template>
     <template #main>
       <AposModalBody>
         <template #bodyHeader>
@@ -192,6 +207,11 @@ export default {
         this.new();
       }
     },
+    updateChecked(checked) {
+      this.checked = checked.map(doc => {
+        return doc._id;
+      });
+    },
     new() {
       this.edit(null);
     },
@@ -316,5 +336,15 @@ export default {
     width: 100%;
     height: 100%;
     margin-top: 130px;
+  }
+
+  .apos-pieces-manager__relationship__rail {
+    height: 100%;
+    padding: 20px;
+    background-color: var(--a-base-9);
+  }
+
+  .apos-pieces-manager__relationship__counts {
+    margin-bottom: 20px;
   }
 </style>

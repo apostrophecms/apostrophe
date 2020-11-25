@@ -130,6 +130,7 @@ export default {
     },
     async choose () {
       const result = await apos.modal.execute(this.chooserComponent, {
+        title: this.field.label || this.field.name,
         moduleName: this.field.withType,
         chosen: this.next,
         relationshipField: this.field
