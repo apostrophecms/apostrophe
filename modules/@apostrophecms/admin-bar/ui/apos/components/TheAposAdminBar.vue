@@ -55,6 +55,7 @@
       <div class="apos-admin-bar__row">
         <div class="apos-admin-bar__context-controls">
           <AposButton
+            v-if="editMode"
             :disabled="patchesSinceLoaded.length === 0"
             type="outline" :modifiers="['no-motion']"
             label="Undo" :tooltip="buttonLabels.undo"
@@ -63,6 +64,7 @@
             @click="undo"
           />
           <AposButton
+            v-if="editMode"
             :disabled="undone.length === 0"
             type="outline" :modifiers="['no-motion']"
             label="Redo" :tooltip="buttonLabels.redo"
@@ -350,6 +352,10 @@ export default {
         }
       }
       apos.bus.$emit('refreshed');
+      // Always do this. Yes some widgets will be inside area editors,
+      // but others will not, or we might not be in edit mode. Apostrophe
+      // is already smart enough to not run them twice, it's OK
+      apos.util.runPlayers();
     },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
