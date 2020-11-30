@@ -50,6 +50,7 @@
           class="apos-pieces-manager__relationship__items"
           @input="updateChecked"
           :value="checkedDocs"
+          @select="select"
         />
       </div>
     </template>
@@ -176,6 +177,13 @@ export default {
       };
     }
   },
+  watch: {
+    // checkedDocs (newVal, oldVal) {
+    //   this.checked = newVal.map(item => {
+    //     return item._id;
+    //   });
+    // }
+  },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
@@ -202,14 +210,18 @@ export default {
     this.destroyShortcuts();
   },
   methods: {
+    select() {
+      console.log('hello stu?');
+    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.new();
       }
     },
     updateChecked(checked) {
-      this.checked = checked.map(doc => {
-        return doc._id;
+      this.checkedDocs = checked;
+      this.checked = this.checkedDocs.map(item => {
+        return item._id;
       });
     },
     new() {

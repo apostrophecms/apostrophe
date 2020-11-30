@@ -1,6 +1,7 @@
 
 <template>
   <div ref="root">
+    <!-- TODO replace w minmax component -->
     <div v-if="field.min || field.max" class="apos-slat-limit">
       <span>{{ next.length }} selected</span>
       <span v-if="field.min">
