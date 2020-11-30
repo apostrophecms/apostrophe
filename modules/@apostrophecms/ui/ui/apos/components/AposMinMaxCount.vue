@@ -37,12 +37,6 @@ export default {
       type: Object
     }
   },
-  // data() {
-  //   return {
-  //     minError: false,
-  //     maxError: false
-  //   };
-  // },
   computed: {
     maxed() {
       return (this.field.max !== undefined) && (this.value.length >= this.field.max);
@@ -105,6 +99,7 @@ export default {
     @include type-help;
     display: flex;
     flex-grow: 1;
+    margin-bottom: $spacing-base;
   }
 
   .has-error {

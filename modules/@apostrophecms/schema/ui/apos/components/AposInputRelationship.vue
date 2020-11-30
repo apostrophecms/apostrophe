@@ -3,6 +3,12 @@
     :field="field" :error="effectiveError"
     :uid="uid" :items="next"
   >
+    <template #additional>
+      <AposMinMaxCount
+        :field="field"
+        :value="next"
+      />
+    </template>
     <template #body>
       <div class="apos-input-wrapper apos-input-relationship">
         <div class="apos-input-relationship__input-wrapper">
