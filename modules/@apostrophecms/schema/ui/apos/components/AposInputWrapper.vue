@@ -16,17 +16,7 @@
       <p v-if="field.help" class="apos-field-help">
         {{ field.help }}
       </p>
-      <div v-if="countLabel || minLabel || maxLabel" class="apos-field-limit">
-        <span v-if="countLabel">
-          {{ countLabel }}
-        </span>
-        <span v-if="minLabel">
-          {{ minLabel }}
-        </span>
-        <span v-if="maxLabel">
-          {{ maxLabel }}
-        </span>
-      </div>
+      <slot name="additional" />
       <slot name="body" />
       <!-- TODO i18n -->
       <div v-if="errorMessage" class="apos-field-error">
@@ -122,32 +112,6 @@ export default {
       } else {
         return false;
       }
-    },
-    countLabel() {
-      if (this.field.type === 'relationship') {
-        return `${this.items.length} Selected`;
-      } else if (this.field.type === 'array') {
-        return `${this.items.length} Added`;
-      } else {
-        return false;
-      }
-    },
-    minLabel() {
-      if ((typeof this.field.min) === 'number') {
-        return `Min: ${this.field.min}`;
-      } else if (this.field.required && (this.field.type === 'array')) {
-        // For consistency with the array editor's behavior
-        return 'Min: 1';
-      } else {
-        return false;
-      }
-    },
-    maxLabel() {
-      if ((typeof this.field.max) === 'number') {
-        return `Max: ${this.field.max}`;
-      } else {
-        return false;
-      }
     }
   },
   mounted: function () {
@@ -175,13 +139,14 @@ export default {
   .apos-field-label {
     @include type-base;
     display: block;
+    margin: 0 0 $spacing-base;
     padding: 0;
     color: var(--a-text-primary);
   }
 
   .apos-field-help,
   .apos-field-error {
-    margin: $spacing-base 0 0;
+    margin: 0 0 $spacing-base;
   }
 
   .apos-field-help {
@@ -197,14 +162,5 @@ export default {
 
   .apos-field-required {
     color: var(--a-danger);
-  }
-
-  .apos-field-limit {
-    @include type-help;
-    margin: $spacing-base 0;
-
-    span {
-      margin-right: $spacing-base;
-    }
   }
 </style>

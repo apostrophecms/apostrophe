@@ -81,7 +81,6 @@
 </template>
 
 <script>
-// TODO: Rename to AposPiecesManagerDisplay
 export default {
   model: {
     prop: 'checked',
