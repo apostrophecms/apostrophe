@@ -31,6 +31,7 @@ module.exports = {
     self.enableBrowserData();
     await self.enableCollection();
     await self.createIndexes();
+    self.addDuplicateOrMissingWidgetIdMigration();
   },
   restApiRoutes(self, options) {
     return {
@@ -684,6 +685,48 @@ module.exports = {
         return {
           action: self.action
         };
+      },
+      addDuplicateOrMissingWidgetIdMigration() {
+        self.apos.migration.add('duplicate-or-missing-widget-id', async () => {
+          return self.apos.migration.eachDoc({}, 5, async (doc) => {
+            const widgetIds = {};
+            const patches = {};
+            // Walk the areas in a doc. Your iterator function is invoked once
+            // for each area found, and receives the
+            // area object and the dot-notation path to that object.
+            // note that areas can be deeply nested in docs via
+            // array schemas.
+            //
+            // If the iterator explicitly returns `false`, the area
+            // is *removed* from the page object, otherwise no
+            // modifications are made. This happens in memory only;
+            // the database is not modified.
+            self.apos.area.walk(doc, (area, dotPath) => {
+              if (!area.items) {
+                return;
+              }
+              for (let i = 0; (i < area.items.length); i++) {
+                const item = area.items[i];
+                if (!item) {
+                  continue;
+                }
+                if ((!item._id) || (_.has(widgetIds, item._id))) {
+                  patches[`${dotPath}.items.${i}._id`] = self.apos.util.generateId();
+                }
+                if (item._id) {
+                  widgetIds[item._id] = true;
+                }
+              }
+            });
+            if (Object.keys(patches).length) {
+              return self.apos.doc.db.updateOne({
+                _id: doc._id
+              }, {
+                $set: patches
+              });
+            }
+          });
+        });
       }
     };
   }
