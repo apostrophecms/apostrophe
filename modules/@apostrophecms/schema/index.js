@@ -656,6 +656,11 @@ module.exports = {
           self.apos.schema.indexFields(field.schema, item, texts);
         });
       },
+      validate: function (field) {
+        for (const subField of field.schema || field.fields.add) {
+          self.validateField(subField);
+        }
+      },
       register: function (field) {
         self.register(field.schema);
       },
@@ -1808,8 +1813,8 @@ module.exports = {
                 }
               }
             } else if (field.type === 'array') {
-              if (doc[field.name] && doc[field.name].items) {
-                doc[field.name].items.map(item => forSchema(field.schema, item));
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => forSchema(field.schema, item));
               }
             } else if (field.type === 'object') {
               if (doc[field.name]) {
@@ -2068,31 +2073,35 @@ module.exports = {
         }
         self.validatedSchemas[options.type + ':' + options.subtype] = true;
 
-        _.each(schema, function (field) {
-          const fieldType = self.fieldTypes[field.type];
-          if (!fieldType) {
-            fail('Unknown schema field type.');
-          }
-          if (!field.name) {
-            fail('name property is missing.');
-          }
-          if (!field.label && !field.contextual) {
-            field.label = _.startCase(field.name.replace(/^_/, ''));
-          }
-          if (fieldType.validate) {
-            fieldType.validate(field, options, warn, fail);
-          }
-          function fail(s) {
-            throw new Error(format(s));
-          }
-          function warn(s) {
-            self.apos.util.error(format(s));
-          }
-          function format(s) {
-            return '\n' + options.type + ' ' + options.subtype + ', field name ' + field.name + ':\n\n' + s + '\n';
-          }
-        });
+        schema.forEach(self.validateField);
       },
+
+      // Validates a single schema field. See `validate`.
+      validateField(field) {
+        const fieldType = self.fieldTypes[field.type];
+        if (!fieldType) {
+          fail('Unknown schema field type.');
+        }
+        if (!field.name) {
+          fail('name property is missing.');
+        }
+        if (!field.label && !field.contextual) {
+          field.label = _.startCase(field.name.replace(/^_/, ''));
+        }
+        if (fieldType.validate) {
+          fieldType.validate(field, options, warn, fail);
+        }
+        function fail(s) {
+          throw new Error(format(s));
+        }
+        function warn(s) {
+          self.apos.util.error(format(s));
+        }
+        function format(s) {
+          return '\n' + options.type + ' ' + options.subtype + ', field name ' + field.name + ':\n\n' + s + '\n';
+        }
+      },
+
       // Recursively register the given schema, giving each field an _id and making provision to be able to
       // fetch its definition via apos.schema.getFieldById().
       register(schema) {
