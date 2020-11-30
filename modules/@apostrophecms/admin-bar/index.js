@@ -21,6 +21,7 @@
 // `closeDelay` is a global configuration and changes both the homepage and all subpages.
 
 const _ = require('lodash');
+const cuid = require('cuid');
 
 module.exports = {
   options: { alias: 'adminBar' },
@@ -267,6 +268,7 @@ module.exports = {
           },
           // Simplifies frontend logic
           contextId: context && context._id,
+          htmlPageId: cuid(),
           contextEditorName
         };
       }

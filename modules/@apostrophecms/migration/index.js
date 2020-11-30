@@ -198,7 +198,7 @@ module.exports = {
       //
       // After adding such a migration, you can add `sortify: true` to the
       // schema field declaration for `field`, and any calls to
-      // the `sort()` cursor filter for `lastName` will automatically
+      // the `sort()` query builder for `lastName` will automatically
       // use `lastNameSortified`. You can also do that explicitly of course.
       //
       // Note that you want to do both things (add the migration, and

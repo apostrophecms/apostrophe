@@ -190,6 +190,10 @@ export default {
     }
   },
   mounted() {
+    // A unique identifier for this current page's lifetime
+    // in this browser right now. Not the same thing as a page id
+    // or session id. Used for advisory locks, to distinguish
+    // different tabs owned by the same user
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 

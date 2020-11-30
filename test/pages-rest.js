@@ -67,7 +67,7 @@ describe('Pages REST', function() {
     assert(apos.page.__meta.name === '@apostrophecms/page');
   });
 
-  it('should be able to insert test user', async function() {
+  it('should be able to insert test users', async function() {
     assert(apos.user.newInstance);
     const user = apos.user.newInstance();
     assert(user);
@@ -79,7 +79,20 @@ describe('Pages REST', function() {
     user.password = 'admin';
     user.email = 'ad@min.com';
 
-    return apos.user.insert(apos.task.getReq(), user);
+    await apos.user.insert(apos.task.getReq(), user);
+
+    const user2 = apos.user.newInstance();
+    assert(user2);
+
+    user2.firstName = 'ad';
+    user2.lastName = 'min2';
+    user2.title = 'admin2';
+    user2.username = 'admin2';
+    user2.password = 'admin2';
+    user2.email = 'ad@min2.com';
+
+    return apos.user.insert(apos.task.getReq(), user2);
+
   });
 
   it('REST: should be able to log in as admin', async () => {
@@ -729,6 +742,162 @@ describe('Pages REST', function() {
     assert(page.body.items[4]);
     assert(page.body.items[4].content.match(/I @ syntax/));
     assert(!page.body.items[5]);
+  });
+
+  let advisoryLockTestId;
+
+  it('can insert a page for advisory lock testing', async () => {
+    const body = {
+      slug: '/advisory-test',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Advisory Test'
+    };
+
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body,
+      jar
+    });
+
+    assert(page);
+    assert(page.title === 'Advisory Test');
+    advisoryLockTestId = page._id;
+  });
+
+  it('can get an advisory lock on a page while patching a property', async () => {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'xyz',
+          lock: true
+        },
+        title: 'Advisory Test Patched'
+      }
+    });
+    assert(page.title === 'Advisory Test Patched');
+  });
+
+  it('cannot get an advisory lock with a different context id', async () => {
+    try {
+      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+        jar,
+        body: {
+          _advisoryLock: {
+            htmlPageId: 'pdq',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(e.body.data.me);
+    }
+  });
+
+  it('can get an advisory lock with a different context id if forcing', async () => {
+    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: true,
+          force: true
+        }
+      }
+    });
+  });
+
+  it('can renew the advisory lock with the second context id after forcing', async () => {
+    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: true
+        }
+      }
+    });
+  });
+
+  it('can unlock the advisory lock while patching a property', async () => {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: false
+        },
+        title: 'Advisory Test Patched Again'
+      }
+    });
+    assert(page.title === 'Advisory Test Patched Again');
+  });
+
+  it('can relock with the first context id after unlocking', async () => {
+    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'xyz',
+          lock: true
+        }
+      }
+    });
+    assert(doc.title === 'Advisory Test Patched Again');
+  });
+
+  let jar2;
+
+  it('should be able to log in as second user', async () => {
+    jar2 = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin2',
+        password: 'admin2',
+        session: true
+      },
+      jar: jar2
+    });
+
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+    try {
+      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+        jar: jar2,
+        body: {
+          _advisoryLock: {
+            htmlPageId: 'nbc',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(!e.body.data.me);
+      assert(e.body.data.username === 'admin');
+    }
   });
 
 });

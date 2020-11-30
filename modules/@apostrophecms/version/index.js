@@ -181,15 +181,15 @@ module.exports = {
       //
       // The `._doc` property of each version is set to the document.
       async find(req, criteria, options) {
-        const cursor = self.db.find(criteria);
-        cursor.sort({ createdAt: -1 });
+        const query = self.db.find(criteria);
+        query.sort({ createdAt: -1 });
         if (options.limit) {
-          cursor.limit(options.limit);
+          query.limit(options.limit);
         }
         if (options.skip) {
-          cursor.skip(options.skip);
+          query.skip(options.skip);
         }
-        const versions = await cursor.toArray();
+        const versions = await query.toArray();
         if (versions.length) {
           const docId = versions[0].docId;
           for (let i = 1; i < versions.length; i++) {

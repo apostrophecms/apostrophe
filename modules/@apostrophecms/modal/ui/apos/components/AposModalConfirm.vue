@@ -1,7 +1,8 @@
 <template>
   <AposModal
     :modal="modal" class="apos-confirm"
-    @esc="cancel" @no-modal="$emit('safe-close')"
+    v-on="mode !== 'alert' ? { 'esc': cancel } : null"
+    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false" @show-modal="modal.showModal = true"
   >
     <template #main>
@@ -28,12 +29,13 @@
           </p>
           <div class="apos-confirm__btns">
             <AposButton
+              v-if="mode !== 'alert'"
               class="apos-confirm__btn"
               :label="confirmContent.negativeLabel || 'Cancel'" @click="cancel"
             />
             <AposButton
               class="apos-confirm__btn"
-              :label="confirmContent.affirmativeLabel || 'Confirm'"
+              :label="affirmativeLabel"
               @click="confirm"
               :type="confirmContent.theme || 'primary'"
             />
@@ -48,6 +50,10 @@
 
 export default {
   props: {
+    mode: {
+      type: String,
+      default: 'confirm'
+    },
     confirmContent: {
       type: Object,
       required: true
@@ -57,7 +63,7 @@ export default {
       default: ''
     }
   },
-  emits: [ 'safe-close', 'confirm-response' ],
+  emits: [ 'safe-close', 'confirm-response', 'modal-result' ],
   data() {
     return {
       modal: {
@@ -69,6 +75,15 @@ export default {
         trapFocus: true
       }
     };
+  },
+  computed: {
+    affirmativeLabel() {
+      if (this.mode === 'confirm') {
+        return this.confirmContent.affirmativeLabel || 'Confirm';
+      } else {
+        return this.confirmContent.affirmativeLabel || 'OK';
+      }
+    }
   },
   async mounted() {
     // Get the data. This will be more complex in actuality.
