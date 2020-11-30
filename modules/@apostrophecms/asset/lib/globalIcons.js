@@ -37,6 +37,7 @@ module.exports = {
   'instagram-icon': 'Instagram',
   'label-icon': 'Label',
   'link-icon': 'Link',
+  'lock-icon': 'Lock',
   'magnify-icon': 'Magnify',
   'menu-down-icon': 'MenuDown',
   'minus-icon': 'Minus',

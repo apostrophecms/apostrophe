@@ -42,8 +42,7 @@
                 iconOnly: true,
                 icon: 'plus-icon',
                 type: 'primary',
-                modifiers: ['round', 'no-motion'],
-                iconSize: 10
+                modifiers: ['round', 'no-motion']
               }"
               @item-clicked="emitEvent"
             />
@@ -552,20 +551,15 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__create {
   margin-left: 10px;
-  // Adjust button padding and svg size to have a large plus icon while keeping
-  // the button size the same.
+
   /deep/ .apos-context-menu__btn {
-    padding: 2px;
-    border-width: 0;
+    width: 23px;
+    height: 23px;
+    padding: 0;
   }
 
   /deep/ .apos-context-menu__popup {
     top: calc(100% + 13px);
-  }
-
-  /deep/ .apos-button__icon svg {
-    width: 19px;
-    height: 19px;
   }
 }
 
