@@ -90,7 +90,7 @@
     "postcss-loader": "^3.0.0",
     "postcss-prefixer": "^2.1.2",
     "postcss-scss": "^2.1.1",
-    "prompt": "^0.2.14",
+    "prompts": "^2.4.0",
     "prosemirror-tables": "^0.9.5",
     "qs": "^6.9.4",
     "regexp-quote": "0.0.0",
