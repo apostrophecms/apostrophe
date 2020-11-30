@@ -313,9 +313,9 @@ module.exports = {
       // Verify a login attempt. `username` can be either
       // the username or the email address (both are unique).
       //
-      // If the user's login FAILS, `false` is returned after a 1000ms delay to
-      // discourage abuse. In the case of an error, `'invalid'` is thrown as an
-      // exception instead following the delay.
+      // If the user's credentials are invalid, `false` is returned after a
+      // 1000ms delay to discourage abuse. If another type of error occurs, it is thrown
+      // normally.
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
@@ -338,8 +338,13 @@ module.exports = {
           await self.apos.user.verifyPassword(user, password);
           return user;
         } catch (err) {
-          await Promise.delay(1000);
-          throw self.apos.error('invalid');
+          if (err.name === 'invalid') {
+            await Promise.delay(1000);
+            return false;
+          } else {
+            // Actual system error
+            throw err;
+          }
         }
       },
 

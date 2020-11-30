@@ -358,9 +358,8 @@ module.exports = {
       // previously hashed value for the property named `secret`,
       // without ever storing the actual value of the secret
       //
-      // If the secret does not match, the string `'invalid'` is
-      // thrown as an exception. Otherwise the method returns
-      // normally.
+      // If the secret does not match, an `invalid` error is thrown.
+      // Otherwise the method returns normally.
 
       async verifySecret(user, secret, attempt) {
         const verify = Promise.promisify(self.pw.verify);
@@ -374,7 +373,7 @@ module.exports = {
         if (isVerified) {
           return null;
         } else {
-          throw new Error(`Incorrect ${secret}`);
+          throw self.apos.error('invalid', `Incorrect ${secret}`);
         }
       },
 
