@@ -656,9 +656,9 @@ module.exports = {
           self.apos.schema.indexFields(field.schema, item, texts);
         });
       },
-      validate: function (field) {
+      validate: function (field, options, warn, fail) {
         for (const subField of field.schema || field.fields.add) {
-          self.validateField(subField);
+          self.validateField(subField, options);
         }
       },
       register: function (field) {
@@ -2073,11 +2073,11 @@ module.exports = {
         }
         self.validatedSchemas[options.type + ':' + options.subtype] = true;
 
-        schema.forEach(self.validateField);
+        schema.forEach(field => self.validateField(field, options));
       },
 
       // Validates a single schema field. See `validate`.
-      validateField(field) {
+      validateField(field, options) {
         const fieldType = self.fieldTypes[field.type];
         if (!fieldType) {
           fail('Unknown schema field type.');
