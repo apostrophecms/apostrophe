@@ -177,13 +177,6 @@ export default {
       };
     }
   },
-  watch: {
-    // checkedDocs (newVal, oldVal) {
-    //   this.checked = newVal.map(item => {
-    //     return item._id;
-    //   });
-    // }
-  },
   created() {
     this.options.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
@@ -210,9 +203,6 @@ export default {
     this.destroyShortcuts();
   },
   methods: {
-    select() {
-      console.log('hello stu?');
-    },
     moreMenuHandler(action) {
       if (action === 'new') {
         this.new();
