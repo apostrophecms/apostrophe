@@ -8,8 +8,8 @@
     @include type-small;
     z-index: $z-index-default;
     position: relative;
-    padding: 16px;
-    border-radius: 5px;
+    padding: 10px;
+    border-radius: 3px;
     border-width: 0;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
@@ -21,7 +21,7 @@
     width: 16px;
     height: 16px;
     margin: 5px;
-    border-radius: 5px;
+    border-radius: 3px;
     // Solid border style needed to work with v-tooltip placement.
     border-style: solid;
     background-color: var(--a-background-inverted);
