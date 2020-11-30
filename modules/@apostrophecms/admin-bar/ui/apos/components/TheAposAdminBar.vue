@@ -87,7 +87,6 @@
             class="apos-admin-bar__context-button"
             label="Preview Mode" :tooltip="{
               content: 'Preview Mode',
-              offset: 0,
               placement: 'bottom'
             }"
             type="outline" :modifiers="['no-motion']"
@@ -106,7 +105,6 @@
             class="apos-admin-bar__context-button"
             label="Page Settings" :tooltip="{
               content: 'Page Settings',
-              offset: 0,
               placement: 'bottom'
             }"
             type="outline" :modifiers="['no-motion']"
