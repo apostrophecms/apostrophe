@@ -2190,9 +2190,13 @@ module.exports = {
         }
         _.each(patch, function(val, key) {
           if (key.charAt(0) !== '$') {
-            key = self.apos.util.resolveAtReference(existingPage, key);
+            let atReference = false;
+            if (key.charAt(0) === '@') {
+              atReference = true;
+              key = self.apos.util.resolveAtReference(existingPage, key);
+            }
             // Simple replacement with a dot path
-            if (key.indexOf('.') !== -1) {
+            if (atReference || (key.indexOf('.') !== -1)) {
               cloneOriginalBase(key);
               self.apos.util.set(patch, key, val);
             }

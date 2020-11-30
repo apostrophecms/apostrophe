@@ -112,11 +112,12 @@ module.exports = {
           const password = self.apos.launder.string(req.body.password);
           const session = self.apos.launder.boolean(req.body.session);
           if (!(username && password)) {
-            throw self.apos.error('invalid');
+            throw self.apos.error('invalid', 'Both the username and the password are required.');
           }
           const user = await self.apos.login.verifyLogin(username, password);
           if (!user) {
-            throw self.apos.error('invalid');
+            // For security reasons we may not tell the user which case applies
+            throw self.apos.error('invalid', 'Your credentials are incorrect, or there is no such user.');
           }
           if (session) {
             const passportLogin = (user) => {
@@ -139,7 +140,7 @@ module.exports = {
         },
         async logout(req) {
           if (!req.user) {
-            throw self.apos.error('forbidden');
+            throw self.apos.error('forbidden', 'You were not logged in.');
           }
           if (req.token) {
             await self.bearerTokens.remove({
@@ -388,7 +389,7 @@ module.exports = {
 
       async enableBearerTokens() {
         self.bearerTokens = self.apos.db.collection('aposBearerTokens');
-        await self.bearerTokens.ensureIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        await self.bearerTokens.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
       }
     };
   },
