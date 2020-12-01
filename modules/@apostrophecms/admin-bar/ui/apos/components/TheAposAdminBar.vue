@@ -72,16 +72,16 @@
               />
             </span>
             <span class="apos-admin-bar__status">
-              <AposIndicator
-                icon="database-check-icon"
-                :icon-size="16"
-                class="apos-admin-bar__status__icon"
-              />
-              <transition-group name="fade">
-                <span :key="3" v-show="saveStatus === 3" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
-                <span :key="2" v-show="saveStatus === 2" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
-                <span :key="1" v-show="saveStatus === 1" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
-              </transition-group>
+              <span class="apos-admin-bar__status__inner">
+                <component
+                  :is="savingIndicator.el"
+                  v-bind="savingIndicator.options"
+                  class="apos-admin-bar__status__icon"
+                />
+                <div class="apos-admin-bar__status__label" ref="statusLabel">
+                  {{ savingLabel }}
+                </div>
+              </span>
             </span>
           </div>
         </transition>
@@ -161,7 +161,27 @@ export default {
       editing: false,
       editingTimeout: null,
       retrying: false,
-      saved: false
+      saved: false,
+      savingTimeout: null,
+      savingStatus: {
+        transitioning: false,
+        messages: {
+          1: {
+            label: 'Draft Saved',
+            icon: 'database-check-icon',
+            class: 'is-success'
+          },
+          2: {
+            label: 'Saving draft...',
+            component: 'AposSpinner'
+          },
+          3: {
+            label: 'Retrying Save draft...',
+            component: 'AposSpinner',
+            class: 'is-warning'
+          }
+        }
+      }
     };
   },
   computed: {
@@ -181,22 +201,50 @@ export default {
 
       return tooltips;
     },
-    saveStatusLabels() {
+    savingIndicator() {
+      let el = '';
+      const options = {};
+      if (this.savingStep) {
+        const currentStep = this.savingStatus.messages[this.savingStep];
+        // form indicator component + options
+        if (currentStep.component) {
+          el = currentStep.component;
+        } else {
+          el = 'AposIndicator';
+        }
+        if (currentStep.icon) {
+          options.icon = currentStep.icon;
+          options.iconSize = 15;
+        }
+        if (currentStep.class) {
+          options.class = currentStep.class;
+        }
+
+        if (el === 'AposIndicator') { // icon, include status tooltip where possible
+          options.tooltip = this.savingStatus.messages[this.savingStep].label;
+        }
+      };
       return {
-        1: 'Saved',
-        2: 'Saving...',
-        3: 'Retrying...'
+        el,
+        options
       };
     },
-    saveStatus() {
+    savingStep() {
+      let s = null;
       if (this.retrying) {
-        return 3;
+        s = 3;
       } else if (this.saving || this.editing) {
-        return 2;
+        s = 2;
       } else if (this.saved) {
-        return 1;
+        s = 1;
+      }
+      return s;
+    },
+    savingLabel() {
+      if (this.savingStep) {
+        return this.savingStatus.messages[this.savingStep].label;
       } else {
-        return 0;
+        return '';
       }
     },
     currentPageId() {
@@ -216,8 +264,17 @@ export default {
     }
   },
   watch: {
-    saveStatus(newVal, oldVal) {
-      console.log(`change: ${newVal}`);
+    savingStep(newVal) {
+      const self = this;
+      apos.util.removeClass(self.$refs.statusLabel, 'is-hidden');
+      if (this.savingTimeout) {
+        clearTimeout(this.savingTimeout);
+      }
+      this.savingTimeout = setTimeout(fade, 5000);
+
+      function fade() {
+        apos.util.addClass(self.$refs.statusLabel, 'is-hidden');
+      }
     }
   },
   mounted() {
@@ -625,11 +682,45 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__status {
+  @include type-help;
+  position: relative;
   margin-left: 7.5px;
+  opacity: 1;
+  color: var(--a-base-2);
+  transition: opacity 150ms;
+  &.is-hidden {
+    opacity: 0;
+  }
+  .is-success {
+    color: var(--a-success);
+  }
+
+  .is-warning {
+    color: var(--a-warning);
+  }
 }
 
-.apos-admin-bar__status__text {
+.apos-admin-bar__status__inner {
   position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.apos-admin-bar__status__icon {
+  margin-right: 7.5px;
+  width: 18px;
+  height: 18px;
+}
+
+.apos-admin-bar__status__label {
+  opacity: 1;
+  transition: opacity 200ms ease;
+  &.is-hidden {
+    opacity: 0;
+  }
 }
 
 .flip-enter-active, .flip-leave-active {
@@ -642,8 +733,8 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .fade-enter-active, .fade-leave-active {
-  transition: all 200ms;
-  transition-delay: 200ms;
+  transition: all 150ms;
+  // transition-delay: 200ms;
 }
 .fade-enter, .fade-leave-to {
   opacity: 0;
