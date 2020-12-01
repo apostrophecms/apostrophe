@@ -48,66 +48,40 @@
             />
           </li>
         </ul>
-        <TheAposAdminBarUser
-          class="apos-admin-bar__user"
-        />
+        <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
       <div class="apos-admin-bar__row apos-admin-bar__row--utils">
         <transition name="flip">
           <div v-if="editMode" class="apos-admin-bar__control-set apos-admin-bar__context-controls">
-            <span
-              v-if="patchesSinceLoaded.length === 0"
-              v-tooltip="buttonLabels.undoDisabled"
-            >
+            <span v-tooltip="undoTooltips.undo"> <!-- lame but need a tooltip even on a disabled button -->
               <AposButton
                 :disabled="patchesSinceLoaded.length === 0"
                 type="subtle" :modifiers="['small', 'no-motion']"
-                label="Undo" :tooltip="buttonLabels.undo"
-                class="apos-admin-bar__context-button"
+                label="Undo" class="apos-admin-bar__context-button"
                 icon="undo-icon" :icon-only="true"
                 @click="undo"
               />
             </span>
-            <AposButton
-              v-else
-              :disabled="patchesSinceLoaded.length === 0"
-              type="subtle" :modifiers="['small', 'no-motion']"
-              label="Undo" :tooltip="buttonLabels.undo"
-              class="apos-admin-bar__context-button"
-              icon="undo-icon" :icon-only="true"
-              @click="undo"
-            />
-            <span
-              v-if="undone.length === 0"
-              v-tooltip="buttonLabels.redoDisabled"
-            >
+            <span v-tooltip="undoTooltips.redo">
               <AposButton
                 :disabled="undone.length === 0"
                 type="subtle" :modifiers="['small', 'no-motion']"
-                label="Redo" :tooltip="buttonLabels.redo"
-                class="apos-admin-bar__context-button"
+                label="Redo" class="apos-admin-bar__context-button"
                 icon="redo-icon" :icon-only="true"
                 @click="redo"
               />
             </span>
-            <AposButton
-              v-else
-              :disabled="undone.length === 0"
-              type="subtle" :modifiers="['small', 'no-motion']"
-              label="Redo" :tooltip="buttonLabels.redo"
-              class="apos-admin-bar__context-button"
-              icon="redo-icon" :icon-only="true"
-              @click="redo"
-            />
             <span class="apos-admin-bar__status">
               <AposIndicator
                 icon="database-check-icon"
                 :icon-size="16"
                 class="apos-admin-bar__status__icon"
               />
-              <!-- Some kind of persistent icon -->
-
-              {{ status }}
+              <transition-group name="fade">
+                <span :key="3" v-show="saveStatus === 3" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
+                <span :key="2" v-show="saveStatus === 2" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
+                <span :key="1" v-show="saveStatus === 1" class="apos-admin-bar__status__text">{{ SaveStatusLabels[saveStatus] }}</span>
+              </transition-group>
             </span>
           </div>
         </transition>
@@ -187,16 +161,44 @@ export default {
       editing: false,
       editingTimeout: null,
       retrying: false,
-      saved: false,
-      buttonLabels: {
-        undo: 'Undo change',
-        redo: 'Redo change',
-        undoDisabled: 'Undo Change (No change to undo)',
-        redoDisabled: 'Redo Change (No change to redo)'
-      }
+      saved: false
     };
   },
   computed: {
+    undoTooltips() {
+      const tooltips = {
+        undo: 'Undo Change',
+        redo: 'Redo Change'
+      };
+
+      if (this.patchesSinceLoaded.length === 0) {
+        tooltips.undo = 'No changes to undo';
+      }
+
+      if (this.undone.length === 0) {
+        tooltips.redo = 'No changes to redo';
+      }
+
+      return tooltips;
+    },
+    saveStatusLabels() {
+      return {
+        1: 'Saved',
+        2: 'Saving...',
+        3: 'Retrying...'
+      };
+    },
+    saveStatus() {
+      if (this.retrying) {
+        return 3;
+      } else if (this.saving || this.editing) {
+        return 2;
+      } else if (this.saved) {
+        return 1;
+      } else {
+        return 0;
+      }
+    },
     currentPageId() {
       if (apos.page && apos.page.page && apos.page.page._id) {
         return apos.page.page._id;
@@ -211,17 +213,11 @@ export default {
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
-    },
-    status() {
-      if (this.retrying) {
-        return 'Retrying...';
-      } else if (this.saving || this.editing) {
-        return 'Saving...';
-      } else if (this.saved) {
-        return 'Saved';
-      } else {
-        return '';
-      }
+    }
+  },
+  watch: {
+    saveStatus(newVal, oldVal) {
+      console.log(`change: ${newVal}`);
     }
   },
   mounted() {
@@ -492,12 +488,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
   }
 }
 
-.apos-admin-bar__context-button {
-  // All but the first.
-  .apos-admin-bar__context-controls &:nth-child(n+2) {
-    margin-left: 7.5px;
-  }
-}
+// .apos-admin-bar__context-button {
+//   // All but the first.
+//   .apos-admin-bar__context-controls &:nth-child(n+2) {
+//     margin-left: 7.5px;
+//   }
+// }
 
 .apos-admin-bar__items {
   display: flex;
@@ -577,6 +573,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__row--utils {
+  height: 30px;
   padding-top: $admin-bar-h-pad--small;
   padding-bottom: $admin-bar-h-pad--small;
 }
@@ -631,11 +628,25 @@ $admin-bar-border: 1px solid var(--a-base-9);
   margin-left: 7.5px;
 }
 
-.flip-enter-active, .flip-leave-active {
-  transition: opacity 0.5s;
+.apos-admin-bar__status__text {
+  position: absolute;
 }
 
-.flip-enter, .flip-leave-to /* .fade-leave-active below version 2.1.8 */ {
+.flip-enter-active, .flip-leave-active {
+  transition: opacity 0.5s;
+  transition-delay: 200ms;
+}
+
+.flip-enter, .flip-leave-to {
   opacity: 0;
 }
+
+.fade-enter-active, .fade-leave-active {
+  transition: all 200ms;
+  transition-delay: 200ms;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
 </style>
