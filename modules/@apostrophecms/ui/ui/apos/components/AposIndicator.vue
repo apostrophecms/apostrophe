@@ -1,7 +1,7 @@
 <template>
   <span
     class="apos-indicator"
-    v-tooltip="tooltip"
+    v-tooltip="tooltipFinal"
     :style="`height: ${iconSize}px`"
   >
     <component
@@ -27,15 +27,34 @@ export default {
       default: 15
     },
     tooltip: {
-      type: [ String, Object, Boolean ],
-      default: false
+      type: [ String, Object ],
+      default: null
+    }
+  },
+  computed: {
+    tooltipFinal() {
+      let tooltip = {
+        delay: {
+          show: 500,
+          hide: 100
+        }
+      };
+      if (typeof this.tooltip === 'string') {
+        tooltip.content = this.tooltip;
+      } else {
+        tooltip = {
+          ...tooltip,
+          ...this.tooltip
+        };
+      }
+      return tooltip;
     }
   }
 };
 </script>
 <style lang="scss" scoped>
   .apos-indicator {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }

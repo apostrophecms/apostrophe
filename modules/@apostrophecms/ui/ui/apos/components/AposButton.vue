@@ -221,7 +221,8 @@ export default {
     padding: 7.5px 10px;
   }
 
-  .apos-button--quiet {
+  .apos-button--quiet,
+  .apos-button--subtle {
     padding: 0;
     border: none;
     color: var(--a-primary);
@@ -247,6 +248,16 @@ export default {
         cursor: not-allowed;
         color: var(--a-base-5);
       }
+    }
+  }
+
+  .apos-button--subtle {
+    color: var(--a-text-primary);
+    &:hover,
+    &:focus,
+    &:active {
+      color: inherit;
+      background-color: var(--a-base-10);
     }
   }
 
@@ -451,6 +462,10 @@ export default {
     padding: 7.5px 10px;
   }
 
+  .apos-button--icon-only.apos-button--small {
+    padding: 7.5px;
+  }
+
   .apos-button__label {
     display: inline-block;
   }
@@ -466,10 +481,6 @@ export default {
     display: inline-flex;
     margin-right: 5px;
     align-items: center;
-  }
-
-  .apos-button:not(.apos-button--icon-only) .apos-button__icon {
-    max-height: 13px;
   }
 
   .apos-button--danger-on-hover:hover {

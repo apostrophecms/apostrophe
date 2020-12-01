@@ -52,27 +52,65 @@
           class="apos-admin-bar__user"
         />
       </div>
-      <div class="apos-admin-bar__row">
-        <div class="apos-admin-bar__context-controls">
-          <AposButton
-            v-if="editMode"
-            :disabled="patchesSinceLoaded.length === 0"
-            type="outline" :modifiers="['no-motion']"
-            label="Undo" :tooltip="buttonLabels.undo"
-            class="apos-admin-bar__context-button"
-            icon="undo-icon" :icon-only="true"
-            @click="undo"
-          />
-          <AposButton
-            v-if="editMode"
-            :disabled="undone.length === 0"
-            type="outline" :modifiers="['no-motion']"
-            label="Redo" :tooltip="buttonLabels.redo"
-            class="apos-admin-bar__context-button"
-            icon="redo-icon" :icon-only="true"
-            @click="redo"
-          />
-        </div>
+      <div class="apos-admin-bar__row apos-admin-bar__row--utils">
+        <transition name="flip">
+          <div v-if="editMode" class="apos-admin-bar__control-set apos-admin-bar__context-controls">
+            <span
+              v-if="patchesSinceLoaded.length === 0"
+              v-tooltip="buttonLabels.undoDisabled"
+            >
+              <AposButton
+                :disabled="patchesSinceLoaded.length === 0"
+                type="subtle" :modifiers="['small', 'no-motion']"
+                label="Undo" :tooltip="buttonLabels.undo"
+                class="apos-admin-bar__context-button"
+                icon="undo-icon" :icon-only="true"
+                @click="undo"
+              />
+            </span>
+            <AposButton
+              v-else
+              :disabled="patchesSinceLoaded.length === 0"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              label="Undo" :tooltip="buttonLabels.undo"
+              class="apos-admin-bar__context-button"
+              icon="undo-icon" :icon-only="true"
+              @click="undo"
+            />
+            <span
+              v-if="undone.length === 0"
+              v-tooltip="buttonLabels.redoDisabled"
+            >
+              <AposButton
+                :disabled="undone.length === 0"
+                type="subtle" :modifiers="['small', 'no-motion']"
+                label="Redo" :tooltip="buttonLabels.redo"
+                class="apos-admin-bar__context-button"
+                icon="redo-icon" :icon-only="true"
+                @click="redo"
+              />
+            </span>
+            <AposButton
+              v-else
+              :disabled="undone.length === 0"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              label="Redo" :tooltip="buttonLabels.redo"
+              class="apos-admin-bar__context-button"
+              icon="redo-icon" :icon-only="true"
+              @click="redo"
+            />
+            <span class="apos-admin-bar__status">
+              <AposIndicator
+                icon="database-check-icon"
+                :icon-size="16"
+                class="apos-admin-bar__status__icon"
+              />
+              <!-- Some kind of persistent icon -->
+
+              {{ status }}
+            </span>
+          </div>
+        </transition>
         <div class="apos-admin-bar__context-title">
           <span
             v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
@@ -89,7 +127,7 @@
               content: 'Preview Mode',
               placement: 'bottom'
             }"
-            type="outline" :modifiers="['no-motion']"
+            type="subtle" :modifiers="['small', 'no-motion']"
             icon="eye-icon" :icon-only="true"
             @click="switchToPreviewMode"
           />
@@ -97,7 +135,7 @@
             v-if="!editMode"
             class="apos-admin-bar__context-button"
             label="Edit" icon="pencil-icon"
-            :modifiers="['no-motion']"
+            type="subtle" :modifiers="['small', 'no-motion']"
             @click="switchToEditMode"
           />
           <AposButton
@@ -107,7 +145,7 @@
               content: 'Page Settings',
               placement: 'bottom'
             }"
-            type="outline" :modifiers="['no-motion']"
+            type="subtle" :modifiers="['small', 'no-motion']"
             icon="cog-icon" :icon-only="true"
             @click="emitEvent({
               itemName: contextEditorName,
@@ -116,9 +154,6 @@
               }
             })"
           />
-          <span class="apos-admin-bar__status">
-            {{ status }}
-          </span>
         </div>
       </div>
     </nav>
@@ -155,7 +190,9 @@ export default {
       saved: false,
       buttonLabels: {
         undo: 'Undo change',
-        redo: 'Redo change'
+        redo: 'Redo change',
+        undoDisabled: 'Undo Change (No change to undo)',
+        redoDisabled: 'Redo Change (No change to redo)'
       }
     };
   },
@@ -402,10 +439,11 @@ function depth(el) {
 
 <style lang="scss" scoped>
 $menu-row-height: 50px;
-$menu-v-pad: 18px;
+// $menu-v-pad: 18px;
 $menu-h-space: 12px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
+$admin-bar-h-pad--small: 5px;
 $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar-wrapper {
@@ -424,7 +462,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  height: $menu-row-height;
+  // height: $menu-row-height;s
   padding: 0 $admin-bar-h-pad 0 0;
   border-bottom: $admin-bar-border;
 }
@@ -467,10 +505,10 @@ $admin-bar-border: 1px solid var(--a-base-9);
   padding: 0;
 }
 
-.apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
-.apos-admin-bar__logo {
-  margin-left: $admin-bar-h-pad;
-}
+// .apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
+// .apos-admin-bar__logo {
+//   margin-left: $admin-bar-h-pad;
+// }
 
 .apos-admin-bar__logo {
   display: inline-block;
@@ -488,6 +526,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   &:focus {
     box-shadow: none;
     outline-width: 0;
+    border-width: 0;
     background-color: var(--a-base-9);
     color: currentColor;
     text-decoration: none;
@@ -506,12 +545,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
   margin-right: $menu-h-space;
 }
 
-.apos-admin-bar__logo,
-.apos-admin-bar /deep/ .apos-context-menu__btn,
-.apos-admin-bar__btn {
-  padding-top: $menu-v-pad;
-  padding-bottom: $menu-v-pad;
-}
+// .apos-admin-bar__logo,
+// .apos-admin-bar /deep/ .apos-context-menu__btn,
+// .apos-admin-bar__btn {
+//   padding-top: $menu-v-pad;
+//   padding-bottom: $menu-v-pad;
+// }
 
 .apos-admin-bar__sub /deep/ .apos-button,
 .apos-admin-bar__btn,
@@ -533,20 +572,29 @@ $admin-bar-border: 1px solid var(--a-base-9);
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__btn {
-  .apos-admin-bar__row--utils & {
-    padding-left: $admin-bar-h-pad;
-    padding-right: $admin-bar-h-pad;
-    border-right: $admin-bar-border;
+.apos-admin-bar__row {
+  padding: 0 $admin-bar-h-pad;
+}
 
-    &:hover,
-    &:focus {
-      border-width: 1px;
-    }
-  }
+.apos-admin-bar__row--utils {
+  padding-top: $admin-bar-h-pad--small;
+  padding-bottom: $admin-bar-h-pad--small;
+}
+
+.apos-admin-bar__btn {
+  // .apos-admin-bar__row--utils & {
+  //   padding-left: $admin-bar-h-pad;
+  //   padding-right: $admin-bar-h-pad;
+  //   border-right: $admin-bar-border;
+
+  //   &:hover,
+  //   &:focus {
+  //     border-width: 1px;
+  //   }
+  // }
 
   .apos-admin-bar__dropdown-items & {
-    padding: 25px;
+    // padding: 25px;
   }
 }
 
@@ -580,7 +628,14 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__status {
-  width: 100px;
   margin-left: 7.5px;
+}
+
+.flip-enter-active, .flip-leave-active {
+  transition: opacity 0.5s;
+}
+
+.flip-enter, .flip-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>

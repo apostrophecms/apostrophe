@@ -22,6 +22,7 @@ export const buttons = () => ({
             Default: null,
             Primary: 'primary',
             Outline: 'outline',
+            Subtle: 'subtle',
             Input: 'input',
             Danger: 'danger',
             Quiet: 'quiet',
