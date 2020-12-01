@@ -26,6 +26,10 @@ module.exports = function(self, oembetter) {
       response.thumbnail_url = maxResImage;
       return cb(null);
     } catch (e) {
+      if (e.status === 404) {
+        // Nonfatal, just continue to use hqdefault
+        return cb(null);
+      }
       return cb(e);
     }
   });
