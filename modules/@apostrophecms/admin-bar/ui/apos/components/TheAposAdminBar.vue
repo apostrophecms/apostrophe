@@ -372,7 +372,7 @@ export default {
           // "@ notation" PATCH feature. Sort the areas by DOM depth
           // to ensure parents patch before children
           this.original = {};
-          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]'));
+          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.moduleOptions.contextId);
           els.sort((a, b) => {
             const da = depth(a);
             const db = depth(b);
