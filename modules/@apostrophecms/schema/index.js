@@ -2201,8 +2201,14 @@ module.exports = {
           if (key.charAt(0) !== '$') {
             let atReference = false;
             if (key.charAt(0) === '@') {
-              atReference = true;
+              atReference = key;
               key = self.apos.util.resolveAtReference(existingPage, key);
+              if (key && patch[key.split('.')[0]]) {
+                // This base has already been cloned into the patch, or it
+                // otherwise touches this base, so we need to re-resolve
+                // the reference or indexes may be incorrect
+                key = self.apos.util.resolveAtReference(patch, atReference);
+              }
             }
             // Simple replacement with a dot path
             if (atReference || (key.indexOf('.') !== -1)) {

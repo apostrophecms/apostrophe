@@ -216,6 +216,11 @@ export default {
           });
         }
       }
+    },
+    tabs() {
+      if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
+        this.currentTab = this.tabs[0].name;
+      }
     }
   },
   async mounted() {

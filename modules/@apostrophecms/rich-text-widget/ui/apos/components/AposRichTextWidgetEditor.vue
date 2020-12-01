@@ -112,7 +112,7 @@ export default {
         ].concat((apos.tiptapExtensions || []).map(C => new C(this.options))),
         autoFocus: true,
         onUpdate: this.editorUpdate,
-        content: this.value.content
+        content: this.stripPlaceholderBrs(this.value.content)
       }),
       docFields: {
         data: {
@@ -183,7 +183,8 @@ export default {
         clearTimeout(this.pending);
         this.pending = null;
       }
-      const content = this.editor.getHTML();
+      let content = this.editor.getHTML();
+      content = this.restorePlaceholderBrs(content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
@@ -191,6 +192,19 @@ export default {
     },
     command(name, options) {
       this.commands[name](options);
+    },
+    // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
+    // temporarily so the editing experience doesn't break due to contenteditable
+    // issues with empty paragraphs, but strips them on save; however
+    // seeing them while editing creates a WYSIWYG expectation
+    // on the user's part, so we must maintain them
+    restorePlaceholderBrs(html) {
+      return html.replace(/<(p[^>]*)>(\s*)<\/p>/gi, '<$1><br /></p>');
+    },
+    // Strip the placeholder BRs again when populating the editor.
+    // Otherwise they get doubled by ProseMirror
+    stripPlaceholderBrs(html) {
+      return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
     }
   }
 };
