@@ -116,7 +116,7 @@ export default {
         value = '';
       }
       if (this.field.required) {
-        if (!value.length) {
+        if (typeof value === 'string' && !value.length) {
           return 'required';
         }
       }
