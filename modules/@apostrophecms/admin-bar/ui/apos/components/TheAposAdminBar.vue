@@ -109,7 +109,7 @@
               tooltip="Page Title"
               class="apos-admin-bar__title__indicator"
             />
-            <span>{{ moduleOptions.context.title }}</span>
+            {{ moduleOptions.context.title }}
           </span>
         </transition-group>
         <transition-group
@@ -527,7 +527,6 @@ function depth(el) {
 
 <style lang="scss" scoped>
 $menu-row-height: 50px;
-// $menu-v-pad: 18px;
 $menu-h-space: 12px;
 $menu-v-space: 25px;
 $admin-bar-h-pad: 20px;
@@ -550,7 +549,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  // height: $menu-row-height;s
   padding: 0 $admin-bar-h-pad 0 0;
   border-bottom: $admin-bar-border;
 }
@@ -558,7 +556,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__control-set--title {
   justify-content: center;
   align-items: center;
-  // flex: 1;
 }
 
 .apos-admin-bar__title__wrapper {
@@ -570,23 +567,11 @@ $admin-bar-border: 1px solid var(--a-base-9);
   margin-right: 5px;
 }
 
-// .apos-admin-bar__context-button {
-//   // All but the first.
-//   .apos-admin-bar__context-controls &:nth-child(n+2) {
-//     margin-left: 7.5px;
-//   }
-// }
-
 .apos-admin-bar__items {
   display: flex;
   margin: 0;
   padding: 0;
 }
-
-// .apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
-// .apos-admin-bar__logo {
-//   margin-left: $admin-bar-h-pad;
-// }
 
 .apos-admin-bar__logo {
   display: inline-block;
@@ -622,13 +607,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__logo {
   margin-right: $menu-h-space;
 }
-
-// .apos-admin-bar__logo,
-// .apos-admin-bar /deep/ .apos-context-menu__btn,
-// .apos-admin-bar__btn {
-//   padding-top: $menu-v-pad;
-//   padding-bottom: $menu-v-pad;
-// }
 
 .apos-admin-bar__sub /deep/ .apos-button,
 .apos-admin-bar__btn,
