@@ -202,16 +202,16 @@ export default {
         transitioning: false,
         messages: {
           1: {
-            label: 'Draft Saved',
+            label: 'Document Saved',
             icon: 'database-check-icon',
             class: 'is-success'
           },
           2: {
-            label: 'Saving draft...',
+            label: 'Saving document...',
             component: 'AposSpinner'
           },
           3: {
-            label: 'Retrying Save draft...',
+            label: 'Retrying Save document...',
             component: 'AposSpinner',
             class: 'is-warning'
           }
