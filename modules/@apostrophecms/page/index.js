@@ -286,7 +286,7 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -301,6 +301,18 @@ module.exports = {
       // to pass every time.
       //
       // This call is atomic with respect to other REST write operations on pages.
+      //
+      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // lock on the document for the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
+      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // released *after* addressing other items in the same patch. If `force: true` is added to
+      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      //
+      // `_advisoryLock` is only relevant if you want to ask others not to edit the document while you are
+      // editing it in a modal or similar.
+
       async put(req, _id) {
         self.publicApiCheck(req);
         return self.withLock(req, async () => {
@@ -316,6 +328,19 @@ module.exports = {
           if (!manager) {
             throw self.apos.error('invalid');
           }
+          let htmlPageId = null;
+          let lock = false;
+          let force = false;
+          if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+            htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+            lock = self.apos.launder.boolean(input._advisoryLock.lock);
+            force = self.apos.launder.boolean(input._advisoryLock.force);
+          }
+          if (htmlPageId && lock) {
+            await self.apos.doc.lock(req, page, htmlPageId, {
+              force
+            });
+          }
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
@@ -326,7 +351,10 @@ module.exports = {
 
             await self.move(req, page._id, targetId, position);
           }
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
+          if (htmlPageId && !lock) {
+            await self.apos.doc.unlock(req, page, htmlPageId);
+          }
+          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
       },
       // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
@@ -455,53 +483,83 @@ database.`);
       // it to be called from the universal @apostrophecms/doc PATCH route
       // as well.
       //
-      // If `req.body._patches` is an array of patches to the same document, this method
-      // will iterate over those patches as if each were `req.body`, applying all of them
+      // However if you plan to submit many patches over a period of time while editing you may also
+      // want to use the advisory lock mechanism.
+      //
+      // If `_advisoryLock: { htmlPageId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
+      // lock on the document for the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
+      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { htmlPageId: 'xyz', lock: false }` is passed, the advisory lock will be
+      // released *after* addressing other items in the same patch. If `force: true` is added to
+      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      //
+      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a period of time
+      // and wish to avoid conflict with other users. You do not need it for one-time patches.
+      //
+      // If `input._patches` is an array of patches to the same document, this method
+      // will iterate over those patches as if each were `input`, applying all of them
       // within a single lock and without redundant network operations. This greatly
       // improves the performance of saving all changes to a document at once after
-      // accumulating a number of changes in patch form on the front end. This feature
-      // may not be used to patch `_targetId` and `_position`.
+      // accumulating a number of changes in patch form on the front end. If _targetId and
+      // _position are present only the last such values given in the array of patches
+      // are applied.
       async patch(req, _id) {
         // TODO watch out for _targetId and _position and trash and their implications
         return self.withLock(req, async () => {
+          const input = req.body;
           const page = await self.findOneForEditing(req, { _id });
           let _targetId;
           let _position;
+          let result;
           if (!page) {
             throw self.apos.error('notfound');
           }
           if (!page._edit) {
             throw self.apos.error('forbidden');
           }
-          if (Array.isArray(req.body._patches)) {
-            for (const patch of req.body._patches) {
-              await self.applyPatch(req, page, patch);
-              // Since patches are applied consecutively, the last move
-              // is the move that matters
-              if (patch._targetId) {
-                _targetId = patch._targetId;
-                _position = patch._position;
+          const patches = Array.isArray(input._patches) ? input._patches : [ input ];
+          // Conventional for loop so we can handle the last one specially
+          for (let i = 0; (i < patches.length); i++) {
+            const input = patches[i];
+            let htmlPageId = null;
+            let lock = false;
+            let force;
+            if (input._advisoryLock && ((typeof input._advisoryLock) === 'object')) {
+              htmlPageId = self.apos.launder.string(input._advisoryLock.htmlPageId);
+              lock = self.apos.launder.boolean(input._advisoryLock.lock);
+              force = self.apos.launder.boolean(input._advisoryLock.force);
+            }
+            if (htmlPageId && lock) {
+              await self.apos.doc.lock(req, page, htmlPageId, {
+                force
+              });
+            }
+            if (input._targetId) {
+              _targetId = input._targetId;
+              _position = input._position;
+            }
+            await self.applyPatch(req, page, input);
+            if (i === (patches.length - 1)) {
+              await self.update(req, page);
+              if (_targetId) {
+                const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
+                const actualTargetId = result.targetId;
+                const actualPosition = result.position;
+                await self.move(req, page._id, actualTargetId, actualPosition);
               }
+              result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
-          } else {
-            await self.applyPatch(req, page, req.body);
-            // Since patches are applied consecutively, the last move
-            // is the move that matters
-            if (req.body._targetId) {
-              _targetId = req.body._targetId;
-              _position = req.body._position;
+            if (htmlPageId && !lock) {
+              await self.apos.doc.unlock(req, page, htmlPageId);
             }
           }
-          await self.update(req, page);
-
-          if (_targetId) {
-            const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
-            const actualTargetId = result.targetId;
-            const actualPosition = result.position;
-            await self.move(req, page._id, actualTargetId, actualPosition);
+          if (!result) {
+            // Edge case: empty `_patches` array. Don't be a pain,
+            // return the document as-is
+            return self.findOneForEditing(req, { _id }, { attachments: true });
           }
-          return self.findOneForEditing(req, { _id: page._id }, null, { annotate: true });
-
+          return result;
         });
       },
       // Apply a single patch to the given page without saving. An implementation detail of the
@@ -541,15 +599,15 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate;
         return browserOptions;
       },
-      // Returns a cursor that finds pages the current user can edit
+      // Returns a query that finds pages the current user can edit
       // in a batch operation.
       //
       // `req` determines what the user is eligible to edit, `criteria`
       // is the MongoDB criteria object, and any properties of `options`
       // are invoked as methods on the query with their values.
       findForBatch(req, criteria = {}, options = {}) {
-        const cursor = self.find(req, criteria, options).permission('edit').trash(null);
-        return cursor;
+        const query = self.find(req, criteria, options).permission('edit').trash(null);
+        return query;
       },
       // Insert a page. `targetId` must be an existing page id, and
       // `position` may be `before`, `inside` or `after`.
@@ -1893,19 +1951,21 @@ database.`);
         }
         return query;
       },
-      // Returns a cursor that finds pages the current user can edit. Unlike
-      // find(), this cursor defaults to including docs in the trash, although
+      // Returns a query that finds pages the current user can edit. Unlike
+      // find(), this query defaults to including docs in the trash, although
       // we apply filters in the UI.
-      findForEditing(req, criteria, projection, options) {
+      findForEditing(req, criteria, builders) {
         // Include ancestors to help with determining allowed types
-        const cursor = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
-        if (projection) {
-          cursor.project(projection);
+        const query = self.find(req, criteria).permission('edit').trash(null).ancestors(true);
+        if (builders) {
+          for (const [ key, value ] of Object.entries(builders)) {
+            query[key](value);
+          }
         }
-        return cursor;
+        return query;
       },
-      async findOneForEditing(req, criteria, projection, options) {
-        return self.findForEditing(req, criteria, projection, options).toObject();
+      async findOneForEditing(req, criteria, builders) {
+        return self.findForEditing(req, criteria, builders).toObject();
       },
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have editing permissions. Otherwise does

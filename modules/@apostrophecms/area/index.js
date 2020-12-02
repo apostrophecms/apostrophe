@@ -3,10 +3,8 @@ const deep = require('deep-get-set');
 
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
-// areas, including calling the loader methods of widgets that have them
-// whenever a doc containing areas is fetched, via an extension to
-// `@apostrophecms/cursors`. This module also provides browser-side support for
-// invoking the players of widgets in an area and for editing areas.
+// areas, with the help of a query builder in the doc module. This module also
+// provides browser-side support for invoking the players of widgets in an area and for editing areas.
 
 module.exports = {
   options: { alias: 'area' },
@@ -397,26 +395,15 @@ module.exports = {
       // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area. null and
       // undefined are tolerated and converted to empty areas.
       fromPlaintext(plaintext) {
-        const area = {
-          metaType: 'area',
-          items: []
-        };
-        if (plaintext && plaintext.length) {
-          plaintext = plaintext.toString();
-          area.items.push({
-            _id: self.apos.util.generateId(),
-            type: '@apostrophecms/rich-text',
-            content: self.apos.util.escapeHtml(plaintext, true)
-          });
-        }
-        return area;
+        return self.fromRichText(self.apos.util.escapeHtml(plaintext, true));
       },
       // Convert HTML to an area with one '@apostrophecms/rich-text' widget, otherwise
       // an empty area. null and undefined are tolerated and converted to empty areas.
       fromRichText(html) {
         const area = {
           metaType: 'area',
-          items: []
+          items: [],
+          _id: self.apos.util.generateId()
         };
         if (html && html.length) {
           html = html.toString();

@@ -14,7 +14,7 @@ export default {
     };
   },
   mounted() {
-    apos.bus.$on('apos-busy', state => {
+    apos.bus.$on('busy', state => {
       // TODO: Possibly add a check for `state.name === 'busy'` again if other
       // busy contexts are added.
       if (state.active === false && this.busyCount >= 0) {

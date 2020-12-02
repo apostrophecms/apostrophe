@@ -118,7 +118,17 @@
     if (options.qs) {
       url = apos.http.addQueryToUrl(url, options.qs);
     }
-
+    if (options.busy) {
+      if (!busyActive[busyName]) {
+        busyActive[busyName] = 0;
+        apos.bus.$emit('busy', {
+          active: true,
+          name: busyName
+        });
+      }
+      // keep track of nested calls
+      busyActive[busyName]++;
+    }
     xmlhttp.open(method, url);
     var formData = window.FormData && (data instanceof window.FormData);
     var sendJson = (options.send === 'json') || (options.body && ((typeof options.body) === 'object') && !formData);
@@ -148,18 +158,6 @@
     }
     xmlhttp.addEventListener('load', function() {
       var data = null;
-      if (options.busy) {
-        if (!busyActive[busyName]) {
-          busyActive[busyName] = 0;
-          apos.bus.$emit('apos-busy', {
-            active: true,
-            name: busyName
-          });
-        }
-        // keep track of nested calls
-        busyActive[busyName]++;
-      }
-
       var responseHeader = this.getResponseHeader('Content-Type');
       if (responseHeader || (options.parse === 'json')) {
         if ((options.parse === 'json') || (responseHeader.match(/^application\/json/))) {
@@ -184,10 +182,11 @@
           return callback(null, data);
         }
       } else {
-        const error = new Error(xmlhttp.status);
+        const error = new Error((data && data.message) || (data && data.name) || 'Error');
+        error.status = xmlhttp.status;
+        error.name = (data && data.name);
         error.body = data;
         error.headers = getHeaders();
-        error.status = xmlhttp.status;
         return callback(error);
       }
     });
@@ -212,7 +211,7 @@
         busyActive[busyName]--;
         if (!busyActive[busyName]) {
           // if no nested calls, disable the "busy" state
-          apos.bus.$emit('apos-busy', {
+          apos.bus.$emit('busy', {
             active: false,
             name: busyName
           });

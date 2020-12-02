@@ -149,7 +149,7 @@ export default {
       }
       if (this.field.page) {
         const matches = slug.match(/[^/]+$/);
-        slug = matches[0] || '';
+        slug = (matches && matches[0]) || '';
       }
       return ((title === '') && (slug === `${this.prefix}none`)) || this.slugify(title) === this.slugify(slug);
     },

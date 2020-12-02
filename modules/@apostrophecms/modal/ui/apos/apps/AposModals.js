@@ -11,7 +11,14 @@ export default function() {
     methods: {
       async confirm(confirmContent) {
         return this.execute(apos.modal.components.confirm, {
-          confirmContent
+          confirmContent,
+          mode: 'confirm'
+        });
+      },
+      async alert(alertContent) {
+        return this.execute(apos.modal.components.confirm, {
+          confirmContent: alertContent,
+          mode: 'alert'
         });
       },
       execute(componentName, props) {
@@ -26,4 +33,5 @@ export default function() {
   });
   apos.modal.execute = theAposModals.execute;
   apos.confirm = theAposModals.confirm;
+  apos.alert = theAposModals.alert;
 };

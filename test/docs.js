@@ -509,30 +509,43 @@ describe('Docs', function() {
 
   it('should be able to lock a document', async function() {
     const req = apos.task.getReq();
-
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
     try {
-      await apos.doc.lock(req, 'i27', 'abc');
+      await apos.doc.lock(req, doc, 'abc');
     } catch (e) {
       assert(!e);
     }
   });
 
-  it('should not be able to lock a document with a different contextId', async function() {
+  it('should not be able to lock a document with a different htmlPageId', async function() {
     const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
 
     try {
-      await apos.doc.lock(req, 'i27', 'def');
+      await apos.doc.lock(req, doc, 'def');
     } catch (e) {
       assert(e);
       assert(e.name === 'locked');
     }
   });
 
-  it('should be able to unlock a document', async function() {
+  it('should be able to refresh the lock with the same htmlPageId', async function() {
     const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
 
     try {
-      await apos.doc.unlock(req, 'i27', 'abc');
+      await apos.doc.lock(req, doc, 'abc');
+    } catch (e) {
+      assert(!e);
+    }
+  });
+
+  it('should be able to unlock a document', async function() {
+    const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+
+    try {
+      await apos.doc.unlock(req, doc, 'abc');
     } catch (e) {
       assert(false);
     }
@@ -540,9 +553,10 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
 
     try {
-      await apos.doc.lock(req, 'i27', 'def');
+      await apos.doc.lock(req, doc, 'def');
     } catch (e) {
       assert(false);
     }
@@ -550,9 +564,10 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     const req = apos.task.getReq();
+    const doc = await apos.doc.db.findOne({ _id: 'i27' });
 
     try {
-      await apos.doc.lock(req, 'i27', 'abc', { force: true });
+      await apos.doc.lock(req, doc, 'abc', { force: true });
     } catch (e) {
       assert(false);
     }

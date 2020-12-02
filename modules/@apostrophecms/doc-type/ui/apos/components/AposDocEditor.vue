@@ -128,7 +128,10 @@ export default {
       schemaUtilityFields: [],
       schemaOtherFields: [],
       triggerValidation: false,
-      original: null
+      original: null,
+      locked: false,
+      lockTimeout: null,
+      lockRefreshing: null
     };
   },
   computed: {
@@ -213,6 +216,11 @@ export default {
           });
         }
       }
+    },
+    tabs() {
+      if ((!this.currentTab) || (!this.tabs.find(tab => tab.name === this.currentTab))) {
+        this.currentTab = this.tabs[0].name;
+      }
     }
   },
   async mounted() {
@@ -223,6 +231,53 @@ export default {
       let docData;
       try {
         const getOnePath = `${this.moduleAction}/${this.docId}`;
+        try {
+          await apos.http.patch(getOnePath, {
+            body: {
+              _advisoryLock: {
+                htmlPageId: apos.adminBar.htmlPageId,
+                lock: true
+              }
+            }
+          });
+          this.markLockedAndScheduleRefresh();
+        } catch (e) {
+          if (e.body && e.body && e.body.name === 'locked') {
+            // We do not ask before busting our own advisory lock.
+            // We used to do this in A2 but end users told us they hated it and
+            // were constantly confused by it. This is because there is no
+            // way to guarantee a lock is dropped when leaving the page
+            // in edit mode. However, in the rare case where the "other tab"
+            // getting its lock busted really is another tab, we do notify
+            // the user there.
+            if (e.body.data.me ||
+              await apos.confirm({
+                heading: 'Another User Is Editing',
+                description: `${e.body.data.title} is editing that document. Do you want to take control?`
+              })
+            ) {
+              try {
+                await apos.http.patch(getOnePath, {
+                  body: {
+                    _advisoryLock: {
+                      htmlPageId: apos.adminBar.htmlPageId,
+                      lock: true,
+                      force: true
+                    }
+                  }
+                });
+                this.markLockedAndScheduleRefresh();
+              } catch (e) {
+                await apos.notify(e.message, {
+                  type: 'error'
+                });
+                this.modal.showModal = false;
+              }
+            } else {
+              this.modal.showModal = false;
+            }
+          }
+        }
         docData = await apos.http.get(getOnePath, {
           busy: true,
           qs: this.filterValues
@@ -250,7 +305,73 @@ export default {
       });
     }
   },
+  async destroyed () {
+    if (this.locked) {
+      clearTimeout(this.lockTimeout);
+      if (this.lockRefreshing) {
+        // First await the promise we held onto to make sure there is
+        // no race condition that leaves the lock in place
+        await this.lockRefreshing;
+      }
+      try {
+        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+          body: {
+            _advisoryLock: {
+              htmlPageId: apos.adminBar.htmlPageId,
+              lock: false
+            }
+          }
+        });
+      } catch (e) {
+        // Not our concern, just being polite
+      }
+    }
+  },
   methods: {
+    markLockedAndScheduleRefresh() {
+      this.locked = true;
+      this.lockTimeout = setTimeout(this.refreshLock, 10000);
+    },
+    refreshLock() {
+      this.lockRefreshing = (async () => {
+        try {
+          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+            body: {
+              _advisoryLock: {
+                htmlPageId: apos.adminBar.htmlPageId,
+                lock: true
+              }
+            }
+          });
+          // Reset this each time to avoid various race conditions
+          this.lockTimeout = setTimeout(this.refreshLock, 10000);
+        } catch (e) {
+          if (e.body && e.body.name && (e.body.name === 'locked')) {
+            await this.showLockedError(e);
+            this.modal.showModal = false;
+          }
+          // Other errors on this are not critical
+        }
+        this.lockRefreshing = null;
+      })();
+    },
+    async showLockedError(e) {
+      if (e.body.data.me) {
+        // We use an alert because it is a clear interruption of their
+        // work, and because a notification would appear in both windows
+        // if control was taken by the same user in another window,
+        // which would be confusing.
+        await apos.alert({
+          heading: 'You Took Control in Another Window',
+          description: 'You took control of this document in another tab or window.'
+        });
+      } else {
+        await apos.alert({
+          heading: 'Another User Took Control',
+          description: 'Another user took control of the document.'
+        });
+      }
+    },
     submit() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -269,6 +390,11 @@ export default {
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
           requestMethod = apos.http.put;
+          // Make sure we fail if someone else took the advisory lock
+          body._advisoryLock = {
+            htmlPageId: apos.adminBar.htmlPageId,
+            lock: true
+          };
         } else {
           route = this.moduleAction;
           requestMethod = apos.http.post;
@@ -286,10 +412,15 @@ export default {
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred saving the document.'
-          });
-          return;
+          if (e.body && (e.body.name === 'locked')) {
+            await this.showLockedError(e);
+            this.modal.showModal = false;
+          } else {
+            await this.handleSaveError(e, {
+              fallback: 'An error occurred saving the document.'
+            });
+            return;
+          }
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;

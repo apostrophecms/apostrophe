@@ -70,7 +70,7 @@ module.exports = {
         // page itself is not included in its own `._ancestors` array.
         //
         // If the argument is an object, do all of the above, and also call the
-        // filters present in the object on the cursor that fetches the ancestors.
+        // query builders present in the object on the query that fetches the ancestors.
         // For example, you can pass `{ children: true }` to fetch the children of
         // each ancestor as the `._children` property of each ancestor, or pass
         // `{ children: { depth: 2 } }` to get really fancy.
@@ -87,6 +87,10 @@ module.exports = {
               return;
             }
             for (const page of results) {
+              if (!page.path) {
+                // Projection is too limited, don't crash trying to get ancestors
+                continue;
+              }
               const req = query.req;
               const subquery = self.apos.page.find(req);
               subquery.ancestorPerformanceRestrictions();
@@ -131,7 +135,7 @@ module.exports = {
         // orphan docs. If flag is `false`, return only
         // docs that are not orphans. Orphans are pages that
         // are not returned by the default behavior of the
-        // `children` filter implemented by `@apostrophecms/page-cursor`
+        // `children` query builder implemented by `@apostrophecms/any-page-type`
         // and thus are left out of standard navigation.
         orphan: {
           finalize() {
@@ -178,6 +182,11 @@ module.exports = {
             }
 
             const clauses = [];
+
+            if (!results.find(page => page.path)) {
+              // Gracefully bow out if the projection is too limited to get children
+              return;
+            }
 
             results.forEach(page => {
               clauses.push({
@@ -263,7 +272,7 @@ module.exports = {
           }
         }
       },
-      // Apply default restrictions suitable for fetching ancestor pages to the cursor as
+      // Apply default restrictions suitable for fetching ancestor pages to the query as
       // a starting point before applying the ancestor options. Called by the
       // ancestors filter here and also by pages.pageBeforeSend when it fetches just
       // the home page using the same options, in the event ancestors were not loaded,
@@ -285,7 +294,7 @@ function applySubqueryOptions(subquery, options, ours) {
   } else if (typeof (options) === 'object') {
     parameters = _.pick(options, ours);
     // Pass everything that's not a parameter to
-    // cursor used to get ancestors
+    // query used to get ancestors
     _.each(_.omit(options, ours), function(val, key) {
       subquery[key](val);
     });

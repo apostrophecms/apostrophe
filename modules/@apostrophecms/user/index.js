@@ -30,7 +30,7 @@
 // such as `@apostrophecms/signup`.
 
 const credential = require('credential');
-const prompt = require('prompt');
+const prompts = require('prompts');
 const Promise = require('bluebird');
 
 module.exports = {
@@ -358,9 +358,8 @@ module.exports = {
       // previously hashed value for the property named `secret`,
       // without ever storing the actual value of the secret
       //
-      // If the secret does not match, the string `'invalid'` is
-      // thrown as an exception. Otherwise the method returns
-      // normally.
+      // If the secret does not match, an `invalid` error is thrown.
+      // Otherwise the method returns normally.
 
       async verifySecret(user, secret, attempt) {
         const verify = Promise.promisify(self.pw.verify);
@@ -374,7 +373,7 @@ module.exports = {
         if (isVerified) {
           return null;
         } else {
-          throw new Error(`Incorrect ${secret}`);
+          throw self.apos.error('invalid', `Incorrect ${secret}`);
         }
       },
 
@@ -407,18 +406,21 @@ module.exports = {
           throw 'You must specify --username=usernamehere';
         }
         const req = self.apos.task.getReq();
-        prompt.start();
-        const result = await Promise.promisify(prompt.get, { context: prompt })({
-          properties: {
-            password: {
-              required: true,
-              hidden: true
+
+        const { password } = await prompts(
+          {
+            type: 'password',
+            name: 'password',
+            message: `Enter a password for ${username}:`,
+            validate (input) {
+              return input ? true : 'Password is required';
             }
           }
-        });
+        );
+
         return self.apos.user.insert(req, {
           username: username,
-          password: result.password,
+          password: password,
           title: username,
           firstName: username
         });
@@ -439,16 +441,16 @@ module.exports = {
           throw new Error('No such user.');
         }
 
-        prompt.start();
-
-        const { password } = await Promise.promisify(prompt.get, { context: prompt })({
-          properties: {
-            password: {
-              required: true,
-              hidden: true
+        const { password } = await prompts(
+          {
+            type: 'password',
+            name: 'password',
+            message: `Change password for ${username} to:`,
+            validate (input) {
+              return input ? true : 'Password is required';
             }
           }
-        });
+        );
 
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;

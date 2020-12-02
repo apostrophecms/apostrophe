@@ -1,16 +1,6 @@
 
 <template>
   <div ref="root">
-    <div v-if="field.min || field.max" class="apos-slat-limit">
-      <span>{{ next.length }} selected</span>
-      <span v-if="field.min">
-        min: {{ field.min }}
-      </span>
-      <span v-if="field.max">
-        max: {{ field.max }}
-      </span>
-    </div>
-
     <draggable
       class="apos-slat-list"
       tag="ol"

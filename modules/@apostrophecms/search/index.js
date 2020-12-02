@@ -173,7 +173,7 @@ module.exports = {
 
         let defaultingToAll = false;
 
-        const cursor = self.apos.doc.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        const query = self.apos.doc.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
         if (self.filters) {
           const filterTypes = _.filter(_.map(self.filters, 'name'), function (name) {
             return name !== '__else';
@@ -192,7 +192,7 @@ module.exports = {
         } else {
           allowedTypes = self.types;
         }
-        cursor.and({ type: { $in: allowedTypes } });
+        query.and({ type: { $in: allowedTypes } });
 
         if (self.filters) {
           req.data.filters = _.cloneDeep(self.filters);
@@ -204,13 +204,13 @@ module.exports = {
           });
         }
 
-        const count = await cursor.toCount();
-        if (cursor.get('page') > cursor.get('totalPages')) {
+        const count = await query.toCount();
+        if (query.get('page') > query.get('totalPages')) {
           req.notFound = true;
           return;
         }
         req.data.totalDocs = count;
-        req.data.totalPages = cursor.get('totalPages');
+        req.data.totalPages = query.get('totalPages');
 
         const docs = await findDocs();
 
@@ -219,7 +219,7 @@ module.exports = {
         } else {
           self.setTemplate(req, 'index');
         }
-        req.data.currentPage = cursor.get('page');
+        req.data.currentPage = query.get('page');
         req.data.docs = docs;
 
         return self.emit('beforeIndex', req);
@@ -230,7 +230,7 @@ module.exports = {
           // and fetch them via their own type managers so that we get the
           // expected relationships and urls and suchlike.
 
-          const idsAndTypes = await cursor.project({
+          const idsAndTypes = await query.project({
             _id: 1,
             type: 1
           }).toArray();

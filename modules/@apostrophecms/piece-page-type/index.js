@@ -74,15 +74,12 @@ module.exports = {
     return {
 
       // Extend this method for your piece type to call additional
-      // chainable filters by default. You should not add entirely new
-      // filters here. For that, define the appropriate subclass of
-      // `@apostrophecms/piece-type-cursor` in your subclass of
-      // `@apostrophecms/piece-type`.
+      // query builders by default.
 
       indexQuery(req) {
-        const cursor = self.pieces.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
-        self.filterByIndexPage(cursor, req.data.page);
-        return cursor;
+        const query = self.pieces.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        self.filterByIndexPage(query, req.data.page);
+        return query;
       },
 
       // At the URL of the page, display an index view (list view) of
@@ -104,7 +101,7 @@ module.exports = {
           });
         }
 
-        const cursor = self.indexQuery(req);
+        const query = self.indexQuery(req);
 
         await getFilters();
         await totalPieces();
@@ -112,27 +109,27 @@ module.exports = {
         await self.beforeIndex(req);
 
         async function getFilters() {
-          return self.populatePiecesFilters(cursor);
+          return self.populatePiecesFilters(query);
         }
 
         async function totalPieces() {
-          const count = await cursor.toCount();
-          if (cursor.get('page') > cursor.get('totalPages')) {
+          const count = await query.toCount();
+          if (query.get('page') > query.get('totalPages')) {
             req.notFound = true;
             return;
           }
           req.data.totalPieces = count;
-          req.data.totalPages = cursor.get('totalPages');
+          req.data.totalPages = query.get('totalPages');
         }
 
         async function findPieces() {
-          const docs = await cursor.toArray();
+          const docs = await query.toArray();
           if (self.apos.util.isAjaxRequest(req)) {
             self.setTemplate(req, 'indexAjax');
           } else {
             self.setTemplate(req, 'index');
           }
-          req.data.currentPage = cursor.get('page');
+          req.data.currentPage = query.get('page');
           req.data.pieces = docs;
         }
       },
@@ -203,8 +200,8 @@ module.exports = {
         await self.beforeShow(req);
 
         async function findAsReader() {
-          const cursor = self.pieces.find(req, { slug: req.params.slug });
-          doc = await cursor.toObject();
+          const query = self.pieces.find(req, { slug: req.params.slug });
+          doc = await query.toObject();
         }
 
         async function findAsEditor() {
@@ -213,8 +210,8 @@ module.exports = {
           }
           // Use findForEditing to allow subclasses to extend the set of filters that
           // don't apply by default in an editing context. -Tom
-          const cursor = self.pieces.findForEditing(req, { slug: req.params.slug });
-          doc = await cursor.toObject();
+          const query = self.pieces.findForEditing(req, { slug: req.params.slug });
+          doc = await query.toObject();
         }
 
         async function findPrevious() {
@@ -224,8 +221,8 @@ module.exports = {
           if (!doc) {
             return;
           }
-          const cursor = self.indexQuery(req);
-          previous = await cursor.previous(doc).applyBuilders(typeof self.options.previous === 'object' ? self.options.previous : {}).toObject();
+          const query = self.indexQuery(req);
+          previous = await query.previous(doc).applyBuilders(typeof self.options.previous === 'object' ? self.options.previous : {}).toObject();
         }
 
         async function findNext() {
@@ -235,8 +232,8 @@ module.exports = {
           if (!doc) {
             return;
           }
-          const cursor = self.indexQuery(req);
-          next = await cursor.next(doc).applyBuidlers(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
+          const query = self.indexQuery(req);
+          next = await query.next(doc).applyBuidlers(typeof self.options.next === 'object' ? self.options.next : {}).toObject();
         }
       },
 
@@ -296,8 +293,7 @@ module.exports = {
 
       // Adds the `._url` property to all of the provided pieces,
       // which are assumed to be of the appropriate type for this module.
-      // Aliased as the `addUrls` method of [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html), which
-      // is invoked by the `addUrls` filter of [@apostrophecms/cursor](../@apostrophecms/doc/server-@apostrophecms/cursor.html).
+      // Aliased as the `addUrls` method of [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html).
 
       async addUrlsToPieces(req, results) {
         const pieceName = self.pieces.name;
@@ -317,13 +313,13 @@ module.exports = {
         });
       },
 
-      // Returns a cursor suitable for finding pieces-page-type for the
+      // Returns a query suitable for finding pieces-page-type for the
       // purposes of assigning URLs to pieces based on the best match.
       //
       // Should be as fast as possible while still returning enough
       // information to do that.
       //
-      // The default implementation returns a cursor with areas
+      // The default implementation returns a query with areas
       // and relationships shut off for speed but all properties included.
 
       findForAddUrlsToPieces(req) {
@@ -341,8 +337,8 @@ module.exports = {
       // with label and value properties, for each filter configured in the
       // `piecesFilters` array option. Each filter in that array must have a
       // `name` property. Distinct values are fetched for the corresponding
-      // cursor filter (note that most schema fields automatically get a
-      // corresponding cursor filter method). Each filter's choices are
+      // query builder (note that most schema fields automatically get a
+      // corresponding query builder method). Each filter's choices are
       // reduced by the other filters; for instance, "tags" might only reveal
       // choices not ruled out by the current "topic" filter setting.
       //
@@ -350,16 +346,16 @@ module.exports = {
       // Apostrophe will supply a `count` property for each distinct value,
       // whenever possible. This has a performance impact.
 
-      async populatePiecesFilters(cursor) {
-        const req = cursor.req;
+      async populatePiecesFilters(query) {
+        const req = query.req;
         req.data.piecesFilters = req.data.piecesFilters || {};
         for (const filter of self.piecesFilters) {
           // The choices for each filter should reflect the effect of all filters
           // except this one (filtering by topic pares down the list of categories and
           // vice versa)
-          const _cursor = cursor.clone();
-          _cursor[filter.name](undefined);
-          req.data.piecesFilters[filter.name] = await _cursor.toChoices(filter.name, _.pick(filter, 'counts'));
+          const _query = query.clone();
+          _query[filter.name](undefined);
+          req.data.piecesFilters[filter.name] = await _query.toChoices(filter.name, _.pick(filter, 'counts'));
         }
       }
     };

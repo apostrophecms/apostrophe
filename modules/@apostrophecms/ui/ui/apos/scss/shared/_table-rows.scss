@@ -23,20 +23,6 @@ span.apos-tree__cell:first-of-type {
   align-items: flex-start;
   margin-right: 10px;
   padding-top: 0.2em;
-
-  /deep/ .material-design-icon__svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  .apos-tree__cell--icon & /deep/ .material-design-icon__svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .apos-tree__cell--icon & {
-    padding-top: 0;
-  }
 }
 
 .apos-tree__cell[disabled] {

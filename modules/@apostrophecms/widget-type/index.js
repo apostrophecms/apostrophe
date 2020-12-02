@@ -189,23 +189,23 @@ module.exports = {
 
         // If this is a virtual widget (a widget being edited or previewed in the
         // editor), any nested areas, etc. inside it haven't already been loaded as
-        // part of loading a doc. Do that now by creating a cursor and then feeding
+        // part of loading a doc. Do that now by creating a query and then feeding
         // it our widgets as if they were docs.
 
         if (!(widgets.length && widgets[0]._virtual)) {
           return;
         }
 
-        // Get a doc cursor so that we can interpose the widgets as our docs and have the
+        // Get a doc query so that we can interpose the widgets as our docs and have the
         // normal things happen after the docs have been "loaded," such as calling loaders
-        // of widgets in areas. -Tom and Matt
+        // of widgets in areas.
 
-        // Shut off relationships because we already did them and the cursor would try to do them
-        // again based on `type`, which isn't really a doc type. -Tom
-        const cursor = self.apos.doc.find(req).relationships(false);
+        // Shut off relationships because we already did them and the query would try to do them
+        // again based on `type`, which isn't really a doc type.
+        const query = self.apos.doc.find(req).relationships(false);
 
         // Call .after with our own results
-        return cursor.after(widgets);
+        return query.after(widgets);
       },
 
       // Sanitize the widget. Invoked when the user has edited a widget on the

@@ -42,8 +42,7 @@
                 iconOnly: true,
                 icon: 'plus-icon',
                 type: 'primary',
-                modifiers: ['round', 'no-motion'],
-                iconSize: 10
+                modifiers: ['round', 'no-motion']
               }"
               @item-clicked="emitEvent"
             />
@@ -54,7 +53,26 @@
         />
       </div>
       <div class="apos-admin-bar__row">
-        <div class="apos-admin-bar__context-spacer" />
+        <div class="apos-admin-bar__context-controls">
+          <AposButton
+            v-if="editMode"
+            :disabled="patchesSinceLoaded.length === 0"
+            type="outline" :modifiers="['no-motion']"
+            label="Undo" :tooltip="buttonLabels.undo"
+            class="apos-admin-bar__context-button"
+            icon="undo-icon" :icon-only="true"
+            @click="undo"
+          />
+          <AposButton
+            v-if="editMode"
+            :disabled="undone.length === 0"
+            type="outline" :modifiers="['no-motion']"
+            label="Redo" :tooltip="buttonLabels.redo"
+            class="apos-admin-bar__context-button"
+            icon="redo-icon" :icon-only="true"
+            @click="redo"
+          />
+        </div>
         <div class="apos-admin-bar__context-title">
           <span
             v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
@@ -69,7 +87,6 @@
             class="apos-admin-bar__context-button"
             label="Preview Mode" :tooltip="{
               content: 'Preview Mode',
-              offset: 0,
               placement: 'bottom'
             }"
             type="outline" :modifiers="['no-motion']"
@@ -88,7 +105,6 @@
             class="apos-admin-bar__context-button"
             label="Page Settings" :tooltip="{
               content: 'Page Settings',
-              offset: 0,
               placement: 'bottom'
             }"
             type="outline" :modifiers="['no-motion']"
@@ -100,27 +116,9 @@
               }
             })"
           />
-          <AposButton
-            v-if="editMode"
-            type="primary" label="Publish Changes"
-            :disabled="!readyToSave"
-            class="apos-admin-bar__btn apos-admin-bar__context-button"
-            @click="save"
-          />
-          <AposButton
-            v-if="patches.length"
-            type="default" label="Undo"
-            icon="undo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="undo"
-          />
-          <AposButton
-            v-if="undone.length"
-            type="default" label="Redo"
-            icon="redo-icon" class="apos-admin-bar__btn"
-            :icon-only="true"
-            @click="redo"
-          />
+          <span class="apos-admin-bar__status">
+            {{ status }}
+          </span>
         </div>
       </div>
     </nav>
@@ -145,9 +143,20 @@ export default {
     return {
       menuItems: [],
       createMenu: [],
-      patches: [],
+      patchesSinceLoaded: [],
       undone: [],
-      editMode: window.sessionStorage.getItem('aposEditMode') === 'true'
+      patchesSinceSave: [],
+      editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
+      original: null,
+      saving: false,
+      editing: false,
+      editingTimeout: null,
+      retrying: false,
+      saved: false,
+      buttonLabels: {
+        undo: 'Undo change',
+        redo: 'Redo change'
+      }
     };
   },
   computed: {
@@ -158,16 +167,31 @@ export default {
       return false;
     },
     readyToSave() {
-      return this.patches.length;
+      return this.patchesSinceSave.length;
     },
     moduleOptions() {
       return window.apos.adminBar;
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
+    },
+    status() {
+      if (this.retrying) {
+        return 'Retrying...';
+      } else if (this.saving || this.editing) {
+        return 'Saving...';
+      } else if (this.saved) {
+        return 'Saved';
+      } else {
+        return '';
+      }
     }
   },
   mounted() {
+    // A unique identifier for this current page's lifetime
+    // in this browser right now. Not the same thing as a page id
+    // or session id. Used for advisory locks, to distinguish
+    // different tabs owned by the same user
     this.$refs.spacer.style.height = `${this.$refs.adminBar.offsetHeight}px`;
     const itemsSet = klona(this.items);
 
@@ -191,9 +215,29 @@ export default {
       }
     });
 
+    apos.bus.$on('context-editing', async () => {
+      // Accept a hint that someone is actively typing in a
+      // rich text editor and a context-edited event is likely
+      // coming; allows continuity of the "Saving..." indicator
+      // so it doesn't flicker once a second as you type
+      this.editing = true;
+      if (this.editingTimeout) {
+        clearTimeout(this.editingTimeout);
+      }
+      this.editingTimeout = setTimeout(() => {
+        this.editing = false;
+        // Wait slightly longer than the rich text editor does
+        // before sending us a context-edited event
+      }, 1100);
+    });
+
     apos.bus.$on('context-edited', patch => {
-      this.patches.push(patch);
+      this.patchesSinceLoaded.push(patch);
+      this.patchesSinceSave.push(patch);
       this.undone = [];
+      if (!this.saving) {
+        this.save();
+      }
     });
 
     window.addEventListener('beforeunload', this.beforeUnload);
@@ -215,7 +259,7 @@ export default {
   },
   methods: {
     beforeUnload(e) {
-      if (this.patches.length) {
+      if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
@@ -226,13 +270,33 @@ export default {
       apos.bus.$emit('admin-menu-click', name);
     },
     async save() {
-      await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
-        body: {
-          _patches: this.patches
-        },
-        busy: true
-      });
-      this.patches = [];
+      // More patches could get pushed during the async call to
+      // send the previous batch, so keep going until we clear
+      // the queue
+      while (this.patchesSinceSave.length) {
+        const patchesSinceSave = this.patchesSinceSave;
+        this.retrying = false;
+        this.saving = true;
+        this.patchesSinceSave = [];
+        try {
+          this.saved = false;
+          await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+            body: {
+              _patches: patchesSinceSave
+            }
+          });
+          this.retrying = false;
+        } catch (e) {
+          this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
+          // Wait 5 seconds between attempts if errors occur
+          await new Promise((resolve, reject) => {
+            setTimeout(() => resolve(), 5000);
+          });
+          this.retrying = true;
+        }
+      }
+      this.saving = false;
+      this.saved = true;
     },
     switchToEditMode() {
       window.sessionStorage.setItem('aposEditMode', 'true');
@@ -244,8 +308,7 @@ export default {
       this.editMode = false;
       this.refresh();
     },
-    async refresh({ asPatched } = {}) {
-      let content;
+    async refresh() {
       let url = window.location.href;
       const qs = {
         ...apos.http.parseQuery(window.location.search),
@@ -256,41 +319,85 @@ export default {
       };
       url = url.replace(/\?.*$/, '');
       url = apos.http.addQueryToUrl(url, qs);
-      if (asPatched) {
-        content = await apos.http.post(`${window.apos.doc.action}/get-as-patched`, {
-          body: {
-            url,
-            _id: this.moduleOptions.contextId,
-            type: this.moduleOptions.context.type,
-            patches: asPatched
-          },
-          busy: true
-        });
-      } else {
-        content = await apos.http.get(window.location.href, {
-          qs,
-          headers: {
-            'Cache-Control': 'no-cache'
-          },
-          busy: true
-        });
-      }
+      const content = await apos.http.get(url, {
+        qs,
+        headers: {
+          'Cache-Control': 'no-cache'
+        },
+        busy: true
+      });
       const refreshable = document.querySelector('[data-apos-refreshable]');
       if (refreshable) {
         refreshable.innerHTML = content;
+        if (!this.original) {
+          // the first time we enter edit mode on the page, we need to
+          // establish a baseline for undo/redo. Use our
+          // "@ notation" PATCH feature. Sort the areas by DOM depth
+          // to ensure parents patch before children
+          this.original = {};
+          const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.moduleOptions.contextId);
+          els.sort((a, b) => {
+            const da = depth(a);
+            const db = depth(b);
+            if (da < db) {
+              return -1;
+            } else if (db > da) {
+              return 1;
+            } else {
+              return 0;
+            }
+          });
+          for (const el of els) {
+            const data = JSON.parse(el.getAttribute('data'));
+            this.original[`@${data._id}`] = data;
+          }
+        }
       }
       apos.bus.$emit('refreshed');
+      // Always do this. Yes some widgets will be inside area editors,
+      // but others will not, or we might not be in edit mode. Apostrophe
+      // is already smart enough to not run them twice, it's OK
+      apos.util.runPlayers();
     },
     async undo() {
-      this.undone.push(this.patches.pop());
-      this.refresh({ asPatched: this.patches });
+      this.undone.push(this.patchesSinceLoaded.pop());
+      await this.refreshAfterHistoryChange('The operation could not be undone.');
     },
     async redo() {
-      this.patches.push(this.undone.pop());
-      this.refresh({ asPatched: this.patches });
+      this.patchesSinceLoaded.push(this.undone.pop());
+      await this.refreshAfterHistoryChange('The operation could not be redone.');
+    },
+    async refreshAfterHistoryChange(errorMessage) {
+      this.saving = true;
+      try {
+        await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+          body: {
+            _patches: [
+              this.original,
+              ...this.patchesSinceLoaded
+            ]
+          },
+          busy: true
+        });
+        await this.refresh();
+      } catch (e) {
+        console.error(e);
+        apos.notify(errorMessage, { type: 'error' });
+      } finally {
+        this.saving = false;
+      }
     }
   }
 };
+
+function depth(el) {
+  let depth = 0;
+  while (el) {
+    el = el.parentNode;
+    depth++;
+  }
+  return depth;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -322,15 +429,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   border-bottom: $admin-bar-border;
 }
 
-.apos-admin-bar__context-spacer {
-  flex: 1;
-  // Using text-align because otherwise we don't wind
-  // up with quite the right centering for the middle one
-  // due to subtle issues with the way space is
-  // distributed
-  text-align: left;
-}
-
 .apos-admin-bar__context-title {
   @include type-base;
   display: inline-flex;
@@ -348,8 +446,12 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__context-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 1;
+
+  &:last-child {
+    justify-content: flex-end;
+  }
 }
 
 .apos-admin-bar__context-button {
@@ -365,6 +467,7 @@ $admin-bar-border: 1px solid var(--a-base-9);
   padding: 0;
 }
 
+.apos-admin-bar__context-controls:first-child .apos-admin-bar__context-button:first-child,
 .apos-admin-bar__logo {
   margin-left: $admin-bar-h-pad;
 }
@@ -456,20 +559,15 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__create {
   margin-left: 10px;
-  // Adjust button padding and svg size to have a large plus icon while keeping
-  // the button size the same.
+
   /deep/ .apos-context-menu__btn {
-    padding: 2px;
-    border-width: 0;
+    width: 23px;
+    height: 23px;
+    padding: 0;
   }
 
   /deep/ .apos-context-menu__popup {
     top: calc(100% + 13px);
-  }
-
-  /deep/ .apos-button__icon svg {
-    width: 19px;
-    height: 19px;
   }
 }
 
@@ -479,5 +577,10 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 /deep/ .apos-context-menu__pane {
   min-width: 150px;
+}
+
+.apos-admin-bar__status {
+  width: 100px;
+  margin-left: 7.5px;
 }
 </style>

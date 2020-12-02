@@ -629,6 +629,11 @@ module.exports = {
           self.apos.schema.indexFields(field.schema, item, texts);
         });
       },
+      validate: function (field, options, warn, fail) {
+        for (const subField of field.schema || field.fields.add) {
+          self.validateField(subField, options);
+        }
+      },
       register: function (field) {
         self.register(field.schema);
       },
@@ -1781,8 +1786,8 @@ module.exports = {
                 }
               }
             } else if (field.type === 'array') {
-              if (doc[field.name] && doc[field.name].items) {
-                doc[field.name].items.map(item => forSchema(field.schema, item));
+              if (doc[field.name]) {
+                doc[field.name].forEach(item => forSchema(field.schema, item));
               }
             } else if (field.type === 'object') {
               if (doc[field.name]) {
@@ -2033,31 +2038,35 @@ module.exports = {
         }
         self.validatedSchemas[options.type + ':' + options.subtype] = true;
 
-        _.each(schema, function (field) {
-          const fieldType = self.fieldTypes[field.type];
-          if (!fieldType) {
-            fail('Unknown schema field type.');
-          }
-          if (!field.name) {
-            fail('name property is missing.');
-          }
-          if (!field.label && !field.contextual) {
-            field.label = _.startCase(field.name.replace(/^_/, ''));
-          }
-          if (fieldType.validate) {
-            fieldType.validate(field, options, warn, fail);
-          }
-          function fail(s) {
-            throw new Error(format(s));
-          }
-          function warn(s) {
-            self.apos.util.error(format(s));
-          }
-          function format(s) {
-            return '\n' + options.type + ' ' + options.subtype + ', field name ' + field.name + ':\n\n' + s + '\n';
-          }
-        });
+        schema.forEach(field => self.validateField(field, options));
       },
+
+      // Validates a single schema field. See `validate`.
+      validateField(field, options) {
+        const fieldType = self.fieldTypes[field.type];
+        if (!fieldType) {
+          fail('Unknown schema field type.');
+        }
+        if (!field.name) {
+          fail('name property is missing.');
+        }
+        if (!field.label && !field.contextual) {
+          field.label = _.startCase(field.name.replace(/^_/, ''));
+        }
+        if (fieldType.validate) {
+          fieldType.validate(field, options, warn, fail);
+        }
+        function fail(s) {
+          throw new Error(format(s));
+        }
+        function warn(s) {
+          self.apos.util.error(format(s));
+        }
+        function format(s) {
+          return '\n' + options.type + ' ' + options.subtype + ', field name ' + field.name + ':\n\n' + s + '\n';
+        }
+      },
+
       // Recursively register the given schema, giving each field an _id and making provision to be able to
       // fetch its definition via apos.schema.getFieldById().
       register(schema) {
@@ -2155,9 +2164,19 @@ module.exports = {
         }
         _.each(patch, function(val, key) {
           if (key.charAt(0) !== '$') {
-            key = self.apos.util.resolveAtReference(existingPage, key);
+            let atReference = false;
+            if (key.charAt(0) === '@') {
+              atReference = key;
+              key = self.apos.util.resolveAtReference(existingPage, key);
+              if (key && patch[key.split('.')[0]]) {
+                // This base has already been cloned into the patch, or it
+                // otherwise touches this base, so we need to re-resolve
+                // the reference or indexes may be incorrect
+                key = self.apos.util.resolveAtReference(patch, atReference);
+              }
+            }
             // Simple replacement with a dot path
-            if (key.indexOf('.') !== -1) {
+            if (atReference || (key.indexOf('.') !== -1)) {
               cloneOriginalBase(key);
               self.apos.util.set(patch, key, val);
             }

@@ -566,20 +566,24 @@ module.exports = {
           }
         }
       },
-      // Returns a cursor that finds docs the current user can edit. Unlike
-      // find(), this cursor defaults to including docs in the trash. Subclasses
+      // Returns a query that finds docs the current user can edit. Unlike
+      // find(), this query defaults to including docs in the trash. Subclasses
       // of @apostrophecms/piece-type often extend this to remove more default filters
-      findForEditing(req, criteria, projection) {
-        const cursor = self.find(req, criteria).permission('edit').trash(null);
-        if (projection) {
-          cursor.project(projection);
+      findForEditing(req, criteria, builders) {
+        const query = self.find(req, criteria).permission('edit').trash(null);
+        if (builders) {
+          for (const [ key, value ] of Object.entries(builders)) {
+            query[key](value);
+          }
         }
-        return cursor;
+        return query;
       },
       // Returns one editable doc matching the criteria, null if none match.
-      // if annotate: true is present, annotate all image URLs for a REST response.
-      async findOneForEditing(req, criteria, options = { annotate: false }) {
-        const doc = await self.findForEditing(req, criteria).toObject();
+      // If `builders` is an object its properties are invoked as
+      // query builders, for instance `{ attachments: true }`.
+      async findOneForEditing(req, criteria, builders) {
+        const query = await self.findForEditing(req, criteria, builders);
+        const doc = query.toObject();
         if (options.annotate) {
           self.apos.attachment.all(doc, { annotate: true });
         }
@@ -864,10 +868,23 @@ module.exports = {
               query.and(self.apos.permission.criteria(query.req, permission || 'view'));
             }
           },
-          after: function(results) {
+          after(results) {
             // In all cases we mark the docs with ._edit if
             // the req is permitted to do that
             self.apos.permission.annotate(query.req, 'edit', results);
+          }
+        },
+
+        // `.attachments(true)` annotates all attachment fields in the
+        // returned documents with URLs as documented for the
+        // `apos.attachment.all` method. Used by our REST APIs.
+
+        attachments: {
+          def: false,
+          after(results) {
+            for (const doc of results) {
+              self.apos.attachment.all(doc, { annotate: true });
+            }
           }
         },
 
@@ -1273,9 +1290,9 @@ module.exports = {
               // The choices for each filter should reflect the effect of all filters
               // except this one (filtering by topic pares down the list of categories and
               // vice versa)
-              const _cursor = query.clone();
-              _cursor[filter](undefined);
-              choices[filter] = await _cursor.toChoices(filter, { counts: query.get('counts') });
+              const _query = query.clone();
+              _query[filter](undefined);
+              choices[filter] = await _query.toChoices(filter, { counts: query.get('counts') });
             }
             if (query.get('counts')) {
               query.set('countsResults', choices);
@@ -1490,15 +1507,6 @@ module.exports = {
         async toArray() {
           const mongo = await query.toMongo();
           const docs = await query.mongoToArray(mongo);
-          if (query.req.query['apos-as-patched']) {
-            const asPatched = await self.apos.cache.get('as-patched', query.req.query['apos-as-patched']);
-            if (asPatched) {
-              const doc = docs.find(doc => doc._id === asPatched._id);
-              if (doc) {
-                Object.assign(doc, asPatched);
-              }
-            }
-          }
           await query.after(docs);
           return docs;
         },

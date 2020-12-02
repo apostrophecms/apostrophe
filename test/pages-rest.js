@@ -5,6 +5,37 @@ let apos;
 let homeId;
 let jar;
 
+const areaConfig = {
+  '@apostrophecms/image': {},
+  '@apostrophecms/video': {},
+  '@apostrophecms/rich-text': {
+    toolbar: [
+      'styles',
+      'bold',
+      'italic',
+      'strike',
+      'link',
+      'bullet_list',
+      'ordered_list',
+      'blockquote'
+    ],
+    styles: [
+      {
+        tag: 'p',
+        label: 'Paragraph (P)'
+      },
+      {
+        tag: 'h3',
+        label: 'Heading 3 (H3)'
+      },
+      {
+        tag: 'h4',
+        label: 'Heading 4 (H4)'
+      }
+    ]
+  }
+};
+
 describe('Pages REST', function() {
 
   this.timeout(t.timeout);
@@ -41,6 +72,30 @@ describe('Pages REST', function() {
             ]
           }
         },
+        'two-column-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Two Column'
+          },
+          fields: {
+            add: {
+              one: {
+                type: 'area',
+                contextual: true,
+                options: {
+                  widgets: areaConfig
+                }
+              },
+              two: {
+                type: 'area',
+                contextual: true,
+                options: {
+                  widgets: areaConfig
+                }
+              }
+            }
+          }
+        },
         'test-page': {
           extend: '@apostrophecms/page-type',
           fields: {
@@ -54,7 +109,10 @@ describe('Pages REST', function() {
                   widgets: {
                     '@apostrophecms/rich-text': {
                       toolbar: [ 'bold', 'italic' ]
-                    }
+                    },
+                    '@apostrophecms/image': {},
+                    '@apostrophecms/video': {},
+                    'two-column': {}
                   }
                 }
               }
@@ -67,7 +125,7 @@ describe('Pages REST', function() {
     assert(apos.page.__meta.name === '@apostrophecms/page');
   });
 
-  it('should be able to insert test user', async function() {
+  it('should be able to insert test users', async function() {
     assert(apos.user.newInstance);
     const user = apos.user.newInstance();
     assert(user);
@@ -79,7 +137,20 @@ describe('Pages REST', function() {
     user.password = 'admin';
     user.email = 'ad@min.com';
 
-    return apos.user.insert(apos.task.getReq(), user);
+    await apos.user.insert(apos.task.getReq(), user);
+
+    const user2 = apos.user.newInstance();
+    assert(user2);
+
+    user2.firstName = 'ad';
+    user2.lastName = 'min2';
+    user2.title = 'admin2';
+    user2.username = 'admin2';
+    user2.password = 'admin2';
+    user2.email = 'ad@min2.com';
+
+    return apos.user.insert(apos.task.getReq(), user2);
+
   });
 
   it('REST: should be able to log in as admin', async () => {
@@ -97,7 +168,8 @@ describe('Pages REST', function() {
     await apos.http.post('/api/v1/@apostrophecms/login/login', {
       body: {
         username: 'admin',
-        password: 'admin'
+        password: 'admin',
+        session: true
       },
       jar
     });
@@ -728,6 +800,715 @@ describe('Pages REST', function() {
     assert(page.body.items[4]);
     assert(page.body.items[4].content.match(/I @ syntax/));
     assert(!page.body.items[5]);
+  });
+
+  it('can patch an @ reference in a patch containing other out-of-order @ references', async () => {
+    // recreate the exact scenario since we cannot
+    // reproduce it from scratch
+    await apos.doc.db.updateOne({
+      _id: 'sibling'
+    }, {
+      $set: {
+        'body.items': [
+          {
+            _id: 'cki6gxnch00093g631cw03444',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<p>one</p>'
+          },
+          {
+            _id: 'ckgs41w9r000e3h5xmjl9g1uv',
+            one: {
+              _id: 'ckhxhuyoz00084j4l7yw7brq7',
+              items: [
+                {
+                  _id: 'ckhxmr8ds001h2a67copguxnk',
+                  metaType: 'widget',
+                  type: '@apostrophecms/image',
+                  imageIds: [
+                    'ckhuxqw8o006h094lnkip3gen'
+                  ]
+                }
+              ],
+              metaType: 'area'
+            },
+            two: {
+              _id: 'ckhxhuypw00094j4l0mdg0b06',
+              items: [
+                {
+                  _id: 'cki4zm66r000t2a67ojd2iyuc',
+                  video: {
+                    url: 'https://vimeo.com/56282283',
+                    title: 'Public Test Video',
+                    thumbnail: 'https://i.vimeocdn.com/video/389683305_1000.jpg'
+                  },
+                  metaType: 'widget',
+                  type: '@apostrophecms/video'
+                }
+              ],
+              metaType: 'area'
+            },
+            metaType: 'widget',
+            type: 'two-column'
+          },
+          {
+            _id: 'ckgs11fi200013h5x59udhats',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<p>Today\'s featured product:</p><p>Today\'s featured product:</p>'
+          },
+          {
+            _id: 'ckhxsb9yb002b3f62q5h31dhv',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki4zlkqh000q2a67qqbtlv2l',
+            video: {
+              url: 'https://www.youtube.com/watch?v=-e6xOBCAVvA',
+              title: 'The 10-Year Hunt for the Lost McDonald\'s DS Game',
+              thumbnail: 'https://i.ytimg.com/vi/-e6xOBCAVvA/hqdefault.jpg'
+            },
+            metaType: 'widget',
+            type: '@apostrophecms/video'
+          },
+          {
+            _id: 'ckhxsbcgl002c3f62hyk8a5p8',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'ckhxsbeoo002d3f62692wxm28',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki6g7v3b0003xrecv5oldhh9',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki6g7v3b0004xrec9hawsy7o',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki6g7v3b0005xrecwc9teivh',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki6g7v3b0006xrec6ubczv1z',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'cki6g7v3b0007xrecjxcgk5ub',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'ckgwevhkd000v3e5x99dy9jv2',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<blockquote><p>This is cool.</p></blockquote>'
+          },
+          {
+            _id: 'ckgwevqy600143e5xv4ihv38j',
+            one: {
+              _id: 'ckhxhuyse000g4j4lqcjklpxd',
+              items: [ ],
+              metaType: 'area'
+            },
+            two: {
+              _id: 'ckhxhuysm000h4j4ljjzd45kx',
+              items: [ ],
+              metaType: 'area'
+            },
+            metaType: 'widget',
+            type: 'two-column'
+          }
+        ]
+      }
+    });
+    const bodyId = (await apos.doc.db.findOne({ _id: 'sibling' })).body._id;
+    // apply the patch that fails without the fix
+    await apos.http.patch('/api/v1/@apostrophecms/page/sibling', {
+      jar,
+      body: {
+        _patches: [
+          {
+            [`@${bodyId}`]: {
+              _id: 'ckgrzsklg0007ulec0ffxg5bj',
+              items: [
+                {
+                  _id: 'ckgs41w9r000e3h5xmjl9g1uv',
+                  one: {
+                    _id: 'ckhxhuyoz00084j4l7yw7brq7',
+                    items: [
+                      {
+                        _id: 'ckhxmr8ds001h2a67copguxnk',
+                        metaType: 'widget',
+                        type: '@apostrophecms/image',
+                        imageIds: [
+                          'ckhuxqw8o006h094lnkip3gen'
+                        ],
+                        _edit: true,
+                        _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+                        _image: [
+                          {
+                            _id: 'ckhuxqw8o006h094lnkip3gen',
+                            visibility: 'public',
+                            trash: false,
+                            type: '@apostrophecms/image',
+                            attachment: {
+                              _id: 'ckhxvoqra00qsuj4lq0hnkrzg',
+                              crop: null,
+                              group: 'images',
+                              createdAt: '2020-11-25T20:46:28.611Z',
+                              name: 'squirrel',
+                              title: 'squirrel',
+                              extension: 'jpg',
+                              type: 'attachment',
+                              docIds: [
+                                'ckhuxqw8o006h094lnkip3gen'
+                              ],
+                              trashDocIds: [],
+                              length: {
+                                dev: 51713,
+                                mode: 33204,
+                                nlink: 1,
+                                uid: 1001,
+                                gid: 1001,
+                                rdev: 0,
+                                blksize: 4096,
+                                ino: 4196261,
+                                size: 107948,
+                                blocks: 216,
+                                atimeMs: 1606337187953.1726,
+                                mtimeMs: 1606337187955.1726,
+                                ctimeMs: 1606337187955.1726,
+                                birthtimeMs: 1606337187955.1726,
+                                atime: '2020-11-25T20:46:27.953Z',
+                                mtime: '2020-11-25T20:46:27.955Z',
+                                ctime: '2020-11-25T20:46:27.955Z',
+                                birthtime: '2020-11-25T20:46:27.955Z'
+                              },
+                              md5: '464686711e5df3a60ba5f5384196514a',
+                              width: 1072,
+                              height: 715,
+                              landscape: true,
+                              ownerId: 'ckgrzqiyy0006zuec6xrfnq24',
+                              used: true,
+                              utilized: true,
+                              trash: false,
+                              _urls: {
+                                max: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.max.jpg',
+                                full: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.full.jpg',
+                                'two-thirds': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.two-thirds.jpg',
+                                'one-half': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-half.jpg',
+                                'one-third': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-third.jpg',
+                                'one-sixth': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-sixth.jpg',
+                                original: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.jpg'
+                              }
+                            },
+                            title: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641',
+                            alt: 'I promise that\'s a squirrel',
+                            credit: '',
+                            creditUrl: null,
+                            slug: 'image-f23976a0-f103-4c43-844a-d879a60eb609-1140x6410',
+                            metaType: 'doc',
+                            createdAt: '2020-11-23T19:20:49.080Z',
+                            titleSortified: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641',
+                            updatedAt: '2020-11-25T20:48:58.668Z',
+                            highSearchText: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641 image f23976a0 f103 4c43 844a d879a60eb609 1140x6410',
+                            highSearchWords: [
+                              'f23976a0',
+                              'f103',
+                              '4c43',
+                              '844a',
+                              'd879a60eb609',
+                              '1140x641',
+                              'image',
+                              '1140x6410'
+                            ],
+                            lowSearchText: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641 image f23976a0 f103 4c43 844a d879a60eb609 1140x6410',
+                            searchSummary: '',
+                            tagsIds: [],
+                            _edit: true
+                          }
+                        ]
+                      }
+                    ],
+                    metaType: 'area',
+                    _edit: true,
+                    _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                  },
+                  two: {
+                    _id: 'ckhxhuypw00094j4l0mdg0b06',
+                    items: [
+                      {
+                        _id: 'cki4zm66r000t2a67ojd2iyuc',
+                        video: {
+                          url: 'https://vimeo.com/56282283',
+                          title: 'Public Test Video',
+                          thumbnail: 'https://i.vimeocdn.com/video/389683305_1000.jpg'
+                        },
+                        metaType: 'widget',
+                        type: '@apostrophecms/video',
+                        _edit: true,
+                        _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                      }
+                    ],
+                    metaType: 'area',
+                    _edit: true,
+                    _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                  },
+                  metaType: 'widget',
+                  type: 'two-column',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckgs11fi200013h5x59udhats',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '<p>Today\'s featured product:</p><p>Today\'s featured product:</p>',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckhxsb9yb002b3f62q5h31dhv',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki4zlkqh000q2a67qqbtlv2l',
+                  video: {
+                    url: 'https://www.youtube.com/watch?v=-e6xOBCAVvA',
+                    title: 'The 10-Year Hunt for the Lost McDonald\'s DS Game',
+                    thumbnail: 'https://i.ytimg.com/vi/-e6xOBCAVvA/hqdefault.jpg'
+                  },
+                  metaType: 'widget',
+                  type: '@apostrophecms/video',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckhxsbcgl002c3f62hyk8a5p8',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckhxsbeoo002d3f62692wxm28',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki6g7v3b0003xrecv5oldhh9',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki6g7v3b0004xrec9hawsy7o',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki6g7v3b0005xrecwc9teivh',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki6g7v3b0006xrec6ubczv1z',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'cki6g7v3b0007xrecjxcgk5ub',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckgwevhkd000v3e5x99dy9jv2',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '<blockquote><p>This is cool.</p></blockquote>',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                },
+                {
+                  _id: 'ckgwevqy600143e5xv4ihv38j',
+                  one: {
+                    _id: 'ckhxhuyse000g4j4lqcjklpxd',
+                    items: [],
+                    metaType: 'area',
+                    _edit: true,
+                    _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                  },
+                  two: {
+                    _id: 'ckhxhuysm000h4j4ljjzd45kx',
+                    items: [],
+                    metaType: 'area',
+                    _edit: true,
+                    _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                  },
+                  metaType: 'widget',
+                  type: 'two-column',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                }
+              ],
+              metaType: 'area',
+              _edit: true,
+              _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+              _fieldId: 'ef3e5cb82b863cff62bcad353fde019a'
+            },
+            '@ckhxhuyoz00084j4l7yw7brq7': {
+              _id: 'ckhxhuyoz00084j4l7yw7brq7',
+              items: [
+                {
+                  _id: 'ckhxmr8ds001h2a67copguxnk',
+                  metaType: 'widget',
+                  type: '@apostrophecms/image',
+                  imageIds: [
+                    'ckhuxqw8o006h094lnkip3gen'
+                  ],
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+                  _image: [
+                    {
+                      _id: 'ckhuxqw8o006h094lnkip3gen',
+                      visibility: 'public',
+                      trash: false,
+                      type: '@apostrophecms/image',
+                      attachment: {
+                        _id: 'ckhxvoqra00qsuj4lq0hnkrzg',
+                        crop: null,
+                        group: 'images',
+                        createdAt: '2020-11-25T20:46:28.611Z',
+                        name: 'squirrel',
+                        title: 'squirrel',
+                        extension: 'jpg',
+                        type: 'attachment',
+                        docIds: [
+                          'ckhuxqw8o006h094lnkip3gen'
+                        ],
+                        trashDocIds: [],
+                        length: {
+                          dev: 51713,
+                          mode: 33204,
+                          nlink: 1,
+                          uid: 1001,
+                          gid: 1001,
+                          rdev: 0,
+                          blksize: 4096,
+                          ino: 4196261,
+                          size: 107948,
+                          blocks: 216,
+                          atimeMs: 1606337187953.1726,
+                          mtimeMs: 1606337187955.1726,
+                          ctimeMs: 1606337187955.1726,
+                          birthtimeMs: 1606337187955.1726,
+                          atime: '2020-11-25T20:46:27.953Z',
+                          mtime: '2020-11-25T20:46:27.955Z',
+                          ctime: '2020-11-25T20:46:27.955Z',
+                          birthtime: '2020-11-25T20:46:27.955Z'
+                        },
+                        md5: '464686711e5df3a60ba5f5384196514a',
+                        width: 1072,
+                        height: 715,
+                        landscape: true,
+                        ownerId: 'ckgrzqiyy0006zuec6xrfnq24',
+                        used: true,
+                        utilized: true,
+                        trash: false,
+                        _urls: {
+                          max: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.max.jpg',
+                          full: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.full.jpg',
+                          'two-thirds': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.two-thirds.jpg',
+                          'one-half': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-half.jpg',
+                          'one-third': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-third.jpg',
+                          'one-sixth': '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.one-sixth.jpg',
+                          original: '/uploads/attachments/ckhxvoqra00qsuj4lq0hnkrzg-squirrel.jpg'
+                        }
+                      },
+                      title: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641',
+                      alt: 'I promise that\'s a squirrel',
+                      credit: '',
+                      creditUrl: null,
+                      slug: 'image-f23976a0-f103-4c43-844a-d879a60eb609-1140x6410',
+                      metaType: 'doc',
+                      createdAt: '2020-11-23T19:20:49.080Z',
+                      titleSortified: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641',
+                      updatedAt: '2020-11-25T20:48:58.668Z',
+                      highSearchText: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641 image f23976a0 f103 4c43 844a d879a60eb609 1140x6410',
+                      highSearchWords: [
+                        'f23976a0',
+                        'f103',
+                        '4c43',
+                        '844a',
+                        'd879a60eb609',
+                        '1140x641',
+                        'image',
+                        '1140x6410'
+                      ],
+                      lowSearchText: 'f23976a0 f103 4c43 844a d879a60eb609 1140x641 image f23976a0 f103 4c43 844a d879a60eb609 1140x6410',
+                      searchSummary: '',
+                      tagsIds: [],
+                      _edit: true
+                    }
+                  ]
+                }
+              ],
+              metaType: 'area',
+              _edit: true,
+              _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+              _fieldId: 'e49e6abd03df799df82381186ee5fdda'
+            },
+            '@ckhxhuypw00094j4l0mdg0b06': {
+              _id: 'ckhxhuypw00094j4l0mdg0b06',
+              items: [
+                {
+                  _id: 'cki4zm66r000t2a67ojd2iyuc',
+                  video: {
+                    url: 'https://vimeo.com/56282283',
+                    title: 'Public Test Video',
+                    thumbnail: 'https://i.vimeocdn.com/video/389683305_1000.jpg'
+                  },
+                  metaType: 'widget',
+                  type: '@apostrophecms/video',
+                  _edit: true,
+                  _docId: 'ckgrzqh5a000bx7ecn4hpskk7'
+                }
+              ],
+              metaType: 'area',
+              _edit: true,
+              _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+              _fieldId: 'c550ad6db39c7248dd94f47a8754ab03'
+            },
+            '@ckhxhuyse000g4j4lqcjklpxd': {
+              _id: 'ckhxhuyse000g4j4lqcjklpxd',
+              items: [],
+              metaType: 'area',
+              _edit: true,
+              _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+              _fieldId: 'e49e6abd03df799df82381186ee5fdda'
+            },
+            '@ckhxhuysm000h4j4ljjzd45kx': {
+              _id: 'ckhxhuysm000h4j4ljjzd45kx',
+              items: [],
+              metaType: 'area',
+              _edit: true,
+              _docId: 'ckgrzqh5a000bx7ecn4hpskk7',
+              _fieldId: 'c550ad6db39c7248dd94f47a8754ab03'
+            }
+          },
+          {
+            $push: {
+              '@ckgrzsklg0007ulec0ffxg5bj.items': {
+                $each: [
+                  {
+                    _id: 'cki6gxnch00093g631cw03444',
+                    type: '@apostrophecms/rich-text',
+                    content: ''
+                  }
+                ],
+                $before: 'ckgs41w9r000e3h5xmjl9g1uv'
+              }
+            }
+          }
+        ]
+      }
+    });
+  });
+
+  let advisoryLockTestId;
+
+  it('can insert a page for advisory lock testing', async () => {
+    const body = {
+      slug: '/advisory-test',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Advisory Test'
+    };
+
+    const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body,
+      jar
+    });
+
+    assert(page);
+    assert(page.title === 'Advisory Test');
+    advisoryLockTestId = page._id;
+  });
+
+  it('can get an advisory lock on a page while patching a property', async () => {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'xyz',
+          lock: true
+        },
+        title: 'Advisory Test Patched'
+      }
+    });
+    assert(page.title === 'Advisory Test Patched');
+  });
+
+  it('cannot get an advisory lock with a different context id', async () => {
+    try {
+      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+        jar,
+        body: {
+          _advisoryLock: {
+            htmlPageId: 'pdq',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(e.body.data.me);
+    }
+  });
+
+  it('can get an advisory lock with a different context id if forcing', async () => {
+    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: true,
+          force: true
+        }
+      }
+    });
+  });
+
+  it('can renew the advisory lock with the second context id after forcing', async () => {
+    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: true
+        }
+      }
+    });
+  });
+
+  it('can unlock the advisory lock while patching a property', async () => {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'pdq',
+          lock: false
+        },
+        title: 'Advisory Test Patched Again'
+      }
+    });
+    assert(page.title === 'Advisory Test Patched Again');
+  });
+
+  it('can relock with the first context id after unlocking', async () => {
+    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      jar,
+      body: {
+        _advisoryLock: {
+          htmlPageId: 'xyz',
+          lock: true
+        }
+      }
+    });
+    assert(doc.title === 'Advisory Test Patched Again');
+  });
+
+  let jar2;
+
+  it('should be able to log in as second user', async () => {
+    jar2 = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged out/));
+
+    // Log in
+
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username: 'admin2',
+        password: 'admin2',
+        session: true
+      },
+      jar: jar2
+    });
+
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar: jar2
+    });
+
+    assert(page.match(/logged in/));
+  });
+
+  it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
+    try {
+      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+        jar: jar2,
+        body: {
+          _advisoryLock: {
+            htmlPageId: 'nbc',
+            lock: true
+          }
+        }
+      });
+      assert(false);
+    } catch (e) {
+      assert(e.status === 409);
+      assert(e.body.name === 'locked');
+      assert(!e.body.data.me);
+      assert(e.body.data.username === 'admin');
+    }
   });
 
 });
