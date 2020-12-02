@@ -311,6 +311,15 @@ module.exports = {
         const output = await _super(req, input, options);
         output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(options));
         return output;
+      },
+      // Add on the core default options to use, if needed.
+      getBrowserData(_super, req) {
+        const result = _super(req);
+
+        _.defaults(result, {
+          defaultOptions: options.defaultOptions
+        });
+        return result;
       }
     };
   }
