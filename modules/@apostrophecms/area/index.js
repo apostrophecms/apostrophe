@@ -40,13 +40,9 @@ module.exports = {
           if (!field) {
             throw self.apos.error('invalid');
           }
-          let options;
-          // TODO: Remove `singleton` check if no longer relevant.
-          if (field.type === 'singleton') {
-            options = field.options;
-          } else {
-            options = field.options && field.options.widgets && field.options.widgets[type];
-          }
+
+          let options = field.options && field.options.widgets && field.options.widgets[type];
+
           options = options || {};
           const manager = self.getWidgetManager(type);
           if (!manager) {
