@@ -132,7 +132,7 @@ export default {
       return moduleOptionsBody(this.type);
     },
     editorOptions() {
-      const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
+      const defaultOptions = this.moduleOptions.defaultOptions;
 
       const activeOptions = Object.assign({}, this.options);
 
