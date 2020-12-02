@@ -252,11 +252,13 @@ export default {
   }
 
   .apos-button--subtle {
+    padding: 10px;
     color: var(--a-text-primary);
     &:hover,
     &:focus,
     &:active {
       color: inherit;
+      text-decoration: none;
       background-color: var(--a-base-10);
     }
   }

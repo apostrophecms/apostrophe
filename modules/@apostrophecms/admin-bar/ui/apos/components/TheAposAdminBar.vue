@@ -51,84 +51,119 @@
         <TheAposAdminBarUser class="apos-admin-bar__user" />
       </div>
       <div class="apos-admin-bar__row apos-admin-bar__row--utils">
-        <transition name="flip">
-          <div v-if="editMode" class="apos-admin-bar__control-set apos-admin-bar__context-controls">
-            <span v-tooltip="undoTooltips.undo"> <!-- lame but need a tooltip even on a disabled button -->
-              <AposButton
-                :disabled="patchesSinceLoaded.length === 0"
-                type="subtle" :modifiers="['small', 'no-motion']"
-                label="Undo" class="apos-admin-bar__context-button"
-                icon="undo-icon" :icon-only="true"
-                @click="undo"
+        <transition-group
+          tag="div"
+          class="apos-admin-bar__control-set apos-admin-bar__control-set--context-controls"
+          name="flip"
+        >
+          <!-- need a tooltip even on a disabled button -->
+          <div
+            v-if="editMode" :key="'undo'"
+            v-tooltip="undoTooltips.undo"
+          >
+            <AposButton
+              :disabled="patchesSinceLoaded.length === 0"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              label="Undo" class="apos-admin-bar__context-button"
+              icon="undo-icon" :icon-only="true"
+              @click="undo"
+            />
+          </div>
+          <div v-if="editMode" :key="'redo'" v-tooltip="undoTooltips.redo">
+            <AposButton
+              :disabled="undone.length === 0"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              label="Redo" class="apos-admin-bar__context-button"
+              icon="redo-icon" :icon-only="true"
+              @click="redo"
+            />
+          </div>
+          <div v-if="editMode" :key="'status'" class="apos-admin-bar__status">
+            <span class="apos-admin-bar__status__inner">
+              <component
+                :is="savingIndicator.el"
+                v-bind="savingIndicator.options"
+                class="apos-admin-bar__status__icon"
               />
-            </span>
-            <span v-tooltip="undoTooltips.redo">
-              <AposButton
-                :disabled="undone.length === 0"
-                type="subtle" :modifiers="['small', 'no-motion']"
-                label="Redo" class="apos-admin-bar__context-button"
-                icon="redo-icon" :icon-only="true"
-                @click="redo"
-              />
-            </span>
-            <span class="apos-admin-bar__status">
-              <span class="apos-admin-bar__status__inner">
-                <component
-                  :is="savingIndicator.el"
-                  v-bind="savingIndicator.options"
-                  class="apos-admin-bar__status__icon"
-                />
-                <div class="apos-admin-bar__status__label" ref="statusLabel">
-                  {{ savingLabel }}
-                </div>
-              </span>
+              <div class="apos-admin-bar__status__label" ref="statusLabel">
+                {{ savingLabel }}
+              </div>
             </span>
           </div>
-        </transition>
-        <div class="apos-admin-bar__context-title">
+        </transition-group>
+        <transition-group
+          tag="div"
+          class="apos-admin-bar__control-set apos-admin-bar__control-set--title"
+          name="flip"
+        >
           <span
-            v-tooltip="'Page Title'" class="apos-admin-bar__context-title__icon"
+            v-show="true"
+            class="apos-admin-bar__title__wrapper"
+            :key="'title'"
           >
-            <information-outline-icon fill-color="var(--a-primary)" :size="16" />
+            <!-- TODO add last save timestamp and last save author to tooltip -->
+            <AposIndicator
+              icon="information-outline-icon"
+              fill-color="var(--a-primary)"
+              :size="15"
+              tooltip="Page Title"
+              class="apos-admin-bar__title__indicator"
+            />
+            <span>{{ moduleOptions.context.title }}</span>
           </span>
-          {{ moduleOptions.context.title }}
-        </div>
-        <div class="apos-admin-bar__context-controls">
-          <AposButton
+        </transition-group>
+        <transition-group
+          tag="div"
+          class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
+          name="flip"
+        >
+          <div 
+            v-if="!editMode" :key="'switchToEditMode'"
+            class="apos-admin-bar__control-set__group"
+          >
+            <AposButton
+              class="apos-admin-bar__context-button"
+              label="Edit" type="subtle"
+              :modifiers="['small', 'no-motion']"
+              :tooltip="{
+                content: 'Toggle Edit Mode',
+                placement: 'bottom'
+              }"
+              @click="switchToEditMode"
+            />
+          </div>
+          <div
             v-if="editMode"
-            class="apos-admin-bar__context-button"
-            label="Preview Mode" :tooltip="{
-              content: 'Preview Mode',
-              placement: 'bottom'
-            }"
-            type="subtle" :modifiers="['small', 'no-motion']"
-            icon="eye-icon" :icon-only="true"
-            @click="switchToPreviewMode"
-          />
-          <AposButton
-            v-if="!editMode"
-            class="apos-admin-bar__context-button"
-            label="Edit" icon="pencil-icon"
-            type="subtle" :modifiers="['small', 'no-motion']"
-            @click="switchToEditMode"
-          />
-          <AposButton
-            v-if="editMode && moduleOptions.contextId"
-            class="apos-admin-bar__context-button"
-            label="Page Settings" :tooltip="{
-              content: 'Page Settings',
-              placement: 'bottom'
-            }"
-            type="subtle" :modifiers="['small', 'no-motion']"
-            icon="cog-icon" :icon-only="true"
-            @click="emitEvent({
-              itemName: contextEditorName,
-              props: {
-                docId: moduleOptions.contextId
-              }
-            })"
-          />
-        </div>
+            :key="'switchToPreviewMode'"
+            class="apos-admin-bar__control-set__group"
+          >
+            <AposButton
+              v-if="moduleOptions.contextId"
+              class="apos-admin-bar__context-button"
+              label="Page Settings" :tooltip="{
+                content: 'Page Settings',
+                placement: 'bottom'
+              }"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              icon="cog-icon" :icon-only="true"
+              @click="emitEvent({
+                itemName: contextEditorName,
+                props: {
+                  docId: moduleOptions.contextId
+                }
+              })"
+            />
+            <AposButton
+              class="apos-admin-bar__context-button"
+              label="Preview" :tooltip="{
+                content: 'Toggle Preview Mode',
+                placement: 'bottom'
+              }"
+              type="subtle" :modifiers="['small', 'no-motion']"
+              @click="switchToPreviewMode"
+            />
+          </div>
+        </transition-group>
       </div>
     </nav>
   </div>
@@ -520,29 +555,19 @@ $admin-bar-border: 1px solid var(--a-base-9);
   border-bottom: $admin-bar-border;
 }
 
-.apos-admin-bar__context-title {
-  @include type-base;
-  display: inline-flex;
+.apos-admin-bar__control-set--title {
   justify-content: center;
   align-items: center;
-  flex: 1;
+  // flex: 1;
 }
 
-.apos-admin-bar__context-title__icon {
-  display: inline-block;
-  margin-right: 5px;
-  line-height: 0;
-}
-
-.apos-admin-bar__context-controls {
-  display: flex;
+.apos-admin-bar__title__wrapper {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  flex: 1;
+}
 
-  &:last-child {
-    justify-content: flex-end;
-  }
+.apos-admin-bar__title__indicator {
+  margin-right: 5px;
 }
 
 // .apos-admin-bar__context-button {
@@ -630,26 +655,31 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__row--utils {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   height: 30px;
   padding-top: $admin-bar-h-pad--small;
   padding-bottom: $admin-bar-h-pad--small;
+  /deep/ .apos-button--subtle { // optical consistency
+    padding: 9px;
+  }
 }
 
-.apos-admin-bar__btn {
-  // .apos-admin-bar__row--utils & {
-  //   padding-left: $admin-bar-h-pad;
-  //   padding-right: $admin-bar-h-pad;
-  //   border-right: $admin-bar-border;
+.apos-admin-bar__control-set {
+  @include type-base;
+  display: flex;
+  height: 100%;
+  min-width: 200px;
+}
 
-  //   &:hover,
-  //   &:focus {
-  //     border-width: 1px;
-  //   }
-  // }
+.apos-admin-bar__control-set--mode-and-settings {
+  justify-content: flex-end;
+}
 
-  .apos-admin-bar__dropdown-items & {
-    // padding: 25px;
-  }
+.apos-admin-bar__control-set__group {
+  display: flex;
+  align-items: center;
 }
 
 .apos-admin-bar__dropdown-items {
@@ -723,21 +753,28 @@ $admin-bar-border: 1px solid var(--a-base-9);
   }
 }
 
+.flip-enter { // to the ground
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.flip-leave { // in the frame
+  transform: translateY(0);
+  opacity: 1;
+}
+.flip-enter-to { // from the ground
+  transform: translateY(0);
+  opacity: 1;
+}
+.flip-leave-to { // to the sky
+  transform: translateY(50%);
+  opacity: 0;
+}
+
 .flip-enter-active, .flip-leave-active {
-  transition: opacity 0.5s;
-  transition-delay: 200ms;
-}
-
-.flip-enter, .flip-leave-to {
-  opacity: 0;
-}
-
-.fade-enter-active, .fade-leave-active {
   transition: all 150ms;
-  // transition-delay: 200ms;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
+  &.apos-admin-bar__control-set__group {
+    position: absolute;
+  }
 }
 
 </style>
