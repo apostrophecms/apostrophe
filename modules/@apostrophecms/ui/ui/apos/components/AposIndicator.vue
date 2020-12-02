@@ -41,7 +41,7 @@ export default {
   }
 
   .apos-indicator__icon {
-    display: flex;
+    display: inline-flex;
     max-width: 100%;
     max-height: 100%;
     /deep/ .material-design-icon__svg {
