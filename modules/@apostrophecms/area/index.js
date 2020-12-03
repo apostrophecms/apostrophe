@@ -40,12 +40,9 @@ module.exports = {
           if (!field) {
             throw self.apos.error('invalid');
           }
-          let options;
-          if (field.type === 'singleton') {
-            options = field.options;
-          } else {
-            options = field.options && field.options.widgets && field.options.widgets[type];
-          }
+
+          let options = field.options && field.options.widgets && field.options.widgets[type];
+
           options = options || {};
           const manager = self.getWidgetManager(type);
           if (!manager) {
@@ -485,57 +482,6 @@ module.exports = {
           widgetManagers,
           action: self.action
         };
-      },
-      // We never trust the browser to tell us what option set to apply to a widget.
-      // Instead the browser sends a widget options path to allow the server to walk its
-      // schemas and figure out what option set to use. No more blessings in the session in 3.x.
-      //
-      // The first entry is the doc type, followed by the top level property name.
-      //
-      // If a property is determined to be an area, the next entry is the index in the area (not important
-      // here but helpful for readability), then a :, then the type of the widget.
-      //
-      // Examples:
-      //
-      // Simple rich text widget in body:
-      //
-      // home.body.0:@apostrophecms/rich-text
-      //
-      // Nested video widget in layout widget:
-      //
-      // home.body.1:two-column.left.0:@apostrophecms/video
-      //
-      // If a property is determined to be a field of type object, the next element of the path will be a
-      // property name within the object.
-      //
-      // Example (a rich text singleton called fancy nested in an object field called address):
-      //
-      // home.address.fancy.0:@apostrophecms/rich-text
-      //
-      // If a property is determined to be a field of type array, the next element of the path will be the
-      // index within the array.
-      //
-      // Example (like the object example but with an array of addresses):
-      //
-      // home.addresses.0.fancy.0:@apostrophecms/rich-text
-      //
-      getWidgetOptionsByPath(path) {
-        path = path.split('.');
-        const docType = path.shift();
-        const docTypeManager = self.apos.doc.getManager(docType);
-        if (!(docType && docTypeManager)) {
-          throw self.apos.error('invalid');
-        }
-        const prop = path.shift();
-        const field = docTypeManager.schema.find(field => field.name === prop);
-        if (!field) {
-          throw self.apos.error('invalid');
-        }
-        const fieldType = self.apos.schema.fieldTypes[field.type];
-        if (!(fieldType && fieldType.getWidgetOptionsForPath)) {
-          throw self.apos.error('invalid');
-        }
-        return fieldType.getWidgetOptionsForPath(field, path);
       }
     };
   },

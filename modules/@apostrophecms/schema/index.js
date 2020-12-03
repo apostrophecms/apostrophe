@@ -64,33 +64,6 @@ module.exports = {
       },
       isEmpty: function (field, value) {
         return self.apos.area.isEmpty({ area: value });
-      },
-      getWidgetOptionsForPath(field, path) {
-        // eslint-disable-next-line no-unused-vars
-        let [ index, type ] = path.shift().split(':');
-        // eslint-disable-next-line no-unused-vars
-        index = self.apos.launder.integer(index);
-        if (!type) {
-          throw self.apos.error('invalid');
-        }
-        const widgetOptions = field.options.widgets && field.options.widgets[type];
-        if (!path.length) {
-          return widgetOptions;
-        }
-        const prop = path.shift();
-        const widgetTypeManager = self.apos.area.getManager(type);
-        if (!widgetTypeManager) {
-          throw self.apos.error('invalid');
-        }
-        const subField = widgetTypeManager.schema.find(field => field.name === prop);
-        if (!subField) {
-          throw self.apos.error('invalid');
-        }
-        const fieldType = self.apos.schema.fieldTypes[subField.type];
-        if (!(fieldType && fieldType.getWidgetOptionsForPath)) {
-          throw self.apos.error('invalid');
-        }
-        return fieldType.getWidgetForPath(subField, path);
       }
     });
 
@@ -1879,14 +1852,6 @@ module.exports = {
       // ```
       //
       // Note that areas are *always* indexed.
-      //
-      // ### `getWidgetOptionsForPath`
-      //
-      // Optional. A function which accepts `(field, path)` and looks up the options for
-      // a widget at the given path nested beneath within the specified field. The name of the
-      // field itself has already been removed from the front of the path. Needed when a field
-      // can have nested widgets within it, i.e. an area, array or object field type or something
-      // new that is like that.
 
       addFieldType(type) {
         let fieldType = type;

@@ -21,7 +21,7 @@
             :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             :name="item"
             :tool="tools[item]"
-            :options="options"
+            :options="editorOptions"
             :editor="editor"
           />
         </div>
@@ -93,9 +93,13 @@ export default {
   },
   emits: [ 'update' ],
   data() {
+    const defaultOptions = moduleOptionsBody(this.type).defaultOptions;
+    const toolbar = this.options.toolbar === false ? []
+      : (this.options.toolbar || defaultOptions.toolbar);
+
     return {
       tools: moduleOptionsBody(this.type).tools,
-      toolbar: this.options.toolbar,
+      toolbar,
       editor: new Editor({
         extensions: [
           new BulletList(),
@@ -126,6 +130,19 @@ export default {
   computed: {
     moduleOptions() {
       return moduleOptionsBody(this.type);
+    },
+    editorOptions() {
+      const defaultOptions = this.moduleOptions.defaultOptions;
+
+      const activeOptions = Object.assign({}, this.options);
+
+      // Allow toolbar option to pass through if `false`
+      activeOptions.toolbar = (activeOptions.toolbar !== undefined)
+        ? activeOptions.toolbar : defaultOptions.toolbar;
+
+      activeOptions.styles = activeOptions.styles || defaultOptions.styles;
+
+      return activeOptions;
     },
     menuType() {
       if (this.options.menuType && this.options.menuType === 'block') {

@@ -243,13 +243,6 @@ module.exports = {
         return heading.class.split(/\s+/);
       },
 
-      // Rich text editor content is found in the
-      // div itself as markup, so don't redundantly
-      // represent it as a data attribute.
-      filterForDataAttribute(widget) {
-        return _.omit(widget, 'content');
-      },
-
       addSearchTexts(item, texts) {
         texts.push({
           weight: 10,
@@ -314,10 +307,24 @@ module.exports = {
   },
   extendMethods(self, options) {
     return {
-      async sanitize(_super, req, input, options) {
-        const output = await _super(req, input, options);
-        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(options));
+      async sanitize(_super, req, input, saniOptions) {
+        const rteOptions = {
+          ...options.defaultOptions,
+          ...saniOptions
+        };
+
+        const output = await _super(req, input, rteOptions);
+        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(rteOptions));
         return output;
+      },
+      // Add on the core default options to use, if needed.
+      getBrowserData(_super, req) {
+        const result = _super(req);
+
+        _.defaults(result, {
+          defaultOptions: options.defaultOptions
+        });
+        return result;
       }
     };
   }
