@@ -307,9 +307,14 @@ module.exports = {
   },
   extendMethods(self, options) {
     return {
-      async sanitize(_super, req, input, options) {
-        const output = await _super(req, input, options);
-        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(options));
+      async sanitize(_super, req, input, saniOptions) {
+        const rteOptions = {
+          ...options.defaultOptions,
+          ...saniOptions
+        };
+
+        const output = await _super(req, input, rteOptions);
+        output.content = sanitizeHtml(input.content, self.optionsToSanitizeHtml(rteOptions));
         return output;
       },
       // Add on the core default options to use, if needed.
