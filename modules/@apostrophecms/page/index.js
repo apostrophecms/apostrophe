@@ -87,6 +87,7 @@ module.exports = {
     self.addEditorModal();
     self.enableBrowserData();
     self.addDeduplicateRanksMigration();
+    self.addFixHomePagePathMigration();
     await self.createIndexes();
   },
   restApiRoutes(self, options) {
@@ -2008,6 +2009,26 @@ database.`);
               }
             });
           }
+        });
+      },
+      addFixHomePagePathMigration() {
+        self.apos.migration.add('fix-home-page-path', async () => {
+          const home = await self.apos.doc.db.findOne({
+            slug: '/',
+            path: '/',
+            level: 0
+          });
+          if (!home) {
+            return;
+          }
+          home.path = home._id;
+          return self.apos.doc.db.updateOne({
+            _id: home._id
+          }, {
+            $set: {
+              path: home._id
+            }
+          });
         });
       }
     };

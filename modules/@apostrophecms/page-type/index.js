@@ -91,6 +91,45 @@ module.exports = {
           }
           await matched.handler(req);
         }
+      },
+      'beforeEnsuringDraft': {
+        reconcileTree(req, draft, options) {
+          const parentPath = self.apos.page.getParentPath(draft);
+          let newRank;
+          let oldAfter;
+          let newLevel;
+          const oldPeers = await self.apos.doc.db.find({
+            path: new RegExp(`^${self.apos.util.regExpQuote(parent.path)}/`),
+            aposLocale: draft.locale.replace(':draft', ':published'),
+            level: draft.level
+          });
+          const oldIndex = oldPeers.findIndex(peer => peer.aposDocId === draft.aposDocId);
+          if (oldIndex === 0) {
+            newRank = 0;
+          } else {
+            oldAfter = oldPeers[oldIndex - 1];
+          }
+          let newParent = await self.apos.doc.db.findOne({
+            _id: parentPath.split('/').pop(),
+            aposLocale: draft.aposLocale
+          });
+          if (!newParent) {
+            const homePath = draft.path.split('/')[0];
+            newParent = self.apos.docs.db.findOne({
+              path: homePath,
+              aposLocale: draft.aposLocale
+            });
+          }
+          if (newRank === undefined) {
+            const newPeers = await self.apos.docs.db.find({
+              path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
+              level: parent.level + 1
+            });
+            const newAfterIndex = newPeers.findIndex(peer => peer.aposDocId === oldAfter._id);
+            if (newAfterIndex > -1) {
+              newRank = 
+            }
+        }
       }
     };
   },
