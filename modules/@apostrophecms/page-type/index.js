@@ -94,6 +94,12 @@ module.exports = {
       },
       'beforeEnsuringDraft': {
         reconcileTree(req, draft, options) {
+          // The developer wrote directly to the published locale, which
+          // means we should quietly guarantee the draft locale gets an
+          // equivalent update. For a page, we have to also guarantee the
+          // page tree is consistent, as much as the existing discrepancies
+          // between the draft and published trees permit. For speed we
+          // do this with direct mongo manipulations
           const parentPath = self.apos.page.getParentPath(draft);
           let newRank;
           let oldAfter;
@@ -127,8 +133,22 @@ module.exports = {
             });
             const newAfterIndex = newPeers.findIndex(peer => peer.aposDocId === oldAfter._id);
             if (newAfterIndex > -1) {
-              newRank = 
+              newRank = newAfterIndex + 1;
             }
+          }
+          await self.apos.doc.db.updateMany({
+            path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
+            rank: {
+              $gte: newRank
+            }
+          }, {
+            $inc: {
+              rank: 1
+            }
+          });
+          draft.rank = newRank;
+          draft.path = `${newParent.path}/${draft.aposDocId}`;
+          draft.level = newParent.level + 1;
         }
       }
     };
