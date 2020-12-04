@@ -11,7 +11,6 @@
         :id="getChoiceId(uid, choice.value)"
         :choice="choice"
         :field="field"
-        :status="status"
         v-model="value.data"
       />
     </template>

@@ -86,7 +86,6 @@ export default {
     return {
       keepInBounds: true,
       href: null,
-      id: null,
       target: null,
       active: false,
       hasLinkOnOpen: false,
@@ -98,41 +97,15 @@ export default {
         {
           name: 'href',
           label: 'URL',
-          help: 'Where should the link go?',
-          placeholder: 'http://calm.com',
           type: 'string'
         },
-        {
-          name: 'id',
-          label: 'Anchor Name',
-          help: 'This becomes the ID of the anchor',
-          type: 'string'
-        },
-        // {
-        //   name: 'target',
-        //   label: 'Target',
-        //   help: 'Where should this link open?',
-        //   type: 'select',
-        //   def: '_self',
-        //   choices: [
-        //     {
-        //       label: 'Current tab (_self)',
-        //       value: '_self'
-        //     },
-        //     {
-        //       label: 'New tab (_blank)',
-        //       value: '_blank'
-        //     }
-        //   ]
-        // }
         {
           name: 'target',
-          label: 'New Tab',
-          type: 'radio',
-          def: '_blank',
+          label: 'Link Target',
+          type: 'checkboxes',
           choices: [
             {
-              label: 'Open Link in New Tab',
+              label: 'Open link in new tab',
               value: '_blank'
             }
           ]
@@ -158,6 +131,9 @@ export default {
     active(newVal) {
       if (newVal) {
         this.hasLinkOnOpen = !!(this.value.data.href);
+        window.addEventListener('keydown', this.keyboardHandler);
+      } else {
+        window.removeEventListener('keydown', this.keyboardHandler);
       }
     },
     'editor.selection.from': {
@@ -172,9 +148,6 @@ export default {
     }
   },
   methods: {
-    hello() {
-      alert('hello');
-    },
     removeLink() {
       this.value.data = {};
       this.save();
@@ -191,8 +164,26 @@ export default {
       this.editor.focus();
     },
     save() {
+      // cleanup incomplete submissions
+      if (this.value.data.target && !this.value.data.href) {
+        delete this.value.data.target;
+      }
       this.editor.commands[this.name](this.value.data);
       this.active = false;
+    },
+    keyboardHandler(e) {
+      if (e.keyCode === 27) {
+        this.close();
+      }
+      if (e.keyCode === 13) {
+        if (this.value.data.href || e.metaKey) {
+          this.save();
+          this.close();
+          e.preventDefault();
+        } else {
+          e.preventDefault();
+        }
+      }
     },
     populateFields() {
       const attrs = this.editor.getMarkAttrs('link');
@@ -243,12 +234,15 @@ export default {
   }
 
   .apos-link-control__remove {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     display: flex;
-    width: 100%;
     justify-content: flex-end;
+  }
+
+  // special schema style for this use
+  .apos-link-control /deep/ .apos-field-target {
+    .apos-field-label {
+      display: none;
+    }
   }
 
 </style>
