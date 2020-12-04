@@ -91,65 +91,6 @@ module.exports = {
           }
           await matched.handler(req);
         }
-      },
-      'beforeEnsuringDraft': {
-        reconcileTree(req, draft, options) {
-          // The developer wrote directly to the published locale, which
-          // means we should quietly guarantee the draft locale gets an
-          // equivalent update. For a page, we have to also guarantee the
-          // page tree is consistent, as much as the existing discrepancies
-          // between the draft and published trees permit. For speed we
-          // do this with direct mongo manipulations
-          const parentPath = self.apos.page.getParentPath(draft);
-          let newRank;
-          let oldAfter;
-          let newLevel;
-          const oldPeers = await self.apos.doc.db.find({
-            path: new RegExp(`^${self.apos.util.regExpQuote(parent.path)}/`),
-            aposLocale: draft.locale.replace(':draft', ':published'),
-            level: draft.level
-          });
-          const oldIndex = oldPeers.findIndex(peer => peer.aposDocId === draft.aposDocId);
-          if (oldIndex === 0) {
-            newRank = 0;
-          } else {
-            oldAfter = oldPeers[oldIndex - 1];
-          }
-          let newParent = await self.apos.doc.db.findOne({
-            _id: parentPath.split('/').pop(),
-            aposLocale: draft.aposLocale
-          });
-          if (!newParent) {
-            const homePath = draft.path.split('/')[0];
-            newParent = self.apos.docs.db.findOne({
-              path: homePath,
-              aposLocale: draft.aposLocale
-            });
-          }
-          if (newRank === undefined) {
-            const newPeers = await self.apos.docs.db.find({
-              path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
-              level: parent.level + 1
-            });
-            const newAfterIndex = newPeers.findIndex(peer => peer.aposDocId === oldAfter._id);
-            if (newAfterIndex > -1) {
-              newRank = newAfterIndex + 1;
-            }
-          }
-          await self.apos.doc.db.updateMany({
-            path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
-            rank: {
-              $gte: newRank
-            }
-          }, {
-            $inc: {
-              rank: 1
-            }
-          });
-          draft.rank = newRank;
-          draft.path = `${newParent.path}/${draft.aposDocId}`;
-          draft.level = newParent.level + 1;
-        }
       }
     };
   },
@@ -228,6 +169,51 @@ module.exports = {
       // are invoked as methods on the query with their values.
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options).type(self.name);
+      },
+      // Called for you when a page is inserted directly in
+      // the published locale, to ensure there is an equivalent
+      // draft page. You don't need to invoke this
+      async insertDraftOf(req, doc, draft, options) {
+        // Make sure page tree is as consistent as possible
+        const parentPath = self.apos.page.getParentPath(doc);
+        let newAfter;
+        let oldAfter;
+        let position;
+        let targetId;
+        const oldPeers = await self.apos.doc.db.find({
+          path: new RegExp(`^${self.apos.util.regExpQuote(parentPath)}/`),
+          aposLocale: parent.locale,
+          level: doc.level
+        });
+        const oldIndex = oldPeers.findIndex(peer => peer.aposDocId === draft.aposDocId);
+        if (oldIndex === 0) {
+          position = 'lastChild';
+        } else {
+          oldAfter = oldPeers[oldIndex - 1];
+          position = 'after';
+        }
+        let newParent = await self.apos.doc.db.findOne({
+          aposDocId: parentPath.split('/').pop(),
+          aposLocale: draft.aposLocale
+        });
+        if (!newParent) {
+          const homeId = draft.path.split('/')[0];
+          newParent = await self.apos.docs.db.findOne({
+            aposDocId: homeId,
+            aposLocale: draft.aposLocale
+          });
+        }
+        if (position === 'after') {
+          const newPeers = await self.apos.docs.db.find({
+            path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
+            level: parent.level + 1
+          });
+          newAfter = newPeers.find(peer => peer.aposDocId === oldAfter.aposDocId);
+          targetId = newAfter._id;
+        } else {
+          targetId = newParent._id;
+        }
+        return self.apos.page.insert(req, targetId, position, draft);
       }
     };
   },

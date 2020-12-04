@@ -97,7 +97,7 @@ module.exports = {
           if (!manager.isLocalized()) {
             return;
           }
-          doc.aposLocale = req.locale;
+          doc.aposLocale = doc.aposLocale || req.locale;
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
           self.testInsertPermissions(req, doc, options);
@@ -146,7 +146,7 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterInsert': {
-        ensureDraftExists(req, doc, options) {
+        async ensureDraftExists(req, doc, options) {
           const manager = self.getManager(doc.type);
           if (!manager.isLocalized(doc)) {
             return;
@@ -154,7 +154,7 @@ module.exports = {
           if (self.isDraft(doc)) {
             return;
           }
-          const draftLocale = self.draftify(doc.aposLocale);
+          const draftLocale = doc.aposLocale.replace(':published', ':draft');
           const draftId = `${doc.aposDocId}:${draftLocale}`;
           if (await self.db.findOne({
             _id: draftId
@@ -168,11 +168,7 @@ module.exports = {
             _id: draftId,
             aposLocale: draftLocale
           };
-          // Gives the page-type modules a chance to fix rank, pages may
-          // exist in draft form that don't exist yet in published form,
-          // the tree may also differ in other ways
-          await manager.emit('beforeEnsuringDraft', req, draft, options);
-          return self.db.insertOne(draft);
+          return manager.insertDraftOf(req, doc, draft, options);
         }
       },
       fixUniqueError: {

@@ -238,6 +238,16 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      // Accepts a doc, a preliminary draft, and the options
+      // originally passed to insert(). Default implementation
+      // inserts `draft` in the database normally. This method is
+      // called only when a draft is being created on the fly
+      // for a published document that does not yet have a draft.
+      // Apostrophe only has one corresponding draft at a time
+      // per published document.
+      insertDraftOf(req, doc, draft, options) {
+        return self.insert(req, draft);
+      },
       finalizeControls() {
         self.createControls = self.options.createControls || [
           {

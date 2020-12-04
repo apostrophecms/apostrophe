@@ -235,10 +235,7 @@ module.exports = {
               }
               pagesByPath[page.path].push(page);
               const last = page.path.lastIndexOf('/');
-              let parentPath = page.path.substr(0, last);
-              if (parentPath === '') {
-                parentPath = '/';
-              }
+              const parentPath = page.path.substr(0, last);
               if (pagesByPath[parentPath]) {
                 _.each(pagesByPath[parentPath], function(parent) {
                   parent._children.push(page);
