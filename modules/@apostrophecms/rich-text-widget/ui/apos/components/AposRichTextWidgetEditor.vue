@@ -266,4 +266,8 @@ export default {
     outline: none;
   }
 
+  .apos-rich-text-toolbar__inner /deep/ > * {
+    height: 35px;
+  }
+
 </style>
