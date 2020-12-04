@@ -621,6 +621,8 @@ database.`);
       async insert(req, targetId, position, page, options = { permissions: true }) {
         return self.withLock(req, async () => {
           let peers;
+          page.aposLastTargetId = targetId;
+          page.aposLastPosition = position;
           const query = self.findForEditing(req, { _id: targetId });
           if ((position === 'firstChild') || (position === 'lastChild')) {
             query.children({
@@ -952,6 +954,8 @@ database.`);
             }
             moved.level = level;
             moved.rank = rank;
+            moved.aposLastTargetId = targetId;
+            moved.aposLastPosition = position;
             // Are we in the trashcan? Our new parent reveals that
             if (parent.trash) {
               moved.trash = true;

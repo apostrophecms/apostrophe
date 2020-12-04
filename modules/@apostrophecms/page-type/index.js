@@ -91,6 +91,11 @@ module.exports = {
           }
           await matched.handler(req);
         }
+      },
+      afterPublished: {
+        async replayMoveAfterPublished(req, published) {
+          return self.apos.page.move(req, published._id, published.lastAposTargetId, published.lastAposPosition);
+        }
       }
     };
   },
@@ -173,52 +178,40 @@ module.exports = {
       // Called for you when a page is inserted directly in
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this
-      async insertDraftOf(req, doc, draft, options) {
-        // Make sure page tree is as consistent as possible
-        const parentPath = self.apos.page.getParentPath(doc);
-        let newAfter;
-        let oldAfter;
-        let position;
-        let targetId;
-        const oldPeers = await self.apos.doc.db.find({
-          path: new RegExp(`^${self.apos.util.regExpQuote(parentPath)}/`),
-          aposLocale: parent.locale,
-          level: doc.level
-        });
-        const oldIndex = oldPeers.findIndex(peer => peer.aposDocId === draft.aposDocId);
-        if (oldIndex === 0) {
-          position = 'lastChild';
+      async insertDraftOf(req, doc, draft) {
+        if (doc.aposLastTargetId) {
+          // Replay the high level positioning used to place it in the published locale
+          return self.apos.page.insert(req, doc.aposLastTargetId, doc.aposLastPosition, draft);
+        } else if (!doc.level) {
+          // Insert the home page
+          return self.apos.doc.db.insert(req, draft);
         } else {
-          oldAfter = oldPeers[oldIndex - 1];
-          position = 'after';
+          throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
         }
-        let newParent = await self.apos.doc.db.findOne({
-          aposDocId: parentPath.split('/').pop(),
-          aposLocale: draft.aposLocale
-        });
-        if (!newParent) {
-          const homeId = draft.path.split('/')[0];
-          newParent = await self.apos.docs.db.findOne({
-            aposDocId: homeId,
-            aposLocale: draft.aposLocale
-          });
-        }
-        if (position === 'after') {
-          const newPeers = await self.apos.docs.db.find({
-            path: new RegExp(`^${self.apos.util.regExpQuote(newParent.path)}/`),
-            level: parent.level + 1
-          });
-          newAfter = newPeers.find(peer => peer.aposDocId === oldAfter.aposDocId);
-          targetId = newAfter._id;
+      },
+      // Called for you when a page is published for the firtsinserted directly in
+      // the published locale, to ensure there is an equivalent
+      // draft page. You don't need to invoke this
+      async insertPublishedOf(req, doc, published) {
+        if (doc.aposLastTargetId) {
+          // Replay the high level positioning used to place it in the published locale
+          return self.apos.page.insert(req, doc.aposLastTargetId, doc.aposLastPosition, published);
+        } else if (!doc.level) {
+          // Insert the home page
+          return self.apos.doc.db.insert(req, published);
         } else {
-          targetId = newParent._id;
+          throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }
-        return self.apos.page.insert(req, targetId, position, draft);
       }
     };
   },
   extendMethods(self, options) {
     return {
+      copyForPublication(_super, req, draft, published) {
+        _super(req, draft, published);
+        published.aposLastTargetId = draft.aposLastTargetId;
+        published.aposLastPosition = draft.aposLastPosition;
+      },
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);
         projection.slug = 1;

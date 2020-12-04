@@ -168,7 +168,7 @@ module.exports = {
             _id: draftId,
             aposLocale: draftLocale
           };
-          return manager.insertDraftOf(req, doc, draft, options);
+          return manager.insertDraftOf(req, doc, draft);
         }
       },
       fixUniqueError: {
@@ -358,6 +358,7 @@ module.exports = {
         await m.emit('afterLoad', req, [ doc ]);
         return doc;
       },
+
       // Recursively visit every property of a doc,
       // invoking an iterator function for each one. Optionally
       // deletes properties.

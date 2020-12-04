@@ -245,8 +245,12 @@ module.exports = {
       // for a published document that does not yet have a draft.
       // Apostrophe only has one corresponding draft at a time
       // per published document.
-      insertDraftOf(req, doc, draft, options) {
+      insertDraftOf(req, doc, draft) {
         return self.insert(req, draft);
+      },
+      // Similar to insertDraftOf, invoked on first publication.
+      insertPublishedOf(req, doc, published) {
+        return self.insert(req, published);
       },
       finalizeControls() {
         self.createControls = self.options.createControls || [

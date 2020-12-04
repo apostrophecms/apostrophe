@@ -1,3 +1,6 @@
+// TODO: replace with i18n-next. Careful, the middleware for apostrophe editing
+// locales is also in here.
+//
 // This module makes an instance of the [i18n](https://npmjs.org/package/i18n) npm module available
 // as `apos.i18n`. Apostrophe also makes this available in Nunjucks templates via the
 // usual `__()` helper function. Any options passed to this module are passed on to `i18n`.
@@ -27,6 +30,14 @@ module.exports = {
   middleware(self, options) {
     return {
       init(req, res, next) {
+        // TODO: if queryLocale is not present, implement fallbacks
+        // similar to apostrophe-workflow based on prefixes, hostnames,
+        // locale headers, etc. What we have now works for editing
+        // draft/published content
+        const queryLocale = req.query['apos-locale'];
+        const bareLocale = (self.locales.includes(queryLocale) && queryLocale) || 'default';
+        const mode = req.query['apos-edit'] ? 'draft' : 'published';
+        req.locale = `${bareLocale}:${mode}`;
         return self.apos.i18n.init(req, res, next);
       }
     };

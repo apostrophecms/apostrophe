@@ -582,7 +582,7 @@ module.exports = {
       // If `builders` is an object its properties are invoked as
       // query builders, for instance `{ attachments: true }`.
       async findOneForEditing(req, criteria, builders) {
-        const query = await self.findForEditing(req, criteria, builders);
+        const query = await self.findOneForEditing(req, criteria, builders);
         const doc = query.toObject();
         if (options.annotate) {
           self.apos.attachment.all(doc, { annotate: true });
@@ -591,6 +591,48 @@ module.exports = {
       },
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
+      },
+      // Publish the changes found in the given draft document.
+      async publish(req, draft) {
+        const publishedLocale = draft.aposLocale.replace(':draft', ':published');
+        const publishedId = `${draft.aposDocId}${publishedLocale}`;
+        let published = await self.findOneForEditing(req, {
+          _id: publishedId
+        }, {
+          locale: publishedLocale
+        });
+        if (!published) {
+          published = {
+            _id: publishedId,
+            aposDocId: draft.aposDocId,
+            aposLocale: publishedLocale
+          };
+          self.copyForPublication(req, draft, published);
+          return self.insertPublishedOf(req, draft, published);
+        } else {
+          self.copyForPublication(req, draft, published);
+          published = await self.update(req, published);
+          await self.db.updateOne({
+            _id: draft._id
+          }, {
+            $set: {
+              aposModified: false
+            }
+          });
+          await self.emit('afterPublished', req, published);
+        }
+      },
+      // Called for you by `apos.doc.publish`. Copies properties from
+      // `draft` to `published` where appropriate.
+      copyForPublication(req, draft, published) {
+        // By default, we copy all schema properties not expressly excluded,
+        // and no others.
+        const schema = self.schema;
+        for (const field of schema) {
+          if (!self.unpublishedProperties.includes(field.name)) {
+            published[field.name] = draft[field.name];
+          }
+        }
       }
     };
   },
