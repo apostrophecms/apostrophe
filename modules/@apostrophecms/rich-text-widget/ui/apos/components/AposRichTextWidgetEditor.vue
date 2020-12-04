@@ -266,10 +266,6 @@ export default {
     outline: none;
   }
 
-  .apos-rich-text-toolbar__inner /deep/ .apos-button.apos-rich-text-editor__control:focus {
-    border: none;
-  }
-
   .apos-rich-text-toolbar__inner /deep/ > * {
     height: 35px;
   }
