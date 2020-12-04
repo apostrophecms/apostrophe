@@ -2021,7 +2021,6 @@ database.`);
           if (!home) {
             return;
           }
-          home.path = home._id;
           return self.apos.doc.db.updateOne({
             _id: home._id
           }, {
