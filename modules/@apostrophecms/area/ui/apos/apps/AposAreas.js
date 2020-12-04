@@ -68,7 +68,7 @@ export default function() {
     el.removeAttribute('data-apos-area-newly-editable');
 
     const component = window.apos.area.components.editor;
-
+    
     return new Vue({
       el: el,
       data: function() {

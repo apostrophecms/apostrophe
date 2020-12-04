@@ -16,6 +16,7 @@
      -->
     <div
       v-if="active"
+      v-click-outside-element="close"
       class="apos-link-control__dialog"
       :class="{
         'is-triggered': active,
@@ -26,6 +27,13 @@
         menu-placement="bottom-start"
         v-if="active"
       >
+        <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
+          <AposButton
+            type="quiet"
+            @click="removeLink"
+            label="Remove Link"
+          />
+        </div>
         <form>
           <AposSchema
             :schema="schema"
@@ -81,6 +89,7 @@ export default {
       id: null,
       target: null,
       active: false,
+      hasLinkOnOpen: false,
       value: {
         data: {}
       },
@@ -99,19 +108,31 @@ export default {
           help: 'This becomes the ID of the anchor',
           type: 'string'
         },
+        // {
+        //   name: 'target',
+        //   label: 'Target',
+        //   help: 'Where should this link open?',
+        //   type: 'select',
+        //   def: '_self',
+        //   choices: [
+        //     {
+        //       label: 'Current tab (_self)',
+        //       value: '_self'
+        //     },
+        //     {
+        //       label: 'New tab (_blank)',
+        //       value: '_blank'
+        //     }
+        //   ]
+        // }
         {
           name: 'target',
-          label: 'Target',
-          help: 'Where should this link open?',
-          type: 'select',
-          def: '_self',
+          label: 'New Tab',
+          type: 'radio',
+          def: '_blank',
           choices: [
             {
-              label: 'Current tab (_self)',
-              value: '_self'
-            },
-            {
-              label: 'New tab (_blank)',
+              label: 'Open Link in New Tab',
               value: '_blank'
             }
           ]
@@ -134,6 +155,11 @@ export default {
     }
   },
   watch: {
+    active(newVal) {
+      if (newVal) {
+        this.hasLinkOnOpen = !!(this.value.data.href);
+      }
+    },
     'editor.selection.from': {
       handler(newVal, oldVal) {
         this.populateFields();
@@ -146,6 +172,14 @@ export default {
     }
   },
   methods: {
+    hello() {
+      alert('hello');
+    },
+    removeLink() {
+      this.value.data = {};
+      this.save();
+      this.close();
+    },
     click() {
       if (this.hasSelection) {
         this.active = !this.active;
@@ -207,4 +241,14 @@ export default {
   .apos-link-control__footer .apos-button {
     margin-left: 7.5px;
   }
+
+  .apos-link-control__remove {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
 </style>
