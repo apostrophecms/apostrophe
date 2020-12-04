@@ -16,6 +16,7 @@
      -->
     <div
       v-if="active"
+      v-click-outside-element="close"
       class="apos-link-control__dialog"
       :class="{
         'is-triggered': active,
@@ -26,6 +27,13 @@
         menu-placement="bottom-start"
         v-if="active"
       >
+        <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
+          <AposButton
+            type="quiet"
+            @click="removeLink"
+            label="Remove Link"
+          />
+        </div>
         <form>
           <AposSchema
             :schema="schema"
@@ -78,9 +86,9 @@ export default {
     return {
       keepInBounds: true,
       href: null,
-      id: null,
       target: null,
       active: false,
+      hasLinkOnOpen: false,
       value: {
         data: {}
       },
@@ -89,29 +97,15 @@ export default {
         {
           name: 'href',
           label: 'URL',
-          help: 'Where should the link go?',
-          placeholder: 'http://calm.com',
-          type: 'string'
-        },
-        {
-          name: 'id',
-          label: 'Anchor Name',
-          help: 'This becomes the ID of the anchor',
           type: 'string'
         },
         {
           name: 'target',
-          label: 'Target',
-          help: 'Where should this link open?',
-          type: 'select',
-          def: '_self',
+          label: 'Link Target',
+          type: 'checkboxes',
           choices: [
             {
-              label: 'Current tab (_self)',
-              value: '_self'
-            },
-            {
-              label: 'New tab (_blank)',
+              label: 'Open link in new tab',
               value: '_blank'
             }
           ]
@@ -134,6 +128,14 @@ export default {
     }
   },
   watch: {
+    active(newVal) {
+      if (newVal) {
+        this.hasLinkOnOpen = !!(this.value.data.href);
+        window.addEventListener('keydown', this.keyboardHandler);
+      } else {
+        window.removeEventListener('keydown', this.keyboardHandler);
+      }
+    },
     'editor.selection.from': {
       handler(newVal, oldVal) {
         this.populateFields();
@@ -146,6 +148,11 @@ export default {
     }
   },
   methods: {
+    removeLink() {
+      this.value.data = {};
+      this.save();
+      this.close();
+    },
     click() {
       if (this.hasSelection) {
         this.active = !this.active;
@@ -157,8 +164,26 @@ export default {
       this.editor.focus();
     },
     save() {
+      // cleanup incomplete submissions
+      if (this.value.data.target && !this.value.data.href) {
+        delete this.value.data.target;
+      }
       this.editor.commands[this.name](this.value.data);
       this.active = false;
+    },
+    keyboardHandler(e) {
+      if (e.keyCode === 27) {
+        this.close();
+      }
+      if (e.keyCode === 13) {
+        if (this.value.data.href || e.metaKey) {
+          this.save();
+          this.close();
+          e.preventDefault();
+        } else {
+          e.preventDefault();
+        }
+      }
     },
     populateFields() {
       const attrs = this.editor.getMarkAttrs('link');
@@ -207,4 +232,17 @@ export default {
   .apos-link-control__footer .apos-button {
     margin-left: 7.5px;
   }
+
+  .apos-link-control__remove {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  // special schema style for this use
+  .apos-link-control /deep/ .apos-field-target {
+    .apos-field-label {
+      display: none;
+    }
+  }
+
 </style>

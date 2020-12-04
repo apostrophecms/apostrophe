@@ -536,7 +536,12 @@ export default {
   }
 
   .apos-button--no-border {
-    border: none;
+    &,
+    &:focus,
+    &:active,
+    &:hover {
+      border: none;
+    }
   }
 
   .apos-button--no-motion {
