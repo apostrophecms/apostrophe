@@ -214,6 +214,33 @@ module.exports = {
     });
 
     self.addFieldType({
+      name: 'color',
+      convert: async function (req, field, data, object) {
+        console.log(data);
+        if (typeof data[field.name] === 'string') {
+          data[field.name] = self.apos.launder.string(data[field.name]).split(',');
+
+          if (!Array.isArray(data[field.name])) {
+            object[field.name] = [];
+            return;
+          }
+
+          object[field.name] = _.filter(data[field.name], function (choice) {
+            return _.includes(_.map(field.choices, 'value'), choice);
+          });
+        }
+      },
+      index: function (value, field, texts) {
+        const silent = field.silent === undefined ? true : field.silent;
+        texts.push({
+          weight: field.weight || 15,
+          text: (value || []).join(' '),
+          silent: silent
+        });
+      }
+    });
+
+    self.addFieldType({
       name: 'checkboxes',
       convert: async function (req, field, data, object) {
         if (typeof data[field.name] === 'string') {

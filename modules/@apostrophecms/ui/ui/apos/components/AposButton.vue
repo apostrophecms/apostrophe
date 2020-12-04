@@ -9,6 +9,7 @@
     :type="buttonType"
     :role="role"
     v-tooltip="tooltip"
+    :style="styles"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -21,7 +22,7 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <span class="apos-button__label" :class="{ 'apos-sr-only' : iconOnly }">
+      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || color) }">
         {{ label }}
       </span>
     </div>
@@ -29,6 +30,7 @@
 </template>
 
 <script>
+import tinycolor from 'tinycolor2';
 
 export default {
   name: 'AposButton',
@@ -42,6 +44,10 @@ export default {
       default() {
         return [];
       }
+    },
+    color: {
+      type: String,
+      default: null
     },
     href: {
       type: String,
@@ -94,6 +100,22 @@ export default {
   computed: {
     tabindex() {
       return this.disableFocus ? '-1' : '0';
+    },
+    styles() {
+      const styles = {};
+      let styleStr = '';
+      if (this.color) {
+        styles['background-color'] = this.color;
+        styles.border = `3px solid ${tinycolor(this.color).lighten(20).toString()}`;
+      }
+
+      for (const k in styles) {
+        if (Object.prototype.hasOwnProperty.call(styles, k)) {
+          styleStr += k + ': ' + styles[k] + '; ';
+        }
+      }
+
+      return styleStr;
     },
     modifierClass() {
       const modifiers = [];
@@ -215,6 +237,13 @@ export default {
   .apos-button--outline,
   .apos-button[disabled].apos-button--outline {
     background-color: transparent;
+  }
+
+  .apos-button--color {
+    // background-color: var(--a-primary);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
   }
 
   .apos-button--small {
