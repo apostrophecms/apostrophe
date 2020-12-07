@@ -44,7 +44,7 @@ module.exports = {
     adminOnly: true,
     searchable: false,
     slugPrefix: 'user-',
-    isLocalized: false
+    localized: false
   },
   fields(self, options) {
     return {

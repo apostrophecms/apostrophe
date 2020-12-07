@@ -1510,7 +1510,7 @@ module.exports = {
           return query.toArray();
         }, _id => {
           const index = _id.indexOf(':');
-          const locale = options.locale || req.locale;
+          const locale = options.locale || `${req.locale}:${req.mode}`;
           if (index > -1) {
             return `${_id.substring(0, index)}:${locale}`;
           }
@@ -1695,7 +1695,7 @@ module.exports = {
             if (relationship.idsStorage) {
               _.each(_objects, function (object) {
                 if (object[relationship.name]) {
-                  const locale = options.locale || req.locale;
+                  const locale = options.locale || `${req.locale}:${req.mode}`;
                   object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage].map(id => `${id}:${locale}`), object[relationship.name]);
                 }
               });

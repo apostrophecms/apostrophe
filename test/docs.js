@@ -82,9 +82,9 @@ describe('Docs', function() {
   it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
-        _id: 'lori:default:published',
+        _id: 'lori:en:published',
         aposDocId: 'lori',
-        aposLocale: 'default:published',
+        aposLocale: 'en:published',
         slug: 'lori',
         visibility: 'public',
         type: 'test-people',
@@ -94,9 +94,9 @@ describe('Docs', function() {
         alive: true
       },
       {
-        _id: 'larry:default:published',
+        _id: 'larry:en:published',
         aposDocId: 'larry',
-        aposLocale: 'default:published',
+        aposLocale: 'en:published',
         slug: 'larry',
         visibility: 'public',
         type: 'test-people',
@@ -106,9 +106,9 @@ describe('Docs', function() {
         alive: true
       },
       {
-        _id: 'carl:default:published',
+        _id: 'carl:en:published',
         aposDocId: 'carl',
-        aposLocale: 'default:published',
+        aposLocale: 'en:published',
         slug: 'carl',
         visibility: 'public',
         type: 'test-people',
@@ -153,9 +153,9 @@ describe('Docs', function() {
     try {
       await apos.doc.db.insertMany([
         {
-          _id: 'peter:default:published',
+          _id: 'peter:en:published',
           aposDocId: 'peter',
-          aposLocale: 'default:published',
+          aposLocale: 'en:published',
           type: 'test-people',
           visibility: 'loginRequired',
           age: 70,
@@ -163,9 +163,9 @@ describe('Docs', function() {
         },
         // ids will not conflict, but slug will
         {
-          _id: 'peter2:default:published',
+          _id: 'peter2:en:published',
           aposDocId: 'peter2',
-          aposLocale: 'default:published',
+          aposLocale: 'en:published',
           type: 'test-people',
           visibility: 'loginRequired',
           age: 70,
@@ -259,12 +259,12 @@ describe('Docs', function() {
 
     assert(response);
     assert(response._id);
-    assert(response._id.endsWith(':default:published'));
+    assert(response._id.endsWith(':en:published'));
     assert(response._id === `${response.aposDocId}:${response.aposLocale}`);
     // Direct insertion in published locale should autocreate
     // a corresponding draft for internal consistency
     const draft = await apos.doc.db.findOne({
-      _id: `${response.aposDocId}:default:draft`
+      _id: `${response.aposDocId}:en:draft`
     });
     assert(draft);
     // Unique index allows for duplicates across locales
@@ -502,9 +502,9 @@ describe('Docs', function() {
 
     for (i = 0; (i < 100); i++) {
       testItems.push({
-        _id: `i${i}:default:published`,
+        _id: `i${i}:en:published`,
         aposDocId: `i${i}`,
-        aposLocale: 'default:published',
+        aposLocale: 'en:published',
         slug: `i${i}`,
         visibility: 'public',
         type: 'test',
@@ -515,30 +515,30 @@ describe('Docs', function() {
     await apos.doc.db.insertMany(testItems);
 
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7:default:published', 'i3:default:published', 'i27:default:published', 'i9:default:published' ]).toArray();
+      .explicitOrder([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).toArray();
 
-    assert(docs[0]._id === 'i7:default:published');
+    assert(docs[0]._id === 'i7:en:published');
     assert(docs[0].aposDocId === 'i7');
-    assert(docs[0].aposLocale === 'default:published');
-    assert(docs[1]._id === 'i3:default:published');
-    assert(docs[2]._id === 'i27:default:published');
-    assert(docs[3]._id === 'i9:default:published');
+    assert(docs[0].aposLocale === 'en:published');
+    assert(docs[1]._id === 'i3:en:published');
+    assert(docs[2]._id === 'i27:en:published');
+    assert(docs[3]._id === 'i9:en:published');
     assert(!docs[4]);
   });
 
   it('should respect explicitOrder with skip and limit', async function() {
     // Relies on test data of previous test
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7:default:published', 'i3:default:published', 'i27:default:published', 'i9:default:published' ]).skip(2).limit(2).toArray();
+      .explicitOrder([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
 
-    assert(docs[0]._id === 'i27:default:published');
-    assert(docs[1]._id === 'i9:default:published');
+    assert(docs[0]._id === 'i27:en:published');
+    assert(docs[1]._id === 'i9:en:published');
     assert(!docs[2]);
   });
 
   it('should be able to lock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
     try {
       await apos.doc.lock(req, doc, 'abc');
     } catch (e) {
@@ -548,7 +548,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document with a different htmlPageId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
     try {
       await apos.doc.lock(req, doc, 'def');
@@ -560,7 +560,7 @@ describe('Docs', function() {
 
   it('should be able to refresh the lock with the same htmlPageId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
     try {
       await apos.doc.lock(req, doc, 'abc');
@@ -571,7 +571,7 @@ describe('Docs', function() {
 
   it('should be able to unlock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
     try {
       await apos.doc.unlock(req, doc, 'abc');
@@ -582,7 +582,7 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
     try {
       await apos.doc.lock(req, doc, 'def');
@@ -593,7 +593,7 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
 
     try {
       await apos.doc.lock(req, doc, 'abc', { force: true });

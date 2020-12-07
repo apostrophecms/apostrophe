@@ -95,16 +95,32 @@ module.exports = {
         setLocale(req, doc, options) {
           const manager = self.getManager(doc.type);
           if (!manager.isLocalized()) {
-            return;
+          } else {
+            doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
           }
-          doc.aposLocale = doc.aposLocale || req.locale;
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
           self.testInsertPermissions(req, doc, options);
+          const manager = self.getManager(doc.type);
+          if (doc._id && manager.isLocalized()) {
+            if (!doc.aposDocId) {
+              const components = doc._id.split(':');
+              if (components.length < 3) {
+                throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
+              }
+              doc.aposDocId = components[0];
+              doc.aposLocale = `${components[1]}:${components[2]}`;
+            }
+          }
           if (!doc.aposDocId) {
             doc.aposDocId = self.apos.util.generateId();
           }
           if (!doc._id) {
+            if (!doc.aposLocale) {
+              if (manager.isLocalized()) {
+                doc.aposLocale = options.locale || `${req.locale}:${req.mode}`;
+              }
+            }
             if (doc.aposLocale) {
               doc._id = `${doc.aposDocId}:${doc.aposLocale}`;
             } else {

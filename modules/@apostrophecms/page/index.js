@@ -415,6 +415,7 @@ module.exports = {
           _.each(builders, function (val, key) {
             query[key](val);
           });
+          console.log('<<<', builders);
           req.data.home = await query.toObject();
         }
       },
@@ -708,8 +709,8 @@ database.`);
               }
             });
           }
-          page._id = self.apos.util.generateId();
-          page.path = self.apos.util.addSlashIfNeeded(parent.path) + page._id;
+          page.aposDocId = self.apos.util.generateId();
+          page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
           await self.apos.doc.insert(req, page, options);
           return page;
@@ -1628,8 +1629,9 @@ database.`);
           };
           delete _item._children;
           if (!parent) {
-            _item._id = self.apos.util.generateId();
-            _item.path = _item._id;
+            // Parking the home page for the first time
+            _item.aposDocId = self.apos.util.generateId();
+            _item.path = _item.aposDocId;
             return self.apos.doc.insert(req, _item);
           } else {
             return self.insert(req, parent._id, 'lastChild', _item);

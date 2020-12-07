@@ -23,6 +23,8 @@ module.exports = {
       cookie: 'apos_language',
       directory: self.options.localesDir || self.apos.rootDir + '/locales'
     });
+    self.locales = (i18nOptions.options && i18nOptions.options.locales[0]) || [ 'en' ];
+    self.defaultLocale = self.options.defaultLocale || self.locales[0];
     i18n.configure(i18nOptions);
     // Make the i18n instance available globally in Apostrophe
     self.apos.i18n = i18n;
@@ -35,10 +37,10 @@ module.exports = {
         // locale headers, etc. What we have now works for editing
         // draft/published content
         const queryLocale = req.query['apos-locale'];
-        const bareLocale = (self.locales.includes(queryLocale) && queryLocale) || self.options.defaultLocale || 'default';
+        const locale = (self.locales.includes(queryLocale) && queryLocale) || self.defaultLocale;
+        req.locale = locale;
         const mode = req.query['apos-edit'] ? 'draft' : 'published';
         req.mode = mode;
-        req.locale = `${bareLocale}:${mode}`;
         return self.apos.i18n.init(req, res, next);
       }
     };

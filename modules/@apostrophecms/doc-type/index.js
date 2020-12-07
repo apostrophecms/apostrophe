@@ -201,8 +201,8 @@ module.exports = {
               type: self.name,
               _id: { $ne: doc._id }
             };
-            if (doc.workflowLocale) {
-              query.workflowLocale = doc.workflowLocale;
+            if (doc.aposLocale) {
+              query.aposLocale = doc.aposLocale;
             }
             query[name] = $set[name];
             if ($set[name] === '') {
@@ -589,7 +589,7 @@ module.exports = {
       // If `builders` is an object its properties are invoked as
       // query builders, for instance `{ attachments: true }`.
       async findOneForEditing(req, criteria, builders) {
-        const query = await self.findOneForEditing(req, criteria, builders);
+        const query = await self.findForEditing(req, criteria, builders);
         const doc = query.toObject();
         if (options.annotate) {
           self.apos.attachment.all(doc, { annotate: true });
@@ -1391,7 +1391,7 @@ module.exports = {
             if (!self.isLocalized()) {
               return;
             }
-            const locale = query.get('locale') || query.req.locale;
+            const locale = query.get('locale') || `${query.req.locale}:${query.req.mode}`;
             if (locale) {
               query.and({
                 $or: [
