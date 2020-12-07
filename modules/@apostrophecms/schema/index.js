@@ -1488,14 +1488,7 @@ module.exports = {
         const builders = options.builders || {};
         const hints = options.hints || {};
         const getCriteria = options.getCriteria || {};
-        // Some joinr methods don't take fieldsStorage
-        if (method.length === 4) {
-          const realMethod = method;
-          method = function (items, idsStorage, fieldsStorage, objectField, getter) {
-            return realMethod(items, idsStorage, objectField, getter);
-          };
-        }
-        await method(items, idsStorage, fieldsStorage, objectField, function (ids) {
+        await method(items, idsStorage, fieldsStorage, objectField, ids => {
           const idsCriteria = {};
           if (reverse) {
             idsCriteria[idsStorage] = { $in: ids };
@@ -1515,6 +1508,13 @@ module.exports = {
           // Hints, on the other hand, must be sanitized
           query.applyBuildersSafely(hints);
           return query.toArray();
+        }, _id => {
+          const index = _id.indexOf(':');
+          const locale = options.locale || req.locale;
+          if (index > -1) {
+            return `${_id.substring(0, index)}:${locale}`;
+          }
+          return `${_id}:locale`;
         });
       },
 
@@ -1656,6 +1656,7 @@ module.exports = {
                 builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
                 hints: {}
               };
+              options.locale = options.builders.locale;
               const subname = relationship.name + ':' + type;
               const _relationship = _.assign({}, relationship, {
                 name: subname,
@@ -1694,7 +1695,8 @@ module.exports = {
             if (relationship.idsStorage) {
               _.each(_objects, function (object) {
                 if (object[relationship.name]) {
-                  object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage], object[relationship.name]);
+                  const locale = options.locale || req.locale;
+                  object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage].map(id => `${id}:${locale}`), object[relationship.name]);
                 }
               });
             }

@@ -26,7 +26,6 @@ describe('Docs', function() {
                 type: 'relationship',
                 max: 1,
                 withType: 'test-people',
-                idsStorage: 'friendIds',
                 label: 'Friends'
               }
             }
@@ -83,7 +82,9 @@ describe('Docs', function() {
   it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
-        _id: 'lori',
+        _id: 'lori:default:published',
+        aposDocId: 'lori',
+        aposLocale: 'default:published',
         slug: 'lori',
         visibility: 'public',
         type: 'test-people',
@@ -93,7 +94,9 @@ describe('Docs', function() {
         alive: true
       },
       {
-        _id: 'larry',
+        _id: 'larry:default:published',
+        aposDocId: 'larry',
+        aposLocale: 'default:published',
         slug: 'larry',
         visibility: 'public',
         type: 'test-people',
@@ -103,7 +106,9 @@ describe('Docs', function() {
         alive: true
       },
       {
-        _id: 'carl',
+        _id: 'carl:default:published',
+        aposDocId: 'carl',
+        aposLocale: 'default:published',
         slug: 'carl',
         visibility: 'public',
         type: 'test-people',
@@ -111,7 +116,7 @@ describe('Docs', function() {
         lastName: 'Sagan',
         age: 62,
         alive: false,
-        friendIds: [ 'larry' ]
+        friendsIds: [ 'larry' ]
       }
     ];
 
@@ -170,10 +175,10 @@ describe('Docs', function() {
   // FINDING
   /// ///
 
-  it('should have a find method on docs that returns a cursor', function() {
-    const cursor = apos.doc.find(apos.task.getAnonReq());
-    assert(cursor);
-    assert(cursor.toArray);
+  it('should have a find method on docs that returns a query', function() {
+    const query = apos.doc.find(apos.task.getAnonReq());
+    assert(query);
+    assert(query.toArray);
   });
 
   it('should be able to find all test documents and output them as an array', async function () {
@@ -246,6 +251,15 @@ describe('Docs', function() {
 
     assert(response);
     assert(response._id);
+    assert(response._id.endsWith(':default:published'));
+    assert(response._id === `${response.aposDocId}:${response.aposLocale}`);
+    // Direct insertion in published locale should autocreate
+    // a corresponding draft for internal consistency
+    const draft = await apos.doc.db.findOne({
+      _id: `${response._id}:default:draft`
+    });
+    assert(draft);
+    assert(draft.firstName === response.firstName);
   });
 
   it('should be able to insert a new object into the docs collection in the database', async function() {
@@ -298,7 +312,7 @@ describe('Docs', function() {
   // UPDATING
   /// ///
 
-  it('should have an "update" method on docs that updates an existing database object based on the "_id" porperty', async function() {
+  it('should have an "update" method on docs that updates an existing database object', async function() {
     const req = apos.task.getReq();
     const docs = await apos.doc.find(req, { slug: 'one' }).toArray();
 
@@ -477,8 +491,8 @@ describe('Docs', function() {
 
     for (i = 0; (i < 100); i++) {
       testItems.push({
-        _id: 'i' + i,
-        slug: 'i' + i,
+        _id: `i${i}:default:published`,
+        slug: `i${i}`,
         visibility: 'public',
         type: 'test',
         title: 'title: ' + i
@@ -488,28 +502,30 @@ describe('Docs', function() {
     await apos.doc.db.insertMany(testItems);
 
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).toArray();
+      .explicitOrder([ 'i7:default:published', 'i3:default:published', 'i27:default:published', 'i9:default:published' ]).toArray();
 
-    assert(docs[0]._id === 'i7');
-    assert(docs[1]._id === 'i3');
-    assert(docs[2]._id === 'i27');
-    assert(docs[3]._id === 'i9');
+    assert(docs[0]._id === 'i7:default:published');
+    assert(docs[i].aposDocId === 'i7');
+    assert(docs[i].aposLocale === 'default:published');
+    assert(docs[1]._id === 'i3:default:published');
+    assert(docs[2]._id === 'i27:default:published');
+    assert(docs[3]._id === 'i9:default:published');
     assert(!docs[4]);
   });
 
   it('should respect explicitOrder with skip and limit', async function() {
     // Relies on test data of previous test
     const docs = await apos.doc.find(apos.task.getAnonReq(), {})
-      .explicitOrder([ 'i7', 'i3', 'i27', 'i9' ]).skip(2).limit(2).toArray();
+      .explicitOrder([ 'i7:default:published', 'i3:default:published', 'i27:default:published', 'i9:default:published' ]).skip(2).limit(2).toArray();
 
-    assert(docs[0]._id === 'i27');
-    assert(docs[1]._id === 'i9');
+    assert(docs[0]._id === 'i27:default:published');
+    assert(docs[1]._id === 'i9:default:published');
     assert(!docs[2]);
   });
 
   it('should be able to lock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
     try {
       await apos.doc.lock(req, doc, 'abc');
     } catch (e) {
@@ -519,7 +535,7 @@ describe('Docs', function() {
 
   it('should not be able to lock a document with a different htmlPageId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
 
     try {
       await apos.doc.lock(req, doc, 'def');
@@ -531,7 +547,7 @@ describe('Docs', function() {
 
   it('should be able to refresh the lock with the same htmlPageId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
 
     try {
       await apos.doc.lock(req, doc, 'abc');
@@ -542,7 +558,7 @@ describe('Docs', function() {
 
   it('should be able to unlock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
 
     try {
       await apos.doc.unlock(req, doc, 'abc');
@@ -553,7 +569,7 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
 
     try {
       await apos.doc.lock(req, doc, 'def');
@@ -564,7 +580,7 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27' });
+    const doc = await apos.doc.db.findOne({ _id: 'i27:default:published' });
 
     try {
       await apos.doc.lock(req, doc, 'abc', { force: true });

@@ -250,8 +250,12 @@ module.exports = {
             return { Host: 'you-need-to-set-baseUrl-in-app-js.com' }[propName];
           },
           query: {},
-          url: '/'
+          url: '/',
+          locale: `${(self.apos.modules['@apostrophecms/i18n'].options.defaultLocale || 'default')}:published`
         };
+        if (properties.mode) {
+          req.locale = req.locale.replace(':published', ':draft');
+        }
         _.extend(req, properties || {});
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
         return req;

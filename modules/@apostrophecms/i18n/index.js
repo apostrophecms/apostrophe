@@ -35,8 +35,9 @@ module.exports = {
         // locale headers, etc. What we have now works for editing
         // draft/published content
         const queryLocale = req.query['apos-locale'];
-        const bareLocale = (self.locales.includes(queryLocale) && queryLocale) || 'default';
+        const bareLocale = (self.locales.includes(queryLocale) && queryLocale) || self.options.defaultLocale || 'default';
         const mode = req.query['apos-edit'] ? 'draft' : 'published';
+        req.mode = mode;
         req.locale = `${bareLocale}:${mode}`;
         return self.apos.i18n.init(req, res, next);
       }
