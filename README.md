@@ -1,21 +1,8 @@
 
+[![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/master.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/master)
+[<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit)
+[![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
 
-
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-<br />
 <p align="center">
   <a href="https://github.com/github_username/repo_name">
     <img src="logo.svg" alt="Logo" width="80" height="80">
@@ -33,9 +20,6 @@
     ·
     <a href="https://github.com/apostrophecms/apostrophe/issues/new?assignees=&labels=bug&template=bug_report.md&title=">Report Bug</a>
   </p>
-  <P align="center">
-  [![CircleCI](https://circleci.com/gh/apostrophecms/apostrophe/tree/master.svg?style=svg)](https://circleci.com/gh/apostrophecms/apostrophe/tree/master) · [<img src="./badges/npm-audit-badge.png" title="npm audit" />](https://docs.npmjs.com/cli/audit) · [![Chat on Discord](https://img.shields.io/discord/517772094482677790.svg)](https://chat.apostrophecms.org)
-  </p>
 </p>
 
 
@@ -44,16 +28,9 @@
 <details open="open">
   <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
   <ol>
-    <li>
-      <a href="#about-the-project">About the Project</a>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
+    <li><a href="#about-the-project">About the Project</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#extensions-and-integrations">Extensions and Integrations</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -67,7 +44,7 @@
 
 Our goal is to create a CMS for everyone in an organization. It's our belief that a CMS should inspire every one to express themselves on the web by providing a modern and flexible developer experience and an intuitive interface for content editors. ApostropheCMS is built for teams, and we want to make your job more fun.
 
-### Built With
+#### Built With
 
 * [Node](https://nodejs.org/en/)
 * [Nunjucks](https://mozilla.github.io/nunjucks/)
@@ -78,7 +55,7 @@ Our goal is to create a CMS for everyone in an organization. It's our belief tha
 
 To get started with ApostropheCMS, follow these steps to set up a local development environment.
 
-### Prerequisites
+#### Prerequisites
 
 We recommend installing the following with [Homebrew](https://brew.sh/) on macOS. If you're on Linux, you should use your package manager (apt or yum). If you're on Windows, we recommend the Windows Subsystem for Linux.
 
@@ -92,7 +69,7 @@ We recommend installing the following with [Homebrew](https://brew.sh/) on macOS
 | Imagemagick (optional)  | Any | GIF support, faster image uploads
 
 
-### New Project
+#### New Project
 Our recomended way to start a new project with ApostropheCMS is to use the [Apostrophe CLI](https://github.com/apostrophecms/apostrophe-cli). Alternatively, you can simply clone this repo and `npm install`.
 ##### Install the Apostrophe CLI
  ```sh
