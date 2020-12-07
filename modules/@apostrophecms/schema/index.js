@@ -1514,7 +1514,7 @@ module.exports = {
           if (index > -1) {
             return `${_id.substring(0, index)}:${locale}`;
           }
-          return `${_id}:locale`;
+          return `${_id}:${locale}`;
         });
       },
 

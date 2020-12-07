@@ -245,8 +245,11 @@ module.exports = {
       // for a published document that does not yet have a draft.
       // Apostrophe only has one corresponding draft at a time
       // per published document.
-      insertDraftOf(req, doc, draft) {
-        return self.insert(req, draft);
+      async insertDraftOf(req, doc, draft) {
+        if (draft.type === 'test-people') {
+        }
+        const inserted = await self.insert(req, draft);
+        return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published) {

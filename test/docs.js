@@ -19,7 +19,7 @@ describe('Docs', function() {
 
       modules: {
         'test-people': {
-          extend: '@apostrophecms/doc-type',
+          extend: '@apostrophecms/piece-type',
           fields: {
             add: {
               _friends: {
@@ -140,6 +140,7 @@ describe('Docs', function() {
     const person = await cursor.toObject();
     assert(person);
     assert(person.slug === 'carl');
+    console.log(person);
     assert(person._friends);
     assert(person._friends[0].slug === 'larry');
   });
@@ -152,12 +153,19 @@ describe('Docs', function() {
     try {
       await apos.doc.db.insertMany([
         {
+          _id: 'peter:default:published',
+          aposDocId: 'peter',
+          aposLocale: 'default:published',
           type: 'test-people',
           visibility: 'loginRequired',
           age: 70,
           slug: 'peter'
         },
+        // ids will not conflict, but slug will
         {
+          _id: 'peter2:default:published',
+          aposDocId: 'peter2',
+          aposLocale: 'default:published',
           type: 'test-people',
           visibility: 'loginRequired',
           age: 70,
@@ -256,9 +264,12 @@ describe('Docs', function() {
     // Direct insertion in published locale should autocreate
     // a corresponding draft for internal consistency
     const draft = await apos.doc.db.findOne({
-      _id: `${response._id}:default:draft`
+      _id: `${response.aposDocId}:default:draft`
     });
     assert(draft);
+    // Unique index allows for duplicates across locales
+    assert(object.slug === draft.slug);
+    // Content properties coming through
     assert(draft.firstName === response.firstName);
   });
 
@@ -492,6 +503,8 @@ describe('Docs', function() {
     for (i = 0; (i < 100); i++) {
       testItems.push({
         _id: `i${i}:default:published`,
+        aposDocId: `i${i}`,
+        aposLocale: 'default:published',
         slug: `i${i}`,
         visibility: 'public',
         type: 'test',
@@ -505,8 +518,8 @@ describe('Docs', function() {
       .explicitOrder([ 'i7:default:published', 'i3:default:published', 'i27:default:published', 'i9:default:published' ]).toArray();
 
     assert(docs[0]._id === 'i7:default:published');
-    assert(docs[i].aposDocId === 'i7');
-    assert(docs[i].aposLocale === 'default:published');
+    assert(docs[0].aposDocId === 'i7');
+    assert(docs[0].aposLocale === 'default:published');
     assert(docs[1]._id === 'i3:default:published');
     assert(docs[2]._id === 'i27:default:published');
     assert(docs[3]._id === 'i9:default:published');

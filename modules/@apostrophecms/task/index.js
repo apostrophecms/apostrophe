@@ -253,7 +253,7 @@ module.exports = {
           url: '/',
           locale: `${(self.apos.modules['@apostrophecms/i18n'].options.defaultLocale || 'default')}:published`
         };
-        if (properties.mode) {
+        if (properties && properties.mode && properties.mode.draft) {
           req.locale = req.locale.replace(':published', ':draft');
         }
         _.extend(req, properties || {});

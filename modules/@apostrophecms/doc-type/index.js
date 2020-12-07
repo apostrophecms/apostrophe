@@ -1,6 +1,9 @@
 const _ = require('lodash');
 
 module.exports = {
+  options: {
+    localized: true
+  },
   cascades: [ 'fields' ],
   fields(self, options) {
     return {
@@ -129,7 +132,7 @@ module.exports = {
       },
       afterTrash: {
         deduplicateTrash(req, doc) {
-          const deduplicateKey = doc._id;
+          const deduplicateKey = doc.aposDocId;
           if (doc.parkedId === 'trash') {
             // The primary trashcan itself should not deduplicate
             return;
@@ -171,7 +174,7 @@ module.exports = {
             // The primary trashcan itself should not deduplicate
             return;
           }
-          const deduplicateKey = doc._id;
+          const deduplicateKey = doc.aposDocId;
           const prefix = 'deduplicate-' + deduplicateKey + '-';
           const suffix = '-deduplicate-' + deduplicateKey;
           const $set = {};
@@ -422,6 +425,10 @@ module.exports = {
             throw new Error('Doc type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+      },
+
+      isLocalized() {
+        return this.options.localized;
       },
 
       // This method provides the back end of /autocomplete routes.
@@ -675,6 +682,10 @@ module.exports = {
         // `.and({ price: { $gte: 0 } })` requires the query to match only documents
         // with a price greater than 0, in addition to all other criteria for the
         // query.
+        //
+        // Since this is the main way additional criteria get merged, this method
+        // performs a few transformations of the query to make it more readable
+        // when APOS_LOG_ALL_QUERIES=1 is in the environment.
 
         and: {
           set(c) {
@@ -682,13 +693,27 @@ module.exports = {
               // So we don't crash on our default value
               return;
             }
+            if (!Object.keys(c).length) {
+              // Don't add empty criteria objects to $and
+              return;
+            }
+            // Simplify an $or chain of one
+            if (c.$or && (Object.keys(c).length === 1) && (c.$or.length === 1)) {
+              c = c.$or[0];
+            }
             const criteria = query.get('criteria');
-            if (!criteria) {
+            // If the existing criteria is {} just replace it
+            if ((!criteria) || (!Object.keys(criteria).length)) {
               query.criteria(c);
             } else {
-              query.criteria({
-                $and: [ criteria, c ]
-              });
+              if (criteria.$and) {
+                // Improve readability, avoid nesting
+                criteria.$and.push(c);
+              } else {
+                query.criteria({
+                  $and: [ criteria, c ]
+                });
+              }
             }
           }
         },
@@ -1354,6 +1379,31 @@ module.exports = {
           set(choices) {
             query.choices(choices);
             query.set('counts', true);
+          }
+        },
+
+        locale: {
+          def: null,
+          launder(locale) {
+            return self.apos.launder.string(locale);
+          },
+          finalize() {
+            if (!self.isLocalized()) {
+              return;
+            }
+            const locale = query.get('locale') || query.req.locale;
+            if (locale) {
+              query.and({
+                $or: [
+                  {
+                    aposLocale: locale
+                  },
+                  {
+                    aposLocale: null
+                  }
+                ]
+              });
+            }
           }
         }
 

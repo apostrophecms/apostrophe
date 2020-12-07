@@ -148,7 +148,7 @@ module.exports = {
       '@apostrophecms/doc-type:afterInsert': {
         async ensureDraftExists(req, doc, options) {
           const manager = self.getManager(doc.type);
-          if (!manager.isLocalized(doc)) {
+          if (!manager.isLocalized()) {
             return;
           }
           if (self.isDraft(doc)) {
@@ -158,9 +158,11 @@ module.exports = {
           const draftId = `${doc.aposDocId}:${draftLocale}`;
           if (await self.db.findOne({
             _id: draftId
-          }).project({
-            _id: 1
-          }).toObject()) {
+          }, {
+            projection: {
+              _id: 1
+            }
+          })) {
             return;
           }
           const draft = {
@@ -202,12 +204,16 @@ module.exports = {
         return self.db.createIndex(params, { unique: true });
       },
       getSlugIndexParams() {
-        return { slug: 1 };
+        return {
+          slug: 1,
+          aposLocale: 1
+        };
       },
       getPathLevelIndexParams() {
         return {
           path: 1,
-          level: 1
+          level: 1,
+          aposLocale: 1
         };
       },
       async createIndexes() {
@@ -768,6 +774,9 @@ module.exports = {
             }
           });
         });
+      },
+      isDraft(doc) {
+        return doc.aposLocale.endsWith(':draft');
       }
     };
   }
