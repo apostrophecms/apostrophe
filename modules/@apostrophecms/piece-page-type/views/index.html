@@ -6,6 +6,9 @@
     <h2><a href="{{ piece._url }}">{{ piece.title }}</a></h2>
   {% endfor %}
   {% import '@apostrophecms/pager:macros.html' as pager with context %}
-  {{ pager.render({ page: data.currentPage, total: data.totalPages }, data.url) }}
+  {{ pager.render({
+    page: data.currentPage,
+    total: data.totalPages
+  }, data.url) }}
 {% endblock %}
 
