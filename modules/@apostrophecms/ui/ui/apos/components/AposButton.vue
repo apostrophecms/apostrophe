@@ -4,12 +4,13 @@
     v-on="href ? {} : {click: click}"
     :href="href.length ? href : false"
     class="apos-button"
-    :class="modifierClass" :tabindex="tabindex"
+    :class="modifierClass"
+    :tabindex="tabindex"
     :disabled="isDisabled"
     :type="buttonType"
     :role="role"
     v-tooltip="tooltip"
-    :style="styles"
+    v-bind="attrs"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
@@ -77,6 +78,12 @@ export default {
         return [];
       }
     },
+    attrs: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     disableFocus: Boolean,
     buttonType: {
       type: [ String, Boolean ],
@@ -94,28 +101,12 @@ export default {
   emits: [ 'click' ],
   data() {
     return {
-      contextMenuOpen: true
+      // contextMenuOpen: true, TODO get rid of this?
     };
   },
   computed: {
     tabindex() {
       return this.disableFocus ? '-1' : '0';
-    },
-    styles() {
-      const styles = {};
-      let styleStr = '';
-      if (this.color) {
-        styles['background-color'] = this.color;
-        styles.border = `3px solid ${tinycolor(this.color).lighten(20).toString()}`;
-      }
-
-      for (const k in styles) {
-        if (Object.prototype.hasOwnProperty.call(styles, k)) {
-          styleStr += k + ': ' + styles[k] + '; ';
-        }
-      }
-
-      return styleStr;
     },
     modifierClass() {
       const modifiers = [];
@@ -239,11 +230,39 @@ export default {
     background-color: transparent;
   }
 
-  .apos-button--color {
-    // background-color: var(--a-primary);
-    border-radius: 50%;
+  .apos-button.apos-button--color {
     width: 50px;
     height: 50px;
+    border: 0;
+    box-shadow: var(--a-box-shadow);
+  }
+
+  .apos-button--color,
+  .apos-button--color:before,
+  .apos-button--color:after {
+    border-radius: 50%;
+  }
+
+  .apos-button--color:before,
+  .apos-button--color:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+  }
+
+  .apos-button--color:before {
+    $top: 1;
+    z-index: $top;
+    border: 2px solid var(--a-base-4);
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4T2N89uzZfwY8QFJSEp80A+OoAcMiDP7//483HTx//hx/Ohg1gIFx6IcBALl+VXknOCvFAAAAAElFTkSuQmCC');
+  }
+
+  .apos-button--color:after {
+    $bottom: 1;
+    z-index: $bottom;
   }
 
   .apos-button--small {

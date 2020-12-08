@@ -5,16 +5,23 @@
   >
     <template #body>
       <div class="apos-color">
-        <AposContextMenu
-          :button="buttonOptions"
-          @open="open"
-          @close="close"
-        >
-          <Picker
-            :value="colors"
-            @input="update"
-          />
-        </AposContextMenu>
+        <div class="apos-color__ui">
+          <AposContextMenu
+            :button="buttonOptions"
+            @open="open"
+            @close="close"
+            menu-placement="bottom-start"
+            menu-offset="88, 20"
+          >
+            <Picker
+              :value="next"
+              @input="update"
+            />
+          </AposContextMenu>
+        </div>
+        <div class="apos-color__info">
+          {{ valueLabel }}
+        </div>
       </div>
     </template>
   </AposInputWrapper>
@@ -22,7 +29,9 @@
 
 <script>
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import Picker from 'vue-color/src/components/Sketch.vue';
+import Picker from 'vue-color/src/components/Sketch';
+import tinycolor from 'tinycolor2';
+import cuid from 'cuid';
 
 export default {
   name: 'AposInputColor',
@@ -33,28 +42,52 @@ export default {
   data() {
     return {
       active: false,
-      buttonOptions: {
-        label: 'Hello world',
-        type: 'default'
-      }
+      tinyColorObj: null,
+      id: cuid()
     };
   },
-
   computed: {
-    classList: function () {
+    buttonOptions() {
+      return {
+        label: this.field.label,
+        type: 'color',
+        color: this.value.data || '',
+        attrs: { 'data-apos-color-input': this.id }
+      };
+    },
+    valueLabel() {
+      if (this.next) {
+        return this.next;
+      } else {
+        return 'No color selected';
+      }
+    },
+    preferredFormat() {
+      return 'rgb';
+    },
+    classList() {
       return [
         'apos-input-wrapper',
         'apos-color'
       ];
-    },
-    colors() {
-      return {
-        hex: '#194d33',
-        a: 0.6
-      };
     }
   },
+  mounted() {
+    this.tinyColorObj = tinycolor(this.next);
+    this.generatePreview();
+  },
   methods: {
+    generatePreview() {
+      const style = document.createElement('style');
+      style.type = 'text/css';
+      let rule = `[data-apos-color-input="${this.id}"]:after {`;
+      rule += `background-color: ${this.tinyColorObj.toString(this.preferredFormat)};`;
+      rule += `border: 2px solid ${this.tinyColorObj.lighten(20).toString(this.preferredFormat)};`;
+      rule += `opacity: ${this.next ? 1 : 0}`; // hack to simlulate not-yet-set
+      rule += '}';
+      this.$el.appendChild(style);
+      style.innerHTML = rule;
+    },
     open() {
       this.active = true;
     },
@@ -62,13 +95,35 @@ export default {
       this.active = false;
     },
     update(value) {
-      console.log('hi update');
-      console.log(value);
+      this.tinyColorObj = tinycolor(value.hsl);
+      this.next = this.tinyColorObj.toString(this.preferredFormat);
+      this.generatePreview();
+    },
+    validate(value) {
+      if (value == null) {
+        value = '';
+      }
+      const color = tinycolor(value);
+      console.log(`value is ${color.isValid()}`);
+      return !(color.isValid());
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  
+  .apos-color {
+    display: flex;
+    align-items: center;
+
+    & /deep/ .vc-sketch {
+      padding: 0;
+      box-shadow: none;
+    }
+  }
+
+  .apos-color__info {
+    @include type-base;
+    margin-left: 15px;
+  }
 </style>
