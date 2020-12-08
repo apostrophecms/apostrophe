@@ -51,6 +51,7 @@ describe('Pieces Public API', function() {
   it('should be able to insert a piece into the database', async () => {
     await apos.thing.insert(apos.task.getReq(), testThing);
     const thing = await apos.thing.find(apos.task.getReq(), { _id: 'testThing:en:published' }).toObject();
+    assert(thing);
   });
 
   it('should not be able to anonymously retrieve a piece by id from the database without a public API projection', async () => {

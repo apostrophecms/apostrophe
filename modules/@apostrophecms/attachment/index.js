@@ -126,6 +126,7 @@ module.exports = {
     }
 
     self.rescaleTask = require('./lib/tasks/rescale.js')(self);
+    await self.addFixLengthPropertyMigration();
     await self.enableCollection();
     await self.initUploadfs();
     self.addFieldType();
@@ -745,6 +746,21 @@ module.exports = {
             break;
           }
         }
+      },
+      addFixLengthPropertyMigration() {
+        self.apos.migration.add('fix-length-property', async () => {
+          return self.each({
+            'length.size': { $exists: 1 }
+          }, 5, attachment => {
+            return self.db.update({
+              _id: attachment._id
+            }, {
+              $set: {
+                length: attachment.length.size
+              }
+            });
+          });
+        });
       },
       // Returns true if, based on the provided attachment object,
       // a valid focal point has been specified. Useful to avoid
