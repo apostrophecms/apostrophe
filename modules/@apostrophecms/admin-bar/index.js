@@ -264,7 +264,10 @@ module.exports = {
             title: context.title,
             type: context.type,
             _url: context._url,
-            slug: context.slug
+            slug: context.slug,
+            updatedAt: context.updatedAt,
+            updatedBy: context.updatedBy
+
           },
           // Simplifies frontend logic
           contextId: context && context._id,

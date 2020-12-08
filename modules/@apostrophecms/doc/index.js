@@ -129,6 +129,7 @@ module.exports = {
             }
           });
           doc.updatedAt = new Date();
+          doc.updatedBy = req.user._id || 'ApostropheCMS';
         }
       },
       fixUniqueError: {

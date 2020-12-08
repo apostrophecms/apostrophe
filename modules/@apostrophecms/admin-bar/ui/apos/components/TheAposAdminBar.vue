@@ -106,7 +106,7 @@
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
               :size="15"
-              tooltip="Page Title"
+              :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
             {{ moduleOptions.context.title }}
@@ -171,6 +171,7 @@
 
 <script>
 import klona from 'klona';
+import dayjs from 'dayjs';
 
 export default {
   name: 'TheAposAdminBar',
@@ -185,6 +186,8 @@ export default {
   emits: [ 'admin-menu-click' ],
   data() {
     return {
+      updatedBy: 'ApostropheCMS',
+      logo: 'AposLogo',
       menuItems: [],
       createMenu: [],
       patchesSinceLoaded: [],
@@ -220,6 +223,9 @@ export default {
     };
   },
   computed: {
+    docTooltip() {
+      return `Last saved on ${dayjs(this.moduleOptions.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
+    },
     undoTooltips() {
       const tooltips = {
         undo: 'Undo Change',
@@ -312,7 +318,24 @@ export default {
       }
     }
   },
-  mounted() {
+  async mounted() {
+    // Fetch the user data of the person who last edited this doc for display in the admin bar
+    if (this.moduleOptions.context.updatedBy && this.moduleOptions.context.updatedBy !== 'ApostropheCMS') {
+      const editor = await apos.http.get(
+        `${window.apos.user.action}/${this.moduleOptions.context.updatedBy}`,
+        {}
+      );
+      if (editor) {
+        let editorLabel = '';
+        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
+        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.username ? `(${editor.username})` : '';
+        this.updatedBy = editorLabel;
+      }
+    } else {
+      this.updatedBy = `ApostropheCMS ■●▲`;
+    }
+
     // A unique identifier for this current page's lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
@@ -561,6 +584,9 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__title__wrapper {
   display: inline-flex;
   align-items: center;
+  & /deep/ .apos-tooltip__inner {
+    max-width: 200px;
+  }
 }
 
 .apos-admin-bar__title__indicator {
