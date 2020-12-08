@@ -44,7 +44,7 @@
     <span class="{{ pageClass }}{% if page == 1 %}  is-first{% endif %}{% if page == options.total %} is-last{% endif %}{% if page == options.page %} is-active{% endif %}">
       {%- if (options.page != page) -%}
         {# Dual markup for javascript applications and plain old links #}
-        <a data-apos-page="{{ page }}" href="{{ url | build({ page: page, append: 1 }) }}">
+        <a href="{{ url | build({ page: page, append: 1 }) }}">
       {%- endif -%}
       {{ page }}
       {%- if (options.page != page) -%}
