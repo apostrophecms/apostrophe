@@ -187,7 +187,6 @@ export default {
   data() {
     return {
       updatedBy: 'ApostropheCMS',
-      logo: 'AposLogo',
       menuItems: [],
       createMenu: [],
       patchesSinceLoaded: [],
@@ -584,9 +583,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__title__wrapper {
   display: inline-flex;
   align-items: center;
-  & /deep/ .apos-tooltip__inner {
-    max-width: 200px;
-  }
 }
 
 .apos-admin-bar__title__indicator {
