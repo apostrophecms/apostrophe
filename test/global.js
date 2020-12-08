@@ -31,7 +31,8 @@ describe('Global', function() {
 
   it('should be able to add a test property', async function() {
     return apos.doc.db.updateOne({
-      slug: 'global'
+      slug: 'global',
+      aposLocale: 'en:published'
     }, {
       $set: {
         test: 'test'

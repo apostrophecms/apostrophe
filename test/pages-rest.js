@@ -188,7 +188,7 @@ describe('Pages REST', function() {
     assert(home.slug === '/');
     // make sure new style paths used
     assert(home.path !== '/');
-    assert(home.path === home._id);
+    assert(`${home.path}:en:published` === home._id);
     assert(home.level === 0);
     homeId = home._id;
   });
@@ -284,7 +284,7 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'New Tab');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page._id.replace(':en:published', '')}`);
     assert.strictEqual(page.level, 1);
   });
 
@@ -306,7 +306,7 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'Second New');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/${page._id.replace(':en:published', '')}`);
     assert.strictEqual(page.level, 1);
     assert.strictEqual(page.rank, 1);
   });
@@ -332,7 +332,7 @@ describe('Pages REST', function() {
     assert(page);
     assert(page.title === 'New Page');
     // Is the path generally correct?
-    assert.strictEqual(page.path, `${homeId}/parent/${page._id}`);
+    assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/parent/${page._id.replace(':en:published', '')}`);
     assert.strictEqual(page.level, 2);
     assert.strictEqual(page.rank, 2);
   });

@@ -415,7 +415,6 @@ module.exports = {
           _.each(builders, function (val, key) {
             query[key](val);
           });
-          console.log('<<<', builders);
           req.data.home = await query.toObject();
         }
       },
@@ -1072,7 +1071,6 @@ database.`);
           targetId = target._children[position]._id;
           position = 'before';
         }
-
         return {
           targetId,
           position
