@@ -129,7 +129,11 @@ module.exports = {
             }
           });
           doc.updatedAt = new Date();
-          doc.updatedBy = req.user || {
+          doc.updatedBy = req.user ? {
+            firstName: req.user.firstName || null,
+            lastName: req.user.lastName || null,
+            username: req.user.username
+          } : {
             username: 'ApostropheCMS'
           };
         }
