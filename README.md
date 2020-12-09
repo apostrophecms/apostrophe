@@ -46,8 +46,8 @@ ApostropheCMS is content software for everyone in an organization. It helps team
 #### Built With
 
 * [Node](https://nodejs.org/en/)
-* [Nunjucks](https://mozilla.github.io/nunjucks/)
 * [MongoDB](https://www.mongodb.com/)
+* [Nunjucks](https://mozilla.github.io/nunjucks/)
 
 ## Getting Started
 
