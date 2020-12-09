@@ -61,7 +61,6 @@ We recommend installing the following with [Homebrew](https://brew.sh/) on macOS
 
 | Software | Minimum Version | Notes
 | ------------- | ------------- | -----
-| Xcode  | Current | Only needed on macOS
 | Node.js | 8.x | Or better
 | npm  | 6.x  | Or better
 | MongoDB  | 3.6  | Or better
