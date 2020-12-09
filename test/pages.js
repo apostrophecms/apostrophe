@@ -157,7 +157,6 @@ describe('Pages', function() {
         rank: 1
       }
     ];
-
     const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);

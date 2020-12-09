@@ -241,12 +241,10 @@ module.exports = {
       async post(req) {
         self.publicApiCheck(req);
         req.body._position = req.body._position || 'lastChild';
-
         const {
           targetId,
           position
         } = await self.getTargetIdAndPosition(req, null, req.body._targetId, req.body._position);
-
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
@@ -2029,7 +2027,7 @@ database.`);
             _id: home._id
           }, {
             $set: {
-              path: home._id
+              path: home._id.replace(/:.*$/)
             }
           });
         });
