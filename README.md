@@ -81,10 +81,10 @@ apos create-project wonderful-project --setup
 You'll be prompted to create a password for the `admin` user.
 ##### Run
 ```sh
-node app.js
+cd wonderful-project && node app.js
 ```
 
-Navigate to [localhost:3000/login](localhost:3000) to login with the admin credentials you created.
+Navigate to [localhost:3000/login](http://localhost:3000) to login with the admin credentials you created.
 #### Next Steps
 Check out our [Getting Started tutorial](https://docs.apostrophecms.org/getting-started/creating-your-first-project.html#working-with-areas) in the documentation to start adding content. Be sure to reference our [glossary of terms](https://docs.apostrophecms.org/reference/glossary.html) to get acquainted with the reference materials.
 
