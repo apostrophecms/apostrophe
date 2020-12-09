@@ -10,7 +10,6 @@
       :col-widths="colWidths" :hidden="options.hideHeader"
     />
     <AposTreeRows
-      v-if="myItems"
       v-model="checkedProxy"
       :rows="myItems"
       :headers="headers"
