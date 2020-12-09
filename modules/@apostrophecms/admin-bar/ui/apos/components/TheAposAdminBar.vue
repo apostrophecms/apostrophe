@@ -153,6 +153,7 @@
                 }
               })"
             />
+            <AposDocMoreMenu :options="moduleOptions" /> <!-- beefy and shared context menu-->
             <AposButton
               class="apos-admin-bar__context-button"
               label="Preview" :tooltip="{

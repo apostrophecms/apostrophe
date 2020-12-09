@@ -6,6 +6,7 @@
       @show="show"
       :offset="menuOffset"
       trigger="manual"
+      :placement="menuPlacement"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
       popover-class="apos-popover"
