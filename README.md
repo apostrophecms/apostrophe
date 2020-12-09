@@ -16,7 +16,9 @@
     <a href="https://docs.apostrophecms.org/"><strong>Documentation »</strong></a>
     <br />
     <br />
-    <a href="http://dashboard.apostrophecmsdemo.org/">View Demo</a>
+    <a href="http://dashboard.apostrophecmsdemo.org/">Demo</a>
+    ·
+    <a href="https://portal.productboard.com/apostrophecms/1-product-roadmap">Roadmap</a>
     ·
     <a href="https://github.com/apostrophecms/apostrophe/issues/new?assignees=&labels=bug&template=bug_report.md&title=">Report Bug</a>
   </p>
