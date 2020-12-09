@@ -33,9 +33,9 @@
     <li><a href="#about-apostrophecms">About ApostropheCMS</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
     <li><a href="#extensions-and-integrations">Extensions and Integrations</a></li>
+    <li><a href="#community">Community</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
 
@@ -64,7 +64,7 @@ We recommend installing the following with [Homebrew](https://brew.sh/) on macOS
 | Node.js | 8.x | Or better
 | npm  | 6.x  | Or better
 | MongoDB  | 3.6  | Or better
-| Imagemagick (optional)  | Any | GIF support, faster image uploads
+| Imagemagick  | Any | Faster image uploads, GIF support (optional)
 
 
 #### Installation
@@ -76,63 +76,43 @@ Our recomended way to start a new project with ApostropheCMS is to use the [Apos
  ```
 ##### Create a project
 ```sh
-apos create-project wonderful-project
+apos create-project wonderful-project --setup
 ```
-
-##### Install dependencies
-```sh
-cd wonderful-project && npm install
-```
-##### Create an admin user add them to the admin group
-```sh
-node app.js apostrophe-users:add myUser admin
-```
+You'll be prompted to create a password for the `admin` user.
 ##### Run
 ```sh
 node app.js
 ```
 
-Navigate to `localhost:3000/login` to login with the admin credentials you created.
+Navigate to [localhost:3000/login](localhost:3000) to login with the admin credentials you created.
 #### Next Steps
 Check out our [Getting Started tutorial](https://docs.apostrophecms.org/getting-started/creating-your-first-project.html#working-with-areas) in the documentation to start adding content. Be sure to reference our [glossary of terms](https://docs.apostrophecms.org/reference/glossary.html) to get acquainted with the reference materials.
 
 ## Extensions and Integrations
 
-You can find a complete list of [extensions](https://apostrophecms.com/extensions) on our website, but here are a few highlights:
+You can find a  list of ApostropheCMS [extensions](https://apostrophecms.com/extensions) on our website, but here are a few highlights:
 
 #### Extend ApostropheCMS
 
 - [apostrophe-headless](https://github.com/apostrophecms/apostrophe-headless) - Add REST APIs and power your React / Vue Native / etc. apps with a headless CMS.
 - [apostrophe-blog](https://github.com/apostrophecms/apostrophe-blog) - Everything you need to put a blog on your site.
-- [apostrophe-events](https://github.com/apostrophecms/apostrophe-events) - Manage upcoming events.
+- [apostrophe-events](https://github.com/apostrophecms/apostrophe-events) - Manage one-time and recurring events.
 - [apostrophe-workflow](https://github.com/apostrophecms/apostrophe-workflow) - Add powerful localization capabilities to your project.
 - [apostrophe-passport](https://github.com/apostrophecms/apostrophe-passport) - Authenticate via Twitter, Facebook, Github and more.
 - [apostrophe-saml](https://github.com/apostrophecms/apostrophe-saml) - Authenticate via Shibboleth, as well as corporate SAML environments like Salesforce.
-- [apostrophe-places](https://github.com/apostrophecms/apostrophe-places) - Manage geotagged content and display it on a map.
 - [apostrophe-redirects](https://github.com/apostrophecms/apostrophe-redirects) - An easy redirects module.
 
 #### Editor Extensions
 - [Atom Snippets](https://github.com/apostrophecms/apostrophe-atom)
 - [VS Snippets](https://marketplace.visualstudio.com/items?itemName=punkave.apostrophecms-vs-snippets)
 
+## Community
+
+[Discord](https://discord.com/invite/XkbRNq7) - [Twitter](https://twitter.com/apostrophecms) - [Discussions](https://github.com/apostrophecms/apostrophe/discussions)
 ## Contributing
 
-We eagerly welcome open source contributions. Before submitting a PR, please read through our [Contribution Guide](https://github.com/apostrophecms/apostrophe/blob/main/CODE_OF_CONDUCT.md)
-
-1. Fork the Project
-2. Create a Feature Branch (`git checkout -b feature/LovelyFeature`)
-3. Commit your Changes (`git commit -m 'Add some LovelyFeature'`)
-4. Push to the Branch (`git push origin feature/LovelyFeature`)
-5. Open a Pull Request
-
-
+We eagerly welcome open source contributions. Before submitting a PR, please read through our [Contribution Guide](https://github.com/apostrophecms/apostrophe/blob/main/CONTRIBUTING.md)
 
 ## License
 
 ApostropheCMS is released under the [ MIT License](https://github.com/apostrophecms/apostrophe/blob/main/LICENSE.md).
-
-
-
-## Contact
-
-[Discord](https://discord.com/invite/XkbRNq7) - [Twitter](https://twitter.com/apostrophecms) - [Discussions](https://github.com/apostrophecms/apostrophe/discussions)
