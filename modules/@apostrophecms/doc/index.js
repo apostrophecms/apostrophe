@@ -129,6 +129,14 @@ module.exports = {
             }
           });
           doc.updatedAt = new Date();
+          doc.updatedBy = req.user ? {
+            _id: req.user._id,
+            firstName: req.user.firstName || null,
+            lastName: req.user.lastName || null,
+            username: req.user.username
+          } : {
+            username: 'ApostropheCMS'
+          };
         }
       },
       fixUniqueError: {
