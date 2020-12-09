@@ -186,7 +186,6 @@ export default {
   emits: [ 'admin-menu-click' ],
   data() {
     return {
-      updatedBy: 'ApostropheCMS',
       menuItems: [],
       createMenu: [],
       patchesSinceLoaded: [],
@@ -222,6 +221,17 @@ export default {
     };
   },
   computed: {
+    updatedBy() {
+      let editorLabel = 'ApostropheCMS ■●▲';
+      if (this.moduleOptions.context.updatedBy) {
+        const editor = this.moduleOptions.context.updatedBy;
+        editorLabel = '';
+        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
+        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.username ? `(${editor.username})` : '';
+      }
+      return editorLabel;
+    },
     docTooltip() {
       return `Last saved on ${dayjs(this.moduleOptions.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
     },
@@ -317,24 +327,7 @@ export default {
       }
     }
   },
-  async mounted() {
-    // Fetch the user data of the person who last edited this doc for display in the admin bar
-    if (this.moduleOptions.context.updatedBy && this.moduleOptions.context.updatedBy !== 'ApostropheCMS') {
-      const editor = await apos.http.get(
-        `${window.apos.user.action}/${this.moduleOptions.context.updatedBy}`,
-        {}
-      );
-      if (editor) {
-        let editorLabel = '';
-        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
-        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
-        editorLabel += editor.username ? `(${editor.username})` : '';
-        this.updatedBy = editorLabel;
-      }
-    } else {
-      this.updatedBy = `ApostropheCMS ■●▲`;
-    }
-
+  mounted() {
     // A unique identifier for this current page's lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
