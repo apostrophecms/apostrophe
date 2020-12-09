@@ -12,6 +12,9 @@
       />
     </template>
     <template #primaryControls>
+      <AposDocMoreMenu
+        :doc-id="docId"
+      />
       <AposButton
         type="primary" label="Save"
         :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"

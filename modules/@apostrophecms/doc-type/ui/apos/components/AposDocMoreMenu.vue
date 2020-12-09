@@ -1,9 +1,9 @@
 <template>
   <AposContextMenu
-    v-if="options.contextId"
     class="apos-admin-bar__context-button"
     :menu="menu"
     menu-placement="bottom-end"
+    @item-clicked="menuHandler"
     :button="{
       tooltip: { content: 'More Options', placement: 'bottom' },
       label: 'More Options',
@@ -12,18 +12,7 @@
       type: 'subtle',
       modifiers: ['small', 'no-motion']
     }"
-    @item-clicked="emitEvent"
-  >
-    <ul class="apos-context-menu__items" v-if="menu">
-      <AposContextMenuItem
-        v-for="item in menu"
-        :key="item.action"
-        :menu-item="item"
-        @clicked="menuItemClicked"
-        :open="isOpen"
-      />
-    </ul>
-  </AposContextMenu>
+  />
 </template>
 
 <script>
@@ -31,14 +20,15 @@
 export default {
   name: 'AposDocMoreMenu',
   props: {
-    options: {
-      type: Object,
+    docId: {
+      type: String,
       required: true
     }
   },
-  emits: [ 'admin-menu-click' ],
+  emits: [ 'admin-menu-click', 'close' ],
   data() {
     return {
+      isOpen: false,
       menu: [
         {
           label: 'Share Draft',
@@ -65,8 +55,28 @@ export default {
     };
   },
   methods: {
+    async duplicate() {
+      console.log('TODO: stub for Duplicate action');
+    },
+    async save() {
+      console.log('TODO: stub for Save Draft action');
+    },
+    async share() {
+      console.log('TODO: stub for Share Draft action');
+    },
+    async revertToLastPublished() {
+      console.log('TODO: stub for revertToLastPublished action');
+    },
+    async versions() {
+      await apos.modal.execute('AposDocVersions', {
+        options: { foo: 'bar' },
+        doc: {
+          _id: this.docId
+        }
+      });
+    },
     menuHandler(action) {
-      console.log(`do ${action}`);
+      this[action]();
     }
   }
 };
