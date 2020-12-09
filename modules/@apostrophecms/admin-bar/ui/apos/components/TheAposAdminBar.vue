@@ -106,7 +106,7 @@
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
               :size="15"
-              tooltip="Page Title"
+              :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
             {{ moduleOptions.context.title }}
@@ -174,6 +174,7 @@
 
 <script>
 import klona from 'klona';
+import dayjs from 'dayjs';
 
 export default {
   name: 'TheAposAdminBar',
@@ -223,6 +224,20 @@ export default {
     };
   },
   computed: {
+    updatedBy() {
+      let editorLabel = 'ApostropheCMS ■●▲';
+      if (this.moduleOptions.context.updatedBy) {
+        const editor = this.moduleOptions.context.updatedBy;
+        editorLabel = '';
+        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
+        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.username ? `(${editor.username})` : '';
+      }
+      return editorLabel;
+    },
+    docTooltip() {
+      return `Last saved on ${dayjs(this.moduleOptions.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
+    },
     undoTooltips() {
       const tooltips = {
         undo: 'Undo Change',
