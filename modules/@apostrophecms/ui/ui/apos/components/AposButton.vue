@@ -16,6 +16,13 @@
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
     </transition>
+    <span
+      v-if="colorStyle"
+      class="apos-button__color-preview"
+    >
+      <span :style="colorStyle" class="apos-button__color-preview__swatch"></span>
+      <span class="apos-button__color-preview__checkerboard"></span>
+    </span>
     <div class="apos-button__content">
       <AposIndicator
         v-if="icon"
@@ -110,6 +117,17 @@ export default {
     tabindex() {
       return this.disableFocus ? '-1' : '0';
     },
+    colorStyle() {
+      if (this.type === 'color') {
+        let style = ''
+        style += `background-color: ${this.color};`;
+        style += `border: 2px solid ${tinycolor(this.color).lighten(20).toString()};`;
+        return style;
+      } else {
+        return null;
+      }
+      
+    },
     modifierClass() {
       const modifiers = [];
 
@@ -160,25 +178,9 @@ export default {
       return (this.disabled || this.busy);
     }
   },
-  mounted() {
-    if (this.type === 'color') {
-      this.previewColor();
-    }
-  },
   methods: {
     click($event) {
       this.$emit('click', $event);
-    },
-    previewColor() {
-      const tc = tinycolor(this.color);
-      const style = document.createElement('style');
-      style.type = 'text/css';
-      let rule = `#${this.id}:after {`;
-      rule += `background-color: ${tc.toString()};`;
-      rule += `border: 2px solid ${tc.lighten(20).toString()};`;
-      rule += '}';
-      this.$el.appendChild(style);
-      style.innerHTML = rule;
     }
   }
 };
@@ -252,35 +254,34 @@ export default {
     width: 50px;
     height: 50px;
     border: 0;
+    border-radius: 50%;
     box-shadow: var(--a-box-shadow);
   }
 
-  .apos-button--color,
-  .apos-button--color:before,
-  .apos-button--color:after {
-    border-radius: 50%;
-  }
-
-  .apos-button--color:before,
-  .apos-button--color:after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
+  .apos-button__color-preview {
     width: calc(100% - 4px);
     height: calc(100% - 4px);
   }
-
-  .apos-button--color:before {
-    $top: 1;
-    z-index: $top;
-    border: 2px solid var(--a-base-4);
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4T2N89uzZfwY8QFJSEp80A+OoAcMiDP7//483HTx//hx/Ohg1gIFx6IcBALl+VXknOCvFAAAAAElFTkSuQmCC');
+  .apos-button__color-preview,
+  .apos-button__color-preview__swatch,
+  .apos-button__color-preview__checkerboard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
   }
 
-  .apos-button--color:after {
-    $bottom: 1;
-    z-index: $bottom;
+  .apos-button__color-preview__swatch,
+  .apos-button__color-preview__checkerboard {
+    width: 100%;
+    height: 100%;
+  }
+  .apos-button__color-preview__swatch {
+    z-index: $z-index-default;
+  }
+  .apos-button__color-preview__checkerboard {
+    z-index: $z-index-base;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4T2N89uzZfwY8QFJSEp80A+OoAcMiDP7//483HTx//hx/Ohg1gIFx6IcBALl+VXknOCvFAAAAAElFTkSuQmCC');
   }
 
   .apos-button--small {

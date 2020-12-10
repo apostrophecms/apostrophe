@@ -53,7 +53,7 @@ export default {
           ],
           disableAlpha: false,
           disableFields: false,
-          format: 'hex'
+          format: 'hex8'
         };
       }
     }
@@ -71,7 +71,6 @@ export default {
         label: this.field.label,
         type: 'color',
         color: this.value.data || '',
-        attrs: { id: this.id }
       };
     },
     valueLabel() {
@@ -90,20 +89,8 @@ export default {
   },
   mounted() {
     this.tinyColorObj = tinycolor(this.next);
-    this.generatePreview();
   },
   methods: {
-    generatePreview() {
-      const style = document.createElement('style');
-      style.type = 'text/css';
-      let rule = `#${this.id}:after {`;
-      rule += `background-color: ${this.tinyColorObj.toString(this.fieldOptions.format)};`;
-      rule += `border: 2px solid ${this.tinyColorObj.lighten(20).toString(this.fieldOptions.format)};`;
-      rule += `opacity: ${this.next ? 1 : 0}`; // hack to simlulate not-yet-set
-      rule += '}';
-      this.$el.appendChild(style);
-      style.innerHTML = rule;
-    },
     open() {
       this.active = true;
     },
@@ -113,7 +100,6 @@ export default {
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
       this.next = this.tinyColorObj.toString(this.fieldOptions.format);
-      this.generatePreview();
     },
     validate(value) {
       if (this.field.required) {

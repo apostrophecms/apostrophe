@@ -227,14 +227,6 @@ module.exports = {
           object[field.name] = null;
         }
       },
-      index: function (value, field, texts) {
-        const silent = field.silent === undefined ? true : field.silent;
-        texts.push({
-          weight: field.weight || 15,
-          text: (value || []).join(' '),
-          silent: silent
-        });
-      },
       isEmpty: function (field, value) {
         return !value.length;
       }
