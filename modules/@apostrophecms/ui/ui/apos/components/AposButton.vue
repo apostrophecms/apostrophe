@@ -10,6 +10,7 @@
     :type="buttonType"
     :role="role"
     v-tooltip="tooltip"
+    :id="attrs.id ? attrs.id : id"
     v-bind="attrs"
   >
     <transition name="fade">
@@ -32,6 +33,7 @@
 
 <script>
 import tinycolor from 'tinycolor2';
+import cuid from 'cuid';
 
 export default {
   name: 'AposButton',
@@ -101,7 +103,7 @@ export default {
   emits: [ 'click' ],
   data() {
     return {
-      // contextMenuOpen: true, TODO get rid of this?
+      id: cuid()
     };
   },
   computed: {
@@ -158,9 +160,25 @@ export default {
       return (this.disabled || this.busy);
     }
   },
+  mounted() {
+    if (this.type === 'color') {
+      this.previewColor();
+    }
+  },
   methods: {
     click($event) {
       this.$emit('click', $event);
+    },
+    previewColor() {
+      const tc = tinycolor(this.color);
+      const style = document.createElement('style');
+      style.type = 'text/css';
+      let rule = `#${this.id}:after {`;
+      rule += `background-color: ${tc.toString()};`;
+      rule += `border: 2px solid ${tc.lighten(20).toString()};`;
+      rule += '}';
+      this.$el.appendChild(style);
+      style.innerHTML = rule;
     }
   }
 };

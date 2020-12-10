@@ -71,7 +71,7 @@ export default {
         label: this.field.label,
         type: 'color',
         color: this.value.data || '',
-        attrs: { 'data-apos-color-input': this.id }
+        attrs: { id: this.id }
       };
     },
     valueLabel() {
@@ -96,7 +96,7 @@ export default {
     generatePreview() {
       const style = document.createElement('style');
       style.type = 'text/css';
-      let rule = `[data-apos-color-input="${this.id}"]:after {`;
+      let rule = `#${this.id}:after {`;
       rule += `background-color: ${this.tinyColorObj.toString(this.fieldOptions.format)};`;
       rule += `border: 2px solid ${this.tinyColorObj.lighten(20).toString(this.fieldOptions.format)};`;
       rule += `opacity: ${this.next ? 1 : 0}`; // hack to simlulate not-yet-set
