@@ -32,7 +32,6 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import Picker from 'vue-color/src/components/Sketch';
 import tinycolor from 'tinycolor2';
-import cuid from 'cuid';
 
 export default {
   name: 'AposInputColor',
@@ -61,8 +60,7 @@ export default {
   data() {
     return {
       active: false,
-      tinyColorObj: null,
-      id: cuid()
+      tinyColorObj: null
     };
   },
   computed: {
