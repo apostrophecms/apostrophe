@@ -134,7 +134,9 @@ export default {
     },
     rows: {
       type: Array,
-      required: true
+      default() {
+        return [];
+      }
     },
     checked: {
       type: Array,

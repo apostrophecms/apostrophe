@@ -28,17 +28,21 @@ module.exports = {
     return {
       add: {
         title: {
-          label: 'Title'
+          label: 'Title',
+          component: 'AposCellButton'
         },
         updatedAt: {
-          label: 'Edited on'
+          label: 'Edited on',
+          component: 'AposCellDate'
         },
         visibility: {
           label: 'Visibility'
         },
+        // TODO: Update this to identify if there's a piece page for the type.
         ...(self.options.contextual ? {
           _url: {
-            label: 'Link'
+            label: 'Link',
+            component: 'AposCellLink'
           }
         } : {})
       }
