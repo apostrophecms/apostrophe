@@ -25,7 +25,6 @@ export default {
       required: true
     }
   },
-  emits: [ 'admin-menu-click', 'close' ],
   data() {
     return {
       isOpen: false,
@@ -35,16 +34,8 @@ export default {
           action: 'share'
         },
         {
-          label: 'Save Draft',
-          action: 'save'
-        },
-        {
           label: 'Duplicate Document',
           action: 'duplicate'
-        },
-        {
-          label: 'Version History',
-          action: 'versions'
         },
         {
           label: 'Revert to Last Published',
@@ -58,24 +49,13 @@ export default {
     async duplicate() {
       console.log('TODO: stub for Duplicate action');
     },
-    async save() {
-      console.log('TODO: stub for Save Draft action');
-    },
     async share() {
       console.log('TODO: stub for Share Draft action');
     },
     async revertToLastPublished() {
       console.log('TODO: stub for revertToLastPublished action');
     },
-    async versions() {
-      await apos.modal.execute('AposDocVersions', {
-        options: { foo: 'bar' },
-        doc: {
-          _id: this.docId
-        }
-      });
-    },
-    menuHandler(action) {
+    async menuHandler(action) {
       this[action]();
     }
   }
