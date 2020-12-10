@@ -64,6 +64,12 @@ module.exports = {
       },
       isEmpty: function (field, value) {
         return self.apos.area.isEmpty({ area: value });
+      },
+      isEqual (req, field, one, two) {
+        if (self.apos.area.isEmpty({ area: one[field.name] }) && self.apos.area.isEmpty({ area: two[field.name] })) {
+          return true;
+        }
+        return _.isEqual(one[field.name], two[field.name]);
       }
     });
 
@@ -637,6 +643,20 @@ module.exports = {
       register: function (field) {
         self.register(field.schema);
       },
+      isEqual(req, field, one, two) {
+        if (!(one[field.name] && two[field.name])) {
+          return !(one[field.name] || two[field.name]);
+        }
+        if (one[field.name].length !== two[field.name].length) {
+          return false;
+        }
+        for (let i = 0; (i < one.length); i++) {
+          if (!self.isEqual(req, field.schema, one[field.name][i], two[field.name][i])) {
+            return false;
+          }
+        }
+        return true;
+      },
       def: []
     });
 
@@ -668,6 +688,18 @@ module.exports = {
       },
       register: function (field) {
         self.register(field.schema);
+      },
+      isEqual(req, field, one, two) {
+        if (one && (!two)) {
+          return false;
+        }
+        if (two && (!one)) {
+          return false;
+        }
+        if (!(one || two)) {
+          return true;
+        }
+        return self.isEqual(req, field.schema, one[field.name], two[field.name]);
       },
       def: {}
     });
@@ -855,6 +887,17 @@ module.exports = {
         if (field.schema && !Array.isArray(field.schema)) {
           fail('schema property should be an array if present at this stage');
         }
+      },
+      isEqual(req, field, one, two) {
+        if (!_.isEqual(one[field.idsStorage], two[field.idsStorage])) {
+          return false;
+        }
+        if (field.fieldsStorage) {
+          if (!_.isEqual(one[field.fieldsStorage], two[field.fieldsStorage])) {
+            return false;
+          }
+        }
+        return true;
       }
     });
 
@@ -1354,6 +1397,36 @@ module.exports = {
         });
       },
 
+      // Compare two objects and return true only if their schema fields are equal.
+      //
+      // Note that for relationship fields this comparison is based on the idsStorage
+      // and fieldsStorage, which are updated at the time a document is saved to the
+      // database, so it will not work on a document not yet inserted or updated
+      // unless `prepareRelationshipsForStorage` is used.
+      //
+      // This method is invoked by the doc module to compare draft and published
+      // documents and set the aposModified property of the draft, just before updating the
+      // published version.
+
+      isEqual(req, schema, one, two) {
+        for (const field of schema) {
+          const fieldType = self.fieldTypes[field.type];
+          if (!fieldType.isEqual) {
+            if ((one[field.name] == null) && (two[field.name] == null)) {
+              return true;
+            }
+            if (!_.isEqual(one[field.name], two[field.name])) {
+              return false;
+            }
+          } else {
+            if (!fieldType.isEqual(req, field, one, two)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      },
+
       // Index the object's fields for participation in Apostrophe search unless
       // `searchable: false` is set for the field in question
 
@@ -1510,7 +1583,7 @@ module.exports = {
           return query.toArray();
         }, _id => {
           const index = _id.indexOf(':');
-          const locale = options.locale || `${req.locale}:${req.mode}`;
+          const locale = `${req.locale}:${req.mode}`;
           if (index > -1) {
             return `${_id.substring(0, index)}:${locale}`;
           }
@@ -1656,7 +1729,6 @@ module.exports = {
                 builders: { relationships: withRelationshipsNext[relationship._dotPath] || false },
                 hints: {}
               };
-              options.locale = options.builders.locale;
               const subname = relationship.name + ':' + type;
               const _relationship = _.assign({}, relationship, {
                 name: subname,
@@ -1695,7 +1767,7 @@ module.exports = {
             if (relationship.idsStorage) {
               _.each(_objects, function (object) {
                 if (object[relationship.name]) {
-                  const locale = options.locale || `${req.locale}:${req.mode}`;
+                  const locale = `${req.locale}:${req.mode}`;
                   object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage].map(id => `${id}:${locale}`), object[relationship.name]);
                 }
               });

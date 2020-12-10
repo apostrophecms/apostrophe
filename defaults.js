@@ -22,7 +22,6 @@ module.exports = {
     '@apostrophecms/schema': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
-    '@apostrophecms/version': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/attachment': {},
     '@apostrophecms/oembed': {},

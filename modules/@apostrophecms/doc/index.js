@@ -118,7 +118,7 @@ module.exports = {
           if (!doc._id) {
             if (!doc.aposLocale) {
               if (manager.isLocalized()) {
-                doc.aposLocale = options.locale || `${req.locale}:${req.mode}`;
+                doc.aposLocale = `${req.locale}:${req.mode}`;
               }
             }
             if (doc.aposLocale) {
@@ -381,6 +381,22 @@ module.exports = {
         return doc;
       },
 
+      // Publish the given draft. If `options.permissions` is explicitly
+      // set to `false`, permissions checks are bypassed.
+      async publish(req, draft, options = {}) {
+        const m = self.getManager(draft.type);
+        return m.publish(req, draft, options);
+      },
+
+      // Revert to the previously published content, or if
+      // already equal to the previously published content, to the
+      // publication before that. Returns `false` if the draft
+      // cannot be reverted any further.
+      async revert(req, draft) {
+        const m = self.getManager(draft.type);
+        return m.revert(req, draft);
+      },
+
       // Recursively visit every property of a doc,
       // invoking an iterator function for each one. Optionally
       // deletes properties.
@@ -519,10 +535,17 @@ module.exports = {
       //
       // You may override this method to change the implementation.
       async updateBody(req, doc, options) {
-        return self.retryUntilUnique(req, doc, async function () {
+        const manager = self.apos.doc.getManager(doc.type);
+        if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
+          // Performance hit now at write time is better than inaccurate
+          // indicators of which docs are modified later (per Ben)
+          doc.aposModified = await manager.isModified(req, doc);
+        }
+        return self.retryUntilUnique(req, doc, async () => {
           return self.db.replaceOne({ _id: doc._id }, self.apos.util.clonePermanent(doc));
         });
       },
+
       // Insert the given document. Called by `.insert()`. You will usually want to
       // call the update method of the appropriate doc type manager instead:
       //
@@ -533,10 +556,17 @@ module.exports = {
       // However you can override this method to alter the
       // implementation.
       async insertBody(req, doc, options) {
+        const manager = self.apos.doc.getManager(doc.type);
+        if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
+          // We are inserting the draft for the first time so it is always
+          // different from the published, which won't exist yet
+          doc.aposModified = true;
+        }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
         });
       },
+
       // Given either an id (as a string) or a criteria
       // object, return a criteria object.
       idOrCriteria(idOrCriteria) {

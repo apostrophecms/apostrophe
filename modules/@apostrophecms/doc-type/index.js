@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const klona = require('klona');
 
 module.exports = {
   options: {
@@ -599,10 +600,15 @@ module.exports = {
       async findOneForCopying(req, criteria) {
         return self.findOneForEditing(req, criteria);
       },
-      // Publish the changes found in the given draft document.
-      async publish(req, draft) {
+      // Publish the given draft. If `options.permissions` is explicitly
+      // set to `false`, permissions checks are bypassed.
+      async publish(req, draft, options = {}) {
+        if (!self.isLocalized()) {
+          throw new Error(`${self.__meta.name} is not a localized type, cannot be published`);
+        }
         const publishedLocale = draft.aposLocale.replace(':draft', ':published');
-        const publishedId = `${draft.aposDocId}${publishedLocale}`;
+        const publishedId = `${draft.aposDocId}:${publishedLocale}`;
+        let previousPublished;
         let published = await self.findOneForEditing(req, {
           _id: publishedId
         }, {
@@ -615,19 +621,102 @@ module.exports = {
             aposLocale: publishedLocale
           };
           self.copyForPublication(req, draft, published);
-          return self.insertPublishedOf(req, draft, published);
+          published = await self.insertPublishedOf(req, draft, published, options);
         } else {
+          previousPublished = klona(published);
           self.copyForPublication(req, draft, published);
-          published = await self.update(req, published);
-          await self.db.updateOne({
-            _id: draft._id
-          }, {
-            $set: {
-              aposModified: false
-            }
-          });
-          await self.emit('afterPublished', req, published);
+          published = await self.update({
+            ...req,
+            mode: 'published'
+          }, published, options);
         }
+        await self.apos.doc.db.updateOne({
+          _id: draft._id
+        }, {
+          $set: {
+            aposModified: false
+          }
+        });
+        // Now that we're sure publication worked, update "previous" so we
+        // can revert the most recent publication if desired
+        if (previousPublished) {
+          // Avoid index conflicts
+          delete previousPublished.aposLocale;
+          delete previousPublished.aposDocId;
+          previousPublished._id = previousPublished._id.replace(':published', ':previous');
+          await self.apos.doc.db.replaceOne({
+            _id: previousPublished._id
+          }, previousPublished, {
+            upsert: true
+          });
+        }
+        await self.emit('afterPublished', req, published);
+      },
+      // Reverts the given draft to the most recent publication,
+      // or if they are equal, reverts both the given draft and the
+      // published state to the previous publication. Updates the
+      // draft and if necessary the published document in the database
+      // and returns the reverted draft fully fetched with its relationships
+      // etc.
+      //
+      // Returns `false` if the draft cannot be reverted any further.
+      //
+      // This is *not* the on-page `undo/redo` backend.
+      async revert(req, draft) {
+        const published = await self.apos.doc.db.findOne({
+          _id: draft._id.replace(':draft', ':published')
+        });
+        if (!published) {
+          return false;
+        }
+        if (await self.isModified(req, draft)) {
+          // Draft and published roles intentionally reversed
+          self.copyForPublication(req, published, draft);
+          draft.aposModified = false;
+          return self.update({
+            ...req,
+            mode: 'draft'
+          }, draft);
+        } else {
+          const previousId = draft._id.replace(':draft', ':previous');
+          const previous = await self.apos.doc.db.findOne({
+            _id: previousId
+          });
+          if (!previous) {
+            return false;
+          }
+          self.copyForPublication(req, previous, published);
+          await self.update({
+            ...req,
+            mode: 'published'
+          }, published);
+          self.copyForPublication(req, previous, draft);
+          const result = await self.update({
+            ...req,
+            mode: 'draft'
+          }, draft);
+          self.apos.doc.db.removeOne({
+            _id: previousId
+          });
+          return result;
+        }
+      },
+      // Returns true if the given draft has been modified from the published
+      // version of the same document. If the draft has no published version
+      // it is always considered modified. The _id property of the draft
+      // must exist before calling.
+      async isModified(req, draft) {
+        // Straight to mongo for speed. We can even compare relationships without
+        // loading joins because we are only interested in the permanent
+        // storage of the ids and fields
+        const published = await self.apos.doc.db.findOne({
+          _id: draft._id.replace(':draft', ':published')
+        });
+        if (!published) {
+          return true;
+        }
+        const schema = self.schema;
+        return !self.apos.schema.isEqual(req, schema, draft, published);
       },
       // Called for you by `apos.doc.publish`. Copies properties from
       // `draft` to `published` where appropriate.
@@ -636,7 +725,7 @@ module.exports = {
         // and no others.
         const schema = self.schema;
         for (const field of schema) {
-          if (!self.unpublishedProperties.includes(field.name)) {
+          if (!field.unpublished) {
             published[field.name] = draft[field.name];
           }
         }

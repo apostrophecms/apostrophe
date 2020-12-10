@@ -248,12 +248,18 @@ module.exports = {
       async insertDraftOf(req, doc, draft) {
         if (draft.type === 'test-people') {
         }
-        const inserted = await self.insert(req, draft);
+        const inserted = await self.insert({
+          ...req,
+          mode: 'draft'
+        }, draft);
         return inserted;
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published) {
-        return self.insert(req, published);
+        return self.insert({
+          ...req,
+          mode: 'published'
+        }, published);
       },
       finalizeControls() {
         self.createControls = self.options.createControls || [

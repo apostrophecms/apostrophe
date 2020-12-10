@@ -612,11 +612,14 @@ database.`);
       // `position` may be `before`, `inside` or `after`.
       //
       // The `options` argument may be omitted completely. If
-      // `options.permissions` is set to false, permissions checks
+      // `options.permissions` is explicitly set to false, permissions checks
       // are bypassed.
       //
       // Returns the new page.
-      async insert(req, targetId, position, page, options = { permissions: true }) {
+      //
+      // If `options.permissions` is explicitly set to false, permissions checks
+      // are bypassed.
+      async insert(req, targetId, position, page, options = {}) {
         return self.withLock(req, async () => {
           let peers;
           page.aposLastTargetId = targetId;
@@ -1457,14 +1460,10 @@ database.`);
         await self.ensureLevelRankIndex();
       },
       async ensurePathIndex() {
-        const params = self.getPathIndexParams();
-        await self.apos.doc.db.createIndex(params, {
-          unique: true,
-          sparse: true
+        await self.apos.doc.db.createIndex({
+          path: 1,
+          aposLocale: 1
         });
-      },
-      getPathIndexParams() {
-        return { path: 1 };
       },
       async ensureLevelRankIndex() {
         const params = self.getLevelRankIndexParams();

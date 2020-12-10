@@ -179,26 +179,34 @@ module.exports = {
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this
       async insertDraftOf(req, doc, draft) {
+        const _req = {
+          ...req,
+          mode: 'draft'
+        };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(req, doc.aposLastTargetId, doc.aposLastPosition, draft);
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.db.insert(req, draft);
+          return self.apos.doc.insert(_req, draft);
         } else {
           throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
         }
       },
-      // Called for you when a page is published for the firtsinserted directly in
+      // Called for you when a page is inserted in
       // the published locale, to ensure there is an equivalent
       // draft page. You don't need to invoke this
-      async insertPublishedOf(req, doc, published) {
+      async insertPublishedOf(req, doc, published, options = {}) {
+        const _req = {
+          ...req,
+          mode: 'published'
+        };
         if (doc.aposLastTargetId) {
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(req, doc.aposLastTargetId, doc.aposLastPosition, published);
+          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
         } else if (!doc.level) {
           // Insert the home page
-          return self.apos.doc.db.insert(req, published);
+          return self.apos.doc.db.insert(_req, published, options);
         } else {
           throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }
