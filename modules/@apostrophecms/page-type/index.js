@@ -96,6 +96,11 @@ module.exports = {
         async replayMoveAfterPublished(req, published) {
           return self.apos.page.move(req, published._id, published.lastAposTargetId, published.lastAposPosition);
         }
+      },
+      afterRevert: {
+        async replayMoveAfterRevert(req, draft) {
+          return self.apos.page.move(req, draft._id, draft.lastAposTargetId, draft.lastAposPosition);
+        }
       }
     };
   },
@@ -215,10 +220,12 @@ module.exports = {
   },
   extendMethods(self, options) {
     return {
-      copyForPublication(_super, req, draft, published) {
-        _super(req, draft, published);
-        published.aposLastTargetId = draft.aposLastTargetId;
-        published.aposLastPosition = draft.aposLastPosition;
+      copyForPublication(_super, req, from, to) {
+        _super(req, from, to);
+        const oldMode = from.aposLocale.endsWith(':draft') ? ':draft' : ':published';
+        const newMode = from.aposLocale.endsWith(':draft') ? ':published' : ':draft';
+        to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
+        to.aposLastPosition = from.aposLastPosition;
       },
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);

@@ -210,14 +210,7 @@ module.exports = {
       // `_home` or `_trash`
       async getOne(req, _id) {
         self.publicApiCheck(req);
-        const criteria = (_id === '_home') ? {
-          level: 0
-        } : (_id === '_trash') ? {
-          level: 1,
-          trash: true
-        } : {
-          _id
-        };
+        const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
           throw self.apos.error('notfound');
@@ -478,6 +471,16 @@ database.`);
       find(req, criteria = {}, options = {}) {
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
       },
+      getIdCriteria(_id) {
+        return (_id === '_home') ? {
+          level: 0
+        } : (_id === '_trash') ? {
+          level: 1,
+          trash: true
+        } : {
+          _id
+        };
+      },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route
       // as well.
@@ -624,17 +627,7 @@ database.`);
           let peers;
           page.aposLastTargetId = targetId;
           page.aposLastPosition = position;
-          const query = self.findForEditing(req, { _id: targetId });
-          if ((position === 'firstChild') || (position === 'lastChild')) {
-            query.children({
-              depth: 1,
-              trash: null,
-              orphan: null,
-              areas: false,
-              permission: false
-            });
-          }
-          const target = await query.toObject();
+          const target = await self.getTarget(req, targetId, position);
           if (!target) {
             throw self.apos.error('notfound');
           }
@@ -996,14 +989,7 @@ database.`);
       // value. `position` is used to prevent attempts to move after the trash
       // "page."
       async getTarget(req, targetId, position) {
-        const criteria = (targetId === '_home') ? {
-          level: 0
-        } : (targetId === '_trash') ? {
-          level: 1,
-          trash: true
-        } : {
-          _id: targetId
-        };
+        const criteria = self.getIdCriteria(targetId);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,

@@ -720,13 +720,13 @@ module.exports = {
       },
       // Called for you by `apos.doc.publish`. Copies properties from
       // `draft` to `published` where appropriate.
-      copyForPublication(req, draft, published) {
+      copyForPublication(req, from, to) {
         // By default, we copy all schema properties not expressly excluded,
         // and no others.
         const schema = self.schema;
         for (const field of schema) {
           if (!field.unpublished) {
-            published[field.name] = draft[field.name];
+            to[field.name] = from[field.name];
           }
         }
       }
