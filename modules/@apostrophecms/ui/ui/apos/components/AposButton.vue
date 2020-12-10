@@ -119,14 +119,13 @@ export default {
     },
     colorStyle() {
       if (this.type === 'color') {
-        let style = ''
-        style += `background-color: ${this.color};`;
-        style += `border: 2px solid ${tinycolor(this.color).lighten(20).toString()};`;
-        return style;
+        return {
+          backgroundColor: this.color,
+          border: `2px solid ${tinycolor(this.color).lighten(20).toString()}`
+        }
       } else {
         return null;
       }
-      
     },
     modifierClass() {
       const modifiers = [];
