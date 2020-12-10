@@ -11,7 +11,7 @@
   <h3 align="center">ApostropheCMS</h3>
 
   <p align="center">
-    ApostropheCMS is a full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless archicture in a full-stack JS environment.
+    ApostropheCMS is a full-featured, open source CMS built with Node.js that seeks to empower organizations by combining in-context editing and headless architecture in a full-stack JS environment.
     <br />
     <a href="https://docs.apostrophecms.org/"><strong>Documentation »</strong></a>
     <br />
@@ -84,7 +84,7 @@ You'll be prompted to create a password for the `admin` user.
 cd wonderful-project && node app.js
 ```
 
-Navigate to [localhost:3000/login](http://localhost:3000) to login with the admin credentials you created.
+Navigate to [localhost:3000/login](http://localhost:3000/login) to login with the admin credentials you created.
 #### Next Steps
 Check out our [Getting Started tutorial](https://docs.apostrophecms.org/getting-started/creating-your-first-project.html#working-with-areas) in the documentation to start adding content. Be sure to reference our [glossary of terms](https://docs.apostrophecms.org/reference/glossary.html) to get acquainted with the reference materials.
 
