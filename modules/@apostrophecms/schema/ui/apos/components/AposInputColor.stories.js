@@ -1,7 +1,5 @@
 import {
-  withKnobs,
-  select
-  // boolean
+  withKnobs
 } from '@storybook/addon-knobs';
 
 import AposInputColor from './AposInputColor';
@@ -12,7 +10,6 @@ export default {
 };
 
 export const colorInput = () => {
-  // const isDisabled = boolean('Is Disabled?', false);
 
   const field = {
     required: false,
