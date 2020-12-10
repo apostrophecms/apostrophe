@@ -216,18 +216,15 @@ module.exports = {
     self.addFieldType({
       name: 'color',
       convert: async function (req, field, data, object) {
-        console.log(data);
-        if (typeof data[field.name] === 'string') {
-          data[field.name] = self.apos.launder.string(data[field.name]).split(',');
+        object[field.name] = self.apos.launder.string(data[field.name], field.def);
 
-          if (!Array.isArray(data[field.name])) {
-            object[field.name] = [];
-            return;
-          }
+        if (field.required && (_.isUndefined(object[field.name]) || !object[field.name].toString().length)) {
+          throw self.apos.error('required');
+        }
 
-          object[field.name] = _.filter(data[field.name], function (choice) {
-            return _.includes(_.map(field.choices, 'value'), choice);
-          });
+        const test = tinycolor(object[field.name]);
+        if (!tinycolor(test).isValid()) {
+          object[field.name] = null;
         }
       },
       index: function (value, field, texts) {
@@ -237,6 +234,9 @@ module.exports = {
           text: (value || []).join(' '),
           silent: silent
         });
+      },
+      isEmpty: function (field, value) {
+        return !value.length;
       }
     });
 
@@ -474,18 +474,6 @@ module.exports = {
           }
         }
         object[field.name] = data[field.name];
-      }
-    });
-
-    self.addFieldType({
-      name: 'color',
-      convert: async function (req, field, data, object) {
-        const test = self.apos.launder.string(data[field.name]);
-        if (tinycolor(test).isValid()) {
-          object[field.name] = test;
-        } else {
-          object[field.name] = null;
-        }
       }
     });
 

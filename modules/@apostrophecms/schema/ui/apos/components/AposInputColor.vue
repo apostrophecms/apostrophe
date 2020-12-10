@@ -11,9 +11,10 @@
             @open="open"
             @close="close"
             menu-placement="bottom-start"
-            menu-offset="88, 20"
+            menu-offset="5, 20"
           >
             <Picker
+              v-bind="fieldOptions"
               :value="next"
               @input="update"
             />
@@ -39,6 +40,24 @@ export default {
     Picker
   },
   mixins: [ AposInputMixin ],
+  props: {
+    // TODO need to work out field-level option overrides
+    fieldOptions: {
+      type: Object,
+      default() {
+        return {
+          presetColors: [
+            '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
+            '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
+            '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
+          ],
+          disableAlpha: false,
+          disableFields: false,
+          format: 'hex'
+        };
+      }
+    }
+  },
   data() {
     return {
       active: false,
@@ -62,9 +81,6 @@ export default {
         return 'No color selected';
       }
     },
-    preferredFormat() {
-      return 'rgb';
-    },
     classList() {
       return [
         'apos-input-wrapper',
@@ -81,8 +97,8 @@ export default {
       const style = document.createElement('style');
       style.type = 'text/css';
       let rule = `[data-apos-color-input="${this.id}"]:after {`;
-      rule += `background-color: ${this.tinyColorObj.toString(this.preferredFormat)};`;
-      rule += `border: 2px solid ${this.tinyColorObj.lighten(20).toString(this.preferredFormat)};`;
+      rule += `background-color: ${this.tinyColorObj.toString(this.fieldOptions.format)};`;
+      rule += `border: 2px solid ${this.tinyColorObj.lighten(20).toString(this.fieldOptions.format)};`;
       rule += `opacity: ${this.next ? 1 : 0}`; // hack to simlulate not-yet-set
       rule += '}';
       this.$el.appendChild(style);
@@ -96,16 +112,17 @@ export default {
     },
     update(value) {
       this.tinyColorObj = tinycolor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.preferredFormat);
+      this.next = this.tinyColorObj.toString(this.fieldOptions.format);
       this.generatePreview();
     },
     validate(value) {
-      if (value == null) {
-        value = '';
+      if (this.field.required) {
+        if (!value) {
+          return 'required';
+        }
       }
       const color = tinycolor(value);
-      console.log(`value is ${color.isValid()}`);
-      return !(color.isValid());
+      return color.isValid() ? false : 'Error';
     }
   }
 };
