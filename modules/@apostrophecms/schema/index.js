@@ -305,17 +305,6 @@ module.exports = {
     });
 
     self.addFieldType({
-      name: 'radio',
-      extend: 'checkboxes',
-      convert: async function (req, field, data, object) {
-        object[field.name] = self.apos.launder.string(data[field.name]);
-        if (field.required && !object[field.name]) {
-          throw self.apos.error('required');
-        }
-      }
-    });
-
-    self.addFieldType({
       name: 'select',
       convert: async function (req, field, data, object) {
         object[field.name] = self.apos.launder.select(data[field.name], field.choices, field.def);
@@ -370,6 +359,11 @@ module.exports = {
           }
         });
       }
+    });
+
+    self.addFieldType({
+      name: 'radio',
+      extend: 'select'
     });
 
     self.addFieldType({
