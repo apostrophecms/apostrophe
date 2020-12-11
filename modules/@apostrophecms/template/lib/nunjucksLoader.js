@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const chokidar = require('chokidar');
 
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
@@ -30,18 +31,19 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
     } else {
       self.searchPaths = [];
     }
-    if (!noWatch) {
+    // Unless and until chokidar declares this a supported config,
+    // no watching in WSL (it doesn't work without chokidar either)
+    if ((!noWatch) && (!require('is-wsl'))) {
       _.each(self.searchPaths, function(p) {
         if (fs.existsSync(p)) {
           try {
-            fs.watch(p, {
-              persistent: false,
-              recursive: true
-            }, function(event, filename) {
+            const watcher = chokidar.watch(p);
+            watcher.on('change', (path, stats) => {
               // Just blow the whole cache if anything is modified. Much simpler,
               // avoids several false negatives, and works well for a CMS in dev. -Tom
               self.cache = {};
             });
+            self.watches.push(watcher);
           } catch (e) {
             if (!self.firstWatchFailure) {
               // Don't crash in broken environments like the Linux subsystem for Windows
@@ -174,6 +176,14 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       _.each(self.listeners[name], function(listener) {
         listener.apply(null, args);
       });
+    }
+  };
+
+  self.destroy = function() {
+    for (const watch of self.watches) {
+      // Returns a promise but we don't actually need to wait for it;
+      // resolve it to avoid any anxiety on Node's part about this
+      watch.close().then(() => {});
     }
   };
 
