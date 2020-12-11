@@ -362,6 +362,11 @@ module.exports = {
     });
 
     self.addFieldType({
+      name: 'radio',
+      extend: 'select'
+    });
+
+    self.addFieldType({
       name: 'integer',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
