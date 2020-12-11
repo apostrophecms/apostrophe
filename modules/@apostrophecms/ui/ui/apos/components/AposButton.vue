@@ -31,7 +31,7 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || color) }">
+      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
         {{ label }}
       </span>
     </div>
@@ -119,9 +119,18 @@ export default {
     },
     colorStyle() {
       if (this.type === 'color') {
-        return {
-          backgroundColor: this.color,
-          border: `2px solid ${tinycolor(this.color).lighten(20).toString()}`
+        // if color exists, use it
+        if (this.color) {
+          return {
+            backgroundColor: this.color,
+            border: `2px solid ${tinycolor(this.color).lighten(20).toString()}`
+          }
+        // if not provide a default placeholder
+        } else {
+          return {
+            backgroundColor: 'transparent',
+            border: `2px solid ${tinycolor('white').darken(20).toString()}`
+          }    
         }
       } else {
         return null;
