@@ -702,7 +702,20 @@ database.`);
               }
             });
           }
-          page.aposDocId = self.apos.util.generateId();
+          // Normally we generate the aposDocId here so we can complete
+          // the path before calling doc.insert, but watch out for values
+          // already being present
+          if (page.aposDocId) {
+            if (page._id) {
+              const components = page._id.split(':');
+              if (components.length < 3) {
+                throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
+              }
+              page.aposDocId = components[0];
+            } else {
+              page.aposDocId = self.apos.util.generateId();
+            }
+          }
           page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
           await self.apos.doc.insert(req, page, options);
@@ -809,6 +822,7 @@ database.`);
       // After the moved and target pages are fetched, the `beforeMove` event is emitted with
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
+        console.trace(`moving 1: ${movedId} ${targetId} ${position}`);
         if (!options) {
           options = {};
         } else {
@@ -821,7 +835,11 @@ database.`);
           let rank;
           let originalPath;
           let originalSlug;
+          console.log(`moving: ${movedId} ${targetId} ${position}`);
+          console.log('calling getMoved');
           const moved = await getMoved();
+          console.log('after getMoved');
+          console.log('moved:', moved);
           const oldParent = moved._ancestors[0];
           const target = await self.getTarget(req, targetId, position);
           await self.emit('beforeMove', req, moved, target, position, options);
@@ -1175,6 +1193,25 @@ database.`);
         await self.emit('beforeSave', req, page, options);
         await self.apos.doc.update(req, page, options);
         return page;
+      },
+      // Publish a draft, updating the published locale.
+      async publish(req, draft, options = {}) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.publish(req, draft, options);
+      },
+      // Reverts the given draft to the most recent publication,
+      // or if they are equal, reverts both the given draft and the
+      // published state to the previous publication. Updates the
+      // draft and if necessary the published document in the database
+      // and returns the reverted draft fully fetched with its relationships
+      // etc.
+      //
+      // Returns `false` if the draft cannot be reverted any further.
+      //
+      // This is *not* the on-page `undo/redo` backend.
+      async revert(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.revert(req, draft, options);
       },
       // Ensure the existence of a page or array of pages and
       // lock them in place in the page tree.

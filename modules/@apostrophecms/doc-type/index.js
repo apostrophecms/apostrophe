@@ -609,19 +609,23 @@ module.exports = {
         const publishedLocale = draft.aposLocale.replace(':draft', ':published');
         const publishedId = `${draft.aposDocId}:${publishedLocale}`;
         let previousPublished;
+        console.log(`findOneForEditing for ${draft.slug}`);
         let published = await self.findOneForEditing(req, {
           _id: publishedId
         }, {
           locale: publishedLocale
         });
         if (!published) {
+          console.log(`published not found for ${draft.slug}`);
           published = {
             _id: publishedId,
             aposDocId: draft.aposDocId,
             aposLocale: publishedLocale
           };
           self.copyForPublication(req, draft, published);
+          console.log(`calling insertPublishedOf for ${draft.slug}`);
           published = await self.insertPublishedOf(req, draft, published, options);
+          console.log(`after insertPublishedOf for ${draft.slug}`);
         } else {
           previousPublished = klona(published);
           self.copyForPublication(req, draft, published);

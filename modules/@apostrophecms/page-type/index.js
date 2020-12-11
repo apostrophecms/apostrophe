@@ -94,12 +94,19 @@ module.exports = {
       },
       afterPublished: {
         async replayMoveAfterPublished(req, published) {
-          return self.apos.page.move(req, published._id, published.lastAposTargetId, published.lastAposPosition);
+          console.log('published:', published);
+          return self.apos.page.move({
+            ...req,
+            mode: 'published'
+          }, published._id, published.aposLastTargetId, published.aposLastPosition);
         }
       },
       afterRevert: {
         async replayMoveAfterRevert(req, draft) {
-          return self.apos.page.move(req, draft._id, draft.lastAposTargetId, draft.lastAposPosition);
+          return self.apos.page.move({
+            ...req,
+            mode: 'draft'
+          }, draft._id, draft.aposLastTargetId, draft.aposLastPosition);
         }
       }
     };
@@ -215,6 +222,16 @@ module.exports = {
         } else {
           throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }
+      },
+      // Update a page. The `options` argument may be omitted entirely.
+      // if it is present and `options.permissions` is set to `false`,
+      // permissions are not checked.
+      //
+      // This is a convenience wrapper for `apos.page.update`, for the
+      // benefit of code that expects all managers to have an update method.
+      // Pages are usually updated via `apos.page.update`.
+      async update(req, page, options = {}) {
+        return self.apos.page.update(req, page, options);
       }
     };
   },
