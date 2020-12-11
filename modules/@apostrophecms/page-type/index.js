@@ -94,7 +94,6 @@ module.exports = {
       },
       afterPublished: {
         async replayMoveAfterPublished(req, published) {
-          console.log('published:', published);
           return self.apos.page.move({
             ...req,
             mode: 'published'

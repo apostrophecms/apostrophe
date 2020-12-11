@@ -274,10 +274,6 @@ describe('Draft / Published', function() {
       _id: parent._id.replace(':draft', ':published')
     }).toObject();
     assert(publishedParent);
-    console.log('DRAFT:');
-    console.log(parent);
-    console.log('PUBLISHED:');
-    console.log(publishedParent);
     assert(publishedParent.aposDocId === parent.aposDocId);
     assert(publishedParent.aposLocale === 'en:published');
     assert(publishedParent.title === parent.title);
