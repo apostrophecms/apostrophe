@@ -308,12 +308,10 @@ module.exports = {
       name: 'radio',
       extend: 'checkboxes',
       convert: async function (req, field, data, object) {
-        data[field.name] = self.apos.launder.string(data[field.name]);
-
-        if (field.required && !data[field.name]) {
+        object[field.name] = self.apos.launder.string(data[field.name]);
+        if (field.required && !object[field.name]) {
           throw self.apos.error('required');
         }
-
       }
     });
 
