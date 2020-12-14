@@ -1,6 +1,8 @@
 <template>
   <div class="apos-area-modify-controls">
-    <AposButtonGroup direction="vertical">
+    <AposButtonGroup
+      :modifiers="groupModifiers"
+    >
       <AposButton
         v-if="!foreign"
         v-bind="upButton"
@@ -11,7 +13,7 @@
       <!-- <AposButton v-bind="dragButton" /> -->
       <AposButton
         v-bind="editButton"
-        v-if="foreign || !options.contextual"
+        v-if="!foreign && !options.contextual"
         @click="$emit('edit')"
       />
       <AposButton
@@ -70,6 +72,15 @@ export default {
     };
   },
   computed: {
+    groupModifiers() {
+      const mods = [ 'vertical' ];
+
+      if (this.foreign) {
+        mods.push('invert');
+      }
+
+      return mods;
+    },
     upButton() {
       return {
         ...this.buttonDefaults,

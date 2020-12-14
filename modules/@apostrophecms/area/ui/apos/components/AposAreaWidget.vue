@@ -1,7 +1,9 @@
 
 <template>
   <div
-    class="apos-area-widget-wrapper" :data-area-widget="widget._id"
+    class="apos-area-widget-wrapper"
+    :class="{'is-foreign': foreign}"
+    :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
   >
     <div
@@ -16,6 +18,15 @@
         :class="ui.labels"
       >
         <ol class="apos-area-widget__breadcrumbs">
+          <!-- <li v-if="foreign" class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--icon">
+            <AposIndicator
+              icon="earth-icon"
+              fill-color="currentColor"
+              :icon-size="10"
+              tooltip="This content lives somewhere else in Apostrophe"
+              class="apos-admin-bar__title__indicator"
+            />
+          </li> -->
           <li
             v-for="item in breadcrumbs.list"
             :key="item.id"
@@ -31,7 +42,15 @@
             />
           </li>
           <li class="apos-area-widget__breadcrumb">
-            {{ widgetLabel }}
+            <AposButton
+              type="quiet"
+              @click="foreign ? $emit('edit', i) : getFocus($event, item.id)"
+              :label="foreign ? 'Edit ' + widgetLabel : widgetLabel"
+              tooltip="Click to edit this content in it's natural context"
+              :icon="foreign ? 'earth-icon' : null"
+              :icon-size="11"
+              :modifiers="['no-motion']"
+            />
           </li>
         </ol>
       </div>
@@ -111,9 +130,11 @@
 <script>
 
 import klona from 'klona';
+import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
 
 export default {
   name: 'AposAreaWidget',
+  components: { AposIndicator },
   props: {
     widgetHovered: {
       type: String,
@@ -202,7 +223,7 @@ export default {
         open: 'apos-open',
         focus: 'apos-focus',
         highlight: 'apos-highlight',
-        foreign: 'apos-foreign'
+        // foreign: 'apos-foreign'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -256,9 +277,9 @@ export default {
         addBottom: this.state.add.bottom.focus ? this.classes.focus
           : (this.state.add.bottom.show ? this.classes.show : null)
       };
-      if ((this.state.container.focus || this.state.container.highlight) && this.foreign) {
-        state.container = this.classes.foreign;
-      }
+      // if ((this.state.container.focus || this.state.container.highlight) && this.foreign) {
+      //   state.container = this.classes.foreign;
+      // }
 
       if (this.isSuppressed) {
         this.resetState();
@@ -301,7 +322,10 @@ export default {
     apos.bus.$on('widget-focus-parent', this.focusParent);
 
     this.breadcrumbs.$lastEl = this.$el;
-    this.getBreadcrumbs();
+
+    if (!this.foreign) {
+      this.getBreadcrumbs();
+    }
 
     if (this.widgetFocused) {
       // If another widget was in focus (because the user clicked the "add"
@@ -484,15 +508,15 @@ export default {
     .apos-area-widget-inner &.apos-highlight:before {
       z-index: $z-index-default;
     }
-
-    &.apos-foreign {
-      outline: 1px dashed var(--a-warning);
-      /deep/ .apos-button {
-        background-color: var(--a-warning);
-        color: var(--a-white);
-      }
-    }
   }
+
+  // &.apos-foreign {
+  //   outline-color: var(--a-black);
+  //   /deep/ .apos-button {
+  //     background-color: var(--a-warning);
+  //     color: var(--a-white);
+  //   }
+  // }
 
   .apos-area-widget-inner .apos-area-widget-inner {
     &.apos-highlight:before {
@@ -588,17 +612,21 @@ export default {
     background-color: var(--a-primary);
   }
 
-  .apos-foreign .apos-area-widget__breadcrumbs {
-    background-color: var(--a-warning);
-  }
-
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
     background-color: var(--a-secondary);
   }
 
-  .apos-area-widget-inner .apos-foreign.apos-area-widget-inner .apos-area-widget__breadcrumbs {
-    background-color: var(--a-warning);
+  .is-foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
+    background-color: var(--a-background-inverted);
   }
+
+  // :not(.is-foreign) .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
+  //   background-color: var(--a-secondary);
+  // }
+
+  // .apos-area-widget-inner .apos-foreign.apos-area-widget-inner .apos-area-widget__breadcrumbs {
+  //   background-color: var(--a-warning);
+  // }
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb /deep/ .apos-button__content {
@@ -608,6 +636,10 @@ export default {
     &:hover {
       cursor: pointer;
     }
+  }
+
+  .apos-area-widget__breadcrumb--icon {
+    padding: 2px;
   }
 
   .apos-area-widget__breadcrumb /deep/ .apos-button {

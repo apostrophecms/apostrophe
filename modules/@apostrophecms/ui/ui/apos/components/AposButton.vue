@@ -497,17 +497,6 @@ export default {
     }
   }
 
-  .apos-button--group {
-    background-color: var(--a-background-primary);
-    border: none;
-    &:hover {
-      background-color: var(--a-base-9);
-    }
-    &:focus {
-      background-color: var(--a-base-8);
-    }
-  }
-
   .apos-button--busy {
     .apos-button__content {
       opacity: 0;
