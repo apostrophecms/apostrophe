@@ -35,7 +35,7 @@ module.exports = function(self, options) {
         if (handlers) {
           for (const handler of handlers) {
             const module = self.apos.modules[handler.moduleName];
-            const method = module[handler.methodName];
+            const handler = module.handlers[handler.handlerName];
             // Although we have `self` it can't hurt to
             // supply the correct `this`
             await method.apply(module, args);
@@ -45,11 +45,8 @@ module.exports = function(self, options) {
     },
 
     // Register an event handler method in this module. The
-    // given method name will be invoked when the given event
-    // name is emitted with `emit`. As a shortcut, you may
-    // optionally pass a function as a third argument. That
-    // function becomes a method of your module called `methodName`.
-    // This is exactly the same as defining it the normal way.
+    // given handler name will be invoked when the given event
+    // name is emitted with `emit`. 
     //
     // Your method may return a promise. If it does, the next
     // event handler method will not begin running until your
@@ -72,7 +69,7 @@ module.exports = function(self, options) {
     // Your method name should describe what your method does
     // in response to the event.
 
-    on(name, methodName, fn) {
+    on(name, handlerName, fn) {
       let moduleName;
       let eventName;
       const index = name.indexOf(':');
@@ -106,7 +103,7 @@ module.exports = function(self, options) {
       }
       eh[eventName].push({
         moduleName: self.__meta.name,
-        methodName: methodName
+        handlerName: methodName
       });
     }
 

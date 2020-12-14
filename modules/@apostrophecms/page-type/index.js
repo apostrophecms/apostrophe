@@ -100,12 +100,34 @@ module.exports = {
           }, published._id, published.aposLastTargetId, published.aposLastPosition);
         }
       },
-      afterRevert: {
-        async replayMoveAfterRevert(req, draft) {
-          return self.apos.page.move({
+      afterRevertDraftToPublished: {
+        async replayMoveAfterRevert(req, result) {
+          const _req = {
             ...req,
             mode: 'draft'
-          }, draft._id, draft.aposLastTargetId, draft.aposLastPosition);
+          };
+          await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
+          const draft = await self.apos.page.findOneForEditing(_req, result.draft._id);
+          result.draft = draft;
+        }
+      },
+      afterRevertDraftAndPublishedToPrevious: {
+        async replayMoveAfterRevert(req, result) {
+          console.log(result);
+          const draftReq = {
+            ...req,
+            mode: 'draft'
+          };
+          await self.apos.page.move(draftReq, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
+          const draft = await self.apos.page.findOneForEditing(draftReq, { _id: result.draft._id });
+          const publishedReq = {
+            ...req,
+            mode: 'published'
+          };
+          await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
+          const published = await self.apos.page.findOneForEditing(publishedReq, { _id: result.published._id });
+          result.draft = draft;
+          result.published = published;
         }
       }
     };

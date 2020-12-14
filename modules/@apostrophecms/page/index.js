@@ -1193,19 +1193,37 @@ database.`);
         const manager = self.apos.doc.getManager(draft.type);
         return manager.publish(req, draft, options);
       },
-      // Reverts the given draft to the most recent publication,
-      // or if they are equal, reverts both the given draft and the
-      // published state to the previous publication. Updates the
-      // draft and if necessary the published document in the database
-      // and returns the reverted draft fully fetched with its relationships
-      // etc.
+      // Reverts the given draft to the most recent publication.
       //
-      // Returns `false` if the draft cannot be reverted any further.
+      // Returns the draft's new value, or `false` if the draft
+      // was not modified from the published version (`aposModified: false`)
+      // or no published version exists yet.
       //
-      // This is *not* the on-page `undo/redo` backend.
-      async revert(req, draft) {
+      // This is *not* the on-page `undo/redo` backend. This is the
+      // "Revert to Published" feature.
+      //
+      // Emits the `afterRevertDraftToPublished` event before
+      // returning, which receives `req, { draft }` and may
+      // replace the `draft` property to alter the returned value.
+      async revertDraftToPublished(req, draft) {
         const manager = self.apos.doc.getManager(draft.type);
-        return manager.revert(req, draft, options);
+        return manager.revertDraftToPublished(req, draft);
+      },
+      // Given a draft document, this method reverts both the draft and
+      // the corresponding published document to the previously published
+      // version, and returns the updated draft and published
+      // documents as `{ draft, published}`.
+      //
+      // If it is not possible to revert because the document is new or
+      // has already been reverted to the previously published version,
+      // this method returns `false`.
+      //
+      // Emits the `afterRevertDraftAndPublishedToPrevious` event before
+      // returning, which receives `req, { draft, published }` and may
+      // replace those properties to alter the returned value.
+      async revertDraftAndPublishedToPrevious(req, draft) {
+        const manager = self.apos.doc.getManager(draft.type);
+        return manager.revertDraftAndPublishedToPrevious(req, draft);
       },
       // Ensure the existence of a page or array of pages and
       // lock them in place in the page tree.

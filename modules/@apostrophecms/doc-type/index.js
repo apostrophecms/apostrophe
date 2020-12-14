@@ -652,56 +652,80 @@ module.exports = {
         }
         await self.emit('afterPublished', req, published);
       },
-      // Reverts the given draft to the most recent publication,
-      // or if they are equal, reverts both the given draft and the
-      // published state to the previous publication. Updates the
-      // draft and if necessary the published document in the database
-      // and returns the reverted draft fully fetched with its relationships
-      // etc.
+      // Reverts the given draft to the most recent publication.
       //
-      // Returns `false` if the draft cannot be reverted any further.
+      // Returns the draft's new value, or `false` if the draft
+      // was not modified from the published version (`aposModified: false`)
+      // or no published version exists yet.
       //
-      // This is *not* the on-page `undo/redo` backend.
-      async revert(req, draft) {
+      // This is *not* the on-page `undo/redo` backend. This is the
+      // "Revert to Published" feature.
+      //
+      // Emits the `afterRevertDraftToPublished` event before
+      // returning, which receives `req, { draft }` and may
+      // replace the `draft` property to alter the returned value.
+      async revertDraftToPublished(req, draft) {
         const published = await self.apos.doc.db.findOne({
+          _id: draft._id.replace(':draft', ':published')
+        });
+        if (!published) {
+          console.log('no published');
+          return false;
+        }
+        if (!draft.aposModified) {
+          console.log('draft not modified');
+          return false;
+        }
+        // Draft and published roles intentionally reversed
+        self.copyForPublication(req, published, draft);
+        draft.aposModified = false;
+        draft = await self.update({
+          ...req,
+          mode: 'draft'
+        }, draft);
+        const result = {
+          draft
+        };
+        await self.emit('afterRevertDraftToPublished', req, result);
+        console.log('result is:', result);
+        return result.draft;
+      },
+      async revertDraftAndPublishedToPrevious(req, draft) {
+        let published = await self.apos.doc.db.findOne({
           _id: draft._id.replace(':draft', ':published')
         });
         if (!published) {
           return false;
         }
-        if (await self.isModified(req, draft)) {
-          // Draft and published roles intentionally reversed
-          self.copyForPublication(req, published, draft);
-          draft.aposModified = false;
-          
-          return self.update({
-            ...req,
-            mode: 'draft'
-          }, draft);
-        } else {
-          const previousId = draft._id.replace(':draft', ':previous');
-          const previous = await self.apos.doc.db.findOne({
-            _id: previousId
-          });
-          if (!previous) {
-            return false;
-          }
-          self.copyForPublication(req, previous, published);
-          await self.update({
-            ...req,
-            mode: 'published'
-          }, published);
-          self.copyForPublication(req, previous, draft);
-          const result = await self.update({
-            ...req,
-            mode: 'draft'
-          }, draft);
-          self.apos.doc.db.removeOne({
-            _id: previousId
-          });
-          return result;
+        const previousId = draft._id.replace(':draft', ':previous');
+        const previous = await self.apos.doc.db.findOne({
+          _id: previousId
+        });
+        if (!previous) {
+          return false;
         }
+        self.copyForPublication(req, previous, published);
+        published = await self.update({
+          ...req,
+          mode: 'published'
+        }, published);
+        self.copyForPublication(req, previous, draft);
+        draft = await self.update({
+          ...req,
+          mode: 'draft'
+        }, draft);
+        self.apos.doc.db.removeOne({
+          _id: previousId
+        });
+        const result = {
+          draft,
+          published
+        };
+        console.log('>>> passing result:', result);
+        await self.emit('afterRevertDraftAndPublishedToPrevious', req, result);
+        return result;
       },
+
       // Returns true if the given draft has been modified from the published
       // version of the same document. If the draft has no published version
       // it is always considered modified. The _id property of the draft
