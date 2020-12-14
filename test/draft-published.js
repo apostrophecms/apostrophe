@@ -322,50 +322,52 @@ describe('Draft / Published', function() {
   // TODO convert more tests, add tests involving the page tree more,
   // write another test file with REST tests, implement the RESTfulness
 
-  // it('original product shows as modified if we make another change to it', async () => {
-  //   parent.title = 'Title 3';
-  //   parent = await apos.product.update(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent);
-  //   assert(parent.aposModified);
-  // });
+  it('original page shows as modified if we make another change to it', async () => {
+    parent.title = 'Parent Title 3';
+    parent = await apos.page.update(apos.task.getReq({
+      mode: 'draft'
+    }), parent);
+    assert(parent.aposModified);
+  });
 
-  // it('should be able to publish the product', async () => {
-  //   await apos.product.publish(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent);
-  // });
+  it('should be able to publish the page', async () => {
+    await apos.page.publish(apos.task.getReq({
+      mode: 'draft'
+    }), parent);
+  });
 
-  // it('original product shows as modified if we make a third change to it', async () => {
-  //   parent.title = 'Title 4';
-  //   parent = await apos.product.update(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent);
-  //   assert(parent.aposModified);
-  // });
+  it('original page shows as modified if we make a third change to it', async () => {
+    parent.title = 'Parent Title 4';
+    parent = await apos.page.update(apos.task.getReq({
+      mode: 'draft'
+    }), parent);
+    assert(parent.aposModified);
+  });
 
-  // it('can revert the draft to Title 3', async () => {
-  //   parent = await apos.product.revert(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent);
-  //   assert(parent);
-  //   assert(!parent.aposModified);
-  //   assert(parent.title === 'Title 3');
-  // });
+  it('can revert the draft to parent Title 3', async () => {
+    parent = await apos.page.revert(apos.task.getReq({
+      mode: 'draft'
+    }), parent);
+    assert(parent);
+    assert(!parent.aposModified);
+    assert(parent.title === 'Parent Title 3');
+  });
 
-  // it('can revert the draft to Test Product (previous publication)', async () => {
-  //   parent = await apos.product.revert(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent);
-  //   assert(parent);
-  //   assert(parent.title === 'Test Product');
-  //   assert(!parent.aposModified);
-  // });
+  it('can revert the draft to Parent (previous publication)', async () => {
+    parent = await apos.page.revert(apos.task.getReq({
+      mode: 'draft'
+    }), parent);
+    assert(parent);
+    // Parent Title 2 was never published so we're all the
+    // way back to Parent, the first published value
+    assert(parent.title === 'Parent');
+    assert(!parent.aposModified);
+  });
 
-  // it('cannot revert the draft again', async () => {
-  //   assert(!await apos.product.revert(apos.task.getReq({
-  //     mode: 'draft'
-  //   }), parent));
-  // });
+  it('cannot revert the draft again', async () => {
+    assert(!await apos.page.revert(apos.task.getReq({
+      mode: 'draft'
+    }), parent));
+  });
 
 });

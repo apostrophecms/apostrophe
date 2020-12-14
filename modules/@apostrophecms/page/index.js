@@ -822,7 +822,6 @@ database.`);
       // After the moved and target pages are fetched, the `beforeMove` event is emitted with
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
-        console.trace(`moving 1: ${movedId} ${targetId} ${position}`);
         if (!options) {
           options = {};
         } else {
@@ -835,11 +834,7 @@ database.`);
           let rank;
           let originalPath;
           let originalSlug;
-          console.log(`moving: ${movedId} ${targetId} ${position}`);
-          console.log('calling getMoved');
           const moved = await getMoved();
-          console.log('after getMoved');
-          console.log('moved:', moved);
           const oldParent = moved._ancestors[0];
           const target = await self.getTarget(req, targetId, position);
           await self.emit('beforeMove', req, moved, target, position, options);

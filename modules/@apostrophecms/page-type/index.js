@@ -238,8 +238,8 @@ module.exports = {
     return {
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
-        const oldMode = from.aposLocale.endsWith(':draft') ? ':draft' : ':published';
-        const newMode = from.aposLocale.endsWith(':draft') ? ':published' : ':draft';
+        const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
+        const oldMode = (newMode === ':published') ? ':draft' : ':published';
         to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
         to.aposLastPosition = from.aposLastPosition;
       },
