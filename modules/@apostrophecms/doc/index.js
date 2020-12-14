@@ -151,8 +151,8 @@ module.exports = {
       },
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
-          self.ensureSlug(doc);
           const manager = self.getManager(doc.type);
+          manager.ensureSlug(doc);
           _.each(manager.schema, function (field) {
             if (field.sortify) {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
@@ -513,17 +513,6 @@ module.exports = {
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'edit', doc)) {
             throw self.apos.error('forbidden');
-          }
-        }
-      },
-      // If the doc does not yet have a slug, add one based on the
-      // title; throw an error if there is no title
-      ensureSlug(doc) {
-        if (!doc.slug || doc.slug === 'none') {
-          if (doc.title) {
-            doc.slug = self.apos.util.slugify(doc.title);
-          } else if (doc.slug !== 'none') {
-            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
           }
         }
       },

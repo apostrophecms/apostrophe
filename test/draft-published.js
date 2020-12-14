@@ -247,11 +247,17 @@ describe('Draft / Published', function() {
     parent = {
       type: 'test-page',
       title: 'Parent',
-      slug: '/test-page'
+      slug: '/parent'
     };
-    parent = await apos.page.insert(apos.task.getReq({
+    const req = apos.task.getReq({
       mode: 'draft'
-    }), '_home', 'lastChild', parent);
+    });
+    parent = await apos.page.insert(req, '_home', 'lastChild', parent);
+    const home = await apos.page.find(req, {
+      slug: '/',
+      level: 0
+    }).toObject();
+    assert.strictEqual(parent.path, `${home.path}/${parent.aposDocId}`);
     assert(parent.aposModified);
   });
 
@@ -368,6 +374,116 @@ describe('Draft / Published', function() {
     assert(!await apos.page.revert(apos.task.getReq({
       mode: 'draft'
     }), parent));
+  });
+
+  let sibling;
+
+  it('should be able to create and insert a sibling draft page', async () => {
+    sibling = {
+      type: 'test-page',
+      title: 'Sibling',
+      slug: '/sibling'
+    };
+    sibling = await apos.page.insert(apos.task.getReq({
+      mode: 'draft'
+    }), '_home', 'lastChild', sibling);
+    assert(sibling.aposModified);
+  });
+
+  it('should be able to publish the sibling page', async () => {
+    await apos.page.publish(apos.task.getReq({
+      mode: 'draft'
+    }), sibling);
+  });
+
+  let grandchild;
+
+  it('should be able to create and insert a grandchild page', async () => {
+    grandchild = {
+      type: 'test-page',
+      title: 'Grandchild',
+      // At insert time, a good slug is up to the caller
+      slug: '/parent/grandchild'
+    };
+    grandchild = await apos.page.insert(apos.task.getReq({
+      mode: 'draft'
+    }), parent._id, 'lastChild', grandchild);
+    assert(grandchild.aposModified);
+    assert.strictEqual(grandchild.path, `${parent.path}/${grandchild.aposDocId}`);
+  });
+
+  it('published grandchild should not exist yet', async () => {
+    assert(!await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: grandchild.aposDocId
+    }).toObject());
+  });
+
+  it('should be able to publish the grandchild page', async () => {
+    await apos.page.publish(apos.task.getReq({
+      mode: 'draft'
+    }), grandchild);
+  });
+
+  it('should be able to move the grandchild page beneath the sibling page', async () => {
+    await apos.page.move(apos.task.getReq({
+      mode: 'draft'
+    }), grandchild._id, sibling._id, 'lastChild');
+    sibling = await apos.page.find(apos.task.getReq({
+      mode: 'draft'
+    }), {
+      _id: sibling._id
+    }).children(true).toObject();
+    console.log(sibling);
+    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0]._id === grandchild._id);
+    grandchild = await apos.page.find(apos.task.getReq({
+      mode: 'draft'
+    }), {
+      _id: grandchild._id
+    }).toObject();
+    // Should be considered modified because we moved it
+    assert(grandchild.aposModified);
+  });
+
+  it('published grandchild page should still be beneath parent page', async () => {
+    parent = await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: parent.aposDocId
+    }).children(true).toObject();
+    assert(parent._children[0]._id === grandchild._id.replace(':draft', ':published'));
+  });
+
+  it('should be able to publish the grandchild page again to re-execute the move in the published locale', async () => {
+    await apos.page.publish(apos.task.getReq({
+      mode: 'draft'
+    }), grandchild);
+  });
+
+  it('published grandchild page should now be beneath sibling page', async () => {
+    sibling = await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: sibling.aposDocId
+    }).children(true).toObject();
+    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0]._id === grandchild._id.replace(':draft', ':published'));
+  });
+
+  it('can revert the grandchild page to previous publication, undoing the move', async () => {
+    const req = apos.task.getReq({
+      mode: 'draft'
+    });
+    grandchild = await apos.page.find(req, {
+      _id: grandchild._id
+    }).toObject();
+    grandchild = await apos.page.revert(req, grandchild);
+    parent = apos.page.find(apos.task.getReq({
+      mode: 'draft'
+    }), {
+      _id: parent._id
+    }).toObject();
+    assert(parent && parent._children && parent._children[0] && parent._children[0]._id === grandchild._id);
   });
 
 });

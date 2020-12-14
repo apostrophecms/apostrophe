@@ -705,16 +705,14 @@ database.`);
           // Normally we generate the aposDocId here so we can complete
           // the path before calling doc.insert, but watch out for values
           // already being present
-          if (page.aposDocId) {
-            if (page._id) {
-              const components = page._id.split(':');
-              if (components.length < 3) {
-                throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
-              }
-              page.aposDocId = components[0];
-            } else {
-              page.aposDocId = self.apos.util.generateId();
+          if (page._id) {
+            const components = page._id.split(':');
+            if (components.length < 3) {
+              throw new Error('If you supply your own _id it must end with :locale:mode, like :en:published');
             }
+            page.aposDocId = components[0];
+          } else if (!page.aposDocId) {
+            page.aposDocId = self.apos.util.generateId();
           }
           page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
@@ -866,8 +864,9 @@ database.`);
             options
           };
           async function getMoved() {
-            const moved = await self.find(req, { _id: movedId }).permission(false).trash(null).areas(false).ancestors({
+            const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
               depth: 1,
+              visibility: null,
               trash: null,
               areas: false,
               permission: false

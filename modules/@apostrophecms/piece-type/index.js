@@ -733,6 +733,17 @@ module.exports = {
             throw self.apos.error('notfound');
           }
         }
+      },
+      // If the piece does not yet have a slug, add one based on the
+      // title; throw an error if there is no title
+      ensureSlug(piece) {
+        if (!piece.slug || piece.slug === 'none') {
+          if (piece.title) {
+            piece.slug = self.apos.util.slugify(piece.title);
+          } else if (piece.slug !== 'none') {
+            throw self.apos.error('invalid', 'Document has neither slug nor title, giving up');
+          }
+        }
       }
     };
   },
