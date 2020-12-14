@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.113.2 (2020-12-11)
+* Fixes Node 14 compatibility issues relating to watching template files for modification.
+
 ## 2.113.1 (2020-11-04)
 * Updates the logo in the README.
 
