@@ -113,16 +113,8 @@ module.exports = {
           result.draft = draft;
         }
       },
-      afterRevertDraftAndPublishedToPrevious: {
+      afterRevertPublishedToPrevious: {
         async replayMoveAfterRevert(req, result) {
-          const draftReq = {
-            ...req,
-            mode: 'draft'
-          };
-          await self.apos.page.move(draftReq, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
-          const draft = await self.apos.page.findOneForEditing(draftReq, {
-            _id: result.draft._id
-          });
           const publishedReq = {
             ...req,
             mode: 'published'
@@ -131,7 +123,6 @@ module.exports = {
           const published = await self.apos.page.findOneForEditing(publishedReq, {
             _id: result.published._id
           });
-          result.draft = draft;
           result.published = published;
         }
       }

@@ -687,14 +687,8 @@ module.exports = {
         await self.emit('afterRevertDraftToPublished', req, result);
         return result.draft;
       },
-      async revertDraftAndPublishedToPrevious(req, draft) {
-        let published = await self.apos.doc.db.findOne({
-          _id: draft._id.replace(':draft', ':published')
-        });
-        if (!published) {
-          return false;
-        }
-        const previousId = draft._id.replace(':draft', ':previous');
+      async revertPublishedToPrevious(req, published) {
+        const previousId = published._id.replace(':published', ':previous');
         const previous = await self.apos.doc.db.findOne({
           _id: previousId
         });
@@ -706,33 +700,46 @@ module.exports = {
           ...req,
           mode: 'published'
         }, published);
-        self.copyForPublication(req, previous, draft);
-        draft = await self.update({
-          ...req,
-          mode: 'draft'
-        }, draft);
         self.apos.doc.db.removeOne({
           _id: previousId
         });
         const result = {
-          draft,
           published
         };
-        await self.emit('afterRevertDraftAndPublishedToPrevious', req, result);
-        return result;
+        await self.emit('afterRevertPublishedToPrevious', req, result);
+        await self.apos.doc.db.updateOne({
+          _id: published._id.replace(':published', ':draft')
+        }, {
+          $set: {
+            aposModified: await self.isModified(req, result.published)
+          }
+        });
+        return result.published;
       },
 
       // Returns true if the given draft has been modified from the published
       // version of the same document. If the draft has no published version
-      // it is always considered modified. The _id property of the draft
-      // must exist before calling.
-      async isModified(req, draft) {
+      // it is always considered modified.
+      //
+      // For convenience, you may also call with the published document. The
+      // document mode you did not pass is retrieved and compared to the
+      // one you did pass.
+      async isModified(req, draftOrPublished) {
         // Straight to mongo for speed. We can even compare relationships without
         // loading joins because we are only interested in the permanent
         // storage of the ids and fields
-        const published = await self.apos.doc.db.findOne({
-          _id: draft._id.replace(':draft', ':published')
-        });
+        let draft, published;
+        if (draftOrPublished._id.endsWith(':published')) {
+          published = draftOrPublished;
+          draft = await self.apos.doc.db.findOne({
+            _id: published._id.replace(':published', ':draft')
+          });
+        } else {
+          draft = draftOrPublished;
+          published = await self.apos.doc.db.findOne({
+            _id: draft._id.replace(':draft', ':published')
+          });
+        }
         if (!published) {
           return true;
         }

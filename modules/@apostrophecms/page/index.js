@@ -1221,9 +1221,9 @@ database.`);
       // Emits the `afterRevertDraftAndPublishedToPrevious` event before
       // returning, which receives `req, { draft, published }` and may
       // replace those properties to alter the returned value.
-      async revertDraftAndPublishedToPrevious(req, draft) {
-        const manager = self.apos.doc.getManager(draft.type);
-        return manager.revertDraftAndPublishedToPrevious(req, draft);
+      async revertPublishedToPrevious(req, published) {
+        const manager = self.apos.doc.getManager(published.type);
+        return manager.revertPublishedToPrevious(req, published);
       },
       // Ensure the existence of a page or array of pages and
       // lock them in place in the page tree.

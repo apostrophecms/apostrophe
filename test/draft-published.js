@@ -226,20 +226,38 @@ describe('Draft / Published', function() {
     assert(testDraftProduct.title === 'Title 3');
   });
 
-  it('can revert the draft to Test Product (previous publication)', async () => {
-    const { draft } = await apos.product.revertDraftAndPublishedToPrevious(apos.task.getReq({
+  it('can revert the published version to Test Product (previous publication)', async () => {
+    const req = apos.task.getReq({
+      mode: 'published'
+    });
+    let published = await apos.product.findOneForEditing(req, {
+      aposDocId: testDraftProduct.aposDocId
+    });
+    assert(published && published.aposLocale === 'en:published');
+    published = await apos.product.revertPublishedToPrevious(req, published);
+    assert(published);
+    assert(published.title === 'Test Product');
+    testDraftProduct = await apos.product.findOneForEditing({
+      ...req,
       mode: 'draft'
-    }), testDraftProduct);
-    testDraftProduct = draft;
+    }, {
+      _id: testDraftProduct._id
+    });
     assert(testDraftProduct);
-    assert(testDraftProduct.title === 'Test Product');
-    assert(!testDraftProduct.aposModified);
+    assert(testDraftProduct.title === 'Title 3');
+    assert(testDraftProduct.aposModified);
   });
 
-  it('cannot revert the draft again', async () => {
-    assert(!await apos.product.revertDraftAndPublishedToPrevious(apos.task.getReq({
+  it('cannot revert published to previous again', async () => {
+    const req = apos.task.getReq({
+      mode: 'published'
+    });
+    const published = await apos.product.findOneForEditing(req, {
+      aposDocId: testDraftProduct.aposDocId
+    });
+    assert(!await apos.product.revertPublishedToPrevious(apos.task.getReq({
       mode: 'draft'
-    }), testDraftProduct));
+    }), published));
   });
 
   let parent;
@@ -360,22 +378,40 @@ describe('Draft / Published', function() {
     assert(parent.title === 'Parent Title 3');
   });
 
-  it('can revert the draft to Parent (previous publication)', async () => {
-    const { draft } = await apos.page.revertDraftAndPublishedToPrevious(apos.task.getReq({
+  it('can revert the published version to previous', async () => {
+    const req = apos.task.getReq({
+      mode: 'published'
+    });
+    let published = await apos.page.findOneForEditing(req, {
+      aposDocId: parent.aposDocId
+    });
+    assert(published && published.aposLocale === 'en:published');
+    published = await apos.page.revertPublishedToPrevious(apos.task.getReq({
       mode: 'draft'
-    }), parent);
-    parent = draft;
+    }), published);
+    assert(published);
+    assert(published.title === 'Parent');
+    parent = await apos.page.findOneForEditing({
+      ...req,
+      mode: 'draft'
+    }, {
+      _id: parent._id
+    });
     assert(parent);
-    // Parent Title 2 was never published so we're all the
-    // way back to Parent, the first published value
-    assert(parent.title === 'Parent');
-    assert(!parent.aposModified);
+    assert(parent.title === 'Parent Title 3');
+    assert(parent.aposModified);
   });
 
-  it('cannot revert the draft again', async () => {
-    assert(!await apos.page.revertDraftAndPublishedToPrevious(apos.task.getReq({
+  it('cannot revert published to previous again', async () => {
+    const req = apos.task.getReq({
+      mode: 'published'
+    });
+    const published = await apos.page.findOneForEditing(req, {
+      aposDocId: parent.aposDocId
+    });
+    assert(!await apos.page.revertPublishedToPrevious(apos.task.getReq({
       mode: 'draft'
-    }), parent));
+    }), published));
   });
 
   let sibling;
@@ -463,29 +499,34 @@ describe('Draft / Published', function() {
   });
 
   it('published grandchild page should now be beneath sibling page', async () => {
-    sibling = await apos.page.find(apos.task.getReq({
+    const siblingPublished = await apos.page.find(apos.task.getReq({
       mode: 'published'
     }), {
       aposDocId: sibling.aposDocId
     }).children(true).toObject();
-    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0]._id === grandchild._id.replace(':draft', ':published'));
+    assert(siblingPublished && siblingPublished._children && siblingPublished._children[0] && siblingPublished._children[0]._id === grandchild._id.replace(':draft', ':published'));
   });
 
-  it('can revert the grandchild page to previous publication, undoing the move', async () => {
+  it('can revert the grandchild page to previous publication, undoing the move but only in published mode', async () => {
     const req = apos.task.getReq({
-      mode: 'draft'
+      mode: 'published'
     });
-    grandchild = await apos.page.find(req, {
-      _id: grandchild._id
+    let published = await apos.page.find(req, {
+      aposDocId: grandchild.aposDocId
     }).toObject();
-    const { draft } = await apos.page.revertDraftAndPublishedToPrevious(req, grandchild);
-    grandchild = draft;
-    parent = await apos.page.find(apos.task.getReq({
+    published = await apos.page.revertPublishedToPrevious(req, published);
+    const publishedParent = await apos.page.find(apos.task.getReq({
+      mode: 'published'
+    }), {
+      aposDocId: parent.aposDocId
+    }).children(true).toObject();
+    assert(publishedParent && publishedParent._children && publishedParent._children[0] && publishedParent._children[0]._id === published._id);
+    sibling = await apos.page.find(apos.task.getReq({
       mode: 'draft'
     }), {
-      _id: parent._id
+      _id: sibling._id
     }).children(true).toObject();
-    assert(parent && parent._children && parent._children[0] && parent._children[0]._id === grandchild._id);
+    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0]._id === grandchild._id);
   });
 
 });
