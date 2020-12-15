@@ -9,7 +9,6 @@
 
 ## 2.113.1 (2020-11-04)
 * Updates the logo in the README.
-k
 
 ## 2.113.0 (2020-10-21)
 * Remove published columns in apostrophe-users and apostrophe-groups, the modules where this field does not exist.
