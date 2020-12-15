@@ -2,7 +2,7 @@
 
 ## 2.113.2 (2020-12-14)
 * Hotfixes for Node 14 compatibility issues relating to watching template files for modification.
-* Improvements to README. No other code changes.
+* Improvements to README.
 
 ## 2.113.1 (2020-11-04)
 * Updates the logo in the README.
