@@ -2,7 +2,7 @@
 <template>
   <div
     class="apos-area-widget-wrapper"
-    :class="{'is-foreign': foreign}"
+    :class="{'apos-area-widget-wrapper--foreign': foreign}"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
   >
@@ -18,15 +18,6 @@
         :class="ui.labels"
       >
         <ol class="apos-area-widget__breadcrumbs">
-          <!-- <li v-if="foreign" class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--icon">
-            <AposIndicator
-              icon="earth-icon"
-              fill-color="currentColor"
-              :icon-size="10"
-              tooltip="This content lives somewhere else in Apostrophe"
-              class="apos-admin-bar__title__indicator"
-            />
-          </li> -->
           <li
             v-for="item in breadcrumbs.list"
             :key="item.id"
@@ -219,11 +210,10 @@ export default {
       highlightable: false,
       focused: false,
       classes: {
-        show: 'apos-show',
-        open: 'apos-open',
-        focus: 'apos-focus',
-        highlight: 'apos-highlight',
-        // foreign: 'apos-foreign'
+        show: 'is-visible', // apos-show
+        open: 'is-open', // apos-open
+        focus: 'is-focused', // apos-focus
+        highlight: 'is-highlighted' // apos-highlight
       },
       breadcrumbs: {
         $lastEl: null,
@@ -277,9 +267,6 @@ export default {
         addBottom: this.state.add.bottom.focus ? this.classes.focus
           : (this.state.add.bottom.show ? this.classes.show : null)
       };
-      // if ((this.state.container.focus || this.state.container.highlight) && this.foreign) {
-      //   state.container = this.classes.foreign;
-      // }
 
       if (this.isSuppressed) {
         this.resetState();
@@ -483,7 +470,7 @@ export default {
         opacity: 0.4;
       }
     }
-    &.apos-focus {
+    &.is-focused {
       &:before, &:after {
         opacity: 1;
         border-top: 1px solid var(--a-primary);
@@ -504,30 +491,22 @@ export default {
       background-color: var(--a-base-5);
       pointer-events: none;
     }
-    .apos-area-widget-inner &.apos-focus:before,
-    .apos-area-widget-inner &.apos-highlight:before {
+    .apos-area-widget-inner &.is-focused:before,
+    .apos-area-widget-inner &.is-highlighted:before {
       z-index: $z-index-default;
     }
   }
 
-  // &.apos-foreign {
-  //   outline-color: var(--a-black);
-  //   /deep/ .apos-button {
-  //     background-color: var(--a-warning);
-  //     color: var(--a-white);
-  //   }
-  // }
-
   .apos-area-widget-inner .apos-area-widget-inner {
-    &.apos-highlight:before {
+    &.is-highlighted:before {
       opacity: 0.1;
     }
-    &.apos-focus:before {
+    &.is-focused:before {
       opacity: 0.15;
     }
 
-    &.apos-highlight,
-    &.apos-focus {
+    &.is-highlighted,
+    &.is-focused {
       outline-color: var(--a-secondary);
     }
   }
@@ -542,7 +521,7 @@ export default {
     &.apos-area-widget__label {
       z-index: $z-index-widget-label;
     }
-    &.apos-focus {
+    &.is-focused {
       z-index: $z-index-widget-focused-controls;
     }
   }
@@ -616,17 +595,9 @@ export default {
     background-color: var(--a-secondary);
   }
 
-  .is-foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
+  .apos-area-widget-wrapper--foreign .apos-area-widget-inner .apos-area-widget__breadcrumbs {
     background-color: var(--a-background-inverted);
   }
-
-  // :not(.is-foreign) .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__breadcrumbs {
-  //   background-color: var(--a-secondary);
-  // }
-
-  // .apos-area-widget-inner .apos-foreign.apos-area-widget-inner .apos-area-widget__breadcrumbs {
-  //   background-color: var(--a-warning);
-  // }
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb /deep/ .apos-button__content {
@@ -652,7 +623,7 @@ export default {
     background-color: var(--a-secondary);
   }
 
-  .apos-show,
+  .is-visible,
   .apos-focus {
     opacity: 1;
     pointer-events: auto;
