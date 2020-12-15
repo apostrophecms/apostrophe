@@ -5,8 +5,6 @@
 
 {# bring in modals #}
 {%- import "apostrophe-modal:macros.html" as modals -%}
-{%- import "apostrophe-schemas:macros.html" as pieces with context -%}
-
 {# bring in ui components #}
 {% import 'apostrophe-ui:components/buttons.html' as buttons with context %}
 {% import 'apostrophe-ui:components/dropdowns.html' as dropdowns with context %}
@@ -86,41 +84,19 @@
         {{ fields.checkbox('select-all') }}
       </span>
 
-
       {%- for filter in filters.options -%}
       <span class="apos-modal-filter">
         {%- if not apos.utils.isFalse(filter.label) -%}
-          <label for="{{ filter.name }}">
-            {{ filter.label or apos.utils.startCase(filter.name) }}
-          </label>
-        {%- endif -%}
-          {%- if filter.multiple -%}
-            {%- for chosen in filters.choices[filter.name] -%}
-              {% set id = apos.utils.generateId()%}
-
-              <label class="apos-modal-filter-selection" for="{{ id }}">
-                <input type="checkbox" id="{{ id }}" name="{{ filter.name }}" value="{{ chosen }}" checked />
-                {{ apos.utils.find(filter.choices, 'value', chosen).label }}
-              </label>
-            {%- endfor -%}
-            {{ fields.select(filter.name, apos.utils.concat(
-              [ { label: 'Choose One', value: '**CHOOSE**' } ],
-              apos.utils.difference(filter.choices, filters.choices[filter.name], 'value')
-            ), '**CHOOSE**') }}
-          {% elif filter.type === 'select' %}
-            {{ apos.log(pieces) }}
-            {# {{ pieces.select(filter.name, fitler.choices, 'portrait') }} #}
-          {%- else -%}
-            {{ fields.select(filter.name, apos.utils.concat([
-              { label: filter.anyLabel or '—', value: "**ANY**" }
-              ], filter.choices), filters.choices[filter.name])
-            }}
-        {%- endif -%}
-
+        <label for="{{ filter.name }}">{{ filter.label or apos.utils.startCase(filter.name) }}</label>
+        {%- endif -%} {%- if filter.multiple -%} {%- for chosen in filters.choices[filter.name] -%} {% set id = apos.utils.generateId()
+        %}
+        <label class="apos-modal-filter-selection" for="{{ id }}">
+          <input type="checkbox" id="{{ id }}" name="{{ filter.name }}" value="{{ chosen }}" checked /> {{ apos.utils.find(filter.choices, 'value', chosen).label }}</label>
+        {%- endfor -%} {{ fields.select(filter.name, apos.utils.concat([ { label: 'Choose One', value: '**CHOOSE**' } ], apos.utils.difference(filter.choices,
+        filters.choices[filter.name], 'value')), '**CHOOSE**') }} {%- else -%} {{ fields.select(filter.name, apos.utils.concat([
+        { label: filter.anyLabel or '—', value: "**ANY**" } ], filter.choices), filters.choices[filter.name]) }} {%- endif -%}
       </span>
       {%- endfor -%}
-
-
     </div>
       <div class="apos-modal-filters-wrapper apos-modal-filters-wrapper--right">
       {# Search #}

@@ -14,8 +14,14 @@
 	}
 
   .apos-modal-filter {
-  font-size: 14px;
-  margin-right: 40px;
+		font-size: 14px;
+		margin-right: 40px;
+
+		&:not(:first-child) {
+			label {
+				margin-right: 10px;
+			}
+		}
 
     .apos-field-input-select-wrapper
     {
@@ -24,7 +30,6 @@
 
       select
       {
-        margin-left: 10px;
         padding: 10px 30px 10px 15px;
         .apos-rounded;
       }
@@ -42,7 +47,7 @@
 	.apos-modal-filters-toggles
 	{
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
 
 		.apos-pill
@@ -54,6 +59,7 @@
 
 	.apos-modal-filters-wrapper {
 		display: flex;
+		align-items: flex-end;
 	}
 
 	.apos-modal-filters-wrapper--right {
