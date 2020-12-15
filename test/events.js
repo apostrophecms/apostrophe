@@ -49,7 +49,6 @@ describe('Promisified Events Core', function() {
               },
               'apostrophe:modulesReady': {
                 async testHandlers() {
-                  assert(self.ready2AddC);
                   const context = {};
                   await self.emit('ready1', context);
 

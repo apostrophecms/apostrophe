@@ -157,6 +157,15 @@ describe('Pages', function() {
         rank: 1
       }
     ];
+    // Insert draft versions too to match the A3 data model
+    const draftItems = await apos.doc.db.insertMany(testItems.map(item => ({
+      ...item,
+      aposLocale: item.aposLocale.replace(':published', ':draft'),
+      _id: item._id.replace(':published', ':draft')
+    })));
+    assert(draftItems.result.ok === 1);
+    assert(draftItems.insertedCount === 6);
+
     const items = await apos.doc.db.insertMany(testItems);
 
     assert(items.result.ok === 1);
