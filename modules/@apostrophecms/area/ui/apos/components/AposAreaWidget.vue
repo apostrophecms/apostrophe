@@ -210,10 +210,10 @@ export default {
       highlightable: false,
       focused: false,
       classes: {
-        show: 'is-visible', // apos-show
-        open: 'is-open', // apos-open
-        focus: 'is-focused', // apos-focus
-        highlight: 'is-highlighted' // apos-highlight
+        show: 'is-visible',
+        open: 'is-open',
+        focus: 'is-focused',
+        highlight: 'is-highlighted'
       },
       breadcrumbs: {
         $lastEl: null,
