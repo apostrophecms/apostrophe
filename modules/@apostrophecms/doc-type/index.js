@@ -669,11 +669,9 @@ module.exports = {
           _id: draft._id.replace(':draft', ':published')
         });
         if (!published) {
-          console.log('no published');
           return false;
         }
         if (!draft.aposModified) {
-          console.log('draft not modified');
           return false;
         }
         // Draft and published roles intentionally reversed
@@ -687,7 +685,6 @@ module.exports = {
           draft
         };
         await self.emit('afterRevertDraftToPublished', req, result);
-        console.log('result is:', result);
         return result.draft;
       },
       async revertDraftAndPublishedToPrevious(req, draft) {
@@ -721,7 +718,6 @@ module.exports = {
           draft,
           published
         };
-        console.log('>>> passing result:', result);
         await self.emit('afterRevertDraftAndPublishedToPrevious', req, result);
         return result;
       },
