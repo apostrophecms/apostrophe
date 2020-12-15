@@ -465,7 +465,7 @@ export default {
     &:after {
       bottom: 0;
     }
-    &.apos-highlight {
+    &.is-highlighted {
       &:before, &:after {
         opacity: 0.4;
       }
@@ -624,7 +624,7 @@ export default {
   }
 
   .is-visible,
-  .apos-focus {
+  .is-focused {
     opacity: 1;
     pointer-events: auto;
   }
