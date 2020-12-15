@@ -69,7 +69,10 @@
               @click="undo"
             />
           </div>
-          <div v-if="editMode" :key="'redo'" v-tooltip="undoTooltips.redo">
+          <div
+            v-if="editMode" :key="'redo'"
+            v-tooltip="undoTooltips.redo"
+          >
             <AposButton
               :disabled="undone.length === 0"
               type="subtle" :modifiers="['small', 'no-motion']"
@@ -78,7 +81,10 @@
               @click="redo"
             />
           </div>
-          <div v-if="editMode" :key="'status'" class="apos-admin-bar__status">
+          <div
+            v-if="editMode" :key="'status'"
+            class="apos-admin-bar__status"
+          >
             <span class="apos-admin-bar__status__inner">
               <component
                 :is="savingIndicator.el"
@@ -117,7 +123,7 @@
           class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
           name="flip"
         >
-          <div 
+          <div
             v-if="!editMode" :key="'switchToEditMode'"
             class="apos-admin-bar__control-set__group"
           >
@@ -318,6 +324,10 @@ export default {
   },
   watch: {
     savingStep(newVal) {
+      if (!this.$refs.statusLabel) {
+        return;
+      }
+
       const self = this;
       apos.util.removeClass(self.$refs.statusLabel, 'is-hidden');
       if (this.savingTimeout) {
