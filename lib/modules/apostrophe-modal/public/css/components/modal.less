@@ -32,7 +32,16 @@
 // Base Class  ===================================
 .apos-ui.apos-modal
 {
-	position: fixed;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+
+  .apos-modal-contents {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
 
 	top: 20px;
 	right: 20px;
@@ -74,22 +83,28 @@
   }
 }
 // Modal Body ===================================
+
+.apos-modal-contents {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+}
 .apos-modal
 .apos-modal-content
 {
   position: absolute;
-
-	// this is replaced dynamically with js
-  height: ~'calc(100vh - 100px - 189px - 82px)';     // 100vh - 100 (position) - 189 (header + breadcrumb) - 82px (footer bar)
+  height: 100;
   width: 100%;
 
-  // background-color: @apos-white;
 	background-color: lighten(@apos-light, 5%);
 }
 
 .apos-modal-body
 {
-	height: 100%;
+  height: calc(100% - 63px);
 	overflow: auto;
   .apos-scrollbar;
   background-color: lighten(@apos-light, 5%);
