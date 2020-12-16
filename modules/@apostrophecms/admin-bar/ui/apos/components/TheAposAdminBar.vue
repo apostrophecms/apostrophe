@@ -91,6 +91,18 @@
             </span>
           </div>
         </transition-group>
+        <div
+          class="apos-admin-bar__control-set__group"
+        >
+          <AposContextMenu
+            class="apos-admin-user"
+            :button="draftButton"
+            :menu="draftMenu"
+            menu-placement="bottom-end"
+            :menu-offset="2"
+            @item-clicked="switchDraftMode"
+          />
+        </div>
         <transition-group
           tag="div"
           class="apos-admin-bar__control-set apos-admin-bar__control-set--title"
@@ -129,7 +141,7 @@
                 content: 'Toggle Edit Mode',
                 placement: 'bottom'
               }"
-              @click="switchToEditMode"
+              @click="switchEditMode(true)"
             />
           </div>
           <div
@@ -160,7 +172,7 @@
                 placement: 'bottom'
               }"
               type="subtle" :modifiers="['small', 'no-motion']"
-              @click="switchToPreviewMode"
+              @click="switchEditMode(false)"
             />
           </div>
         </transition-group>
@@ -191,6 +203,7 @@ export default {
       undone: [],
       patchesSinceSave: [],
       editMode: window.sessionStorage.getItem('aposEditMode') === 'true',
+      draftMode: window.apos.mode,
       original: null,
       saving: false,
       editing: false,
@@ -296,6 +309,30 @@ export default {
     },
     contextEditorName() {
       return this.moduleOptions.contextEditorName;
+    },
+    draftButton() {
+      return {
+        label: (this.draftMode === 'draft') ? 'Draft' : 'Published',
+        icon: 'chevron-down-icon',
+        modifiers: [ 'icon-right', 'no-motion' ],
+        type: 'quiet'
+      };
+    },
+    draftMenu() {
+      // TODO maybe another indication of current selection?
+      // The button does already indicate it
+      return [
+        {
+          label: 'Draft',
+          name: 'draft',
+          action: 'draft'
+        },
+        {
+          label: 'Published',
+          name: 'published',
+          action: 'published'
+        }
+      ];
     }
   },
   watch: {
@@ -391,7 +428,7 @@ export default {
         e.returnValue = '';
       }
     },
-    emitEvent: function (name) {
+    emitEvent(name) {
       apos.bus.$emit('admin-menu-click', name);
     },
     async save() {
@@ -423,15 +460,52 @@ export default {
       this.saving = false;
       this.saved = true;
     },
-    switchToEditMode() {
-      window.sessionStorage.setItem('aposEditMode', 'true');
-      this.editMode = true;
-      this.refresh();
+    // TODO switchLocale will need smilar logic and we'll do some
+    // code reuse between them
+    async switchDraftMode(mode) {
+      try {
+        const doc = await apos.http.post(`${apos.login.action}/set-locale`, {
+          body: {
+            mode,
+            locale: apos.locale,
+            _id: this.moduleOptions.contextId
+          }
+        });
+        window.sessionStorage.setItem('aposStateChange', Date.now());
+        window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+        if (doc._url !== location.href) {
+          // Draft and published slug might not be the same
+          location.assign(doc._url);
+        } else {
+          // Avoid stale content
+          location.reload();
+        }
+      } catch (e) {
+        if (e.status === 404) {
+          // TODO don't get this far, check this in advance and disable it in the UI
+          await apos.alert({
+            heading: 'Not Yet Published',
+            description: 'This document has never been published.'
+          });
+        } else {
+          // Should not happen
+          await apos.alert({
+            heading: 'An Error Occurred',
+            description: 'Unable to switch modes.'
+          });
+        }
+      }
     },
-    switchToPreviewMode() {
-      window.sessionStorage.setItem('aposEditMode', 'false');
-      this.editMode = false;
-      this.refresh();
+    switchEditMode(mode) {
+      window.sessionStorage.setItem('aposEditMode', JSON.stringify(mode));
+      this.editMode = mode;
+      if (!this.draftMode) {
+        // Entering edit mode implies entering draft mode.
+        // Also takes care of refresh
+        this.switchDraftMode('draft');
+      } else {
+        this.refresh();
+      }
     },
     async refresh() {
       let url = window.location.href;

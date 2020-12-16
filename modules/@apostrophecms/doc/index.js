@@ -32,6 +32,7 @@ module.exports = {
     await self.enableCollection();
     await self.createIndexes();
     self.addDuplicateOrMissingWidgetIdMigration();
+    self.addDraftPublishedMigration();
   },
   restApiRoutes(self, options) {
     return {
@@ -807,6 +808,57 @@ module.exports = {
                 $set: patches
               });
             }
+          });
+        });
+      },
+      addDraftPublishedMigration() {
+        self.apos.migration.add('add-draft-published', async () => {
+          const indexes = await self.apos.doc.db.indexes();
+          for (const index of indexes) {
+            let keys = Object.keys(index.key);
+            keys.sort();
+            keys = keys.join(',');
+            if ((keys === 'slug') && index.unique) {
+              await self.apos.doc.db.dropIndex(index.name);
+            }
+            if ((keys === 'path') && index.unique) {
+              await self.apos.doc.db.dropIndex(index.name);
+            }
+          }
+          // If a document should be localized but is not, localize it in
+          // all locales and modes, as a migration strategy from alpha 2
+          const types = Object.keys(self.managers).filter(type => {
+            return self.managers[type].isLocalized();
+          });
+          if (!types.length) {
+            return;
+          }
+          return self.apos.migration.eachDoc({
+            aposLocale: {
+              $exists: 0
+            },
+            type: {
+              $in: types
+            }
+          }, 5, async (doc) => {
+            const locales = self.apos.i18n.locales;
+            for (const locale of locales) {
+              await self.apos.doc.db.insertOne({
+                ...doc,
+                _id: `${doc._id}:${locale}:draft`,
+                aposLocale: `${locale}:draft`,
+                aposDocId: doc._id
+              });
+              await self.apos.doc.db.insertOne({
+                ...doc,
+                _id: `${doc._id}:${locale}:published`,
+                aposLocale: `${locale}:published`,
+                aposDocId: doc._id
+              });
+            }
+            await self.apos.doc.db.removeOne({
+              _id: doc._id
+            });
           });
         });
       },

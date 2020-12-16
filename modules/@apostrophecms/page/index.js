@@ -447,6 +447,9 @@ database.`);
                 },
                 isAdminOnly() {
                   return true;
+                },
+                isLocalized() {
+                  return false;
                 }
               };
             }

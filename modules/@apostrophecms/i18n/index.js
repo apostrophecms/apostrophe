@@ -1,9 +1,12 @@
-// TODO: replace with i18n-next. Careful, the middleware for apostrophe editing
+// TODO: replace i18n npm module with i18n-next. Careful, the middleware for apostrophe editing
 // locales is also in here.
 //
 // This module makes an instance of the [i18n](https://npmjs.org/package/i18n) npm module available
-// as `apos.i18n`. Apostrophe also makes this available in Nunjucks templates via the
-// usual `__()` helper function. Any options passed to this module are passed on to `i18n`.
+// in Nunjucks templates via the usual `__()` helper function. That function and its relatives are
+// also available on `req` objects. Any options passed to this module are passed on to `i18n`.
+//
+// `apos.i18n.i18n` can be used to directly access the `i18n` npm module instance if necessary.
+// It usually is a bad idea. Use `req.__` if you need to localize in a route.
 //
 // By default i18n locale files are generated in the `locales` subdirectory of the project.
 //
@@ -16,6 +19,9 @@ const _ = require('lodash');
 const i18n = require('i18n');
 
 module.exports = {
+  options: {
+    alias: 'i18n'
+  },
   init(self, options) {
     const i18nOptions = self.options || {};
     _.defaults(i18nOptions, {
@@ -26,22 +32,47 @@ module.exports = {
     self.locales = (i18nOptions.options && i18nOptions.options.locales[0]) || [ 'en' ];
     self.defaultLocale = self.options.defaultLocale || self.locales[0];
     i18n.configure(i18nOptions);
-    // Make the i18n instance available globally in Apostrophe
-    self.apos.i18n = i18n;
+    self.i18n = i18n;
   },
   middleware(self, options) {
     return {
       init(req, res, next) {
-        // TODO: if queryLocale is not present, implement fallbacks
-        // similar to apostrophe-workflow based on prefixes, hostnames,
-        // locale headers, etc. What we have now works for editing
-        // draft/published content
-        const queryLocale = req.query['apos-locale'];
-        const locale = (self.locales.includes(queryLocale) && queryLocale) || self.defaultLocale;
+        // Support for a single apos-locale query param that
+        // also contains the mode, which is likely to occur
+        // since we have the `aposLocale` property in docs
+        // structured that way
+        if (req.query.locale && req.query.locale.includes(':')) {
+          const parts = req.query.locale.split(':');
+          req.query['apos-locale'] = parts[0];
+          req.query['apos-mode'] = parts[1];
+        }
+        const validModes = [ 'draft', 'published' ];
+        let locale;
+        if (self.isValidLocale(req.query.locale)) {
+          locale = req.query.locale;
+        } else if (self.isValidLocale(req.session && req.session.locale)) {
+          locale = req.session.locale;
+        } else {
+          locale = self.defaultLocale;
+        }
+        let mode;
+        if (validModes.includes(req.query.mode)) {
+          mode = req.query.mode;
+        } else if (validModes.includes(req.session && req.session.mode)) {
+          mode = req.session.mode;
+        } else {
+          mode = 'published';
+        }
         req.locale = locale;
-        const mode = req.query['apos-edit'] ? 'draft' : 'published';
         req.mode = mode;
-        return self.apos.i18n.init(req, res, next);
+        return self.i18n.init(req, res, next);
+      }
+    };
+  },
+  methods(self, options) {
+    return {
+      isValidLocale(locale) {
+        return locale && self.locales.includes(locale);
       }
     };
   }

@@ -750,15 +750,19 @@ module.exports = {
       addFixLengthPropertyMigration() {
         self.apos.migration.add('fix-length-property', async () => {
           return self.each({
-            'length.size': { $exists: 1 }
+            'length.size': {
+              $exists: 1
+            }
           }, 5, attachment => {
-            return self.db.update({
-              _id: attachment._id
-            }, {
-              $set: {
-                length: attachment.length.size
-              }
-            });
+            if (attachment.length && attachment.length.size) {
+              return self.db.updateOne({
+                _id: attachment._id
+              }, {
+                $set: {
+                  length: attachment.length.size
+                }
+              });
+            }
           });
         });
       },

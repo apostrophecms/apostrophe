@@ -179,6 +179,7 @@ module.exports = {
     },
     async getOne(req, _id) {
       self.publicApiCheck(req);
+      _id = self.inferIdLocaleAndMode(req, _id);
       const doc = await self.getRestQuery(req).and({ _id }).toObject();
       if (!doc) {
         throw self.apos.error('notfound');
@@ -195,6 +196,7 @@ module.exports = {
     },
     async put(req, _id) {
       self.publicApiCheck(req);
+      _id = self.inferIdLocaleAndMode(req, _id);
       return self.convertUpdateAndRefresh(req, req.body, _id);
     },
     // Unimplemented; throws a 501 status code. This would truly and permanently remove the thing, per the REST spec.
@@ -202,13 +204,75 @@ module.exports = {
     // a `PATCH` call to modify the `trash` property and set it to `true` or `false`.
     async delete(req, _id) {
       self.publicApiCheck(req);
+      _id = self.inferIdLocaleAndMode(req, _id);
       throw self.apos.error('unimplemented');
     },
     patch(req, _id) {
       self.publicApiCheck(req);
+      _id = self.inferIdLocaleAndMode(req, _id);
       return self.patch(req, _id);
     }
   }),
+  apiRoutes(self, options) {
+    return {
+      post: {
+        ':_id/publish': async (req) => {
+          self.publicApiCheck(req);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.publish(req, draft);
+        },
+        ':_id/revert-draft-to-published': async (req) => {
+          self.publicApiCheck(req);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertDraftToPublished(req, draft);
+        },
+        ':_id/revert-published-to-previous': async (req) => {
+          self.publicApiCheck(req);
+          const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!published) {
+            throw self.apos.error('notfound');
+          }
+          if (!published.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertPublishedToPrevious(req, published);
+        }
+      }
+    };
+  },
   handlers(self, options) {
     return {
       beforeInsert: {

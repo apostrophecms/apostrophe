@@ -245,6 +245,11 @@ module.exports = {
         }
         const closeDelay = self.options.closeDelay;
         const context = req.data.piece || req.data.page;
+        // Page caching is never desirable when possibly
+        // editing that page
+        if (context && context._edit) {
+          req.res.setHeader('Cache-Control', 'no-cache');
+        }
         let contextEditorName;
         if (context) {
           if (self.apos.page.isPage(context)) {
