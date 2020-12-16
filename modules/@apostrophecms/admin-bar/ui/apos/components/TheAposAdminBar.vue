@@ -105,7 +105,6 @@
             <AposIndicator
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
-              :size="15"
               :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
