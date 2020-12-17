@@ -640,10 +640,8 @@ module.exports = {
         // Now that we're sure publication worked, update "previous" so we
         // can revert the most recent publication if desired
         if (previousPublished) {
-          // Avoid index conflicts
-          delete previousPublished.aposLocale;
-          delete previousPublished.aposDocId;
           previousPublished._id = previousPublished._id.replace(':published', ':previous');
+          previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
           await self.apos.doc.db.replaceOne({
             _id: previousPublished._id
           }, previousPublished, {
