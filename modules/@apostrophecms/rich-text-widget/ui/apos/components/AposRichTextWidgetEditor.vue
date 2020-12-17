@@ -182,7 +182,9 @@ export default {
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
-      apos.bus.$emit('context-editing');
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-editing');
+      }
       // Debounce updates. We have our own plumbing for
       // this so that we can change our minds to update
       // right away if we lose focus.
