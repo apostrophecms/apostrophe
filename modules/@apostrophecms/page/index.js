@@ -235,8 +235,14 @@ module.exports = {
       async post(req) {
         self.publicApiCheck(req);
         req.body._position = req.body._position || 'lastChild';
-        const targetId = self.apos.launder.string(req.body._targetId);
-        const position = self.apos.launder.string(req.body._position);
+        let targetId = self.apos.launder.string(req.body._targetId);
+        let position = self.apos.launder.string(req.body._position);
+        // Here we have to normalize before calling insert because we
+        // need the parent page to call newChild(). insert calls again but
+        // sees there's no work to be done, so no performance hit
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
@@ -677,9 +683,9 @@ database.`);
       // are bypassed.
       async insert(req, targetId, position, page, options = {}) {
         // Handle numeric positions
-        const { targetIdNormalized, positionNormalized } = await self.getTargetIdAndPosition(req, null, targetId, position);
-        targetId = targetIdNormalized;
-        position = positionNormalized;
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         return self.withLock(req, async () => {
           let peers;
           page.aposLastTargetId = targetId;
@@ -881,9 +887,9 @@ database.`);
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const { targetIdNormalized, positionNormalized } = await self.getTargetIdAndPosition(req, null, targetId, position);
-        targetId = targetIdNormalized;
-        position = positionNormalized;
+        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = normalized.targetId;
+        position = normalized.position;
         if (!options) {
           options = {};
         } else {
@@ -1066,6 +1072,7 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
+        console.log(criteria);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
@@ -2132,7 +2139,7 @@ database.`);
       },
       addMissingLastTargetIdAndPositionMigration() {
         self.apos.migration.add('missing-last-target-id-and-position', async () => {
-          return self.apos.migration.eachDoc({
+          await self.apos.migration.eachDoc({
             slug: /^\//,
             // Home page should not have them, that's OK
             level: {

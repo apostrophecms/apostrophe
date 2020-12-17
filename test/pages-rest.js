@@ -1406,7 +1406,7 @@ describe('Pages REST', function() {
   });
 
   it('can get an advisory lock on a page while patching a property', async () => {
-    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1421,7 +1421,7 @@ describe('Pages REST', function() {
 
   it('cannot get an advisory lock with a different context id', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar,
         body: {
           _advisoryLock: {
@@ -1439,7 +1439,7 @@ describe('Pages REST', function() {
   });
 
   it('can get an advisory lock with a different context id if forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1452,7 +1452,7 @@ describe('Pages REST', function() {
   });
 
   it('can renew the advisory lock with the second context id after forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1464,7 +1464,7 @@ describe('Pages REST', function() {
   });
 
   it('can unlock the advisory lock while patching a property', async () => {
-    const page = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const page = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1478,7 +1478,7 @@ describe('Pages REST', function() {
   });
 
   it('can relock with the first context id after unlocking', async () => {
-    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const doc = await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -1523,7 +1523,7 @@ describe('Pages REST', function() {
 
   it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/@apostrophecms/page/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {

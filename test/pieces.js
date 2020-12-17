@@ -799,7 +799,7 @@ describe('Pieces', function() {
   let advisoryLockTestId;
 
   it('can insert a product for advisory lock testing', async () => {
-    const response = await apos.http.post('/api/v1/article', {
+    const response = await apos.http.post('/api/v1/product', {
       body: {
         title: 'Advisory Test',
         name: 'advisory-test'
@@ -813,7 +813,7 @@ describe('Pieces', function() {
   });
 
   it('can get an advisory lock on a product while patching a property', async () => {
-    const product = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -828,7 +828,7 @@ describe('Pieces', function() {
 
   it('cannot get an advisory lock with a different context id', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar,
         body: {
           _advisoryLock: {
@@ -846,7 +846,7 @@ describe('Pieces', function() {
   });
 
   it('can get an advisory lock with a different context id if forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -859,7 +859,7 @@ describe('Pieces', function() {
   });
 
   it('can renew the advisory lock with the second context id after forcing', async () => {
-    await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -871,7 +871,7 @@ describe('Pieces', function() {
   });
 
   it('can unlock the advisory lock while patching a property', async () => {
-    const product = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const product = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -885,7 +885,7 @@ describe('Pieces', function() {
   });
 
   it('can relock with the first context id after unlocking', async () => {
-    const doc = await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+    const doc = await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
       jar,
       body: {
         _advisoryLock: {
@@ -930,7 +930,7 @@ describe('Pieces', function() {
 
   it('second user with a distinct htmlPageId gets an appropriate error specifying who has the lock', async () => {
     try {
-      await apos.http.patch(`/api/v1/@apostrophecms/doc/${advisoryLockTestId}`, {
+      await apos.http.patch(`/api/v1/product/${advisoryLockTestId}`, {
         jar: jar2,
         body: {
           _advisoryLock: {
