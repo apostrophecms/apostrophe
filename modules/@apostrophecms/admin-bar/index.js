@@ -250,12 +250,14 @@ module.exports = {
         if (context && context._edit) {
           req.res.setHeader('Cache-Control', 'no-cache');
         }
-        let contextEditorName;
+        let contextEditorName, contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';
+            contextAction = self.apos.page.action;
           } else {
             contextEditorName = `${context.type}:editor`;
+            contextAction = self.apos.doc.getManager(context.type).action;
           }
         }
         return {
@@ -269,8 +271,11 @@ module.exports = {
             title: context.title,
             type: context.type,
             _url: context._url,
-            slug: context.slug
+            slug: context.slug,
+            aposModified: context.aposModified
           },
+          // Base API URL appropriate to the context document
+          contextAction,
           // Simplifies frontend logic
           contextId: context && context._id,
           htmlPageId: cuid(),

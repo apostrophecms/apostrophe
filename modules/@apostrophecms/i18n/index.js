@@ -73,6 +73,31 @@ module.exports = {
     return {
       isValidLocale(locale) {
         return locale && self.locales.includes(locale);
+      },
+      // Infer `req.locale` and `req.mode` from `_id` if they were
+      // not set already by explicit query parameters. Conversely,
+      // if the parameters were set, rewrite `_id` accordingly.
+      // Returns `_id`, after rewriting if appropriate.
+      inferIdLocaleAndMode(req, _id) {
+        let [ cuid, locale, mode ] = _id.split(':');
+        if (locale && mode) {
+          if (!req.query['apos-locale']) {
+            req.locale = locale;
+          } else {
+            locale = req.locale;
+          }
+          if (!req.query['apos-mode']) {
+            req.mode = mode;
+          } else {
+            mode = req.mode;
+          }
+        } else {
+          // aposDocId was passed, complete the _id from whatever
+          // was in query params or defaults
+          locale = req.locale;
+          mode = req.mode;
+        }
+        return `${cuid}:${locale}:${mode}`;
       }
     };
   }

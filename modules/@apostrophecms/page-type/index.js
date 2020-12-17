@@ -94,10 +94,13 @@ module.exports = {
       },
       afterPublished: {
         async replayMoveAfterPublished(req, published) {
-          return self.apos.page.move({
-            ...req,
-            mode: 'published'
-          }, published._id, published.aposLastTargetId, published.aposLastPosition);
+          // Home page does not move
+          if (published.aposLastTargetId) {
+            return self.apos.page.move({
+              ...req,
+              mode: 'published'
+            }, published._id, published.aposLastTargetId, published.aposLastPosition);
+          }
         }
       },
       afterRevertDraftToPublished: {
@@ -273,8 +276,11 @@ module.exports = {
         _super(req, from, to);
         const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
         const oldMode = (newMode === ':published') ? ':draft' : ':published';
-        to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
-        to.aposLastPosition = from.aposLastPosition;
+        // Home pages will not have this
+        if (from.aposLastTargetId) {
+          to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
+          to.aposLastPosition = from.aposLastPosition;
+        }
       },
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);

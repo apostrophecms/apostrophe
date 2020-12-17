@@ -43,26 +43,6 @@ module.exports = {
       async getOne(req, _id) {
         return self.find(req, { _id }).toObject();
       },
-
-      // PATCH /api/v1/@apostrophecms/doc/_id works for any document type,
-      // at the expense of one extra query to determine what module should
-      // be asked to do the work. Simplifies browser-side logic for
-      // on-page editing: the frontend only has to know the doc _id.
-      async patch(req, _id) {
-        const doc = await self.find(req, { _id }).project({
-          type: 1,
-          slug: 1
-        }).toObject();
-        if (!doc) {
-          throw self.apos.error('notfound');
-        }
-        if (self.apos.page.isPage(doc)) {
-          return self.apos.page.patch(req, _id);
-        } else {
-          const manager = self.apos.doc.getManager(doc.type);
-          return manager.patch(req, _id);
-        }
-      }
     };
   },
   apiRoutes(self, options) {

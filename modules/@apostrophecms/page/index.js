@@ -88,6 +88,7 @@ module.exports = {
     self.enableBrowserData();
     self.addDeduplicateRanksMigration();
     self.addFixHomePagePathMigration();
+    self.addMissingLastTargetIdAndPositionMigration();
     await self.createIndexes();
   },
   restApiRoutes(self, options) {
@@ -234,10 +235,8 @@ module.exports = {
       async post(req) {
         self.publicApiCheck(req);
         req.body._position = req.body._position || 'lastChild';
-        const {
-          targetId,
-          position
-        } = await self.getTargetIdAndPosition(req, null, req.body._targetId, req.body._position);
+        const targetId = self.apos.launder.string(req.body._targetId);
+        const position = self.apos.launder.string(req.body._position);
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
@@ -336,11 +335,8 @@ module.exports = {
           await manager.convert(req, input, page);
           await self.update(req, page);
           if (input._targetId) {
-            const {
-              targetId,
-              position
-            } = await self.getTargetIdAndPosition(req, page._id, input._targetId, input._position);
-
+            const targetId = self.apos.launder.string(input._targetId);
+            const position = self.apos.launder.string(input._position);
             await self.move(req, page._id, targetId, position);
           }
           if (htmlPageId && !lock) {
@@ -366,6 +362,63 @@ module.exports = {
       patch(req, _id) {
         self.publicApiCheck(req);
         return self.patch(req, _id);
+      }
+    };
+  },
+  apiRoutes(self, options) {
+    return {
+      post: {
+        ':_id/publish': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.publish(req, draft);
+        },
+        ':_id/revert-draft-to-published': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const draft = await self.findOneForEditing({
+            ...req,
+            mode: 'draft'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!draft) {
+            throw self.apos.error('notfound');
+          }
+          if (!draft.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertDraftToPublished(req, draft);
+        },
+        ':_id/revert-published-to-previous': async (req) => {
+          const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            aposDocId: _id.split(':')[0]
+          });
+          if (!published) {
+            throw self.apos.error('notfound');
+          }
+          if (!published.aposLocale) {
+            // Not subject to draft/publish workflow
+            throw self.apos.error('invalid');
+          }
+          return self.revertPublishedToPrevious(req, published);
+        }
       }
     };
   },
@@ -548,10 +601,9 @@ database.`);
             if (i === (patches.length - 1)) {
               await self.update(req, page);
               if (_targetId) {
-                const result = await self.getTargetIdAndPosition(req, page._id, _targetId, _position);
-                const actualTargetId = result.targetId;
-                const actualPosition = result.position;
-                await self.move(req, page._id, actualTargetId, actualPosition);
+                targetId = self.apos.launder.string(input._targetId);
+                position = self.apos.launder.string(input._position);
+                await self.move(req, page._id, targetId, position);
               }
               result = self.findOneForEditing(req, { _id }, { attachments: true });
             }
@@ -615,7 +667,11 @@ database.`);
         return query;
       },
       // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`.
+      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `position` may be a zero-based offset for the new child
+      // of `targetId` (note that the `rank` property of sibling pages
+      // is not strictly ascending, so use an array index into `_children` to
+      // dtermine this parameter instead).
       //
       // The `options` argument may be omitted completely. If
       // `options.permissions` is explicitly set to false, permissions checks
@@ -626,6 +682,10 @@ database.`);
       // If `options.permissions` is explicitly set to false, permissions checks
       // are bypassed.
       async insert(req, targetId, position, page, options = {}) {
+        // Handle numeric positions
+        const { targetIdNormalized, positionNormalized } = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = targetIdNormalized;
+        position = positionNormalized;
         return self.withLock(req, async () => {
           let peers;
           page.aposLastTargetId = targetId;
@@ -808,9 +868,12 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // position can be 'before', 'after', `firstChild` or `lastChild` and
-      // determines the moved page's new relationship to
-      // the target page.
+      // Insert a page. `targetId` must be an existing page id, and
+      // `position` may be `before`, `inside` or `after`. Alternatively
+      // `position` may be a zero-based offset for the new child
+      // of `targetId` (note that the `rank` property of sibling pages
+      // is not strictly ascending, so use an array index into `_children` to
+      // dtermine this parameter instead).
       //
       // As a shorthand, `targetId` may be `_trash` to refer to the trash can,
       // or `_home` to refer to the home page.
@@ -823,6 +886,10 @@ database.`);
       // After the moved and target pages are fetched, the `beforeMove` event is emitted with
       // `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
+        // Handle numeric positions
+        const { targetIdNormalized, positionNormalized } = await self.getTargetIdAndPosition(req, null, targetId, position);
+        targetId = targetIdNormalized;
+        position = positionNormalized;
         if (!options) {
           options = {};
         } else {
@@ -1033,7 +1100,6 @@ database.`);
       // if applicable.
       async getTargetIdAndPosition(req, pageId, targetId, position) {
         targetId = self.apos.launder.id(targetId);
-
         position = self.apos.launder.string(position);
 
         if (isNaN(parseInt(position)) || parseInt(position) < 0) {
@@ -1715,12 +1781,13 @@ database.`);
         return doc.slug && doc.slug.match(/^\//);
       },
       // Returns a regular expression to match the `path` property of the descendants of the given page,
-      // but not itself
-      matchDescendants(page) {
+      // but not itself. You can also pass the path rather than the entire page object.
+      matchDescendants(pageOrPath) {
+        const path = pageOrPath.path || pageOrPath;
         // Make sure there is a trailing slash, but don't add two (the home page already has one).
         // Also make sure there is at least one additional character, which there always will be,
         // in order to prevent the home page from matching as its own descendant
-        return new RegExp(`^${self.apos.util.regExpQuote(page.path)}/.`);
+        return new RegExp(`^${self.apos.util.regExpQuote(path)}/.`);
       },
       // Returns the path property of the page's parent. For use in queries to fetch the parent.
       getParentPath(page) {
@@ -2068,7 +2135,63 @@ database.`);
             }
           });
         });
-      }
+      },
+      addMissingLastTargetIdAndPositionMigration() {
+        self.apos.migration.add('missing-last-target-id-and-position', async () => {
+          return self.apos.migration.eachDoc({
+            slug: /^\//,
+            // Home page should not have them, that's OK
+            level: {
+              $gte: 0
+            },
+            aposLastTargetId: {
+              $exists: 0
+            }
+          }, 5, async (doc) => {
+            const parentPath = self.getParentPath(doc);
+            const parentAposDocId = parentPath.split('/').pop();
+            let parentId;
+            if (doc.aposLocale) {
+              parentId = `${parentAposDocId}:${doc.aposLocale}`;
+            } else {
+              parentId = parentAposDocId;
+            }
+            const peerCriteria = {
+              path: self.matchDescendants(parentPath),
+              level: doc.level
+            };
+            if (doc.aposLocale) {
+              peerCriteria.aposLocale = doc.aposLocale;
+            }
+            const peers = await self.apos.doc.db.find(peerCriteria).sort({
+              rank: 1
+            }).project({
+              _id: 1
+            }).toArray();
+            let targetId;
+            let position;
+            const index = peers.findIndex(peer => peer._id === doc._id);
+            if (index === -1) {
+              return;
+            }
+            if (index === 0) {
+              targetId = parentId;
+              position = 'firstChild';
+            } else {
+              targetId = peers[index - 1]._id;
+              position = 'after';
+            }
+            return self.apos.doc.db.updateOne({
+              _id: doc._id
+            }, {
+              $set: {
+                aposLastTargetId: targetId,
+                aposLastPosition: position
+              }
+            });
+          });
+        });
+      } 
     };
   },
   helpers(self, options) {

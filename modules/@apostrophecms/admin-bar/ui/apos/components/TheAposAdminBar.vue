@@ -174,6 +174,13 @@
               type="subtle" :modifiers="['small', 'no-motion']"
               @click="switchEditMode(false)"
             />
+           <AposButton
+             v-if="editMode && draftIsModified"
+             type="primary" label="Publish Changes"
+             :disabled="readyToSave"
+             class="apos-admin-bar__btn apos-admin-bar__context-button"
+             @click="publish"
+          />
           </div>
         </transition-group>
       </div>
@@ -211,6 +218,7 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
+      draftIsModified: window.apos.adminBar.context.aposModified,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -302,7 +310,7 @@ export default {
       return false;
     },
     readyToSave() {
-      return this.patchesSinceSave.length;
+      return !!this.patchesSinceSave.length;
     },
     moduleOptions() {
       return window.apos.adminBar;
@@ -414,9 +422,16 @@ export default {
     });
 
     if (this.editMode) {
-      // The page always initially loads with fully rendered content,
-      // so refetch the content with the area placeholders and data instead
-      this.refresh();
+      // Watch out for legacy situations where edit mode is active
+      // but we are not in draft
+      if (this.draftMode !== 'draft') {
+        // Also refreshes
+        this.switchDraftMode('draft');
+      } else {
+        // The page always initially loads with fully rendered content,
+        // so refetch the content with the area placeholders and data instead
+        this.refresh();
+      }
     }
   },
   methods: {
@@ -442,11 +457,12 @@ export default {
         this.patchesSinceSave = [];
         try {
           this.saved = false;
-          await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+          const doc = await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
             body: {
               _patches: patchesSinceSave
             }
           });
+          this.draftIsModified = doc.aposModified;
           this.retrying = false;
         } catch (e) {
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -473,6 +489,9 @@ export default {
         });
         window.sessionStorage.setItem('aposStateChange', Date.now());
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
+        if (mode === 'published') {
+          window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+        }
         if (doc._url !== location.href) {
           // Draft and published slug might not be the same
           location.assign(doc._url);
@@ -499,7 +518,7 @@ export default {
     switchEditMode(mode) {
       window.sessionStorage.setItem('aposEditMode', JSON.stringify(mode));
       this.editMode = mode;
-      if (!this.draftMode) {
+      if (this.draftMode !== 'draft') {
         // Entering edit mode implies entering draft mode.
         // Also takes care of refresh
         this.switchDraftMode('draft');
@@ -558,6 +577,20 @@ export default {
       // is already smart enough to not run them twice, it's OK
       apos.util.runPlayers();
     },
+    async publish() {
+      try {
+        await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/publish`, {
+          body: {},
+          busy: true
+        });
+        apos.notify('Your changes have been published.', { type: 'success', dismiss: true });
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred While Publishing',
+          description: e.message || 'An error occurred while publishing the document.'
+        });
+      }
+    },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
       await this.refreshAfterHistoryChange('The operation could not be undone.');
@@ -569,7 +602,7 @@ export default {
     async refreshAfterHistoryChange(errorMessage) {
       this.saving = true;
       try {
-        await apos.http.patch(`${window.apos.doc.action}/${this.moduleOptions.contextId}`, {
+        await apos.http.patch(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
           body: {
             _patches: [
               this.original,
