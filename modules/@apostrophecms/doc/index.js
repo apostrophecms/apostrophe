@@ -42,7 +42,7 @@ module.exports = {
       // know the doc _id.
       async getOne(req, _id) {
         return self.find(req, { _id }).toObject();
-      },
+      }
     };
   },
   apiRoutes(self, options) {
@@ -75,8 +75,7 @@ module.exports = {
       '@apostrophecms/doc-type:beforeInsert': {
         setLocale(req, doc, options) {
           const manager = self.getManager(doc.type);
-          if (!manager.isLocalized()) {
-          } else {
+          if (manager.isLocalized()) {
             doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
           }
         },

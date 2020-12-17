@@ -567,8 +567,6 @@ database.`);
         return self.withLock(req, async () => {
           const input = req.body;
           const page = await self.findOneForEditing(req, { _id });
-          let _targetId;
-          let _position;
           let result;
           if (!page) {
             throw self.apos.error('notfound');
@@ -593,16 +591,12 @@ database.`);
                 force
               });
             }
-            if (input._targetId) {
-              _targetId = input._targetId;
-              _position = input._position;
-            }
             await self.applyPatch(req, page, input);
             if (i === (patches.length - 1)) {
               await self.update(req, page);
-              if (_targetId) {
-                targetId = self.apos.launder.string(input._targetId);
-                position = self.apos.launder.string(input._position);
+              if (input._targetId) {
+                const targetId = self.apos.launder.string(input._targetId);
+                const position = self.apos.launder.string(input._position);
                 await self.move(req, page._id, targetId, position);
               }
               result = self.findOneForEditing(req, { _id }, { attachments: true });
@@ -2191,7 +2185,7 @@ database.`);
             });
           });
         });
-      } 
+      }
     };
   },
   helpers(self, options) {

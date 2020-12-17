@@ -307,8 +307,6 @@ module.exports = {
       // Apostrophe only has one corresponding draft at a time
       // per published document.
       async insertDraftOf(req, doc, draft) {
-        if (draft.type === 'test-people') {
-        }
         const inserted = await self.insert({
           ...req,
           mode: 'draft'
