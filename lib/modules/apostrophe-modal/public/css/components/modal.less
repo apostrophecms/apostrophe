@@ -98,13 +98,16 @@
   position: absolute;
   height: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
 
 	background-color: lighten(@apos-light, 5%);
 }
 
 .apos-modal-body
 {
-  height: calc(100% - 63px);
+  flex: 1;
 	overflow: auto;
   .apos-scrollbar;
   background-color: lighten(@apos-light, 5%);
