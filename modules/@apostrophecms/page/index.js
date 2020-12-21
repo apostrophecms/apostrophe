@@ -358,9 +358,13 @@ module.exports = {
       // fully deleted, which isn't the same as having references still in the trash.
       async delete(req, _id) {
         self.publicApiCheck(req);
-        throw self.apos.error('unimplemented');
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const page = await self.findOneForEditing(req, {
+          _id
+        });
+        return self.delete(req, page);
       },
-      // Patch some properties of the page.
+        // Patch some properties of the page.
       //
       // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
       // may be `before`, `after` or `inside`. To move a page into or out of the trash, set
@@ -635,6 +639,11 @@ database.`);
         }, parentPage), input);
         await self.apos.schema.convert(req, schema, input, page);
         await self.emit('afterConvert', req, input, page);
+      },
+      // True delete. Will throw an error if the page
+      // has descendants
+      async delete(req, page, options = {}) {
+        return self.apos.doc.delete(req, page, options);
       },
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');

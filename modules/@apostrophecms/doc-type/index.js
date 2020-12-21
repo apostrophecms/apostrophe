@@ -743,7 +743,8 @@ module.exports = {
           return true;
         }
         const schema = self.schema;
-        return !self.apos.schema.isEqual(req, schema, draft, published);
+        const result = !self.apos.schema.isEqual(req, schema, draft, published);
+        return result;
       },
       // Called for you by `apos.doc.publish`. Copies properties from
       // `draft` to `published` where appropriate.

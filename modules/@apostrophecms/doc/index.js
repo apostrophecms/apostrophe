@@ -195,6 +195,50 @@ module.exports = {
         baseUnversionedFields(req, doc, fields) {
           fields.push('visibility');
         }
+      },
+      '@apostrophecms/doc-type:afterDelete': {
+                // If deleting draft also delete published,
+        // and vice versa. (Note that when the user
+        // "discards the draft" of a previously published
+        // document it is not really deleted, it is reset
+        // to the current contents of the published mode,
+        // so we don't lose both in that scenario.)
+        async deleteOtherModeAfterDelete(req, doc) {
+          if (doc.aposLocale.endsWith(':draft')) {
+            const manager = self.getManager(doc.type);
+            const published = await manager.findOneForEditing({
+              ...req,
+              mode: 'published'
+            }, {
+              aposDocId: doc.aposDocId
+            });
+            if (published) {
+              await manager.delete(req, published);
+            }
+          } else {
+            if (doc.aposLocale.endsWith(':published')) {
+              const manager = self.getManager(doc.type);
+              const draft = await manager.findOneForEditing({
+                ...req,
+                mode: 'draft'
+              }, {
+                aposDocId: doc.aposDocId
+              });
+              if (draft) {
+                await manager.delete(req, draft);
+              }
+            }
+          }
+        },
+        // Remove the copy we keep around for undoing publish
+        async deletePreviousAfterDelete(req, doc) {
+          if (doc.aposLocale.endsWith('published')) {
+            return self.db.removeOne({
+              aposDocId: doc.aposDocId,
+              aposLocale: doc.aposDocLocale.replace(':published', ':previous')
+            });
+          }
+        }
       }
     };
   },

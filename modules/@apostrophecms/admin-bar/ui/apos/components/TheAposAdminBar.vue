@@ -515,13 +515,8 @@ export default {
         if (mode === 'published') {
           window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
         }
-        if (doc._url !== location.href) {
-          // Draft and published slug might not be the same
-          location.assign(doc._url);
-        } else {
-          // Avoid stale content
-          location.reload();
-        }
+        this.draftMode = mode;
+        this.refreshOrReload(doc._url);
       } catch (e) {
         if (e.status === 404) {
           // TODO don't get this far, check this in advance and disable it in the UI
@@ -606,6 +601,7 @@ export default {
           body: {},
           busy: true
         });
+        this.draftIsModified = false;
         apos.notify('Your changes have been published.', { type: 'success', dismiss: true });
       } catch (e) {
         await apos.alert({
@@ -626,11 +622,9 @@ export default {
               busy: true
             });
             apos.notify('The changes have been discarded.', { type: 'success', dismiss: true });
-            if (doc._url !== window.location.href) {
-              location.reload();
-            } else {
-              return this.refresh();
-            }
+            this.draftIsModified = doc.modified;
+            this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
+            this.refreshOrReload(doc._url);
           } catch (e) {
             await apos.alert({
               heading: 'An Error Occurred',
@@ -648,6 +642,8 @@ export default {
             await apos.http.delete(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
               busy: true
             });
+            // With the current page gone, we need to move to safe ground
+            location.assign('/');
           } catch (e) {
             await apos.alert({
               heading: 'An Error Occurred',
@@ -683,6 +679,17 @@ export default {
         apos.notify(errorMessage, { type: 'error' });
       } finally {
         this.saving = false;
+      }
+    },
+    async refreshOrReload(url) {
+      // URL might or might not include hostname part
+      url = url.replace(/^https?:\/\/.*?\//, '/');
+      if (url === (window.location.pathname + (window.location.search || ''))) {
+        // No URL change means we can refresh just the content area
+        this.refresh();
+      } else {
+        // Slug changed, must navigate
+        window.location.assign(url);
       }
     }
   }

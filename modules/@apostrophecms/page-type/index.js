@@ -135,22 +135,23 @@ module.exports = {
         }
       },
       beforeDelete: {
-        async checkForChildren(req, doc, options) {
-          const withChildren = await self.findOneForEditing(req, piece, {
-            children: {
-              trash: true,
-              orphan: true,
-              permissions: false
-            },
-            permissions: false
-          });
-          if (!piece) {
-            throw self.apos.error('notfound');
+        async checkForParked(req, doc, options) {
+          if (!doc.level) {
+            throw self.apos.error('invalid', 'The home page may not be removed.');
           }
-          if (piece._children && piece._children.length) {
+          if (doc.parked) {
+            throw self.apos.error('invalid', 'This page is "parked" and may not be removed.');
+          }
+        },
+        async checkForChildren(req, doc, options) {
+          const descendants = await self.apos.doc.db.countDocuments({
+            path: self.apos.page.matchDescendants(doc),
+            aposLocale: doc.aposLocale
+          });
+          if (descendants) {
             throw self.apos.error('invalid', 'You must delete the children of this page first.');
           }
-        } 
+        }
       }
     };
   },
