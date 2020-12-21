@@ -24,9 +24,23 @@ export const buttons = () => ({
             Outline: 'outline',
             Subtle: 'subtle',
             Input: 'input',
+            Color: 'color',
             Danger: 'danger',
             Quiet: 'quiet',
             RichText: 'rich-text'
+          },
+          null
+        )
+    },
+    color: {
+      default:
+        select(
+          'Color', {
+            Default: null,
+            Red: '#f44336',
+            Pink: '#E91E63',
+            Purple: '#9C27B0',
+            Indigo: '#3F51B5'
           },
           null
         )
@@ -78,6 +92,7 @@ export const buttons = () => ({
       :label="label"
       :busy="busy"
       :type="type"
+      :color="color"
       :icon="icon"
       :iconOnly="iconOnly"
       v-bind:modifiers="modifiers"

@@ -6,39 +6,45 @@
 {# busted in this release of nunjucks #}
 
 {% macro render(options, url) %}
-  <div class="apos-ui">
-    {% if ((options.page > 1) or (options.total > 1)) %}
-      <div class="apos-pager">
-        {{ pagerPage(1, options, url) }}
-        {% if options.page > 4 %}
-          <span class="apos-pager-gap">&hellip;</span>
-        {% endif %}
+  {% if ((options.page > 1) or (options.total > 1)) %}
+    {% set pagerClass = options.class %}
+    {% set gapClass = pagerClass + '__gap' if pagerClass else '' %}
+    <div class="{{ pagerClass if pagerClass }}">
+      {{ pagerPage(1, options, pagerClass, url) }}
+      {% if options.page > 4 %}
+        <span class="{{ gapClass }}">&hellip;</span>
+      {% endif %}
 
-        {% for page in apos.pager.pageRange({ page: options.page, total: options.total, shown: 5 }) %}
-          {{ pagerPageInner(page, options, url) }}
-        {% endfor %}
+      {% for page in apos.pager.pageRange({
+        page: options.page,
+        total: options.total,
+        shown: 5
+      }) %}
+        {{ pagerPageInner(page, options, pagerClass, url) }}
+      {% endfor %}
 
-        {% if options.page < (options.total - 3) %}
-          <span class="apos-pager-gap">&hellip;</span>
-        {% endif %}
-        {{ pagerPage(options.total, options, url) }}
-      </div>
-    {% endif %}
-  </div>
-{% endmacro %}
-
-{% macro pagerPageInner(page, options, url) %}
-  {% if ((page > 1) and (page < options.total)) %}
-    {{ pagerPage(page, options, url) }}
+      {% if options.page < (options.total - 3) %}
+        <span class="{{ gapClass }}">&hellip;</span>
+      {% endif %}
+      {{ pagerPage(options.total, options, pagerClass, url) }}
+    </div>
   {% endif %}
 {% endmacro %}
 
-{% macro pagerPage(page, options, url) %}
+{% macro pagerPageInner(page, options, pagerClass, url) %}
+  {% if ((page > 1) and (page < options.total)) %}
+    {{ pagerPage(page, options, pagerClass, url) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro pagerPage(page, options, pagerClass, url) %}
+  {% set pageClass = pagerClass + '__item' if pagerClass else '' %}
+
   {% if (page <= options.total) %}
-    <span class="apos-pager-number{% if page == 1 %} apos-first{% endif %}{% if page == options.total %} apos-last{% endif %}{% if page == options.page %} apos-active{% endif %}">
+    <span class="{{ pageClass }}{% if page == 1 %}  is-first{% endif %}{% if page == options.total %} is-last{% endif %}{% if page == options.page %} is-active{% endif %}">
       {%- if (options.page != page) -%}
         {# Dual markup for javascript applications and plain old links #}
-        <a data-apos-page="{{ page }}" href="{{ url | build({ page: page, append: 1 }) }}">
+        <a href="{{ url | build({ page: page, append: 1 }) }}">
       {%- endif -%}
       {{ page }}
       {%- if (options.page != page) -%}

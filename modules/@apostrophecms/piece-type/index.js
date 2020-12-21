@@ -28,17 +28,21 @@ module.exports = {
     return {
       add: {
         title: {
-          label: 'Title'
+          label: 'Title',
+          component: 'AposCellButton'
         },
         updatedAt: {
-          label: 'Edited on'
+          label: 'Edited on',
+          component: 'AposCellDate'
         },
         visibility: {
           label: 'Visibility'
         },
+        // TODO: Update this to identify if there's a piece page for the type.
         ...(self.options.contextual ? {
           _url: {
-            label: 'Link'
+            label: 'Link',
+            component: 'AposCellLink'
           }
         } : {})
       }
@@ -404,6 +408,10 @@ module.exports = {
       // and `afterSave` async events are emitted by this module.
       async update(req, piece, options) {
         return self.apos.doc.update(req, piece, options);
+      },
+      // True delete
+      async delete(req, piece, options = {}) {
+        return self.apos.doc.delete(req, piece, options);
       },
       composeFilters() {
         self.filters = Object.keys(self.filters).map(key => ({

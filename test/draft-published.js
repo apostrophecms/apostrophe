@@ -128,7 +128,7 @@ describe('Draft / Published', function() {
     testDraftProduct = await apos.product.insert(apos.task.getReq({
       mode: 'draft'
     }), product);
-    assert(testDraftProduct.aposModified);
+    assert(testDraftProduct.modified);
   });
 
   it('published should not exist yet', async () => {
@@ -162,14 +162,14 @@ describe('Draft / Published', function() {
       _id: testDraftProduct._id
     }).toObject();
     assert(testDraftProduct);
-    assert(!testDraftProduct.aposModified);
+    assert(!testDraftProduct.modified);
   });
 
   it('original product still shows as unmodified if we update it with no changes', async () => {
     testDraftProduct = await apos.product.update(apos.task.getReq({
       mode: 'draft'
     }), testDraftProduct);
-    assert(!testDraftProduct.aposModified);
+    assert(!testDraftProduct.modified);
   });
 
   it('original product shows as modified if we make a change to it', async () => {
@@ -177,7 +177,7 @@ describe('Draft / Published', function() {
     testDraftProduct = await apos.product.update(apos.task.getReq({
       mode: 'draft'
     }), testDraftProduct);
-    assert(testDraftProduct.aposModified);
+    assert(testDraftProduct.modified);
   });
 
   it('can revert the draft to published', async () => {
@@ -185,7 +185,7 @@ describe('Draft / Published', function() {
       mode: 'draft'
     }), testDraftProduct);
     assert(testDraftProduct);
-    assert(!testDraftProduct.aposModified);
+    assert(!testDraftProduct.modified);
     assert(testDraftProduct.title === 'Test Product');
   });
 
@@ -200,7 +200,7 @@ describe('Draft / Published', function() {
     testDraftProduct = await apos.product.update(apos.task.getReq({
       mode: 'draft'
     }), testDraftProduct);
-    assert(testDraftProduct.aposModified);
+    assert(testDraftProduct.modified);
   });
 
   it('should be able to publish the product', async () => {
@@ -214,7 +214,7 @@ describe('Draft / Published', function() {
     testDraftProduct = await apos.product.update(apos.task.getReq({
       mode: 'draft'
     }), testDraftProduct);
-    assert(testDraftProduct.aposModified);
+    assert(testDraftProduct.modified);
   });
 
   it('can revert the draft to Title 3', async () => {
@@ -222,7 +222,7 @@ describe('Draft / Published', function() {
       mode: 'draft'
     }), testDraftProduct);
     assert(testDraftProduct);
-    assert(!testDraftProduct.aposModified);
+    assert(!testDraftProduct.modified);
     assert(testDraftProduct.title === 'Title 3');
   });
 
@@ -245,7 +245,7 @@ describe('Draft / Published', function() {
     });
     assert(testDraftProduct);
     assert(testDraftProduct.title === 'Title 3');
-    assert(testDraftProduct.aposModified);
+    assert(testDraftProduct.modified);
   });
 
   it('cannot revert published to previous again', async () => {
@@ -277,7 +277,7 @@ describe('Draft / Published', function() {
       level: 0
     }).toObject();
     assert.strictEqual(parent.path, `${home.path}/${parent.aposDocId}`);
-    assert(parent.aposModified);
+    assert(parent.modified);
   });
 
   it('published should not exist yet', async () => {
@@ -311,14 +311,14 @@ describe('Draft / Published', function() {
       _id: parent._id
     }).toObject();
     assert(parent);
-    assert(!parent.aposModified);
+    assert(!parent.modified);
   });
 
   it('original page still shows as unmodified if we update it with no changes', async () => {
     parent = await apos.page.update(apos.task.getReq({
       mode: 'draft'
     }), parent);
-    assert(!parent.aposModified);
+    assert(!parent.modified);
   });
 
   it('original page shows as modified if we make a change to it', async () => {
@@ -326,7 +326,7 @@ describe('Draft / Published', function() {
     parent = await apos.page.update(apos.task.getReq({
       mode: 'draft'
     }), parent);
-    assert(parent.aposModified);
+    assert(parent.modified);
   });
 
   it('can revert the page draft to published', async () => {
@@ -334,7 +334,7 @@ describe('Draft / Published', function() {
       mode: 'draft'
     }), parent);
     assert(parent);
-    assert(!parent.aposModified);
+    assert(!parent.modified);
     assert(parent.title === 'Parent');
   });
 
@@ -352,7 +352,7 @@ describe('Draft / Published', function() {
     parent = await apos.page.update(apos.task.getReq({
       mode: 'draft'
     }), parent);
-    assert(parent.aposModified);
+    assert(parent.modified);
   });
 
   it('should be able to publish the page', async () => {
@@ -366,7 +366,7 @@ describe('Draft / Published', function() {
     parent = await apos.page.update(apos.task.getReq({
       mode: 'draft'
     }), parent);
-    assert(parent.aposModified);
+    assert(parent.modified);
   });
 
   it('can revert the draft to parent Title 3', async () => {
@@ -374,7 +374,7 @@ describe('Draft / Published', function() {
       mode: 'draft'
     }), parent);
     assert(parent);
-    assert(!parent.aposModified);
+    assert(!parent.modified);
     assert(parent.title === 'Parent Title 3');
   });
 
@@ -399,7 +399,7 @@ describe('Draft / Published', function() {
     });
     assert(parent);
     assert(parent.title === 'Parent Title 3');
-    assert(parent.aposModified);
+    assert(parent.modified);
   });
 
   it('cannot revert published to previous again', async () => {
@@ -425,7 +425,7 @@ describe('Draft / Published', function() {
     sibling = await apos.page.insert(apos.task.getReq({
       mode: 'draft'
     }), '_home', 'lastChild', sibling);
-    assert(sibling.aposModified);
+    assert(sibling.modified);
   });
 
   it('should be able to publish the sibling page', async () => {
@@ -446,7 +446,7 @@ describe('Draft / Published', function() {
     grandchild = await apos.page.insert(apos.task.getReq({
       mode: 'draft'
     }), parent._id, 'lastChild', grandchild);
-    assert(grandchild.aposModified);
+    assert(grandchild.modified);
     assert.strictEqual(grandchild.path, `${parent.path}/${grandchild.aposDocId}`);
   });
 
@@ -480,7 +480,7 @@ describe('Draft / Published', function() {
       _id: grandchild._id
     }).toObject();
     // Should be considered modified because we moved it
-    assert(grandchild.aposModified);
+    assert(grandchild.modified);
   });
 
   it('published grandchild page should still be beneath parent page', async () => {

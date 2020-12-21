@@ -220,6 +220,25 @@ module.exports = {
     });
 
     self.addFieldType({
+      name: 'color',
+      convert: async function (req, field, data, object) {
+        object[field.name] = self.apos.launder.string(data[field.name], field.def);
+
+        if (field.required && (_.isUndefined(object[field.name]) || !object[field.name].toString().length)) {
+          throw self.apos.error('required');
+        }
+
+        const test = tinycolor(object[field.name]);
+        if (!tinycolor(test).isValid()) {
+          object[field.name] = null;
+        }
+      },
+      isEmpty: function (field, value) {
+        return !value.length;
+      }
+    });
+
+    self.addFieldType({
       name: 'checkboxes',
       convert: async function (req, field, data, object) {
         if (typeof data[field.name] === 'string') {
@@ -349,6 +368,11 @@ module.exports = {
     });
 
     self.addFieldType({
+      name: 'radio',
+      extend: 'select'
+    });
+
+    self.addFieldType({
       name: 'integer',
       vueComponent: 'AposInputString',
       convert: async function (req, field, data, object) {
@@ -453,18 +477,6 @@ module.exports = {
           }
         }
         object[field.name] = data[field.name];
-      }
-    });
-
-    self.addFieldType({
-      name: 'color',
-      convert: async function (req, field, data, object) {
-        const test = self.apos.launder.string(data[field.name]);
-        if (tinycolor(test).isValid()) {
-          object[field.name] = test;
-        } else {
-          object[field.name] = null;
-        }
       }
     });
 
@@ -1405,7 +1417,7 @@ module.exports = {
       // unless `prepareRelationshipsForStorage` is used.
       //
       // This method is invoked by the doc module to compare draft and published
-      // documents and set the aposModified property of the draft, just before updating the
+      // documents and set the modified property of the draft, just before updating the
       // published version.
 
       isEqual(req, schema, one, two) {

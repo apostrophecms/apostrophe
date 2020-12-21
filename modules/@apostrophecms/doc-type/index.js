@@ -634,7 +634,8 @@ module.exports = {
           _id: draft._id
         }, {
           $set: {
-            aposModified: false
+            modified: false,
+            lastPublishedAt: new Date()
           }
         });
         // Now that we're sure publication worked, update "previous" so we
@@ -653,7 +654,7 @@ module.exports = {
       // Reverts the given draft to the most recent publication.
       //
       // Returns the draft's new value, or `false` if the draft
-      // was not modified from the published version (`aposModified: false`)
+      // was not modified from the published version (`modified: false`)
       // or no published version exists yet.
       //
       // This is *not* the on-page `undo/redo` backend. This is the
@@ -669,12 +670,12 @@ module.exports = {
         if (!published) {
           return false;
         }
-        if (!draft.aposModified) {
+        if (!draft.modified) {
           return false;
         }
         // Draft and published roles intentionally reversed
         self.copyForPublication(req, published, draft);
-        draft.aposModified = false;
+        draft.modified = false;
         draft = await self.update({
           ...req,
           mode: 'draft'
@@ -709,7 +710,7 @@ module.exports = {
           _id: published._id.replace(':published', ':draft')
         }, {
           $set: {
-            aposModified: await self.isModified(req, result.published)
+            modified: await self.isModified(req, result.published)
           }
         });
         return result.published;

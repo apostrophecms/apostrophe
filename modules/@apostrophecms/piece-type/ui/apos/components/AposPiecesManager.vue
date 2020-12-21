@@ -162,8 +162,10 @@ export default {
 
         this.headers.forEach(column => {
           data[column.name] = piece[column.name];
-          data._id = piece._id;
         });
+
+        data._id = piece._id;
+
         items.push(data);
       });
 

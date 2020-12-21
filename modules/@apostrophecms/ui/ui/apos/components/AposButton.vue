@@ -4,15 +4,25 @@
     v-on="href ? {} : {click: click}"
     :href="href.length ? href : false"
     class="apos-button"
-    :class="modifierClass" :tabindex="tabindex"
+    :class="modifierClass"
+    :tabindex="tabindex"
     :disabled="isDisabled"
     :type="buttonType"
     :role="role"
     v-tooltip="tooltip"
+    :id="attrs.id ? attrs.id : id"
+    v-bind="attrs"
   >
     <transition name="fade">
       <AposSpinner :color="spinnerColor" v-if="busy" />
     </transition>
+    <span
+      v-if="colorStyle"
+      class="apos-button__color-preview"
+    >
+      <span :style="colorStyle" class="apos-button__color-preview__swatch"></span>
+      <span class="apos-button__color-preview__checkerboard"></span>
+    </span>
     <div class="apos-button__content">
       <AposIndicator
         v-if="icon"
@@ -21,7 +31,7 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <span class="apos-button__label" :class="{ 'apos-sr-only' : iconOnly }">
+      <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
         {{ label }}
       </span>
     </div>
@@ -29,6 +39,8 @@
 </template>
 
 <script>
+import tinycolor from 'tinycolor2';
+import cuid from 'cuid';
 
 export default {
   name: 'AposButton',
@@ -42,6 +54,10 @@ export default {
       default() {
         return [];
       }
+    },
+    color: {
+      type: String,
+      default: null
     },
     href: {
       type: String,
@@ -71,6 +87,12 @@ export default {
         return [];
       }
     },
+    attrs: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     disableFocus: Boolean,
     buttonType: {
       type: [ String, Boolean ],
@@ -88,12 +110,31 @@ export default {
   emits: [ 'click' ],
   data() {
     return {
-      contextMenuOpen: true
+      id: cuid()
     };
   },
   computed: {
     tabindex() {
       return this.disableFocus ? '-1' : '0';
+    },
+    colorStyle() {
+      if (this.type === 'color') {
+        // if color exists, use it
+        if (this.color) {
+          return {
+            backgroundColor: this.color,
+            border: `2px solid ${tinycolor(this.color).lighten(20).toString()}`
+          }
+        // if not provide a default placeholder
+        } else {
+          return {
+            backgroundColor: 'transparent',
+            border: `2px solid ${tinycolor('white').darken(20).toString()}`
+          }    
+        }
+      } else {
+        return null;
+      }
     },
     modifierClass() {
       const modifiers = [];
@@ -215,6 +256,40 @@ export default {
   .apos-button--outline,
   .apos-button[disabled].apos-button--outline {
     background-color: transparent;
+  }
+
+  .apos-button.apos-button--color {
+    width: 50px;
+    height: 50px;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: var(--a-box-shadow);
+  }
+
+  .apos-button__color-preview {
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+  }
+  .apos-button__color-preview,
+  .apos-button__color-preview__swatch,
+  .apos-button__color-preview__checkerboard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+  }
+
+  .apos-button__color-preview__swatch,
+  .apos-button__color-preview__checkerboard {
+    width: 100%;
+    height: 100%;
+  }
+  .apos-button__color-preview__swatch {
+    z-index: $z-index-default;
+  }
+  .apos-button__color-preview__checkerboard {
+    z-index: $z-index-base;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4T2N89uzZfwY8QFJSEp80A+OoAcMiDP7//483HTx//hx/Ohg1gIFx6IcBALl+VXknOCvFAAAAAElFTkSuQmCC');
   }
 
   .apos-button--small {
@@ -422,17 +497,6 @@ export default {
     }
   }
 
-  .apos-button--group {
-    background-color: var(--a-background-primary);
-    border: none;
-    &:hover {
-      background-color: var(--a-base-9);
-    }
-    &:focus {
-      background-color: var(--a-base-8);
-    }
-  }
-
   .apos-button--busy {
     .apos-button__content {
       opacity: 0;
@@ -507,7 +571,12 @@ export default {
   }
 
   .apos-button--no-border {
-    border: none;
+    &,
+    &:focus,
+    &:active,
+    &:hover {
+      border: none;
+    }
   }
 
   .apos-button--no-motion {

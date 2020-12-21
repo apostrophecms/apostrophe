@@ -182,7 +182,9 @@ export default {
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
-      apos.bus.$emit('context-editing');
+      if (this.docId === window.apos.adminBar.contextId) {
+        apos.bus.$emit('context-editing');
+      }
       // Debounce updates. We have our own plumbing for
       // this so that we can change our minds to update
       // right away if we lose focus.
@@ -264,6 +266,10 @@ export default {
 
   .apos-rich-text-editor__editor /deep/ .ProseMirror:focus {
     outline: none;
+  }
+
+  .apos-rich-text-toolbar__inner /deep/ > * {
+    height: 35px;
   }
 
 </style>

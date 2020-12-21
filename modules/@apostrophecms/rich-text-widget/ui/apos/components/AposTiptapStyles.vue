@@ -75,6 +75,7 @@ export default {
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include type-small;
+    height: 100%;
     padding: 10px 15px 10px 10px;
     &:focus, &:active {
       background-color: var(--a-base-9);

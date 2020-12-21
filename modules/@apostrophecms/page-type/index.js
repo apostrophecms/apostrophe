@@ -109,6 +109,11 @@ module.exports = {
             ...req,
             mode: 'draft'
           };
+          if (!result.draft.level) {
+            // The home page cannot move, so there is no
+            // chance we need to "replay" such a move
+            return;
+          }
           await self.apos.page.move(_req, result.draft._id, result.draft.aposLastTargetId, result.draft.aposLastPosition);
           const draft = await self.apos.page.findOneForEditing(_req, {
             _id: result.draft._id
@@ -128,6 +133,24 @@ module.exports = {
           });
           result.published = published;
         }
+      },
+      beforeDelete: {
+        async checkForChildren(req, doc, options) {
+          const withChildren = await self.findOneForEditing(req, piece, {
+            children: {
+              trash: true,
+              orphan: true,
+              permissions: false
+            },
+            permissions: false
+          });
+          if (!piece) {
+            throw self.apos.error('notfound');
+          }
+          if (piece._children && piece._children.length) {
+            throw self.apos.error('invalid', 'You must delete the children of this page first.');
+          }
+        } 
       }
     };
   },

@@ -144,8 +144,7 @@ export default {
     color: var(--a-text-primary);
   }
 
-  .apos-field-help,
-  .apos-field-error {
+  .apos-field-help {
     margin: 0 0 $spacing-base;
   }
 
@@ -157,6 +156,7 @@ export default {
 
   .apos-field-error {
     @include type-help;
+    margin: $spacing-base 0;
     color: var(--a-danger);
   }
 

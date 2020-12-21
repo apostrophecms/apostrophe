@@ -14,6 +14,12 @@ export default {
     direction: {
       type: String,
       default: 'horizontal'
+    },
+    modifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   data() {
@@ -30,9 +36,7 @@ export default {
         });
       }
 
-      modifiers.push(`apos-button-group--${this.direction}`);
-
-      return modifiers;
+      return modifiers.join(' ');
     }
   }
 };
@@ -43,6 +47,17 @@ export default {
     background-color: var(--a-background-primary);
     border-radius: 3px;
     display: inline-flex;
+  }
+
+  .apos-button-group /deep/ .apos-button {
+    background-color: var(--a-background-primary);
+    border: none;
+    &:hover {
+      background-color: var(--a-base-9);
+    }
+    &:focus {
+      background-color: var(--a-base-8);
+    }
   }
 
   .apos-button-group__inner {
@@ -73,5 +88,24 @@ export default {
   // border throws off bounding shell
   .apos-button-group /deep/ .apos-button:focus {
     border: none;
+  }
+
+  // variants
+  .apos-button-group--invert {
+    .apos-button-group__inner {
+      background-color: var(--a-background-inverted);
+      color: var(--a-text-inverted);
+    }
+    & /deep/ .apos-button {
+      border: none;
+      background-color: var(--a-background-inverted);
+      color: var(--a-text-inverted);
+      &:hover {
+        background-color: var(--a-base-2);
+      }
+      &:focus {
+        background-color: var(--a-base-3);
+      }
+    }
   }
 </style>

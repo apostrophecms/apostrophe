@@ -117,8 +117,7 @@
             <AposIndicator
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
-              :size="15"
-              tooltip="Page Title"
+              :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
             {{ moduleOptions.context.title }}
@@ -165,6 +164,15 @@
                 }
               })"
             />
+            <!-- Later the v-if will go away because options like duplicate and share
+              do not require that the draft be modified, but right now there is just one
+              implemented option on the menu -->
+            <AposDocMoreMenu
+              :doc-id="moduleOptions.contextId"
+              v-if="draftIsModified"
+              :is-modified="draftIsModified"
+              @discardDraft="discardDraft"
+            />
             <AposButton
               class="apos-admin-bar__context-button"
               label="Preview" :tooltip="{
@@ -190,6 +198,7 @@
 
 <script>
 import klona from 'klona';
+import dayjs from 'dayjs';
 
 export default {
   name: 'TheAposAdminBar',
@@ -218,7 +227,7 @@ export default {
       retrying: false,
       saved: false,
       savingTimeout: null,
-      draftIsModified: window.apos.adminBar.context.aposModified,
+      draftIsModified: window.apos.adminBar.context.modified,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -241,6 +250,20 @@ export default {
     };
   },
   computed: {
+    updatedBy() {
+      let editorLabel = 'ApostropheCMS ■●▲';
+      if (this.moduleOptions.context.updatedBy) {
+        const editor = this.moduleOptions.context.updatedBy;
+        editorLabel = '';
+        editorLabel += editor.firstName ? `${editor.firstName} ` : '';
+        editorLabel += editor.lastName ? `${editor.lastName} ` : '';
+        editorLabel += editor.username ? `(${editor.username})` : '';
+      }
+      return editorLabel;
+    },
+    docTooltip() {
+      return `Last saved on ${dayjs(this.moduleOptions.context.updatedAt).format('ddd MMMM D [at] H:mma')} <br /> by ${this.updatedBy}`;
+    },
     undoTooltips() {
       const tooltips = {
         undo: 'Undo Change',
@@ -462,7 +485,7 @@ export default {
               _patches: patchesSinceSave
             }
           });
-          this.draftIsModified = doc.aposModified;
+          this.draftIsModified = doc.modified;
           this.retrying = false;
         } catch (e) {
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -589,6 +612,49 @@ export default {
           heading: 'An Error Occurred While Publishing',
           description: e.message || 'An error occurred while publishing the document.'
         });
+      }
+    },
+    async discardDraft() {
+      if (this.moduleOptions.context.lastPublishedAt) {
+        if (await apos.confirm({
+          heading: 'Are you sure you want to discard the changes?',
+          description: 'Are you sure you want to discard all changes since this document was last published?'
+        })) {
+          try {
+            const doc = await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-draft-to-published`, {
+              body: {},
+              busy: true
+            });
+            apos.notify('The changes have been discarded.', { type: 'success', dismiss: true });
+            if (doc._url !== window.location.href) {
+              location.reload();
+            } else {
+              return this.refresh();
+            }
+          } catch (e) {
+            await apos.alert({
+              heading: 'An Error Occurred',
+              description: e.message || 'An error occurred while discarding the draft.'
+            });
+          }
+        }
+      } else {
+        if (await apos.confirm({
+          heading: 'Are you sure you want to delete this document completely?',
+          description: 'Since this document has never been published, discarding it will delete it completely. This cannot be undone.'
+        })) {
+          try {
+            // Never published, so we truly delete the draft
+            await apos.http.delete(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
+              busy: true
+            });
+          } catch (e) {
+            await apos.alert({
+              heading: 'An Error Occurred',
+              description: e.message || 'An error occurred while discarding the draft.'
+            });
+          }
+        }
       }
     },
     async undo() {

@@ -139,6 +139,14 @@ module.exports = {
             }
           });
           doc.updatedAt = new Date();
+          doc.updatedBy = req.user ? {
+            _id: req.user._id,
+            firstName: req.user.firstName || null,
+            lastName: req.user.lastName || null,
+            username: req.user.username
+          } : {
+            username: 'ApostropheCMS'
+          };
         }
       },
       '@apostrophecms/doc-type:afterInsert': {
@@ -361,6 +369,18 @@ module.exports = {
         return doc;
       },
 
+      // True delete. To place a document in the trash,
+      // update the trash property (for a piece) or move it
+      // to be a child of the trash (for a page). True delete
+      // cannot be undone
+      async delete(req, doc, options = {}) {
+        options = options || {};
+        const m = self.getManager(doc.type);
+        await m.emit('beforeDelete', req, doc, options);
+        await self.deleteBody(req, doc, options);
+        await m.emit('afterDelete', req, doc, options);
+      },
+
       // Publish the given draft. If `options.permissions` is explicitly
       // set to `false`, permissions checks are bypassed.
       async publish(req, draft, options = {}) {
@@ -508,10 +528,19 @@ module.exports = {
         if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
           // Performance hit now at write time is better than inaccurate
           // indicators of which docs are modified later (per Ben)
-          doc.aposModified = await manager.isModified(req, doc);
+          doc.modified = await manager.isModified(req, doc);
         }
         return self.retryUntilUnique(req, doc, async () => {
           return self.db.replaceOne({ _id: doc._id }, self.apos.util.clonePermanent(doc));
+        });
+      },
+
+      async deleteBody(req, doc, options) {
+        if ((options.permissions !== false) && (!self.apos.permission.can(req, 'delete', doc))) {
+          throw self.apos.error('forbidden');
+        }
+        return self.db.removeOne({
+          _id: doc._id
         });
       },
 
@@ -529,7 +558,7 @@ module.exports = {
         if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
           // We are inserting the draft for the first time so it is always
           // different from the published, which won't exist yet
-          doc.aposModified = true;
+          doc.modified = true;
         }
         return self.retryUntilUnique(req, doc, async function () {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
@@ -826,7 +855,8 @@ module.exports = {
                 ...doc,
                 _id: `${doc._id}:${locale}:draft`,
                 aposLocale: `${locale}:draft`,
-                aposDocId: doc._id
+                aposDocId: doc._id,
+                lastPublishedAt: doc.updatedAt
               });
               await self.apos.doc.db.insertOne({
                 ...doc,

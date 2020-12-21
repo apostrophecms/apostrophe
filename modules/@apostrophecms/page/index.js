@@ -1266,7 +1266,7 @@ database.`);
       // Reverts the given draft to the most recent publication.
       //
       // Returns the draft's new value, or `false` if the draft
-      // was not modified from the published version (`aposModified: false`)
+      // was not modified from the published version (`modified: false`)
       // or no published version exists yet.
       //
       // This is *not* the on-page `undo/redo` backend. This is the

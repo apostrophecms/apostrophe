@@ -6,6 +6,7 @@
       @show="show"
       :offset="menuOffset"
       trigger="manual"
+      :placement="menuPlacement"
       :open="isOpen"
       :delay="{ show: 0, hide: 0 }"
       popover-class="apos-popover"
@@ -138,6 +139,10 @@ export default {
 
 <style lang="scss">
 
+.apos-context-menu {
+  position: relative;
+}
+
 .apos-context-menu__popup--unpadded .apos-context-menu__pane  {
   padding: 0;
 }
@@ -167,6 +172,9 @@ export default {
   border-radius: var(--a-border-radius);
   box-shadow: var(--a-box-shadow);
   background-color: var(--a-background-primary);
+  &:focus {
+    outline: none;
+  }
 }
 
 .apos-context-menu__items {
@@ -178,6 +186,18 @@ export default {
   margin-block-start: 0;
   margin-block-end: 0;
   padding: 10px 0;
+}
+
+.apos-context-menu {
+  & /deep/ .apos-popover__wrapper,
+  & /deep/ div:not([class]),
+  & /deep/ .apos-context-menu__dialog,
+  & /deep/ .apos-popover,
+  & /deep/ .apos-popover__inner {
+    &:focus {
+      outline: none;
+    }
+  }
 }
 
 .apos-popover {

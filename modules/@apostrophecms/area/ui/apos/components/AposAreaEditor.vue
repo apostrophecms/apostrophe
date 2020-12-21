@@ -291,7 +291,9 @@ export default {
           }
         }
       }
+
       const widget = this.next[i];
+
       if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
         const result = await apos.modal.execute(componentName, {
@@ -326,11 +328,13 @@ export default {
         ...this.next.slice(index + 1)
       ];
     },
+    // Add a widget into a *singleton* area.
     async add(name) {
       if (this.widgetIsContextual(name)) {
         return this.insert({
           _id: cuid(),
           type: name,
+          index: 0,
           ...this.contextualWidgetDefaultData(name)
         });
       } else {
@@ -342,6 +346,7 @@ export default {
           docId: this.docId
         });
         if (result) {
+          result.index = 0;
           await this.insert(result);
         }
       }

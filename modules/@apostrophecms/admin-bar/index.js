@@ -272,7 +272,10 @@ module.exports = {
             type: context.type,
             _url: context._url,
             slug: context.slug,
-            aposModified: context.aposModified
+            modified: context.modified,
+            updatedAt: context.updatedAt,
+            updatedBy: context.updatedBy,
+            lastPublishedAt: context.lastPublishedAt
           },
           // Base API URL appropriate to the context document
           contextAction,
