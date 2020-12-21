@@ -28,3 +28,6 @@ test/public/uploads
 
 # vim swp files
 .*.sw*
+
+# Local settings for vscode
+.vscode
