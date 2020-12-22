@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.113.4 (2020-12-22)
+* When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the defualt style.
+
 ## 2.113.3 (2021-01-13)
 * Fixes image manager double-scroll bar bug.
 
