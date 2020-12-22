@@ -126,7 +126,7 @@ export default {
     }
 
     .apos-boolean__input:checked + & {
-      background-color: var(--a-base-10);
+      background-color: var(--a-base-8);
 
       .apos-boolean__icon {
         color: var(--a-success);
