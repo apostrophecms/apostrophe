@@ -1,10 +1,8 @@
 # Changelog
 
-## 2.113.4 (2020-12-22)
-* When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the defualt style.
-
-## 2.113.3 (2021-01-13)
+## 2.114.0 (2021-01-13)
 * Fixes image manager double-scroll bar bug.
+* When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the defualt style. Thanks to [Fredrik Ekelund](https://github.com/fredrikekelund) for the contribution.
 
 ## 2.113.2 (2020-12-14)
 * Hotfixes for Node 14 compatibility issues relating to watching template files for modification.
