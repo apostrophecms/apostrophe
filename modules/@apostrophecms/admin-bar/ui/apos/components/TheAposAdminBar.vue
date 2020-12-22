@@ -91,18 +91,6 @@
             </span>
           </div>
         </transition-group>
-        <div
-          class="apos-admin-bar__control-set__group"
-        >
-          <AposContextMenu
-            class="apos-admin-user"
-            :button="draftButton"
-            :menu="draftMenu"
-            menu-placement="bottom-end"
-            :menu-offset="2"
-            @item-clicked="switchDraftMode"
-          />
-        </div>
         <transition-group
           tag="div"
           class="apos-admin-bar__control-set apos-admin-bar__control-set--title"
@@ -110,17 +98,29 @@
         >
           <span
             v-show="true"
-            class="apos-admin-bar__title__wrapper"
+            class="apos-admin-bar__title"
             :key="'title'"
           >
-            <!-- TODO add last save timestamp and last save author to tooltip -->
             <AposIndicator
               icon="information-outline-icon"
               fill-color="var(--a-primary)"
               :tooltip="docTooltip"
               class="apos-admin-bar__title__indicator"
             />
-            {{ moduleOptions.context.title }}
+            <span class="apos-admin-bar__title__document-title">
+              {{ moduleOptions.context.title }}
+            </span>
+            <span class="apos-admin-bar__title__separator">
+              —
+            </span>
+            <AposContextMenu
+              class="apos-admin-bar__title__document"
+              :button="draftButton"
+              :menu="draftMenu"
+              @item-clicked="switchDraftMode"
+              menu-offset="13, 10"
+              menu-placement="bottom-end"
+            />
           </span>
         </transition-group>
         <transition-group
@@ -350,18 +350,18 @@ export default {
       };
     },
     draftMenu() {
-      // TODO maybe another indication of current selection?
-      // The button does already indicate it
       return [
         {
-          label: 'Draft',
+          label: (this.draftMode === 'draft') ? '✓ Draft' : 'Draft',
           name: 'draft',
-          action: 'draft'
+          action: 'draft',
+          modifiers: (this.draftMode === 'draft') ? [ 'disabled' ] : null
         },
         {
-          label: 'Published',
+          label: (this.draftMode === 'published') ? '✓ Published' : 'Published',
           name: 'published',
-          action: 'published'
+          action: 'published',
+          modifiers: (this.draftMode === 'published') ? [ 'disabled' ] : null
         }
       ];
     }
@@ -502,6 +502,9 @@ export default {
     // TODO switchLocale will need smilar logic and we'll do some
     // code reuse between them
     async switchDraftMode(mode) {
+      if (mode === this.draftMode) {
+        return;
+      }
       try {
         const doc = await apos.http.post(`${apos.login.action}/set-locale`, {
           body: {
@@ -738,9 +741,32 @@ $admin-bar-border: 1px solid var(--a-base-9);
   align-items: center;
 }
 
-.apos-admin-bar__title__wrapper {
+.apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
+
+  &__document-title,
+  &__separator {
+    display: inline-flex;
+  }
+
+  &__document-title {
+    margin-top: 1px;
+  }
+
+  &__separator {
+    align-items: center;
+    padding: 0 7px;
+    margin-top: 1px;
+  }
+
+  &__document {
+    margin-top: 3.5px;
+  }
+
+  & /deep/ .apos-indicator {
+    margin-top: 1px;
+  }
 }
 
 .apos-admin-bar__title__indicator {
