@@ -7,7 +7,7 @@
         <ul class="apos-admin-bar__items">
           <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
             <AposButton
-              type="default" label="Page Tree"
+              type="subtle" label="Page Tree"
               icon="file-tree-icon" class="apos-admin-bar__btn"
               :modifiers="['no-motion']"
               @click="emitEvent('@apostrophecms/page:manager')"
@@ -18,7 +18,7 @@
             class="apos-admin-bar__item"
           >
             <AposButton
-              v-if="item.options" type="quiet"
+              v-if="item.options" type="subtle"
               @click="emitEvent(item.action)"
               :label="item.label"
               :modifiers="['no-motion']"
@@ -28,7 +28,9 @@
               v-else-if="item.items" class="apos-admin-bar__sub"
               :menu="item.items" :button="{
                 label: item.label,
-                modifiers: ['no-motion']
+                modifiers: ['no-motion'],
+                class: 'apos-admin-bar__btn',
+                type: 'subtle'
               }"
               @item-clicked="emitEvent"
             />
@@ -69,7 +71,10 @@
               @click="undo"
             />
           </div>
-          <div v-if="editMode" :key="'redo'" v-tooltip="undoTooltips.redo">
+          <div
+            v-if="editMode" :key="'redo'"
+            v-tooltip="undoTooltips.redo"
+          >
             <AposButton
               :disabled="undone.length === 0"
               type="subtle" :modifiers="['small', 'no-motion']"
@@ -78,7 +83,10 @@
               @click="redo"
             />
           </div>
-          <div v-if="editMode" :key="'status'" class="apos-admin-bar__status">
+          <div
+            v-if="editMode" :key="'status'"
+            class="apos-admin-bar__status"
+          >
             <span class="apos-admin-bar__status__inner">
               <component
                 :is="savingIndicator.el"
@@ -182,13 +190,14 @@
               type="subtle" :modifiers="['small', 'no-motion']"
               @click="switchEditMode(false)"
             />
-           <AposButton
-             v-if="editMode && draftIsModified"
-             type="primary" label="Publish Changes"
-             :disabled="readyToSave"
-             class="apos-admin-bar__btn apos-admin-bar__context-button"
-             @click="publish"
-          />
+            <AposButton
+              v-if="editMode"
+              type="primary" label="Publish Changes"
+              :disabled="readyToSave || !draftIsModified"
+              class="apos-admin-bar__btn apos-admin-bar__context-button"
+              @click="publish"
+              :modifiers="['no-motion']"
+            />
           </div>
         </transition-group>
       </div>
@@ -709,12 +718,6 @@ function depth(el) {
 </script>
 
 <style lang="scss" scoped>
-$menu-row-height: 50px;
-$menu-h-space: 12px;
-$menu-v-space: 25px;
-$admin-bar-h-pad: 20px;
-$admin-bar-h-pad--small: 5px;
-$admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar-wrapper {
   z-index: $z-index-admin-bar;
@@ -732,8 +735,9 @@ $admin-bar-border: 1px solid var(--a-base-9);
 .apos-admin-bar__row {
   display: flex;
   align-items: center;
-  padding: 0 $admin-bar-h-pad 0 0;
-  border-bottom: $admin-bar-border;
+  height: 30px;
+  padding: 5px 20px;
+  border-bottom: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__control-set--title {
@@ -784,23 +788,6 @@ $admin-bar-border: 1px solid var(--a-base-9);
   height: 26px;
 }
 
-.apos-admin-bar__sub /deep/ .apos-context-menu__btn,
-.apos-admin-bar__btn,
-.apos-admin-bar__btn.apos-button {
-  @include type-base;
-  border-radius: 0;
-  height: $menu-row-height;
-
-  &:hover,
-  &:focus {
-    box-shadow: none;
-    outline-width: 0;
-    border-width: 0;
-    background-color: var(--a-base-9);
-    color: currentColor;
-    text-decoration: none;
-  }
-}
 .apos-admin-bar__item {
   display: inline-flex;
   align-items: center;
@@ -811,40 +798,17 @@ $admin-bar-border: 1px solid var(--a-base-9);
 }
 
 .apos-admin-bar__logo {
-  margin-right: $menu-h-space;
-}
-
-.apos-admin-bar__sub /deep/ .apos-button,
-.apos-admin-bar__btn,
-.apos-admin-bar__row /deep/ .apos-admin-bar__btn {
-  @include apos-button-reset();
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  margin: 0;
-  padding-right: $menu-h-space;
-  padding-left: $menu-h-space;
-  border: 0;
-  color: var(--a-text-primary);
-  text-decoration: none;
-  cursor: pointer;
+  margin-right: 10px;
 }
 
 .apos-admin-bar__sub /deep/ .apos-context-menu__popup {
   top: calc(100% + 5px);
 }
 
-.apos-admin-bar__row {
-  padding: 0 $admin-bar-h-pad;
-}
-
 .apos-admin-bar__row--utils {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 30px;
-  padding-top: $admin-bar-h-pad--small;
-  padding-bottom: $admin-bar-h-pad--small;
   /deep/ .apos-button--subtle { // optical consistency
     padding: 9px;
   }
@@ -859,6 +823,9 @@ $admin-bar-border: 1px solid var(--a-base-9);
 
 .apos-admin-bar__control-set--mode-and-settings {
   justify-content: flex-end;
+  & /deep/ .apos-button {
+    margin-left: 4px;
+  }
 }
 
 .apos-admin-bar__control-set__group {
