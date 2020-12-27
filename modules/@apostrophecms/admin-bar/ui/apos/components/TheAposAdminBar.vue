@@ -136,7 +136,7 @@
           class="apos-admin-bar__control-set apos-admin-bar__control-set--mode-and-settings"
           name="flip"
         >
-          <div 
+          <div
             v-if="!editMode" :key="'switchToEditMode'"
             class="apos-admin-bar__control-set__group"
           >
@@ -193,7 +193,7 @@
             <AposButton
               v-if="editMode"
               type="primary" label="Publish Changes"
-              :disabled="readyToSave || !draftIsModified"
+              :disabled="!(readyToSave && draftIsModified)"
               class="apos-admin-bar__btn apos-admin-bar__context-button"
               @click="publish"
               :modifiers="['no-motion']"
@@ -905,7 +905,7 @@ function depth(el) {
 }
 
 .flip-enter { // to the ground
-  transform: translateY(-50%);
+  transform: translateY(-20%);
   opacity: 0;
 }
 .flip-leave { // in the frame
@@ -917,7 +917,7 @@ function depth(el) {
   opacity: 1;
 }
 .flip-leave-to { // to the sky
-  transform: translateY(50%);
+  transform: translateY(20%);
   opacity: 0;
 }
 
