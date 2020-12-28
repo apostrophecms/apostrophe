@@ -193,7 +193,7 @@
             <AposButton
               v-if="editMode"
               type="primary" label="Publish Changes"
-              :disabled="!(readyToSave && draftIsModified)"
+              :disabled="!readyToPublish"
               class="apos-admin-bar__btn apos-admin-bar__context-button"
               @click="publish"
               :modifiers="['no-motion']"
@@ -341,8 +341,11 @@ export default {
       }
       return false;
     },
-    readyToSave() {
+    needToAutosave() {
       return !!this.patchesSinceSave.length;
+    },
+    readyToPublish() {
+      return this.draftIsModified && (!this.needToAutosave) && (!this.editing);
     },
     moduleOptions() {
       return window.apos.adminBar;
