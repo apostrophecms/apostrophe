@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-context-menu" ref="container">
+  <div class="apos-context-menu">
     <slot name="prebutton" />
     <v-popover
       @hide="hide"
@@ -12,7 +12,6 @@
       popover-class="apos-popover"
       popover-wrapper-class="apos-popover__wrapper"
       popover-inner-class="apos-popover__inner"
-      :container="container"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
@@ -82,7 +81,6 @@ export default {
     return {
       isOpen: false,
       position: '',
-      container: null,
       event: null
     };
   },
@@ -114,9 +112,6 @@ export default {
         this.$emit('close', this.event);
       }
     }
-  },
-  mounted() {
-    this.container = this.$refs.container;
   },
   methods: {
     show() {
