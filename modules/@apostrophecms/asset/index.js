@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const glob = require('glob');
 const fs = require('fs-extra');
 const Promise = require('bluebird');
