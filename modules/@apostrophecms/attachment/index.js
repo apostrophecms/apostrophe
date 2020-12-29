@@ -126,7 +126,6 @@ module.exports = {
     }
 
     self.rescaleTask = require('./lib/tasks/rescale.js')(self);
-    await self.enableCollection();
     await self.initUploadfs();
     self.addFieldType();
     self.enableBrowserData();
@@ -148,7 +147,7 @@ module.exports = {
       }
     };
   },
- 
+
   // TODO RESTify where possible
   apiRoutes(self, options) {
     // TODO this must be updated to employ the new useMiddleware format and that
@@ -213,6 +212,16 @@ module.exports = {
   },
   handlers(self, options) {
     return {
+      'apostrophe:modulesReady': {
+        // Delay setting up the collection until other modules
+        // are ready in a normal startup. Necessary because uploadfs must
+        // be available during asset builds but the database must not be
+        async enableCollection() {
+          self.db = await self.apos.db.collection('aposAttachments');
+          await self.db.createIndex({ docIds: 1 });
+          await self.db.createIndex({ trashDocIds: 1 });
+        }
+      },
       'apostrophe:destroy': {
         async destroyUploadfs() {
           await Promise.promisify(self.uploadfs.destroy)();
@@ -251,12 +260,6 @@ module.exports = {
             }
           }
         }
-      },
-
-      async enableCollection() {
-        self.db = await self.apos.db.collection('aposAttachments');
-        await self.db.createIndex({ docIds: 1 });
-        await self.db.createIndex({ trashDocIds: 1 });
       },
 
       addFieldType() {

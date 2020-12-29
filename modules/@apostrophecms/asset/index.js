@@ -55,6 +55,8 @@ module.exports = {
           buildPublicBundle();
           await buildAposBundle();
           merge();
+          await deploy();
+
           if (process.env.APOS_BUNDLE_ANALYZER) {
             return new Promise((resolve, reject) => {
               // Intentionally never resolve it, so the task never exits
@@ -212,6 +214,18 @@ module.exports = {
             fs.writeFileSync(`${self.apos.rootDir}/public/apos-frontend/apos-bundle.js`, fs.readFileSync(`${self.apos.rootDir}/public/apos-frontend/public-bundle.js`) + fs.readFileSync(`${self.apos.rootDir}/public/apos-frontend/apos-only-bundle.js`));
           }
 
+          async function deploy() {
+            if (process.env.NODE_ENV !== 'production') {
+              return;
+            }
+            const copyIn = require('util').promisify(self.apos.attachment.uploadfs.copyIn);
+            const releaseId = self.getReleaseId();
+            const localFolder = `${self.apos.rootDir}/public/apos-frontend`;
+            const uploadfsFolder = `/assets/${releaseId}`;
+            await copyIn(`${localFolder}/apos-bundle.js`, `${uploadfsFolder}/apos-bundle.js`);
+            await copyIn(`${localFolder}/public-bundle.js`, `${uploadfsFolder}/public-bundle.js`);
+          }
+
           function getImports(folder, pattern, options) {
             let components = [];
             const seen = {};
@@ -273,14 +287,62 @@ module.exports = {
   methods(self, options) {
     return {
       scriptsHelper(when) {
-        // TODO we still need an asset generation identifier
-        const bundle = (when === 'apos') ? '<script src="/apos-frontend/apos-bundle.js"></script>' : '<script src="/apos-frontend/public-bundle.js"></script>';
-        return self.apos.template.safe(`
-${bundle}
-`);
+        let base;
+        let bundle;
+        if (process.env.NODE_ENV === 'production') {
+          const releaseId = self.getReleaseId();
+          const uploadfsFolder = `/assets/${releaseId}`;
+          base = `${self.apos.attachment.uploadfs.getUrl()}${uploadfsFolder}`;
+        } else {
+          base = '/apos-frontend';
+        }
+        if (when === 'apos') {
+          bundle = `<script src="${base}/apos-bundle.js"></script>`;
+        } else {
+          bundle = `<script src="${base}/public-bundle.js"></script>`;
+        }
+        return self.apos.template.safe(bundle);
       },
       shouldRefreshOnRestart() {
         return options.refreshOnRestart && (process.env.NODE_ENV !== 'production');
+      },
+      // Returns a unique identifier for the current version of the
+      // codebase (the current release). Checks for APOS_RELEASE_ID (for custom cases),
+      // HEROKU_RELEASE_VERSION (for Heroku), PLATFORM_TREE_ID (for platform.sh),
+      // a directory component containing at least YYYY-MM-DD (for stagecoach),
+      // and finally the git hash, if the project root is a git checkout (useful when
+      // debugging production builds locally, and some people do deploy this way).
+      //
+      // If none of these are found, throws an error demanding that APOS_RELEASE_ID be set.
+      //
+      // TODO: auto-detect more cases, such as Azure app service. In the meantime
+      // you can set APOS_RELEASE_ID from whatever you have before running Apostrophe.
+      //
+      // The identifier should be reasonably short and must be URL-friendly. It must
+      // be available both when running the asset build task and when running the site.
+      getReleaseId() {
+        const viaEnv = process.env.APOS_RELEASE_ID || process.env.HEROKU_RELEASE_VERSION || process.env.PLATFORM_TREE_ID;
+        if (viaEnv) {
+          return viaEnv;
+        }
+        const realPath = fs.realpathSync(self.apos.rootDir);
+        // Stagecoach and similar: find a release timestamp in the path and use that
+        const matches = realPath.match(/\/(\d\d\d\d-\d\d-\d\d[^/]+)/);
+        if (matches) {
+          return matches[1];
+        }
+        try {
+          const fromGit = require('child_process').execSync('git rev-parse --short HEAD', {
+            encoding: 'utf8'
+          }).trim();
+          return fromGit;
+        } catch (e) {
+          throw new Error(`When running in production you must set the APOS_RELEASE_ID
+environment variable to a short, unique string identifying this particular
+release of the application. Apostrophe will also autodetect
+HEROKU_RELEASE_VERSION, PLATFORM_TREE_ID or the current git commit
+if your deployment is a git checkout.`);
+        }
       }
     };
   },
