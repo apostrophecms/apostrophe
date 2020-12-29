@@ -37,9 +37,11 @@ module.exports = {
       },
       showTailGap(options) {
         if (options.shown % 2 === 0) {
-          return options.page < (options.total - (options.shown - 2));
+          return (options.page < (options.total - (options.shown - 2)))
+            && (total > (shown + 2));
         } else {
-          return options.page <= (options.total - (options.shown - 2));
+          return (options.page <= (options.total - (options.shown - 2)))
+            && (total > (shown + 2));
         }
       }
     };
