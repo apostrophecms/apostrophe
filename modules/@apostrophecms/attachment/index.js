@@ -130,17 +130,25 @@ module.exports = {
     await self.initUploadfs();
     self.addFieldType();
     self.enableBrowserData();
-    self.apos.task.add('@apostrophecms/attachment', 'rescale', 'Usage: node app @apostrophecms/attachment:rescale\n\n' + 'Regenerate all sizes of all image attachments. Useful after a new size\n' + 'is added to the configuration. Takes a long time!', async function (apos, argv) {
-      return self.rescaleTask(argv);
-    });
-    self.apos.task.add('@apostrophecms/attachment', 'migrate-to-disabled-file-key', 'Usage: node app @apostrophecms/attachment:migrate-to-disabled-file-key\n\n' + 'This task should be run after adding the disabledFileKey option to uploadfs\n' + 'for the first time. It should only be relevant for storage backends where\n' + 'that option is not mandatory, i.e. only local storage as of this writing.', async function (apos, argv) {
-      return self.migrateToDisabledFileKeyTask(argv);
-    });
-    self.apos.task.add('@apostrophecms/attachment', 'migrate-from-disabled-file-key', 'Usage: node app @apostrophecms/attachment:migrate-from-disabled-file-key\n\n' + 'This task should be run after removing the disabledFileKey option from uploadfs.\n' + 'It should only be relevant for storage backends where\n' + 'that option is not mandatory, i.e. only local storage as of this writing.', async function (apos, argv) {
-      return self.migrateFromDisabledFileKeyTask(argv);
-    });
   },
 
+  tasks(self, options) {
+    return {
+      rescale: {
+        help: 'Usage: node app @apostrophecms/attachment:rescale\n\nRegenerate all sizes of all image attachments. Useful after a new size\nis added to the configuration. Takes a long time!',
+        task: self.rescaleTask
+      },
+      'migrate-to-disabled-file-key': {
+        help: 'Usage: node app @apostrophecms/attachment:migrate-to-disabled-file-key\n\nThis task should be run after adding the disabledFileKey option to uploadfs\nfor the first time. It should only be relevant for storage backends where\nthat option is not mandatory, i.e. only local storage as of this writing.',
+        task: self.migrateToDisabledFileKeyTask
+      },
+      'migrate-from-disabled-file-key': {
+        help: 'Usage: node app @apostrophecms/attachment:migrate-from-disabled-file-key\n\nThis task should be run after removing the disabledFileKey option from uploadfs.\nIt should only be relevant for storage backends where\n' + 'that option is not mandatory, i.e. only local storage as of this writing.',
+        task: self.migrateFromDisabledFileKeyTask
+      }
+    };
+  },
+ 
   // TODO RESTify where possible
   apiRoutes(self, options) {
     // TODO this must be updated to employ the new useMiddleware format and that

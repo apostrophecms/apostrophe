@@ -67,9 +67,10 @@ module.exports = {
             const directories = {};
             // Most other modules are not actually instantiated yet, but
             // we can access their metadata, which is sufficient
-            for (const name of Object.keys(self.apos.modules)) {
+            for (const name of self.apos.modulesToBeInstantiated()) {
               const ancestorDirectories = [];
-              for (const entry of self.apos.modules[name].__meta.chain) {
+              const metadata = self.apos.synth.getMetadata(name);
+              for (const entry of metadata.__meta.chain) {
                 const effectiveName = entry.name.replace(/^my-/, '');
                 names[effectiveName] = true;
                 ancestorDirectories.push(entry.dirname);
@@ -170,6 +171,25 @@ module.exports = {
           }
 
           function getIcons() {
+
+            for (const name of self.apos.modulesToBeInstantiated()) {
+              const metadata = self.apos.synth.getMetadata(name);
+              // icons is an unparsed section, so getMetadata gives it back
+              // to us as an object with a property for each class in the
+              // inheritance tree, root first. Just keep merging in
+              // icons from that
+              for (const [ name, layer ] of Object.values(metadata.icons)) {
+                if ((typeof layer) === 'function') {
+                  // We should not support invoking a function to define the icons
+                  // because the developer would expect `(self, options)` to behave
+                  // normally, and they won't during an asset build. So we only
+                  // accept a simple object with the icon mappings
+                  throw new Error(`Error in ${name} module: the "icons" property may not be a function.`);
+                }
+                Object.assign(self.iconMap, layer);
+              }
+            }
+
             // Load global vue icon components.
             const output = {
               importCode: '',
@@ -195,15 +215,16 @@ module.exports = {
           function getImports(folder, pattern, options) {
             let components = [];
             const seen = {};
-            _.each(self.apos.modules, function (module, name) {
-              _.each(module.__meta.chain, function (entry) {
+            for (const name of self.apos.modulesToBeInstantiated()) {
+              const metadata = self.apos.synth.getMetadata(name);
+              for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
                   return;
                 }
                 components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`));
                 seen[entry.dirname] = true;
-              });
-            });
+              }
+            }
             const output = {
               importCode: '',
               registerCode: '',

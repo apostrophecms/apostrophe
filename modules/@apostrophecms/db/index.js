@@ -47,11 +47,7 @@ const mongo = require('mongodb');
 
 module.exports = {
   async init(self, options) {
-    self.apos.task.add('@apostrophecms/db', 'reset', 'Usage: node app @apostrophecms/db:reset\n\n' + 'This destroys ALL of your content. EVERYTHING in your database.\n', async function (apos, argv) {
-      return self.resetFromTask();
-    });
     await self.connectToMongo();
-    await self.earlyResetTask();
     // TODO: Remove this conditional and `self.trace` if not necessary or add
     // documentation explaining utility and usage.
     if (process.env.APOS_TRACE_DB) {
@@ -170,30 +166,6 @@ module.exports = {
         };
       },
 
-      // Remove ALL collections from the database as part of the
-      // `@apostrophecms/db:reset` task. Then Apostrophe carries out the usual
-      // reinitialization of collection indexes and creation of parked pages, etc.
-      //
-      // PLEASE NOTE: this will drop collections UNRELATED to apostrophe.
-      // If that is a concern for you, drop Apostrophe's collections yourself
-      // and start up your app, which will recreate them.
-
-      async earlyResetTask() {
-        if (self.apos.argv._[0] === '@apostrophecms/db:reset') {
-          return self.dropAllCollections();
-        }
-      },
-
-      async resetFromTask() {
-        const argv = self.apos.argv;
-        if (argv._.length !== 1) {
-          throw new Error('Incorrect number of arguments.');
-        }
-
-        // let other modules run their own tasks now that db has been reset
-        await self.emit('reset');
-      },
-
       async dropAllCollections() {
         const collections = await self.apos.db.collections();
         for (const collection of collections) {
@@ -202,6 +174,34 @@ module.exports = {
           if (!collection.collectionName.match(/^system\./)) {
             await collection.drop();
           }
+        }
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      // Reset the database. Drops ALL collections. If you have
+      // collections in the same database unrelated to Apostrophe they WILL
+      // be removed.
+      //
+      // Then Apostrophe carries out the usual reinitialization of collection
+      // indexes and creation of parked pages, etc.
+      //
+      // PLEASE NOTE: this will drop collections UNRELATED to apostrophe.
+      // If that is a concern for you, drop Apostrophe's collections yourself
+      // and start up your app, which will recreate them.
+      reset: {
+        help: 'Usage: node app @apostrophecms/db:reset\n\nThis destroys ALL of your content. EVERYTHING in your database.\n',
+        afterModuleInit: true,
+        exitAfter: false,
+        task: async () => {
+          const argv = self.apos.argv;
+          if (argv._.length !== 1) {
+            throw new Error('Incorrect number of arguments.');
+          }
+          await self.dropAllCollections();
+          // let other modules run their own tasks now that db has been reset
+          await self.emit('reset');
         }
       }
     };

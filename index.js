@@ -98,18 +98,22 @@ module.exports = async function(options) {
       return self.synth.instanceOf(object, name);
     };
 
+    // So the asset module can figure out what other modules
+    // are out there and what icons they need without
+    // actually instantiating them
+    self.modulesToBeInstantiated = modulesToBeInstantiated;
+
     defineModules();
 
     console.log('calling instantiate');
     await instantiateModules();
-    console.log('calling initialize');
-    await initializeModules();
     lintOrphanModules();
     console.log('emitting modulesReady');
     await self.emit('modulesReady');
     await self.emit('afterInit');
-    await self.emit('run', self.isTask());
-
+    if (!self.taskRan) {
+      await self.emit('run', self.isTask());
+    }
     return self;
   } catch (e) {
     if (options.exit !== false) {
@@ -291,8 +295,8 @@ module.exports = async function(options) {
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
-      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'customTags', 'components', 'tasks' ],
-      unparsedSections: [ 'queries', 'extendQueries', 'middleware' ]
+      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'middleware', 'customTags', 'components', 'tasks' ],
+      unparsedSections: [ 'queries', 'extendQueries', 'icons' ]
     });
 
     self.synth = synth;
@@ -312,29 +316,17 @@ module.exports = async function(options) {
 
   async function instantiateModules() {
     self.modules = {};
-    for (const item of _.keys(self.options.modules)) {
-      const improvement = self.synth.isImprovement(item);
-      if (self.options.modules[item] && (improvement || self.options.modules[item].instantiate === false)) {
-        // We don't want an actual instance of this module, we are using it
-        // as an abstract base class in this particular project (but still
-        // configuring it, to easily carry those options to subclasses, which
-        // is how we got here)
-        continue;
-      }
+    for (const item of modulesToBeInstantiated()) {
       // module registers itself in self.modules
       await self.synth.create(item, { apos: self });
     }
   }
 
-  async function initializeModules() {
-    console.log('in im');
-    for (const module of Object.values(self.modules)) {
-      if (module.init) {
-        console.log('init');
-        await module.init(module, module.options);
-      }
-    }
-    console.log('after inits');
+  function modulesToBeInstantiated() {
+    return Object.keys(self.options.modules).filter(name => {
+      const improvement = self.synth.isImprovement(name);
+      return !(self.options.modules[name] && (improvement || self.options.modules[name].instantiate === false));
+    });
   }
 
   function lintOrphanModules() {

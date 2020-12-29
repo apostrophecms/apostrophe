@@ -13,7 +13,6 @@
 module.exports = {
   options: { alias: 'cache' },
   async init(self, options) {
-    self.addClearCacheTask();
     await self.enableCollection();
   },
   methods(self, options) {
@@ -90,24 +89,24 @@ module.exports = {
           key: 1
         }, { unique: true });
         await self.cacheCollection.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
-      },
+      }
 
-      // Command line task to clear all values in a namespace.
+    };
+  },
 
-      async clearCacheTask(argv) {
-        const namespaces = argv._.slice(1);
-        if (!namespaces.length) {
-          throw new Error('A namespace or namespaces must be given.');
+  tasks(self, options) {
+    return {
+      'clear-cache': {
+        help: 'Usage: node app @apostrophecms/cache:clear namespace1 namespace2...\n\nClears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\nknow the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.',
+        task: async (argv) => {
+          const namespaces = argv._.slice(1);
+          if (!namespaces.length) {
+            throw new Error('A namespace or namespaces must be given.');
+          }
+          for (const namespace of namespaces) {
+            await self.clear(namespace);
+          }
         }
-        for (const namespace of namespaces) {
-          await self.clear(namespace);
-        }
-      },
-
-      addClearCacheTask() {
-        self.apos.task.add('@apostrophecms/cache', 'clear', 'Usage: node app @apostrophecms/cache:clear namespace1 namespace2...\n\n' + 'Clears all values stored in a given namespace or namespaces. If you are using apos.cache in your own code you will\n' + 'know the namespace name. Standard caches include "@apostrophecms/oembed". Normally it is not necessary to clear them.', async function (apos, argv) {
-          return self.clearCacheTask(argv);
-        });
       }
     };
   }

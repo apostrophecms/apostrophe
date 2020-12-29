@@ -22,6 +22,7 @@ module.exports = {
   cascades: [ 'icons', 'csrfExceptions' ],
 
   init(self, options) {
+    self.apos = self.options.apos;
     // all apostrophe modules are properties of self.apos.modules.
     // Those with an alias are also properties of self.apos
     self.apos.modules[self.__meta.name] = self;
@@ -32,6 +33,7 @@ module.exports = {
       self.apos[self.options.alias] = self;
     }
 
+    self.__helpers = {};
     self.templateData = self.options.templateData || {};
 
     if (self.apos.asset) {
@@ -51,7 +53,6 @@ module.exports = {
 
   async afterAllSections(self, options) {
     console.log(`*** ${self.__meta.name}`);
-    self.apos = self.options.apos;
     self.addHelpers(self.helpers || {});
     self.addHandlers(self.handlers || {});
     await self.executeAfterModuleInitTask();
@@ -236,9 +237,6 @@ module.exports = {
       // Automatically called for you to add the helpers in the "helpers" section of your module.
 
       addHelpers(object) {
-        if (!self.__helpers) {
-          self.__helpers = {};
-        }
         Object.assign(self.__helpers, object);
       },
 
@@ -589,14 +587,24 @@ module.exports = {
         for (const [ name, info ] of Object.entries(self.tasks || {})) {
           console.log('>>', self.__meta.name, name, info);
           if (info.afterModuleInit) {
-            // Execute a task like @apostrophecms/asset:build which
-            // must run before most modules awake, i.e. before the
-            // database connection is made
+            // Execute a task like @apostrophecms/asset:build or
+            // @apostrophecms/db:reset which
+            // must run before most modules are awake
             if (self.apos.argv._[0] === `${self.__meta.name}:${name}`) {
               console.log('Awaiting...');
               await info.task(self.apos.argv);
-              console.log('Exiting');
-              process.exit(0);
+              // In most cases we exit after running a task
+              if (info.exitAfter !== false) {
+                console.log('Exiting');
+                process.exit(0);
+              } else {
+                // Provision for @apostrophecms/db:reset which should be
+                // followed by normal initialization so all the collections
+                // and indexes are recreated as they would be on a first run
+                console.log('Continuing');
+                // Avoid double execution
+                self.apos.taskRan = true;
+              }
             }
           }
         }
