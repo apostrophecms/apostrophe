@@ -47,7 +47,7 @@ module.exports = {
                 self.usage();
               }
               if (task.usage) {
-                console.log('\nTips for the ' + task.fullName + ' task:\n');
+                console.log(`\nTips for the ${task.fullName} task:\n`);
                 console.log(task.usage);
               } else {
                 console.log('That is a valid task, but it does not have a help message.');
@@ -64,7 +64,7 @@ module.exports = {
           }
 
           try {
-            await task.fn(self.apos, self.apos.argv);
+            await task.task(self.apos.argv);
           } catch (e) {
             console.error(e);
             process.exit(1);
@@ -125,7 +125,7 @@ module.exports = {
           ...options || {}
         };
         self.apos.argv = argv;
-        await task.fn(self.apos, argv);
+        await task.task(argv);
         self.apos.argv = aposArgv;
       },
 

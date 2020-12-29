@@ -191,7 +191,7 @@ module.exports = {
       // If that is a concern for you, drop Apostrophe's collections yourself
       // and start up your app, which will recreate them.
       reset: {
-        help: 'Usage: node app @apostrophecms/db:reset\n\nThis destroys ALL of your content. EVERYTHING in your database.\n',
+        usage: 'Usage: node app @apostrophecms/db:reset\n\nThis destroys ALL of your content. EVERYTHING in your database.\n',
         afterModuleInit: true,
         exitAfter: false,
         task: async () => {

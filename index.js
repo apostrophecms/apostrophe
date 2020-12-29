@@ -105,13 +105,13 @@ module.exports = async function(options) {
 
     defineModules();
 
-    console.log('calling instantiate');
     await instantiateModules();
     lintOrphanModules();
-    console.log('emitting modulesReady');
     await self.emit('modulesReady');
     await self.emit('afterInit');
-    if (!self.taskRan) {
+    if (self.taskRan) {
+      process.exit(0);
+    } else {
       await self.emit('run', self.isTask());
     }
     return self;

@@ -18,13 +18,6 @@ const STORIES_PLACEHOLDER = /"STORIES"/g;
 module.exports = {
   methods(self, options) {
     return {
-      async build(apos, argv) {
-        
-      },
-      async run(apos, argv) {
-      },
-      async deploy(apos, argv) {
-      },
       async preBuild(options) {
         await self.apos.task.invoke('@apostrophecms/asset:build');
         const importsFile = `${self.apos.rootDir}/apos-build/imports.json`;
@@ -87,7 +80,7 @@ module.exports = {
   tasks(self, options) {
     return {
       build: {
-        help: 'pass a folder name to build a static storybook',
+        usage: 'pass a folder name to build a static storybook',
         async task(argv) {
           const target = require('path').resolve(process.cwd(), argv._[1]);
           if (!target) {
@@ -98,14 +91,14 @@ module.exports = {
         }
       },
       run: {
-        help: 'start storybook dev server',
+        usage: 'start storybook dev server',
         async task(argv) {
           const buildDir = await self.preBuild(argv);
           childProcess.execSync(`cd ${buildDir} && npx start-storybook -s ./public -p 9001 -c .storybook`, { stdio: 'inherit' });
         }
       },
       deploy: {
-        help: 'deploy static storybook to github pages of your project repo',
+        usage: 'deploy static storybook to github pages of your project repo',
         async task(argv) {
           const buildDir = await self.preBuild(argv);
           const staticBuild = `${process.env.APOS_ROOT}/data/temp/storybook-static`;

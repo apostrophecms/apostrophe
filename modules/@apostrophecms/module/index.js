@@ -19,7 +19,7 @@ const cors = require('cors');
 
 module.exports = {
 
-  cascades: [ 'icons', 'csrfExceptions' ],
+  cascades: [ 'csrfExceptions' ],
 
   init(self, options) {
     self.apos = self.options.apos;
@@ -52,7 +52,6 @@ module.exports = {
   },
 
   async afterAllSections(self, options) {
-    console.log(`*** ${self.__meta.name}`);
     self.addHelpers(self.helpers || {});
     self.addHandlers(self.handlers || {});
     await self.executeAfterModuleInitTask();
@@ -583,25 +582,20 @@ module.exports = {
       },
 
       async executeAfterModuleInitTask() {
-        console.log(self.tasks);
         for (const [ name, info ] of Object.entries(self.tasks || {})) {
-          console.log('>>', self.__meta.name, name, info);
           if (info.afterModuleInit) {
             // Execute a task like @apostrophecms/asset:build or
             // @apostrophecms/db:reset which
             // must run before most modules are awake
             if (self.apos.argv._[0] === `${self.__meta.name}:${name}`) {
-              console.log('Awaiting...');
               await info.task(self.apos.argv);
               // In most cases we exit after running a task
               if (info.exitAfter !== false) {
-                console.log('Exiting');
                 process.exit(0);
               } else {
                 // Provision for @apostrophecms/db:reset which should be
                 // followed by normal initialization so all the collections
                 // and indexes are recreated as they would be on a first run
-                console.log('Continuing');
                 // Avoid double execution
                 self.apos.taskRan = true;
               }

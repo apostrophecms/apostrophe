@@ -713,7 +713,7 @@ module.exports = {
   tasks(self, options) {
     return self.isAdminOnly() ? {} : {
       generate: {
-        help: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
+        usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
         async task(argv) {
           if (argv.remove) {
             return remove();

@@ -38,7 +38,7 @@ module.exports = {
   tasks(self, options) {
     return {
       build: {
-        help: 'Build Apostrophe frontend javascript master import files',
+        usage: 'Build Apostrophe frontend javascript master import files',
         afterModuleInit: true,
         async task(argv) {
           const buildDir = `${self.apos.rootDir}/apos-build`;
@@ -178,7 +178,7 @@ module.exports = {
               // to us as an object with a property for each class in the
               // inheritance tree, root first. Just keep merging in
               // icons from that
-              for (const [ name, layer ] of Object.values(metadata.icons)) {
+              for (const [ name, layer ] of Object.entries(metadata.icons)) {
                 if ((typeof layer) === 'function') {
                   // We should not support invoking a function to define the icons
                   // because the developer would expect `(self, options)` to behave
@@ -186,7 +186,7 @@ module.exports = {
                   // accept a simple object with the icon mappings
                   throw new Error(`Error in ${name} module: the "icons" property may not be a function.`);
                 }
-                Object.assign(self.iconMap, layer);
+                Object.assign(self.iconMap, layer || {});
               }
             }
 
@@ -219,7 +219,7 @@ module.exports = {
               const metadata = self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (seen[entry.dirname]) {
-                  return;
+                  continue;
                 }
                 components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`));
                 seen[entry.dirname] = true;
