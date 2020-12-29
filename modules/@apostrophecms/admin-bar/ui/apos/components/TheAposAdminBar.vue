@@ -198,6 +198,13 @@
               @click="publish"
               :modifiers="['no-motion']"
             />
+            <AposButton
+              v-if="canRevertPublishedToPrevious"
+              type="primary" label="Undo Publish"
+              class="apos-admin-bar__btn apos-admin-bar__context-button"
+              @click="revertPublishedToPrevious"
+              :modifiers="['no-motion']"
+            />
           </div>
         </transition-group>
       </div>
@@ -237,6 +244,7 @@ export default {
       saved: false,
       savingTimeout: null,
       draftIsModified: window.apos.adminBar.context.modified,
+      canRevertPublishedToPrevious: false,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -617,7 +625,14 @@ export default {
           busy: true
         });
         this.draftIsModified = false;
-        apos.notify('Your changes have been published.', { type: 'success', dismiss: true });
+        this.canRevertPublishedToPrevious = true;
+        setTimeout(() => {
+          this.canRevertPublishedToPrevious = false;
+        }, 5000);
+        apos.notify('Your changes have been published.', {
+          type: 'success',
+          dismiss: true
+        });
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred While Publishing',
@@ -666,6 +681,27 @@ export default {
             });
           }
         }
+      }
+    },
+    async revertPublishedToPrevious() {
+      try {
+        const doc = await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-published-to-previous`, {
+          body: {},
+          busy: true
+        });
+        apos.notify('Restored previously published version.', {
+          type: 'success',
+          dismiss: true
+        });
+        this.draftIsModified = true;
+        this.publishedAt = null;
+        this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
+        this.refreshOrReload(doc._url);
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while restoring the previously published version.'
+        });
       }
     },
     async undo() {

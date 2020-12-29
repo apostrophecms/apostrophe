@@ -127,6 +127,11 @@ module.exports = {
             ...req,
             mode: 'published'
           };
+          if (!result.published.level) {
+            // The home page cannot move, so there is no
+            // chance we need to "replay" such a move
+            return;
+          }
           await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
           const published = await self.apos.page.findOneForEditing(publishedReq, {
             _id: result.published._id
