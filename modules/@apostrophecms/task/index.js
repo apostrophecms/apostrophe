@@ -17,9 +17,6 @@ const _ = require('lodash');
 
 module.exports = {
   options: { alias: 'task' },
-  init(self, options) {
-    self.tasks = {};
-  },
   handlers(self, options) {
     return {
       'apostrophe:run': {
@@ -132,70 +129,20 @@ module.exports = {
         self.apos.argv = aposArgv;
       },
 
-      // Add a command line task to Apostrophe. It is easiest to invoke this
-      // via the `addTask` method of your own module. You may also call it
-      // directly.
-      //
-      // If you do call directly, the group name should be the name of your module.
-      //
-      // The name may be any short, memorable identifier, hyphenated if necessary.
-      //
-      // You may omit the `usage` parameter complete if you don't want to supply
-      // a help message, but we recommend that you do so.
-      //
-      // Your function receives `(apos, argv)`. It should be an async function
-      // and will be awaited.
-      //
-      // Your function should perform the necessary task, referring to
-      // `argv._` for positional command line arguments (`[0]` is the task name)
-      // and to `argv.foo` for an option specified as `--foo=bar`.
-      //
-      // If the function throws a string as an exception, Apostrophe will display
-      // it, without a stack trace, and exit with a status of 1 (failure). This is useful
-      // for error messages.
-      //
-      // If the function throws another type of exception, Apostrophe will log it fully
-      // for developer use and also exit with a status of 1 (failure).
-      //
-      // Your code will typically need to invoke methods that require a `req` argument.
-      // Call `self.apos.task.getReq()` to get a `req` object with
-      // unlimited admin permissions. Use `self.apos.task.getAnonReq()` to get
-      // a `req` object without permissions.
-
-      add(groupName, name, usage, fn) {
-        if (arguments.length === 3) {
-          fn = usage;
-          usage = 'No help available';
-        }
-        if (!_.has(self.tasks, groupName)) {
-          self.tasks[groupName] = {};
-        }
-        self.tasks[groupName][name] = {
-          fn: fn,
-          usage: usage
-        };
-      },
-
       // Identifies the task corresponding to the given command line argument.
-      // This allows for Rails-style hyphenated syntax with a `:` separator,
-      // which is the documented syntax, and also allows camel-cased syntax with a `.`
-      // separator for those who prefer a more JavaScript-y syntax.
 
       find(fullName) {
         const matches = fullName.match(/^(.*?):(.*)$/);
         if (!matches) {
           return false;
         }
-        const groupName = matches[1];
+        const moduleName = matches[1];
         const name = matches[2];
-        if (!_.has(self.tasks, groupName)) {
+        if (!(self.apos.modules[moduleName] && _.has(self.apos.modules[moduleName].tasks, name))) {
           return false;
         }
-        if (!_.has(self.tasks[groupName], name)) {
-          return false;
-        }
-        const task = self.tasks[groupName][name];
-        task.fullName = groupName + ':' + name;
+        const task = self.apos.modules[moduleName].tasks[name];
+        task.fullName = `${moduleName}:${name}`;
         return task;
       },
 
@@ -205,11 +152,11 @@ module.exports = {
       usage() {
         // Direct use of console makes sense in tasks. -Tom
         console.error('\nThe following tasks are available:\n');
-        _.each(self.tasks, function (group, groupName) {
-          _.each(group, function (task, name) {
-            console.error(groupName + ':' + name);
-          });
-        });
+        for (const [ moduleName, module ] of Object.entries(self.apos.modules)) {
+          for (const name of Object.keys(module.tasks)) {
+            console.error(`${moduleName}:${name}`);
+          }
+        }
         console.error('\nType:\n');
         console.error('node app help groupname:taskname\n');
         console.error('To get help with a specific task.\n');

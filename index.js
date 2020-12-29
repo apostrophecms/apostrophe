@@ -100,8 +100,12 @@ module.exports = async function(options) {
 
     defineModules();
 
+    console.log('calling instantiate');
     await instantiateModules();
+    console.log('calling initialize');
+    await initializeModules();
     lintOrphanModules();
+    console.log('emitting modulesReady');
     await self.emit('modulesReady');
     await self.emit('afterInit');
     await self.emit('run', self.isTask());
@@ -287,8 +291,8 @@ module.exports = async function(options) {
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
-      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'middleware', 'customTags', 'components' ],
-      unparsedSections: [ 'queries', 'extendQueries' ]
+      sections: [ 'helpers', 'handlers', 'routes', 'apiRoutes', 'restApiRoutes', 'renderRoutes', 'customTags', 'components', 'tasks' ],
+      unparsedSections: [ 'queries', 'extendQueries', 'middleware' ]
     });
 
     self.synth = synth;
@@ -320,6 +324,17 @@ module.exports = async function(options) {
       // module registers itself in self.modules
       await self.synth.create(item, { apos: self });
     }
+  }
+
+  async function initializeModules() {
+    console.log('in im');
+    for (const module of Object.values(self.modules)) {
+      if (module.init) {
+        console.log('init');
+        await module.init(module, module.options);
+      }
+    }
+    console.log('after inits');
   }
 
   function lintOrphanModules() {

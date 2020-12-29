@@ -120,8 +120,8 @@ module.exports = {
       ...options.defaultOptions
     };
   },
-  init(self, options) {
-    self.apos.asset.addIcon('format-text-icon', 'FormatText');
+  icons: {
+    'format-text-icon': 'FormatText'
   },
   methods(self, options) {
     return {

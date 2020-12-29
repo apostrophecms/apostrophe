@@ -171,6 +171,9 @@ module.exports = {
       },
       'apostrophe:destroy': {
         async destroyServer() {
+          if (self.apos.isTask()) {
+            return;
+          }
           if (!(self.server && self.server.destroy)) {
             return;
           }
@@ -179,6 +182,9 @@ module.exports = {
       },
       'apostrophe:modulesReady': {
         async addCsrfAndModuleMiddleware() {
+          if (self.apos.isTask()) {
+            return;
+          }
           self.enableCsrf();
           // This has to happen on modulesReady, so that it happens before
           // the adding of routes by other, later modules on modulesReady,
@@ -593,15 +599,24 @@ module.exports = {
       // Locate modules with middleware and add it to the list
       findModuleMiddleware() {
         const labeledList = [];
-        for (const name of Object.keys(self.apos.modules)) {
-          const middleware = self.apos.modules[name].middleware;
-          if (!middleware) {
-            continue;
+        for (const [ name, module ] of Object.entries(self.apos.modules)) {
+          const finalMiddleware = {};
+          for (const name of module.__meta.chain.map(entry => entry.name)) {
+            const fn = module.middleware[name];
+            if (fn) {
+              // Middleware is added late to allow things like the express
+              // session middleware accessing the database connection
+              const middleware = fn(module, module.options);
+              Object.assign(finalMiddleware, middleware);
+            }
           }
-          labeledList.push({
-            name,
-            middleware: Object.values(middleware).filter(middleware => !middleware.before)
-          });
+          module.middleware = finalMiddleware;
+          if (Object.keys(finalMiddleware).length) {
+            labeledList.push({
+              name,
+              middleware: Object.values(finalMiddleware).filter(middleware => !middleware.before)
+            });
+          }
         }
         for (const name of Object.keys(self.apos.modules)) {
           const middleware = self.apos.modules[name].middleware;
