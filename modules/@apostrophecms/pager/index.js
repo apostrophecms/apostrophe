@@ -28,20 +28,20 @@ module.exports = {
       },
       showHeadGap: function (options) {
         if (options.shown % 2 === 0) {
-          return ((options.page - (Math.floor(options.shown / 2))) > 2)
-            && options.page > (options.shown - Math.floor(options.shown / 2));
+          return ((options.page - (Math.floor(options.shown / 2))) > 2) &&
+            options.page > (options.shown - Math.floor(options.shown / 2));
         } else {
-          return ((options.page - (Math.floor(options.shown / 2))) > 2)
-            && (options.page >= (options.shown - Math.floor(options.shown / 2)));
+          return ((options.page - (Math.floor(options.shown / 2))) > 2) &&
+            (options.page >= (options.shown - Math.floor(options.shown / 2)));
         }
       },
       showTailGap(options) {
         if (options.shown % 2 === 0) {
-          return (options.page < (options.total - (options.shown - 2)))
-            && (total > (shown + 2));
+          return (options.page < (options.total - (options.shown - 2))) &&
+            (options.total > (options.shown + 2));
         } else {
-          return (options.page <= (options.total - (options.shown - 2)))
-            && (total > (shown + 2));
+          return (options.page <= (options.total - (options.shown - 2))) &&
+            (options.total > (options.shown + 2));
         }
       }
     };
