@@ -42,7 +42,7 @@ module.exports = function(self, options) {
       const result = await self.apos.util.recursionGuard(req, `component:${moduleName}:${componentName}`, async () => {
         const input = await module.components[componentName](req, data);
         return module.render(req, componentName, input);
-      }) || {};
+      });
       if (result === undefined) {
         // Recursion guard stopped it, nunjucks expects a string
         return '';

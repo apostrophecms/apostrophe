@@ -217,7 +217,6 @@ module.exports = {
           req.scene = self.options.scene;
         }
         if (req.aposNeverLoad[self.name]) {
-          console.log(`nested load of ${self.name} blocked by neverLoad/neverLoadSelf`);
           return;
         }
         const pushing = self.neverLoad.filter(type => !req.aposNeverLoad[type]);
