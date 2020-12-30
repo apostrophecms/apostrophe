@@ -1689,7 +1689,7 @@ module.exports = {
                 _.extend(options.hints, _relationship.hints);
                 _.extend(options.hints, _relationship.hintsByType[type]);
               }
-              await apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
+              await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
                 // Allow options to the getter to be specified in the schema,
                 // notably editable: true
                 return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
@@ -1738,7 +1738,7 @@ module.exports = {
 
           // Allow options to the getter to be specified in the schema,
           // notably editable: true
-          await apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
+          await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
           });
         }

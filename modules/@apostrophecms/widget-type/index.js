@@ -224,7 +224,7 @@ module.exports = {
         for (const type of pushing) {
           req.aposNeverLoad[type] = true;
         }
-        await apos.util.recursionGuard(req, `widget:${self.name}`, async () => {
+        await self.apos.util.recursionGuard(req, `widget:${self.name}`, async () => {
           return self.load(req, widgets);
         });
         for (const type of pushing) {

@@ -39,7 +39,7 @@ module.exports = function(self, options) {
       if (!(module.components && module.components[componentName])) {
         throw new Error(`{% component %} was invoked with the name of a component that does not exist.\nModule name: ${moduleName} Component name: ${componentName}`);
       }
-      const result = await apos.util.recursionGuard(req, `component:${moduleName}:${componentName}`, async () => {
+      const result = await self.apos.util.recursionGuard(req, `component:${moduleName}:${componentName}`, async () => {
         const input = await module.components[componentName](req, data);
         return module.render(req, componentName, input);
       }) || {};
