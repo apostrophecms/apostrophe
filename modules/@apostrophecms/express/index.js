@@ -195,10 +195,12 @@ module.exports = {
 
   middleware(self, options) {
     return {
-      createData(req, res, next) {
+      createDataAndGuards(req, res, next) {
         if (!req.data) {
           req.data = {};
         }
+        req.aposNeverLoad = {};
+        req.aposStack = [];
         return next();
       },
       sessions: expressSession(self.getSessionOptions()),

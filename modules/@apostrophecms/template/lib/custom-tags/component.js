@@ -39,8 +39,16 @@ module.exports = function(self, options) {
       if (!(module.components && module.components[componentName])) {
         throw new Error(`{% component %} was invoked with the name of a component that does not exist.\nModule name: ${moduleName} Component name: ${componentName}`);
       }
-      const input = await module.components[componentName](req, data);
-      return module.render(req, componentName, input);
+      const result = await apos.util.recursionGuard(req, `component:${moduleName}:${componentName}`, async () => {
+        const input = await module.components[componentName](req, data);
+        return module.render(req, componentName, input);
+      }) || {};
+      if (result === undefined) {
+        // Recursion guard stopped it, nunjucks expects a string
+        return '';
+      } else {
+        return result;
+      }
     }
   };
 };

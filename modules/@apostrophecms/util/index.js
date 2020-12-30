@@ -1037,6 +1037,23 @@ module.exports = {
           result = _.merge(result, arguments[i]);
         }
         return result;
+      },
+
+      // Pushes the given label onto `req.aposStack` before awaiting the given function; then pops the label off the stack
+      // and returns the result of the function. If the stack limit is reached, a warning which includes the stack itself
+      // is printed to assist in debugging, and the return value is `undefined`. Code that calls this function should be
+      // prepared not to crash if `undefined` is returned.
+
+      async recursionGuard(req, label, fn) {
+        req.aposStack.push(label);
+        if (req.aposStack.length === self.apos.util.stackLimit) {
+          self.apos.util.warn(`WARNING: reached the maximum depth of Apostrophe's asynchronous stack.\nThis is usually because widget loaders, async components, and/or relationships are\ncausing an infinite loop.\nPlease review the stack to find the problem:\n${req.aposStackStack.join('\n')}\nSuggested fixes:\n\n* For each relationship, set "areas: false" or configure a projection with\n"project".\n* Use the "neverLoad" option in your widget modules to block them from loading\nparticular widget types recursively.\n* Do not use "neverLoadSelf: false" for any widget type unless you can\nguarantee it will never cause an infinite loop.\n* Make sure your async components do not call themselves recursively in a way that will never terminate.\n\n`);
+          req.aposStack.pop();
+          return;
+        }
+        const result = await fn();
+        req.aposStack.pop();
+        return result;
       }
 
     };
