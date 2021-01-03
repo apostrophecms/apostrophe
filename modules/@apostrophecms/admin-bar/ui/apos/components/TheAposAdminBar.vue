@@ -198,13 +198,6 @@
               @click="publish"
               :modifiers="['no-motion']"
             />
-            <AposButton
-              v-if="canRevertPublishedToPrevious"
-              type="primary" label="Undo Publish"
-              class="apos-admin-bar__btn apos-admin-bar__context-button"
-              @click="revertPublishedToPrevious"
-              :modifiers="['no-motion']"
-            />
           </div>
         </transition-group>
       </div>
@@ -401,6 +394,35 @@ export default {
     }
   },
   mounted() {
+    // Global event listener that will emit bus events from anywhere via click
+    // To use: Create some UI with the below data attributes
+    // data-apos-bus-event='{"name": "EVENT-NAME", "data": {"FOO": TRUE}}'
+    // Also accepts a simplified name-only string data-apos-bus-event="NAME"
+    // `data` parameter is optional, if present will be passed through the emitted event
+
+    document.body.addEventListener('click', (e) => {
+      if (e.target.getAttribute('data-apos-bus-event')) {
+        const event = e.target.getAttribute('data-apos-bus-event');
+        let name;
+        let json = {};
+        try {
+          json = JSON.parse(event);
+          name = json.name || false;
+        } catch (e) {
+          name = event;
+        }
+        if (name) {
+          apos.bus.$emit(name, json.data || null);
+        } else {
+          console.error('Apostrophe bus events require a name');
+          apos.notify('Something went wrong', { type: 'error' });
+        }
+      }
+    }, false);
+
+    // Listen for bus events coming from notification UI
+    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPreviousFromNotification);
+
     // A unique identifier for this current page's lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
@@ -478,6 +500,16 @@ export default {
     }
   },
   methods: {
+    revertPublishedToPreviousFromNotification() {
+      if (this.canRevertPublishedToPrevious) {
+        this.revertPublishedToPrevious();
+      } else {
+        apos.notify('Cannot revert because state has changed', {
+          type: 'error',
+          dismiss: false
+        });
+      }
+    },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
@@ -629,7 +661,8 @@ export default {
         setTimeout(() => {
           this.canRevertPublishedToPrevious = false;
         }, 5000);
-        apos.notify('Your changes have been published.', {
+        const eventName = 'revert-published-to-previous';
+        apos.notify(`Your changes have been published. <button data-apos-bus-event='${eventName}'>Undo Publish</a>`, {
           type: 'success',
           dismiss: true
         });
