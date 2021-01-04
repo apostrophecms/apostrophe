@@ -569,8 +569,12 @@ export default {
         window.sessionStorage.setItem('aposStateChangeSeen', '{}');
         if (mode === 'published') {
           window.sessionStorage.setItem('aposEditMode', JSON.stringify(false));
+          this.editMode = false;
         }
         this.draftMode = mode;
+        this.moduleOptions.context = doc;
+        // Changes the ending from :published to :draft, etc.
+        this.moduleOptions.contextId = doc._id;
         this.refreshOrReload(doc._url);
       } catch (e) {
         if (e.status === 404) {
