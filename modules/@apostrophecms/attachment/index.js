@@ -862,7 +862,12 @@ module.exports = {
         if (options.deleted) {
           commands.push([
             { _id: { $in: ids } },
-            { $pull: { docIds: doc._id, trashDocIds: doc._id } }
+            {
+              $pull: {
+                docIds: doc._id,
+                trashDocIds: doc._id
+              }
+            }
           ]);
         } else if (!doc.trash) {
           commands.push([

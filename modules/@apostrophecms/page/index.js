@@ -364,7 +364,7 @@ module.exports = {
         });
         return self.delete(req, page);
       },
-        // Patch some properties of the page.
+      // Patch some properties of the page.
       //
       // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
       // may be `before`, `after` or `inside`. To move a page into or out of the trash, set
