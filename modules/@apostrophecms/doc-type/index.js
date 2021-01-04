@@ -129,6 +129,14 @@ module.exports = {
             });
             return self.emit('afterRescue', req, doc);
           }
+        },
+        async autopublish(req, doc, options) {
+          if (!self.options.autopublish) {
+            return;
+          }
+          if (doc.aposLocale.includes(':draft')) {
+            return self.publish(req, doc, options);
+          }
         }
       },
       afterTrash: {
