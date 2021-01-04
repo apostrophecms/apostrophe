@@ -45,17 +45,17 @@
 //
 // ### `neverLoadSelf`
 //
-// If true, this widget's load method will never recursively load
-// another widget of the same type. This option defaults to `true`.
+// If true, this widget's `load` method will never recursively invoke
+// itself for the same widget type. This option defaults to `true`.
 // If you set it to `false`, be aware that you are responsible
 // for ensuring that the situation does not lead to an infinite loop.
 //
 // ### `neverLoad`
 //
-// If set to an array of widget type names, the specified widget types
-// will never be recursively loaded by this module's `load` method.
-// By default this option is empty. See also `neverLoadSelf`, which
-// defaults to `true`, resolving most performance problems.
+// If set to an array of widget type names, the load methods of the
+// specified widget types will never be recursively invoked by this module's
+// `load` method. By default this option is empty. See also `neverLoadSelf`,
+// which defaults to `true`, resolving most performance problems.
 //
 // ### `scene`
 //
