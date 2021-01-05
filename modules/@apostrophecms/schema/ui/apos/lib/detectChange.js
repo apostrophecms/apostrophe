@@ -11,8 +11,8 @@ export function detectDocChange(schema, v1, v2) {
 }
 
 export function detectFieldChange(field, v1, v2) {
-  v1 = localeFreeDocId(v1);
-  v2 = localeFreeDocId(v2);
+  v1 = relevant(v1);
+  v2 = relevant(v2);
   if (isEqual(v1, v2)) {
     return false;
   } else if (!v1 && !v2) {
@@ -20,17 +20,25 @@ export function detectFieldChange(field, v1, v2) {
   } else if (!v1 && Array.isArray(v2) && v2.length === 0) {
     return false;
   } else {
-    console.log('different: ' + field.name, v1, v2);
     return true;
   }
-  function localeFreeDocId(o) {
-    if (o && o._docId) {
-      o._docId = o._docId.replace(/:.*$/, '');
-    }
+  function relevant(o) {
     if ((o != null) && ((typeof o) === 'object')) {
+      const newObject = {};
       for (const [ key, val ] of Object.entries(o)) {
-        o[key] = localeFreeDocId(val);
+        if (key === '_docId') {
+          newObject._docId = o._docId.replace(/:.*$/, '');
+        } else if (key === '_id') {
+          newObject._id = o._id;
+        } else if (key.substring(0, 1) === '_') {
+          // Different results for temporary properties
+          // don't matter
+          continue;
+        } else {
+          newObject[key] = relevant(val);
+        }
       }
+      return newObject;
     }
     return o;
   }

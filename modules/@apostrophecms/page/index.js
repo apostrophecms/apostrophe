@@ -211,6 +211,7 @@ module.exports = {
       // `_home` or `_trash`
       async getOne(req, _id) {
         self.publicApiCheck(req);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         const criteria = self.getIdCriteria(_id);
         const result = await self.getRestQuery(req).and(criteria).toObject();
         if (!result) {
@@ -234,6 +235,7 @@ module.exports = {
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
         self.publicApiCheck(req);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         req.body._position = req.body._position || 'lastChild';
         let targetId = self.apos.launder.string(req.body._targetId);
         let position = self.apos.launder.string(req.body._position);
@@ -312,6 +314,7 @@ module.exports = {
 
       async put(req, _id) {
         self.publicApiCheck(req);
+        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         return self.withLock(req, async () => {
           const page = await self.find(req, { _id }).toObject();
           if (!page) {

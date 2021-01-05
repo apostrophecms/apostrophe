@@ -14,10 +14,10 @@
     <template #primaryControls>
       <!-- TODO: these conditions will need adjusting when we get to the
         "Duplicate" feature, but without them we would have an empty
-        menu for images or users right now because all of the operations
+        menu in many cases because all of the operations
         depend on modification from published -->
       <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished) && docId"
+        v-if="moduleOptions.localized && !moduleOptions.autopublish && isModifiedFromPublished && docId"
         :doc-id="docId"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
@@ -220,20 +220,13 @@ export default {
       if (!this.original) {
         return false;
       }
-      const difference = detectDocChange(this.schema, this.original, this.unsplitDoc());
-      console.log(`difference from original: ${difference}`);
-      return difference;
+      return detectDocChange(this.schema, this.original, this.unsplitDoc());
     },
     isModifiedFromPublished() {
       if (!this.published) {
-        console.log('not published');
         return false;
       }
-      console.log('checking');
-      const difference = detectDocChange(this.schema, this.published, this.unsplitDoc());
-      console.log(difference);
-      console.log(`difference from published: ${difference}`);
-      return difference;
+      return detectDocChange(this.schema, this.published, this.unsplitDoc());
     }
   },
   watch: {
@@ -271,8 +264,8 @@ export default {
     this.cancelDescription = `Do you want to discard changes to this ${this.moduleOptions.label.toLowerCase()}?`;
     if (this.docId) {
       let docData;
+      const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
-        const getOnePath = `${this.moduleAction}/${this.docId}`;
         try {
           await apos.httpDraft.patch(getOnePath, {
             body: {
@@ -324,22 +317,13 @@ export default {
           busy: true,
           qs: this.filterValues
         });
-        if (this.needPublishButton) {
-          this.published = await apos.http.get(getOnePath, {
-            busy: true,
-            qs: {
-              ...this.filterValues,
-              'apos-mode': 'published'
-            }
-          });
-        }
       } catch {
-        await apos.notify(`The requested ${this.moduleLabels.label.toLowerCase()} was not found.`, {
+        // TODO a nicer message here, but moduleLabels is undefined here
+        await apos.notify('The requested document was not found.', {
           type: 'warning',
           icon: 'alert-circle-icon',
           dismiss: true
         });
-        console.error('The requested piece was not found.', this.docId);
         await this.confirmAndCancel();
       } finally {
         if (docData.type !== this.docType) {
@@ -349,6 +333,25 @@ export default {
         this.docFields.data = docData;
         this.docReady = true;
         this.splitDoc();
+      }
+      try {
+        if (this.needPublishButton) {
+          this.published = await apos.http.get(getOnePath, {
+            busy: true,
+            qs: {
+              ...this.filterValues,
+              'apos-mode': 'published'
+            }
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        // TODO a nicer message here, but moduleLabels is undefined here
+        await apos.notify('An error occurred fetching the published version of the document.', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
       }
     } else {
       this.$nextTick(() => {

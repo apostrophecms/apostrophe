@@ -34,7 +34,7 @@ export default {
     }
   },
   data() {
-    return {
+    const menu = {
       isOpen: false,
       menu: [
         // TODO
@@ -64,6 +64,7 @@ export default {
         ] : [])
       ]
     };
+    return menu;
   },
   methods: {
     menuHandler(action) {
