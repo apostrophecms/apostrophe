@@ -51,9 +51,10 @@ module.exports = {
     self.enableAction();
   },
 
-  afterAllSections(self, options) {
+  async afterAllSections(self, options) {
     self.addHelpers(self.helpers || {});
     self.addHandlers(self.handlers || {});
+    await self.executeAfterModuleInitTask();
   },
 
   methods(self, options) {
@@ -232,13 +233,13 @@ module.exports = {
         }
       },
 
-      // Add nunjucks template helpers in the namespace for our module. Typically called
-      // with an object in which each property is a helper name and each value
-      // is a helper function.
+      // Automatically called for you to add the helpers in the "helpers" section of your module.
 
       addHelpers(object) {
         Object.assign(self.__helpers, object);
       },
+
+      // Automatically called for you to add the event handlers in the "handlers" section of your module.
 
       addHandlers(object) {
         Object.keys(object).forEach(eventName => {
@@ -553,28 +554,6 @@ module.exports = {
         return self.apos.modules['@apostrophecms/email'].emailForModule(req, templateName, data, options, self);
       },
 
-      // Add an Apostrophe command line task to your module. The command line
-      // syntax will be:
-      //
-      // `node app name-of-module:name`
-      //
-      // Where `name` is the `name` argument given here (use hyphens).
-      // The usage message is printed if the user asks for help with
-      // the task.
-      //
-      // `fn` is invoked with `(apos, argv)` and will be awaited. On
-      // errors, throw an exception. If your exception is a `string`
-      // rather than an object, it is displayed to the user exactly as
-      // shown, without a stack trace. This is useful for user errors,
-      // as opposed to failures of your code, database server, etc.
-      //
-      // To carry out actions requiring `req` in your code, call
-      // `self.apos.task.getReq()` to get a `req` with unlimited admin permissions.
-
-      addTask(name, usage, fn) {
-        return self.apos.task.add(self.__meta.name, name, usage, fn);
-      },
-
       // Given a Vue component name, such as AposPiecesManager,
       // return that name unless `options.components[name]` has been set to
       // an alternate name. Overriding keys in the `components` option
@@ -600,6 +579,29 @@ module.exports = {
       // this module
       enableAction() {
         self.action = `/api/v1/${self.__meta.name}`;
+      },
+
+      async executeAfterModuleInitTask() {
+        for (const [ name, info ] of Object.entries(self.tasks || {})) {
+          if (info.afterModuleInit) {
+            // Execute a task like @apostrophecms/asset:build or
+            // @apostrophecms/db:reset which
+            // must run before most modules are awake
+            if (self.apos.argv._[0] === `${self.__meta.name}:${name}`) {
+              await info.task(self.apos.argv);
+              // In most cases we exit after running a task
+              if (info.exitAfter !== false) {
+                process.exit(0);
+              } else {
+                // Provision for @apostrophecms/db:reset which should be
+                // followed by normal initialization so all the collections
+                // and indexes are recreated as they would be on a first run
+                // Avoid double execution
+                self.apos.taskRan = true;
+              }
+            }
+          }
+        }
       },
 
       // Merge in the event emitter / responder capabilities

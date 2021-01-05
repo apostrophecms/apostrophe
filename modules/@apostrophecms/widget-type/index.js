@@ -146,8 +146,6 @@ module.exports = {
 
     self.apos.area.setWidgetManager(self.name, self);
 
-    self.apos.task.add(self.__meta.name, 'list', 'Run this task to list all widgets of this type in the project.\n' + 'Useful for testing.\n', self.list);
-
     // To avoid infinite loops and/or bad performance, the load method of
     // this widget type will never invoke itself recursively unless
     // the `loadSelf` option of the module is explicitly set to `true`.
@@ -302,27 +300,6 @@ module.exports = {
         });
       },
 
-      // Implement the command line task that lists all widgets of
-      // this type found in the database:
-      //
-      // `node app your-module-name-here-widget:list`
-
-      async list(apos, argv) {
-
-        return self.apos.migration.eachWidget({}, iterator);
-
-        async function iterator(doc, widget, dotPath) {
-          if (widget.type === self.name) {
-            // console.log is actually appropriate for once
-            // because the purpose of this task is to
-            // write something to stdout. Should
-            // not become an apos.util.log call. -Tom
-            // eslint-disable-next-line no-console
-            console.log(doc.slug + ':' + dotPath);
-          }
-        }
-      },
-
       addSearchTexts(widget, texts) {
         self.apos.schema.indexFields(self.schema, widget, texts);
       },
@@ -373,6 +350,27 @@ module.exports = {
           className: self.options.className
         });
         return result;
+      }
+    };
+  },
+
+  tasks(self, options) {
+    return {
+      list: {
+        usage: 'Run this task to list all widgets of this type in the project.\nUseful for testing.',
+        async task(argv) {
+          return self.apos.migration.eachWidget({}, iterator);
+          async function iterator(doc, widget, dotPath) {
+            if (widget.type === self.name) {
+              // console.log is actually appropriate for once
+              // because the purpose of this task is to
+              // write something to stdout. Should
+              // not become an apos.util.log call. -Tom
+              // eslint-disable-next-line no-console
+              console.log(doc.slug + ':' + dotPath);
+            }
+          }
+        }
       }
     };
   }

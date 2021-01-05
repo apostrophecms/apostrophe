@@ -16,7 +16,6 @@ module.exports = {
   async init(self, options) {
     self.migrations = [];
     await self.enableCollection();
-    self.addMigrationTask();
   },
   handlers(self, options) {
     return {
@@ -226,12 +225,6 @@ module.exports = {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposMigrations');
       },
-      addMigrationTask() {
-        self.apos.task.add(self.__meta.name, 'migrate', 'Apply any necessary migrations to the database.', self.migrationTask);
-      },
-      async migrationTask(apos, argv) {
-        return self.migrate(argv);
-      },
       // Perform the actual migrations. Implementation of
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
@@ -263,6 +256,14 @@ module.exports = {
             throw err;
           }
         }
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      migrate: {
+        usage: 'Apply any necessary migrations to the database.',
+        task: self.migrate
       }
     };
   }

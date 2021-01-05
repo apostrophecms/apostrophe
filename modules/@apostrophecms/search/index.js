@@ -67,7 +67,6 @@ module.exports = {
     options.suggestions.url = options.suggestions.url || self.action + '/suggest';
     self.dispatchAll();
     self.enableFilters();
-    self.apos.task.add(self.__meta.name, 'index', self.indexTask);
   },
   routes(self, options) {
     return {
@@ -262,16 +261,6 @@ module.exports = {
         self.dispatch('/', self.indexPage);
       },
 
-      // Implements the `@apostrophecms/search:index` task, which re-indexes all pages.
-      // This should only be needed if you have changed your mind about the
-      // `searchable` property for various schema fields. Indexing is automatic
-      // every time a doc is saved
-
-      async indexTask(apos, argv) {
-        const req = self.apos.task.getReq();
-        return self.apos.migration.eachDoc({}, _.partial(self.indexTaskOne, req));
-      },
-
       // Indexes just one document as part of the implementation of the
       // `@apostrophecms/search:index` task. This isn't the method you want to
       // override. See `indexDoc` and `getSearchTexts`
@@ -353,6 +342,17 @@ module.exports = {
 
       docUnversionedFields(req, doc, fields) {
         fields.push('titleSortified', 'highSearchText', 'highSearchWords', 'lowSearchText', 'searchSummary');
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      index: {
+        usage: 'Rebuild the search index. Normally this happens automatically.\nThis should only be needed if you have changed the\n"searchable" property for various fields or types.',
+        task(argv) {
+          const req = self.apos.task.getReq();
+          return self.apos.migration.eachDoc({}, _.partial(self.indexTaskOne, req));
+        }
       }
     };
   }
