@@ -955,10 +955,10 @@ module.exports = {
           const attachments = await self.db.find({
             utilized: true,
             'docIds.0': { $exists: 0 },
-            'trashIds.0': { $exists: 0 }
+            'trashDocIds.0': { $exists: 0 }
           }).toArray();
           for (const attachment of attachments) {
-            await alterOne(attachment, 'enable');
+            await alterOne(attachment, 'remove');
           }
         }
         async function alterOne(attachment, action) {

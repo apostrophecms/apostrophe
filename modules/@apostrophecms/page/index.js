@@ -1081,7 +1081,6 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        console.log(criteria);
         const target = await self.find(req, criteria).permission(false).trash(null).areas(false).ancestors(_.assign({
           depth: 1,
           trash: null,
