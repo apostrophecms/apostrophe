@@ -20,10 +20,18 @@
 export default {
   name: 'AposDocMoreMenu',
   props: {
-    // isModified: {
-    //   type: Boolean,
-    //   required: true
-    // }
+    isModified: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    },
+    isModifiedFromPublished: {
+      type: Boolean,
+      default() {
+        return false;
+      }
+    }
   },
   data() {
     return {
@@ -36,17 +44,22 @@ export default {
         //     action: 'share'
         //   }
         // ] : []),
+        // TODO
         // // You can always do this, if you do it with a new item
         // // it just saves and you start a second one
         // {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
-        ...(this.isModified ? [
+        ...(this.isModifiedFromPublished ? [
           {
             label: 'Discard Draft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
+          },
+          {
+            label: 'Save Draft',
+            action: 'saveDraft'
           }
         ] : [])
       ]

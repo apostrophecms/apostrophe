@@ -12,12 +12,18 @@
       />
     </template>
     <template #primaryControls>
+      <!-- TODO: these conditions will need adjusting when we get to the
+        "Duplicate" feature, but without them we would have an empty
+        menu for images or users right now because all of the operations
+        depend on modification from published -->
       <AposDocMoreMenu
-        v-if="docId"
+        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished) && docId"
         :doc-id="docId"
+        :is-modified="isModified"
+        :is-modified-from-published="isModifiedFromPublished"
       />
       <AposButton
-        type="primary" label="Save"
+        type="primary" :label="saveLabel"
         :disabled="docOtherFields.hasErrors || docUtilityFields.hasErrors"
         @click="submit"
       />
@@ -133,6 +139,7 @@ export default {
       schemaOtherFields: [],
       triggerValidation: false,
       original: null,
+      published: null,
       locked: false,
       lockTimeout: null,
       lockRefreshing: null
@@ -183,10 +190,10 @@ export default {
       };
       return tabs;
     },
-    modalTitle () {
+    modalTitle() {
       return `Edit ${this.moduleOptions.label || ''}`;
     },
-    currentFields: function() {
+    currentFields() {
       if (this.currentTab) {
         const tabFields = this.tabs.find((item) => {
           return item.name === this.currentTab;
@@ -196,6 +203,35 @@ export default {
       } else {
         return [];
       }
+    },
+    needPublishButton() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    },
+    saveLabel() {
+      if (this.needPublishButton) {
+        return 'Publish Changes';
+      } else {
+        return 'Save';
+      }
+    },
+    isModified() {
+      if (!this.original) {
+        return false;
+      }
+      const difference = detectDocChange(this.schema, this.original, this.unsplitDoc());
+      console.log(`difference from original: ${difference}`);
+      return difference;
+    },
+    isModifiedFromPublished() {
+      if (!this.published) {
+        console.log('not published');
+        return false;
+      }
+      console.log('checking');
+      const difference = detectDocChange(this.schema, this.published, this.unsplitDoc());
+      console.log(difference);
+      console.log(`difference from published: ${difference}`);
+      return difference;
     }
   },
   watch: {
@@ -236,7 +272,7 @@ export default {
       try {
         const getOnePath = `${this.moduleAction}/${this.docId}`;
         try {
-          await apos.http.patch(getOnePath, {
+          await apos.httpDraft.patch(getOnePath, {
             body: {
               _advisoryLock: {
                 htmlPageId: apos.adminBar.htmlPageId,
@@ -261,7 +297,7 @@ export default {
               })
             ) {
               try {
-                await apos.http.patch(getOnePath, {
+                await apos.httpDraft.patch(getOnePath, {
                   body: {
                     _advisoryLock: {
                       htmlPageId: apos.adminBar.htmlPageId,
@@ -282,10 +318,19 @@ export default {
             }
           }
         }
-        docData = await apos.http.get(getOnePath, {
+        docData = await apos.httpDraft.get(getOnePath, {
           busy: true,
           qs: this.filterValues
         });
+        if (this.needPublishButton) {
+          this.published = await apos.http.get(getOnePath, {
+            busy: true,
+            qs: {
+              ...this.filterValues,
+              'apos-mode': 'published'
+            }
+          });
+        }
       } catch {
         await apos.notify(`The requested ${this.moduleLabels.label.toLowerCase()} was not found.`, {
           type: 'warning',
@@ -318,7 +363,7 @@ export default {
         await this.lockRefreshing;
       }
       try {
-        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+        await apos.httpDraft.patch(`${this.moduleAction}/${this.docId}`, {
           body: {
             _advisoryLock: {
               htmlPageId: apos.adminBar.htmlPageId,
@@ -339,7 +384,7 @@ export default {
     refreshLock() {
       this.lockRefreshing = (async () => {
         try {
-          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
+          await apos.httpDraft.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
               _advisoryLock: {
                 htmlPageId: apos.adminBar.htmlPageId,
@@ -377,6 +422,9 @@ export default {
       }
     },
     submit() {
+      this.save(this.needPublishButton);
+    },
+    save(andPublish = false) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docUtilityFields.hasErrors || this.docOtherFields.hasErrors) {
@@ -393,7 +441,7 @@ export default {
         let requestMethod;
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
+          requestMethod = apos.httpDraft.put;
           // Make sure we fail if someone else took the advisory lock
           body._advisoryLock = {
             htmlPageId: apos.adminBar.htmlPageId,
@@ -401,7 +449,7 @@ export default {
           };
         } else {
           route = this.moduleAction;
-          requestMethod = apos.http.post;
+          requestMethod = apos.httpDraft.post;
 
           if (this.moduleName === '@apostrophecms/page') {
             body._targetId = apos.page.page._id;
@@ -419,12 +467,30 @@ export default {
           if (e.body && (e.body.name === 'locked')) {
             await this.showLockedError(e);
             this.modal.showModal = false;
+            return;
           } else {
             await this.handleSaveError(e, {
               fallback: 'An error occurred saving the document.'
             });
             return;
           }
+        }
+        try {
+          if (andPublish) {
+            await apos.http.post(`${route}/publish`, {
+              body: {},
+              busy: true
+            });
+            const eventName = 'revert-published-to-previous';
+            apos.notify(`Your changes have been published. <button data-apos-bus-event='${eventName}'>Undo Publish</a>`, {
+              type: 'success',
+              dismiss: true
+            });
+          }
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred publishing the document.'
+          });
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
@@ -443,7 +509,7 @@ export default {
           body._targetId = apos.page.page._id;
           body._position = 'lastChild';
         }
-        const newDoc = await apos.http.post(this.moduleAction, {
+        const newDoc = await apos.httpDraft.post(this.moduleAction, {
           body
         });
         return newDoc;
@@ -496,12 +562,6 @@ export default {
         ...this.docOtherFields.data
       };
     },
-    isModified() {
-      if (!this.original) {
-        return false;
-      }
-      return detectDocChange(this.schema, this.original, this.unsplitDoc());
-    },
     // Override of a mixin method to accommodate the tabs/utility rail split
     getFieldValue(name) {
       if (this.docUtilityFields.data[name] !== undefined) {
@@ -523,6 +583,46 @@ export default {
       } else {
         return this.$refs.otherSchema;
       }
+    },
+    async discardDraft() {
+      try {
+        if (await apos.confirm({
+          heading: 'Are You Sure?',
+          description: this.published
+            ? 'This will discard all changes since the document was last published.'
+            : 'Since this draft has never been published, this will completely delete the document.'
+        })) {
+          if (this.published) {
+            await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-draft-to-published`, {
+              body: {},
+              busy: true
+            });
+            apos.notify('Discarded draft.', {
+              type: 'success',
+              dismiss: true
+            });
+            this.modal.showModal = false;
+          } else {
+            await apos.http.delete(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
+              body: {},
+              busy: true
+            });
+            apos.notify('Deleted document.', {
+              type: 'success',
+              dismiss: true
+            });
+            this.modal.showModal = false;
+          }
+        }
+      } catch (e) {
+        await apos.alert({
+          heading: 'An Error Occurred',
+          description: e.message || 'An error occurred while restoring the previously published version.'
+        });
+      }
+    },
+    saveDraft() {
+      this.save(false);
     }
   }
 };

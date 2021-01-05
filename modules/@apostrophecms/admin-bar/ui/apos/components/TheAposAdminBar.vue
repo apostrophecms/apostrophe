@@ -237,7 +237,6 @@ export default {
       saved: false,
       savingTimeout: null,
       draftIsModified: window.apos.adminBar.context.modified,
-      canRevertPublishedToPrevious: false,
       savingStatus: {
         transitioning: false,
         messages: {
@@ -501,14 +500,7 @@ export default {
   },
   methods: {
     revertPublishedToPreviousFromNotification() {
-      if (this.canRevertPublishedToPrevious) {
-        this.revertPublishedToPrevious();
-      } else {
-        apos.notify('Cannot revert because state has changed', {
-          type: 'error',
-          dismiss: false
-        });
-      }
+      this.revertPublishedToPrevious();
     },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
@@ -657,10 +649,6 @@ export default {
           busy: true
         });
         this.draftIsModified = false;
-        this.canRevertPublishedToPrevious = true;
-        setTimeout(() => {
-          this.canRevertPublishedToPrevious = false;
-        }, 5000);
         const eventName = 'revert-published-to-previous';
         apos.notify(`Your changes have been published. <button data-apos-bus-event='${eventName}'>Undo Publish</a>`, {
           type: 'success',
@@ -726,10 +714,15 @@ export default {
           type: 'success',
           dismiss: true
         });
-        this.draftIsModified = true;
-        this.publishedAt = null;
-        this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
-        this.refreshOrReload(doc._url);
+        // This handler covers all "undo publish" buttons, so make sure it's
+        // for the context document before altering any admin bar state
+        // because of it
+        if (doc.aposDocId === this.context && this.context.aposDocId) {
+          this.draftIsModified = true;
+          this.publishedAt = null;
+          this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
+          this.refreshOrReload(doc._url);
+        }
       } catch (e) {
         await apos.alert({
           heading: 'An Error Occurred',

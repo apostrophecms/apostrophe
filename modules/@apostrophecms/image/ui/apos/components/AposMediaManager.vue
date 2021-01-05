@@ -173,6 +173,10 @@ export default {
     },
     accept() {
       return this.options.schema.find(field => field.name === 'attachment').accept;
+    },
+    // Whether a cancellation requires confirmation or not
+    isModified () {
+      return (this.editing && this.modified) || this.relationshipIsModified();
     }
   },
   watch: {
@@ -189,10 +193,6 @@ export default {
     await this.getMedia();
   },
   methods: {
-    // Whether a cancellation requires confirmation or not
-    isModified () {
-      return (this.editing && this.modified) || this.relationshipIsModified();
-    },
     // Update our current idea of whether the doc in the right hand rail
     // has been modified (via event from the editor)
     editorModified (val) {

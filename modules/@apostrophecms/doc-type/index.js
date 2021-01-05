@@ -515,6 +515,8 @@ module.exports = {
         const data = _.pick(options, 'name', 'label', 'pluralLabel');
         data.action = self.action;
         data.schema = self.allowedSchema(req);
+        data.localized = self.isLocalized();
+        data.autopublish = self.options.autopublish;
         return data;
       },
 
