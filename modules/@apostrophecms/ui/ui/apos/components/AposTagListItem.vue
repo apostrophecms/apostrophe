@@ -7,7 +7,7 @@
       <AposIndicator
         :icon="active ? 'close-icon' : 'label-icon'"
         fill-color="var(--a-primary)"
-        :class="`apos-tag-list__icon`"
+        class="apos-tag-list__icon"
         :icon-size="12"
       />
       <span class="apos-tag-list__label">
