@@ -360,4 +360,26 @@
       }
     }
   };
+
+  // apos.httpDraft is just apos.http decorated such that all calls
+  // are made with an apos-mode=draft query parameter
+  apos.httpDraft = {};
+  apos.util.assign(apos.httpDraft, apos.http);
+  var wrap = [ 'post', 'get', 'patch', 'put', 'delete' ];
+  wrap.forEach(function(methodName) {
+    apos.httpDraft[methodName] = function(url, options, callback) {
+      var query;
+      if (options.qs) {
+        // Already assumes no query parameters baked into URL, so OK to
+        // just extend qs
+        options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
+      } else {
+        // Careful, there could be existing query parameters baked into url
+        query = apos.http.parseQuery(url);
+        query['apos-mode'] = 'draft';
+        url = apos.http.addQueryToUrl(url, query);
+      }
+      return apos.http[methodName](url, options, callback);
+    };
+  });
 })();

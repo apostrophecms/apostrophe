@@ -20,10 +20,10 @@
 export default {
   name: 'AposDocMoreMenu',
   props: {
-    isModified: {
-      type: Boolean,
-      required: true
-    }
+    // isModified: {
+    //   type: Boolean,
+    //   required: true
+    // }
   },
   data() {
     return {

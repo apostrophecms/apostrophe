@@ -41,23 +41,23 @@ module.exports = {
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
         // structured that way
-        if (req.query.locale && req.query.locale.includes(':')) {
-          const parts = req.query.locale.split(':');
+        if (req.query['apos-locale'] && req.query['apos-locale'].includes(':')) {
+          const parts = req.query['apos-locale'].split(':');
           req.query['apos-locale'] = parts[0];
           req.query['apos-mode'] = parts[1];
         }
         const validModes = [ 'draft', 'published' ];
         let locale;
-        if (self.isValidLocale(req.query.locale)) {
-          locale = req.query.locale;
+        if (self.isValidLocale(req.query['apos-locale'])) {
+          locale = req.query['apos-locale'];
         } else if (self.isValidLocale(req.session && req.session.locale)) {
           locale = req.session.locale;
         } else {
           locale = self.defaultLocale;
         }
         let mode;
-        if (validModes.includes(req.query.mode)) {
-          mode = req.query.mode;
+        if (validModes.includes(req.query['apos-mode'])) {
+          mode = req.query['apos-mode'];
         } else if (validModes.includes(req.session && req.session.mode)) {
           mode = req.session.mode;
         } else {

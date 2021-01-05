@@ -36,13 +36,14 @@
       {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
       {% block afterMain %}{% endblock %}
     </div>
-    {{ apos.asset.scripts(data.scene) }}
-    {# Automatically does nothing in production #}
-    {{ apos.asset.refreshOnRestart() }}
     {% component '@apostrophecms/template:inject' with { where: 'body', end: 'append' } %}
     {% block extraBody %}{% endblock %}
     {% if data.scene == 'apos' %}
       <div id="apos-modals"></div>
     {% endif %}
+    {# Scripts must load dead last so that apos-modals is always found, etc. #}
+    {{ apos.asset.scripts(data.scene) }}
+    {# Automatically does nothing in production #}
+    {{ apos.asset.refreshOnRestart() }}
   </body>
 </html>

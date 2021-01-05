@@ -242,7 +242,7 @@ export default {
         };
       }
 
-      const getResponse = (await apos.http.get(
+      const getResponse = (await apos.httpDraft.get(
         this.options.action, {
           busy: true,
           qs

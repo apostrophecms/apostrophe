@@ -217,7 +217,7 @@ export default {
         }
 
         try {
-          const doc = await apos.http.put(route, {
+          const doc = await apos.httpDraft.put(route, {
             busy: true,
             body: this.docFields.data
           });

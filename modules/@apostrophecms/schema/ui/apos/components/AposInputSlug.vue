@@ -196,7 +196,7 @@ export default {
       let slug;
       try {
         slug = this.next;
-        await apos.http.post(`${apos.doc.action}/slug-taken`, {
+        await apos.httpDraft.post(`${apos.doc.action}/slug-taken`, {
           body: {
             slug,
             _id: this.docId

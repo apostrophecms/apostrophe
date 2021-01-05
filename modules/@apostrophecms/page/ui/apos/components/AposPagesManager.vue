@@ -156,7 +156,7 @@ export default {
       this.pagesFlat = [];
       const self = this;
 
-      const pageTree = (await apos.http.get(
+      const pageTree = (await apos.httpDraft.get(
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
@@ -189,7 +189,7 @@ export default {
 
       const route = `${this.moduleOptions.action}/${page.changedId}`;
       try {
-        await apos.http.patch(route, {
+        await apos.httpDraft.patch(route, {
           busy: true,
           body
         });
