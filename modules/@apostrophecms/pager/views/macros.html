@@ -11,19 +11,19 @@
     {% set gapClass = pagerClass + '__gap' if pagerClass else '' %}
     <div class="{{ pagerClass if pagerClass }}">
       {{ pagerPage(1, options, pagerClass, url) }}
-      {% if options.page > 4 %}
+      {% if apos.pager.showHeadGap(options) %}
         <span class="{{ gapClass }}">&hellip;</span>
       {% endif %}
 
       {% for page in apos.pager.pageRange({
         page: options.page,
         total: options.total,
-        shown: 5
+        shown: options.shown or 5
       }) %}
         {{ pagerPageInner(page, options, pagerClass, url) }}
       {% endfor %}
 
-      {% if options.page < (options.total - 3) %}
+      {% if apos.pager.showTailGap(options) %}
         <span class="{{ gapClass }}">&hellip;</span>
       {% endif %}
       {{ pagerPage(options.total, options, pagerClass, url) }}

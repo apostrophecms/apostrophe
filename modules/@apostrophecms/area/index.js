@@ -60,7 +60,7 @@ module.exports = {
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
-            return manager.load(req, [ widget ]);
+            return manager.loadIfSuitable(req, [ widget ]);
           }
           async function render() {
             return self.renderWidget(req, type, widget, options);
@@ -426,7 +426,7 @@ module.exports = {
             self.warnMissingWidgetType(type);
             continue;
           }
-          await manager.load(req, req.deferredWidgets[type]);
+          await manager.loadIfSuitable(req, req.deferredWidgets[type]);
         }
       },
       // Returns true if the named area in the given `doc` is empty.
