@@ -21,6 +21,8 @@
         :doc-id="docId"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
+        @saveDraft="saveDraft"
+        @discardDraft="discardDraft"
       />
       <AposButton
         type="primary" :label="saveLabel"
@@ -593,7 +595,7 @@ export default {
             : 'Since this draft has never been published, this will completely delete the document.'
         })) {
           if (this.published) {
-            await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-draft-to-published`, {
+            const doc = await apos.http.post(`${this.moduleAction}/${this.docId}/revert-draft-to-published`, {
               body: {},
               busy: true
             });
@@ -602,8 +604,9 @@ export default {
               dismiss: true
             });
             this.modal.showModal = false;
+            apos.bus.$emit('content-changed', doc);
           } else {
-            await apos.http.delete(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
+            await apos.http.delete(`${this.moduleAction}/${this.docId}`, {
               body: {},
               busy: true
             });
@@ -612,6 +615,7 @@ export default {
               dismiss: true
             });
             this.modal.showModal = false;
+            apos.bus.$emit('content-changed');
           }
         }
       } catch (e) {

@@ -239,12 +239,14 @@ module.exports = {
         },
         ':_id/revert-draft-to-published': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
+          console.log(_id);
           const draft = await self.findOneForEditing({
             ...req,
             mode: 'draft'
           }, {
             aposDocId: _id.split(':')[0]
           });
+          console.log(!!draft);
           if (!draft) {
             throw self.apos.error('notfound');
           }
@@ -252,6 +254,7 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
+          console.log('invoking');
           return self.revertDraftToPublished(req, draft);
         },
         ':_id/revert-published-to-previous': async (req) => {

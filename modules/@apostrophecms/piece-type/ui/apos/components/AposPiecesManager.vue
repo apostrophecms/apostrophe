@@ -200,9 +200,11 @@ export default {
         label: `New ${this.moduleLabels.singular}`
       });
     }
+    apos.bus.$on('content-changed', this.getPieces);
   },
   destroyed() {
     this.destroyShortcuts();
+    apos.bus.$off('content-changed', this.getPieces);
   },
   methods: {
     moreMenuHandler(action) {
