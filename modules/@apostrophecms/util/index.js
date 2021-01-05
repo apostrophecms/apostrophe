@@ -29,7 +29,14 @@ const Promise = require('bluebird');
 const util = require('util');
 
 module.exports = {
-  options: { alias: 'util' },
+  options: {
+    alias: 'util',
+    // No more than 50 combined levels deep in:
+    // * relationship fetches
+    // * widget loaders
+    // * async components
+    stackLimit: 50
+  },
   init(self, options) {
     // An id for this particular Apostrophe instance that should be
     // unique even in a multiple server environment.
@@ -723,6 +730,22 @@ module.exports = {
         }
         p = path[i];
         o[p] = v;
+      },
+      // Pushes the given label onto `req.aposStack` before awaiting the given function; then pops the label off the stack
+      // and returns the result of the function. If the stack limit is reached, a warning which includes the stack itself
+      // is printed to assist in debugging, and the return value is `undefined`. Code that calls this function should be
+      // prepared not to crash if `undefined` is returned.
+
+      async recursionGuard(req, label, fn) {
+        req.aposStack.push(label);
+        if (req.aposStack.length === self.options.stackLimit) {
+          self.apos.util.warn(`WARNING: reached the maximum depth of Apostrophe's asynchronous stack.\nThis is usually because widget loaders, async components, and/or relationships\nare causing an infinite loop.\n\nPlease review the stack to find the problem:\n\n${req.aposStack.join('\n')}\n\nSuggested fixes:\n\n* For each relationship, set "areas: false" or configure a projection with\n"project".\n* Use the "neverLoad" option in your widget modules to block them from loading\nparticular widget types recursively.\n* Do not use "neverLoadSelf: false" for any widget type unless you can\nguarantee it will never cause an infinite loop.\n* Make sure your async components do not call themselves recursively in a way that will never terminate.\n\n`);
+          req.aposStack.pop();
+          return;
+        }
+        const result = await fn();
+        req.aposStack.pop();
+        return result;
       }
     };
   },
@@ -1038,7 +1061,6 @@ module.exports = {
         }
         return result;
       }
-
     };
   }
 };
