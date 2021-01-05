@@ -20,7 +20,8 @@ module.exports = {
     quickCreate: false,
     insertViaUpload: true,
     searchable: false,
-    slugPrefix: 'image-'
+    slugPrefix: 'image-',
+    autopublish: true
   },
   fields: {
     add: {
