@@ -92,8 +92,35 @@ module.exports = {
           await matched.handler(req);
         }
       },
+      afterMove: {
+        async replayMoveAfterMoved(req, doc) {
+          if (!doc._id.includes(':draft')) {
+            return;
+          }
+          const published = await self.findOneForEditing({
+            ...req,
+            mode: 'published'
+          }, {
+            _id: doc._id.replace(':draft', ':published')
+          }, {
+            permission: false
+          });
+          if (published && doc.aposLastTargetId) {
+            return self.apos.page.move({
+              ...req,
+              mode: 'published'
+            }, published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
+          }
+        }
+      },
       afterPublished: {
-        async replayMoveAfterPublished(req, published) {
+        async replayMoveAfterPublished(req, published, firstTime) {
+          if (!firstTime) {
+            // We already do this after every move of the draft, so
+            // if there was already a published version it will have
+            // already been moved
+            return;
+          }
           // Home page does not move
           if (published.aposLastTargetId) {
             return self.apos.page.move({

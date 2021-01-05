@@ -930,7 +930,7 @@ database.`);
           await moveSelf();
           await updateDescendants();
           await trashDescendants();
-          await self.emit('afterMove', req, moved, {
+          await self.apos.doc.getManager(moved.type).emit('afterMove', req, moved, {
             originalSlug,
             originalPath,
             changed,

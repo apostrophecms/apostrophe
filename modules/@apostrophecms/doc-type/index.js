@@ -603,6 +603,7 @@ module.exports = {
       // Publish the given draft. If `options.permissions` is explicitly
       // set to `false`, permissions checks are bypassed.
       async publish(req, draft, options = {}) {
+        let firstTime = false;
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be published`);
         }
@@ -615,6 +616,7 @@ module.exports = {
           locale: publishedLocale
         });
         if (!published) {
+          firstTime = true;
           published = {
             _id: publishedId,
             aposDocId: draft.aposDocId,
@@ -649,7 +651,7 @@ module.exports = {
             upsert: true
           });
         }
-        await self.emit('afterPublished', req, published);
+        await self.emit('afterPublished', req, published, firstTime);
       },
       // Reverts the given draft to the most recent publication.
       //
