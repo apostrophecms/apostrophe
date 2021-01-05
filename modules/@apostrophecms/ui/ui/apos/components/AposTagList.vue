@@ -6,7 +6,7 @@
         <AposTagListItem
           v-for="tag in tags"
           :key="tag.slug"
-          :active-tags="active"
+          :active-tag="active"
           :tag="tag"
           @click="toggleTag"
         />
@@ -35,26 +35,20 @@ export default {
   emits: [ 'update' ],
   data() {
     return {
-      active: [],
+      active: null,
       emptyState: {
         message: 'Tag your images to make searching and filtering the media manager easier'
       }
     };
   },
-  watch: {
-    active (newValue) {
-      this.$emit('update', [ ...newValue ]);
-    }
-  },
   methods: {
     toggleTag(id) {
-      if (this.active.includes(id)) {
-        this.active = this.active.filter(val => {
-          return val !== id;
-        });
+      if (this.active === id) {
+        this.active = null;
       } else {
-        this.active.push(id);
+        this.active = id;
       }
+      this.$emit('update', this.active);
     }
   }
 };

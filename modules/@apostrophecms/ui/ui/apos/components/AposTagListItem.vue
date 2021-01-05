@@ -4,19 +4,12 @@
       :class="{'is-active' : active}" class="apos-tag-list__button"
       @click="click(tag)"
     >
-      <transition
-        name="slide-fade" mode="out-in"
-        duration="100"
-      >
-        <Close
-          v-if="active" class="apos-tag-list__icon apos-tag-list__icon--remove"
-          :size="13"
-        />
-        <Tag
-          v-else class="apos-tag-list__icon apos-tag-list__icon--tag"
-          :size="13"
-        />
-      </transition>
+      <AposIndicator
+        :icon="active ? 'close-icon' : 'label-icon'"
+        fill-color="var(--a-primary)"
+        class="apos-tag-list__icon"
+        :icon-size="12"
+      />
       <span class="apos-tag-list__label">
         {{ tag.label }}
       </span>
@@ -25,19 +18,11 @@
 </template>
 
 <script>
-import Tag from 'vue-material-design-icons/Label.vue';
-import Close from 'vue-material-design-icons/Close.vue';
 export default {
-  components: {
-    Tag,
-    Close
-  },
   props: {
-    activeTags: {
-      type: Array,
-      default() {
-        return [];
-      }
+    activeTag: {
+      type: String,
+      default: null
     },
     tag: {
       required: true,
@@ -47,7 +32,7 @@ export default {
   emits: [ 'click' ],
   computed: {
     active () {
-      return this.activeTags.includes(this.tag.value);
+      return this.activeTag === this.tag.value;
     }
   },
   methods: {
@@ -62,7 +47,7 @@ export default {
 .apos-tag-list__item {
   position: relative;
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 7.5px;
 }
 .apos-tag-list__button {
   @include apos-button-reset();
@@ -105,23 +90,11 @@ export default {
   color: var(--a-base-6);
 }
 
-.slide-fade-enter-active {
-  transition: all 0.3s ease;
-}
-.slide-fade-leave-active {
-  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
-}
-.slide-fade-enter, .slide-fade-leave-to {
-  transform: translateX(2px);
-  opacity: 0;
-}
-
 .apos-tag-list__icon {
   position: absolute;
   left: -20px;
   display: inline-flex;
   opacity: 0;
-  @include apos-transition();
 }
 
 .apos-tag-list__label {

@@ -186,7 +186,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    await this.getMedia();
+    await this.getMedia({ tags: true });
   },
   methods: {
     // Whether a cancellation requires confirmation or not
@@ -198,7 +198,7 @@ export default {
     editorModified (val) {
       this.modified = val;
     },
-    async getMedia () {
+    async getMedia (options) {
       const qs = {
         ...this.filterValues,
         page: this.currentPage
@@ -227,7 +227,10 @@ export default {
         }
       ));
 
-      this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+      if (options && options.tags) {
+        this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+      }
+
       this.currentPage = apiResponse.currentPage;
       this.totalPages = apiResponse.pages;
       this.items = apiResponse.results;
