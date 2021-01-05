@@ -15,7 +15,8 @@ module.exports = {
     alias: 'file',
     quickCreate: false,
     insertViaUpload: true,
-    slugPrefix: 'file-'
+    slugPrefix: 'file-',
+    autopublish: true
   },
   fields: {
     add: {

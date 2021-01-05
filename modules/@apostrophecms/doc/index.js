@@ -197,7 +197,7 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterDelete': {
-                // If deleting draft also delete published,
+        // If deleting draft also delete published,
         // and vice versa. (Note that when the user
         // "discards the draft" of a previously published
         // document it is not really deleted, it is reset
