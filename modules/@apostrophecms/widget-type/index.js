@@ -43,6 +43,20 @@
 // 100% of the permanent properties of the widget in this way.**
 // This is needed for the editing experience.
 //
+// ### `neverLoadSelf`
+//
+// If true, this widget's `load` method will never recursively invoke
+// itself for the same widget type. This option defaults to `true`.
+// If you set it to `false`, be aware that you are responsible
+// for ensuring that the situation does not lead to an infinite loop.
+//
+// ### `neverLoad`
+//
+// If set to an array of widget type names, the load methods of the
+// specified widget types will never be recursively invoked by this module's
+// `load` method. By default this option is empty. See also `neverLoadSelf`,
+// which defaults to `true`, resolving most performance problems.
+//
 // ### `scene`
 //
 // If your widget wishes to use Apostrophe features like schemas
@@ -112,7 +126,8 @@ const _ = require('lodash');
 module.exports = {
   cascades: [ 'fields' ],
   options: {
-    playerData: false
+    playerData: false,
+    neverLoadSelf: true
   },
   init(self, options) {
 
@@ -131,6 +146,17 @@ module.exports = {
 
     self.apos.area.setWidgetManager(self.name, self);
 
+    // To avoid infinite loops and/or bad performance, the load method of
+    // this widget type will never invoke itself recursively unless
+    // the `loadSelf` option of the module is explicitly set to `true`.
+    // In addition the `neverLoad` option can be set to provide additional
+    // widget types that are not to be loaded in a nested way beneath this one
+
+    self.neverLoad = [ ...self.options.neverLoad || [] ];
+    if (self.options.neverLoadSelf) {
+      self.neverLoad.push(self.name);
+      self.neverLoad = [ ...new Set(self.neverLoad) ];
+    }
   },
   methods(self, options) {
     return {
@@ -167,24 +193,57 @@ module.exports = {
         });
       },
 
-      // Perform relationships and any other necessary async
-      // actions for our type of widget. Note that
-      // an array of widgets is handled in a single call
-      // as you can usually optimize this.
-      //
-      // Override this to perform custom relationships not
-      // specified by your schema, talk to APIs, etc.
+      // Load relationships and carry out any other necessary async
+      // actions for our type of widget, as long as it is
+      // not forbidden due to the `neverLoad` option or the
+      // `neverLoadSelf` option (which defaults to `true`).
       //
       // Also implements the `scene` convenience option
       // for upgrading assets delivered to the browser
-      // to the full set of `user` assets.
+      // to the full set of `user` assets (TODO: are we
+      // removing this in A3?)
+      //
+      // If you are looking to add custom loader behavior for
+      // your widget type, don't extend this method, extend
+      // the `load` method which just does the loading work.
+      // `loadIfSuitable` is responsible for invoking that method
+      // only after checking for recursion issues. Those guards
+      // should apply to your code too.
 
-      async load(req, widgets) {
+      async loadIfSuitable(req, widgets) {
         if (self.options.scene) {
           req.scene = self.options.scene;
         }
-        await self.apos.schema.relate(req, self.schema, widgets, undefined);
+        if (req.aposNeverLoad[self.name]) {
+          return;
+        }
+        const pushing = self.neverLoad.filter(type => !req.aposNeverLoad[type]);
+        for (const type of pushing) {
+          req.aposNeverLoad[type] = true;
+        }
+        await self.apos.util.recursionGuard(req, `widget:${self.name}`, async () => {
+          return self.load(req, widgets);
+        });
+        for (const type of pushing) {
+          // Faster than the delete keyword
+          req.aposNeverLoad[type] = false;
+        }
+      },
 
+      // Perform relationships and any other necessary async
+      // actions for our type of widget.
+      //
+      // Override this to perform custom actions not
+      // specified by your schema, talk to APIs, etc. when a widget
+      // is present.
+      //
+      // Note that an array of widgets is handled in a single call
+      // as you can sometimes optimize for that case.
+      // Do not assume there is only one. If you can't optimize it,
+      // that's OK, just loop over them and handle every one.
+
+      async load(req, widgets) {
+        await self.apos.schema.relate(req, self.schema, widgets, undefined);
         // If this is a virtual widget (a widget being edited or previewed in the
         // editor), any nested areas, etc. inside it haven't already been loaded as
         // part of loading a doc. Do that now by creating a query and then feeding
@@ -201,9 +260,8 @@ module.exports = {
         // Shut off relationships because we already did them and the query would try to do them
         // again based on `type`, which isn't really a doc type.
         const query = self.apos.doc.find(req).relationships(false);
-
         // Call .after with our own results
-        return query.after(widgets);
+        await query.after(widgets);
       },
 
       // Sanitize the widget. Invoked when the user has edited a widget on the

@@ -197,7 +197,9 @@ module.exports = {
             return { Host: 'you-need-to-set-baseUrl-in-app-js.com' }[propName];
           },
           query: {},
-          url: '/'
+          url: '/',
+          aposNeverLoad: {},
+          aposStack: []
         };
         _.extend(req, properties || {});
         self.apos.modules['@apostrophecms/express'].addAbsoluteUrlsToReq(req);
