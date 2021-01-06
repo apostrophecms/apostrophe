@@ -97,7 +97,13 @@ module.exports = {
           locale = req.locale;
           mode = req.mode;
         }
-        return `${cuid}:${locale}:${mode}`;
+        if (_id.charAt(0) === '_') {
+          // A shortcut such as _home or _trash,
+          // will be interpreted later
+          return _id;
+        } else {
+          return `${cuid}:${locale}:${mode}`;
+        }
       }
     };
   }
