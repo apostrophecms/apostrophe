@@ -31,14 +31,37 @@ export default {
       default() {
         return false;
       }
+    },
+    saveDraft: {
+      type: Boolean,
+      default() {
+        return true;
+      }
     }
   },
   data() {
     const menu = {
       isOpen: false,
-      menu: [
+      menu: this.recomputeMenu()
+    };
+    return menu;
+  },
+  watch: {
+    isModified() {
+      this.menu = this.recomputeMenu();
+    },
+    isModifiedFromPublished() {
+      this.menu = this.recomputeMenu();
+    }
+  },
+  methods: {
+    menuHandler(action) {
+      this.$emit(action);
+    },
+    recomputeMenu() {
+      return [
         // TODO
-        // ...(this.isModified ? [
+        // ...(this.isModifiedFromPublished ? [
         //   {
         //     label: 'Share Draft',
         //     action: 'share'
@@ -56,19 +79,15 @@ export default {
             label: 'Discard Draft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
-          },
+          }
+        ] : []),
+        ...((this.isModified && this.saveDraft) ? [
           {
             label: 'Save Draft',
             action: 'saveDraft'
           }
         ] : [])
-      ]
-    };
-    return menu;
-  },
-  methods: {
-    menuHandler(action) {
-      this.$emit(action);
+      ];
     }
   }
 };

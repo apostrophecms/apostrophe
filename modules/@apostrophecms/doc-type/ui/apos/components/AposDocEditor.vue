@@ -21,6 +21,7 @@
         :doc-id="docId"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
+        :save-draft="true"
         @saveDraft="saveDraft"
         @discardDraft="discardDraft"
       />

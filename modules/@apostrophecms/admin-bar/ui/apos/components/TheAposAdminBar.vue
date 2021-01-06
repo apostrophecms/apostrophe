@@ -173,12 +173,14 @@
               })"
             />
             <!-- Later the v-if will go away because options like duplicate and share
-              do not require that the draft be modified, but right now there is just one
-              implemented option on the menu -->
+              do not require that the draft be modified, but right now we just have
+              Discard Draft which requires a modified draft -->
             <AposDocMoreMenu
               :doc-id="moduleOptions.contextId"
               v-if="draftIsModified"
               :is-modified="draftIsModified"
+              :is-modified-from-published="draftIsModified"
+              :save-draft="false"
               @discardDraft="discardDraft"
             />
             <AposButton
