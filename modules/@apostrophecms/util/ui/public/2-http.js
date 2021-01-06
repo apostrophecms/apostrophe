@@ -375,7 +375,12 @@
         options.qs = apos.util.assign({ 'apos-mode': 'draft' }, options.qs);
       } else {
         // Careful, there could be existing query parameters baked into url
-        query = apos.http.parseQuery(url);
+        const qat = url.indexOf('?');
+        if (qat !== -1) {
+          query = apos.http.parseQuery(url.substring(qat));
+        } else {
+          query = {};
+        }
         query['apos-mode'] = 'draft';
         url = apos.http.addQueryToUrl(url, query);
       }

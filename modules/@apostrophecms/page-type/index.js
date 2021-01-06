@@ -113,8 +113,40 @@ module.exports = {
           }
         }
       },
-      afterPublished: {
-        async replayMoveAfterPublished(req, published, firstTime) {
+      beforePublish: {
+        async ancestorsMustBePublished(req, { draft, published }) {
+          const ancestorAposDocIds = draft.path.split('/');
+          // Self is not a parent
+          ancestorAposDocIds.pop();
+          const publishedAncestors = await self.apos.doc.db.find({
+            aposDocId: {
+              $in: ancestorAposDocIds
+            },
+            aposLocale: published.aposLocale
+          }).project({
+            _id: 1,
+            aposDocId: 1,
+            title: 1
+          }).toArray();
+          if (publishedAncestors.length !== ancestorAposDocIds.length) {
+            const draftAncestors = await self.apos.doc.db.find({
+              aposDocId: {
+                $in: ancestorAposDocIds
+              },
+              aposLocale: draft.aposLocale
+            }).project({
+              _id: 1,
+              aposDocId: 1,
+              title: 1
+            }).toArray();
+            throw self.apos.error('invalid', {
+              unpublishedAncestors: draftAncestors.filter(draftAncestor => !publishedAncestors.find(publishedAncestor => draftAncestor.aposDocId === publishedAncestor.aposDocId))
+            });
+          }
+        }
+      },
+      afterPublish: {
+        async replayMoveAfterPublish(req, { published, firstTime }) {
           if (!firstTime) {
             // We already do this after every move of the draft, so
             // if there was already a published version it will have

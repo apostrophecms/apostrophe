@@ -633,10 +633,22 @@ module.exports = {
             aposLocale: publishedLocale
           };
           self.copyForPublication(req, draft, published);
+          await self.emit('beforePublish', req, {
+            draft,
+            published,
+            options,
+            firstTime
+          });
           published = await self.insertPublishedOf(req, draft, published, options);
         } else {
           previousPublished = klona(published);
           self.copyForPublication(req, draft, published);
+          await self.emit('beforePublish', req, {
+            draft,
+            published,
+            options,
+            firstTime
+          });
           published = await self.update({
             ...req,
             mode: 'published'
@@ -661,7 +673,12 @@ module.exports = {
             upsert: true
           });
         }
-        await self.emit('afterPublished', req, published, firstTime);
+        await self.emit('afterPublish', req, {
+          draft,
+          published,
+          options,
+          firstTime
+        });
       },
       // Reverts the given draft to the most recent publication.
       //

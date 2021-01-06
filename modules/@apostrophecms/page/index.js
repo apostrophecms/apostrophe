@@ -235,7 +235,6 @@ module.exports = {
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
         self.publicApiCheck(req);
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         req.body._position = req.body._position || 'lastChild';
         let targetId = self.apos.launder.string(req.body._targetId);
         let position = self.apos.launder.string(req.body._position);
@@ -256,7 +255,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return;
           const parentPage = await self.findForEditing(req, { _id: targetId })
-            .permission('edit-@apostrophecms/page').toObject();
+            .permission('edit', '@apostrophecms/page').toObject();
           return self.newChild(parentPage);
         }
 

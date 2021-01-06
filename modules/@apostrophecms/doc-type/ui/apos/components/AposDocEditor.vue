@@ -17,8 +17,7 @@
         menu in many cases because all of the operations
         depend on modification from published -->
       <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && isModifiedFromPublished && docId"
-        :doc-id="docId"
+        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished)"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
         :save-draft="true"
@@ -458,7 +457,8 @@ export default {
           requestMethod = apos.httpDraft.post;
 
           if (this.moduleName === '@apostrophecms/page') {
-            body._targetId = apos.page.page._id;
+            // New pages are always born as drafts
+            body._targetId = apos.page.page._id.replace(':published', ':draft');
             body._position = 'lastChild';
           }
         }
@@ -481,22 +481,8 @@ export default {
             return;
           }
         }
-        try {
-          if (andPublish) {
-            await apos.http.post(`${route}/publish`, {
-              body: {},
-              busy: true
-            });
-            const eventName = 'revert-published-to-previous';
-            apos.notify(`Your changes have been published. <button data-apos-bus-event='${eventName}'>Undo Publish</a>`, {
-              type: 'success',
-              dismiss: true
-            });
-          }
-        } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred publishing the document.'
-          });
+        if (andPublish) {
+          await this.publish(doc._id);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
@@ -505,14 +491,61 @@ export default {
         }
       });
     },
-    async getNewInstance () {
+    async publish(_id) {
+      try {
+        await apos.http.post(`${this.moduleAction}/${this.docId}/publish`, {
+          body: {},
+          busy: true
+        });
+        const event = {
+          name: 'revert-published-to-previous',
+          data: {
+            action: this.moduleAction,
+            _id
+          }
+        };
+        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</a>`, {
+          type: 'success',
+          dismiss: true
+        });
+      } catch (e) {
+        if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
+          if (await apos.confirm({
+            heading: 'One or more parent pages have not been published',
+            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}\nDo you want to do that now?`
+          })) {
+            try {
+              for (const page of e.body.data.unpublishedAncestors) {
+                await apos.http.post(`${this.moduleAction}/${_id}/publish`, {
+                  body: {},
+                  busy: true
+                });
+              }
+              // Retry now that ancestors are published
+              return this.publish(_id);
+            } catch (e) {
+              await apos.alert({
+                heading: 'An Error Occurred While Publishing',
+                description: e.message || 'An error occurred while publishing a parent page.'
+              });
+            }
+          }
+        } else {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred while publishing the document.'
+          });
+        }
+      }
+    },
+    async getNewInstance() {
       try {
         const body = {
           _newInstance: true
         };
 
         if (this.moduleName === '@apostrophecms/page') {
-          body._targetId = apos.page.page._id;
+          // New pages are always born as drafts
+          body._targetId = apos.page.page._id.replace(':published', ':draft');
           body._position = 'lastChild';
         }
         const newDoc = await apos.httpDraft.post(this.moduleAction, {

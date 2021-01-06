@@ -422,7 +422,7 @@ export default {
     }, false);
 
     // Listen for bus events coming from notification UI
-    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPreviousFromNotification);
+    apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
 
     // A unique identifier for this current page's lifetime
     // in this browser right now. Not the same thing as a page id
@@ -501,9 +501,6 @@ export default {
     }
   },
   methods: {
-    revertPublishedToPreviousFromNotification() {
-      this.revertPublishedToPrevious();
-    },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
@@ -655,16 +652,45 @@ export default {
           busy: true
         });
         this.draftIsModified = false;
-        const eventName = 'revert-published-to-previous';
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${eventName}'>Undo Publish</a>`, {
+        const event = {
+          name: 'revert-published-to-previous',
+          data: {
+            action: this.moduleOptions.contextAction,
+            _id: this.moduleOptions.contextId
+          }
+        };
+        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</a>`, {
           type: 'success',
           dismiss: true
         });
       } catch (e) {
-        await apos.alert({
-          heading: 'An Error Occurred While Publishing',
-          description: e.message || 'An error occurred while publishing the document.'
-        });
+        if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
+          if (await apos.confirm({
+            heading: 'One or more parent pages have not been published',
+            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}\nDo you want to do that now?`
+          })) {
+            try {
+              for (const page of e.body.data.unpublishedAncestors) {
+                await apos.http.post(`${this.moduleOptions.contextAction}/${page._id}/publish`, {
+                  body: {},
+                  busy: true
+                });
+              }
+              // Retry now that ancestors are published
+              return this.publish();
+            } catch (e) {
+              await apos.alert({
+                heading: 'An Error Occurred While Publishing',
+                description: e.message || 'An error occurred while publishing a parent page.'
+              });
+            }
+          }
+        } else {
+          await apos.alert({
+            heading: 'An Error Occurred While Publishing',
+            description: e.message || 'An error occurred while publishing the document.'
+          });
+        }
       }
     },
     async discardDraft() {
@@ -710,9 +736,9 @@ export default {
         }
       }
     },
-    async revertPublishedToPrevious() {
+    async revertPublishedToPrevious(data) {
       try {
-        const doc = await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-published-to-previous`, {
+        const doc = await apos.http.post(`${data.action}/${data._id}/revert-published-to-previous`, {
           body: {},
           busy: true
         });
