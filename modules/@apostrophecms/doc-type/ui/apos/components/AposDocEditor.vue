@@ -493,7 +493,7 @@ export default {
     },
     async publish(_id) {
       try {
-        await apos.http.post(`${this.moduleAction}/${this.docId}/publish`, {
+        await apos.http.post(`${this.moduleAction}/${_id}/publish`, {
           body: {},
           busy: true
         });
