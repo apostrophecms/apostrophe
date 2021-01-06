@@ -735,11 +735,12 @@ module.exports = {
           published
         };
         await self.emit('afterRevertPublishedToPrevious', req, result);
+        const modified = await self.isModified(req, result.published);
         await self.apos.doc.db.updateOne({
           _id: published._id.replace(':published', ':draft')
         }, {
           $set: {
-            modified: await self.isModified(req, result.published)
+            modified
           }
         });
         return result.published;
@@ -772,8 +773,7 @@ module.exports = {
           return true;
         }
         const schema = self.schema;
-        const result = !self.apos.schema.isEqual(req, schema, draft, published);
-        return result;
+        return !self.apos.schema.isEqual(req, schema, draft, published);
       },
       // Called for you by `apos.doc.publish`. Copies properties from
       // `draft` to `published` where appropriate.

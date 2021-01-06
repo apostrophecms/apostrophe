@@ -569,14 +569,30 @@ module.exports = {
       // You may override this method to change the implementation.
       async updateBody(req, doc, options) {
         const manager = self.apos.doc.getManager(doc.type);
-        if (manager.isLocalized(doc.type) && doc.aposLocale.endsWith(':draft')) {
+        if (manager.isLocalized(doc.type)) {
           // Performance hit now at write time is better than inaccurate
           // indicators of which docs are modified later (per Ben)
-          doc.modified = await manager.isModified(req, doc);
+          if (doc.aposLocale.endsWith(':draft')) {
+            doc.modified = await manager.isModified(req, doc);
+          }
         }
-        return self.retryUntilUnique(req, doc, async () => {
+        const result = await self.retryUntilUnique(req, doc, async () => {
           return self.db.replaceOne({ _id: doc._id }, self.apos.util.clonePermanent(doc));
         });
+        if (doc.aposLocale.endsWith(':published')) {
+          // The reverse can happen too: published changes
+          // (for instance because a move operation gets
+          // repeated on it) and draft is no longer out of sync
+          const modified = await manager.isModified(req, doc);
+          await self.apos.doc.db.updateOne({
+            _id: doc._id.replace(':published', ':draft')
+          }, {
+            $set: {
+              modified
+            }
+          });
+        }
+        return result;
       },
 
       async deleteBody(req, doc, options) {
