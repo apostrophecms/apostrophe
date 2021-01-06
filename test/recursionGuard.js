@@ -168,7 +168,7 @@ describe('Recursion Guard', function() {
     });
     const selfRefId = cuid();
     await apos.article.insert(req, {
-      _id: selfRefId,
+      aposDocId: selfRefId,
       title: 'Self Referential Article',
       main: {
         metaType: 'area',
@@ -188,7 +188,7 @@ describe('Recursion Guard', function() {
       }
     });
     const article = await apos.article.find(req, {
-      _id: selfRefId
+      aposDocId: selfRefId
     }).toObject();
     assert(article);
     // Sanity check that we didn't kill all widget loaders: check
@@ -210,7 +210,7 @@ describe('Recursion Guard', function() {
     const req = apos.task.getReq();
     const selfRefId = cuid();
     await apos.article.insert(req, {
-      _id: selfRefId,
+      aposDocId: selfRefId,
       title: 'Very Self Referential Article',
       main: {
         metaType: 'area',
@@ -230,7 +230,7 @@ describe('Recursion Guard', function() {
       warnings += args.join('\n');
     };
     const article = await apos.article.find(req, {
-      _id: selfRefId
+      aposDocId: selfRefId
     }).toObject();
     // Verify the stack shown in the warning references the right bits
     assert(warnings.match(/widget:scary-article/));
