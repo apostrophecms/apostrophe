@@ -267,13 +267,14 @@ export default {
       const getOnePath = `${this.moduleAction}/${this.docId}`;
       try {
         try {
-          await apos.httpDraft.patch(getOnePath, {
+          await apos.http.patch(getOnePath, {
             body: {
               _advisoryLock: {
                 htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
-            }
+            },
+            draft: true
           });
           this.markLockedAndScheduleRefresh();
         } catch (e) {
@@ -292,14 +293,15 @@ export default {
               })
             ) {
               try {
-                await apos.httpDraft.patch(getOnePath, {
+                await apos.http.patch(getOnePath, {
                   body: {
                     _advisoryLock: {
                       htmlPageId: apos.adminBar.htmlPageId,
                       lock: true,
                       force: true
                     }
-                  }
+                  },
+                  draft: true
                 });
                 this.markLockedAndScheduleRefresh();
               } catch (e) {
@@ -313,9 +315,10 @@ export default {
             }
           }
         }
-        docData = await apos.httpDraft.get(getOnePath, {
+        docData = await apos.http.get(getOnePath, {
           busy: true,
-          qs: this.filterValues
+          qs: this.filterValues,
+          draft: true
         });
       } catch {
         // TODO a nicer message here, but moduleLabels is undefined here
@@ -368,13 +371,14 @@ export default {
         await this.lockRefreshing;
       }
       try {
-        await apos.httpDraft.patch(`${this.moduleAction}/${this.docId}`, {
+        await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
           body: {
             _advisoryLock: {
               htmlPageId: apos.adminBar.htmlPageId,
               lock: false
             }
-          }
+          },
+          draft: true
         });
       } catch (e) {
         // Not our concern, just being polite
@@ -389,13 +393,14 @@ export default {
     refreshLock() {
       this.lockRefreshing = (async () => {
         try {
-          await apos.httpDraft.patch(`${this.moduleAction}/${this.docId}`, {
+          await apos.http.patch(`${this.moduleAction}/${this.docId}`, {
             body: {
               _advisoryLock: {
                 htmlPageId: apos.adminBar.htmlPageId,
                 lock: true
               }
-            }
+            },
+            draft: true
           });
           // Reset this each time to avoid various race conditions
           this.lockTimeout = setTimeout(this.refreshLock, 10000);
@@ -446,7 +451,7 @@ export default {
         let requestMethod;
         if (this.docId) {
           route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.httpDraft.put;
+          requestMethod = apos.http.put;
           // Make sure we fail if someone else took the advisory lock
           body._advisoryLock = {
             htmlPageId: apos.adminBar.htmlPageId,
@@ -454,7 +459,7 @@ export default {
           };
         } else {
           route = this.moduleAction;
-          requestMethod = apos.httpDraft.post;
+          requestMethod = apos.http.post;
 
           if (this.moduleName === '@apostrophecms/page') {
             // New pages are always born as drafts
@@ -466,7 +471,8 @@ export default {
         try {
           doc = await requestMethod(route, {
             busy: true,
-            body
+            body,
+            draft: true
           });
           apos.bus.$emit('content-changed', doc);
         } catch (e) {
@@ -548,8 +554,9 @@ export default {
           body._targetId = apos.page.page._id.replace(':published', ':draft');
           body._position = 'lastChild';
         }
-        const newDoc = await apos.httpDraft.post(this.moduleAction, {
-          body
+        const newDoc = await apos.http.post(this.moduleAction, {
+          body,
+          draft: true
         });
         return newDoc;
       } catch (error) {

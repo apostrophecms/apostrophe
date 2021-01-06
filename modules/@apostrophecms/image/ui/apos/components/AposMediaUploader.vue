@@ -97,11 +97,12 @@ export default {
         const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
         const fileCount = files.length;
 
-        const emptyDoc = await apos.httpDraft.post(this.action, {
+        const emptyDoc = await apos.http.post(this.action, {
           busy: true,
           body: {
             _newInstance: true
-          }
+          },
+          draft: true
         });
         await apos.notify(
           // TODO: i18n
@@ -180,9 +181,10 @@ export default {
       });
 
       try {
-        const imgPiece = await apos.httpDraft.post(this.action, {
+        const imgPiece = await apos.http.post(this.action, {
           busy: true,
-          body: imageData
+          body: imageData,
+          draft: true
         });
 
         return imgPiece;

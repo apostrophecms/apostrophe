@@ -244,10 +244,11 @@ export default {
         };
       }
 
-      const getResponse = (await apos.httpDraft.get(
+      const getResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs
+          qs,
+          draft: true
         }
       ));
 

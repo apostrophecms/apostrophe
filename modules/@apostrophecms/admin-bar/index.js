@@ -250,7 +250,8 @@ module.exports = {
         if (context && context._edit) {
           req.res.setHeader('Cache-Control', 'no-cache');
         }
-        let contextEditorName, contextAction;
+        let contextEditorName;
+        let contextAction;
         if (context) {
           if (self.apos.page.isPage(context)) {
             contextEditorName = '@apostrophecms/page:editor';

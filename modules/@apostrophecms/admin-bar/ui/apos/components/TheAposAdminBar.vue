@@ -172,7 +172,7 @@
                 }
               })"
             />
-            <!-- Later the v-if will go away because options like duplicate and share
+            <!-- TODO later the v-if will go away because options like duplicate and share
               do not require that the draft be modified, but right now we just have
               Discard Draft which requires a modified draft -->
             <AposDocMoreMenu
@@ -398,7 +398,7 @@ export default {
     // Listen for bus events coming from notification UI
     apos.bus.$on('revert-published-to-previous', this.revertPublishedToPrevious);
 
-    // A unique identifier for this current page's lifetime
+    // A unique identifier for this current page'ss lifetime
     // in this browser right now. Not the same thing as a page id
     // or session id. Used for advisory locks, to distinguish
     // different tabs owned by the same user
@@ -557,9 +557,9 @@ export default {
         }
       }
     },
-    switchEditMode(mode) {
-      window.sessionStorage.setItem('aposEditMode', JSON.stringify(mode));
-      this.editMode = mode;
+    switchEditMode(editing) {
+      window.sessionStorage.setItem('aposEditMode', JSON.stringify(editing));
+      this.editMode = editing;
       if (this.draftMode !== 'draft') {
         // Entering edit mode implies entering draft mode.
         // Also takes care of refresh

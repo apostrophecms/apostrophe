@@ -220,10 +220,11 @@ export default {
           delete qs[prop];
         };
       }
-      const apiResponse = (await apos.httpDraft.get(
+      const apiResponse = (await apos.http.get(
         this.options.action, {
           busy: true,
-          qs
+          qs,
+          draft: true
         }
       ));
 

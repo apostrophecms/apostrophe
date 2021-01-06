@@ -156,13 +156,14 @@ export default {
       this.pagesFlat = [];
       const self = this;
 
-      const pageTree = (await apos.httpDraft.get(
+      const pageTree = (await apos.http.get(
         '/api/v1/@apostrophecms/page', {
           busy: true,
           qs: {
             all: 1,
             trash: null
-          }
+          },
+          draft: true
         }
       ));
 
@@ -189,9 +190,10 @@ export default {
 
       const route = `${this.moduleOptions.action}/${page.changedId}`;
       try {
-        await apos.httpDraft.patch(route, {
+        await apos.http.patch(route, {
           busy: true,
-          body
+          body,
+          draft: true
         });
       } catch (error) {
         await apos.notify(error.body.message || 'An error occurred while updating the page tree.', {

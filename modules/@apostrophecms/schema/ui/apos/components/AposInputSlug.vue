@@ -196,11 +196,12 @@ export default {
       let slug;
       try {
         slug = this.next;
-        await apos.httpDraft.post(`${apos.doc.action}/slug-taken`, {
+        await apos.http.post(`${apos.doc.action}/slug-taken`, {
           body: {
             slug,
             _id: this.docId
-          }
+          },
+          draft: true
         });
         // Still relevant?
         if (slug === this.next) {

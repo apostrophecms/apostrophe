@@ -217,9 +217,10 @@ export default {
         }
 
         try {
-          const doc = await apos.httpDraft.put(route, {
+          const doc = await apos.http.put(route, {
             busy: true,
-            body: this.docFields.data
+            body: this.docFields.data,
+            draft: true
           });
           apos.bus.$emit('content-changed', doc);
           this.original = klona(this.docFields.data);

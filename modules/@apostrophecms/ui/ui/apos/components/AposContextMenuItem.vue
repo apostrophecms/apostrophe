@@ -78,7 +78,9 @@ export default {
 
     &--disabled {
       color: var(--a-base-5);
-      &:hover, &:focus, &:active {
+      &:hover,
+      &:focus,
+      &:active {
         cursor: not-allowed;
         color: var(--a-base-5);
       }
