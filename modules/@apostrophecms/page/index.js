@@ -177,6 +177,7 @@ module.exports = {
           function mark(nodes, ancestors) {
             _.each(nodes, function(node) {
               if (node._edit) {
+                // TODO: Ensure `good` is removed from API responses.
                 node.good = true;
                 _.each(ancestors, function(ancestor) {
                   ancestor.good = true;

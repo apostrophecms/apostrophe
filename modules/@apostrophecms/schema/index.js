@@ -1762,10 +1762,11 @@ module.exports = {
                 _.extend(options.hints, _relationship.hints);
                 _.extend(options.hints, _relationship.hintsByType[type]);
               }
-              // Allow options to the getter to be specified in the schema,
-              // notably editable: true
-
-              await self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
+              await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
+                // Allow options to the getter to be specified in the schema,
+                // notably editable: true
+                return self.fieldTypes[_relationship.type].relate(req, _relationship, _objects, options);
+              });
               _.each(_objects, function (object) {
                 if (object[subname]) {
                   if (Array.isArray(object[subname])) {
@@ -1811,7 +1812,9 @@ module.exports = {
 
           // Allow options to the getter to be specified in the schema,
           // notably editable: true
-          await self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
+          await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
+            return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);
+          });
         }
 
         function findObjectsInArrays(objects, arrays) {

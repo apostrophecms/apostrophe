@@ -252,7 +252,9 @@ module.exports = {
           query: {},
           url: '/',
           locale: self.apos.modules['@apostrophecms/i18n'].defaultLocale,
-          mode: 'published'
+          mode: 'published',
+          aposNeverLoad: {},
+          aposStack: []
         };
         if (properties && properties.mode && properties.mode.draft) {
           req.mode = 'draft';

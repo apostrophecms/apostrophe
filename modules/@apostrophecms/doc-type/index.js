@@ -1404,7 +1404,6 @@ module.exports = {
               return;
             }
             const req = query.req;
-            req.areasLoadedFor = req.areasLoadedFor || {};
 
             const widgetsByType = {};
 
@@ -1417,21 +1416,6 @@ module.exports = {
                 });
               });
               if (areasInfo.length) {
-                // Simple guard against infinite recursion:
-                // we won't load areas for the same doc more than five times
-                // per page request.
-                //
-                // We run this guard only if areas actually exist so we're
-                // not unfairly triggered by docs loaded with a restricted
-                // projection.
-                if (!_.has(req.areasLoadedFor, doc._id)) {
-                  req.areasLoadedFor[doc._id] = 0;
-                }
-                if (req.areasLoadedFor[doc._id] >= 5) {
-                  self.apos.util.warn('WARNING: reached maximum area loader recursion level. Doc _id is ' + doc._id + '. Are you using projections for all relationships?');
-                  return;
-                }
-                req.areasLoadedFor[doc._id]++;
                 for (const info of areasInfo) {
                   const area = info.area;
                   const dotPath = info.dotPath;
@@ -1483,7 +1467,7 @@ module.exports = {
               if (!(manager && manager.load)) {
                 continue;
               }
-              await manager.load(req, widgetsByType[type]);
+              await manager.loadIfSuitable(req, widgetsByType[type]);
             }
           }
         },
