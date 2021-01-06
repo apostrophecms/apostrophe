@@ -128,14 +128,6 @@ module.exports = {
   },
 
   async init(self, options) {
-
-    self.apos.task.add('@apostrophecms/user', 'add', 'Usage: node app @apostrophecms/user:add username groupname\n\n' + 'This adds a new user and assigns them to a group.\n' + 'You will be prompted for a password.', async function (apos, argv) {
-      await self.addFromTask();
-    });
-
-    self.apos.task.add('@apostrophecms/user', 'change-password', 'Usage: node app @apostrophecms/user:change-password username\n\n' + 'This prompts you for a new password for the given user.', async function (apos, argv) {
-      return self.changePasswordFromTask();
-    });
     self.initializeCredential();
     self.addOurTrashPrefixFields();
     self.enableSecrets();
@@ -456,6 +448,18 @@ module.exports = {
         // This module's docBeforeUpdate handler does all the magic here
         user.password = password;
         return self.update(req, user);
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      add: {
+        usage: 'Usage: node app @apostrophecms/user:add username groupname\n\nThis adds a new user and assigns them to a group.\nYou will be prompted for a password.',
+        task: self.addFromTask
+      },
+      'change-password': {
+        usage: 'Usage: node app @apostrophecms/user:change-password username\n\nThis prompts you for a new password for the given user.',
+        task: self.changePasswordFromTask
       }
     };
   }

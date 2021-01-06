@@ -37,7 +37,7 @@
               type="quiet"
               @click="foreign ? $emit('edit', i) : getFocus($event, item.id)"
               :label="foreign ? 'Edit ' + widgetLabel : widgetLabel"
-              tooltip="Click to edit this content in it's natural context"
+              tooltip="Click to edit this content in its natural context"
               :icon="foreign ? 'earth-icon' : null"
               :icon-size="11"
               :modifiers="['no-motion']"

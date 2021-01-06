@@ -633,7 +633,7 @@ export default {
             _id: this.moduleOptions.contextId
           }
         };
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</a>`, {
+        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</button>`, {
           type: 'success',
           dismiss: true
         });

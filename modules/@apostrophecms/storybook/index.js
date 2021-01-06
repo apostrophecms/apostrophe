@@ -16,40 +16,8 @@ const COMPONENTS_PLACEHOLDER = /(\/\/ COMPONENTS)/g;
 const STORIES_PLACEHOLDER = /"STORIES"/g;
 
 module.exports = {
-  init(self, options) {
-    self.addTask('build', 'pass a folder name to build a static storybook', self.build);
-    self.addTask('run', 'start storybook dev server', self.run);
-    self.addTask('deploy', 'deploy static storybook to github pages of your project repo', self.deploy);
-  },
   methods(self, options) {
     return {
-      async build(apos, argv) {
-        const target = require('path').resolve(process.cwd(), argv._[1]);
-        if (!target) {
-          throw 'Must specify target directory as first argument.';
-        }
-        const buildDir = await self.preBuild(argv);
-        childProcess.execSync(`cd ${buildDir} && npx build-storybook -s ./public -c .storybook -o ${target}`, { stdio: 'inherit' });
-      },
-      async run(apos, argv) {
-        const buildDir = await self.preBuild(argv);
-        childProcess.execSync(`cd ${buildDir} && npx start-storybook -s ./public -p 9001 -c .storybook`, { stdio: 'inherit' });
-      },
-      async deploy(apos, argv) {
-        const buildDir = await self.preBuild(argv);
-        const staticBuild = `${process.env.APOS_ROOT}/data/temp/storybook-static`;
-        let domain = '';
-        if (options.domain) {
-          domain = `echo '${options.domain}' > '${staticBuild}/CNAME' && `;
-        }
-        require('child_process').execSync(`
-          cd ${buildDir} &&
-          npx build-storybook -s ./public -c .storybook -o ${staticBuild} &&
-          ${domain}
-          npx storybook-to-ghpages -e ${staticBuild} &&
-          rm -rf ${staticBuild}
-        `, { stdio: 'inherit' });
-      },
       async preBuild(options) {
         await self.apos.task.invoke('@apostrophecms/asset:build');
         const importsFile = `${self.apos.rootDir}/apos-build/imports.json`;
@@ -106,6 +74,46 @@ module.exports = {
         const buildDir = `${self.apos.rootDir}/data/temp/storybook`;
         fs.ensureDirSync(`${buildDir}/public/images`);
         return buildDir;
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      build: {
+        usage: 'pass a folder name to build a static storybook',
+        async task(argv) {
+          const target = require('path').resolve(process.cwd(), argv._[1]);
+          if (!target) {
+            throw 'Must specify target directory as first argument.';
+          }
+          const buildDir = await self.preBuild(argv);
+          childProcess.execSync(`cd ${buildDir} && npx build-storybook -s ./public -c .storybook -o ${target}`, { stdio: 'inherit' });
+        }
+      },
+      run: {
+        usage: 'start storybook dev server',
+        async task(argv) {
+          const buildDir = await self.preBuild(argv);
+          childProcess.execSync(`cd ${buildDir} && npx start-storybook -s ./public -p 9001 -c .storybook`, { stdio: 'inherit' });
+        }
+      },
+      deploy: {
+        usage: 'deploy static storybook to github pages of your project repo',
+        async task(argv) {
+          const buildDir = await self.preBuild(argv);
+          const staticBuild = `${process.env.APOS_ROOT}/data/temp/storybook-static`;
+          let domain = '';
+          if (options.domain) {
+            domain = `echo '${options.domain}' > '${staticBuild}/CNAME' && `;
+          }
+          require('child_process').execSync(`
+            cd ${buildDir} &&
+            npx build-storybook -s ./public -c .storybook -o ${staticBuild} &&
+            ${domain}
+            npx storybook-to-ghpages -e ${staticBuild} &&
+            rm -rf ${staticBuild}
+          `, { stdio: 'inherit' });
+        }
       }
     };
   }

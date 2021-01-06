@@ -155,7 +155,6 @@ module.exports = {
     self.addManagerModal();
     self.addEditorModal();
     self.finalizeControls();
-    self.addTasks();
   },
   restApiRoutes: (self, options) => ({
     async getAll(req) {
@@ -748,37 +747,6 @@ module.exports = {
         piece.title = 'Generated #' + (i + 1);
         return piece;
       },
-      addTasks() {
-        self.addGenerateTask();
-      },
-      addGenerateTask() {
-        if (self.isAdminOnly()) {
-          // Generating users and groups is not a good idea
-          return;
-        }
-        self.apos.task.add(self.__meta.name, 'generate', 'Invoke this task to generate sample docs of this type. Use\n' + 'the --total option to control how many are added to the database.\n' + 'You can remove them all later with the --remove option.', async function (apos, argv) {
-          if (argv.remove) {
-            return remove();
-          } else {
-            return generate();
-          }
-          async function generate() {
-            const total = argv.total || 10;
-            const req = self.apos.task.getReq();
-            for (let i = 0; i < total; i++) {
-              const piece = self.generate(i);
-              piece.aposSampleData = true;
-              await self.insert(req, piece);
-            }
-          }
-          async function remove() {
-            return self.apos.doc.db.deleteMany({
-              type: self.name,
-              aposSampleData: true
-            });
-          }
-        });
-      },
       getRestQuery(req) {
         const query = self.find(req);
         query.applyBuildersSafely(req.query);
@@ -839,6 +807,35 @@ module.exports = {
       },
       find(_super, req, criteria, projection) {
         return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
+      }
+    };
+  },
+  tasks(self, options) {
+    return self.isAdminOnly() ? {} : {
+      generate: {
+        usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
+        async task(argv) {
+          if (argv.remove) {
+            return remove();
+          } else {
+            return generate();
+          }
+          async function generate() {
+            const total = argv.total || 10;
+            const req = self.apos.task.getReq();
+            for (let i = 0; i < total; i++) {
+              const piece = self.generate(i);
+              piece.aposSampleData = true;
+              await self.insert(req, piece);
+            }
+          }
+          async function remove() {
+            return self.apos.doc.db.deleteMany({
+              type: self.name,
+              aposSampleData: true
+            });
+          }
+        }
       }
     };
   }

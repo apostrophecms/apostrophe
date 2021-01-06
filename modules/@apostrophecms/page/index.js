@@ -76,11 +76,6 @@ module.exports = {
         _defaults: { title: 'Trash' }
       } ]
     } ]).concat(self.options.park || []);
-    self.apos.task.add('@apostrophecms/page', 'unpark', 'Usage: node app @apostrophecms/page:unpark /page/slug\n\n' + 'This unparks a page that was formerly locked in a specific\n' + 'position in the page tree.', async function (apos, argv) {
-      // Wrapping a method makes it easy to override
-      // that method
-      return self.unparkTask();
-    });
     self.validateTypeChoices();
     self.finalizeControls();
     self.addManagerModal();
@@ -1758,11 +1753,11 @@ database.`);
           }
         }
       },
-      async unparkTask() {
-        if (self.apos.argv._.length !== 2) {
+      async unparkTask(argv) {
+        if (argv._.length !== 2) {
           throw new Error('Wrong number of arguments');
         }
-        const slug = self.apos.argv._[1];
+        const slug = argv._[1];
         const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
@@ -2210,6 +2205,14 @@ database.`);
     return {
       isAncestorOf: function (possibleAncestorPage, ofPage) {
         return self.isAncestorOf(possibleAncestorPage, ofPage);
+      }
+    };
+  },
+  tasks(self, options) {
+    return {
+      unpark: {
+        usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
+        task: self.unparkTask
       }
     };
   }
