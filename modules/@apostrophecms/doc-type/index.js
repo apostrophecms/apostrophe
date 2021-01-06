@@ -769,7 +769,7 @@ module.exports = {
             _id: draft._id.replace(':draft', ':published')
           });
         }
-        if (!published) {
+        if (!(published && draft)) {
           return true;
         }
         const schema = self.schema;

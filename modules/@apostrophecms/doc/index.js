@@ -579,18 +579,20 @@ module.exports = {
         const result = await self.retryUntilUnique(req, doc, async () => {
           return self.db.replaceOne({ _id: doc._id }, self.apos.util.clonePermanent(doc));
         });
-        if (doc.aposLocale.endsWith(':published')) {
-          // The reverse can happen too: published changes
-          // (for instance because a move operation gets
-          // repeated on it) and draft is no longer out of sync
-          const modified = await manager.isModified(req, doc);
-          await self.apos.doc.db.updateOne({
-            _id: doc._id.replace(':published', ':draft')
-          }, {
-            $set: {
-              modified
-            }
-          });
+        if (manager.isLocalized(doc.type)) {
+          if (doc.aposLocale.endsWith(':published')) {
+            // The reverse can happen too: published changes
+            // (for instance because a move operation gets
+            // repeated on it) and draft is no longer out of sync
+            const modified = await manager.isModified(req, doc);
+            await self.apos.doc.db.updateOne({
+              _id: doc._id.replace(':published', ':draft')
+            }, {
+              $set: {
+                modified
+              }
+            });
+          }
         }
         return result;
       },
