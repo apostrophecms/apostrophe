@@ -34,8 +34,6 @@ module.exports = function(self, options) {
         if (handlers) {
           for (const handler of handlers) {
             const module = self.apos.modules[handler.moduleName];
-            // console.log(`compiledHandlers of ${module.__meta.name}`);
-            // console.log(module.compiledHandlers);
             const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
             // Although we have `self` it can't hurt to
             // supply the correct `this`
