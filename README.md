@@ -25,21 +25,14 @@
 </p>
 
 
+## Table of Contents
 
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
-  <ol>
-    <li><a href="#about-apostrophecms">About ApostropheCMS</a></li>
-    <li><a href="#getting-started">Getting Started</a></li>
-    <li><a href="#extensions-and-integrations">Extensions and Integrations</a></li>
-    <li><a href="#community">Community</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-  </ol>
-</details>
-
-
+1. [About ApostropheCMS](#about-apostrophecms)
+2. [Getting Started](#getting-started)
+3. [Extensions and Integrations](#extensions-and-integrations)
+4. [Community](#community)
+5. [Contributing](#contributing)
+6. [License](#license)
 
 ## About ApostropheCMS
 
