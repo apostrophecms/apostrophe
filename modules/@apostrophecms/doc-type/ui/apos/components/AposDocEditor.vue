@@ -209,11 +209,11 @@ export default {
         return [];
       }
     },
-    needPublishButton() {
+    manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     },
     saveLabel() {
-      if (this.needPublishButton) {
+      if (this.manuallyPublished) {
         return 'Publish Changes';
       } else {
         return 'Save';
@@ -344,7 +344,7 @@ export default {
         this.splitDoc();
       }
       try {
-        if (this.needPublishButton) {
+        if (this.manuallyPublished) {
           this.published = await apos.http.get(getOnePath, {
             busy: true,
             qs: {
@@ -440,7 +440,7 @@ export default {
       }
     },
     submit() {
-      this.save(this.needPublishButton);
+      this.save(this.manuallyPublished);
     },
     save(andPublish = false) {
       this.triggerValidation = true;
