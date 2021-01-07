@@ -2,7 +2,9 @@
 
 ## 2.114.0 (2021-01-13)
 * Fixes image manager double-scroll bar bug.
-* When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the defualt style. Thanks to [Fredrik Ekelund](https://github.com/fredrikekelund) for the contribution.
+* When a `styles` config with a single object is passed to an `apostrophe-rich-text` widget, use that as the default style. Thanks to [Fredrik Ekelund](https://github.com/fredrikekelund) for the contribution.
+* The media library now offers filters by orientation (landscape, portrait, square) and by file type (jpg, png, gif). Thanks to Michelin for their support of this work.
+* Orientation properties for attachments have been cleaned up, and a migration provided. All attachments for images will have correct `square`, `landscape` and `portrait` boolean flags.
 
 ## 2.113.2 (2020-12-14)
 * Hotfixes for Node 14 compatibility issues relating to watching template files for modification.
