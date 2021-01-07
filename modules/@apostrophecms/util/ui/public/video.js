@@ -48,7 +48,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
       inner.removeAttribute('height');
       el.append(inner);
       // wait for CSS width to be known
-      apos.util.onReady(function() {
+      setTimeout(function() {
         // If oembed results include width and height we can get the
         // video aspect ratio right
         if (result.width && result.height) {
@@ -57,7 +57,7 @@ apos.util.widgetPlayers['@apostrophecms/video'] = {
         } else {
           // No, so assume the oembed HTML code is responsive.
         }
-      });
+      }, 0);
     }
 
     function fail(err) {

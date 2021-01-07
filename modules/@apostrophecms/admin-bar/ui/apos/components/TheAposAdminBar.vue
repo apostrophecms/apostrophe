@@ -496,10 +496,6 @@ export default {
         }
       }
       apos.bus.$emit('refreshed');
-      // Always do this. Yes some widgets will be inside area editors,
-      // but others will not, or we might not be in edit mode. Apostrophe
-      // is already smart enough to not run them twice, it's OK
-      apos.util.runPlayers();
     },
     async undo() {
       this.undone.push(this.patchesSinceLoaded.pop());
