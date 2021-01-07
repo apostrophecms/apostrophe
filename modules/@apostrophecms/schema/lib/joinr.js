@@ -11,7 +11,7 @@ const joinr = module.exports = {
   // The second argument is the name of an array property in each of those documents
   // that identifies related documents by id (for instance, groupIds).
   //
-  // The thirdargument is the name of an object property in each of
+  // The third argument is the name of an object property in each of
   // those documents that describes the relationship between the document and each
   // of the related documents. This object is expected to be structured like this:
   //

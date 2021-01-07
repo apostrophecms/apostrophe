@@ -179,9 +179,10 @@
               :doc-id="moduleOptions.contextId"
               v-if="draftIsModified"
               :is-modified="draftIsModified"
+              :can-discard-draft="draftIsModified"
               :is-modified-from-published="draftIsModified"
-              :save-draft="false"
-              @discardDraft="discardDraft"
+              :options="{ saveDraft: false }"
+              @discardDraft="onDiscardDraft"
             />
             <AposButton
               class="apos-admin-bar__context-button"
@@ -197,7 +198,7 @@
               type="primary" label="Publish Changes"
               :disabled="!readyToPublish"
               class="apos-admin-bar__btn apos-admin-bar__context-button"
-              @click="publish"
+              @click="onPublish"
               :modifiers="['no-motion']"
             />
           </div>
@@ -210,9 +211,11 @@
 <script>
 import klona from 'klona';
 import dayjs from 'dayjs';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 
 export default {
   name: 'TheAposAdminBar',
+  mixins: [ AposPublishMixin ],
   props: {
     items: {
       type: Array,
@@ -475,6 +478,9 @@ export default {
     }
   },
   methods: {
+    onPublish(e) {
+      this.publish(this.moduleOptions.contextAction, this.moduleOptions.contextId);
+    },
     beforeUnload(e) {
       if (this.patchesSinceSave.length || this.saving || this.editing) {
         e.preventDefault();
@@ -619,95 +625,16 @@ export default {
       // is already smart enough to not run them twice, it's OK
       apos.util.runPlayers();
     },
-    async publish() {
-      try {
-        await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/publish`, {
-          body: {},
-          busy: true
-        });
-        this.draftIsModified = false;
-        const event = {
-          name: 'revert-published-to-previous',
-          data: {
-            action: this.moduleOptions.contextAction,
-            _id: this.moduleOptions.contextId
-          }
-        };
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</button>`, {
-          type: 'success',
-          dismiss: true
-        });
-      } catch (e) {
-        if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
-          if (await apos.confirm({
-            heading: 'One or more parent pages have not been published',
-            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}\nDo you want to do that now?`
-          })) {
-            try {
-              for (const page of e.body.data.unpublishedAncestors) {
-                await apos.http.post(`${this.moduleOptions.contextAction}/${page._id}/publish`, {
-                  body: {},
-                  busy: true
-                });
-              }
-              // Retry now that ancestors are published
-              return this.publish();
-            } catch (e) {
-              await apos.alert({
-                heading: 'An Error Occurred While Publishing',
-                description: e.message || 'An error occurred while publishing a parent page.'
-              });
-            }
-          }
-        } else {
-          await apos.alert({
-            heading: 'An Error Occurred While Publishing',
-            description: e.message || 'An error occurred while publishing the document.'
-          });
-        }
+    async onDiscardDraft(e) {
+      const result = await this.discardDraft(this.moduleOptions.contextAction, this.moduleOptions.contextId, !!this.moduleOptions.context.lastPublishedAt);
+      if (!result) {
+        return;
       }
-    },
-    async discardDraft() {
-      if (this.moduleOptions.context.lastPublishedAt) {
-        if (await apos.confirm({
-          heading: 'Are you sure you want to discard the changes?',
-          description: 'Are you sure you want to discard all changes since this document was last published?'
-        })) {
-          try {
-            const doc = await apos.http.post(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}/revert-draft-to-published`, {
-              body: {},
-              busy: true
-            });
-            apos.notify('The changes have been discarded.', { type: 'success', dismiss: true });
-            this.draftIsModified = doc.modified;
-            this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;
-            this.refreshOrReload(doc._url);
-          } catch (e) {
-            await apos.alert({
-              heading: 'An Error Occurred',
-              description: e.message || 'An error occurred while discarding the draft.'
-            });
-          }
-        }
+      if (result.doc) {
+        this.refreshOrReload(result.doc._url);
       } else {
-        if (await apos.confirm({
-          heading: 'Are you sure you want to delete this document completely?',
-          description: 'Since this document has never been published, discarding it will delete it completely. This cannot be undone.'
-        })) {
-          try {
-            // Never published, so we truly delete the draft
-            await apos.http.delete(`${this.moduleOptions.contextAction}/${this.moduleOptions.contextId}`, {
-              busy: true
-            });
-            // With the current page gone, we need to move to safe ground
-            location.assign('/');
-          } catch (e) {
-            await apos.alert({
-              heading: 'An Error Occurred',
-              description: e.message || 'An error occurred while discarding the draft.'
-            });
-          }
-        }
+        // With the current page gone, we need to move to safe ground
+        location.assign('/');
       }
     },
     async revertPublishedToPrevious(data) {
@@ -723,7 +650,7 @@ export default {
         // This handler covers all "undo publish" buttons, so make sure it's
         // for the context document before altering any admin bar state
         // because of it
-        if (doc.aposDocId === this.context && this.context.aposDocId) {
+        if (doc.aposDocId === (this.context && this.context.aposDocId)) {
           this.draftIsModified = true;
           this.publishedAt = null;
           this.moduleOptions.context.lastPublishedAt = doc.lastPublishedAt;

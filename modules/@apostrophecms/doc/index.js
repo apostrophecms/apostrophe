@@ -205,28 +205,21 @@ module.exports = {
         // so we don't lose both in that scenario.)
         async deleteOtherModeAfterDelete(req, doc) {
           if (doc.aposLocale.endsWith(':draft')) {
+            return cleanup('published');
+          } else {
+            return cleanup('draft');
+          }
+          async function cleanup(mode) {
             const manager = self.getManager(doc.type);
-            const published = await manager.findOneForEditing({
+            const _req = {
               ...req,
-              mode: 'published'
-            }, {
+              mode
+            };
+            const peer = await manager.findOneForEditing(_req, {
               aposDocId: doc.aposDocId
             });
-            if (published) {
-              await manager.delete(req, published);
-            }
-          } else {
-            if (doc.aposLocale.endsWith(':published')) {
-              const manager = self.getManager(doc.type);
-              const draft = await manager.findOneForEditing({
-                ...req,
-                mode: 'draft'
-              }, {
-                aposDocId: doc.aposDocId
-              });
-              if (draft) {
-                await manager.delete(req, draft);
-              }
+            if (peer) {
+              await manager.delete(_req, peer);
             }
           }
         },

@@ -140,7 +140,6 @@ describe('Docs', function() {
     const person = await cursor.toObject();
     assert(person);
     assert(person.slug === 'carl');
-    console.log(person);
     assert(person._friends);
     assert(person._friends[0].slug === 'larry');
   });

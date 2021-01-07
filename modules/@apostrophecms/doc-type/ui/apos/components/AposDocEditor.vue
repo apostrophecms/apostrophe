@@ -17,12 +17,13 @@
         menu in many cases because all of the operations
         depend on modification from published -->
       <AposDocMoreMenu
-        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished)"
+        v-if="moduleOptions.localized && !moduleOptions.autopublish && (isModified || isModifiedFromPublished || canDiscardDraft)"
         :is-modified="isModified"
         :is-modified-from-published="isModifiedFromPublished"
-        :save-draft="true"
+        :can-discard-draft="canDiscardDraft"
+        :options="{ saveDraft: true }"
         @saveDraft="saveDraft"
-        @discardDraft="discardDraft"
+        @discardDraft="onDiscardDraft"
       />
       <AposButton
         type="primary" :label="saveLabel"
@@ -89,6 +90,7 @@
 import AposModalModifiedMixin from 'Modules/@apostrophecms/modal/mixins/AposModalModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { defaultsDeep } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import klona from 'klona';
@@ -98,7 +100,8 @@ export default {
   mixins: [
     AposModalTabsMixin,
     AposModalModifiedMixin,
-    AposEditorMixin
+    AposEditorMixin,
+    AposPublishMixin
   ],
   props: {
     moduleName: {
@@ -227,6 +230,9 @@ export default {
         return false;
       }
       return detectDocChange(this.schema, this.published, this.unsplitDoc());
+    },
+    canDiscardDraft() {
+      return (this.docId && (!this.published)) || this.isModifiedFromPublished;
     }
   },
   watch: {
@@ -348,13 +354,15 @@ export default {
           });
         }
       } catch (e) {
-        console.error(e);
-        // TODO a nicer message here, but moduleLabels is undefined here
-        await apos.notify('An error occurred fetching the published version of the document.', {
-          type: 'warning',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
+        if (e.name !== 'notfound') {
+          console.error(e);
+          // TODO a nicer message here, but moduleLabels is undefined here
+          await apos.notify('An error occurred fetching the published version of the document.', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+        }
       }
     } else {
       this.$nextTick(() => {
@@ -488,7 +496,7 @@ export default {
           }
         }
         if (andPublish) {
-          await this.publish(doc._id);
+          await this.publish(this.moduleAction, doc._id);
         }
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
@@ -496,52 +504,6 @@ export default {
           window.location.href = doc._url;
         }
       });
-    },
-    async publish(_id) {
-      try {
-        await apos.http.post(`${this.moduleAction}/${_id}/publish`, {
-          body: {},
-          busy: true
-        });
-        const event = {
-          name: 'revert-published-to-previous',
-          data: {
-            action: this.moduleAction,
-            _id
-          }
-        };
-        apos.notify(`Your changes have been published. <button data-apos-bus-event='${JSON.stringify(event)}'>Undo Publish</a>`, {
-          type: 'success',
-          dismiss: true
-        });
-      } catch (e) {
-        if ((e.name === 'invalid') && e.body && e.body.data && e.body.data.unpublishedAncestors) {
-          if (await apos.confirm({
-            heading: 'One or more parent pages have not been published',
-            description: `To publish this page, you must also publish the following pages: ${e.body.data.unpublishedAncestors.map(page => page.title).join(', ')}\nDo you want to do that now?`
-          })) {
-            try {
-              for (const page of e.body.data.unpublishedAncestors) {
-                await apos.http.post(`${this.moduleAction}/${_id}/publish`, {
-                  body: {},
-                  busy: true
-                });
-              }
-              // Retry now that ancestors are published
-              return this.publish(_id);
-            } catch (e) {
-              await apos.alert({
-                heading: 'An Error Occurred While Publishing',
-                description: e.message || 'An error occurred while publishing a parent page.'
-              });
-            }
-          }
-        } else {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred while publishing the document.'
-          });
-        }
-      }
     },
     async getNewInstance() {
       try {
@@ -630,43 +592,9 @@ export default {
         return this.$refs.otherSchema;
       }
     },
-    async discardDraft() {
-      try {
-        if (await apos.confirm({
-          heading: 'Are You Sure?',
-          description: this.published
-            ? 'This will discard all changes since the document was last published.'
-            : 'Since this draft has never been published, this will completely delete the document.'
-        })) {
-          if (this.published) {
-            const doc = await apos.http.post(`${this.moduleAction}/${this.docId}/revert-draft-to-published`, {
-              body: {},
-              busy: true
-            });
-            apos.notify('Discarded draft.', {
-              type: 'success',
-              dismiss: true
-            });
-            this.modal.showModal = false;
-            apos.bus.$emit('content-changed', doc);
-          } else {
-            await apos.http.delete(`${this.moduleAction}/${this.docId}`, {
-              body: {},
-              busy: true
-            });
-            apos.notify('Deleted document.', {
-              type: 'success',
-              dismiss: true
-            });
-            this.modal.showModal = false;
-            apos.bus.$emit('content-changed');
-          }
-        }
-      } catch (e) {
-        await apos.alert({
-          heading: 'An Error Occurred',
-          description: e.message || 'An error occurred while restoring the previously published version.'
-        });
+    async onDiscardDraft(e) {
+      if (await this.discardDraft(this.moduleAction, this.docId, !!this.published)) {
+        this.modal.showModal = false;
       }
     },
     saveDraft() {

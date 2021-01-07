@@ -32,11 +32,21 @@ export default {
         return false;
       }
     },
-    saveDraft: {
+    canDiscardDraft: {
       type: Boolean,
       default() {
-        return true;
+        return false;
       }
+    },
+    options: {
+      type: Object,
+      required: true
+      // subproperties:
+      // saveDraft: Boolean
+      // If true, the save draft option is offered
+      // when isModified is currently true. This does
+      // not make sense in the onpage contextual editor,
+      // because it continuously saves drafts.
     }
   },
   data() {
@@ -74,14 +84,14 @@ export default {
         //   label: 'Duplicate Document',
         //   action: 'duplicate'
         // },
-        ...(this.isModifiedFromPublished ? [
+        ...(this.canDiscardDraft ? [
           {
             label: 'Discard Draft',
             action: 'discardDraft',
             modifiers: [ 'danger' ]
           }
         ] : []),
-        ...((this.isModified && this.saveDraft) ? [
+        ...((this.isModified && this.options.saveDraft) ? [
           {
             label: 'Save Draft',
             action: 'saveDraft'

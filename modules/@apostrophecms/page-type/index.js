@@ -200,7 +200,7 @@ module.exports = {
       },
       beforeDelete: {
         async checkForParked(req, doc, options) {
-          if (!doc.level) {
+          if (doc.level === 0) {
             throw self.apos.error('invalid', 'The home page may not be removed.');
           }
           if (doc.parked) {
@@ -297,7 +297,7 @@ module.exports = {
       },
       // Called for you when a page is inserted directly in
       // the published locale, to ensure there is an equivalent
-      // draft page. You don't need to invoke this
+      // draft page. You don't need to invoke this.
       async insertDraftOf(req, doc, draft) {
         const _req = {
           ...req,
@@ -315,7 +315,7 @@ module.exports = {
       },
       // Called for you when a page is inserted in
       // the published locale, to ensure there is an equivalent
-      // draft page. You don't need to invoke this
+      // draft page. You don't need to invoke this.
       async insertPublishedOf(req, doc, published, options = {}) {
         const _req = {
           ...req,
